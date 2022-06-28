@@ -71,8 +71,10 @@ func (client *Client) CreateAppWithCallback(request *CreateAppRequest, callback 
 // CreateAppRequest is the request struct for api CreateApp
 type CreateAppRequest struct {
 	*requests.RpcRequest
+	ClientToken string `position:"Query" name:"ClientToken"`
 	AppName     string `position:"Query" name:"AppName"`
 	DisplayName string `position:"Query" name:"DisplayName"`
+	ClientIp    string `position:"Query" name:"ClientIp"`
 	Config      string `position:"Body" name:"Config"`
 }
 
@@ -91,7 +93,7 @@ func CreateCreateAppRequest() (request *CreateAppRequest) {
 	request = &CreateAppRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2019-10-23", "CreateApp", "", "")
+	request.InitWithApiInfo("Sls", "2019-10-23", "CreateApp", "sls", "openAPI")
 	request.Method = requests.POST
 	return
 }

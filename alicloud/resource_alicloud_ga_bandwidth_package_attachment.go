@@ -21,8 +21,8 @@ func resourceAlicloudGaBandwidthPackageAttachment() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -67,7 +67,7 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -149,7 +149,7 @@ func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
+		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage", "Exist.EndpointGroup"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

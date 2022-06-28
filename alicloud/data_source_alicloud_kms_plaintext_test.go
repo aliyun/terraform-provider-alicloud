@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
+func TestAccAlicloudKMSPlaintextDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_plaintext.default"
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceKmsPlaintextDependence)
@@ -39,7 +39,9 @@ func TestAccAlicloudKmsPlaintextDataSource(t *testing.T) {
 func dataSourceKmsPlaintextDependence(name string) string {
 	return `
 	resource "alicloud_kms_key" "default" {
+        description = "tf-testacckmskeyforplantexttest"
     	is_enabled = true
+		pending_window_in_days = 7
 	}
 
 	resource "alicloud_kms_ciphertext" "default" {

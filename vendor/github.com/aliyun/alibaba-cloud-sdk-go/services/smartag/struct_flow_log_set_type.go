@@ -17,18 +17,19 @@ package smartag
 
 // FlowLogSetType is a nested struct in smartag response
 type FlowLogSetType struct {
-	FlowLogId         string `json:"FlowLogId" xml:"FlowLogId"`
-	Description       string `json:"Description" xml:"Description"`
-	ActiveAging       int    `json:"ActiveAging" xml:"ActiveAging"`
-	InactiveAging     int    `json:"InactiveAging" xml:"InactiveAging"`
-	OutputType        string `json:"OutputType" xml:"OutputType"`
-	SlsRegionId       string `json:"SlsRegionId" xml:"SlsRegionId"`
-	ProjectName       string `json:"ProjectName" xml:"ProjectName"`
-	LogstoreName      string `json:"LogstoreName" xml:"LogstoreName"`
-	NetflowServerIp   string `json:"NetflowServerIp" xml:"NetflowServerIp"`
-	NetflowServerPort string `json:"NetflowServerPort" xml:"NetflowServerPort"`
-	NetflowVersion    string `json:"NetflowVersion" xml:"NetflowVersion"`
 	Status            string `json:"Status" xml:"Status"`
-	Name              string `json:"Name" xml:"Name"`
 	TotalSagNum       int    `json:"TotalSagNum" xml:"TotalSagNum"`
+	NetflowServerIp   string `json:"NetflowServerIp" xml:"NetflowServerIp"`
+	ProjectName       string `json:"ProjectName" xml:"ProjectName"`
+	SlsRegionId       string `json:"SlsRegionId" xml:"SlsRegionId"`
+	ActiveAging       int    `json:"ActiveAging" xml:"ActiveAging"`
+	OutputType        string `json:"OutputType" xml:"OutputType"`
+	Description       string `json:"Description" xml:"Description"`
+	NetflowVersion    string `json:"NetflowVersion" xml:"NetflowVersion"`
+	InactiveAging     int    `json:"InactiveAging" xml:"InactiveAging"`
+	NetflowServerPort string `json:"NetflowServerPort" xml:"NetflowServerPort"`
+	Name              string `json:"Name" xml:"Name"`
+	FlowLogId         string `json:"FlowLogId" xml:"FlowLogId"`
+	LogstoreName      string `json:"LogstoreName" xml:"LogstoreName"`
+	ResourceGroupId   string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }

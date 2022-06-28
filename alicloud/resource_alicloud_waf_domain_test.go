@@ -11,8 +11,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"os"
-
 	"sync"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -72,8 +70,10 @@ func testSweepWafDomains(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to retrieve waf domain in service list: %s", err)
 		}
-		for _, item := range response["DomainNames"].([]interface{}) {
-			domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+		if response["DomainNames"] != nil {
+			for _, item := range response["DomainNames"].([]interface{}) {
+				domainIds = append(domainIds, fmt.Sprintf(`%s:%s`, instanceId, item.(string)))
+			}
 		}
 	}
 
@@ -105,7 +105,7 @@ func testSweepWafDomains(region string) error {
 	return nil
 }
 
-func TestAccAlicloudWafDomain(t *testing.T) {
+func TestAccAlicloudWAFDomain(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_waf_domain.domain"
@@ -118,13 +118,11 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.wafqa3.com", defaultRegionToTest, rand)
-	instanceId := os.Getenv("ALICLOUD_WAF_INSTANCE_ID")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceWafDomainDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithWafInstanceSetting(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -134,7 +132,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain":            name,
-					"instance_id":       instanceId,
+					"instance_id":       "${data.alicloud_waf_instances.default.ids.0}",
 					"is_access_product": "Off",
 					"source_ips":        []string{"1.1.1.1"},
 					"cluster_type":      "PhysicalCluster",
@@ -159,7 +157,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":            name,
-						"instance_id":       instanceId,
+						"instance_id":       CHECKSET,
 						"is_access_product": "Off",
 						"source_ips.#":      "1",
 						"cluster_type":      "PhysicalCluster",
@@ -314,7 +312,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain":            name,
-					"instance_id":       instanceId,
+					"instance_id":       "${data.alicloud_waf_instances.default.ids.0}",
 					"cluster_type":      "PhysicalCluster",
 					"connection_time":   "30",
 					"http2_port":        []string{"8443"},
@@ -342,7 +340,7 @@ func TestAccAlicloudWafDomain(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":            name,
-						"instance_id":       instanceId,
+						"instance_id":       CHECKSET,
 						"cluster_type":      "PhysicalCluster",
 						"connection_time":   "30",
 						"http2_port.#":      "1",
@@ -371,6 +369,7 @@ func resourceWafDomainDependence(name string) string {
 data "alicloud_resource_manager_resource_groups" "default" {
  name_regex = "^default$"
  }
+data "alicloud_waf_instances" "default" {}
 `
 }
 

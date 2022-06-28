@@ -40,7 +40,7 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSagAclsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"acls.#":      "1",
 			"ids.#":       "1",
@@ -50,7 +50,7 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSagAclsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"acls.#":  "0",
 			"ids.#":   "0",
@@ -60,8 +60,8 @@ func TestAccAlicloudSagAclsDataSource_basic(t *testing.T) {
 
 	var sagAclsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_sag_acls.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSagAclsMapFunc,
+		fakeMapFunc:  fakeSagAclsMapFunc,
 	}
 
 	preCheck := func() {

@@ -78,7 +78,10 @@ func dataSourceAlicloudAlikafkaSaslUsersRead(d *schema.ResourceData, meta interf
 	if ok && nameRegex.(string) != "" {
 		var r *regexp.Regexp
 		if nameRegex != "" {
-			r = regexp.MustCompile(nameRegex.(string))
+			r, err = regexp.Compile(nameRegex.(string))
+			if err != nil {
+				return WrapError(err)
+			}
 		}
 		for _, saslUser := range response.SaslUserList.SaslUserVO {
 			if r != nil && !r.MatchString(saslUser.Username) {

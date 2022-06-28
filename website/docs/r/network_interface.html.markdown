@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_network\_interface
 
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_network_interface](https://www.terraform.io/docs/providers/alicloud/r/ecs_network_interface) from version 1.123.1.
+
 Provides an ECS Elastic Network Interface resource.
 
 For information about Elastic Network Interface and how to use it, see [Elastic Network Interface](https://www.alibabacloud.com/help/doc-detail/58496.html).
@@ -44,7 +46,7 @@ resource "alicloud_security_group" "group" {
 }
 
 resource "alicloud_network_interface" "default" {
-  name              = "${var.name}%d"
+  name              = var.name
   vswitch_id        = alicloud_vswitch.vswitch.id
   security_groups   = [alicloud_security_group.group.id]
   private_ip        = "192.168.0.2"

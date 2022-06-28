@@ -74,16 +74,17 @@ type SubscribeBillToOSSRequest struct {
 	BucketOwnerId           requests.Integer `position:"Query" name:"BucketOwnerId"`
 	SubscribeType           string           `position:"Query" name:"SubscribeType"`
 	SubscribeBucket         string           `position:"Query" name:"SubscribeBucket"`
+	BeginBillingCycle       string           `position:"Query" name:"BeginBillingCycle"`
 	MultAccountRelSubscribe string           `position:"Query" name:"MultAccountRelSubscribe"`
 }
 
 // SubscribeBillToOSSResponse is the response struct for api SubscribeBillToOSS
 type SubscribeBillToOSSResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      string `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateSubscribeBillToOSSRequest creates a request to invoke SubscribeBillToOSS API

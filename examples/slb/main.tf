@@ -1,8 +1,8 @@
-resource "alicloud_slb" "instance" {
-  name                 = var.slb_name
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name                 = var.slb_name
   internet_charge_type = var.internet_charge_type
   address_type         = var.address_type
-  specification        = "slb.s2.small"
+  load_balancer_spec        = "slb.s2.small"
 
   tags = {
     tag_a = 1
@@ -19,7 +19,7 @@ resource "alicloud_slb" "instance" {
 }
 
 resource "alicloud_slb_listener" "tcp" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = "22"
   frontend_port             = "22"
   protocol                  = "tcp"
@@ -40,7 +40,7 @@ resource "alicloud_slb_listener" "tcp" {
 }
 
 resource "alicloud_slb_listener" "udp" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 2001
   frontend_port             = 2001
   protocol                  = "udp"
@@ -57,7 +57,7 @@ resource "alicloud_slb_listener" "udp" {
 }
 
 resource "alicloud_slb_listener" "http" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 80
   frontend_port             = 80
   protocol                  = "http"
@@ -110,7 +110,7 @@ resource "alicloud_slb_server_certificate" "foo-file" {
 }
 
 resource "alicloud_slb_listener" "https-file" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 80
   frontend_port             = 8443
   protocol                  = "https"

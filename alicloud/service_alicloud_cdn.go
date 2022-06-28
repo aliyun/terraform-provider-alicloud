@@ -2,8 +2,13 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -56,34 +61,60 @@ func (c *CdnService) DescribeCdnDomainNew(id string) (*cdn.GetDomainDetailModel,
 	return &domain.GetDomainDetailModel, nil
 }
 
-func (c *CdnService) DescribeCdnDomainConfig(id string) (*cdn.DomainConfigInDescribeCdnDomainConfigs, error) {
-	conf := &cdn.DomainConfigInDescribeCdnDomainConfigs{}
-	parts, err := ParseResourceId(id, 2)
-	if err != err {
-		return conf, WrapError(err)
-	}
-	request := cdn.CreateDescribeCdnDomainConfigsRequest()
-	request.RegionId = c.client.RegionId
-	request.DomainName = parts[0]
+func (c *CdnService) DescribeCdnDomainConfig(id string) (object interface{}, err error) {
 
-	raw, err := c.client.WithCdnClient_new(func(cdnClient *cdn.Client) (interface{}, error) {
-		return cdnClient.DescribeCdnDomainConfigs(request)
+	var response map[string]interface{}
+	conn, err := c.client.NewCdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeCdnDomainConfigs"
+
+	parts := strings.Split(id, ":")
+	request := map[string]interface{}{
+		"RegionId":      c.client.RegionId,
+		"DomainName":    parts[0],
+		"FunctionNames": parts[1],
+	}
+
+	if len(parts) > 2 {
+		request["ConfigId"] = parts[2]
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			return conf, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return conf, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, request, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*cdn.DescribeCdnDomainConfigsResponse)
-	for _, value := range response.DomainConfigs.DomainConfig {
-		if value.FunctionName == parts[1] {
-			return &value, nil
-		}
+	addDebug(action, response, request)
+
+	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), DefaultErrorMsg, err)
 	}
 
-	return conf, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), NotFoundMsg, ProviderERROR)
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("cdn_domain_config", id)), ResourceNotfound, response)
+	}
+
+	val := v.([]interface{})[0].(map[string]interface{})
+	return val, nil
 }
 
 func (c *CdnService) WaitForCdnDomain(id string, status Status, timeout int) error {
@@ -168,4 +199,120 @@ func (c *CdnService) DescribeTags(resourceId string, resourceType TagResourceTyp
 		tags = append(tags, t.Tag...)
 	}
 	return
+}
+
+func (c *CdnService) CdnDomainConfigRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		v, err := c.DescribeCdnDomainConfig(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		val := v.(map[string]interface{})
+		for _, failState := range failStates {
+			if fmt.Sprint(val["Status"]) == failState {
+				return val, fmt.Sprint(val["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(val["Status"])))
+			}
+		}
+		return val, fmt.Sprint(val["Status"]), nil
+	}
+}
+
+func (s *CdnService) DescribeCdnRealTimeLogDelivery(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDomainRealtimeLogDelivery"
+	request := map[string]interface{}{
+		"Domain": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Domain.NotFound", "InternalError"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CDN:RealTimeLogDelivery", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *CdnService) CdnRealTimeLogDeliveryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCdnRealTimeLogDelivery(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CdnService) DescribeCdnFcTrigger(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeFCTrigger"
+	request := map[string]interface{}{
+		"TriggerARN": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-05-10"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.FCTrigger", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FCTrigger", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }

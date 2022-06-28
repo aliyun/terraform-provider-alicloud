@@ -76,6 +76,7 @@ type CreateCenBandwidthPackageRequest struct {
 	Description                string           `position:"Query" name:"Description"`
 	AutoRenewDuration          requests.Integer `position:"Query" name:"AutoRenewDuration"`
 	BandwidthPackageChargeType string           `position:"Query" name:"BandwidthPackageChargeType"`
+	ResourceGroupId            string           `position:"Query" name:"ResourceGroupId"`
 	GeographicRegionBId        string           `position:"Query" name:"GeographicRegionBId"`
 	Period                     requests.Integer `position:"Query" name:"Period"`
 	GeographicRegionAId        string           `position:"Query" name:"GeographicRegionAId"`
@@ -92,9 +93,9 @@ type CreateCenBandwidthPackageRequest struct {
 // CreateCenBandwidthPackageResponse is the response struct for api CreateCenBandwidthPackage
 type CreateCenBandwidthPackageResponse struct {
 	*responses.BaseResponse
-	RequestId                  string `json:"RequestId" xml:"RequestId"`
 	CenBandwidthPackageId      string `json:"CenBandwidthPackageId" xml:"CenBandwidthPackageId"`
 	CenBandwidthPackageOrderId string `json:"CenBandwidthPackageOrderId" xml:"CenBandwidthPackageOrderId"`
+	RequestId                  string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateCreateCenBandwidthPackageRequest creates a request to invoke CreateCenBandwidthPackage API
@@ -102,7 +103,7 @@ func CreateCreateCenBandwidthPackageRequest() (request *CreateCenBandwidthPackag
 	request = &CreateCenBandwidthPackageRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateCenBandwidthPackage", "cbn", "openAPI")
+	request.InitWithApiInfo("Cbn", "2017-09-12", "CreateCenBandwidthPackage", "", "")
 	request.Method = requests.POST
 	return
 }

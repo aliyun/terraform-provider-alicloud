@@ -28,7 +28,7 @@ resource "alicloud_quotas_quota_alarm" "example" {
   quota_dimensions {
     key   = "regionId"
     value = "cn-hangzhou"
-		}
+  }
 }
 
 ```

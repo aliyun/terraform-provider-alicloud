@@ -17,9 +17,9 @@ This data source provides a list of DMS Enterprise Users in an Alibaba Cloud acc
 
 ```terraform
 # Declare the data source
-data "alicloud_dms_enterprise_users" "dms_enterprise_users_ds"{
-  ids = ["uid"]
-  role = "USER"
+data "alicloud_dms_enterprise_users" "dms_enterprise_users_ds" {
+  ids    = ["uid"]
+  role   = "USER"
   status = "NORMAL"
 }
 

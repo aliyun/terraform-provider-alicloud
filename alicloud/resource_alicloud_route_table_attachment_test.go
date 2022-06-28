@@ -121,7 +121,7 @@ func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudRouteTableAttachmentBasic(t *testing.T) {
+func TestAccAlicloudVPCRouteTableAttachmentBasic(t *testing.T) {
 	var v vpc.RouterTableListType
 	resourceId := "alicloud_route_table_attachment.default"
 	rand := acctest.RandIntRange(1000, 9999)
@@ -157,7 +157,7 @@ func TestAccAlicloudRouteTableAttachmentBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRouteTableAttachmentMulti(t *testing.T) {
+func TestAccAlicloudVPCRouteTableAttachmentMulti(t *testing.T) {
 	var v vpc.RouterTableListType
 	resourceId := "alicloud_route_table_attachment.default.1"
 	rand := acctest.RandIntRange(1000, 9999)

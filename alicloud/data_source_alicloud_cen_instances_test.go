@@ -112,6 +112,7 @@ var existCenInstancesMapFunc = func(rand int) map[string]string {
 		"instances.0.tags.%":            "2",
 		"instances.0.tags.Created":      "TF",
 		"instances.0.tags.For":          "acceptance test",
+		"instances.0.create_time":       CHECKSET,
 	}
 }
 

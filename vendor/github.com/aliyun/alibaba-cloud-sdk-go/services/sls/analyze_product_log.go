@@ -97,7 +97,7 @@ func CreateAnalyzeProductLogRequest() (request *AnalyzeProductLogRequest) {
 	request = &AnalyzeProductLogRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2018-06-13", "AnalyzeProductLog", "", "")
+	request.InitWithApiInfo("Sls", "2018-06-13", "AnalyzeProductLog", "sls", "openAPI")
 	request.Method = requests.POST
 	return
 }

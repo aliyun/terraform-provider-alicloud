@@ -71,7 +71,8 @@ func (client *Client) DeleteAppWithCallback(request *DeleteAppRequest, callback 
 // DeleteAppRequest is the request struct for api DeleteApp
 type DeleteAppRequest struct {
 	*requests.RpcRequest
-	AppName string `position:"Query" name:"AppName"`
+	AppName  string `position:"Query" name:"AppName"`
+	ClientIp string `position:"Query" name:"ClientIp"`
 }
 
 // DeleteAppResponse is the response struct for api DeleteApp
@@ -88,7 +89,7 @@ func CreateDeleteAppRequest() (request *DeleteAppRequest) {
 	request = &DeleteAppRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2019-10-23", "DeleteApp", "", "")
+	request.InitWithApiInfo("Sls", "2019-10-23", "DeleteApp", "sls", "openAPI")
 	request.Method = requests.POST
 	return
 }

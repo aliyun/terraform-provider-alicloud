@@ -187,7 +187,7 @@ func dataSourceAlicloudGpdbInstancesRead(d *schema.ResourceData, meta interface{
 			}
 
 			// describe instance
-			instanceAttribute, err := gpdbService.DescribeGpdbInstance(item.DBInstanceId)
+			instanceAttribute, err := gpdbService.DescribeDBInstanceAttribute(item.DBInstanceId)
 			if err != nil {
 				return WrapError(err)
 			}

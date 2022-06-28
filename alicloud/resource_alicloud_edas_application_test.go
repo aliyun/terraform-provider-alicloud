@@ -49,8 +49,8 @@ func testSweepEdasApplication(region string) error {
 
 	listApplicationResponse, _ := raw.(*edas.ListApplicationResponse)
 	if listApplicationResponse.Code != 200 {
-		log.Printf("[ERROR] Failed to retrieve edas application in service list: %s", listApplicationResponse.Message)
-		return WrapError(Error(listApplicationResponse.Message))
+		log.Printf("[ERROR] Failed to retrieve edas application in service list: %v", listApplicationResponse)
+		return nil
 	}
 
 	for _, v := range listApplicationResponse.ApplicationList.Application {
@@ -94,7 +94,7 @@ func testSweepEdasApplication(region string) error {
 		deleteApplicationRequest.RegionId = region
 		deleteApplicationRequest.AppId = v.AppId
 
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteApplication(deleteApplicationRequest)
 			})
@@ -114,7 +114,7 @@ func testSweepEdasApplication(region string) error {
 			return nil
 		})
 		if err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] DeleteApplication failed: %v", err)
 		}
 	}
 
@@ -140,7 +140,6 @@ func TestAccAlicloudEdasApplication_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -208,7 +207,6 @@ func TestAccAlicloudEdasApplication_multi(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EdasSupportedRegions)
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -246,16 +244,15 @@ func resourceEdasApplicationConfigDependence(name string) string {
 		  default = "%v"
 		}
 
-		resource "alicloud_vpc" "default" {
-		  cidr_block = "172.16.0.0/12"
-		  vpc_name       = "${var.name}"
+		data "alicloud_vpcs" "default" {
+			name_regex = "default-NODELETING"
 		}
 
 		resource "alicloud_edas_cluster" "default" {
 		  cluster_name = "${var.name}"
 		  cluster_type = 2
 		  network_mode = 2
-		  vpc_id       = "${alicloud_vpc.default.id}"
+		  vpc_id       = data.alicloud_vpcs.default.ids.0
 		}
 		`, name)
 }

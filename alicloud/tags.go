@@ -17,9 +17,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/rds"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -75,29 +73,43 @@ func parsingTags(d *schema.ResourceData) (map[string]interface{}, []string) {
 
 func tagsToMap(tags interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-	if tags == nil || len(tags.([]interface{})) < 1 {
+	if tags == nil {
 		return result
 	}
-	for _, tag := range tags.([]interface{}) {
-		t := tag.(map[string]interface{})
-		var tagKey string
-		var tagValue interface{}
-		if v, ok := t["TagKey"]; ok {
-			tagKey = v.(string)
-			tagValue = t["TagValue"]
-		} else if v, ok := t["Key"]; ok {
-			tagKey = v.(string)
-			tagValue = t["Value"]
+	switch v := tags.(type) {
+	case map[string]interface{}:
+		for key, value := range tags.(map[string]interface{}) {
+			if !tagIgnored(key, value) {
+				result[key] = value
+			}
 		}
-		if !tagIgnored(tagKey, tagValue) {
-			result[tagKey] = tagValue
+	case []interface{}:
+		if len(tags.([]interface{})) < 1 {
+			return result
 		}
+		for _, tag := range tags.([]interface{}) {
+			t := tag.(map[string]interface{})
+			var tagKey string
+			var tagValue interface{}
+			if v, ok := t["TagKey"]; ok {
+				tagKey = v.(string)
+				tagValue = t["TagValue"]
+			} else if v, ok := t["Key"]; ok {
+				tagKey = v.(string)
+				tagValue = t["Value"]
+			}
+			if !tagIgnored(tagKey, tagValue) {
+				result[tagKey] = tagValue
+			}
+		}
+	default:
+		log.Printf("\u001B[31m[ERROR]\u001B[0m Unknown tags type %s. The tags value is: %v.", v, tags)
 	}
 	return result
 }
 
 func tagIgnored(tagKey string, tagValue interface{}) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://", "^sae.do.not.delete"}
 	for _, v := range filter {
 		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
 		ok, _ := regexp.MatchString(v, tagKey)
@@ -141,7 +153,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 				return ecsClient.DescribeDisks(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -206,7 +218,7 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				return ecsClient.UntagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -242,7 +254,7 @@ func updateTags(client *connectivity.AliyunClient, ids []string, resourceType Ta
 				return ecsClient.TagResources(request)
 			})
 			if err != nil {
-				if IsThrottling(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 
@@ -334,19 +346,6 @@ func diffTags(oldTags, newTags []Tag) ([]Tag, []Tag) {
 	}
 
 	return tagsFromMap(create), remove
-}
-
-func diffRdsTags(oldTags, newTags map[string]interface{}) (remove []string, add []rds.TagResourcesTag) {
-	for k, _ := range oldTags {
-		remove = append(remove, k)
-	}
-	for k, v := range newTags {
-		add = append(add, rds.TagResourcesTag{
-			Key:   k,
-			Value: v.(string),
-		})
-	}
-	return
 }
 
 func diffGpdbTags(oldTags, newTags []gpdb.TagResourcesTag) ([]gpdb.TagResourcesTag, []gpdb.TagResourcesTag) {
@@ -468,14 +467,6 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 	return result
 }
 
-func kmsTagsToMap(tags []kms.Tag) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
-	}
-
-	return result
-}
 func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string) bool {
 	if len(expectMap) != len(compareMap) {
 		return false
@@ -578,13 +569,12 @@ func elasticsearchTagIgnored(tagKey, tagValue string) bool {
 	return false
 }
 
-func ignoredTags(tagKey, tagValue string) bool {
+func ignoredTags(tagKey string, tagValue interface{}) bool {
 	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
 	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
 		ok, _ := regexp.MatchString(v, tagKey)
 		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag with key: %s and value: %s, ignoring.\n", tagKey, tagValue)
 			return true
 		}
 	}

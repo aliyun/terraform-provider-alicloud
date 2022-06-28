@@ -17,23 +17,23 @@ package elasticsearch
 
 // ResultInRestartInstance is a nested struct in elasticsearch response
 type ResultInRestartInstance struct {
-	CreatedAt           string                         `json:"createdAt" xml:"createdAt"`
-	Description         string                         `json:"description" xml:"description"`
-	Domain              string                         `json:"domain" xml:"domain"`
-	EsVersion           string                         `json:"esVersion" xml:"esVersion"`
-	InstanceId          string                         `json:"instanceId" xml:"instanceId"`
-	KibanaDomain        string                         `json:"kibanaDomain" xml:"kibanaDomain"`
-	KibanaPort          int                            `json:"kibanaPort" xml:"kibanaPort"`
-	NodeAmount          int                            `json:"nodeAmount" xml:"nodeAmount"`
-	PaymentType         string                         `json:"paymentType" xml:"paymentType"`
-	PublicDomain        string                         `json:"publicDomain" xml:"publicDomain"`
-	PublicPort          int                            `json:"publicPort" xml:"publicPort"`
-	Status              string                         `json:"status" xml:"status"`
-	UpdatedAt           string                         `json:"updatedAt" xml:"updatedAt"`
-	KibanaConfiguration KibanaConfiguration            `json:"kibanaConfiguration" xml:"kibanaConfiguration"`
-	MasterConfiguration MasterConfiguration            `json:"masterConfiguration" xml:"masterConfiguration"`
-	NetworkConfig       NetworkConfig                  `json:"networkConfig" xml:"networkConfig"`
-	NodeSpec            NodeSpec                       `json:"nodeSpec" xml:"nodeSpec"`
-	DictList            DictListInRestartInstance      `json:"dictList" xml:"dictList"`
-	SynonymsDicts       SynonymsDictsInRestartInstance `json:"synonymsDicts" xml:"synonymsDicts"`
+	CreatedAt           string              `json:"createdAt" xml:"createdAt"`
+	Description         string              `json:"description" xml:"description"`
+	Domain              string              `json:"domain" xml:"domain"`
+	EsVersion           string              `json:"esVersion" xml:"esVersion"`
+	InstanceId          string              `json:"instanceId" xml:"instanceId"`
+	KibanaDomain        string              `json:"kibanaDomain" xml:"kibanaDomain"`
+	KibanaPort          int                 `json:"kibanaPort" xml:"kibanaPort"`
+	NodeAmount          int                 `json:"nodeAmount" xml:"nodeAmount"`
+	PaymentType         string              `json:"paymentType" xml:"paymentType"`
+	PublicDomain        string              `json:"publicDomain" xml:"publicDomain"`
+	PublicPort          int                 `json:"publicPort" xml:"publicPort"`
+	Status              string              `json:"status" xml:"status"`
+	UpdatedAt           string              `json:"updatedAt" xml:"updatedAt"`
+	KibanaConfiguration KibanaConfiguration `json:"kibanaConfiguration" xml:"kibanaConfiguration"`
+	MasterConfiguration MasterConfiguration `json:"masterConfiguration" xml:"masterConfiguration"`
+	NetworkConfig       NetworkConfig       `json:"networkConfig" xml:"networkConfig"`
+	NodeSpec            NodeSpec            `json:"nodeSpec" xml:"nodeSpec"`
+	DictList            []DictListItem      `json:"dictList" xml:"dictList"`
+	SynonymsDicts       []SynonymsDictsItem `json:"synonymsDicts" xml:"synonymsDicts"`
 }

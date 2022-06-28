@@ -5,6 +5,10 @@ const (
 	Minimum          = "Minimum"
 	Maximum          = "Maximum"
 	ErrorCodeMaximum = "ErrorCodeMaximum"
+	Value            = "Value"
+	Sum              = "Sum"
+	Count            = "Count"
+	Availability     = "Availability"
 )
 
 const (

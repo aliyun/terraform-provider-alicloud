@@ -36,7 +36,7 @@ func testSweepEdasCluster(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-testacc",
+		"tf_testAcc",
 	}
 
 	clusterListRq := edas.CreateListClusterRequest()
@@ -47,11 +47,13 @@ func testSweepEdasCluster(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", err)
+		return nil
 	}
 
 	listClusterResponse, _ := raw.(*edas.ListClusterResponse)
 	if listClusterResponse.Code != 200 {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", listClusterResponse)
+		return nil
 	}
 
 	for _, v := range listClusterResponse.ClusterList.Cluster {
@@ -74,13 +76,13 @@ func testSweepEdasCluster(region string) error {
 		deleteClusterRq.RegionId = region
 		deleteClusterRq.ClusterId = v.ClusterId
 
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			raw, err := edasService.client.WithEdasClient(func(edasClient *edas.Client) (interface{}, error) {
 				return edasClient.DeleteCluster(deleteClusterRq)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{ThrottlingUser}) {
-					time.Sleep(10 * time.Second)
+					time.Sleep(5 * time.Second)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

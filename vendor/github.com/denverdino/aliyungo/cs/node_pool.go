@@ -31,19 +31,24 @@ type ScalingGroup struct {
 	LoginPassword              string             `json:"login_password"`
 	KeyPair                    string             `json:"key_pair"`
 	SecurityGroupId            string             `json:"security_group_id"`
+	SecurityGroupIds           []string           `json:"security_group_ids"`
 	SystemDiskCategory         ecs.DiskCategory   `json:"system_disk_category"`
 	SystemDiskSize             int64              `json:"system_disk_size"`
 	SystemDiskPerformanceLevel string             `json:"system_disk_performance_level"`
+	SystemDiskEncryptAlgorithm string             `json:"system_disk_encrypt_algorithm"`
+	SystemDiskEncrypted        bool               `json:"system_disk_encrypted"`
+	SystemDiskKMSKeyId         string             `json:"system_disk_kms_key_id"`
 	DataDisks                  []NodePoolDataDisk `json:"data_disks"` //支持多个数据盘
 	Tags                       []Tag              `json:"tags"`
 	ImageId                    string             `json:"image_id"`
 	Platform                   string             `json:"platform"`
-	// 支持包年包月
-	InstanceChargeType string `json:"instance_charge_type"`
-	Period             int    `json:"period"`
-	PeriodUnit         string `json:"period_unit"`
-	AutoRenew          bool   `json:"auto_renew"`
-	AutoRenewPeriod    int    `json:"auto_renew_period"`
+	OSType                     string             `json:"os_type"`
+	ImageType                  string             `json:"image_type"`
+	InstanceChargeType         string             `json:"instance_charge_type"`
+	Period                     int                `json:"period"`
+	PeriodUnit                 string             `json:"period_unit"`
+	AutoRenew                  bool               `json:"auto_renew"`
+	AutoRenewPeriod            int                `json:"auto_renew_period"`
 	// spot实例
 	SpotStrategy   string      `json:"spot_strategy"`
 	SpotPriceLimit []SpotPrice `json:"spot_price_limit"`
@@ -56,6 +61,14 @@ type ScalingGroup struct {
 	// 公网ip
 	InternetChargeType      string `json:"internet_charge_type"`
 	InternetMaxBandwidthOut int    `json:"internet_max_bandwidth_out"`
+	// Operating system hardening
+	SocEnabled *bool `json:"soc_enabled"`
+	CisEnabled *bool `json:"cis_enabled"`
+	// ipv6
+	SupportIPv6 bool `json:"support_ipv6"`
+	// deploymentset
+	DeploymentSetId string `json:"deploymentset_id"`
+	DesiredSize     *int64 `json:"desired_size,omitempty"`
 }
 
 type AutoScaling struct {

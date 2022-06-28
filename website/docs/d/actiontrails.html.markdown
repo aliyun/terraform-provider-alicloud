@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_actiontrails
 
--> **DEPRECATED:**  This datasource has been renamed to [alicloud_actiontrail_trails](https://www.terraform.io/docs/providers/alicloud/d/actiontrail_trails.html) from version 1.95.0. 
+-> **DEPRECATED:**  This datasource has been renamed to [alicloud_actiontrail_trails](https://www.terraform.io/docs/providers/alicloud/d/actiontrail_trails) from version 1.95.0.
 
 This data source provides a list of action trail of the current Alibaba Cloud user.
 

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsLaunchTemplatesDataSource(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplatesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ecs_launch_templates.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
@@ -131,12 +131,12 @@ func dataSourceEcsLaunchTemplatesDependence(name string) string {
 		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 		}
 		data "alicloud_images" "default" {
-		  name_regex  = "^ubuntu_18.*64"
+		  name_regex  = "^ubuntu"
 		  most_recent = true
 		  owners      = "system"
 		}
 		data "alicloud_vpcs" "default" {
-		  is_default = true
+		  name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
 		 vpc_id = "${data.alicloud_vpcs.default.ids.0}"

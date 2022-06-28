@@ -1,11 +1,14 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -13,60 +16,49 @@ import (
 func dataSourceAlicloudKmsKeys() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudKmsKeysRead,
-
 		Schema: map[string]*schema.Schema{
+			"description_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.ValidateRegexp,
+				ForceNew:     true,
+			},
+			"filters": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-				MinItems: 1,
 			},
-
-			"description_regex": {
+			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled", "PendingDeletion"}, false),
 			},
-
-			"status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				// must contain a valid status, expected Enabled, Disabled, PendingDeletion
-				ValidateFunc: validation.StringInSlice([]string{
-					string(Enabled),
-					string(Disabled),
-					string(PendingDeletion),
-				}, false),
-			},
-
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
-			//Computed value
 			"keys": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"arn": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"description": {
+						"automatic_rotation": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"status": {
+						"creator": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -78,12 +70,65 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"creator": {
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_spec": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key_usage": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"last_rotation_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"material_expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"next_rotation_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"origin": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"primary_key_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"protection_level": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"rotation_interval": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
 				},
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 		},
 	}
@@ -92,104 +137,136 @@ func dataSourceAlicloudKmsKeys() *schema.Resource {
 func dataSourceAlicloudKmsKeysRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := kms.CreateListKeysRequest()
-	request.RegionId = client.RegionId
-
-	idsMap := make(map[string]string)
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		for _, i := range v.([]interface{}) {
-			if i == nil {
-				continue
-			}
-			idsMap[i.(string)] = i.(string)
-		}
+	action := "ListKeys"
+	request := make(map[string]interface{})
+	if v, ok := d.GetOk("filters"); ok {
+		request["Filters"] = v
 	}
-
-	var s []map[string]interface{}
-	var ids []string
-	var keyIds []string
-
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-	for true {
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.ListKeys(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_keys", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*kms.ListKeysResponse)
-		for _, key := range response.Keys.Key {
-			if len(idsMap) > 0 {
-				if _, ok := idsMap[key.KeyId]; ok {
-					keyIds = append(keyIds, key.KeyId)
-					continue
-				}
-			} else {
-				keyIds = append(keyIds, key.KeyId)
-				continue
-			}
-		}
-		if len(response.Keys.Key) < PageSizeLarge {
-			break
-		}
-		page, err := getNextpageNumber(request.PageNumber)
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var objects []map[string]interface{}
+	var descriptionRegex *regexp.Regexp
+	if v, ok := d.GetOk("description_regex"); ok {
+		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request.PageNumber = page
+		descriptionRegex = r
 	}
 
-	descriptionRegex, ok := d.GetOk("description_regex")
-	var r *regexp.Regexp
-	if ok && descriptionRegex.(string) != "" {
-		r = regexp.MustCompile(descriptionRegex.(string))
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
 	}
 	status, statusOk := d.GetOk("status")
-	for _, k := range keyIds {
-
-		request := kms.CreateDescribeKeyRequest()
-		request.KeyId = k
-		raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-			return kmsClient.DescribeKey(request)
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, k, request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kms_keys", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		key, _ := raw.(*kms.DescribeKeyResponse)
-		if r != nil && !r.MatchString(key.KeyMetadata.Description) {
-			continue
+		resp, err := jsonpath.Get("$.Keys.Key", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Keys.Key", response)
 		}
-		if statusOk && status != "" && status != key.KeyMetadata.KeyState {
-			continue
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprint(item["KeyId"])]; !ok {
+					continue
+				}
+			}
+			objects = append(objects, item)
 		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":            key.KeyMetadata.KeyId,
-			"arn":           key.KeyMetadata.Arn,
-			"description":   key.KeyMetadata.Description,
-			"status":        key.KeyMetadata.KeyState,
-			"creation_date": key.KeyMetadata.CreationDate,
-			"delete_date":   key.KeyMetadata.DeleteDate,
-			"creator":       key.KeyMetadata.Creator,
+			"arn":    object["KeyArn"],
+			"id":     fmt.Sprint(object["KeyId"]),
+			"key_id": fmt.Sprint(object["KeyId"]),
+		}
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			ids = append(ids, fmt.Sprint(object["KeyId"]))
+			s = append(s, mapping)
+			continue
 		}
 
+		kmsService := KmsService{client}
+		id := fmt.Sprint(object["KeyId"])
+		getResp, err := kmsService.DescribeKmsKey(id)
+		if _, ok := getResp["KeyState"]; !ok && err != nil {
+			return WrapError(err)
+		}
+		if descriptionRegex != nil {
+			if !descriptionRegex.MatchString(fmt.Sprint(getResp["Description"])) {
+				continue
+			}
+		}
+		if statusOk && status != "" && status != getResp["KeyState"].(string) {
+			continue
+		}
+		mapping["automatic_rotation"] = getResp["AutomaticRotation"]
+		mapping["creator"] = getResp["Creator"]
+		mapping["creation_date"] = getResp["CreationDate"]
+		mapping["delete_date"] = getResp["DeleteDate"]
+		mapping["description"] = getResp["Description"]
+		mapping["key_spec"] = getResp["KeySpec"]
+		mapping["key_usage"] = getResp["KeyUsage"]
+		mapping["last_rotation_date"] = getResp["LastRotationDate"]
+		mapping["material_expire_time"] = getResp["MaterialExpireTime"]
+		mapping["next_rotation_date"] = getResp["NextRotationDate"]
+		mapping["origin"] = getResp["Origin"]
+		mapping["primary_key_version"] = getResp["PrimaryKeyVersion"]
+		mapping["protection_level"] = getResp["ProtectionLevel"]
+		mapping["rotation_interval"] = getResp["RotationInterval"]
+		mapping["status"] = getResp["KeyState"]
+		ids = append(ids, fmt.Sprint(object["KeyId"]))
+		names = append(names)
 		s = append(s, mapping)
-		ids = append(ids, key.KeyMetadata.KeyId)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("keys", s); err != nil {
-		return WrapError(err)
-	}
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
 
-	// create a json file in current directory and write data source to it.
+	if err := d.Set("keys", s); err != nil {
+		return WrapError(err)
+	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

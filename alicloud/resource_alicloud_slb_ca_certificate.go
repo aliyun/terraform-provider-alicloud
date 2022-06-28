@@ -1,161 +1,203 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudSlbCACertificate() *schema.Resource {
+func resourceAlicloudSlbCaCertificate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSlbCACertificateCreate,
-		Read:   resourceAlicloudSlbCACertificateRead,
-		Update: resourceAlicloudSlbCACertificateUpdate,
-		Delete: resourceAlicloudSlbCACertificateDelete,
+		Create: resourceAlicloudSlbCaCertificateCreate,
+		Read:   resourceAlicloudSlbCaCertificateRead,
+		Update: resourceAlicloudSlbCaCertificateUpdate,
+		Delete: resourceAlicloudSlbCaCertificateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"ca_certificate": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"ca_certificate_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'name' has been deprecated from provider version 1.123.1. New field 'ca_certificate_name' instead",
+				ConflictsWith: []string{"ca_certificate_name"},
+			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudSlbCACertificateCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSlbCaCertificateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-
-	request := slb.CreateUploadCACertificateRequest()
-	request.RegionId = client.RegionId
-
-	if val, ok := d.GetOk("name"); ok && val.(string) != "" {
-		request.CACertificateName = val.(string)
-	}
-
-	if val, ok := d.GetOk("resource_group_id"); ok && val.(string) != "" {
-		request.ResourceGroupId = val.(string)
-	}
-
-	if val, ok := d.GetOk("ca_certificate"); ok && val.(string) != "" {
-		request.CACertificate = val.(string)
-	} else {
-		return WrapError(Error("UploadCACertificate got an error, ca_certificate should be not null"))
-	}
-
-	raw, err := slbService.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.UploadCACertificate(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_ca_certificate", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*slb.UploadCACertificateResponse)
-
-	d.SetId(response.CACertificateId)
-
-	return resourceAlicloudSlbCACertificateUpdate(d, meta)
-}
-
-func resourceAlicloudSlbCACertificateRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-	tags, err := slbService.DescribeTags(d.Id(), nil, TagResourceCertificate)
+	var response map[string]interface{}
+	action := "UploadCACertificate"
+	request := make(map[string]interface{})
+	conn, err := client.NewSlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tags", slbService.tagsToMap(tags))
+	request["CACertificate"] = d.Get("ca_certificate")
+	if v, ok := d.GetOk("ca_certificate_name"); ok {
+		request["CACertificateName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["CACertificateName"] = v
+	}
 
-	object, err := slbService.DescribeSlbCACertificate(d.Id())
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_ca_certificate", action, AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(response["CACertificateId"]))
+
+	return resourceAlicloudSlbCaCertificateUpdate(d, meta)
+}
+func resourceAlicloudSlbCaCertificateRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	object, err := slbService.DescribeSlbCaCertificate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_slb_ca_certificate slbService.DescribeSlbCaCertificate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
-	err = d.Set("name", object.CACertificateName)
-	err = d.Set("resource_group_id", object.ResourceGroupId)
+	d.Set("ca_certificate_name", object["CACertificateName"])
+	d.Set("name", object["CACertificateName"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
+	}
+	return nil
+}
+func resourceAlicloudSlbCaCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	slbService := SlbService{client}
+	conn, err := client.NewSlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	var response map[string]interface{}
+	d.Partial(true)
 
-	return nil
+	if d.HasChange("tags") {
+		if err := slbService.SetResourceTags(d, "certificate"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+	update := false
+	request := map[string]interface{}{
+		"CACertificateId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("ca_certificate_name") {
+		update = true
+		request["CACertificateName"] = d.Get("ca_certificate_name")
+	} else if !d.IsNewResource() && d.HasChange("name") {
+		update = true
+		request["CACertificateName"] = d.Get("name")
+	}
+	request["RegionId"] = client.RegionId
+	if update {
+		action := "SetCACertificateName"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("name")
+		d.SetPartial("ca_certificate_name")
+	}
+	d.Partial(false)
+	return resourceAlicloudSlbCaCertificateRead(d, meta)
 }
-
-func resourceAlicloudSlbCACertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudSlbCaCertificateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-	if err := slbService.setInstanceTags(d, TagResourceCertificate); err != nil {
+	action := "DeleteCACertificate"
+	var response map[string]interface{}
+	conn, err := client.NewSlbClient()
+	if err != nil {
 		return WrapError(err)
 	}
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudSlbCACertificateRead(d, meta)
-	}
-	if d.HasChange("name") {
-		request := slb.CreateSetCACertificateNameRequest()
-		request.RegionId = client.RegionId
-		request.CACertificateId = d.Id()
-		request.CACertificateName = d.Get("name").(string)
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.SetCACertificateName(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	request := map[string]interface{}{
+		"CACertificateId": d.Id(),
 	}
 
-	return resourceAlicloudSlbCACertificateRead(d, meta)
-}
-
-func resourceAlicloudSlbCACertificateDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	slbService := SlbService{client}
-
-	request := slb.CreateDeleteCACertificateRequest()
-	request.RegionId = client.RegionId
-	request.CACertificateId = d.Id()
-
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-			return slbClient.DeleteCACertificate(request)
-		})
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, SlbIsBusy) {
+			if IsExpectedErrors(err, []string{"BackendServer.configuring", "OperationBusy", "ServiceIsConfiguring", "ServiceIsStopping", "SystemBusy"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"CACertificateId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(slbService.WaitForSlbCACertificate(d.Id(), Deleted, DefaultTimeoutMedium))
+	return nil
 }

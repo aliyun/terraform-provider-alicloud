@@ -58,7 +58,7 @@ The following arguments are supported:
 * `inner_access_policy` - (Optional, Available in 1.55.3+) Whether to allow both machines to access each other on all ports in the same security group. Valid values: ["Accept", "Drop"]
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-Combining security group rules, the policy can define multiple application scenario. Default to true. It is valid from verison `1.7.2`.
+Combining security group rules, the policy can define multiple application scenario. Default to true. It is valid from version `1.7.2`.
 
 ## Attributes Reference
 

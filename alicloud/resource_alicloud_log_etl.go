@@ -121,7 +121,6 @@ func resourceAlicloudLogETL() *schema.Resource {
 			"from_time": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
 			},
 			"to_time": {
 				Type:     schema.TypeInt,
@@ -433,7 +432,6 @@ func getETLJob(d *schema.ResourceData, meta interface{}) (sls.ETL, error) {
 		FromTime:   int64(d.Get("from_time").(int)),
 		Logstore:   d.Get("logstore").(string),
 		Parameters: parms,
-		RoleArn:    d.Get("role_arn").(string),
 		Script:     d.Get("script").(string),
 		ToTime:     int32(d.Get("to_time").(int)),
 		Version:    int8(d.Get("version").(int)),
@@ -441,49 +439,36 @@ func getETLJob(d *schema.ResourceData, meta interface{}) (sls.ETL, error) {
 	for _, f := range d.Get("etl_sinks").(*schema.Set).List() {
 		v := f.(map[string]interface{})
 		sink := sls.ETLSink{
-			AccessKeyId:     v["access_key_id"].(string),
-			AccessKeySecret: v["access_key_secret"].(string),
-			Endpoint:        v["endpoint"].(string),
-			Name:            v["name"].(string),
-			Project:         v["project"].(string),
-			Type:            v["type"].(string),
-			RoleArn:         v["role_arn"].(string),
-			Logstore:        v["logstore"].(string),
+			Endpoint: v["endpoint"].(string),
+			Name:     v["name"].(string),
+			Project:  v["project"].(string),
+			Type:     v["type"].(string),
+			Logstore: v["logstore"].(string),
 		}
-		akId := v["access_key_id"].(string)
-		kmsAkId := v["kms_encrypted_access_key_id"].(string)
-		if akId == "" && kmsAkId == "" {
-			return etlJob, WrapError(Error("One of the 'access_key_id' and 'kms_encrypted_access_key_id' should be set."))
+		sinkResult, err := permissionParameterCheck(v, client, d)
+		if err != nil {
+			return etlJob, WrapError(err)
 		}
-		if akId != "" {
-			sink.AccessKeyId = akId
+		if len(sinkResult) == 1 {
+			sink.RoleArn = sinkResult["roleArn"]
 		} else {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(kmsAkId, d.Get("kms_encryption_access_key_id_context").(map[string]interface{}))
-			if err != nil {
-				return etlJob, WrapError(err)
-			}
-			sink.AccessKeyId = decryptResp.Plaintext
-		}
-		akSecret := v["access_key_secret"].(string)
-		kmsAkSecret := v["kms_encrypted_access_key_secret"].(string)
-		if akSecret == "" && kmsAkSecret == "" {
-			return etlJob, WrapError(Error("One of the 'access_key_secret' and 'kms_encrypted_access_key_secret' should be set."))
-		}
-		if akSecret != "" {
-			sink.AccessKeySecret = akSecret
-		} else {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(kmsAkSecret, d.Get("kms_encryption_access_key_secret_context").(map[string]interface{}))
-			if err != nil {
-				return etlJob, WrapError(err)
-			}
-			sink.AccessKeySecret = decryptResp.Plaintext
+			sink.AccessKeyId = sinkResult["akId"]
+			sink.AccessKeySecret = sinkResult["ak"]
 		}
 		etlSinks = append(etlSinks, sink)
 	}
 	config.ETLSinks = etlSinks
 
+	configResult, err := permissionParameterCheck(nil, client, d)
+	if err != nil {
+		return etlJob, WrapError(err)
+	}
+	if len(configResult) == 1 {
+		config.RoleArn = configResult["roleArn"]
+	} else {
+		config.AccessKeyId = configResult["akId"]
+		config.AccessKeySecret = configResult["ak"]
+	}
 	etlJob = sls.ETL{
 		Configuration:    config,
 		DisplayName:      d.Get("display_name").(string),
@@ -495,36 +480,65 @@ func getETLJob(d *schema.ResourceData, meta interface{}) (sls.ETL, error) {
 		CreateTime:       int32(d.Get("create_time").(int)),
 		LastModifiedTime: int32(d.Get("last_modified_time").(int)),
 	}
-
-	akId := d.Get("access_key_id").(string)
-	kmsAkId := d.Get("kms_encrypted_access_key_id").(string)
-	if akId == "" && kmsAkId == "" {
-		return etlJob, WrapError(Error("One of the 'access_key_id' and 'kms_encrypted_access_key_id' should be set."))
-	}
-	if akId != "" {
-		etlJob.Configuration.AccessKeyId = akId
-	} else {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(kmsAkId, d.Get("kms_encryption_access_key_id_context").(map[string]interface{}))
-		if err != nil {
-			return etlJob, WrapError(err)
-		}
-		etlJob.Configuration.AccessKeyId = decryptResp.Plaintext
-	}
-	akSecret := d.Get("access_key_secret").(string)
-	kmsAkSecret := d.Get("kms_encrypted_access_key_secret").(string)
-	if akSecret == "" && kmsAkSecret == "" {
-		return etlJob, WrapError(Error("One of the 'access_key_secret' and 'kms_encrypted_access_key_secret' should be set."))
-	}
-	if akSecret != "" {
-		etlJob.Configuration.AccessKeySecret = akSecret
-	} else {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(kmsAkSecret, d.Get("kms_encryption_access_key_secret_context").(map[string]interface{}))
-		if err != nil {
-			return etlJob, WrapError(err)
-		}
-		etlJob.Configuration.AccessKeySecret = decryptResp.Plaintext
-	}
 	return etlJob, nil
+}
+
+func permissionParameterCheck(v map[string]interface{}, client *connectivity.AliyunClient, d *schema.ResourceData) (map[string]string, error) {
+	if v != nil {
+		akId := v["access_key_id"].(string)
+		ak := v["access_key_secret"].(string)
+		roleArn := v["role_arn"].(string)
+		if akId != "" && ak != "" {
+			if roleArn != "" {
+				return nil, Error("(access_key_id, access_key_secret), (role_arn) only one can be selected to fill into the sink")
+			}
+			return map[string]string{"akId": akId, "ak": ak}, nil
+		}
+		if roleArn != "" {
+			return map[string]string{"roleArn": roleArn}, nil
+		}
+		kmsAkId := v["kms_encrypted_access_key_id"].(string)
+		kmsAk := v["kms_encrypted_access_key_secret"].(string)
+		if kmsAkId != "" && kmsAk != "" {
+			kmsService := KmsService{client}
+			akIdResp, akIdErr := kmsService.Decrypt(kmsAkId, d.Get("kms_encryption_access_key_id_context").(map[string]interface{}))
+			if akIdErr != nil {
+				return nil, akIdErr
+			}
+			akResp, akErr := kmsService.Decrypt(kmsAk, d.Get("kms_encryption_access_key_secret_context").(map[string]interface{}))
+			if akErr != nil {
+				return nil, akErr
+			}
+			return map[string]string{"akId": akIdResp, "ak": akResp}, nil
+		}
+		return nil, Error("(access_key_id, access_key_secret),(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context),(role_arn) must fill in one of them into sink")
+	} else {
+		akId := d.Get("access_key_id").(string)
+		ak := d.Get("access_key_secret").(string)
+		roleArn := d.Get("role_arn").(string)
+		if akId != "" && ak != "" {
+			if roleArn != "" {
+				return nil, Error("(access_key_id, access_key_secret), (role_arn) only one can be selected to fill into the configuration")
+			}
+			return map[string]string{"akId": akId, "ak": ak}, nil
+		}
+		if roleArn != "" {
+			return map[string]string{"roleArn": roleArn}, nil
+		}
+		kmsAkId := d.Get("kms_encrypted_access_key_id").(string)
+		kmsAk := d.Get("kms_encrypted_access_key_secret").(string)
+		if kmsAkId != "" && kmsAk != "" {
+			kmsService := KmsService{client}
+			akIdResp, akIdErr := kmsService.Decrypt(kmsAkId, d.Get("kms_encryption_access_key_id_context").(map[string]interface{}))
+			if akIdErr != nil {
+				return nil, akIdErr
+			}
+			akResp, akErr := kmsService.Decrypt(kmsAk, d.Get("kms_encryption_access_key_secret_context").(map[string]interface{}))
+			if akErr != nil {
+				return nil, akErr
+			}
+			return map[string]string{"akId": akIdResp, "ak": akResp}, nil
+		}
+		return nil, Error("(access_key_id, access_key_secret),(kms_encrypted_access_key_id, kms_encrypted_access_key_secret, kms_encryption_access_key_id_context, kms_encryption_access_key_secret_context),(role_arn) must fill in one of them into configuration")
+	}
 }

@@ -37,6 +37,8 @@ The following arguments are supported:
     * `UnAvailable`: The image is unavailable.
     * `CreateFailed`: The image failed to be created.
     * `Deprecated`: The image is discontinued.
+* `image_id` - (Optional, Available in 1.145.0+) The ID of the image.
+* `image_name` - (Optional, Available in 1.145.0+) The name of the image.
 * `snapshot_id` - (Optional, Available in 1.95.0+) The ID of the snapshot used to create the custom image.
 * `resource_group_id` - (Optional, Available in 1.95.0+) The ID of the resource group to which the custom image belongs.
 * `image_family` - (Optional, Available in 1.95.0+) The name of the image family. You can set this parameter to query images of the specified image family. This parameter is empty by default.
@@ -57,6 +59,7 @@ The following arguments are supported:
 * `most_recent` - (Optional, type: bool) If more than one result are returned, select the most recent one.
 * `owners` - (Optional) Filter results by a specific image owner. Valid items are `system`, `self`, `others`, `marketplace`.
 * `tags` - (Optional, Available in 1.95.0+) A mapping of tags to assign to the resource.
+* `image_owner_id` - (Optional, Available in 1.165.0+) The ID of the Alibaba Cloud account to which the image belongs. This parameter takes effect only when you query shared images or community images.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 -> **NOTE:** At least one of the `name_regex`, `most_recent` and `owners` must be set.

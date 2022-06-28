@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudLogAudit() *schema.Resource {
@@ -42,6 +44,11 @@ func resourceAlicloudLogAudit() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 			},
+			"resource_directory_type": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"custom", "all"}, true),
+				Optional:     true,
+			},
 		},
 	}
 }
@@ -60,10 +67,21 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 
 	var variableMap = map[string]interface{}{}
 	mutiAccount := expandStringList(d.Get("multi_account").(*schema.Set).List())
-	if len(mutiAccount) > 0 {
-		mutiAccountMap := map[string]string{}
+
+	if resourceDirectoryType, ok := d.GetOk("resource_directory_type"); ok {
+		resourceDirectoryMap := map[string]interface{}{}
+		resourceDirectoryMap["type"] = resourceDirectoryType
+		resourceDirectoryMap["multi_account"] = mutiAccount
+		data, err := json.Marshal(resourceDirectoryMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		resultResourceDirectory := string(data)
+		variableMap["resource_directory"] = resultResourceDirectory
+	} else if len(mutiAccount) > 0 {
 		mutiAccountList := []map[string]string{}
 		for _, v := range mutiAccount {
+			mutiAccountMap := map[string]string{}
 			mutiAccountMap["uid"] = v
 			mutiAccountList = append(mutiAccountList, mutiAccountMap)
 		}
@@ -77,10 +95,13 @@ func resourceAlicloudLogAuditUpdate(d *schema.ResourceData, meta interface{}) er
 	variableMap["region"] = client.RegionId
 	variableMap["aliuid"] = d.Get("aliuid").(string)
 	variableMap["project"] = fmt.Sprintf("slsaudit-center-%s-%s", variableMap["aliuid"], variableMap["region"])
-	variableMap["logstore"] = "xx"
+	variableMap["logstore"] = "slsaudit"
 
 	if tempMap, ok := d.GetOk("variable_map"); ok {
 		for k, v := range tempMap.(map[string]interface{}) {
+			if strings.HasSuffix(k, "_policy_setting") {
+				return Error("Does not support configuration %s in variable_map", k)
+			}
 			variableMap[k] = v
 		}
 	}
@@ -127,11 +148,39 @@ func resourceAlicloudLogAuditRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("display_name", displayName)
 	d.Set("aliuid", initMap["aliuid"].(string))
+	if multiAccount, ok := initMap["multi_account"]; ok {
+		account, err := analyzeMultiAccount(multiAccount.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("multi_account", account)
+	}
+	if resourceDirectory, ok := initMap["resource_directory"]; ok {
+		resourceDirectoryMap := map[string]interface{}{}
+		err = json.Unmarshal([]byte(resourceDirectory.(string)), &resourceDirectoryMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		if len(resourceDirectoryMap) > 0 {
+			if rd_type, ok := resourceDirectoryMap["type"]; ok {
+				d.Set("resource_directory_type", rd_type.(string))
+			}
+			if multiAccount, ok := resourceDirectoryMap["multi_account"]; ok {
+				d.Set("multi_account", multiAccount)
+			}
+		}
+	}
+	for k := range initMap {
+		if strings.HasSuffix(k, "_policy_setting") {
+			delete(initMap, k)
+		}
+	}
 	delete(initMap, "region")
 	delete(initMap, "aliuid")
 	delete(initMap, "project")
 	delete(initMap, "logstore")
 	delete(initMap, "multi_account")
+	delete(initMap, "resource_directory")
 	d.Set("variable_map", initMap)
 	return nil
 }
@@ -156,4 +205,21 @@ func getInitParameter(rep string) (displayName string, initMap map[string]interf
 		}
 	}
 	return displayName, initMap, err
+}
+
+func analyzeMultiAccount(s string) ([]string, error) {
+	var m []map[string]interface{}
+	err := json.Unmarshal([]byte(s), &m)
+	if err != nil {
+		return nil, err
+	}
+	multiAccount := make([]string, len(m))
+	for i := range m {
+		if v, ok := m[i]["uid"].(string); ok {
+			multiAccount[i] = v
+		} else {
+			multiAccount[i] = fmt.Sprintf("%.0f", m[i]["uid"].(float64))
+		}
+	}
+	return multiAccount, nil
 }

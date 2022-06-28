@@ -32,6 +32,7 @@ The following arguments are supported:
 * `lang` - (Optional) Language.
 * `user_client_ip` - (Optional) The IP address of the client. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `domain_type` - (Optional, Available in 1.124.1+) The type of domain.
 
 ## Attributes Reference
 
@@ -45,3 +46,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_id` - Id of the instance resource.
   * `version_code` - Paid package version.
   * `version_name` - Paid package version name.
+  * `domain` - (Available in 1.124.1+) The domain name.
+  * `payment_type` - (Available in 1.124.1+) The payment type of alidns instance.

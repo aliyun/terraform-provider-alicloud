@@ -24,11 +24,13 @@ type DBInstance struct {
 	ReadonlyReplicas            string                                   `json:"ReadonlyReplicas" xml:"ReadonlyReplicas"`
 	DBInstanceClass             string                                   `json:"DBInstanceClass" xml:"DBInstanceClass"`
 	VpcAuthMode                 string                                   `json:"VpcAuthMode" xml:"VpcAuthMode"`
+	CapacityUnit                string                                   `json:"CapacityUnit" xml:"CapacityUnit"`
 	DestroyTime                 string                                   `json:"DestroyTime" xml:"DestroyTime"`
-	RegionId                    string                                   `json:"RegionId" xml:"RegionId"`
 	LastDowngradeTime           string                                   `json:"LastDowngradeTime" xml:"LastDowngradeTime"`
+	RegionId                    string                                   `json:"RegionId" xml:"RegionId"`
 	MaxConnections              int                                      `json:"MaxConnections" xml:"MaxConnections"`
 	ResourceGroupId             string                                   `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	CloudType                   string                                   `json:"CloudType" xml:"CloudType"`
 	DBInstanceType              string                                   `json:"DBInstanceType" xml:"DBInstanceType"`
 	MaintainEndTime             string                                   `json:"MaintainEndTime" xml:"MaintainEndTime"`
 	ExpireTime                  string                                   `json:"ExpireTime" xml:"ExpireTime"`
@@ -43,18 +45,18 @@ type DBInstance struct {
 	VSwitchId                   string                                   `json:"VSwitchId" xml:"VSwitchId"`
 	VPCCloudInstanceIds         string                                   `json:"VPCCloudInstanceIds" xml:"VPCCloudInstanceIds"`
 	MaintainStartTime           string                                   `json:"MaintainStartTime" xml:"MaintainStartTime"`
-	DBInstanceStorage           int                                      `json:"DBInstanceStorage" xml:"DBInstanceStorage"`
 	CreationTime                string                                   `json:"CreationTime" xml:"CreationTime"`
+	DBInstanceStorage           int                                      `json:"DBInstanceStorage" xml:"DBInstanceStorage"`
 	StorageEngine               string                                   `json:"StorageEngine" xml:"StorageEngine"`
 	DBInstanceStatus            string                                   `json:"DBInstanceStatus" xml:"DBInstanceStatus"`
 	CurrentKernelVersion        string                                   `json:"CurrentKernelVersion" xml:"CurrentKernelVersion"`
 	ZoneId                      string                                   `json:"ZoneId" xml:"ZoneId"`
-	KindCode                    string                                   `json:"KindCode" xml:"KindCode"`
 	ProtocolType                string                                   `json:"ProtocolType" xml:"ProtocolType"`
+	KindCode                    string                                   `json:"KindCode" xml:"KindCode"`
 	LockMode                    string                                   `json:"LockMode" xml:"LockMode"`
-	MongosList                  MongosListInDescribeDBInstances          `json:"MongosList" xml:"MongosList"`
 	ReplicaSets                 ReplicaSetsInDescribeDBInstanceAttribute `json:"ReplicaSets" xml:"ReplicaSets"`
-	ShardList                   ShardListInDescribeDBInstanceAttribute   `json:"ShardList" xml:"ShardList"`
+	MongosList                  MongosListInDescribeDBInstanceAttribute  `json:"MongosList" xml:"MongosList"`
 	Tags                        TagsInDescribeDBInstanceAttribute        `json:"Tags" xml:"Tags"`
 	ConfigserverList            ConfigserverList                         `json:"ConfigserverList" xml:"ConfigserverList"`
+	ShardList                   ShardListInDescribeDBInstances           `json:"ShardList" xml:"ShardList"`
 }

@@ -107,12 +107,12 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     enabled = true
 
     transitions {
-        days =         "3"
-        storage_class= "IA"
+      days          = "3"
+      storage_class = "IA"
     }
     transitions {
-        days=         "30"
-        storage_class= "Archive"
+      days          = "30"
+      storage_class = "Archive"
     }
   }
 }
@@ -128,11 +128,11 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 
     transitions {
       created_before_date = "2020-11-11"
-      storage_class = "IA"
+      storage_class       = "IA"
     }
     transitions {
       created_before_date = "2021-11-11"
-      storage_class = "Archive"
+      storage_class       = "Archive"
     }
   }
 }
@@ -166,21 +166,21 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
     enabled = true
 
     expiration {
-        expired_object_delete_marker = true
+      expired_object_delete_marker = true
     }
 
     noncurrent_version_expiration {
-        days = 240
+      days = 240
     }
 
     noncurrent_version_transition {
-        days          = 180
-        storage_class = "Archive"
+      days          = 180
+      storage_class = "Archive"
     }
-    
+
     noncurrent_version_transition {
-        days          = 60
-        storage_class = "IA"
+      days          = 60
+      storage_class = "IA"
     }
   }
 }
@@ -276,6 +276,18 @@ resource "alicloud_oss_bucket" "bucket-redundancytype" {
 }
 ```
 
+Set bucket accelerate configuration
+
+```terraform
+resource "alicloud_oss_bucket" "bucket-accelerate" {
+  bucket = "bucket_name"
+
+  transfer_acceleration {
+    enabled = false
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -295,6 +307,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
+* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket (documented below).
 
 #### Block cors_rule
 
@@ -349,9 +362,9 @@ The lifecycle_rule expiration object supports the following:
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 * `created_before_date` - (Optional, Available in 1.121.2+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
-* `expired_object_delete_markers` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
+* `expired_object_delete_marker` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
-`NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_markers" can be specified in one expiration configuration.
+`NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
 
 #### Block transitions
 
@@ -400,6 +413,12 @@ The versioning supports the following:
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
 `NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
+
+#### Block transfer_acceleration
+
+The transfer_acceleration supports the following:
+
+* `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
 
 ## Attributes Reference
 

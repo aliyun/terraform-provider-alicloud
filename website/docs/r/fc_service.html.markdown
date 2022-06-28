@@ -24,7 +24,7 @@ For more details supported regions, see [Service endpoints](https://www.alibabac
 
 Basic Usage
 
-```terrraform
+```terraform
 variable "name" {
   default = "tf-testaccalicloudfcservice"
 }
@@ -39,8 +39,8 @@ resource "alicloud_log_store" "foo" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = var.name
-  document = <<EOF
+  name        = var.name
+  document    = <<EOF
   {
       "Statement": [
         {
@@ -76,8 +76,7 @@ resource "alicloud_fc_service" "foo" {
 
 ## Module Support
 
-You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
-to create a service and a function quickly and then set several triggers for it.
+You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) to create a service and a function quickly and then set several triggers for it.
 
 ## Argument Reference
 

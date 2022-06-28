@@ -53,12 +53,19 @@ The following attributes are exported in addition to the arguments listed above:
   * `credit_specification` - Performance mode of the t5 burstable instance.
   * `system_disk_category` - System disk category of the scaling configuration.
   * `system_disk_size` - System disk size of the scaling configuration.
+  * `system_disk_performance_level` - The performance level of the ESSD used as the system disk.
   * `data_disks` - Data disks of the scaling configuration.
     * `size` - Size of data disk.
     * `category` - Category of data disk.
     * `snapshot_id` - Size of data disk.
     * `device` - Device attribute of data disk.
     * `delete_with_instance` - Delete_with_instance attribute of data disk.
+    * `performance_level` - The performance level of the ESSD used as data disk.
   * `lifecycle_state` - Lifecycle state of the scaling configuration.
   * `creation_time` - Creation time of the scaling configuration.
-  
+  * `instance_name` - (Optional,Available in 1.143.0+) InstanceName of an ECS instance.
+  * `host_name` - (Optional,Available in 1.143.0+) Hostname of an ECS instance.
+  * `spot_strategy` - (Optional, Available in 1.151.0+) The spot strategy for a Pay-As-You-Go instance.
+  * `spot_price_limit` - (Optional, Available in 1.151.0+) The maximum price hourly for instance types.
+    * `instance_type` - Resource type of an ECS instance.
+    * `price_limit` - Price limit hourly of instance type.

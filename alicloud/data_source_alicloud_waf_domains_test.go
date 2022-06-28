@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudWafDomainsDataSource(t *testing.T) {
+func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudWafDomainDataSourceConfig(rand, map[string]string{
@@ -89,7 +89,7 @@ func TestAccAlicloudWafDomainsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithWafInstanceSetting(t)
+		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 	WafDomainsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }

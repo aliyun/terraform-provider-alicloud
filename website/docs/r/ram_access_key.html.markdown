@@ -48,8 +48,8 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_access_key" "encrypt" {
-  user_name   = alicloud_ram_user.user.name
-  pgp_key = "keybase:some_person_that_exists"
+  user_name = alicloud_ram_user.user.name
+  pgp_key   = "keybase:some_person_that_exists"
 }
 
 output "secret" {

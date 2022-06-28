@@ -22,9 +22,9 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "vsw" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = var.vswitch_cidr
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = var.vswitch_cidr
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_security_group" "sg" {
@@ -88,20 +88,20 @@ resource "alicloud_nat_gateway" "default" {
   specification = "Small"
 }
 
-resource "alicloud_eip" "default" {
+resource "alicloud_eip_address" "default" {
   count     = 2
   bandwidth = 10
 }
 
 resource "alicloud_eip_association" "default" {
   count         = 2
-  allocation_id = alicloud_eip.default.*.id[count.index]
+  allocation_id = alicloud_eip_address.default.*.id[count.index]
   instance_id   = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_forward_entry" "dnat" {
   forward_table_id = alicloud_nat_gateway.default.forward_table_ids
-  external_ip      = alicloud_eip.default[1].ip_address
+  external_ip      = alicloud_eip_address.default[1].ip_address
   external_port    = "any"
   ip_protocol      = "any"
   internal_ip      = alicloud_instance.webserver.private_ip
@@ -111,6 +111,6 @@ resource "alicloud_forward_entry" "dnat" {
 resource "alicloud_snat_entry" "snat" {
   snat_table_id     = alicloud_nat_gateway.default.snat_table_ids
   source_vswitch_id = alicloud_vswitch.vsw.id
-  snat_ip           = alicloud_eip.default[0].ip_address
+  snat_ip           = alicloud_eip_address.default[0].ip_address
 }
 

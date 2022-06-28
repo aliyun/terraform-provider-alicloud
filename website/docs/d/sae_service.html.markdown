@@ -1,5 +1,5 @@
 ---
-subcategory: "SAE"
+subcategory: "Serverless App Engine (SAE)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sae_service"
 sidebar_current: "docs-alicloud-datasource-sae-service"
@@ -14,6 +14,8 @@ Using this data source can open SAE service automatically. If the service has be
 For information about SAE and how to use it, see [What is SAE](https://help.aliyun.com/document_detail/125720.html).
 
 -> **NOTE:** Available in v1.120.0+
+
+-> **NOTE:** The SAE service is not support in the international site.
 
 ## Example Usage
 

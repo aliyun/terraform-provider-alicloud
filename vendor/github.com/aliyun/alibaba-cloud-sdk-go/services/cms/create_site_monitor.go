@@ -71,24 +71,27 @@ func (client *Client) CreateSiteMonitorWithCallback(request *CreateSiteMonitorRe
 // CreateSiteMonitorRequest is the request struct for api CreateSiteMonitor
 type CreateSiteMonitorRequest struct {
 	*requests.RpcRequest
-	Address     string `position:"Query" name:"Address"`
-	TaskType    string `position:"Query" name:"TaskType"`
-	TaskName    string `position:"Query" name:"TaskName"`
-	IspCities   string `position:"Query" name:"IspCities"`
-	OptionsJson string `position:"Query" name:"OptionsJson"`
-	AlertIds    string `position:"Query" name:"AlertIds"`
-	Interval    string `position:"Query" name:"Interval"`
+	ReportProject string           `position:"Query" name:"ReportProject"`
+	TaskName      string           `position:"Query" name:"TaskName"`
+	AlertIds      string           `position:"Query" name:"AlertIds"`
+	Address       string           `position:"Query" name:"Address"`
+	TaskType      string           `position:"Query" name:"TaskType"`
+	EndTime       requests.Integer `position:"Query" name:"EndTime"`
+	IspCities     string           `position:"Query" name:"IspCities"`
+	OptionsJson   string           `position:"Query" name:"OptionsJson"`
+	IntervalUnit  string           `position:"Query" name:"IntervalUnit"`
+	Interval      string           `position:"Query" name:"Interval"`
 }
 
 // CreateSiteMonitorResponse is the response struct for api CreateSiteMonitor
 type CreateSiteMonitorResponse struct {
 	*responses.BaseResponse
-	Code             string           `json:"Code" xml:"Code"`
-	Message          string           `json:"Message" xml:"Message"`
-	Success          string           `json:"Success" xml:"Success"`
-	RequestId        string           `json:"RequestId" xml:"RequestId"`
-	Data             Data             `json:"Data" xml:"Data"`
-	CreateResultList CreateResultList `json:"CreateResultList" xml:"CreateResultList"`
+	Code             string                              `json:"Code" xml:"Code"`
+	Message          string                              `json:"Message" xml:"Message"`
+	RequestId        string                              `json:"RequestId" xml:"RequestId"`
+	Success          string                              `json:"Success" xml:"Success"`
+	Data             Data                                `json:"Data" xml:"Data"`
+	CreateResultList CreateResultListInCreateSiteMonitor `json:"CreateResultList" xml:"CreateResultList"`
 }
 
 // CreateCreateSiteMonitorRequest creates a request to invoke CreateSiteMonitor API
@@ -96,7 +99,7 @@ func CreateCreateSiteMonitorRequest() (request *CreateSiteMonitorRequest) {
 	request = &CreateSiteMonitorRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateSiteMonitor", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateSiteMonitor", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSecurityGroupsDataSourceBasic(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 
 	nameRegexConf := dataSourceTestAccConfig{
@@ -109,15 +109,15 @@ func testAccCheckAlicloudSecurityGroupsDataSourceConfig(rand int, attrMap map[st
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupsDataSourceConfig%d"
 }
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
-  vpc_name = "${var.name}"
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
   name        = "${var.name}"
   description = "test security group"
-  vpc_id      = "${alicloud_vpc.default.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
   resource_group_id = "%s"
   tags = {
 		from = "datasource"
@@ -137,6 +137,7 @@ var existSecurityGroupsMapFunc = func(rand int) map[string]string {
 		"ids.#":                        "1",
 		"names.#":                      "1",
 		"groups.#":                     "1",
+		"total_count":                  CHECKSET,
 		"groups.0.vpc_id":              CHECKSET,
 		"groups.0.resource_group_id":   os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
 		"groups.0.security_group_type": "normal",

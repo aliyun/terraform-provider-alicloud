@@ -102,41 +102,35 @@ func TestAccAlicloudYundunDbauditInstanceDataSource_basic(t *testing.T) {
 }
 
 func dataSourceYundunDbauditInstanceConfigDependency(description string) string {
-	return fmt.Sprintf(
-		`  data "alicloud_zones" "default" {
-    				available_resource_creation = "VSwitch"
-			  }
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+	available_resource_creation = "VSwitch"
+}
 
-			  variable "name" {
-				default = "%s"
-			  }
+variable "name" {
+	default = "%s"
+}
 
-			  resource "alicloud_vpc" "default" {
-				name = "${var.name}"
-				cidr_block = "172.16.0.0/12"
-			  }
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
+}
 
-			  resource "alicloud_vswitch" "default" {
-				vpc_id = "${alicloud_vpc.default.id}"
-				cidr_block = "172.16.0.0/21"
-				availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				name = "${var.name}"
-			  }
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.0.id
+}
 			
-			  provider "alicloud" {
-				endpoints {
-					bssopenapi = "business.aliyuncs.com"
-					}
-			  }
-			
-			  resource "alicloud_yundun_dbaudit_instance" "default" {
-					description       = "${var.name}"
-					plan_code         = "alpha.professional"
-					period            = "1"
-					vswitch_id        = "${alicloud_vswitch.default.id}"
-					tags 				 = {
-						Created = "TF"
-						For 	= "acceptance test"
-				  }
-			  }`, description)
+resource "alicloud_yundun_dbaudit_instance" "default" {
+	description       = "${var.name}"
+	plan_code         = "alpha.professional"
+	period            = "1"
+	vswitch_id        = data.alicloud_vswitches.default.ids.0
+	tags 				 = {
+		Created = "TF"
+		For 	= "acceptance test"
+  }
+}`, description)
 }

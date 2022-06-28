@@ -139,12 +139,12 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 	}))
 	hashcode5 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                0,
-		"created_before_date": "2020-11-11",
+		"created_before_date": "2023-11-11",
 		"storage_class":       "IA",
 	}))
 	hashcode6 := strconv.Itoa(transitionsHash(map[string]interface{}{
 		"days":                0,
-		"created_before_date": "2021-11-11",
+		"created_before_date": "2023-11-10",
 		"storage_class":       "Archive",
 	}))
 	hashcode7 := strconv.Itoa(expirationHash(map[string]interface{}{
@@ -322,11 +322,11 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 							"enabled": "true",
 							"transitions": []map[string]interface{}{
 								{
-									"created_before_date": "2020-11-11",
+									"created_before_date": "2023-11-11",
 									"storage_class":       "IA",
 								},
 								{
-									"created_before_date": "2021-11-11",
+									"created_before_date": "2023-11-10",
 									"storage_class":       "Archive",
 								},
 							},
@@ -381,9 +381,9 @@ func TestAccAlicloudOssBucketBasic(t *testing.T) {
 						"lifecycle_rule.3.id":      "rule4",
 						"lifecycle_rule.3.prefix":  "path4/",
 						"lifecycle_rule.3.enabled": "true",
-						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": "2020-11-11",
+						"lifecycle_rule.3.transitions." + hashcode5 + ".created_before_date": "2023-11-11",
 						"lifecycle_rule.3.transitions." + hashcode5 + ".storage_class":       string(oss.StorageIA),
-						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2021-11-11",
+						"lifecycle_rule.3.transitions." + hashcode6 + ".created_before_date": "2023-11-10",
 						"lifecycle_rule.3.transitions." + hashcode6 + ".storage_class":       string(oss.StorageArchive),
 
 						"lifecycle_rule.4.id":      "rule5",
@@ -545,7 +545,6 @@ func TestAccAlicloudOssBucketVersioning(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			//testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -674,7 +673,6 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -751,6 +749,80 @@ func TestAccAlicloudOssBucketCheckSseRule(t *testing.T) {
 						"server_side_encryption_rule.#":                   "0",
 						"server_side_encryption_rule.0.sse_algorithm":     REMOVEKEY,
 						"server_side_encryption_rule.0.kms_master_key_id": REMOVEKEY,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudOssBucketCheckTransferAcc(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transfer_acceleration": []map[string]interface{}{
+						{
+							"enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transfer_acceleration.0.enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transfer_acceleration": []map[string]interface{}{
+						{
+							"enabled": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transfer_acceleration.0.enabled": "false",
 					}),
 				),
 			},

@@ -23,6 +23,11 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 
 			// Computed values
 			"ids": {
@@ -82,6 +87,14 @@ func dataSourceAlicloudCrEEInstances() *schema.Resource {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"authorization_token": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"temp_username": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 					},
 				},
@@ -193,6 +206,32 @@ func dataSourceAlicloudCrEEInstancesRead(d *schema.ResourceData, meta interface{
 
 		ids = append(ids, instance.InstanceId)
 		names = append(names, instance.InstanceName)
+
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			instanceMaps = append(instanceMaps, mapping)
+			continue
+		}
+
+		response := &cr_ee.GetAuthorizationTokenResponse{}
+		request := cr_ee.CreateGetAuthorizationTokenRequest()
+		request.InstanceId = instance.InstanceId
+		action := request.GetActionName()
+
+		raw, err := client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.GetAuthorizationToken(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "data_alicloud_cr_ee_instances", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, raw, request.RpcRequest, request)
+
+		response, _ = raw.(*cr_ee.GetAuthorizationTokenResponse)
+		if !response.GetAuthorizationTokenIsSuccess {
+			return WrapErrorf(err, DefaultErrorMsg, "data_alicloud_cr_ee_instances", action, AlibabaCloudSdkGoERROR)
+		}
+		mapping["authorization_token"] = response.AuthorizationToken
+		mapping["temp_username"] = response.TempUsername
+
 		instanceMaps = append(instanceMaps, mapping)
 	}
 

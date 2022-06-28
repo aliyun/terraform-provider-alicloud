@@ -19,12 +19,12 @@ Creates a Function Compute service alias. Creates an alias that points to the sp
 
 Basic Usage
 
-```terrraform
+```terraform
 resource "alicloud_fc_alias" "example" {
-  alias_name       = "my_alias"
-  description      = "a sample description"
-  service_name     = "my_service_name"
-  service_version  = "1"
+  alias_name      = "my_alias"
+  description     = "a sample description"
+  service_name    = "my_service_name"
+  service_version = "1"
 
   routing_config {
     additional_version_weights = {

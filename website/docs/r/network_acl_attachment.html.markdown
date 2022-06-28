@@ -11,6 +11,9 @@ description: |-
 
 Provides a network acl attachment resource to associate network acls to vswitches.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.124.0`. Replace by `resources` with the resource [alicloud_network_acl](https://www.terraform.io/docs/providers/alicloud/r/network_acl). 
+Note that because this resource conflicts with the `resources` attribute of `alicloud_network_acl`, this resource can no be used.
+
 -> **NOTE:** Available in 1.44.0+. Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
 
 ## Example Usage

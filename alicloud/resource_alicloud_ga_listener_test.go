@@ -11,6 +11,7 @@ import (
 
 func TestAccAlicloudGaListener_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudGaListenerMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -32,7 +33,7 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id": "${data.alicloud_ga_accelerators.default.ids.0}",
+					"accelerator_id": "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
 					"description":    "create_description",
 					"name":           "${var.name}",
 					"port_ranges": []map[string]interface{}{
@@ -156,8 +157,26 @@ func AlicloudGaListenerBasicDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-data "alicloud_ga_accelerators" "default"{
-  
+data "alicloud_ga_accelerators" "default" {
+  status = "active"
+}
+
+resource "alicloud_ga_bandwidth_package" "default" {
+   	bandwidth              =  100
+  	type                   = "Basic"
+  	bandwidth_type         = "Basic"
+	payment_type           = "PayAsYouGo"
+  	billing_type           = "PayBy95"
+	ratio       = 30
+	bandwidth_package_name = var.name
+    auto_pay               = true
+    auto_use_coupon        = true
+}
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
+	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 `, name)
 }

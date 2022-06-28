@@ -68,7 +68,7 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
-				Default:      "Normal",
+				Computed:     true,
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
@@ -139,7 +139,7 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
-				Default:      "Small",
+				Computed:     true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("internet_charge_type").(string) == "PayByLcu"
 				},
@@ -160,6 +160,17 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
 			},
 		},
 	}
@@ -214,13 +225,15 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
-
+	if v, ok := d.GetOk("network_type"); ok {
+		request["NetworkType"] = v
+	}
 	request["VpcId"] = d.Get("vpc_id")
-	request["ClientToken"] = buildClientToken("CreateNatGateway")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("CreateNatGateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "VswitchStatusError"}) {
@@ -270,6 +283,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("nat_type", object["NatType"])
 	d.Set("payment_type", convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)))
 	d.Set("instance_charge_type", object["InstanceChargeType"])
+	d.Set("network_type", object["NetworkType"])
 	//if object["InstanceChargeType"] == "PrePaid" {
 	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
 	//	if err != nil {
@@ -294,6 +308,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("deletion_protection", object["DeletionProtection"])
 	return nil
 }
 func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -307,6 +322,42 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
+	}
+	if d.HasChange("deletion_protection") {
+		var response map[string]interface{}
+		action := "DeletionProtection"
+		request := map[string]interface{}{
+			"RegionId":         client.RegionId,
+			"InstanceId":       d.Id(),
+			"ProtectionEnable": d.Get("deletion_protection"),
+			"Type":             "NATGW",
+		}
+		conn, err := client.NewVpcClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			request["ClientToken"] = buildClientToken(action)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("deletion_protection")
 	}
 	update := false
 	request := map[string]interface{}{
@@ -437,6 +488,10 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 	return resourceAlicloudNatGatewayRead(d, meta)
 }
 func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
+	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
+		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_nat_gateway. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	action := "DeleteNatGateway"

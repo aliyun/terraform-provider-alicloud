@@ -7,7 +7,7 @@ description: |-
   Provides a Alibaba Cloud kms secret resource.
 ---
 
-# alicloud\_kms\_key
+# alicloud\_kms\_secret
 
 This resouce used to create a secret and store its initial version.
 
@@ -41,6 +41,8 @@ The following arguments are supported:
 * `version_id` - (Required) The version number of the initial version. Version numbers are unique in each secret object.
 * `version_stages` - (Optional, List(string)) The stage labels that mark the new secret version. If you do not specify this parameter, Secrets Manager marks it with "ACSCurrent".
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `enable_automatic_rotation` - (Optional, ForceNew, Available in 1.124.0+) Whether to enable automatic key rotation.
+* `rotation_interval` - (Optional, ForceNew, Available in 1.124.0+) The time period of automatic rotation. The format is integer[unit], where integer represents the length of time, and unit represents the unit of time. The legal unit units are: d (day), h (hour), m (minute), s (second). 7d or 604800s both indicate a 7-day cycle.
 
 ## Attributes Reference
 

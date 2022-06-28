@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_group_metric_rules"
 sidebar_current: "docs-alicloud-datasource-cms-group-metric-rules"

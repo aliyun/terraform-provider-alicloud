@@ -3,9 +3,11 @@ package alicloud
 import (
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
@@ -46,7 +48,7 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
-				Optional:     true,
+				Required:     true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -66,16 +68,31 @@ func resourceAlicloudDbauditInstance() *schema.Resource {
 func resourceAlicloudDbauditInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := buildDbauditCreateRequest(d, meta)
-	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.CreateInstance(request)
+	var response *bssopenapi.CreateInstanceResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+			return bssopenapiClient.CreateInstance(request)
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request.RegionId = string(connectivity.APSouthEast1)
+				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response = raw.(*bssopenapi.CreateInstanceResponse)
+
+		return nil
 	})
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_yundun_dbaudit_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	response := raw.(*bssopenapi.CreateInstanceResponse)
 	instanceId := response.Data.InstanceId
 	if !response.Success {
 		return WrapError(Error(response.Message))
@@ -181,24 +198,8 @@ func resourceAlicloudDbauditInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudDbauditInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	dbauditService := DbauditService{client}
-	request := yundun_dbaudit.CreateRefundInstanceRequest()
-	request.InstanceId = d.Id()
-
-	raw, err := dbauditService.client.WithDbauditClient(func(dbauditClient *yundun_dbaudit.Client) (interface{}, error) {
-		return dbauditClient.RefundInstance(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	// Wait for the release procedure of cloud resource dependencies. Instance can not be fetched through api as soon as release has
-	// been invoked, however the resources have not been fully destroyed yet. Therefore, a certain amount time of waiting
-	// is quite necessary (conservative estimation cloud be less then 3 minutes)
-	time.Sleep(time.Duration(RELEASE_HANG_MINS) * time.Minute)
-	return WrapError(dbauditService.WaitForYundunDbauditInstance(d.Id(), Deleted, 0))
+	log.Printf("[WARN] Cannot destroy resourceAlicloudDbauditInstance. Terraform will remove this resource from the state file, however resources may remain.")
+	return nil
 }
 
 func buildDbauditCreateRequest(d *schema.ResourceData, meta interface{}) *bssopenapi.CreateInstanceRequest {

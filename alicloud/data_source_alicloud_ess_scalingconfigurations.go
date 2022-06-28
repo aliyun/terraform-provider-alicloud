@@ -95,6 +95,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"system_disk_performance_level": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"data_disks": {
 							Type: schema.TypeList,
 							Elem: &schema.Resource{
@@ -119,6 +123,10 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 										Type:     schema.TypeBool,
 										Optional: true,
 									},
+									"performance_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 								},
 							},
 							Computed: true,
@@ -129,6 +137,34 @@ func dataSourceAlicloudEssScalingConfigurations() *schema.Resource {
 						},
 						"creation_time": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"host_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"spot_strategy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"spot_price_limit": {
+							Type: schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_type": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"price_limit": {
+										Type:     schema.TypeFloat,
+										Optional: true,
+									},
+								},
+							},
 							Computed: true,
 						},
 					},
@@ -191,7 +227,10 @@ func dataSourceAlicloudEssScalingConfigurationsRead(d *schema.ResourceData, meta
 	if okNameRegex || okIds {
 		for _, configuration := range allScalingConfigurations {
 			if okNameRegex && nameRegex != "" {
-				var r = regexp.MustCompile(nameRegex.(string))
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
 				if r != nil && !r.MatchString(configuration.ScalingConfigurationName) {
 					continue
 				}
@@ -218,21 +257,26 @@ func scalingConfigurationsDescriptionAttribute(d *schema.ResourceData, scalingCo
 	essService := EssService{client}
 	for _, scalingConfiguration := range scalingConfigurations {
 		mapping := map[string]interface{}{
-			"id":                         scalingConfiguration.ScalingConfigurationId,
-			"name":                       scalingConfiguration.ScalingConfigurationName,
-			"scaling_group_id":           scalingConfiguration.ScalingGroupId,
-			"image_id":                   scalingConfiguration.ImageId,
-			"instance_type":              scalingConfiguration.InstanceType,
-			"security_group_id":          scalingConfiguration.SecurityGroupId,
-			"internet_charge_type":       scalingConfiguration.InternetChargeType,
-			"internet_max_bandwidth_in":  scalingConfiguration.InternetMaxBandwidthIn,
-			"internet_max_bandwidth_out": scalingConfiguration.InternetMaxBandwidthOut,
-			"credit_specification":       scalingConfiguration.CreditSpecification,
-			"system_disk_category":       scalingConfiguration.SystemDiskCategory,
-			"system_disk_size":           scalingConfiguration.SystemDiskSize,
-			"data_disks":                 essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),
-			"lifecycle_state":            scalingConfiguration.LifecycleState,
-			"creation_time":              scalingConfiguration.CreationTime,
+			"id":                            scalingConfiguration.ScalingConfigurationId,
+			"name":                          scalingConfiguration.ScalingConfigurationName,
+			"scaling_group_id":              scalingConfiguration.ScalingGroupId,
+			"image_id":                      scalingConfiguration.ImageId,
+			"instance_type":                 scalingConfiguration.InstanceType,
+			"security_group_id":             scalingConfiguration.SecurityGroupId,
+			"internet_charge_type":          scalingConfiguration.InternetChargeType,
+			"internet_max_bandwidth_in":     scalingConfiguration.InternetMaxBandwidthIn,
+			"internet_max_bandwidth_out":    scalingConfiguration.InternetMaxBandwidthOut,
+			"credit_specification":          scalingConfiguration.CreditSpecification,
+			"system_disk_category":          scalingConfiguration.SystemDiskCategory,
+			"system_disk_size":              scalingConfiguration.SystemDiskSize,
+			"system_disk_performance_level": scalingConfiguration.SystemDiskPerformanceLevel,
+			"data_disks":                    essService.flattenDataDiskMappings(scalingConfiguration.DataDisks.DataDisk),
+			"lifecycle_state":               scalingConfiguration.LifecycleState,
+			"creation_time":                 scalingConfiguration.CreationTime,
+			"instance_name":                 scalingConfiguration.InstanceName,
+			"host_name":                     scalingConfiguration.HostName,
+			"spot_strategy":                 scalingConfiguration.SpotStrategy,
+			"spot_price_limit":              essService.flattenSpotPriceLimitMappings(scalingConfiguration.SpotPriceLimit.SpotPriceModel),
 		}
 		ids = append(ids, scalingConfiguration.ScalingConfigurationId)
 		names = append(names, scalingConfiguration.ScalingConfigurationName)

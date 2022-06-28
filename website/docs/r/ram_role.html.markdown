@@ -18,8 +18,8 @@ Provides a RAM Role resource.
 ```terraform
 # Create a new RAM Role.
 resource "alicloud_ram_role" "role" {
-  name     = "testrole"
-  document = <<EOF
+  name        = "testrole"
+  document    = <<EOF
   {
     "Statement": [
       {
@@ -49,7 +49,7 @@ The following arguments are supported:
 * `ram_users` - (Deprecated, Optional, Type: list, Conflicts with `document`) (It has been deprecated from version 1.49.0, and use field 'document' to replace.) List of ram users who can assume the RAM role. The format of each item in this list is `acs:ram::${account_id}:root` or `acs:ram::${account_id}:user/${user_name}`, such as `acs:ram::1234567890000:root` and `acs:ram::1234567890001:user/Mary`. The `${user_name}` is the name of a RAM user which must exists in the Alicloud account indicated by the `${account_id}`.
 * `version` - (Deprecated, Optional, Conflicts with `document`) (It has been deprecated from version 1.49.0, and use field 'document' to replace.) Version of the RAM role policy document. Valid value is `1`. Default value is `1`.
 * `document` - (Optional, Conflicts with `services`, `ram_users` and `version`) Authorization strategy of the RAM role. It is required when the `services` and `ram_users` are not specified.
-* `description` - (Optional, Forces new resource) Description of the RAM role. This name can have a string of 1 to 1024 characters.
+* `description` - (Optional) Description of the RAM role. This name can have a string of 1 to 1024 characters. **NOTE:** The `description` supports modification since V1.144.0.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 * `max_session_duration` - (Optional, Available in 1.105.0+) The maximum session duration of the RAM role. Valid values: 3600 to 43200. Unit: seconds. Default value: 3600. The default value is used if the parameter is not specified.
 
@@ -66,6 +66,16 @@ The following attributes are exported:
 * `document` - Authorization strategy of the role.
 * `ram_users` - List of services which can assume the RAM role. 
 * `services` - List of services which can assume the RAM role.
+
+### Timeouts
+
+-> **NOTE:** Available in v1.159.0+
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the ram role.
+* `update` - (Defaults to 10 mins) Used when updating the ram role.
+* `delete` - (Defaults to 10 mins) Used when deleting the ram role.
 
 ## Import
 

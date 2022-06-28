@@ -142,7 +142,7 @@ func resourceAlicloudLogOssShipperCreate(d *schema.ResourceData, meta interface{
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
 			project, _ := sls.NewLogProject(projectName, slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
-			project.WithToken(slsClient.SecurityToken)
+			project, _ = project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(logstoreName, project)
 			return nil, logstore.CreateShipper(buildConfig(d))
 		})
@@ -234,7 +234,7 @@ func resourceAlicloudLogOssShipperUpdate(d *schema.ResourceData, meta interface{
 	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
-			project.WithToken(slsClient.SecurityToken)
+			project, _ = project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(parts[1], project)
 			return nil, logstore.UpdateShipper(buildConfig(d))
 		})
@@ -265,7 +265,7 @@ func resourceAlicloudLogOssShipperDelete(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			project, _ := sls.NewLogProject(parts[0], slsClient.Endpoint, slsClient.AccessKeyID, slsClient.AccessKeySecret)
-			project.WithToken(slsClient.SecurityToken)
+			project, _ = project.WithToken(slsClient.SecurityToken)
 			logstore, _ := sls.NewLogStore(parts[1], project)
 			return nil, logstore.DeleteShipper(parts[2])
 		})
@@ -286,6 +286,9 @@ func resourceAlicloudLogOssShipperDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ShipperNotExist"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_oss_shipper", "DeleteLogOssShipper", AliyunLogGoSdkERROR)
 	}
 	return WrapError(logService.WaitForLogOssShipper(d.Id(), Deleted, DefaultTimeout))

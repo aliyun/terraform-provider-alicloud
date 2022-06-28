@@ -60,6 +60,11 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"multi_account": []string{"1234567", "123123123213", "123141412"},
 				}),
@@ -69,6 +74,17 @@ func TestAccAlicloudLogAudit_basic(t *testing.T) {
 					}),
 				),
 			},
+			// TODO: only when center account is resource directory master or resource directory admin need to check resource type config，otherwise pass it directly
+			// {
+			// 	Config: testAccConfig(map[string]interface{}{
+			// 		"resource_directory_type": "custom",
+			// 	}),
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		testAccCheck(map[string]string{
+			// 			"resource_directory_type": "custom",
+			// 		}),
+			// 	),
+			// },
 		},
 	})
 }

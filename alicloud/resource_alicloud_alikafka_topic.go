@@ -56,7 +56,7 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      12,
-				ValidateFunc: validation.IntBetween(0, 48),
+				ValidateFunc: validation.IntBetween(0, 360),
 			},
 			"remark": {
 				Type:         schema.TypeString,
@@ -64,6 +64,18 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"tags": tagsSchema(),
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"status_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -235,6 +247,10 @@ func resourceAlicloudAlikafkaTopicRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	d.Set("tags", alikafkaService.tagsToMap(tags))
+
+	d.Set("create_time", object.CreateTime)
+	d.Set("status_name", object.StatusName)
+	d.Set("status", object.Status)
 
 	return nil
 }

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -22,10 +20,8 @@ func TestAccAlicloudCenRegionRouteEntriesDataSource(t *testing.T) {
 			"region_id":   fmt.Sprintf(`"%s"`, defaultRegionToTest),
 		}),
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
-	}
-	CenRegionRouteEntriesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, allConf)
+
+	CenRegionRouteEntriesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
 func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -60,11 +56,9 @@ func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[str
 	
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_id = "${alicloud_vswitch.default.vpc_id}"
 	    child_instance_type = "VPC"
 	    child_instance_region_id = "%s"
-	    depends_on = [
-	        "alicloud_vswitch.default"]
 	}
 	
 	resource "alicloud_route_entry" "default" {
@@ -75,11 +69,9 @@ func testAccCheckCenRegionRouteEntriesDataSourceConfig(rand int, attrMap map[str
 	}
 	
 	resource "alicloud_cen_route_entry" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
+	    instance_id = "${alicloud_cen_instance_attachment.default.instance_id}"
 	    route_table_id = "${alicloud_vpc.default.route_table_id}"
 	    cidr_block = "${alicloud_route_entry.default.destination_cidrblock}"
-	    depends_on = [
-			"alicloud_cen_instance_attachment.default"]
 	}
 	
 	data "alicloud_cen_region_route_entries" "default" {
@@ -93,12 +85,17 @@ var existCenRegionRouteEntriesMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"instance_id":                  CHECKSET,
 		"region_id":                    CHECKSET,
-		"entries.#":                    "3",
-		"entries.0.cidr_block":         "100.64.0.0/10",
-		"entries.0.type":               "System",
-		"entries.0.next_hop_type":      "local_service",
-		"entries.0.next_hop_id":        "",
+		"entries.#":                    "2",
+		"entries.0.cidr_block":         "11.0.0.0/16",
+		"entries.0.type":               "CEN",
+		"entries.0.next_hop_type":      "VPC",
+		"entries.0.next_hop_id":        CHECKSET,
 		"entries.0.next_hop_region_id": CHECKSET,
+		"entries.1.cidr_block":         "172.16.0.0/24",
+		"entries.1.type":               "CEN",
+		"entries.1.next_hop_type":      "VPC",
+		"entries.1.next_hop_id":        CHECKSET,
+		"entries.1.next_hop_region_id": CHECKSET,
 	}
 }
 

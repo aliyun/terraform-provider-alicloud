@@ -5,7 +5,7 @@ data "alicloud_instance_types" "instance_type" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = "vpc-${var.short_name}"
+  vpc_name   = "vpc-${var.short_name}"
   cidr_block = "10.1.0.0/21"
 }
 

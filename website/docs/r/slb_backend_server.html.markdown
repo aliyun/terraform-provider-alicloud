@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_backend_server"
 sidebar_current: "docs-alicloud-resource-slb-backend-server"
@@ -68,13 +68,13 @@ resource "alicloud_instance" "default" {
   vswitch_id                 = alicloud_vswitch.default.id
 }
 
-resource "alicloud_slb" "default" {
-  name       = var.name
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name  = var.name
   vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_backend_server" "default" {
-  load_balancer_id = alicloud_slb.default.id
+  load_balancer_id = alicloud_slb_load_balancer.default.id
 
   backend_servers {
     server_id = alicloud_instance.default[0].id
@@ -93,7 +93,7 @@ resource "alicloud_slb_backend_server" "default" {
 The following arguments are supported:
 
 * `load_balancer_id` - (Required) ID of the load balancer.
-* `backend_servers` - (Required) A list of instances to added backend server in the SLB. It contains three sub-fields as `Block server` follows.
+* `backend_servers` - (Optional) A list of instances to added backend server in the SLB. It contains three sub-fields as `Block server` follows.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Block servers
@@ -102,8 +102,8 @@ The servers mapping supports the following:
 
 * `server_id` - (Required) A list backend server ID (ECS instance ID).
 * `weight` - (Optional) Weight of the backend server. Valid value range: [0-100]. 
-* `type` - (Optional) Type of the backend server. Valid value `ecs`, `eni`. Default to `ecs`.
-* `server_ip` - (Optional, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
+* `type` - (Optional) Type of the backend server. Valid value `ecs`, `eni`, `eci`. Default to `ecs`. **NOTE:** From 1.170.0+, The `eci` is valid. 
+* `server_ip` - (Optional, Computed, Available in 1.93.0+) ServerIp of the backend server. This parameter can be specified when the type is `eni`. `ecs` type currently does not support adding `server_ip` parameter.
 
 ## Attributes Reference
 
@@ -116,5 +116,5 @@ The following attributes are exported:
 Load balancer backend server can be imported using the load balancer id.
 
 ```
-$ terraform import alicloud_slb_backend_server.example lb-abc123456
+$ terraform import alicloud_slb_backend_server.example <load_balancer_id>
 ```

@@ -7,7 +7,7 @@ description: |-
     Provides a list of CEN VBR Health Checks owned by an Alibaba Cloud account.
 ---
 
-# alicloud\_cen\_vbr_health\_checks
+# alicloud\_cen\_vbr\_health\_checks
 
 This data source provides CEN VBR Health Checks available to the user.
 
@@ -17,10 +17,10 @@ This data source provides CEN VBR Health Checks available to the user.
 
 ```terraform
 data "alicloud_cen_vbr_health_chekcs" "example" {
-    cen_id                 = "cen-wxad980***"
-    vbr_instance_id        = "vbr-mkahi8h****"
-    vbr_instance_owner_id  = "1189203******"
-    vbr_instance_region_id = "cn-beijing"
+  cen_id                 = "cen-wxad980***"
+  vbr_instance_id        = "vbr-mkahi8h****"
+  vbr_instance_owner_id  = "1189203******"
+  vbr_instance_region_id = "cn-beijing"
 }
 
 output "first_cen_vbr_health_check_id" {

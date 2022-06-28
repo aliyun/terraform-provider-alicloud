@@ -71,20 +71,22 @@ func (client *Client) DescribeAlertingMetricRuleResourcesWithCallback(request *D
 // DescribeAlertingMetricRuleResourcesRequest is the request struct for api DescribeAlertingMetricRuleResources
 type DescribeAlertingMetricRuleResourcesRequest struct {
 	*requests.RpcRequest
-	GroupId  string           `position:"Query" name:"GroupId"`
-	PageSize requests.Integer `position:"Query" name:"PageSize"`
-	Page     requests.Integer `position:"Query" name:"Page"`
-	RuleId   string           `position:"Query" name:"RuleId"`
+	GroupId    string           `position:"Query" name:"GroupId"`
+	PageSize   requests.Integer `position:"Query" name:"PageSize"`
+	Namespace  string           `position:"Query" name:"Namespace"`
+	Page       requests.Integer `position:"Query" name:"Page"`
+	RuleId     string           `position:"Query" name:"RuleId"`
+	Dimensions string           `position:"Query" name:"Dimensions"`
 }
 
 // DescribeAlertingMetricRuleResourcesResponse is the response struct for api DescribeAlertingMetricRuleResources
 type DescribeAlertingMetricRuleResourcesResponse struct {
 	*responses.BaseResponse
-	RequestId string                                         `json:"RequestId" xml:"RequestId"`
-	Success   bool                                           `json:"Success" xml:"Success"`
 	Code      int                                            `json:"Code" xml:"Code"`
 	Message   string                                         `json:"Message" xml:"Message"`
+	RequestId string                                         `json:"RequestId" xml:"RequestId"`
 	Total     int                                            `json:"Total" xml:"Total"`
+	Success   bool                                           `json:"Success" xml:"Success"`
 	Resources ResourcesInDescribeAlertingMetricRuleResources `json:"Resources" xml:"Resources"`
 }
 
@@ -93,7 +95,7 @@ func CreateDescribeAlertingMetricRuleResourcesRequest() (request *DescribeAlerti
 	request = &DescribeAlertingMetricRuleResourcesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeAlertingMetricRuleResources", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeAlertingMetricRuleResources", "Cms", "openAPI")
 	request.Method = requests.GET
 	return
 }

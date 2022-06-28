@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBAttachmentsDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbAttachmentsDataSourceConfig(rand, map[string]string{
@@ -27,7 +27,7 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBAttachmentsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_attachments.#":             "1",
 			"slb_attachments.0.instance_id": CHECKSET,
@@ -35,7 +35,7 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBAttachmentsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_attachments.#": "0",
 		}
@@ -43,8 +43,8 @@ func TestAccAlicloudSlbAttachmentsDataSource_basic(t *testing.T) {
 
 	var slbAttachmentCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_attachments.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBAttachmentsMapFunc,
+		fakeMapFunc:  fakeSLBAttachmentsMapFunc,
 	}
 
 	slbAttachmentCheckInfo.dataSourceTestCheck(t, rand, idsConf, allConf)
@@ -62,7 +62,7 @@ variable "name" {
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu"
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
   owners = "system"
 }
@@ -71,27 +71,35 @@ data "alicloud_instance_types" "default" {
 	memory_size = 2
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id = local.vswitch_id
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_security_group" "default" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_instance" "default" {
@@ -104,11 +112,11 @@ resource "alicloud_instance" "default" {
 
   security_groups = ["${alicloud_security_group.default.id}"]
   instance_name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = local.vswitch_id
 }
 
 resource "alicloud_slb_attachment" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   instance_ids = ["${alicloud_instance.default.id}"]
   weight = 42
 }

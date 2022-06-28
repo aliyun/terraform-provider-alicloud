@@ -89,6 +89,10 @@ func resourceAlicloudWafInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"region": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -116,6 +120,10 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["RenewalStatus"] = v
 	}
 
+	region := client.RegionId
+	if v, ok := d.GetOk("region"); ok && v.(string) != "" {
+		region = v.(string)
+	}
 	request["SubscriptionType"] = d.Get("subscription_type")
 	request["Parameter"] = []map[string]string{
 		{
@@ -152,7 +160,7 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		},
 		{
 			"Code":  "Region",
-			"Value": client.RegionId,
+			"Value": region,
 		},
 		{
 			"Code":  "WafLog",
@@ -165,6 +173,10 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -201,6 +213,10 @@ func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -253,16 +269,16 @@ func resourceAlicloudWafInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if update {
 		action := "ModifyInstance"
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

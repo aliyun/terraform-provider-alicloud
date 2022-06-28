@@ -47,7 +47,8 @@ func testSweepSagQos(region string) error {
 			return sagClient.DescribeQoses(req)
 		})
 		if err != nil {
-			return fmt.Errorf("Error retrieving Sag Qoses: %s", err)
+			log.Println(fmt.Errorf("Error retrieving Sag Qoses: %s", err))
+			return nil
 		}
 		resp, _ := raw.(*smartag.DescribeQosesResponse)
 		if resp == nil || len(resp.Qoses.Qos) < 1 {

@@ -28,8 +28,8 @@ resource "alicloud_resource_manager_resource_group" "example" {
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew) Field `name` has been deprecated from version 1.114.0. Use `resource_group_name` instead.
-* `resorce_group_name` - (Required, ForceNew, Available in v1.114.0) The unique identifier of the resource group.The identifier must be 3 to 12 characters in length and can contain letters, digits, periods (.), hyphens (-), and underscores (_). The identifier must start with a letter.
+* `name` - (Optional, ForceNew) Field `name` has been deprecated from version 1.114.0. Use `resource_group_name` instead.
+* `resource_group_name` - (Optional, ForceNew, Available in v1.114.0) The unique identifier of the resource group.The identifier must be 3 to 12 characters in length and can contain letters, digits, periods (.), hyphens (-), and underscores (_). The identifier must start with a letter.
 * `display_name` - (Required) The display name of the resource group. The name must be 1 to 30 characters in length and can contain letters, digits, periods (.), at signs (@), and hyphens (-).
 
 ## Attributes Reference

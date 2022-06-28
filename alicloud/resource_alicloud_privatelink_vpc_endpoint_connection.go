@@ -124,6 +124,10 @@ func resourceAlicloudPrivatelinkVpcEndpointConnectionRead(d *schema.ResourceData
 func resourceAlicloudPrivatelinkVpcEndpointConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewPrivatelinkClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -143,10 +147,6 @@ func resourceAlicloudPrivatelinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 			request["DryRun"] = d.Get("dry_run")
 		}
 		action := "UpdateVpcEndpointConnectionAttribute"
-		conn, err := client.NewPrivatelinkClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 10*time.Second)
@@ -154,7 +154,7 @@ func resourceAlicloudPrivatelinkVpcEndpointConnectionUpdate(d *schema.ResourceDa
 			request["ClientToken"] = buildClientToken("UpdateVpcEndpointConnectionAttribute")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied"}) {
+				if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}

@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudTsdbInstancesDataSourceConfig(rand, map[string]string{
@@ -56,7 +57,7 @@ func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existTsdbInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                              "1",
 			"instances.#":                        "1",
@@ -81,7 +82,7 @@ func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeTsdbInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":       "0",
 			"instances.#": "0",
@@ -90,8 +91,8 @@ func TestAccAlicloudTsdbInstancesDataSource(t *testing.T) {
 
 	var tsdbInstancesRecordsCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_tsdb_instances.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existTsdbInstancesMapFunc,
+		fakeMapFunc:  fakeTsdbInstancesMapFunc,
 	}
 
 	var perCheck = func() {

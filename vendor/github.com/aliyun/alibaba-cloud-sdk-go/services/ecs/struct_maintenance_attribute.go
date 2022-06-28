@@ -17,6 +17,7 @@ package ecs
 
 // MaintenanceAttribute is a nested struct in ecs response
 type MaintenanceAttribute struct {
+	NotifyOnMaintenance bool                `json:"NotifyOnMaintenance" xml:"NotifyOnMaintenance"`
 	InstanceId          string              `json:"InstanceId" xml:"InstanceId"`
 	ActionOnMaintenance ActionOnMaintenance `json:"ActionOnMaintenance" xml:"ActionOnMaintenance"`
 	MaintenanceWindows  MaintenanceWindows  `json:"MaintenanceWindows" xml:"MaintenanceWindows"`

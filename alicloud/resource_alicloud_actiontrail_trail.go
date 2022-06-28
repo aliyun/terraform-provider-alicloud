@@ -66,6 +66,7 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 			},
 			"sls_write_role_arn": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 			},
 			"status": {
@@ -203,6 +204,10 @@ func resourceAlicloudActiontrailTrailRead(d *schema.ResourceData, meta interface
 func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	actiontrailService := ActiontrailService{client}
+	conn, err := client.NewActiontrailClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -250,12 +255,11 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 		if v, ok := d.GetOk("oss_bucket_name"); ok {
 			request["OssBucketName"] = v
 		}
+		if v, ok := d.GetOk("oss_write_role_arn"); ok {
+			request["OssWriteRoleArn"] = v
+		}
 
 		action := "UpdateTrail"
-		conn, err := client.NewActiontrailClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -292,10 +296,6 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 					"Name": d.Id(),
 				}
 				action := "StopLogging"
-				conn, err := client.NewActiontrailClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
@@ -322,10 +322,6 @@ func resourceAlicloudActiontrailTrailUpdate(d *schema.ResourceData, meta interfa
 					"Name": d.Id(),
 				}
 				action := "StartLogging"
-				conn, err := client.NewActiontrailClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-07-06"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

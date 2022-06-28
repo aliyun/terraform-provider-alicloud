@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
+func TestAccAlicloudECSImagesDataSource_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 
@@ -121,7 +121,7 @@ func TestAccAlicloudImagesDataSource_basic(t *testing.T) {
 	imagesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, statusConf, ownerConf, recentNameRegexconf, ownerNameRegexConf, ownerRecentConf, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_win(t *testing.T) {
+func TestAccAlicloudECSImagesDataSource_win(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 
@@ -178,7 +178,7 @@ func TestAccAlicloudImagesDataSource_win(t *testing.T) {
 	imagesCheckInfo.dataSourceTestCheck(t, rand, allConf)
 }
 
-func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
+func TestAccAlicloudECSImagesDataSource_linux(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_images.default"
 
@@ -193,17 +193,6 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "^ubuntu.*fake",
-			"owners":     "system",
-		}),
-	}
-
-	slesConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^sles.*",
-			"owners":     "system",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^sles.*fake",
 			"owners":     "system",
 		}),
 	}
@@ -248,17 +237,6 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex": "^debian.*fake",
-			"owners":     "system",
-		}),
-	}
-
-	coreOsConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^coreos.*",
-			"owners":     "system",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex": "^coreos.*fake",
 			"owners":     "system",
 		}),
 	}
@@ -309,9 +287,56 @@ func TestAccAlicloudImagesDataSource_linux(t *testing.T) {
 		fakeMapFunc:  fakeImagesMapFunc,
 	}
 
-	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, slesConf, openSuseConf, freebsdConf, centOsConf, debianConf, coreOsConf, aliyunConf)
+	imagesCheckInfo.dataSourceTestCheck(t, rand, ubuntuConf, openSuseConf, freebsdConf, centOsConf, debianConf, aliyunConf)
+}
+
+func TestAccAlicloudECSImagesDataSource_ImageOwnerId(t *testing.T) {
+	rand := acctest.RandIntRange(1000000, 9999999)
+	resourceId := "data.alicloud_images.default"
+
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
+		fmt.Sprintf("tf-testacc-%d", rand),
+		dataSourceImagesConfigDependence)
+
+	imageOwnerIDConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"image_owner_id": "${data.alicloud_account.default.id}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"image_owner_id": "${data.alicloud_account.default.id}1",
+		}),
+	}
+
+	var existImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":             CHECKSET,
+			"ids.0":             CHECKSET,
+			"images.#":          CHECKSET,
+			"images.0.platform": CHECKSET,
+			"images.0.os_name":  CHECKSET,
+			"images.0.image_id": CHECKSET,
+		}
+	}
+
+	var fakeImagesMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":    "0",
+			"images.#": "0",
+		}
+	}
+
+	var imagesCheckInfo = dataSourceAttr{
+		resourceId:   resourceId,
+		existMapFunc: existImagesMapFunc,
+		fakeMapFunc:  fakeImagesMapFunc,
+	}
+
+	imagesCheckInfo.dataSourceTestCheck(t, rand, imageOwnerIDConf)
 }
 
 func dataSourceImagesConfigDependence(name string) string {
-	return ""
+	return `
+data "alicloud_account" "default" {
+}
+`
 }

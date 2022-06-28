@@ -1,11 +1,11 @@
-resource "alicloud_slb" "instance" {
-  name                 = "tf-testAccSlbListenerHttp"
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name                 = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
   internet             = true
 }
 
 resource "alicloud_slb_listener" "http_listener_forward" {
-  load_balancer_id = alicloud_slb.instance.id
+  load_balancer_id = alicloud_slb_load_balancer.instance.id
   frontend_port    = 90
   protocol         = "http"
   listener_forward = "on"
@@ -13,7 +13,7 @@ resource "alicloud_slb_listener" "http_listener_forward" {
 }
 
 resource "alicloud_slb_listener" "https_listener_forward" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 80
   frontend_port             = 443
   protocol                  = "https"

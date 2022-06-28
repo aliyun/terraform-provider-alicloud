@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpnRouteEntry_basic(t *testing.T) {
+func TestAccAlicloudVPNRouteEntry_basic(t *testing.T) {
 	var v vpc.VpnRouteEntry
 
 	resourceId := "alicloud_vpn_route_entry.default"
@@ -94,7 +94,7 @@ func TestAccAlicloudVpnRouteEntry_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpnRouteEntry_multi(t *testing.T) {
+func TestAccAlicloudVPNRouteEntry_multi(t *testing.T) {
 	var v vpc.VpnRouteEntry
 
 	resourceId := "alicloud_vpn_route_entry.default.1"

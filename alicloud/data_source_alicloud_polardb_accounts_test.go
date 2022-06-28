@@ -5,12 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudPolarDBClusterAccountsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-
+	checkoutSupportedRegions(t, true, connectivity.EcsClassicSupportedRegions)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_account.account.db_cluster_id}"`,
@@ -54,10 +56,7 @@ func TestAccAlicloudPolarDBClusterAccountsDataSource(t *testing.T) {
 		existMapFunc: existPolarClusterMapFunc,
 		fakeMapFunc:  fakePolarClusterMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	PolarClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idConf, allConf)
+	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, idConf, allConf)
 }
 
 func testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand int, attrMap map[string]string) string {

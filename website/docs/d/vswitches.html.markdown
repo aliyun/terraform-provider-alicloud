@@ -21,7 +21,7 @@ data "alicloud_zones" "default" {}
 
 resource "alicloud_vpc" "vpc" {
   cidr_block = "172.16.0.0/16"
-  vpc_name       = "${var.name}"
+  vpc_name   = "${var.name}"
 }
 
 resource "alicloud_vswitch" "vswitch" {

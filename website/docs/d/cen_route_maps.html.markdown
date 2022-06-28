@@ -15,11 +15,10 @@ This data source provides CEN Route Maps available to the user.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_route_maps" "this" {
-  cen_id = "cen-ihdlgo87ai********"
-  ids = [
-  "cenrmap-bnh97kb3mn********"]
+  cen_id             = "cen-ihdlgo87ai********"
+  ids                = ["cen-ihdlgo87ai:cenrmap-bnh97kb3mn********"]
   description_regex  = "datasource_test"
   cen_region_id      = "cn-hangzhou"
   transmit_direction = "RegionIn"
@@ -27,7 +26,7 @@ data "alicloud_cen_route_maps" "this" {
 }
 
 output "first_cen_route_map_id" {
-  value = "${data.alicloud_cen_route_maps.this.maps.0.id}"
+  value = data.alicloud_cen_route_maps.this.maps.0.route_map_id
 }
 ```
 
@@ -36,7 +35,7 @@ output "first_cen_route_map_id" {
 The following arguments are supported:
 
 * `cen_id` - (Required) The ID of the CEN instance.
-* `ids` - (Optional) A list of CEN route map IDs.
+* `ids` - (Optional) A list of CEN route map IDs. Each item formats as `<cen_id>:<route_map_id>`.
 * `status` - (Optional) The status of the route map, including `Creating`, `Active` and `Deleting`.
 * `description_regex` - (Optional) A regex string to filter CEN route map by description.
 * `cen_region_id` - (Optional) The ID of the region to which the CEN instance belongs.
@@ -47,9 +46,9 @@ The following arguments are supported:
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of CEN route map IDs.
+* `ids` - A list of CEN route map IDs. Each item formats as `<cen_id>:<route_map_id>`. Before 1.161.0, its element is `route_map_id`.
 * `maps` - A list of CEN instances. Each element contains the following attributes:
-  * `id` - The ID of the route map.
+  * `id` - The ID of the route map. It formats as `<cen_id>:<route_map_id>`. Before 1.161.0, it is `route_map_id`.
   * `cen_id` - The ID of the CEN instance.
   * `description` - The description of the route map.
   * `status` - The status of the route map.

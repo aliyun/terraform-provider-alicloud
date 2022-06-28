@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -27,7 +29,7 @@ func resourceAlicloudConfigConfigurationRecorder() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  false,
+				Computed: true,
 			},
 			"organization_enable_status": {
 				Type:     schema.TypeString,
@@ -65,8 +67,19 @@ func resourceAlicloudConfigConfigurationRecorderCreate(d *schema.ResourceData, m
 	if v, ok := d.GetOkExists("enterprise_edition"); ok {
 		request["EnterpriseEdition"] = v
 	}
-
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_config_configuration_recorder", action, AlibabaCloudSdkGoERROR)
 	}
@@ -110,8 +123,19 @@ func resourceAlicloudConfigConfigurationRecorderUpdate(d *schema.ResourceData, m
 		if err != nil {
 			return WrapError(err)
 		}
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		addDebug(action, response, request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}

@@ -86,11 +86,11 @@ type CreateSmartAccessGatewayClientUserRequest struct {
 // CreateSmartAccessGatewayClientUserResponse is the response struct for api CreateSmartAccessGatewayClientUser
 type CreateSmartAccessGatewayClientUserResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	ClientIp  string `json:"ClientIp" xml:"ClientIp"`
-	UserMail  string `json:"UserMail" xml:"UserMail"`
 	UserName  string `json:"UserName" xml:"UserName"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	UserMail  string `json:"UserMail" xml:"UserMail"`
 	Bandwidth int    `json:"Bandwidth" xml:"Bandwidth"`
+	ClientIp  string `json:"ClientIp" xml:"ClientIp"`
 }
 
 // CreateCreateSmartAccessGatewayClientUserRequest creates a request to invoke CreateSmartAccessGatewayClientUser API

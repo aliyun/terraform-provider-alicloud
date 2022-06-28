@@ -3,7 +3,7 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: golang, tag: 1.12.10}
+  source: {repository: golang, tag: 1.13.4}
 
 inputs:
   - name: terraform-provider-alicloud
@@ -17,7 +17,7 @@ params:
   ALICLOUD_REGION:       ""
   ALICLOUD_ACCOUNT_ID:   ""
   DING_TALK_TOKEN:       ""
-  BUCKET_NAME:           "terraform-ci"
+  BUCKET_NAME:           "terraform-provider-ci"
   BUCKET_REGION:         "cn-beijing"
   ALICLOUD_RESOURCE_GROUP_ID : ""
   ALICLOUD_WAF_INSTANCE_ID: ""
@@ -25,3 +25,4 @@ params:
   CONCOURSE_TARGET_URL: ""
   CONCOURSE_TARGET_USER: ""
   CONCOURSE_TARGET_PASSWORD: ""
+  TRIGGER_TARGET_PIPELINE: ""

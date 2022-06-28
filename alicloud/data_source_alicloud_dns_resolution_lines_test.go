@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDnsResolutionLinesDataSource(t *testing.T) {
+func TestAccAlicloudAlidnsResolutionLinesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%sdns%v.abc", defaultRegionToTest, rand)
 	testAccConfig := dataSourceTestAccConfigFunc("data.alicloud_dns_resolution_lines.default", name, dataSourceDnsResolutionLinesConfigDependence)

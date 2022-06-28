@@ -8,6 +8,8 @@ import (
 )
 
 func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_elasticsearch_instances.default"
 
@@ -74,10 +76,7 @@ func TestAccAlicloudElasticsearchDataSource(t *testing.T) {
 		existMapFunc: existElasticsearchMapFunc,
 		fakeMapFunc:  fakeElasticsearchMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	elasticsearchCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, descriptionRegexConf, idsConf, tagsConf, allConf)
+	elasticsearchCheckInfo.dataSourceTestCheck(t, rand, descriptionRegexConf, idsConf, tagsConf, allConf)
 }
 
 var existElasticsearchMapFunc = func(rand int) map[string]string {
@@ -111,24 +110,23 @@ var fakeElasticsearchMapFunc = func(rand int) map[string]string {
 
 func dataSourceElasticsearchConfigDependence(name string) string {
 	return fmt.Sprintf(`
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "Elasticsearch"
-}
-
 variable "name" {
   default = "%s"
 }
 
+data "alicloud_elasticsearch_zones" "default" {}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
 data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_zones.default.ids[0]
-  name_regex = "default-tf--testAcc-00"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_elasticsearch_zones.default.ids.0
 }
 
 resource "alicloud_elasticsearch_instance" "default" {
-  description          = "${var.name}"
+  description          = var.name
   password             = "Yourpassword1234"
-  vswitch_id           = "${data.alicloud_vswitches.default.ids.0}"
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
   data_node_amount     = "2"
   data_node_spec       = "elasticsearch.sn2ne.large"
   data_node_disk_size  = "20"

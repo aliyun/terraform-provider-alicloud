@@ -38,7 +38,7 @@ func testSweepCenInstanceAttachment(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-test",
+		"tf_testAcc",
 	}
 
 	request := cbn.CreateDescribeCensRequest()
@@ -115,37 +115,51 @@ func testSweepCenInstanceAttachment(region string) error {
 }
 
 func TestAccAlicloudCenInstanceAttachment_basic(t *testing.T) {
-	var v *cbn.DescribeCenAttachedChildInstanceAttributeResponse
+	var v map[string]interface{}
 	resourceId := "alicloud_cen_instance_attachment.default"
-	var providers []*schema.Provider
-	providerFactories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
-			p := Provider()
-			providers = append(providers, p.(*schema.Provider))
-			return p, nil
-		},
+	ra := resourceAttrInit(resourceId, CenInstanceAttachmentBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	ra := resourceAttrInit(resourceId, cenInstanceAttachmentMap)
-	rand := acctest.RandIntRange(1000000, 9999999)
-	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeCenInstanceAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-CenInstanceAttachment%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenInstanceAttachmentConfigDependence)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
-
 		// module name
-		IDRefreshName:     resourceId,
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckCenInstanceAttachmentDestroyWithProviders(&providers),
-
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCenInstanceAttachmentBasic(rand, defaultRegionToTest),
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":              "${alicloud_cen_instance.default.id}",
+					"child_instance_id":        "${alicloud_vpc.default.id}",
+					"child_instance_type":      "VPC",
+					"child_instance_region_id": defaultRegionToTest,
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckCenInstanceAttachmentExistsWithProviders(resourceId, v, &providers),
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"instance_id":              CHECKSET,
+						"child_instance_id":        CHECKSET,
+						"child_instance_type":      "VPC",
+						"child_instance_region_id": defaultRegionToTest,
+					}),
 				),
+			},
+
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -167,7 +181,7 @@ func TestAccAlicloudCenInstanceAttachment_multi_same_region(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
+			//testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 
 		// module name
@@ -255,8 +269,11 @@ func testAccCenInstanceAttachmentBasic(rand int, region string) string {
 }
 func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string {
 	return fmt.Sprintf(`
+	provider "alicloud" {
+		region = "%[1]s"
+	}
 	variable "name"{
-	    default = "tf-testAcc%sCenInstanceAttachmentBasic-%d"
+	    default = "tf-testAcc%[1]sCenInstanceAttachmentBasic-%d"
 	}
 
 	resource "alicloud_cen_instance" "default" {
@@ -264,30 +281,24 @@ func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string
 	    description = "tf-testAccCenInstanceAttachmentBasicDescription"
 	}
 
-	resource "alicloud_vpc" "default" {
-	    vpc_name = "${var.name}"
-	    cidr_block = "192.168.0.0/16"
-	}
-
-	resource "alicloud_vpc" "default1" {
-	    name = "${var.name}"
-	    cidr_block = "172.16.0.0/12"
+	data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
+	    child_instance_id = data.alicloud_vpcs.default.ids.0
 	    child_instance_type = "VPC"
-	    child_instance_region_id = "%s"
+	    child_instance_region_id = "%[1]s"
 	}
 
 	resource "alicloud_cen_instance_attachment" "default1" {
 	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default1.id}"
+	    child_instance_id = data.alicloud_vpcs.default.ids.0
 	    child_instance_type = "VPC"
-	    child_instance_region_id = "%s"
+	    child_instance_region_id = "%[1]s"
 	}
-	`, region, rand, region, region)
+	`, region, rand)
 }
 
 func testAccCenInstanceAttachmentMultiDifferentRegion(rand int, region string) string {
@@ -307,16 +318,14 @@ provider "alicloud" {
     region = "cn-shanghai"
 }
 
-resource "alicloud_vpc" "default" {
+data "alicloud_vpcs" "default" {
     provider = "alicloud.fra"
-    vpc_name = "${var.name}"
-    cidr_block = "192.168.0.0/16"
+    name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default1" {
+data "alicloud_vpcs" "default1" {
     provider = "alicloud.sh"
-    name = "${var.name}"
-    cidr_block = "172.16.0.0/12"
+    name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -326,14 +335,14 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_id = data.alicloud_vpcs.default.ids.0
 	child_instance_type = "VPC"
     child_instance_region_id = "eu-central-1"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_id = data.alicloud_vpcs.default1.ids.0
 	child_instance_type = "VPC"
     child_instance_region_id = "cn-shanghai"
 }
@@ -417,14 +426,13 @@ func deleteCenInstancAttachmet(id string, client *connectivity.AliyunClient) err
 	if err != nil {
 		return WrapError(err)
 	}
-	cbnService := CbnService{client}
 	request := cbn.CreateDetachCenChildInstanceRequest()
 	request.ChildInstanceId = parts[1]
 	request.ChildInstanceRegionId = parts[3]
 	request.ChildInstanceType = parts[2]
 	request.CenId = parts[0]
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.DetachCenChildInstance(request)
 		})
@@ -437,9 +445,27 @@ func deleteCenInstancAttachmet(id string, client *connectivity.AliyunClient) err
 		}
 		return nil
 	})
-	stateConf := BuildStateConf([]string{}, []string{}, 10*time.Minute, 5*time.Second, cbnService.CenInstanceAttachmentStateRefreshFunc(id, []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return err
+	return err
+}
+func resourceCenInstanceAttachmentConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name"{
+	    default = "%s"
 	}
-	return nil
+
+	resource "alicloud_cen_instance" "default" {
+	    name = "${var.name}"
+	    description = var.name
+	}
+
+	resource "alicloud_vpc" "default" {
+	    vpc_name = "${var.name}"
+	    cidr_block = "192.168.0.0/16"
+	}
+`, name)
+}
+
+var CenInstanceAttachmentBasicMap = map[string]string{
+	"child_instance_owner_id": CHECKSET,
+	"status":                  CHECKSET,
 }

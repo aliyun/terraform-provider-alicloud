@@ -32,6 +32,7 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Custom", "Primary", "Cluster"}, false),
 				Default:      "Custom",
 			},
@@ -73,6 +74,19 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Public", "Private", "Inner"}, false),
 			},
 			"ssl_expire_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_auto_rotate": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+			},
+			"ssl_certificate_url": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"db_endpoint_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -156,6 +170,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(errParse)
 	}
 	dbClusterId := parts[0]
+	dbEndpointId := parts[1]
 	object, err := polarDBService.DescribePolarDBClusterEndpoint(d.Id())
 
 	if err != nil {
@@ -166,6 +181,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("db_cluster_id", dbClusterId)
+	d.Set("db_endpoint_id", dbEndpointId)
 	d.Set("endpoint_type", object.EndpointType)
 	nodes := strings.Split(object.Nodes, ",")
 	d.Set("nodes", nodes)
@@ -186,23 +202,44 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	endpointSslItem, err := polarDBService.DescribePolarDBClusterSSL(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
+	dbClusterSSL, err := polarDBService.DescribePolarDBClusterSSL(d)
 
 	var sslConnectionString string
 	var sslExpireTime string
-	if endpointSslItem == nil {
+	var sslEnabled string
+	if len(dbClusterSSL.Items) < 1 {
 		sslConnectionString = ""
 		sslExpireTime = ""
-
+		sslEnabled = ""
+	} else if len(dbClusterSSL.Items) == 1 && dbClusterSSL.Items[0].DBEndpointId == "" {
+		sslConnectionString = dbClusterSSL.Items[0].SSLConnectionString
+		sslExpireTime = dbClusterSSL.Items[0].SSLExpireTime
+		sslEnabled = convertPolarDBSSLEnableResponse(dbClusterSSL.Items[0].SSLEnabled)
 	} else {
-		sslConnectionString = endpointSslItem.SSLConnectionString
-		sslExpireTime = endpointSslItem.SSLExpireTime
+		for _, item := range dbClusterSSL.Items {
+			if item.DBEndpointId == dbEndpointId {
+				sslConnectionString = item.SSLConnectionString
+				sslExpireTime = item.SSLExpireTime
+				sslEnabled = convertPolarDBSSLEnableResponse(item.SSLEnabled)
+			}
+		}
 	}
-	d.Set("ssl_connection_string", sslConnectionString)
-	d.Set("ssl_expire_time", sslExpireTime)
+	sslAutoRotate := dbClusterSSL.SSLAutoRotate
+
+	if err := d.Set("ssl_connection_string", sslConnectionString); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ssl_expire_time", sslExpireTime); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("ssl_auto_rotate", sslAutoRotate); err != nil {
+		return WrapError(err)
+	}
+	if sslEnabled == "Enable" {
+		d.Set("ssl_certificate_url", "https://apsaradb-public.oss-ap-southeast-1.aliyuncs.com/ApsaraDB-CA-Chain.zip?file=ApsaraDB-CA-Chain.zip&regionId="+polarDBService.client.RegionId)
+	} else {
+		d.Set("ssl_certificate_url", "")
+	}
 	return nil
 }
 
@@ -269,7 +306,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("ssl_enabled") || d.HasChange("net_type") {
+	if d.HasChange("ssl_enabled") || d.HasChange("net_type") || d.HasChange("ssl_auto_rotate") {
 		if d.Get("ssl_enabled") == "" && d.Get("net_type") != "" {
 			return WrapErrorf(Error("Need to specify ssl_enabled as Enable or Disable, if you want to modify the net_type."), DefaultErrorMsg, d.Id(), "ModifyDBClusterSSL", ProviderERROR)
 		}
@@ -278,6 +315,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		modifySSLRequest.NetType = d.Get("net_type").(string)
 		modifySSLRequest.DBClusterId = dbClusterId
 		modifySSLRequest.DBEndpointId = dbEndpointId
+		modifySSLRequest.SSLAutoRotate = d.Get("ssl_auto_rotate").(string)
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
@@ -354,4 +392,12 @@ func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR)
 	}
 	return nil
+}
+
+func convertPolarDBSSLEnableResponse(source string) string {
+	switch source {
+	case "Enabled":
+		return "Enable"
+	}
+	return "Disable"
 }

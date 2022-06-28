@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
+func TestAccAlicloudWAFInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
@@ -94,7 +94,7 @@ func TestAccAlicloudWafInstancesDataSource(t *testing.T) {
 
 	var perCheck = func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithWafInstanceSetting(t)
+		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 
 	wafInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, idsConf, statusConf, instanceSourceConf, resourceGroupIdConf, allConf)

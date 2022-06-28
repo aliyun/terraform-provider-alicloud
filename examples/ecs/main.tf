@@ -48,9 +48,9 @@ data "alicloud_zones" "zones_ds" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  vpc_id            = alicloud_vpc.vpc.id
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = data.alicloud_zones.zones_ds.zones[0].id
+  vpc_id     = alicloud_vpc.vpc.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.zones_ds.zones[0].id
 }
 
 resource "alicloud_instance" "instance" {

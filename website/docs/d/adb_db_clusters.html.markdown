@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_adb_db_clusters" "example" {
-    description_regex = "example"
+  description_regex = "example"
 }
 
 output "first_adb_db_cluster_id" {
@@ -87,3 +87,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `vpc_id` - The vpc id.
 	* `vswitch_id` - The vswitch id.
 	* `zone_id` - The zone ID  of the resource.
+	* `mode` - The lock mode of the cluster.	

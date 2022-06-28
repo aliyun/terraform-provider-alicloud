@@ -38,6 +38,7 @@ shared:
       CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
       CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
       CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
+      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
 
 jobs:
   - name: build-terraform-provider-package

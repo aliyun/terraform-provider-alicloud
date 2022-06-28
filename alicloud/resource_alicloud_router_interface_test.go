@@ -145,7 +145,7 @@ func testAccCheckRouterInterfaceDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudRouterInterfaceBasic(t *testing.T) {
+func TestAccAlicloudVPCRouterInterfaceBasic(t *testing.T) {
 	var v vpc.RouterInterfaceType
 	resourceId := "alicloud_router_interface.default"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceCheckMap)
@@ -233,7 +233,7 @@ func TestAccAlicloudRouterInterfaceBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudRouterInterfaceMulti(t *testing.T) {
+func TestAccAlicloudVPCRouterInterfaceMulti(t *testing.T) {
 	var v vpc.RouterInterfaceType
 	resourceId := "alicloud_router_interface.default.2"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceCheckMap)

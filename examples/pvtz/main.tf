@@ -11,7 +11,7 @@ resource "alicloud_pvtz_zone_record" "main" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = var.long_name
+  vpc_name   = var.long_name
   cidr_block = var.vpc_cidr
 }
 

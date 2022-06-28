@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func SkipTestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
+func TestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_dns_instances.default"
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, "", dataSourceAlidnsInstancesConfigDependence)
@@ -31,6 +31,8 @@ func SkipTestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
 			"instances.0.instance_id":    CHECKSET,
 			"instances.0.version_code":   "version_personal",
 			"instances.0.version_name":   CHECKSET,
+			"instances.0.payment_type":   "Subscription",
+			"instances.0.domain":         "",
 		}
 	}
 
@@ -48,6 +50,11 @@ func SkipTestAccAlicloudAlidnsInstancesDataSource(t *testing.T) {
 	}
 
 	AlidnsInstancesCheckInfo.dataSourceTestCheck(t, rand, idsConf)
+	preCheck := func() {
+		testAccPreCheck(t)
+		testAccPreCheckWithTime(t, []int{1})
+	}
+	AlidnsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, idsConf)
 }
 
 func dataSourceAlidnsInstancesConfigDependence(name string) string {

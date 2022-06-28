@@ -38,9 +38,10 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 			},
 
 			"servers": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true, // The Computed can not be removed and it used to meet scenario when using alicloud_ess_scalinggroup_vserver_groups
+				Deprecated: "Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"server_ids": {

@@ -91,6 +91,7 @@ type CreateDBClusterRequest struct {
 	ClientToken                            string           `position:"Query" name:"ClientToken"`
 	DefaultTimeZone                        string           `position:"Query" name:"DefaultTimeZone"`
 	ClusterNetworkType                     string           `position:"Query" name:"ClusterNetworkType"`
+	ParameterGroupId                       string           `position:"Query" name:"ParameterGroupId"`
 	Engine                                 string           `position:"Query" name:"Engine"`
 	GDNId                                  string           `position:"Query" name:"GDNId"`
 	ResourceOwnerAccount                   string           `position:"Query" name:"ResourceOwnerAccount"`
@@ -107,9 +108,9 @@ type CreateDBClusterRequest struct {
 type CreateDBClusterResponse struct {
 	*responses.BaseResponse
 	RequestId       string `json:"RequestId" xml:"RequestId"`
+	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 	DBClusterId     string `json:"DBClusterId" xml:"DBClusterId"`
 	OrderId         string `json:"OrderId" xml:"OrderId"`
-	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateCreateDBClusterRequest creates a request to invoke CreateDBCluster API

@@ -83,9 +83,9 @@ type DescribeSagManagementPortRequest struct {
 type DescribeSagManagementPortResponse struct {
 	*responses.BaseResponse
 	RequestId  string      `json:"RequestId" xml:"RequestId"`
+	Gateway    string      `json:"Gateway" xml:"Gateway"`
 	IP         string      `json:"IP" xml:"IP"`
 	Mask       string      `json:"Mask" xml:"Mask"`
-	Gateway    string      `json:"Gateway" xml:"Gateway"`
 	TaskStates []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 

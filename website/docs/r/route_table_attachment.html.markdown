@@ -66,7 +66,7 @@ The following attributes are exported:
 
 ## Import
 
-The route table attachemnt can be imported using the id, e.g.
+The route table attachment can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_route_table_attachment.foo vtb-abc123456:vsw-abc123456

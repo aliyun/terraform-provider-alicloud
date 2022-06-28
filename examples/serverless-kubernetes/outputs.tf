@@ -27,6 +27,6 @@ output "endpoint_public_access_enabled" {
 
 output "security_group_id" {
   description = "The ID of security group where the current cluster worker node is located."
-  value = alicloud_cs_serverless_kubernetes.serverless.security_group_id
+  value       = alicloud_cs_serverless_kubernetes.serverless.security_group_id
 }
 

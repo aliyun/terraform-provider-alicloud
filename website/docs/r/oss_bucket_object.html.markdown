@@ -44,8 +44,8 @@ resource "alicloud_oss_bucket_object" "object-content" {
 
 The following arguments are supported:
 
-* `bucket` - (Required) The name of the bucket to put the file in.
-* `key` - (Required) The name of the object once it is in the bucket.
+* `bucket` - (Required, ForceNew) The name of the bucket to put the file in.
+* `key` - (Required, ForceNew) The name of the object once it is in the bucket.
 * `source` - (Optional) The path to the source file being uploaded to the bucket.
 * `content` - (Optional unless `source` given) The literal content being uploaded to the bucket.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/52284.htm) to apply. Defaults to "private".

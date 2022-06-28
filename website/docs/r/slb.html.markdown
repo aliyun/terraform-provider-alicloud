@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb"
 sidebar_current: "docs-alicloud-resource-slb"
@@ -8,6 +8,8 @@ description: |-
 ---
 
 # alicloud\_slb
+
+-> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer) from version 1.123.1.
 
 Provides an Application Load Balancer resource.
 
@@ -107,5 +109,5 @@ The following attributes are exported:
 Load balancer can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_slb.example lb-abc123456
+$ terraform import alicloud_slb_load_balancer.example lb-abc123456
 ```

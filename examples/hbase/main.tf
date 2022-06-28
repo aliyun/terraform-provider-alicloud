@@ -17,10 +17,10 @@ resource "alicloud_hbase_instance" "default" {
   duration               = var.duration
   auto_renew             = var.auto_renew
   vswitch_id             = var.vswitch_id
-  cold_storage_size        = var.cold_storage_size
-  maintain_start_time     = var.maintain_start_time
-  maintain_end_time     = var.maintain_end_time
-  deletion_protection     = var.deletion_protection
-  immediate_delete_flag    = var.immediate_delete_flag
-  ip_white                = var.ip_white
+  cold_storage_size      = var.cold_storage_size
+  maintain_start_time    = var.maintain_start_time
+  maintain_end_time      = var.maintain_end_time
+  deletion_protection    = var.deletion_protection
+  immediate_delete_flag  = var.immediate_delete_flag
+  ip_white               = var.ip_white
 }

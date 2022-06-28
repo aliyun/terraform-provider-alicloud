@@ -33,7 +33,6 @@ func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -117,7 +116,6 @@ func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name

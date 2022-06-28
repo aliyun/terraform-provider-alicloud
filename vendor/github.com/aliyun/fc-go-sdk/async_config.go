@@ -10,6 +10,7 @@ import (
 
 // AsyncConfig represents the async configuration.
 type AsyncConfig struct {
+	StatefulInvocation        *bool              `json:"statefulInvocation"`
 	DestinationConfig         *DestinationConfig `json:"destinationConfig"`
 	MaxAsyncEventAgeInSeconds *int64             `json:"maxAsyncEventAgeInSeconds"`
 	MaxAsyncRetryAttempts     *int64             `json:"maxAsyncRetryAttempts"`
@@ -17,11 +18,11 @@ type AsyncConfig struct {
 
 // AsyncConfigResponse defines the detail async config object
 type AsyncConfigResponse struct {
-	Service                   *string            `json:"service"`
-	Function                  *string            `json:"function"`
-	CreatedTime               *string            `json:"createdTime"`
-	Qualifier                 *string            `json:"qualifier"`
-	LastModifiedTime          *string            `json:"lastModifiedTime"`
+	Service          *string `json:"service"`
+	Function         *string `json:"function"`
+	CreatedTime      *string `json:"createdTime"`
+	Qualifier        *string `json:"qualifier"`
+	LastModifiedTime *string `json:"lastModifiedTime"`
 	AsyncConfig
 }
 
@@ -174,7 +175,6 @@ func (o GetFunctionAsyncInvokeConfigOutput) GetRequestID() string {
 	return GetRequestID(o.Header)
 }
 
-
 // DeleteFunctionAsyncInvokeConfigInput defines function creation input
 type DeleteFunctionAsyncInvokeConfigInput struct {
 	ServiceName  *string `json:"serviceName"`
@@ -243,8 +243,8 @@ func (o DeleteFunctionAsyncInvokeConfigOutput) GetRequestID() string {
 // ListFunctionAsyncInvokeConfigsOutput defines ListFunctionAsyncInvokeConfigsOutput result
 type ListFunctionAsyncInvokeConfigsOutput struct {
 	Header    http.Header
-	Configs  []*AsyncConfigResponse `json:"configs"`
-	NextToken *string               `json:"nextToken,omitempty"`
+	Configs   []*AsyncConfigResponse `json:"configs"`
+	NextToken *string                `json:"nextToken,omitempty"`
 }
 
 func (o ListFunctionAsyncInvokeConfigsOutput) String() string {
@@ -261,13 +261,13 @@ func (o ListFunctionAsyncInvokeConfigsOutput) GetRequestID() string {
 type ListFunctionAsyncInvokeConfigsInput struct {
 	ServiceName  *string `json:"serviceName"`
 	FunctionName *string `json:"functionName"`
-	NextToken *string
-	Limit     *int32
+	NextToken    *string
+	Limit        *int32
 }
 
 func NewListFunctionAsyncInvokeConfigsInput(serviceName, functionName string) *ListFunctionAsyncInvokeConfigsInput {
 	return &ListFunctionAsyncInvokeConfigsInput{
-		ServiceName: &serviceName,
+		ServiceName:  &serviceName,
 		FunctionName: &functionName,
 	}
 }

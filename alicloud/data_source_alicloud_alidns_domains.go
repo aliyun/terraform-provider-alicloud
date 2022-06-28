@@ -243,7 +243,7 @@ func dataSourceAlicloudAlidnsDomainsRead(d *schema.ResourceData, meta interface{
 	}
 	request.PageSize = requests.NewInteger(PageSizeLarge)
 	request.PageNumber = requests.NewInteger(1)
-	var objects []alidns.Domain
+	var objects []alidns.DomainInDescribeDomains
 	var domainNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("domain_name_regex"); ok {
 		r, err := regexp.Compile(v.(string))

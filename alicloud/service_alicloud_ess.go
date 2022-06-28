@@ -2,9 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -150,9 +155,67 @@ func (s *EssService) WaitForEssNotification(id string, status Status, timeout in
 	}
 }
 
+func (s *EssService) ActivityStateRefreshFunc(activityId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+
+		request := ess.CreateDescribeScalingActivitiesRequest()
+		request.ScalingActivityId = &[]string{activityId}
+		request.RegionId = s.client.RegionId
+		raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DescribeScalingActivities(request)
+		})
+		if e != nil {
+			return nil, "", WrapErrorf(e, activityId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		response, _ := raw.(*ess.DescribeScalingActivitiesResponse)
+		for _, v := range response.ScalingActivities.ScalingActivity {
+			if v.ScalingActivityId == activityId {
+				for _, failState := range failStates {
+					if fmt.Sprint(v.StatusCode) == failState {
+						return v, fmt.Sprint(v.StatusCode), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(v.StatusCode)))
+					}
+				}
+				return v, fmt.Sprint(v.StatusCode), nil
+			}
+		}
+		return nil, "", Error("activity not found")
+	}
+}
+
+func (s *EssService) DescribeEssScalingGroupById(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEssClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := map[string]interface{}{
+		"ScalingGroupId.1": id,
+		"RegionId":         s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("DescribeScalingGroups"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingGroups", AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.ScalingGroups.ScalingGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingGroups.ScalingGroup", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingGroups", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+
+}
+
+// Deprecated: Use method DescribeEssScalingGroupById instead.
 func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup, err error) {
 	request := ess.CreateDescribeScalingGroupsRequest()
-	request.ScalingGroupId1 = id
+	request.ScalingGroupId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingGroups(request)
@@ -172,9 +235,45 @@ func (s *EssService) DescribeEssScalingGroup(id string) (group ess.ScalingGroup,
 	return
 }
 
+func (s *EssService) DescribeEssScalingGroupSuspendProcess(id string) (object map[string]interface{}, err error) {
+	strs, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	idExist := false
+	scalingGroupId, processTemp := strs[0], strs[1]
+	request := ess.CreateDescribeScalingGroupsRequest()
+	request.ScalingGroupId = &[]string{scalingGroupId}
+	request.RegionId = s.client.RegionId
+	raw, e := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingGroups(request)
+	})
+	if e != nil {
+		err = WrapErrorf(e, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ess.DescribeScalingGroupsResponse)
+	for _, v := range response.ScalingGroups.ScalingGroup {
+		if v.ScalingGroupId == scalingGroupId {
+			process := v.SuspendedProcesses.SuspendedProcess
+			for i := 0; i < len(process); i++ {
+				if strings.EqualFold(processTemp, process[i]) {
+					idExist = true
+					return object, nil
+				}
+			}
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EssScalingGroup", id)), NotFoundWithResponse, response)
+	}
+	return
+}
+
 func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
-	request.ScalingConfigurationId1 = id
+	request.ScalingConfigurationId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingConfigurations(request)
@@ -193,6 +292,35 @@ func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.Scal
 
 	err = GetNotFoundErrorFromString(GetNotFoundMessage("Scaling Configuration", id))
 	return
+}
+
+func (s *EssService) DescribeEssEciScalingConfiguration(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEssClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := map[string]interface{}{
+		"ScalingConfigurationId.1": id,
+		"RegionId":                 s.client.RegionId,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("DescribeEciScalingConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeEciScalingConfigurations", AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.ScalingConfigurations", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingConfigurations", response)
+	}
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EciScalingConfiguration", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *EssService) ActiveEssScalingConfiguration(sgId, id string) error {
@@ -250,6 +378,20 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 			"disk_name":               i.DiskName,
 			"description":             i.Description,
 			"auto_snapshot_policy_id": i.AutoSnapshotPolicyId,
+			"performance_level":       i.PerformanceLevel,
+		}
+		result = append(result, l)
+	}
+	return result
+}
+
+func (s *EssService) flattenSpotPriceLimitMappings(list []ess.SpotPriceModel) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+	for _, i := range list {
+		p, _ := strconv.ParseFloat(strconv.FormatFloat(i.PriceLimit, 'f', 2, 64), 64)
+		l := map[string]interface{}{
+			"instance_type": i.InstanceType,
+			"price_limit":   p,
 		}
 		result = append(result, l)
 	}
@@ -280,7 +422,7 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
-	request.ScalingRuleId1 = id
+	request.ScalingRuleId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScalingRules(request)
@@ -327,7 +469,7 @@ func (s *EssService) WaitForEssScalingRule(id string, status Status, timeout int
 
 func (s *EssService) DescribeEssScheduledTask(id string) (task ess.ScheduledTask, err error) {
 	request := ess.CreateDescribeScheduledTasksRequest()
-	request.ScheduledTaskId1 = id
+	request.ScheduledTaskId = &[]string{id}
 	request.RegionId = s.client.RegionId
 	raw, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.DescribeScheduledTasks(request)
@@ -377,12 +519,8 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	request := ess.CreateDescribeScalingInstancesRequest()
 	request.RegionId = srv.client.RegionId
 	request.ScalingGroupId = id
-	s := reflect.ValueOf(request).Elem()
-
 	if len(instanceIds) > 0 {
-		for i, id := range instanceIds {
-			s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-		}
+		request.InstanceId = &instanceIds
 	}
 
 	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -602,4 +740,84 @@ func (s *EssService) WaitForEssAlarm(id string, status Status, timeout int) erro
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.AlarmTaskId, id, ProviderERROR)
 		}
 	}
+}
+
+func (s *EssService) SetResourceTags(d *schema.ResourceData, scalingGroupId string, client *connectivity.AliyunClient) error {
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+
+		// untag resources
+		if len(removed) > 0 {
+			removedTagKeys := make([]string, 0)
+			for _, v := range removed {
+				if !ignoredTags(v, "") {
+					removedTagKeys = append(removedTagKeys, v)
+				}
+			}
+			untagRequest := ess.CreateUntagResourcesRequest()
+			resourceId := []string{scalingGroupId}
+			untagRequest.ResourceId = &resourceId
+			untagRequest.ResourceType = "scalinggroup"
+			untagRequest.TagKey = &removedTagKeys
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.UntagResources(untagRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), untagRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(untagRequest.GetActionName(), raw, untagRequest.RpcRequest, untagRequest)
+		}
+
+		// tag resources
+		if len(added) > 0 {
+			tagRequest := ess.CreateTagResourcesRequest()
+			resourceId := []string{scalingGroupId}
+			tagRequest.ResourceId = &resourceId
+			tagRequest.ResourceType = "scalinggroup"
+			tags := make([]ess.TagResourcesTag, 0)
+			for k, v := range added {
+				if !ignoredTags(v.(string), "") {
+					tags = append(tags, ess.TagResourcesTag{
+						Key:   k,
+						Value: v.(string),
+					})
+				}
+			}
+			tagRequest.Tag = &tags
+			raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.TagResources(tagRequest)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), tagRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(tagRequest.GetActionName(), raw, tagRequest.RpcRequest, tagRequest)
+		}
+	}
+	return nil
+}
+
+func (s *EssService) ListTagResources(scalingGroupId string, client *connectivity.AliyunClient) (object interface{}, err error) {
+	listTagsRequest := ess.CreateListTagResourcesRequest()
+	listTagsRequest.ResourceType = "scalinggroup"
+	resourceIds := []string{scalingGroupId}
+	listTagsRequest.ResourceId = &resourceIds
+	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.ListTagResources(listTagsRequest)
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, scalingGroupId, listTagsRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(listTagsRequest.GetActionName(), raw, listTagsRequest.RpcRequest, listTagsRequest)
+
+	response, _ := raw.(*ess.ListTagResourcesResponse)
+
+	tags := make([]interface{}, 0)
+	for _, v := range response.TagResources.TagResource {
+		tags = append(tags, map[string]interface{}{
+			"TagKey":   v.TagKey,
+			"TagValue": v.TagValue,
+		})
+	}
+	return tags, nil
 }

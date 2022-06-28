@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
+func TestAccAlicloudADBDbClustersDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	nameConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAdbDbClusterDataSourceConfig(rand, map[string]string{
@@ -68,24 +68,26 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 			"ids.#":                          "1",
 			"descriptions.#":                 "1",
 			"clusters.#":                     "1",
+			"total_count":                    CHECKSET,
 			"clusters.0.id":                  CHECKSET,
 			"clusters.0.description":         CHECKSET,
 			"clusters.0.payment_type":        "PayAsYouGo",
 			"clusters.0.charge_type":         "PostPaid",
 			"clusters.0.region_id":           CHECKSET,
-			"clusters.0.expired":             "false",
+			"clusters.0.expired":             CHECKSET,
 			"clusters.0.lock_mode":           "Unlock",
 			"clusters.0.create_time":         CHECKSET,
 			"clusters.0.db_cluster_version":  "3.0",
 			"clusters.0.db_node_class":       "E8",
 			"clusters.0.db_node_count":       "1",
-			"clusters.0.db_node_storage":     "300",
+			"clusters.0.db_node_storage":     CHECKSET,
 			"clusters.0.compute_resource":    "8Core32GB",
 			"clusters.0.elastic_io_resource": "0",
 			"clusters.0.zone_id":             CHECKSET,
 			"clusters.0.db_cluster_category": "MixedStorage",
 			"clusters.0.maintain_time":       "23:00Z-00:00Z",
 			"clusters.0.security_ips.#":      "2",
+			"clusters.0.mode":                "flexible",
 		}
 	}
 
@@ -103,12 +105,7 @@ func TestAccAlicloudAdbDbClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAdbClusterMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheckWithNoDefaultVswitch(t)
-	}
-
-	AdbClusterCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameConf, statusConf, tagsConf, allConf)
+	AdbClusterCheckInfo.dataSourceTestCheck(t, rand, nameConf, statusConf, tagsConf, allConf)
 }
 
 func testAccCheckAlicloudAdbDbClusterDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -125,6 +122,9 @@ variable "creation" {
 variable "name" {
 	default = "tf-testAccADBConfig_%d"
 }
+data "alicloud_resource_manager_resource_groups" "default" {
+  name_regex = "default"
+}
 
 resource "alicloud_adb_db_cluster" "default" {
   db_cluster_category = "MixedStorage"
@@ -138,7 +138,7 @@ resource "alicloud_adb_db_cluster" "default" {
     Created = "TF-update"
     For     = "acceptance-test-update"
   }
-  resource_group_id = "rg-aek2s7ylxx66kca"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   security_ips      = ["10.168.1.12", "10.168.1.11"]
 }
 

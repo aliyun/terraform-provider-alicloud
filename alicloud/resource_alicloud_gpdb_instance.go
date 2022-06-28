@@ -24,7 +24,8 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -69,14 +70,12 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			"engine": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"gpdb"}, false),
-				Optional:     true,
-				Computed:     true,
+				Required:     true,
 				ForceNew:     true,
 			},
 			"engine_version": {
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
@@ -104,17 +103,22 @@ func resourceAlicloudGpdbInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("engine_version", instance.EngineVersion)
 	d.Set("status", instance.DBInstanceStatus)
 	d.Set("description", instance.DBInstanceDescription)
-	d.Set("instance_class", instance.DBInstanceClass)
-	d.Set("instance_group_count", instance.DBInstanceGroupCount)
 	d.Set("instance_network_type", instance.InstanceNetworkType)
 	security_ips, err := gpdbService.DescribeGpdbSecurityIps(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("security_ip_list", security_ips)
-	d.Set("create_time", instance.CreationTime)
-	d.Set("instance_charge_type", instance.PayType)
 	d.Set("tags", gpdbService.tagsToMap(instance.Tags.Tag))
+	d.Set("instance_charge_type", convertGpdbPayTypeResponse(instance.PayType))
+
+	object, err := gpdbService.DescribeDBInstanceAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("instance_class", object.DBInstanceClass)
+	d.Set("instance_group_count", object.DBInstanceGroupCount)
+	d.Set("create_time", object.CreationTime)
 
 	return nil
 }
@@ -209,13 +213,13 @@ func resourceAlicloudGpdbInstanceDelete(d *schema.ResourceData, meta interface{}
 	request.RegionId = client.RegionId
 	request.DBInstanceId = d.Id()
 
-	err := resource.Retry(10*5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		raw, err := client.WithGpdbClient(func(client *gpdb.Client) (interface{}, error) {
 			return client.DeleteDBInstance(request)
 		})
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus", "IncorrectDBState"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -238,14 +242,13 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request := gpdb.CreateCreateDBInstanceRequest()
 	request.RegionId = string(client.Region)
 	request.ZoneId = Trim(d.Get("availability_zone").(string))
-	request.PayType = d.Get("instance_charge_type").(string)
 	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
 	request.DBInstanceDescription = d.Get("description").(string)
 	request.DBInstanceClass = Trim(d.Get("instance_class").(string))
 	request.DBInstanceGroupCount = Trim(d.Get("instance_group_count").(string))
 	request.Engine = Trim(d.Get("engine").(string))
 	request.EngineVersion = Trim(d.Get("engine_version").(string))
-
+	request.PayType = convertGpdbPayTypeRequest(d.Get("instance_charge_type").(string))
 	// Instance NetWorkType
 	request.InstanceNetworkType = string(Classic)
 	if request.VSwitchId != "" {
@@ -281,4 +284,24 @@ func buildGpdbCreateRequest(d *schema.ResourceData, meta interface{}) (*gpdb.Cre
 	request.ClientToken = buildClientToken(request.GetActionName())
 
 	return request, nil
+}
+
+func convertGpdbPayTypeRequest(source string) string {
+	switch source {
+	case string(PostPaid):
+		return string(Postpaid)
+	case string(PrePaid):
+		return string(Prepaid)
+	}
+	return source
+}
+
+func convertGpdbPayTypeResponse(source string) string {
+	switch source {
+	case string(Postpaid):
+		return string(PostPaid)
+	case string(Prepaid):
+		return string(PrePaid)
+	}
+	return source
 }

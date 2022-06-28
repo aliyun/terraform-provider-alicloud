@@ -11,6 +11,7 @@ import (
 )
 
 func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEciContainerGroupsDataSourceName(rand, map[string]string{
@@ -95,7 +96,7 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			"groups.0.container_group_id":                  CHECKSET,
 			"groups.0.container_group_name":                CHECKSET,
 			"groups.0.containers.#":                        "1",
-			"groups.0.containers.0.image":                  "registry-vpc.cn-beijing.aliyuncs.com/eci_open/nginx:alpine",
+			"groups.0.containers.0.image":                  fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
 			"groups.0.containers.0.name":                   "nginx",
 			"groups.0.containers.0.image_pull_policy":      "IfNotPresent",
 			"groups.0.containers.0.volume_mounts.#":        "1",
@@ -106,7 +107,7 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 			"groups.0.host_aliases.#":                      "1",
 			"groups.0.init_containers.#":                   "1",
 			"groups.0.init_containers.0.name":              "init-busybox",
-			"groups.0.init_containers.0.image":             "registry-vpc.cn-beijing.aliyuncs.com/eci_open/busybox:1.30",
+			"groups.0.init_containers.0.image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
 			"groups.0.init_containers.0.image_pull_policy": "IfNotPresent",
 			"groups.0.memory":                              "4",
 			"groups.0.resource_group_id":                   CHECKSET,
@@ -129,10 +130,7 @@ func TestAccAlicloudEciContainerGroupsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudEciContainerGroupsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudEciContainerGroupsDataSourceNameMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.EciContainerGroupRegions)
-	}
-	alicloudEciContainerGroupsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, allConf)
+	alicloudEciContainerGroupsCheckInfo.dataSourceTestCheck(t, rand, idsConf, resourceGroupIdConf, tagsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEciContainerGroupsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -146,11 +144,11 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
-  name        = "test-eci-group"
+  name        = var.name
   description = "tf-eci-image-test"
   vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
 }
@@ -168,7 +166,7 @@ resource "alicloud_eci_container_group" "default" {
   # containers
   #################################
   containers {
-    image             = "registry-vpc.cn-beijing.aliyuncs.com/eci_open/nginx:alpine"
+    image             = "registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine"
     name              = "nginx"
     working_dir       = "/tmp/nginx"
     image_pull_policy = "IfNotPresent"
@@ -197,7 +195,7 @@ resource "alicloud_eci_container_group" "default" {
   #################################
   init_containers {
     name              = "init-busybox"
-    image             = "registry-vpc.cn-beijing.aliyuncs.com/eci_open/busybox:1.30"
+    image             = "registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30"
     image_pull_policy = "IfNotPresent"
     commands          = ["echo"]
     args              = ["hello initcontainer"]
@@ -216,6 +214,6 @@ data "alicloud_eci_container_groups" "default" {
 	enable_details = true
 	%s	
 }
-`, rand, strings.Join(pairs, " \n "))
+`, rand, defaultRegionToTest, defaultRegionToTest, strings.Join(pairs, " \n "))
 	return config
 }

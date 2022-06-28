@@ -76,7 +76,11 @@ The following arguments are supported:
 * `compress_type` - (Optional, available in 1.69.0+) The compress type of instance policy. Valid values are `1`, `4`, `8`.
 * `archive_backup_retention_period` - (Optional, available in 1.69.0+) Instance archive backup retention days. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values: [30-1095], and `archive_backup_retention_period` must larger than `backup_retention_period` 730.
 * `archive_backup_keep_count` - (Optional, available in 1.69.0+) Instance archive backup keep count. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. When `archive_backup_keep_policy` is `ByMonth` Valid values: [1-31]. When `archive_backup_keep_policy` is `ByWeek` Valid values: [1-7].
-* `archive_backup_keep_policy` - (Optional, available in 1.69.0+) Instance archive backup keep policy. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values are `ByMonth`, `Disable`, `KeepAll`.
+* `archive_backup_keep_policy` - (Optional, available in 1.69.0+) Instance archive backup keep policy. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values are `ByMonth`, `ByWeek`, `KeepAll`.
+* `released_keep_policy` - (Optional, available in 1.147.0+) The policy based on which ApsaraDB RDS retains archived backup files if the instance is released. Default value: None. Valid values:
+  * **None**: No archived backup files are retained.
+  * **Lastest**: Only the most recent archived backup file is retained.
+  * **All**: All archived backup files are retained.
 
 -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
 

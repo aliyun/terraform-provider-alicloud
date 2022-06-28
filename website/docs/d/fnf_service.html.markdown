@@ -19,7 +19,7 @@ For information about Fnf and how to use it, see [What is Fnf](https://www.aliba
 
 ```terraform
 data "alicloud_fnf_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

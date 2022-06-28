@@ -72,11 +72,13 @@ func (client *Client) CreateHostAvailabilityWithCallback(request *CreateHostAvai
 type CreateHostAvailabilityRequest struct {
 	*requests.RpcRequest
 	TaskOptionHttpMethod               string                                             `position:"Query" name:"TaskOption.HttpMethod"`
+	TaskOptionHttpHeader               string                                             `position:"Query" name:"TaskOption.HttpHeader"`
 	AlertConfigEscalationList          *[]CreateHostAvailabilityAlertConfigEscalationList `position:"Query" name:"AlertConfigEscalationList"  type:"Repeated"`
 	TaskName                           string                                             `position:"Query" name:"TaskName"`
 	AlertConfigSilenceTime             requests.Integer                                   `position:"Query" name:"AlertConfig.SilenceTime"`
 	TaskOptionHttpResponseCharset      string                                             `position:"Query" name:"TaskOption.HttpResponseCharset"`
 	TaskOptionHttpNegative             requests.Boolean                                   `position:"Query" name:"TaskOption.HttpNegative"`
+	TaskOptionInterval                 requests.Integer                                   `position:"Query" name:"TaskOption.Interval"`
 	AlertConfigNotifyType              requests.Integer                                   `position:"Query" name:"AlertConfig.NotifyType"`
 	TaskOptionTelnetOrPingHost         string                                             `position:"Query" name:"TaskOption.TelnetOrPingHost"`
 	TaskOptionHttpResponseMatchContent string                                             `position:"Query" name:"TaskOption.HttpResponseMatchContent"`
@@ -105,9 +107,9 @@ type CreateHostAvailabilityResponse struct {
 	*responses.BaseResponse
 	Code      string `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
-	Success   bool   `json:"Success" xml:"Success"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    int64  `json:"TaskId" xml:"TaskId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateHostAvailabilityRequest creates a request to invoke CreateHostAvailability API
@@ -115,7 +117,7 @@ func CreateCreateHostAvailabilityRequest() (request *CreateHostAvailabilityReque
 	request = &CreateHostAvailabilityRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateHostAvailability", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateHostAvailability", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

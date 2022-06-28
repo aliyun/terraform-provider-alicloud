@@ -30,8 +30,8 @@ func testSweepAccountAliases(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	request := ram.CreateGetAccountAliasRequest()
@@ -72,7 +72,7 @@ func testSweepAccountAliases(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamAccountAlias_basic(t *testing.T) {
+func TestAccAlicloudRAMAccountAlias_basic(t *testing.T) {
 	randInt := acctest.RandIntRange(1000, 9999)
 	var v *ram.GetAccountAliasResponse
 	resourceId := "alicloud_ram_account_alias.default"

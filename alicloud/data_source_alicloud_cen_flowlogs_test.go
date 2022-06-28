@@ -11,7 +11,9 @@ import (
 	"fmt"
 )
 
-func TestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
+func SkipTestAccAlicloudCenFlowlogsDataSource(t *testing.T) {
+	// flow log has been offline
+	t.Skip("From January 30, 2022, the cloud enterprise network will take the old console flow log function offline. If you need to continue to use the flow log function, you can enter the new version console to use the flow log function of the enterprise version forwarding router. The Enterprise Edition Forwarding Router Flow Log feature provides the same capabilities as the Legacy Console Flow Log feature")
 	rand := acctest.RandIntRange(1000000, 99999999)
 	cenIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenFlowlogsDataSourceConfig(rand, map[string]string{

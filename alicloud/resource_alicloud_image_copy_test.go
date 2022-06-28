@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -13,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudImageCopyBasic(t *testing.T) {
+func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 	var v ecs.Image
 
 	resourceId := "alicloud_image_copy.default"
@@ -43,7 +44,7 @@ func TestAccAliCloudImageCopyBasic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"provider":         "alicloud.sh",
 					"source_image_id":  "${alicloud_image.default.id}",
-					"source_region_id": "cn-hangzhou",
+					"source_region_id": os.Getenv("ALICLOUD_REGION"),
 					"description":      fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 					"image_name":       name,
 					"tags": map[string]string{
@@ -211,42 +212,43 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "default" {
-    provider = "alicloud.hz"
  	cpu_core_count    = 1
 	memory_size       = 2
 }
 data "alicloud_images" "default" {
-  provider = "alicloud.hz"
-  name_regex  = "^ubuntu"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
-resource "alicloud_vpc" "default" {
-  provider = "alicloud.hz"
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
-  provider = "alicloud.hz"
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vswitch_name              = "${var.name}"
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 resource "alicloud_security_group" "default" {
-  provider = "alicloud.hz"
   name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_instance" "default" {
-  provider = "alicloud.hz"
   image_id = "${data.alicloud_images.default.ids[0]}"
   instance_type = "${data.alicloud_instance_types.default.ids[0]}"
   security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = local.vswitch_id
   instance_name = "${var.name}"
 }
 resource "alicloud_image" "default" {
-  provider = "alicloud.hz"
   instance_id = "${alicloud_instance.default.id}"
   image_name        = "${var.name}"
 }

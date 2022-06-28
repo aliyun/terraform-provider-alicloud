@@ -18,13 +18,13 @@ Provides an ALIKAFKA instance resource.
 -> **NOTE:** Only the following regions support create alikafka pre paid instance.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
--> **NOTE:** Only the following regions support create alikafka post paid instance(International account is not support to buy post paid instance currently). 
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
+-> **NOTE:** Only the following regions support create alikafka post paid instance. 
+[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 ## Example Usage
 
 Basic Usage
 
-```
+```terraform
 variable "instance_name" {
   default = "alikafkaInstanceName"
 }
@@ -38,19 +38,24 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name        = var.instance_name
-  topic_quota = "50"
-  disk_type   = "1"
-  disk_size   = "500"
-  deploy_type = "4"
-  io_max      = "20"
-  vswitch_id  = alicloud_vswitch.default.id
+  name           = var.instance_name
+  topic_quota    = "50"
+  disk_type      = "1"
+  disk_size      = "500"
+  deploy_type    = "4"
+  io_max         = "20"
+  vswitch_id     = alicloud_vswitch.default.id
+  security_group = alicloud_security_group.default.id
 }
 ```
 
@@ -59,12 +64,14 @@ resource "alicloud_alikafka_instance" "default" {
 The following arguments are supported:
 
 * `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
-* `topic_quota` - (Required) The max num of topic can be create of the instance. When modify this value, it only adjust to a greater value.
+* `topic_quota` - (Required) The max num of topic can be creation of the instance. When modify this value, it only adjusts to a greater value.
 * `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
-* `disk_size` - (Required) The disk size of the instance. When modify this value, it only support adjust to a greater value.
-* `deploy_type` - (Required, ForceNew) The deploy type of the instance. Currently only support two deploy type, 4: eip/vpc instance, 5: vpc instance.
+* `disk_size` - (Required) The disk size of the instance. When modify this value, it only supports adjust to a greater value.
+* `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
+  - 4: eip/vpc instance
+  - 5: vpc instance.
 * `io_max` - (Required) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
-* `eip_max` - (Optional) The max bandwidth of the instance. When modify this value, it only support adjust to a greater value.
+* `eip_max` - (Optional) The max bandwidth of the instance. It will be ignored when `deploy_type = 5`. When modify this value, it only supports adjust to a greater value.
 * `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.

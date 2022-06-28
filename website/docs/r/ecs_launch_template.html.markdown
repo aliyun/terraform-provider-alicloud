@@ -21,69 +21,69 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_launch_template" "default" {
-    name                           =  "tf_test_name"
-    description                    =  "Test For Terraform"
-    image_id                       =  "m-bp1i3ucxxxxx"
-    host_name                      =  "host_name"
-    instance_charge_type           =  "PrePaid"
-    instance_name                  =  "instance_name"
-    instance_type                  =  "instance_type"
-    internet_charge_type           =  "PayByBandwidth"
-    internet_max_bandwidth_in      =  "5"
-    internet_max_bandwidth_out     =  "0"
-    io_optimized                   =  "optimized"
-    key_pair_name                  =  "key_pair_name"
-    ram_role_name                  =  "ram_role_name"
-    network_type                   =  "vpc"
-    security_enhancement_strategy  =  "Active"
-    spot_price_limit               =  "5"
-    spot_strategy                  =  "SpotWithPriceLimit"
-    security_group_ids             =  ["sg-zkdfjaxxxxxx"]
-    system_disk {
-            category             = "cloud_ssd"
-            description          = "Test For Terraform"
-            name                 = "tf_test_name"
-            size                 = "40"
-            delete_with_instance = "false"
-        }
-    
-    resource_group_id    =  "rg-zkdfjaxxxxxx"
-    user_data            =  "xxxxxxx"
-    vswitch_id           =  "vw-zwxscaxxxxxx"
-    vpc_id               =  "vpc-asdfnbgxxxxxxx"
-    zone_id              =  "cn-hangzhou-i"
+  name                          = "tf_test_name"
+  description                   = "Test For Terraform"
+  image_id                      = "m-bp1i3ucxxxxx"
+  host_name                     = "host_name"
+  instance_charge_type          = "PrePaid"
+  instance_name                 = "instance_name"
+  instance_type                 = "instance_type"
+  internet_charge_type          = "PayByBandwidth"
+  internet_max_bandwidth_in     = "5"
+  internet_max_bandwidth_out    = "0"
+  io_optimized                  = "optimized"
+  key_pair_name                 = "key_pair_name"
+  ram_role_name                 = "ram_role_name"
+  network_type                  = "vpc"
+  security_enhancement_strategy = "Active"
+  spot_price_limit              = "5"
+  spot_strategy                 = "SpotWithPriceLimit"
+  security_group_ids            = ["sg-zkdfjaxxxxxx"]
+  system_disk {
+    category             = "cloud_ssd"
+    description          = "Test For Terraform"
+    name                 = "tf_test_name"
+    size                 = "40"
+    delete_with_instance = "false"
+  }
 
-    template_tags = {
-        Create = "Terraform"
-        For    = "Test"
-    }
+  resource_group_id = "rg-zkdfjaxxxxxx"
+  user_data         = "xxxxxxx"
+  vswitch_id        = "vw-zwxscaxxxxxx"
+  vpc_id            = "vpc-asdfnbgxxxxxxx"
+  zone_id           = "cn-hangzhou-i"
 
-    network_interfaces {
-            name               = "eth0"
-            description        = "hello1"
-            primary_ip         = "10.0.0.2"
-            security_group_id  = "sg-asdfnbgxxxxxxx"
-            vswitch_id         = "vw-zkdfjaxxxxxx"
-        }
+  template_tags = {
+    Create = "Terraform"
+    For    = "Test"
+  }
 
-    data_disks {
-            name                 = "disk1"
-            description          = "test1"
-            delete_with_instance = "true"
-            category             = "cloud"
-            encrypted            = "false"
-            performance_level    = "PL0"
-            size                 = "20"
-        }
-    data_disks {
-            name                 = "disk2"
-            description          = "test2"
-            delete_with_instance = "true"
-            category             = "cloud"
-            encrypted            = "false"
-            performance_level    = "PL0"
-            size                 = "20"
-        }
+  network_interfaces {
+    name              = "eth0"
+    description       = "hello1"
+    primary_ip        = "10.0.0.2"
+    security_group_id = "sg-asdfnbgxxxxxxx"
+    vswitch_id        = "vw-zkdfjaxxxxxx"
+  }
+
+  data_disks {
+    name                 = "disk1"
+    description          = "test1"
+    delete_with_instance = "true"
+    category             = "cloud"
+    encrypted            = "false"
+    performance_level    = "PL0"
+    size                 = "20"
+  }
+  data_disks {
+    name                 = "disk2"
+    description          = "test2"
+    delete_with_instance = "true"
+    category             = "cloud"
+    encrypted            = "false"
+    performance_level    = "PL0"
+    size                 = "20"
+  }
 }
 ```
 

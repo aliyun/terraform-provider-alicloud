@@ -176,6 +176,10 @@ func resourceAlicloudPrivatelinkVpcEndpointRead(d *schema.ResourceData, meta int
 func resourceAlicloudPrivatelinkVpcEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	privatelinkService := PrivatelinkService{client}
+	conn, err := client.NewPrivatelinkClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -188,11 +192,6 @@ func resourceAlicloudPrivatelinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("security_group_ids") && !d.IsNewResource() {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
-		}
-
-		conn, err := client.NewPrivatelinkClient()
-		if err != nil {
-			return WrapError(err)
 		}
 
 		o, n := d.GetChange("security_group_ids")
@@ -276,10 +275,6 @@ func resourceAlicloudPrivatelinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 			updateVpcEndpointAttributeReq["DryRun"] = d.Get("dry_run")
 		}
 		action := "UpdateVpcEndpointAttribute"
-		conn, err := client.NewPrivatelinkClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 10*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, updateVpcEndpointAttributeReq, &util.RuntimeOptions{})

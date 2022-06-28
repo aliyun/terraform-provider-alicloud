@@ -74,6 +74,7 @@ type GrantSagInstanceToCcnRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	CcnUid               requests.Integer `position:"Query" name:"CcnUid"`
 	CcnInstanceId        string           `position:"Query" name:"CcnInstanceId"`
+	GrantTrafficService  requests.Boolean `position:"Query" name:"GrantTrafficService"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`

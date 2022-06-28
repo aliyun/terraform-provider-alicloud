@@ -45,12 +45,13 @@ func testSweepEdasK8sCluster(region string) error {
 	})
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", err)
+		return nil
 	}
 
 	listClusterResponse, _ := raw.(*edas.ListClusterResponse)
 	if listClusterResponse.Code != 200 {
 		log.Printf("[ERROR] Failed to retrieve edas cluster in service list: %s", listClusterResponse.Message)
-		return WrapError(Error(listClusterResponse.Message))
+		return nil
 	}
 
 	for _, v := range listClusterResponse.ClusterList.Cluster {
@@ -209,17 +210,25 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		  memory_size = 4
 		  kubernetes_node_role = "Worker"
 		}
-		
-		resource "alicloud_vpc" "default" {
-		  vpc_name = var.name
-		  cidr_block = "10.1.0.0/21"
+
+		data "alicloud_vpcs" "default" {
+			name_regex = "default-NODELETING"
+		}
+		data "alicloud_vswitches" "default" {
+			vpc_id = data.alicloud_vpcs.default.ids.0
+			zone_id      = data.alicloud_zones.default.zones.0.id
 		}
 		
-		resource "alicloud_vswitch" "default" {
-		  vswitch_name = var.name
-		  vpc_id = alicloud_vpc.default.id
-		  cidr_block = "10.1.1.0/24"
-		  availability_zone = data.alicloud_zones.default.zones.0.id
+		resource "alicloud_vswitch" "vswitch" {
+		  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+		  vpc_id            = data.alicloud_vpcs.default.ids.0
+		  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+		  zone_id           = data.alicloud_zones.default.zones.0.id
+		  vswitch_name      = var.name
+		}
+		
+		locals {
+		  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 		}
 		
 		resource "alicloud_log_project" "log" {
@@ -230,7 +239,7 @@ func resourceEdasK8sClusterConfigDependence(name string) string {
 		resource "alicloud_cs_managed_kubernetes" "default" {
 		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
 		  name = var.name
-		  worker_vswitch_ids = [alicloud_vswitch.default.id]
+		  worker_vswitch_ids = [local.vswitch_id]
 		  worker_number = "2"
 		  password =                    "Test12345"
 		  pod_cidr =                   "172.20.0.0/16"

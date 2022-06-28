@@ -97,7 +97,7 @@ func resourceAlicloudAdbAccountCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		request.AccountPassword = decryptResp.Plaintext
+		request.AccountPassword = decryptResp
 	}
 
 	// Description will not be set when account type is normal and it is a API bug
@@ -208,7 +208,7 @@ func resourceAlicloudAdbAccountUpdate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return WrapError(err)
 			}
-			request.AccountPassword = decryptResp.Plaintext
+			request.AccountPassword = decryptResp
 		}
 
 		raw, err := client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {

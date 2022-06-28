@@ -108,8 +108,8 @@ type CreateDBInstanceRequest struct {
 type CreateDBInstanceResponse struct {
 	*responses.BaseResponse
 	RequestId    string `json:"RequestId" xml:"RequestId"`
-	OrderId      string `json:"OrderId" xml:"OrderId"`
 	DBInstanceId string `json:"DBInstanceId" xml:"DBInstanceId"`
+	OrderId      string `json:"OrderId" xml:"OrderId"`
 }
 
 // CreateCreateDBInstanceRequest creates a request to invoke CreateDBInstance API
@@ -117,7 +117,7 @@ func CreateCreateDBInstanceRequest() (request *CreateDBInstanceRequest) {
 	request = &CreateDBInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "CreateDBInstance", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "CreateDBInstance", "dds", "openAPI")
 	request.Method = requests.POST
 	return
 }

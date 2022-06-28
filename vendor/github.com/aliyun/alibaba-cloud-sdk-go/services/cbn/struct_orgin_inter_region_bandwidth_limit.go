@@ -17,8 +17,8 @@ package cbn
 
 // OrginInterRegionBandwidthLimit is a nested struct in cbn response
 type OrginInterRegionBandwidthLimit struct {
-	LocalRegionId    string `json:"LocalRegionId" xml:"LocalRegionId"`
+	BandwidthLimit   string `json:"BandwidthLimit" xml:"BandwidthLimit"`
 	OppositeRegionId string `json:"OppositeRegionId" xml:"OppositeRegionId"`
 	GeographicSpanId string `json:"GeographicSpanId" xml:"GeographicSpanId"`
-	BandwidthLimit   string `json:"BandwidthLimit" xml:"BandwidthLimit"`
+	LocalRegionId    string `json:"LocalRegionId" xml:"LocalRegionId"`
 }

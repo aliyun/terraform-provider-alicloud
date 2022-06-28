@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsCiphertext_basic(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -26,7 +26,7 @@ func TestAccAlicloudKmsCiphertext_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsCiphertext_validate(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_validate(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -44,7 +44,7 @@ func TestAccAlicloudKmsCiphertext_validate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKmsCiphertext_validate_withContext(t *testing.T) {
+func TestAccAlicloudKMSCiphertext_validate_withContext(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -66,6 +66,7 @@ var testAccAlicloudKmsCiphertextConfig_basic = func(keyId string) string {
 resource "alicloud_kms_key" "default" {
   	description = "%s"
 	is_enabled  = true
+	pending_window_in_days = 7
 }
 
 resource "alicloud_kms_ciphertext" "default" {
@@ -80,6 +81,7 @@ var testAccAlicloudKmsCiphertextConfig_validate = func(keyId string) string {
 	resource "alicloud_kms_key" "default" {
         description = "%s"
 		is_enabled  = true
+		pending_window_in_days = 7
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
@@ -98,6 +100,7 @@ var testAccAlicloudKmsCiphertextConfig_validate_withContext = func(keyId string)
 	resource "alicloud_kms_key" "default" {
         description = "%s"
 		is_enabled  = true
+		pending_window_in_days = 7
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {

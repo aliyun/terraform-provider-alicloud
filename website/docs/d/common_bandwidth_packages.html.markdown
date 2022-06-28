@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "EIP Bandwidth Plan (CBWP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_common_bandwidth_packages"
 sidebar_current: "docs-alicloud-datasource-common-bandwidth-packages"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_server_group"
 sidebar_current: "docs-alicloud-resource-slb-server-group"
@@ -21,6 +21,9 @@ and to meet the personalized requirements of domain name and URL forwarding.
 -> **NOTE:** One Classic and Intranet load balancer, its virtual server group can only add Classic ECS instances.
 
 -> **NOTE:** One VPC load balancer, its virtual server group can only add the same VPC ECS instances.
+
+For information about server group and how to use it, see [Configure a server group](https://www.alibabacloud.com/help/en/doc-detail/35215.html).
+
 
 ## Example Usage
 
@@ -77,13 +80,13 @@ resource "alicloud_instance" "instance" {
   vswitch_id                 = alicloud_vswitch.default.id
 }
 
-resource "alicloud_slb" "default" {
-  name       = var.name
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = var.name
   vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = alicloud_slb.default.id
+  load_balancer_id = alicloud_slb_load_balancer.default.id
   name             = var.name
   servers {
     server_ids = [alicloud_instance.instance[0].id, alicloud_instance.instance[1].id]
@@ -104,7 +107,7 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - (Optional) Name of the virtual server group. Our plugin provides a default name: "tf-server-group".
-* `servers` - A list of ECS instances to be added. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
+* `servers` - A list of ECS instances to be added. **NOTE:** Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
 ## Block servers

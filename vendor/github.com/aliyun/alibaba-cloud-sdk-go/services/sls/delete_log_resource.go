@@ -90,7 +90,7 @@ func CreateDeleteLogResourceRequest() (request *DeleteLogResourceRequest) {
 	request = &DeleteLogResourceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2018-06-13", "DeleteLogResource", "", "")
+	request.InitWithApiInfo("Sls", "2018-06-13", "DeleteLogResource", "sls", "openAPI")
 	request.Method = requests.POST
 	return
 }

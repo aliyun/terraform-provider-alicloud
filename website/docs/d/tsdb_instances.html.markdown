@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_tsdb_instances" "example" {
-  ids         = ["example_value"]
+  ids = ["example_value"]
 }
 
 output "first_tsdb_instance_id" {

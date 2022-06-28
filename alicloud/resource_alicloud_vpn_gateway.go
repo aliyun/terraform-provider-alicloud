@@ -2,18 +2,20 @@ package alicloud
 
 import (
 	"fmt"
-	"strconv"
+	"log"
 	"strings"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -25,6 +27,10 @@ func resourceAliyunVpnGateway() *schema.Resource {
 		Delete: resourceAliyunVpnGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -94,6 +100,13 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Computed: true,
 			},
 
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
+			"tags": tagsSchema(),
+
 			"internet_ip": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -114,135 +127,187 @@ func resourceAliyunVpnGateway() *schema.Resource {
 
 func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-	request := vpc.CreateCreateVpnGatewayRequest()
-	request.RegionId = client.RegionId
-
-	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
-		request.Name = d.Get("name").(string)
-	}
-
-	if v, ok := d.GetOk("vswitch_id"); ok && v.(string) != "" {
-		request.VSwitchId = d.Get("vswitch_id").(string)
-	}
-
-	request.VpcId = d.Get("vpc_id").(string)
-
-	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "" {
-		if v.(string) == string(PostPaid) {
-			request.InstanceChargeType = string("POSTPAY")
-		} else {
-			request.InstanceChargeType = string("PREPAY")
-		}
-	}
-
-	if v, ok := d.GetOk("period"); ok && v.(int) != 0 && request.InstanceChargeType == string("PREPAY") {
-		request.Period = requests.NewInteger(v.(int))
-	}
-
-	request.Bandwidth = requests.NewInteger(d.Get("bandwidth").(int))
-
-	if v, ok := d.GetOkExists("enable_ipsec"); ok {
-		request.EnableIpsec = requests.NewBoolean(v.(bool))
-	}
-
-	if v, ok := d.GetOk("enable_ssl"); ok {
-		request.EnableSsl = requests.NewBoolean(v.(bool))
-	}
-
-	if v, ok := d.GetOk("ssl_connections"); ok && v.(int) != 0 {
-		request.SslConnections = requests.NewInteger(v.(int))
-	}
-
-	request.AutoPay = requests.NewBoolean(true)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.CreateVpnGateway(request)
-	})
-
+	vpcService := VpcService{client}
+	var response map[string]interface{}
+	action := "CreateVpnGateway"
+	request := make(map[string]interface{})
+	conn, err := client.NewVpcClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_gateway", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*vpc.CreateVpnGatewayResponse)
-	d.SetId(response.VpnGatewayId)
-
-	time.Sleep(10 * time.Second)
-	if err := vpnGatewayService.WaitForVpnGateway(d.Id(), Active, 2*DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
 
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+
+	request["VpcId"] = d.Get("vpc_id").(string)
+
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		if v.(string) == string(PostPaid) {
+			request["InstanceChargeType"] = "POSTPAY"
+		} else {
+			request["InstanceChargeType"] = "PREPAY"
+		}
+	}
+
+	if v, ok := d.GetOk("period"); ok && v.(int) != 0 && request["InstanceChargeType"] == "PREPAY" {
+		request["Period"] = requests.NewInteger(v.(int))
+	}
+
+	request["Bandwidth"] = d.Get("bandwidth")
+
+	if v, ok := d.GetOkExists("enable_ipsec"); ok {
+		request["EnableIpsec"] = v
+	}
+
+	if v, ok := d.GetOk("enable_ssl"); ok {
+		request["EnableSsl"] = v
+	}
+
+	if v, ok := d.GetOk("ssl_connections"); ok && v.(int) != 0 {
+		request["SslConnections"] = v
+	}
+
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	} else {
+		request["AutoPay"] = true
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("CreateVpnGateway")
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_gateway", action, AlibabaCloudSdkGoERROR)
+	}
+
+	time.Sleep(10 * time.Second)
+	d.SetId(fmt.Sprint(response["VpnGatewayId"]))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpnGatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAliyunVpnGatewayUpdate(d, meta)
 }
 
 func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-
-	object, err := vpnGatewayService.DescribeVpnGateway(d.Id())
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeVpnGateway(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpn_gateway vpcService.DescribeVpnGateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("name", object.Name)
-	d.Set("description", object.Description)
-	d.Set("vpc_id", object.VpcId)
-	d.Set("internet_ip", object.InternetIp)
-	d.Set("status", object.Status)
-	d.Set("vswitch_id", object.VSwitchId)
-	d.Set("enable_ipsec", "enable" == strings.ToLower(object.IpsecVpn))
-	d.Set("enable_ssl", "enable" == strings.ToLower(object.SslVpn))
-	d.Set("ssl_connections", object.SslMaxConnections)
-	d.Set("business_status", object.BusinessStatus)
+	d.Set("name", object["Name"])
+	d.Set("description", object["Description"])
+	d.Set("vpc_id", object["VpcId"])
+	d.Set("internet_ip", object["InternetIp"])
+	d.Set("status", object["Status"])
+	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("enable_ipsec", "enable" == object["IpsecVpn"])
+	d.Set("enable_ssl", "enable" == object["SslVpn"])
+	d.Set("ssl_connections", object["SslMaxConnections"])
+	d.Set("business_status", object["BusinessStatus"])
 
-	spec := strings.Split(object.Spec, "M")[0]
-	bandwidth, err := strconv.Atoi(spec)
+	spec := strings.Split(object["Spec"].(string), "M")[0]
+	d.Set("bandwidth", formatInt(spec))
 
-	if err == nil {
-		d.Set("bandwidth", bandwidth)
-	} else {
-		return WrapError(err)
-	}
-
-	if string("PostpayByFlow") == object.ChargeType {
+	if object["ChargeType"] == "PostpayByFlow" {
 		d.Set("instance_charge_type", string(PostPaid))
 	} else {
 		d.Set("instance_charge_type", string(PrePaid))
 	}
 
+	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "VpnGateWay")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(listTagResourcesObject))
 	return nil
 }
 
 func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := vpc.CreateModifyVpnGatewayAttributeRequest()
-	request.RegionId = client.RegionId
-	request.VpnGatewayId = d.Id()
-	update := false
+	vpcService := VpcService{client}
+	action := "ModifyVpnGatewayAttribute"
+	var response map[string]interface{}
 	d.Partial(true)
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"VpnGatewayId": d.Id(),
+	}
+
+	request["RegionId"] = client.RegionId
+
+	update := false
+	if d.HasChange("tags") {
+		if err := vpcService.SetResourceTags(d, "VpnGateWay"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	if d.HasChange("name") {
-		request.Name = d.Get("name").(string)
 		update = true
+		if v, ok := d.GetOk("name"); ok {
+			request["Name"] = v
+		}
 	}
 
 	if d.HasChange("description") {
-		request.Description = d.Get("description").(string)
 		update = true
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
 
 	if update {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.ModifyVpnGatewayAttribute(request)
+		request["ClientToken"] = buildClientToken(action)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		d.SetPartial("name")
 		d.SetPartial("description")
 	}
@@ -265,39 +330,49 @@ func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceAliyunVpnGatewayDelete(d *schema.ResourceData, meta interface{}) error {
+	if d.Get("instance_charge_type").(string) == "PrePaid" {
+		log.Printf("[WARN] Cannot destroy resource Alicloud Resource VPN Gateway. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
+	vpcService := VpcService{client}
+	action := "DeleteVpnGateway"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"VpnGatewayId": d.Id(),
+	}
 
-	request := vpc.CreateDeleteVpnGatewayRequest()
-	request.RegionId = client.RegionId
-	request.VpnGatewayId = d.Id()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVpnGateway(&args)
-		})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
-				time.Sleep(10 * time.Second)
-				return resource.RetryableError(err)
-			}
-			/*Vpn known issue: while the vpn is configuring, it will return unknown error*/
-			if IsExpectedErrors(err, []string{"UnknownError"}) {
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidVpnGatewayInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.VpnGateway", "InvalidVpnGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	return WrapError(vpnGatewayService.WaitForVpnGateway(d.Id(), Deleted, DefaultTimeoutMedium))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpnGatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
 }

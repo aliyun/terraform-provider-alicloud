@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKvstoreConnection_basic(t *testing.T) {
+func TestAccAlicloudKVStoreConnection_basic(t *testing.T) {
 	var v r_kvstore.InstanceNetInfo
 	resourceId := "alicloud_kvstore_connection.default"
 	ra := resourceAttrInit(resourceId, RedisConnectionMap)
@@ -74,7 +74,7 @@ func KvstoreConnectionBasicdependence(name string) string {
 		instance_charge_type = "PostPaid"
 	}
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
+func TestAccAlicloudCREENamespacesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	namespaceName := fmt.Sprintf("tf-testacc-cr-ee-ns-%d", rand)
 	resourceId := "data.alicloud_cr_ee_namespaces.default"
@@ -17,32 +17,34 @@ func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}-fake",
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
+			"ids":         []string{"${alicloud_cr_ee_namespace.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"ids":         []string{"test-id-fake"},
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}",
+			"ids":         []string{"${alicloud_cr_ee_namespace.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+			"instance_id": "${alicloud_cr_ee_namespace.default.instance_id}",
 			"name_regex":  "${alicloud_cr_ee_namespace.default.name}-fake",
 			"ids":         []string{"test-id-fake"},
 		}),
@@ -59,6 +61,9 @@ func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
 			"namespaces.0.default_visibility": "PRIVATE",
 			"namespaces.0.auto_create":        "true",
 			"namespaces.0.instance_id":        CHECKSET,
+			"namespaces.0.id":                 CHECKSET,
+			"namespaces.0.namespace_name":     namespaceName,
+			"namespaces.0.namespace_id":       CHECKSET,
 		}
 	}
 
@@ -75,10 +80,7 @@ func TestAccAlicloudCrEENamespacesDataSource(t *testing.T) {
 		existMapFunc: existCrEENamespacesMapFunc,
 		fakeMapFunc:  fakeCrEENamespacesMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithCrEE(t)
-	}
-	crEENamespacesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	crEENamespacesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 func dataSourceCrEENamespacesConfigDependence(name string) string {
@@ -86,12 +88,11 @@ func dataSourceCrEENamespacesConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
-	data "alicloud_cr_ee_instances" "default" {
-	}
+	
+	data "alicloud_cr_ee_instances" "default"{}
 	
 	resource "alicloud_cr_ee_namespace" "default" {
-		instance_id = "${data.alicloud_cr_ee_instances.default.ids.0}"
+		instance_id = data.alicloud_cr_ee_instances.default.ids.0
 		name = "${var.name}"
 		auto_create	= true
 		default_visibility = "PRIVATE"

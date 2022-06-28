@@ -46,13 +46,17 @@ func resourceAlicloudFCFunctionAsyncInvokeConfig() *schema.Resource {
 			"maximum_event_age_in_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(60, 21600),
+				ValidateFunc: validation.IntBetween(1, 2592000),
 			},
 			"maximum_retry_attempts": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      2,
-				ValidateFunc: validation.IntBetween(0, 2),
+				ValidateFunc: validation.IntBetween(0, 8),
+			},
+			"stateful_invocation": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"destination_config": {
 				Type:     schema.TypeList,
@@ -133,6 +137,9 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
 		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
 	}
+	if v, ok := d.GetOk("stateful_invocation"); ok {
+		request.StatefulInvocation = BoolPointer(v.(bool))
+	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
 	var requestInfo *fc.Client
@@ -188,6 +195,7 @@ func resourceAlicloudFCAsyncInvokeConfigRead(d *schema.ResourceData, meta interf
 	d.Set("maximum_retry_attempts", object.MaxAsyncRetryAttempts)
 	d.Set("created_time", object.CreatedTime)
 	d.Set("last_modified_time", object.LastModifiedTime)
+	d.Set("stateful_invocation", object.StatefulInvocation)
 
 	return nil
 }
@@ -211,6 +219,10 @@ func resourceAlicloudFCAsyncInvokeConfigUpdate(d *schema.ResourceData, meta inte
 
 	if v, ok := d.GetOk("maximum_event_age_in_seconds"); ok {
 		request.MaxAsyncEventAgeInSeconds = Int64Pointer(int64(v.(int)))
+	}
+
+	if v, ok := d.GetOkExists("stateful_invocation"); ok {
+		request.StatefulInvocation = BoolPointer(v.(bool))
 	}
 
 	var response *fc.PutFunctionAsyncInvokeConfigOutput
@@ -331,7 +343,7 @@ func parseFCDestinationConfigId(id string) (serviceName string, functionName str
 		return
 	}
 
-	return "", "", "", fmt.Errorf("unexpected format of ID (%s), expected service_name:function_name or sevice_name:function_name:qualifier", id)
+	return "", "", "", fmt.Errorf("unexpected format of ID (%s), expected service_name:function_name or service_name:function_name:qualifier", id)
 }
 
 func flattenFCFunctionEventInvokeConfigDestinationConfig(destinationConfig *fc.DestinationConfig) []interface{} {

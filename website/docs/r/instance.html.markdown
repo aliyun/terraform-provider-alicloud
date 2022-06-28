@@ -62,8 +62,8 @@ resource "alicloud_vswitch" "vswitch" {
   vswitch_name      = var.name
 }
 
-resource "alicloud_slb" "slb" {
-  name       = "test-slb-tf"
+resource "alicloud_slb_load_balancer" "slb" {
+  load_balancer_name       = "test-slb-tf"
   vswitch_id = alicloud_vswitch.vswitch.id
 }
 
@@ -114,8 +114,8 @@ Terraform will autogenerate a default name is `ECS-Instance`.
 * `system_disk_name` - (Optional, Available in 1.101.0+) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available in 1.101.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. 
-* `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL0`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
-* `system_disk_auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
+* `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
+* `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.73.0+, Modifiable in 1.169.0+) The ID of the automatic snapshot policy applied to the system disk.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
@@ -207,6 +207,14 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
     * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.
     * `description` - (Optional, ForceNew) The description of the data disk.
 * `status` - (Optional 1.85.0+) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
+* `hpc_cluster_id` - (Optional, ForceNew, Available in 1.144.0+) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
+* `secondary_private_ips` - (Optional, Available in 1.144.0+) A list of Secondary private IP addresses which is selected from within the CIDR block of the VSwitch.
+* `secondary_private_ip_address_count` - (Optional, Available in 1.145.0+) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
+* `deployment_set_id` - (Optional, Available in 1.149.0+) The ID of the deployment set to which to deploy the instance.
+* `operator_type` - (Optional, Available in 1.164.0+) The operation type. It is valid when `instance_charge_type` is `PrePaid`. Default value: `upgrade`. Valid values: `upgrade`, `downgrade`. **NOTE:**  When the new instance type specified by the `instance_type` parameter has lower specifications than the current instance type, you must set `operator_type` to `downgrade`.
+* `stopped_mode` - (Optional,Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
+    * `KeepCharging` : standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
+    * `StopCharging` : economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -222,23 +230,26 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 
 -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
 
-### Timeouts
-
--> **NOTE:** Available in 1.46.0+.
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status). 
-`Note`: There are extra at most 2 minutes used to retry to aviod some needless API errors and it is not in the timeouts configure.
-* `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
-* `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to aviod some needless API errors and it is not in the timeouts configure.
-
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The instance ID.
 * `public_ip` - The instance public ip.
+* `deployment_set_group_no` - (Optional, Available in 1.149.0+) The group number of the instance in a deployment set when the deployment set is use.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.46.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the instance (until it reaches the initial `Running` status).
+  `Note`: There are extra at most 2 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
+* `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
+* `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
+
+
 
 ## Import
 

@@ -37,6 +37,8 @@ func TestAccAlicloudResourceManagerAccountsDataSource(t *testing.T) {
 			"accounts.0.resource_directory_id": CHECKSET,
 			"accounts.0.status":                CHECKSET,
 			"accounts.0.type":                  CHECKSET,
+			"accounts.0.payer_account_id":      "",
+			"accounts.0.account_name":          CHECKSET,
 		}
 	}
 
@@ -69,6 +71,7 @@ func testAccCheckAlicloudResourceManagerAccountsSourceConfig(rand int, attrMap m
 	}
 	config := fmt.Sprintf(`
 data "alicloud_resource_manager_accounts" "default"{
+	enable_details = true
 %s
 }
 `, strings.Join(pairs, "\n   "))

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/yundun_dbaudit"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -32,8 +33,8 @@ func testSweepDbauditInstances(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 	request := yundun_dbaudit.CreateDescribeInstancesRequest()
 	request.PageSize = requests.NewInteger(PageSizeSmall)
@@ -98,6 +99,13 @@ func testSweepDbauditInstances(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
 		}
+		// 释放产生的 sls project
+		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			return nil, slsClient.DeleteProject(v.InstanceId)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete Log Project (%s): %s", v.InstanceId, err)
+		}
 	}
 
 	return nil
@@ -122,20 +130,19 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description":       "${var.name}",
 					"plan_code":         "alpha.professional",
 					"period":            "1",
-					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -239,80 +246,29 @@ func TestAccAlicloudYundunDbauditInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudYundunDbauditInstance_Multi(t *testing.T) {
-	var v yundun_dbaudit.Instance
-
-	resourceId := "alicloud_yundun_dbaudit_instance.default.1"
-	ra := resourceAttrInit(resourceId, dbauditInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DbauditService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDbauditInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.YundunDbauditSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"count":       "2",
-					"description": "${var.name}-${count.index}",
-					"plan_code":   "alpha.professional",
-					"period":      "1",
-					"vswitch_id":  "${alicloud_vswitch.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
+func resourceDbauditInstanceDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+  }
+	
+data "alicloud_resource_manager_resource_groups" "default"{
+	status="OK"
 }
 
-func resourceDbauditInstanceDependence(name string) string {
-	return fmt.Sprintf(
-		`  data "alicloud_zones" "default" {
-    				available_resource_creation = "VSwitch"
-			  }
-				
-				data "alicloud_resource_manager_resource_groups" "default"{
-					status="OK"
-				}
+  variable "name" {
+	default = "%s"
+  }
 
-			  variable "name" {
-				default = "%s"
-			  }
+  data "alicloud_vpcs" "default" {
+	  name_regex = "default-NODELETING"
+  }
+  data "alicloud_vswitches" "default" {
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+  }
 
-			  resource "alicloud_vpc" "default" {
-				name = "${var.name}"
-				cidr_block = "172.16.0.0/12"
-			  }
-
-			  resource "alicloud_vswitch" "default" {
-				vpc_id = "${alicloud_vpc.default.id}"
-				cidr_block = "172.16.0.0/21"
-				availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-				vswitch_name = "${var.name}"
-			  }
-			
-			  provider "alicloud" {
-				endpoints {
-					bssopenapi = "business.aliyuncs.com"
-					}
-			  }`, name)
+ `, name)
 }
 
 var dbauditInstanceBasicMap = map[string]string{

@@ -259,6 +259,69 @@ func TestAccAlicloudOtsTable_multi(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudOtsTable_withTableEncryption(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+					"enable_sse":   "true",
+					"sse_key_type": "SSE_KMS_SERVICE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": "tf-" + name,
+						"table_name":    name,
+						"time_to_live":  "-1",
+						"max_version":   "1",
+						"enable_sse":    "true",
+						"sse_key_type":  "SSE_KMS_SERVICE",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func resourceOtsTableConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {

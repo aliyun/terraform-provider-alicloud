@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opentracing/opentracing-go/ext"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	"github.com/denverdino/aliyungo/util"
+	"github.com/opentracing/opentracing-go"
 )
 
 // RemovalPolicy.N add index to array item
@@ -38,6 +41,9 @@ type Client struct {
 	regionID        Region
 	businessInfo    string
 	userAgent       string
+	disableTrace    bool
+	span            opentracing.Span
+	logger          *Logger
 }
 
 // Initialize properties of a client instance
@@ -48,18 +54,7 @@ func (client *Client) Init(endpoint, version, accessKeyId, accessKeySecret strin
 		ak += "&"
 	}
 	client.AccessKeySecret = ak
-	client.debug = false
-	handshakeTimeout, err := strconv.Atoi(os.Getenv("TLSHandshakeTimeout"))
-	if err != nil {
-		handshakeTimeout = 0
-	}
-	if handshakeTimeout == 0 {
-		client.httpClient = &http.Client{}
-	} else {
-		t := &http.Transport{
-			TLSHandshakeTimeout: time.Duration(handshakeTimeout) * time.Second}
-		client.httpClient = &http.Client{Transport: t}
-	}
+	client.InitClient()
 	client.endpoint = endpoint
 	client.version = version
 }
@@ -84,35 +79,82 @@ func (client *Client) NewInit4RegionalDomain(endpoint, version, accessKeyId, acc
 // Intialize client object when all properties are ready
 func (client *Client) InitClient() *Client {
 	client.debug = false
-	handshakeTimeout, err := strconv.Atoi(os.Getenv("TLSHandshakeTimeout"))
-	if err != nil {
-		handshakeTimeout = 0
+
+	// create DefaultTransport manully, because transport doesn't has clone method in go 1.10
+	t := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
-	if handshakeTimeout == 0 {
-		client.httpClient = &http.Client{}
-	} else {
-		t := &http.Transport{
-			TLSHandshakeTimeout: time.Duration(handshakeTimeout) * time.Second}
-		client.httpClient = &http.Client{Transport: t}
+
+	handshakeTimeoutStr, ok := os.LookupEnv("TLSHandshakeTimeout")
+	if ok {
+		handshakeTimeout, err := strconv.Atoi(handshakeTimeoutStr)
+		if err != nil {
+			log.Printf("Get TLSHandshakeTimeout from env error: %v.", err)
+		} else {
+			t.TLSHandshakeTimeout = time.Duration(handshakeTimeout) * time.Second
+		}
 	}
+
+	responseHeaderTimeoutStr, ok := os.LookupEnv("ResponseHeaderTimeout")
+	if ok {
+		responseHeaderTimeout, err := strconv.Atoi(responseHeaderTimeoutStr)
+		if err != nil {
+			log.Printf("Get ResponseHeaderTimeout from env error: %v.", err)
+		} else {
+			t.ResponseHeaderTimeout = time.Duration(responseHeaderTimeout) * time.Second
+		}
+	}
+
+	expectContinueTimeoutStr, ok := os.LookupEnv("ExpectContinueTimeout")
+	if ok {
+		expectContinueTimeout, err := strconv.Atoi(expectContinueTimeoutStr)
+		if err != nil {
+			log.Printf("Get ExpectContinueTimeout from env error: %v.", err)
+		} else {
+			t.ExpectContinueTimeout = time.Duration(expectContinueTimeout) * time.Second
+		}
+	}
+
+	idleConnTimeoutStr, ok := os.LookupEnv("IdleConnTimeout")
+	if ok {
+		idleConnTimeout, err := strconv.Atoi(idleConnTimeoutStr)
+		if err != nil {
+			log.Printf("Get IdleConnTimeout from env error: %v.", err)
+		} else {
+			t.IdleConnTimeout = time.Duration(idleConnTimeout) * time.Second
+		}
+	}
+
+	client.httpClient = &http.Client{
+		Transport: t,
+	}
+
+	httpTimeoutStr, ok := os.LookupEnv("HttpTimeout")
+	if ok {
+		httpTimeout, err := strconv.Atoi(httpTimeoutStr)
+		if err != nil {
+			log.Printf("Get HttpTimeout from env error: %v.", err)
+		} else {
+			client.httpClient.Timeout = time.Duration(httpTimeout) * time.Second
+		}
+	}
+
 	return client
 }
 
 // Intialize client object when all properties are ready
 //only for regional domain hz
 func (client *Client) InitClient4RegionalDomain() *Client {
-	client.debug = false
-	handshakeTimeout, err := strconv.Atoi(os.Getenv("TLSHandshakeTimeout"))
-	if err != nil {
-		handshakeTimeout = 0
-	}
-	if handshakeTimeout == 0 {
-		client.httpClient = &http.Client{}
-	} else {
-		t := &http.Transport{
-			TLSHandshakeTimeout: time.Duration(handshakeTimeout) * time.Second}
-		client.httpClient = &http.Client{Transport: t}
-	}
+	client.InitClient()
 	//set endpoint
 	client.setEndpoint4RegionalDomain(client.regionID, client.serviceCode, client.AccessKeyId, client.AccessKeySecret, client.securityToken)
 	return client
@@ -255,6 +297,18 @@ func (client *Client) WithUserAgent(userAgent string) *Client {
 	return client
 }
 
+// WithUserAgent sets user agent to the request/response message
+func (client *Client) WithDisableTrace(disableTrace bool) *Client {
+	client.SetDisableTrace(disableTrace)
+	return client
+}
+
+// WithUserAgent sets user agent to the request/response message
+func (client *Client) WithSpan(span opentracing.Span) *Client {
+	client.SetSpan(span)
+	return client
+}
+
 // ----------------------------------------------------
 // SetXXX methods
 // ----------------------------------------------------
@@ -325,6 +379,16 @@ func (client *Client) SetTransport(transport http.RoundTripper) {
 	client.httpClient.Transport = transport
 }
 
+// SetDisableTrace close trace mode
+func (client *Client) SetDisableTrace(disableTrace bool) {
+	client.disableTrace = disableTrace
+}
+
+// SetSpan set the parent span
+func (client *Client) SetSpan(span opentracing.Span) {
+	client.span = span
+}
+
 func (client *Client) initEndpoint() error {
 	// if set any value to "CUSTOMIZED_ENDPOINT" could skip location service.
 	// example: export CUSTOMIZED_ENDPOINT=true
@@ -347,15 +411,17 @@ func (client *Client) initEndpoint() error {
 }
 
 // Invoke sends the raw HTTP request for ECS services
-func (client *Client) Invoke(action string, args interface{}, response interface{}) error {
+func (client *Client) Invoke(action string, args interface{}, response interface{}) (err error) {
 	if err := client.ensureProperties(); err != nil {
 		return err
 	}
 
-	//init endpoint
-	//if err := client.initEndpoint(); err != nil {
-	//	return err
-	//}
+	// log request
+	fieldMap := make(map[string]string)
+	initLogMsg(fieldMap)
+	defer func() {
+		client.printLog(fieldMap, err)
+	}()
 
 	request := Request{}
 	request.init(client.version, action, client.AccessKeyId, client.securityToken, client.regionID)
@@ -377,23 +443,58 @@ func (client *Client) Invoke(action string, args interface{}, response interface
 
 	// TODO move to util and add build val flag
 	httpReq.Header.Set("X-SDK-Client", `AliyunGO/`+Version+client.businessInfo)
-
 	httpReq.Header.Set("User-Agent", httpReq.UserAgent()+" "+client.userAgent)
 
+	// Set tracer
+	var span opentracing.Span
+	if ok := opentracing.IsGlobalTracerRegistered(); ok && !client.disableTrace {
+		tracer := opentracing.GlobalTracer()
+		var rootCtx opentracing.SpanContext
+
+		if client.span != nil {
+			rootCtx = client.span.Context()
+		}
+
+		span = tracer.StartSpan(
+			"AliyunGO-"+request.Action,
+			opentracing.ChildOf(rootCtx),
+			opentracing.Tag{string(ext.Component), "AliyunGO"},
+			opentracing.Tag{"ActionName", request.Action})
+
+		defer span.Finish()
+		tracer.Inject(
+			span.Context(),
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(httpReq.Header))
+	}
+
+	putMsgToMap(fieldMap, httpReq)
 	t0 := time.Now()
+	fieldMap["{start_time}"] = t0.Format("2006-01-02 15:04:05")
 	httpResp, err := client.httpClient.Do(httpReq)
 	t1 := time.Now()
+	fieldMap["{cost}"] = t1.Sub(t0).String()
 	if err != nil {
+		if span != nil {
+			ext.LogError(span, err)
+		}
 		return GetClientError(err)
 	}
+	fieldMap["{code}"] = strconv.Itoa(httpResp.StatusCode)
+	fieldMap["{res_headers}"] = TransToString(httpResp.Header)
 	statusCode := httpResp.StatusCode
 
 	if client.debug {
 		log.Printf("Invoke %s %s %d (%v)", ECSRequestMethod, requestURL, statusCode, t1.Sub(t0))
 	}
 
+	if span != nil {
+		ext.HTTPStatusCode.Set(span, uint16(httpResp.StatusCode))
+	}
+
 	defer httpResp.Body.Close()
 	body, err := ioutil.ReadAll(httpResp.Body)
+	fieldMap["{res_body}"] = string(body)
 
 	if err != nil {
 		return GetClientError(err)
@@ -432,10 +533,17 @@ func (client *Client) Invoke(action string, args interface{}, response interface
 }
 
 // Invoke sends the raw HTTP request for ECS services
-func (client *Client) InvokeByFlattenMethod(action string, args interface{}, response interface{}) error {
+func (client *Client) InvokeByFlattenMethod(action string, args interface{}, response interface{}) (err error) {
 	if err := client.ensureProperties(); err != nil {
 		return err
 	}
+
+	// log request
+	fieldMap := make(map[string]string)
+	initLogMsg(fieldMap)
+	defer func() {
+		client.printLog(fieldMap, err)
+	}()
 
 	//init endpoint
 	if err := client.initEndpoint(); err != nil {
@@ -463,23 +571,58 @@ func (client *Client) InvokeByFlattenMethod(action string, args interface{}, res
 
 	// TODO move to util and add build val flag
 	httpReq.Header.Set("X-SDK-Client", `AliyunGO/`+Version+client.businessInfo)
-
 	httpReq.Header.Set("User-Agent", httpReq.UserAgent()+" "+client.userAgent)
 
+	// Set tracer
+	var span opentracing.Span
+	if ok := opentracing.IsGlobalTracerRegistered(); ok && !client.disableTrace {
+		tracer := opentracing.GlobalTracer()
+		var rootCtx opentracing.SpanContext
+
+		if client.span != nil {
+			rootCtx = client.span.Context()
+		}
+
+		span = tracer.StartSpan(
+			"AliyunGO-"+request.Action,
+			opentracing.ChildOf(rootCtx),
+			opentracing.Tag{string(ext.Component), "AliyunGO"},
+			opentracing.Tag{"ActionName", request.Action})
+
+		defer span.Finish()
+		tracer.Inject(
+			span.Context(),
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(httpReq.Header))
+	}
+
+	putMsgToMap(fieldMap, httpReq)
 	t0 := time.Now()
+	fieldMap["{start_time}"] = t0.Format("2006-01-02 15:04:05")
 	httpResp, err := client.httpClient.Do(httpReq)
 	t1 := time.Now()
+	fieldMap["{cost}"] = t1.Sub(t0).String()
 	if err != nil {
+		if span != nil {
+			ext.LogError(span, err)
+		}
 		return GetClientError(err)
 	}
+	fieldMap["{code}"] = strconv.Itoa(httpResp.StatusCode)
+	fieldMap["{res_headers}"] = TransToString(httpResp.Header)
 	statusCode := httpResp.StatusCode
 
 	if client.debug {
 		log.Printf("Invoke %s %s %d (%v)", ECSRequestMethod, requestURL, statusCode, t1.Sub(t0))
 	}
 
+	if span != nil {
+		ext.HTTPStatusCode.Set(span, uint16(httpResp.StatusCode))
+	}
+
 	defer httpResp.Body.Close()
 	body, err := ioutil.ReadAll(httpResp.Body)
+	fieldMap["{res_body}"] = string(body)
 
 	if err != nil {
 		return GetClientError(err)
@@ -519,10 +662,17 @@ func (client *Client) InvokeByFlattenMethod(action string, args interface{}, res
 // Invoke sends the raw HTTP request for ECS services
 //改进了一下上面那个方法，可以使用各种Http方法
 //2017.1.30 增加了一个path参数，用来拓展访问的地址
-func (client *Client) InvokeByAnyMethod(method, action, path string, args interface{}, response interface{}) error {
+func (client *Client) InvokeByAnyMethod(method, action, path string, args interface{}, response interface{}) (err error) {
 	if err := client.ensureProperties(); err != nil {
 		return err
 	}
+
+	// log request
+	fieldMap := make(map[string]string)
+	initLogMsg(fieldMap)
+	defer func() {
+		client.printLog(fieldMap, err)
+	}()
 
 	//init endpoint
 	//if err := client.initEndpoint(); err != nil {
@@ -541,7 +691,6 @@ func (client *Client) InvokeByAnyMethod(method, action, path string, args interf
 	// Generate the request URL
 	var (
 		httpReq *http.Request
-		err     error
 	)
 	if method == http.MethodGet {
 		requestURL := client.endpoint + path + "?" + data.Encode()
@@ -561,20 +710,56 @@ func (client *Client) InvokeByAnyMethod(method, action, path string, args interf
 	httpReq.Header.Set("X-SDK-Client", `AliyunGO/`+Version+client.businessInfo)
 	httpReq.Header.Set("User-Agent", httpReq.Header.Get("User-Agent")+" "+client.userAgent)
 
+	// Set tracer
+	var span opentracing.Span
+	if ok := opentracing.IsGlobalTracerRegistered(); ok && !client.disableTrace {
+		tracer := opentracing.GlobalTracer()
+		var rootCtx opentracing.SpanContext
+
+		if client.span != nil {
+			rootCtx = client.span.Context()
+		}
+
+		span = tracer.StartSpan(
+			"AliyunGO-"+request.Action,
+			opentracing.ChildOf(rootCtx),
+			opentracing.Tag{string(ext.Component), "AliyunGO"},
+			opentracing.Tag{"ActionName", request.Action})
+
+		defer span.Finish()
+		tracer.Inject(
+			span.Context(),
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(httpReq.Header))
+	}
+
+	putMsgToMap(fieldMap, httpReq)
 	t0 := time.Now()
+	fieldMap["{start_time}"] = t0.Format("2006-01-02 15:04:05")
 	httpResp, err := client.httpClient.Do(httpReq)
 	t1 := time.Now()
+	fieldMap["{cost}"] = t1.Sub(t0).String()
 	if err != nil {
+		if span != nil {
+			ext.LogError(span, err)
+		}
 		return GetClientError(err)
 	}
+	fieldMap["{code}"] = strconv.Itoa(httpResp.StatusCode)
+	fieldMap["{res_headers}"] = TransToString(httpResp.Header)
 	statusCode := httpResp.StatusCode
 
 	if client.debug {
 		log.Printf("Invoke %s %s %d (%v) %v", ECSRequestMethod, client.endpoint, statusCode, t1.Sub(t0), data.Encode())
 	}
 
+	if span != nil {
+		ext.HTTPStatusCode.Set(span, uint16(httpResp.StatusCode))
+	}
+
 	defer httpResp.Body.Close()
 	body, err := ioutil.ReadAll(httpResp.Body)
+	fieldMap["{res_body}"] = string(body)
 
 	if err != nil {
 		return GetClientError(err)
@@ -632,4 +817,16 @@ func GetCustomError(code, message string) error {
 		},
 		StatusCode: 400,
 	}
+}
+
+func putMsgToMap(fieldMap map[string]string, request *http.Request) {
+	fieldMap["{host}"] = request.Host
+	fieldMap["{method}"] = request.Method
+	fieldMap["{uri}"] = request.URL.RequestURI()
+	fieldMap["{pid}"] = strconv.Itoa(os.Getpid())
+	fieldMap["{version}"] = strings.Split(request.Proto, "/")[1]
+	hostname, _ := os.Hostname()
+	fieldMap["{hostname}"] = hostname
+	fieldMap["{req_headers}"] = TransToString(request.Header)
+	fieldMap["{target}"] = request.URL.Path + request.URL.RawQuery
 }

@@ -19,9 +19,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_kvstore_connection" "default" {
-  connection_string_prefix  = "allocatetestupdate"
-  instance_id               = "r-abc123456"
-  port                      = "6370"
+  connection_string_prefix = "allocatetestupdate"
+  instance_id              = "r-abc123456"
+  port                     = "6370"
 }
 ```
 
@@ -43,9 +43,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 2 mins) Used when creating the KVStore connection (until it reaches the initial `Normal` status). 
-* `update` - (Defaults to 2 mins) Used when updating the KVStore connection (until it reaches the initial `Normal` status). 
-* `delete` - (Defaults to 2 mins) Used when deleting the KVStore connection (until it reaches the initial `Normal` status). 
+* `create` - (Defaults to 5 mins) Used when creating the KVStore connection (until it reaches the initial `Normal` status). 
+* `update` - (Defaults to 5 mins) Used when updating the KVStore connection (until it reaches the initial `Normal` status). 
+* `delete` - (Defaults to 5 mins) Used when deleting the KVStore connection (until it reaches the initial `Normal` status). 
 
 ## Import
 

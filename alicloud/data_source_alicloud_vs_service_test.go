@@ -7,6 +7,8 @@ import (
 )
 
 func TestAccAlicloudVsServiceDataSource(t *testing.T) {
+	defer checkoutAccount(t, false)
+	checkoutAccount(t, true)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)

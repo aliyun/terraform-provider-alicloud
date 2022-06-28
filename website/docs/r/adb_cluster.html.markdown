@@ -9,11 +9,11 @@ description: |-
 
 # alicloud\_adb\_cluster
 
-Provides a ADB cluster resource. A ADB cluster is an isolated database
-environment in the cloud. A ADB cluster can contain multiple user-created
+Provides a ADB cluster resource. An ADB cluster is an isolated database
+environment in the cloud. An ADB cluster can contain multiple user-created
 databases.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster.html).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new resource [alicloud_adb_db_cluster](https://www.terraform.io/docs/providers/alicloud/r/adb_db_cluster).
 
 -> **NOTE:** Available in v1.71.0+.
 
@@ -68,7 +68,8 @@ The following arguments are supported:
 * `db_node_count` - (Required) The db_node_count of cluster node.
 * `db_node_storage` - (Required) The db_node_storage of cluster node.
 * `zone_id` - (Optional) The Zone to launch the DB cluster.
-* `pay_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`. Currently, the resource can not supports change pay type.
+* `pay_type` - (Optional) Field `pay_type` has been deprecated. New field `payment_type` instead.
+* `payment_type` - (Optional) The payment type of the resource. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`. **Note:** The `payment_type` supports updating from v1.166.0+.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1.
@@ -98,7 +99,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when creating the adb cluster (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 72 hours) Used when updating the adb cluster (until it reaches the initial `Running` status). 
+* `update` - (Defaults to 72 mins) Used when updating the adb cluster (until it reaches the initial `Running` status). 
 * `delete` - (Defaults to 50 mins) Used when terminating the adb cluster. 
 
 ## Import

@@ -7,11 +7,11 @@ variable "deploy_group" {
 }
 
 variable "ecu_info" {
-  type = list(string)
+  type        = list(string)
   description = "The ID of the Elastic Compute Unit (ECU) where you want to deploy the application."
 }
 
 variable "force_status" {
-  type = bool
+  type        = bool
   description = "This parameter specifies whether to forcibly remove an ECS instance where the application is deployed. It is set as true only after the ECS instance expires. In normal cases, this parameter do not need to be specified."
 }

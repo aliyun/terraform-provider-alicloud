@@ -72,6 +72,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   bandwidth = "2"
+  internet_charge_type = "PayByBandwidth"
   name = "${var.name}"
   description = "${var.name}_description"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0

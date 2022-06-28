@@ -17,38 +17,25 @@ package edas
 
 // App is a nested struct in edas response
 type App struct {
-	Name                   string  `json:"Name" xml:"Name"`
-	CsClusterId            string  `json:"CsClusterId" xml:"CsClusterId"`
-	Instances              int     `json:"Instances" xml:"Instances"`
-	CreateTime             int64   `json:"CreateTime" xml:"CreateTime"`
-	DeployType             string  `json:"DeployType" xml:"DeployType"`
-	Dockerize              bool    `json:"Dockerize" xml:"Dockerize"`
-	EdasContainerVersion   string  `json:"EdasContainerVersion" xml:"EdasContainerVersion"`
-	RegionId               string  `json:"RegionId" xml:"RegionId"`
-	SlbPort                int     `json:"SlbPort" xml:"SlbPort"`
-	UserId                 string  `json:"UserId" xml:"UserId"`
-	ApplicationType        string  `json:"ApplicationType" xml:"ApplicationType"`
-	TomcatVersion          string  `json:"TomcatVersion" xml:"TomcatVersion"`
-	Description            string  `json:"Description" xml:"Description"`
-	ClusterId              string  `json:"ClusterId" xml:"ClusterId"`
-	Port                   int     `json:"Port" xml:"Port"`
-	ApplicationName        string  `json:"ApplicationName" xml:"ApplicationName"`
-	ExtSlbIp               string  `json:"ExtSlbIp" xml:"ExtSlbIp"`
-	BuildPackageId         int64   `json:"BuildPackageId" xml:"BuildPackageId"`
-	Memory                 int     `json:"Memory" xml:"Memory"`
-	BuildpackId            int     `json:"BuildpackId" xml:"BuildpackId"`
-	ExtSlbId               string  `json:"ExtSlbId" xml:"ExtSlbId"`
-	Owner                  string  `json:"Owner" xml:"Owner"`
-	AppId                  string  `json:"AppId" xml:"AppId"`
-	InstanceCount          int     `json:"InstanceCount" xml:"InstanceCount"`
-	HealthCheckUrl         string  `json:"HealthCheckUrl" xml:"HealthCheckUrl"`
+	RequestMem             int     `json:"RequestMem" xml:"RequestMem"`
 	InstancesBeforeScaling int     `json:"InstancesBeforeScaling" xml:"InstancesBeforeScaling"`
-	SlbId                  string  `json:"SlbId" xml:"SlbId"`
-	ClusterType            int     `json:"ClusterType" xml:"ClusterType"`
-	Cpu                    int     `json:"Cpu" xml:"Cpu"`
+	DeployType             string  `json:"DeployType" xml:"DeployType"`
+	ApplicationName        string  `json:"ApplicationName" xml:"ApplicationName"`
+	ApplicationType        string  `json:"ApplicationType" xml:"ApplicationType"`
+	Instances              int     `json:"Instances" xml:"Instances"`
+	LimitMem               int     `json:"LimitMem" xml:"LimitMem"`
 	Cmd                    string  `json:"Cmd" xml:"Cmd"`
-	RunningInstanceCount   int     `json:"RunningInstanceCount" xml:"RunningInstanceCount"`
-	SlbIp                  string  `json:"SlbIp" xml:"SlbIp"`
+	RegionId               string  `json:"RegionId" xml:"RegionId"`
+	BuildpackId            int     `json:"BuildpackId" xml:"BuildpackId"`
+	TomcatVersion          string  `json:"TomcatVersion" xml:"TomcatVersion"`
+	CsClusterId            string  `json:"CsClusterId" xml:"CsClusterId"`
+	RequestCpuM            int     `json:"RequestCpuM" xml:"RequestCpuM"`
+	AppId                  string  `json:"AppId" xml:"AppId"`
+	K8sNamespace           string  `json:"K8sNamespace" xml:"K8sNamespace"`
+	EdasContainerVersion   string  `json:"EdasContainerVersion" xml:"EdasContainerVersion"`
+	LimitCpuM              int     `json:"LimitCpuM" xml:"LimitCpuM"`
+	ClusterId              string  `json:"ClusterId" xml:"ClusterId"`
+	DevelopType            string  `json:"DevelopType" xml:"DevelopType"`
 	CmdArgs                CmdArgs `json:"CmdArgs" xml:"CmdArgs"`
 	EnvList                EnvList `json:"EnvList" xml:"EnvList"`
 }

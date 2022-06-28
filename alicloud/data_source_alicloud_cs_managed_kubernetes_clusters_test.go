@@ -108,16 +108,24 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role = "Worker"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_log_project" "log" {
@@ -127,7 +135,8 @@ resource "alicloud_log_project" "log" {
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix = "${var.name}"
-  worker_vswitch_ids = ["${alicloud_vswitch.default.id}"]
+  cluster_spec = "ack.pro.small"
+  worker_vswitch_ids = ["${local.vswitch_id}"]
   new_nat_gateway = true
   worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   worker_number = 2

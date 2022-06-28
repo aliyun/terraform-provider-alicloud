@@ -30,10 +30,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/21"
-  zone_id           = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_name      = "${var.name}"
+  vpc_id       = "${alicloud_vpc.default.id}"
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_nat_gateway" "default" {
@@ -42,18 +42,18 @@ resource "alicloud_nat_gateway" "default" {
   name          = "${var.name}"
 }
 
-resource "alicloud_eip" "default" {
-  name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+  address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip.default.id}"
+  allocation_id = "${alicloud_eip_address.default.id}"
   instance_id   = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_forward_entry" "default" {
   forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip      = "${alicloud_eip.default.ip_address}"
+  external_ip      = "${alicloud_eip_address.default.ip_address}"
   external_port    = "80"
   ip_protocol      = "tcp"
   internal_ip      = "172.16.0.3"

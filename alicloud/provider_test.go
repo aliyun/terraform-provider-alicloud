@@ -57,6 +57,8 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
 		log.Println("[INFO] Test: Using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
+	} else {
+		defaultRegionToTest = v
 	}
 }
 
@@ -91,6 +93,7 @@ func testAccClassicNetworkResources(t *testing.T) {
 // Skip automatically the testcases which does not support some known regions.
 // If supported is true, the regions should a list of supporting the service regions.
 // If supported is false, the regions should a list of unsupporting the service regions.
+// If the region is unsupported and has backend region, the backend region will instead
 func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
@@ -99,25 +102,94 @@ func testAccPreCheckWithRegions(t *testing.T, supported bool, regions []connecti
 		t.Fatal("ALICLOUD_SECRET_KEY must be set for acceptance tests")
 	}
 	if v := os.Getenv("ALICLOUD_REGION"); v == "" {
-		log.Println("[INFO] Test: Using cn-beijing as test region")
+		t.Logf("[WARNING] The region is not set and using cn-beijing as test region")
 		os.Setenv("ALICLOUD_REGION", "cn-beijing")
 	}
+	checkoutSupportedRegions(t, supported, regions)
+}
+
+func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivity.Region) {
 	region := os.Getenv("ALICLOUD_REGION")
 	find := false
+	backupRegion := string(connectivity.APSouthEast1)
+	if region == string(connectivity.APSouthEast1) {
+		backupRegion = string(connectivity.EUCentral1)
+	}
+
+	checkoutRegion := os.Getenv("CHECKOUT_REGION")
+	if checkoutRegion == "true" {
+		if region == string(connectivity.Hangzhou) {
+			region = string(connectivity.EUCentral1)
+			os.Setenv("ALICLOUD_REGION", region)
+		}
+	}
+	backupRegionFind := false
+	hangzhouRegionFind := false
 	for _, r := range regions {
 		if region == string(r) {
 			find = true
 			break
 		}
+		if string(r) == backupRegion {
+			backupRegionFind = true
+		}
+		if string(connectivity.Hangzhou) == string(r) {
+			hangzhouRegionFind = true
+		}
 	}
 
 	if (find && !supported) || (!find && supported) {
 		if supported {
+			if backupRegionFind {
+				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				os.Setenv("ALICLOUD_REGION", backupRegion)
+				defaultRegionToTest = backupRegion
+				return
+			}
+			if hangzhouRegionFind {
+				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, connectivity.Hangzhou)
+				os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
+				defaultRegionToTest = string(connectivity.Hangzhou)
+				return
+			}
 			t.Skipf("Skipping unsupported region %s. Supported regions: %s.", region, regions)
 		} else {
+			if !backupRegionFind {
+				t.Logf("Skipping unsupported region %s. Unsupported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				os.Setenv("ALICLOUD_REGION", backupRegion)
+				defaultRegionToTest = backupRegion
+				return
+			}
+			if !hangzhouRegionFind {
+				t.Logf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, connectivity.Hangzhou)
+				os.Setenv("ALICLOUD_REGION", string(connectivity.Hangzhou))
+				defaultRegionToTest = string(connectivity.Hangzhou)
+				return
+			}
 			t.Skipf("Skipping unsupported region %s. Unsupported regions: %s.", region, regions)
 		}
 		t.Skipped()
+	}
+}
+
+func checkoutAccount(t *testing.T, SLAVE bool) {
+	if SLAVE {
+		if os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE") == "" || os.Getenv("ALICLOUD_SECRET_KEY_SLAVE") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_SLAVE or ALICLOUD_SECRET_KEY_SLAVE is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY_MASTER", os.Getenv("ALICLOUD_ACCESS_KEY"))
+			os.Setenv("ALICLOUD_SECRET_KEY_MASTER", os.Getenv("ALICLOUD_SECRET_KEY"))
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_SLAVE"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_SLAVE"))
+			t.Logf("%s is using the slave account", t.Name())
+		}
+	} else {
+		if os.Getenv("ALICLOUD_ACCESS_KEY_MASTER") == "" || os.Getenv("ALICLOUD_SECRET_KEY_MASTER") == "" {
+			t.Logf("\nALICLOUD_ACCESS_KEY_MASTER or ALICLOUD_SECRET_KEY_MASTER is empty and please add them.")
+		} else {
+			os.Setenv("ALICLOUD_ACCESS_KEY", os.Getenv("ALICLOUD_ACCESS_KEY_MASTER"))
+			os.Setenv("ALICLOUD_SECRET_KEY", os.Getenv("ALICLOUD_SECRET_KEY_MASTER"))
+		}
 	}
 }
 
@@ -199,9 +271,9 @@ func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithWafInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_WAF_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no WAF instance id setting")
+func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
+	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
+		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
 		t.Skipped()
 	}
 }
@@ -275,8 +347,20 @@ func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
 	response, _ := raw.(*vpc.DescribeVpcsResponse)
 
 	if len(response.Vpcs.Vpc) < 1 {
-		t.Skipf("Skipping the test case with there is no default vpc")
-		t.Skipped()
+		request.IsDefault = requests.NewBoolean(false)
+		request.VpcName = "default"
+		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+			return vpcClient.DescribeVpcs(request)
+		})
+		if err != nil {
+			t.Skipf("Skipping the test case with err: %s", err)
+			t.Skipped()
+		}
+		response2, _ := raw.(*vpc.DescribeVpcsResponse)
+		if len(response2.Vpcs.Vpc) < 1 {
+			t.Skipf("Skipping the test case with there is no default vpc")
+			t.Skipped()
+		}
 	}
 }
 
@@ -319,17 +403,6 @@ func testAccPreCheckWithResourceManagerAccountsSetting(t *testing.T) {
 func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("INVITED_ALICLOUD_ACCOUNT_ID")); v == "" {
 		t.Skipf("Skipping the test case with there is no \"INVITED_ALICLOUD_ACCOUNT_ID\" setting")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithCenVbrHealthCheckSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("VBR_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no vbr instance id setting")
-		t.Skipped()
-	}
-	if v := strings.TrimSpace(os.Getenv("VBR_INSTANCE_REGION_ID")); v == "" {
-		t.Skipf("Skipping the test case with no vbr instance region id setting")
 		t.Skipped()
 	}
 }
@@ -526,7 +599,7 @@ func TestAccAlicloudProviderLog(t *testing.T) {
 }
 
 func TestAccAlicloudProviderDatahub(t *testing.T) {
-	var v *datahub.Project
+	var v *datahub.GetProjectResult
 
 	resourceId := "alicloud_datahub_project.default"
 	ra := resourceAttrInit(resourceId, datahubProjectBasicMap)

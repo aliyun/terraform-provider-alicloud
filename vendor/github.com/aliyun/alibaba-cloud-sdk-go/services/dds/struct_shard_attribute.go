@@ -17,12 +17,14 @@ package dds
 
 // ShardAttribute is a nested struct in dds response
 type ShardAttribute struct {
-	MaxIOPS         int    `json:"MaxIOPS" xml:"MaxIOPS"`
-	NodeId          string `json:"NodeId" xml:"NodeId"`
-	NodeDescription string `json:"NodeDescription" xml:"NodeDescription"`
-	Port            int    `json:"Port" xml:"Port"`
-	MaxConnections  int    `json:"MaxConnections" xml:"MaxConnections"`
-	NodeStorage     int    `json:"NodeStorage" xml:"NodeStorage"`
-	NodeClass       string `json:"NodeClass" xml:"NodeClass"`
-	ConnectString   string `json:"ConnectString" xml:"ConnectString"`
+	MaxIOPS          int    `json:"MaxIOPS" xml:"MaxIOPS"`
+	Port             int    `json:"Port" xml:"Port"`
+	NodeDescription  string `json:"NodeDescription" xml:"NodeDescription"`
+	NodeId           string `json:"NodeId" xml:"NodeId"`
+	MaxConnections   int    `json:"MaxConnections" xml:"MaxConnections"`
+	NodeStorage      int    `json:"NodeStorage" xml:"NodeStorage"`
+	Status           string `json:"Status" xml:"Status"`
+	NodeClass        string `json:"NodeClass" xml:"NodeClass"`
+	ConnectString    string `json:"ConnectString" xml:"ConnectString"`
+	ReadonlyReplicas int    `json:"ReadonlyReplicas" xml:"ReadonlyReplicas"`
 }

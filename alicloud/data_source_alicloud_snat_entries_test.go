@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSnatEntriesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPCSnatEntriesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	snatIpConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSnatEntriesBasicConfig(rand, map[string]string{
@@ -114,23 +114,24 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vpc.default.id}"
-	specification = "Small"
-	name = "${var.name}"
+	nat_gateway_name = "${var.name}"
+    vswitch_id    = alicloud_vswitch.default.id
+    nat_type      = "Enhanced"
 }
 
-resource "alicloud_eip" "default" {
-	name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
+	allocation_id = "${alicloud_eip_address.default.id}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_snat_entry" "default" {
 	snat_table_id = "${alicloud_nat_gateway.default.snat_table_ids}"
 	source_vswitch_id = "${alicloud_vswitch.default.id}"
-	snat_ip = "${alicloud_eip.default.ip_address}"
+	snat_ip = "${alicloud_eip_address.default.ip_address}"
    snat_entry_name = "${var.name}"
 }
 

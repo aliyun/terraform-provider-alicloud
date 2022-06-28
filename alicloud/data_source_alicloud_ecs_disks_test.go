@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
+func TestAccAlicloudECSDisksDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
@@ -128,6 +128,18 @@ func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
 			"status": `"Creating"`,
 		}),
 	}
+
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+			"disk_name":   `"${alicloud_ecs_disk.default.disk_name}"`,
+			"page_number": `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
+			"disk_name":   `"${alicloud_ecs_disk.default.disk_name}"`,
+			"page_number": `2`,
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
 			"zone_id":              `"${alicloud_ecs_disk.default.zone_id}"`,
@@ -145,6 +157,7 @@ func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
 				"Created" = "TF"
 				"Environment" = "Acceptance-test"
 		}`,
+			"page_number": `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudEcsDisksDataSourceName(rand, map[string]string{
 			"category":             `"cloud"`,
@@ -161,6 +174,7 @@ func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
 				"Created" = "TF-fake"
 				"Environment" = "Acceptance-test"
 			}`,
+			"page_number": `2`,
 		}),
 	}
 	var existAlicloudEcsDisksDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -168,6 +182,7 @@ func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
 			"ids.#":                           "1",
 			"names.#":                         "1",
 			"disks.#":                         "1",
+			"total_count":                     CHECKSET,
 			"disks.0.zone_id":                 CHECKSET,
 			"disks.0.category":                `cloud_efficiency`,
 			"disks.0.delete_auto_snapshot":    `true`,
@@ -205,7 +220,7 @@ func TestAccAlicloudEcsDisksDataSource(t *testing.T) {
 		existMapFunc: existAlicloudEcsDisksDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudEcsDisksDataSourceNameMapFunc,
 	}
-	alicloudEcsDisksCheckInfo.dataSourceTestCheck(t, rand, idsConf, ZoneIdConf, categoryConf, deleteAutoSnapshotConf, deleteWithInstanceConf, diskNameConf, enableAutoSnapshotConf, encryptedConf, paymentTypeConf, tagsConf, nameRegexConf, statusConf, allConf)
+	alicloudEcsDisksCheckInfo.dataSourceTestCheck(t, rand, idsConf, ZoneIdConf, categoryConf, deleteAutoSnapshotConf, deleteWithInstanceConf, diskNameConf, enableAutoSnapshotConf, encryptedConf, paymentTypeConf, tagsConf, nameRegexConf, statusConf, pagingConf, allConf)
 }
 func testAccCheckAlicloudEcsDisksDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

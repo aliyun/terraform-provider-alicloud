@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -153,7 +152,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
+		testAccPreCheck(t)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -205,7 +204,7 @@ func TestAccAlicloudOssBucketsDataSource_sserule_with_kmsid(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.OssSseSupportedRegions)
+		testAccPreCheck(t)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -257,7 +256,7 @@ func TestAccAlicloudOssBucketsDataSource_versioning(t *testing.T) {
 		fakeMapFunc:  fakeOssBucketsMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.OssVersioningSupportedRegions)
+		testAccPreCheck(t)
 	}
 	ossBucketsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }

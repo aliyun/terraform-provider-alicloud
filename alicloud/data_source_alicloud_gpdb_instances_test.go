@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
+func SkipTestAccAlicloudGPDBInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_gpdb_instances.default"
 	name := fmt.Sprintf("tf-testAccGpdbInstance_datasource-%d", rand)
@@ -122,11 +122,8 @@ func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, tagsConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, availabilityZoneConf, vSwitchIdConf, tagsConf, allConf)
 }
 
 func dataSourceGpdbConfigDependence(name string) string {
@@ -134,7 +131,7 @@ func dataSourceGpdbConfigDependence(name string) string {
         data "alicloud_gpdb_zones" "default" {}
 
 		data "alicloud_vpcs" "default" {
-			is_default = true
+			name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
 		  vpc_id = data.alicloud_vpcs.default.ids.0

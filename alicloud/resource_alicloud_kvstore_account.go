@@ -93,7 +93,7 @@ func resourceAlicloudKvstoreAccountCreate(d *schema.ResourceData, meta interface
 			if err != nil {
 				return WrapError(err)
 			}
-			request.AccountPassword = decryptResp.Plaintext
+			request.AccountPassword = decryptResp
 		}
 	}
 	if request.AccountPassword == "" {
@@ -225,7 +225,7 @@ func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface
 			if err != nil {
 				return WrapError(err)
 			}
-			request.AccountPassword = decryptResp.Plaintext
+			request.AccountPassword = decryptResp
 		}
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ResetAccountPassword(request)

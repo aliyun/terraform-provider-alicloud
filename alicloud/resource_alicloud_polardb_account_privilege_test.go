@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAlicloudPolarDBAccountPrivilege_update(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.PolarDBSupportRegions)
 	var v *polardb.DBAccount
 	name := "tf-testAccPolarDBAccountPrivilege_update"
 	resourceId := "alicloud_polardb_account_privilege.default"
@@ -32,7 +33,6 @@ func TestAccAlicloudPolarDBAccountPrivilege_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name

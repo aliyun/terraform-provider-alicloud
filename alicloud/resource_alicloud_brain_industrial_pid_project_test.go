@@ -3,12 +3,19 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/alibabacloud-go/tea-rpc/client"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -53,7 +60,8 @@ func testSweepBrainIndustrialPidProject(region string) error {
 		runtime.SetAutoretry(true)
 		response, _ = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-20"), StringPointer("AK"), nil, request, &runtime)
 		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_brain_industrial_pid_project", action, AlibabaCloudSdkGoERROR)
+			log.Println(fmt.Errorf("%s failed: %v", action, response))
+			return nil
 		}
 		resp, err := jsonpath.Get("$.PidProjectList", response)
 		if err != nil {
@@ -228,4 +236,268 @@ func AlicloudBrainIndustrialPidProjectBasicDependence(name string) string {
 	resource "alicloud_brain_industrial_pid_organization" "update" {
 		pid_organization_name = "tf-testAccUp"
 	}`, name)
+}
+
+func TestUnitAlicloudBrainIndustrialPidProject(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"pid_organization_id": "CreatePidProjectValue",
+		"pid_project_name":    "CreatePidProjectValue",
+		"pid_project_desc":    "CreatePidProjectValue",
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// ListPidProjects
+		"PidProjectList": []interface{}{
+			map[string]interface{}{
+				"PidOrganisationId": "CreatePidProjectValue",
+				"PidProjectDesc":    "CreatePidProjectValue",
+				"PidProjectName":    "CreatePidProjectValue",
+				"PidProjectId":      "CreatePidProjectValue",
+			},
+		},
+		"PidProjectId": "CreatePidProjectValue",
+		"Message":      "CreatePidProjectValue",
+		"Code":         "200",
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreatePidProject
+		"PidProjectId": "CreatePidProjectValue",
+		"Message":      "CreatePidProjectValue",
+		"Code":         "200",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_brain_industrial_pid_project", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudBrainIndustrialPidProjectCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// ListPidProjects Response
+		"PidProjectId": "CreatePidProjectValue",
+		"Message":      "CreatePidProjectValue",
+		"Code":         "200",
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreatePidProject" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudBrainIndustrialPidProjectCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudBrainIndustrialPidProjectUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// UpdatePidProject
+	attributesDiff := map[string]interface{}{
+		"pid_organization_id": "UpdatePidProjectValue",
+		"pid_project_name":    "UpdatePidProjectValue",
+		"pid_project_desc":    "UpdatePidProjectValue",
+	}
+	diff, err := newInstanceDiff("alicloud_brain_industrial_pid_project", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// ListPidProjects Response
+		"PidProjectList": []interface{}{
+			map[string]interface{}{
+				"PidOrganisationId": "UpdatePidProjectValue",
+				"PidProjectDesc":    "UpdatePidProjectValue",
+				"PidProjectName":    "UpdatePidProjectValue",
+			},
+		},
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdatePidProject" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudBrainIndustrialPidProjectUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_brain_industrial_pid_project"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "ListPidProjects" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudBrainIndustrialPidProjectRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewAistudioClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudBrainIndustrialPidProjectDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeletePidProject" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{
+							"Code": "200",
+						}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudBrainIndustrialPidProjectDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
+
 }

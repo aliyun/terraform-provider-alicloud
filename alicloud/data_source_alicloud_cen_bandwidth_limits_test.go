@@ -74,16 +74,14 @@ provider "alicloud" {
   region = "us-west-1"
 }
 
-resource "alicloud_vpc" "default" {
-  provider = "alicloud.bj"
-  vpc_name = "${var.name}-01"
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+    provider = "alicloud.bj"
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vpc" "default1" {
-  provider = "alicloud.us"
-  name = "${var.name}-02"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default1" {
+	provider = "alicloud.us"
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -106,14 +104,14 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 
 resource "alicloud_cen_instance_attachment" "default" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default.id}"
+    child_instance_id = data.alicloud_vpcs.default.ids.0
     child_instance_type = "VPC""
     child_instance_region_id = "cn-beijing"
 }
 
 resource "alicloud_cen_instance_attachment" "default1" {
     instance_id = "${alicloud_cen_instance.default.id}"
-    child_instance_id = "${alicloud_vpc.default1.id}"
+    child_instance_id = data.alicloud_vpcs.default1.ids.0
     child_instance_type = "VPC""
     child_instance_region_id = "us-west-1"
 }

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -22,7 +23,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
@@ -45,6 +46,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,61}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
 				ConflictsWith: []string{"name"},
 			},
 			"name": {
@@ -52,6 +54,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
+				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{0,61}[a-z0-9]$`), "The name can consist of lowercase letters, numbers, underscores, and must begin with letters and end with letters or numbers"),
 				Deprecated:    "Field 'name' has been deprecated from provider version 1.120.0. New field 'account_name' instead.",
 				ConflictsWith: []string{"account_name"},
 			},
@@ -159,7 +162,7 @@ func resourceAlicloudRdsAccountCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		request["AccountPassword"] = decryptResp.Plaintext
+		request["AccountPassword"] = decryptResp
 	} else {
 		return WrapError(Error("One of the 'account_password' and 'password' and 'kms_encrypted_password' should be set."))
 	}
@@ -303,7 +306,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		resetAccountPasswordReq["AccountPassword"] = decryptResp.Plaintext
+		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
 	if update {
 
@@ -363,13 +366,41 @@ func resourceAlicloudRdsAccountDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError", "OperationDenied.DBClusterStatus", "OperationDenied.DBInstanceStatus", "OperationDenied.DBStatus"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
+		object, err := rdsService.DescribeRdsAccount(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(err)
+		}
+		if fmt.Sprint(object["AccountStatus"]) == "Lock" {
+			action = "UnlockAccount"
+			wait = incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return resource.NonRetryableError(err)
+			}
+			action = "DeleteAccount"
+			return resource.RetryableError(fmt.Errorf("there need to delete account %s again after unlock it", d.Id()))
+		}
 		return nil
 	})
 	if err != nil {

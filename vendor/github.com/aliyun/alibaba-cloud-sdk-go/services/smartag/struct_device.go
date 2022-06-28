@@ -17,11 +17,12 @@ package smartag
 
 // Device is a nested struct in smartag response
 type Device struct {
-	SerialNumber       string `json:"SerialNumber" xml:"SerialNumber"`
-	HcState            string `json:"HcState" xml:"HcState"`
-	HaState            string `json:"HaState" xml:"HaState"`
-	SoftwareVersion    string `json:"SoftwareVersion" xml:"SoftwareVersion"`
-	MonitorVersion     string `json:"MonitorVersion" xml:"MonitorVersion"`
-	DistributeSkStatus int    `json:"DistributeSkStatus" xml:"DistributeSkStatus"`
-	SecretKey          string `json:"SecretKey" xml:"SecretKey"`
+	SerialNumber          string `json:"SerialNumber" xml:"SerialNumber"`
+	HaState               string `json:"HaState" xml:"HaState"`
+	SecretKey             string `json:"SecretKey" xml:"SecretKey"`
+	DpiSignatureDbVersion string `json:"DpiSignatureDbVersion" xml:"DpiSignatureDbVersion"`
+	SoftwareVersion       string `json:"SoftwareVersion" xml:"SoftwareVersion"`
+	DistributeSkStatus    int    `json:"DistributeSkStatus" xml:"DistributeSkStatus"`
+	MonitorVersion        string `json:"MonitorVersion" xml:"MonitorVersion"`
+	HcState               string `json:"HcState" xml:"HcState"`
 }

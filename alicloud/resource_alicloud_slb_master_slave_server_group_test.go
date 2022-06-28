@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbMasterSlaveServerGroup_vpc(t *testing.T) {
+func TestAccAlicloudSLBMasterSlaveServerGroup_vpc(t *testing.T) {
 	var v *slb.DescribeMasterSlaveServerGroupAttributeResponse
 	resourceId := "alicloud_slb_master_slave_server_group.default"
 	ra := resourceAttrInit(resourceId, testAccSlbMasterSlaveServerGroupCheckMap)
@@ -39,7 +39,7 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_vpc(t *testing.T) {
 			{
 				//Config: testAccSlbMasterSlaveServerGroupVpc,
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
@@ -73,7 +73,7 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbMasterSlaveServerGroup_multi_vpc(t *testing.T) {
+func TestAccAlicloudSLBMasterSlaveServerGroup_multi_vpc(t *testing.T) {
 	var v *slb.DescribeMasterSlaveServerGroupAttributeResponse
 	resourceId := "alicloud_slb_master_slave_server_group.default.1"
 	ra := resourceAttrInit(resourceId, testAccSlbMasterSlaveServerGroupCheckMap)
@@ -101,7 +101,7 @@ func TestAccAlicloudSlbMasterSlaveServerGroup_multi_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"count":            "10",
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"name":             "${var.name}",
 					"servers": []map[string]interface{}{
 						{
@@ -185,10 +185,10 @@ resource "alicloud_instance" "default" {
     system_disk_category = "cloud_efficiency"
     vswitch_id = "${alicloud_vswitch.default.id}"
 }
-resource "alicloud_slb" "default" {
-    name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+    load_balancer_name = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
-    specification  = "slb.s2.small"
+    load_balancer_spec  = "slb.s2.small"
 }
 `, name)
 }

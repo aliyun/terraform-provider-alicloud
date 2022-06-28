@@ -1,11 +1,17 @@
 package fc
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"gopkg.in/resty.v1"
+	"github.com/gorilla/websocket"
 )
 
 // Client defines fc client
@@ -732,7 +738,6 @@ func (c *Client) ListFunctionAsyncInvokeConfigs(input *ListFunctionAsyncInvokeCo
 	return output, nil
 }
 
-
 // PutFunctionAsyncInvokeConfig creates or updates an async config
 func (c *Client) PutFunctionAsyncInvokeConfig(input *PutFunctionAsyncInvokeConfigInput) (*PutFunctionAsyncInvokeConfigOutput, error) {
 	if input == nil {
@@ -762,3 +767,404 @@ func (c *Client) DeleteFunctionAsyncInvokeConfig(input *DeleteFunctionAsyncInvok
 	output.Header = httpResponse.Header()
 	return output, nil
 }
+
+// ListLayers returns list of layers from fc
+func (c *Client) ListLayers(input *ListLayersInput) (*ListLayersOutput, error) {
+	if input == nil {
+		input = new(ListLayersInput)
+	}
+
+	var output = new(ListLayersOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListLayerVersions returns list of layer versions of a specific layer from fc
+func (c *Client) ListLayerVersions(input *ListLayerVersionsInput) (*ListLayerVersionsOutput, error) {
+	if input == nil {
+		input = new(ListLayerVersionsInput)
+	}
+
+	var output = new(ListLayerVersionsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetLayerVersion returns layer version information from fc
+func (c *Client) GetLayerVersion(input *GetLayerVersionInput) (*GetLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionInput)
+	}
+
+	var output = new(GetLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// GetLayerVersionByArn returns layer version information from fc
+func (c *Client) GetLayerVersionByArn(input *GetLayerVersionByArnInput) (*GetLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionByArnInput)
+	}
+
+	var output = new(GetLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// PublishLayerVersion creates a new layer version
+func (c *Client) PublishLayerVersion(input *PublishLayerVersionInput) (*PublishLayerVersionOutput, error) {
+	if input == nil {
+		input = new(PublishLayerVersionInput)
+	}
+
+	var output = new(PublishLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// PublishPublicLayerVersion publish a new exiting layer version as public
+func (c *Client) PublishPublicLayerVersion(input *GetLayerVersionInput) (*PublishPublicLayerVersionOutput, error) {
+	if input == nil {
+		input = new(GetLayerVersionInput)
+	}
+
+	var output = new(PublishPublicLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// PermanentDeleteVersion delete a soft deleted layer version permanently
+func (c *Client) PermanentDeleteLayerVersion(input *PermanentDeleteLayerVersionInput) (*PublishPublicLayerVersionOutput, error) {
+	if input == nil {
+		return nil, nil
+	}
+
+	var output = new(PublishPublicLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPost)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// DeleteLayerVersion deletes a layer version
+func (c *Client) DeleteLayerVersion(input *DeleteLayerVersionInput) (*DeleteLayerVersionOutput, error) {
+	if input == nil {
+		input = new(DeleteLayerVersionInput)
+	}
+
+	var output = new(DeleteLayerVersionOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// GetStatefulAsyncInvocation returns stateful async invocation record
+func (c *Client) GetStatefulAsyncInvocation(input *GetStatefulAsyncInvocationInput) (*GetStatefulAsyncInvocationOutput, error) {
+	if input == nil {
+		input = new(GetStatefulAsyncInvocationInput)
+	}
+
+	var output = new(GetStatefulAsyncInvocationOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// ListStatefulAsyncInvocations returns list of stateful async invocation records
+func (c *Client) ListStatefulAsyncInvocations(input *ListStatefulAsyncInvocationsInput) (*ListStatefulAsyncInvocationsOutput, error) {
+	if input == nil {
+		input = new(ListStatefulAsyncInvocationsInput)
+	}
+
+	var output = new(ListStatefulAsyncInvocationsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// StopStatefulAsyncInvocation ...
+func (c *Client) StopStatefulAsyncInvocation(input *StopStatefulAsyncInvocationInput) (*StopStatefulAsyncInvocationOutput, error) {
+	if input == nil {
+		input = new(StopStatefulAsyncInvocationInput)
+	}
+
+	var output = new(StopStatefulAsyncInvocationOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
+
+// DoHttpRequest returns function http invocation response
+func (c *Client) DoHttpRequest(req *http.Request) (*http.Response, error) {
+	headerParams := make(map[string]string)
+	if req.Header != nil {
+		for k, _ := range req.Header {
+			headerParams[k] = req.Header.Get(k)
+		}
+	}
+	// CONTENT-MD5
+	if req.Body != nil {
+		buf, _ := ioutil.ReadAll(req.Body)
+		req.Body = ioutil.NopCloser(bytes.NewReader(buf))
+		b, err := json.Marshal(buf)
+		if err != nil {
+			return nil, err
+		}
+		headerParams[HTTPHeaderContentMD5] = MD5(b)
+	}
+	// CONTENT-TYPE
+	headerParams[HTTPHeaderContentType] = req.Header.Get(HTTPHeaderContentType)
+	// DATE
+	headerParams[HTTPHeaderDate] = time.Now().UTC().Format(http.TimeFormat)
+	// Canonicalized
+	canonicalizedResource := req.URL.Path
+	params := req.URL.Query()
+	canonicalizedResource = GetSignResourceWithQueries(req.URL.Path, params)
+	// Build Authorization header
+	headerParams["Authorization"] = GetAuthStr(c.Config.AccessKeyID, c.Config.AccessKeySecret, req.Method, headerParams, canonicalizedResource)
+	// Prepare and send request.
+	preparedRequest := c.Connect.PrepareRequest(req.Body, headerParams, params).SetDoNotParseResponse(true)
+	resp, err := preparedRequest.Execute(req.Method, c.Config.Endpoint+req.URL.Path)
+	if err != nil {
+		return nil, err
+	}
+	return resp.RawResponse, err
+}
+
+// SignURL : sign an URL with signature in queries for HTTP function
+func (c *Client) SignURL(signURLInput *SignURLInput) (string, error) {
+	conf := c.Config
+	return signURLInput.signURL(conf.APIVersion, conf.Endpoint, conf.AccessKeyID, conf.AccessKeySecret, conf.SecurityToken)
+}
+
+// ListOnDemandConfigs return list of provision configs from fc
+func (c *Client) ListOnDemandConfigs(input *ListOnDemandConfigsInput) (*ListOnDemandConfigsOutput, error) {
+	if input == nil {
+		input = NewListOnDemandConfigsInput()
+	}
+
+	var output = new(ListOnDemandConfigsOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	if err := json.Unmarshal(httpResponse.Body(), output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+// PutOnDemandConfig put on-demand config
+func (c *Client) PutOnDemandConfig(input *PutOnDemandConfigInput) (*PutOnDemandConfigOutput, error) {
+	if input == nil {
+		input = new(PutOnDemandConfigInput)
+	}
+
+	var output = new(PutOnDemandConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodPut)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	if err := json.Unmarshal(httpResponse.Body(), output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+// GetOnDemandConfig return on-demand config from fc
+func (c *Client) GetOnDemandConfig(input *GetOnDemandConfigInput) (*GetOnDemandConfigOutput, error) {
+	if input == nil {
+		input = new(GetOnDemandConfigInput)
+	}
+
+	var output = new(GetOnDemandConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	if err := json.Unmarshal(httpResponse.Body(), output); err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
+// DeleteOnDemandConfig delete on-demand config
+func (c *Client) DeleteOnDemandConfig(input *DeleteOnDemandConfigInput) (*DeleteOnDemandConfigOutput, error) {
+	if input == nil {
+		input = new(DeleteOnDemandConfigInput)
+	}
+
+	var output = new(DeleteOnDemandConfigOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodDelete)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// ListInstances ...
+func (c *Client) ListInstances(input *ListInstancesInput) (*ListInstancesOutput, error) {
+	if input == nil {
+		input = new(ListInstancesInput)
+	}
+
+	var output = new(ListInstancesOutput)
+	httpResponse, err := c.sendRequest(input, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+	data := httpResponse.Body()
+	fmt.Printf("%s\n", data)
+	json.Unmarshal(data, output)
+	output.Header = httpResponse.Header()
+	return output, nil
+}
+
+// InstanceExec ...
+func (c *Client) InstanceExec(input *InstanceExecInput) (*InstanceExecOutput, error) {
+	if input == nil {
+		input = new(InstanceExecInput)
+	}
+
+	var output = new(InstanceExecOutput)
+	ws, err := c.openWebSocketConn(input)
+	if err != nil {
+		return nil, err
+	}
+	output.WebsocketConnection = ws
+	output.start(input)
+	return output, nil
+}
+
+// buildWebSocket ...
+func (c *Client) openWebSocketConn(input ServiceInput) (*websocket.Conn, error) {
+	if err := input.Validate(); err != nil {
+		return nil, err
+	}
+	path := "/" + c.Config.APIVersion + input.GetPath()
+
+	headerParams := make(map[string]string)
+	for k, v := range input.GetHeaders() {
+		headerParams[k] = v
+	}
+
+	headerParams["Host"] = c.Config.host
+	headerParams[HTTPHeaderAccountID] = c.Config.AccountID
+	headerParams[HTTPHeaderUserAgent] = c.Config.UserAgent
+	headerParams["Accept"] = "application/json"
+	// Caution: should not declare this as byte[] whose zero value is an empty byte array
+	// if input has no payload, the http body should not be populated at all.
+	if input.GetPayload() != nil {
+		switch input.GetPayload().(type) {
+		case *[]byte:
+			headerParams["Content-Type"] = "application/octet-stream"
+			b := input.GetPayload().(*[]byte)
+			headerParams["Content-MD5"] = MD5(*b)
+		default:
+			headerParams["Content-Type"] = "application/json"
+			b, err := json.Marshal(input.GetPayload())
+			if err != nil {
+				// TODO: return client side error
+				return nil, nil
+			}
+			headerParams["Content-MD5"] = MD5(b)
+		}
+	}
+	headerParams["Date"] = time.Now().UTC().Format(http.TimeFormat)
+	if c.Config.SecurityToken != "" {
+		headerParams[HTTPHeaderSecurityToken] = c.Config.SecurityToken
+	}
+	switch c.Config.APIVersion {
+	case APIVersionV1:
+		headerParams["Authorization"] = GetAuthStr(
+			c.Config.AccessKeyID, c.Config.AccessKeySecret, http.MethodGet, headerParams, path)
+	default:
+		return nil, fmt.Errorf("unsupported api version: '%s'", c.Config.APIVersion)
+	}
+
+	u := &url.URL{Scheme: "ws", Host: c.Config.host, Path: path, RawQuery: input.GetQueryParams().Encode()}
+	if strings.HasPrefix(c.Config.host, "https://") {
+		u.Scheme = "wss"
+	}
+	header := make(http.Header)
+	for headerKey, headerValue := range headerParams {
+		if headerKey == "Connection" || headerKey == "Upgrade" || headerKey == "Sec-Websocket-Version" {
+			continue
+		}
+		header.Set(headerKey, headerValue)
+	}
+
+	ws, resp, err := websocket.DefaultDialer.Dial(u.String(), header)
+	if err != nil {
+		if resp != nil {
+			content, _ := ioutil.ReadAll(resp.Body)
+			return nil, fmt.Errorf("%v: %s", err, content)
+		}
+		return nil, err
+	}
+
+	return ws, nil
+}
+

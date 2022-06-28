@@ -41,6 +41,8 @@ func resourceAlicloudOnsTopic() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validation.IntInSlice([]int{2, 4, 6}),
+				Computed:     true,
+				Deprecated:   "Attribute perm has been deprecated and suggest removing it from your template.",
 			},
 			"remark": {
 				Type:         schema.TypeString,
@@ -147,49 +149,11 @@ func resourceAlicloudOnsTopicRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudOnsTopicUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
-	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Partial(true)
-
 	if d.HasChange("tags") {
 		if err := onsService.SetResourceTags(d, "TOPIC"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
-	if d.HasChange("perm") {
-		request := map[string]interface{}{
-			"InstanceId": parts[0],
-			"Topic":      parts[1],
-		}
-		request["Perm"] = d.Get("perm")
-		action := "OnsTopicUpdate"
-		conn, err := client.NewOnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("perm")
-	}
-	d.Partial(false)
 	return resourceAlicloudOnsTopicRead(d, meta)
 }
 func resourceAlicloudOnsTopicDelete(d *schema.ResourceData, meta interface{}) error {

@@ -10,12 +10,10 @@ import (
 )
 
 func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+	rand := acctest.RandIntRange(0, 9999)
 	resourceId := "data.alicloud_drds_instances.default"
-
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId,
-		fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
-		dataSourceDRDSInstancesConfigDependence)
+	name := fmt.Sprintf("tf-testAcc%s%d", defaultRegionToTest, rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceDRDSInstancesConfigDependence)
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -62,13 +60,12 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 			"ids.#":                    "1",
 			"descriptions.#":           "1",
 			"ids.0":                    CHECKSET,
-			"descriptions.0":           fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
 			"instances.#":              "1",
-			"instances.0.description":  fmt.Sprintf("tf-testAcc%sDRDSInstancesDataSource-%d", defaultRegionToTest, rand),
-			"instances.0.type":         "1",
+			"instances.0.description":  name,
+			"instances.0.type":         "PRIVATE",
 			"instances.0.zone_id":      CHECKSET,
 			"instances.0.id":           CHECKSET,
-			"instances.0.network_type": "vpc",
+			"instances.0.network_type": "VPC",
 			"instances.0.create_time":  CHECKSET,
 		}
 	}
@@ -89,7 +86,6 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
 	drdsInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, descriptionRegexConf, idsConf, allConf)
@@ -104,10 +100,11 @@ func dataSourceDRDSInstancesConfigDependence(name string) string {
 		default = "%s"
 	}
 	data "alicloud_vpcs" "default"	{
-        is_default = "true"
+        name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+      zone_id = data.alicloud_zones.default.ids.0
 	}
  	resource "alicloud_drds_instance" "default" {
   		description = "${var.name}"

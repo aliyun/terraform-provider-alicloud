@@ -33,8 +33,8 @@ func testSweepRamGroups(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	var groups []ram.GroupInListGroups
@@ -112,7 +112,7 @@ func testSweepRamGroups(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamGroup_basic(t *testing.T) {
+func TestAccAlicloudRAMGroup_basic(t *testing.T) {
 	var v *ram.GetGroupResponse
 	resourceId := "alicloud_ram_group.default"
 	ra := resourceAttrInit(resourceId, ramGroupBasicMap)
@@ -212,7 +212,7 @@ func TestAccAlicloudRamGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRamGroup_multi(t *testing.T) {
+func TestAccAlicloudRAMGroup_multi(t *testing.T) {
 	var v *ram.GetGroupResponse
 	resourceId := "alicloud_ram_group.default.9"
 	ra := resourceAttrInit(resourceId, ramGroupBasicMap)

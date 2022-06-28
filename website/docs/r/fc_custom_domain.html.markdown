@@ -19,41 +19,41 @@ Provides an Alicloud Function Compute custom domain resource.
 
 Basic Usage
 
-```terrraform
+```terraform
 variable "name" {
   default = "tf-testaccalicloudfcservice"
 }
 
 resource "alicloud_fc_custom_domain" "default" {
-	domain_name = "terraform.functioncompute.com"
-	protocol = "HTTP"
-	route_config {
-		path = "/login/*"
-		service_name = alicloud_fc_service.default.name
-		function_name = alicloud_fc_function.default.name
-		qualifier = "v1"
-		methods = ["GET","POST"]
-	}
+  domain_name = "terraform.functioncompute.com"
+  protocol    = "HTTP"
+  route_config {
+    path          = "/login/*"
+    service_name  = alicloud_fc_service.default.name
+    function_name = alicloud_fc_function.default.name
+    qualifier     = "v1"
+    methods       = ["GET", "POST"]
+  }
   cert_config {
-    cert_name = "your certificate name"
+    cert_name   = "your certificate name"
     private_key = "your private key"
     certificate = "your certificate data"
   }
 }
 
 resource "alicloud_fc_service" "default" {
-    name = var.name
-    description = "${var.name}-description"
+  name        = var.name
+  description = "${var.name}-description"
 }
 
 resource "alicloud_oss_bucket" "default" {
-	bucket = var.name
+  bucket = var.name
 }
 
 resource "alicloud_oss_bucket_object" "default" {
-	bucket = alicloud_oss_bucket.default.id
-	key = "fc/hello.zip"
-	content = <<EOF
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "fc/hello.zip"
+  content = <<EOF
 		# -*- coding: utf-8 -*-
 	def handler(event, context):
 		print "hello world"
@@ -62,13 +62,13 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 resource "alicloud_fc_function" "default" {
-	service = alicloud_fc_service.default.name
-	name = var.name
-	oss_bucket = alicloud_oss_bucket.default.id
-	oss_key = alicloud_oss_bucket_object.default.key
-	memory_size = 512
-	runtime = "python2.7"
-	handler = "hello.handler"
+  service     = alicloud_fc_service.default.name
+  name        = var.name
+  oss_bucket  = alicloud_oss_bucket.default.id
+  oss_key     = alicloud_oss_bucket_object.default.key
+  memory_size = 512
+  runtime     = "python2.7"
+  handler     = "hello.handler"
 }
 ```
 
@@ -87,7 +87,7 @@ The following arguments are supported:
 * `path` - (Required) The path that requests are routed from.
 * `serivce_name` - (Required) The name of the Function Compute service that requests are routed to. 
 * `function_name` - (Required) The name of the Function Compute function that requests are routed to.
-* `qualifier` - (Optional) The version or alias of the Function Compute service that requests are routed to. For example, qualifier v1 indicates that the requests are routed to the version 1 Function Compute service. For detail information about verison and alias, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/96464.htm).
+* `qualifier` - (Optional) The version or alias of the Function Compute service that requests are routed to. For example, qualifier v1 indicates that the requests are routed to the version 1 Function Compute service. For detail information about version and alias, please refer to the [developer guide](https://www.alibabacloud.com/help/doc-detail/96464.htm).
 * `methods` - (Optional) The requests of the specified HTTP methos are routed from. Valid method: GET, POST, DELETE, HEAD, PUT and PATCH. For example, "GET, HEAD" methods indicate that only requests from GET and HEAD methods are routed.
 
 **cert_config** includes the following arguments:

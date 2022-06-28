@@ -94,7 +94,7 @@ func testSweepHaVipAttachment(region string) error {
 }
 
 // At present, only white list users can operate HaVip Resource.
-func SkipTestAccAlicloudHaVipAttachmentBasic(t *testing.T) {
+func SkipTestAccAlicloudVPCHavipAttachmentBasic(t *testing.T) {
 	resourceId := "alicloud_havip_attachment.foo"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

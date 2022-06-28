@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
-	var v *datahub.Subscription
+	var v *datahub.GetSubscriptionResult
 
 	resourceId := "alicloud_datahub_subscription.default"
 	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)
@@ -76,7 +76,7 @@ func TestAccAlicloudDatahubSubscription_basic(t *testing.T) {
 	})
 }
 func TestAccAlicloudDatahubSubscription_multi(t *testing.T) {
-	var v *datahub.Subscription
+	var v *datahub.GetSubscriptionResult
 
 	resourceId := "alicloud_datahub_subscription.default.4"
 	ra := resourceAttrInit(resourceId, datahubSubscriptionBasicMap)

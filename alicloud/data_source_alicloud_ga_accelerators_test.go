@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "data.alicloud_ga_accelerators.default"
 	name := fmt.Sprintf("tf-testAccelerators_datasource-%d", rand)
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceGaAcceleratorsConfigDependence)
@@ -48,10 +51,10 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 			"names.#":                                         "1",
 			"accelerators.#":                                  CHECKSET,
 			"accelerators.0.id":                               CHECKSET,
-			"accelerators.0.accelerator_name":                 fmt.Sprintf("tf-testAccelerators_datasource-%d", rand),
+			"accelerators.0.accelerator_name":                 name,
 			"accelerators.0.cen_id":                           "",
 			"accelerators.0.ddos_id":                          "",
-			"accelerators.0.description":                      "",
+			"accelerators.0.description":                      name,
 			"accelerators.0.dns_name":                         CHECKSET,
 			"accelerators.0.expired_time":                     CHECKSET,
 			"accelerators.0.payment_type":                     "PREPAY",
@@ -75,16 +78,21 @@ func TestAccAlicloudGaAcceleratorsDataSource(t *testing.T) {
 		existMapFunc: existMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {}
 
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
 }
 
 func dataSourceGaAcceleratorsConfigDependence(name string) string {
-	return fmt.Sprintf(`resource "alicloud_ga_accelerator" "default" {
-  spec ="1"
-  auto_use_coupon=true
-  duration=1
-  accelerator_name="%s"
-}`, name)
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+resource "alicloud_ga_accelerator" "default" {
+  duration         = 1
+  spec             = "1"
+  accelerator_name = var.name
+  auto_use_coupon  = true
+  description      = var.name
+}
+`, name)
 }

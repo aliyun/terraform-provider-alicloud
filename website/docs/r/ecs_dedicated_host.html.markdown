@@ -44,6 +44,12 @@ resource "alicloud_ecs_dedicated_host" "default" {
   sale_cycle = "Month"
 }
 ```
+### Deleting alicloud_ecs_dedicated_host or removing it from your configuration
+
+The alicloud_ecs_dedicated_host resource allows you to manage payment_type = "PrePaid" dedicated host, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration
+will remove it from your state file and management, but will not destroy the Dedicated Host.
+You can resume managing the subscription dedicated host via the AlibabaCloud Console.
 
 ## Argument Reference
 
@@ -68,11 +74,22 @@ The following arguments are supported:
 * `sale_cycle` - (Optional, Computed) The unit of the subscription period of the dedicated host.
 * `zone_id` - (Optional, ForceNew, Computed) The zone ID of the dedicated host. This parameter is empty by default. If you do not specify this parameter, the system automatically selects a zone.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `cpu_over_commit_ratio` - (Optional, Available in 1.123.1+) CPU oversold ratio. Only custom specifications g6s, c6s, r6s support setting the CPU oversold ratio.
+* `dedicated_host_cluster_id` - (Optional, Available in 1.123.1+) The dedicated host cluster ID to which the dedicated host belongs.
+* `min_quantity` - (Optional, Available in 1.123.1+) Specify the minimum purchase quantity of a dedicated host.
 
 ## Attributes Reference
 
 * `id` - The ID of the dedicated host.
 * `status` - The status of the dedicated host.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 11 mins) Used when create the dedicated host.
+* `delete` - (Defaults to 1 mins) Used when delete the dedicated host.
+* `update` - (Defaults to 11 mins) Used when update the dedicated host.
 
 ## Import
 

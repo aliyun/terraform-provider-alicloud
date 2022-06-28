@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
@@ -39,6 +38,12 @@ func dataSourceAlicloudKVStoreInstanceClasses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+			},
+			"product_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Local", "Tair_rdb", "Tair_scm", "Tair_essd", "OnECS"}, false),
 			},
 			"performance_type": {
 				Type:         schema.TypeString,
@@ -144,6 +149,7 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	instanceChargeType := d.Get("instance_charge_type").(string)
 	request.InstanceChargeType = instanceChargeType
 	request.Engine = d.Get("engine").(string)
+	request.ProductType = d.Get("product_type").(string)
 	var response = &r_kvstore.DescribeAvailableResourceResponse{}
 	err := resource.Retry(time.Minute*5, func() *resource.RetryError {
 		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
@@ -167,8 +173,6 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 	var instanceClasses []string
 	var ids []string
 
-	engine, engineGot := d.GetOk("engine")
-	engine = strings.ToLower(engine.(string))
 	engineVersion, engineVersionGot := d.GetOk("engine_version")
 	architecture, architectureGot := d.GetOk("architecture")
 	editionType, editionTypeGot := d.GetOk("edition_type")
@@ -180,9 +184,6 @@ func dataSourceAlicloudKVStoreAvailableResourceRead(d *schema.ResourceData, meta
 		zondId := AvailableZone.ZoneId
 		ids = append(ids, zondId)
 		for _, SupportedEngine := range AvailableZone.SupportedEngines.SupportedEngine {
-			if engineGot && engine != SupportedEngine.Engine {
-				continue
-			}
 			ids = append(ids, SupportedEngine.Engine)
 			for _, SupportedEditionType := range SupportedEngine.SupportedEditionTypes.SupportedEditionType {
 				if editionTypeGot && editionType.(string) != SupportedEditionType.EditionType {

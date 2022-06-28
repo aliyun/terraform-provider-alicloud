@@ -3,8 +3,8 @@ resource "alicloud_vpc" "this" {
   cidr_block = "172.16.0.0/16"
 }
 resource "alicloud_security_group" "default" {
-  name   = var.security_group_name
-  vpc_id = var.vpc_id == "" ? alicloud_vpc.this.0.id : var.vpc_id
+  vpc_name = var.security_group_name
+  vpc_id   = var.vpc_id == "" ? alicloud_vpc.this.0.id : var.vpc_id
 }
 
 resource "alicloud_security_group_rule" "http-in" {

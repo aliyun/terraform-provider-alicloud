@@ -71,15 +71,21 @@ func (client *Client) ListInstanceIndicesWithCallback(request *ListInstanceIndic
 // ListInstanceIndicesRequest is the request struct for api ListInstanceIndices
 type ListInstanceIndicesRequest struct {
 	*requests.RoaRequest
-	InstanceId string `position:"Path" name:"InstanceId"`
-	Lang       string `position:"Query" name:"lang"`
+	All         requests.Boolean `position:"Query" name:"all"`
+	InstanceId  string           `position:"Path" name:"InstanceId"`
+	IsManaged   requests.Boolean `position:"Query" name:"isManaged"`
+	Size        requests.Integer `position:"Query" name:"size"`
+	Name        string           `position:"Query" name:"name"`
+	Page        requests.Integer `position:"Query" name:"page"`
+	IsOpenstore requests.Boolean `position:"Query" name:"isOpenstore"`
 }
 
 // ListInstanceIndicesResponse is the response struct for api ListInstanceIndices
 type ListInstanceIndicesResponse struct {
 	*responses.BaseResponse
-	RequestId string   `json:"RequestId" xml:"RequestId"`
-	Result    []string `json:"Result" xml:"Result"`
+	RequestId string       `json:"RequestId" xml:"RequestId"`
+	Headers   Headers      `json:"Headers" xml:"Headers"`
+	Result    []ResultItem `json:"Result" xml:"Result"`
 }
 
 // CreateListInstanceIndicesRequest creates a request to invoke ListInstanceIndices API
@@ -87,7 +93,7 @@ func CreateListInstanceIndicesRequest() (request *ListInstanceIndicesRequest) {
 	request = &ListInstanceIndicesRequest{
 		RoaRequest: &requests.RoaRequest{},
 	}
-	request.InitWithApiInfo("elasticsearch", "2017-06-13", "ListInstanceIndices", "/openapi/diagnosis/instances/[InstanceId]/indices", "elasticsearch", "openAPI")
+	request.InitWithApiInfo("elasticsearch", "2017-06-13", "ListInstanceIndices", "/openapi/instances/[InstanceId]/indices", "elasticsearch", "openAPI")
 	request.Method = requests.GET
 	return
 }

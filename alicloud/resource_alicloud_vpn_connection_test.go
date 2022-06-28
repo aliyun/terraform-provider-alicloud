@@ -42,7 +42,7 @@ func testAccCheckVpnConnectionAttr(vpnConn *vpc.DescribeVpnConnectionResponse, l
 		return nil
 	}
 }
-func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
+func TestAccAlicloudVPNConnectionBasic(t *testing.T) {
 	var v vpc.DescribeVpnConnectionResponse
 
 	resourceId := "alicloud_vpn_connection.default"
@@ -215,7 +215,7 @@ func TestAccAlicloudVpnConnectionBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudVpnConnectionMulti(t *testing.T) {
+func TestAccAlicloudVPNConnectionMulti(t *testing.T) {
 	var v vpc.DescribeVpnConnectionResponse
 
 	resourceId := "alicloud_vpn_connection.default.1"
@@ -323,6 +323,196 @@ resource "alicloud_vpn_customer_gateway" "default" {
 	name = "${var.name}"
 	ip_address = "42.104.22.210"
 	description = "testAccVpnConnectionDesc"
+}
+
+`, name)
+}
+
+func TestAccAlicloudVPNConnection_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_connection.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnConnectionMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnConnection")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sonnection%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnConnectionBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_gateway_id":      "${alicloud_vpn_gateway.default.id}",
+					"customer_gateway_id": "${alicloud_vpn_customer_gateway.default.id}",
+					"local_subnet":        []string{"172.16.0.0/24", "172.16.1.0/24"},
+					"remote_subnet":       []string{"10.0.0.0/24", "10.0.1.0/24"},
+					"name":                "${var.name}",
+					"effect_immediately":  "false",
+					"ike_config": []map[string]string{
+						{
+							"ike_auth_alg":  "md5",
+							"ike_enc_alg":   "des",
+							"ike_version":   "ikev2",
+							"ike_mode":      "main",
+							"ike_lifetime":  "86400",
+							"psk":           "tf-testvpn2",
+							"ike_pfs":       "group1",
+							"ike_remote_id": "testbob2",
+							"ike_local_id":  "testalice2",
+						},
+					},
+					"ipsec_config": []map[string]string{
+						{
+							"ipsec_pfs":      "group5",
+							"ipsec_enc_alg":  "des",
+							"ipsec_auth_alg": "md5",
+							"ipsec_lifetime": "8640",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_gateway_id":      CHECKSET,
+						"customer_gateway_id": CHECKSET,
+						"name":                name,
+						"local_subnet.#":      "2",
+						"remote_subnet.#":     "2",
+						"effect_immediately":  "false",
+						"ike_config.#":        "1",
+						"ipsec_config.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_config": []map[string]string{
+						{
+							"enable":   "true",
+							"dip":      "10.0.0.1",
+							"sip":      "192.168.1.1",
+							"interval": "10",
+							"retry":    "10",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_dpd": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_dpd": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_nat_traversal": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_nat_traversal": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bgp_config": []map[string]string{
+						{
+							"enable":       "true",
+							"local_asn":    "45014",
+							"tunnel_cidr":  "169.254.11.0/30",
+							"local_bgp_ip": "169.254.11.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bgp_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_dpd":           "false",
+					"enable_nat_traversal": "false",
+					"health_check_config": []map[string]string{
+						{
+							"enable": "false",
+						},
+					},
+					"bgp_config": []map[string]string{
+						{
+							"enable": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bgp_config.#":          "1",
+						"health_check_config.#": "1",
+						"enable_dpd":            "false",
+						"enable_nat_traversal":  "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpnConnectionMap3 = map[string]string{}
+
+func AlicloudVpnConnectionBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_zones" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones[0].id
+}
+
+resource "alicloud_vpn_gateway" "default" {
+  name                 = data.alicloud_vpcs.default.vpcs[0].vpc_name
+  vpc_id               = data.alicloud_vpcs.default.vpcs[0].id
+  bandwidth            = 10
+  instance_charge_type = "PostPaid"
+  enable_ssl           = false
+  vswitch_id           = data.alicloud_vswitches.default.vswitches[0].id
+}
+
+resource "alicloud_vpn_customer_gateway" "default" {
+  name       = data.alicloud_vpcs.default.vpcs[0].vpc_name
+  ip_address = "192.168.1.1"
+  asn = "45014"
 }
 
 `, name)

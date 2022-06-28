@@ -243,9 +243,9 @@ func dataSourceAlicloudNetworkAclsRead(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_network_acls", action, AlibabaCloudSdkGoERROR)
 		}
@@ -339,7 +339,7 @@ func dataSourceAlicloudNetworkAclsRead(d *schema.ResourceData, meta interface{})
 			}
 		}
 		mapping["resources"] = resourceMap
-		ids = append(ids, fmt.Sprint(object["NetworkAclId"]))
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["NetworkAclName"])
 		s = append(s, mapping)
 	}

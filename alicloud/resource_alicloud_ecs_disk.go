@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -24,7 +25,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
 			Delete: schema.DefaultTimeout(2 * time.Minute),
-			Update: schema.DefaultTimeout(6 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"advanced_features": {
@@ -51,7 +52,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"delete_with_instance": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -79,7 +80,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"enable_auto_snapshot": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 			"encrypt_algorithm": {
 				Type:     schema.TypeString,
@@ -111,6 +112,10 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"performance_level": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("category").(string) != "cloud_essd"
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -145,7 +150,6 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
-				Default:      "offline",
 			},
 			"zone_id": {
 				Type:          schema.TypeString,
@@ -257,7 +261,7 @@ func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"UnknownError"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -437,15 +441,16 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	update = false
 	modifyDiskChargeTypeReq := map[string]interface{}{
-		"DiskIds": d.Id(),
+		"DiskIds": convertListToJsonString([]interface{}{d.Id()}),
 	}
 	if !d.IsNewResource() && d.HasChange("instance_id") {
 		update = true
 	}
+	modifyDiskChargeTypeReq["ClientToken"] = buildClientToken("ModifyDiskChargeType")
 	modifyDiskChargeTypeReq["InstanceId"] = d.Get("instance_id")
 	modifyDiskChargeTypeReq["RegionId"] = client.RegionId
 	modifyDiskChargeTypeReq["AutoPay"] = true
-	if d.HasChange("payment_type") {
+	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 		modifyDiskChargeTypeReq["DiskChargeType"] = convertEcsDiskPaymentTypeRequest(d.Get("payment_type").(string))
 	}
@@ -459,7 +464,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDiskChargeTypeReq, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDiskStatus"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -478,11 +483,11 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	modifyDiskAttributeReq := map[string]interface{}{
 		"DiskId": d.Id(),
 	}
-	if d.HasChange("delete_auto_snapshot") || d.IsNewResource() {
+	if needUpdate(d, "delete_auto_snapshot", true) {
 		update = true
 		modifyDiskAttributeReq["DeleteAutoSnapshot"] = d.Get("delete_auto_snapshot")
 	}
-	if d.HasChange("delete_with_instance") || d.IsNewResource() {
+	if needUpdate(d, "delete_with_instance", true) {
 		update = true
 		modifyDiskAttributeReq["DeleteWithInstance"] = d.Get("delete_with_instance")
 	}
@@ -498,7 +503,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		update = true
 		modifyDiskAttributeReq["DiskName"] = d.Get("name")
 	}
-	if d.HasChange("enable_auto_snapshot") || d.IsNewResource() {
+	if d.HasChange("enable_auto_snapshot") {
 		update = true
 		modifyDiskAttributeReq["EnableAutoSnapshot"] = d.Get("enable_auto_snapshot")
 	}
@@ -536,6 +541,20 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	object, err := ecsService.DescribeEcsDisk(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ecs_disk ecsService.DescribeEcsDisk Failed!!! %s", err)
+			return nil
+		}
+		return WrapError(err)
+	}
+	if fmt.Sprint(object["DeleteWithInstance"]) == "true" {
+		log.Printf("[DEBUG] Resource alicloud_ecs_disk %s attribute DeleteWithInstance is true, so it will remove from state.", d.Id())
+		return nil
+	}
+
 	action := "DeleteDisk"
 	var response map[string]interface{}
 	conn, err := client.NewEcsClient()
@@ -584,4 +603,12 @@ func convertEcsDiskPaymentTypeRequest(source interface{}) interface{} {
 		return "PrePaid"
 	}
 	return source
+}
+
+func needUpdate(d *schema.ResourceData, key string, value interface{}) bool {
+	v, _ := d.GetOkExists(key)
+	if d.IsNewResource() && strings.EqualFold(fmt.Sprint(v), fmt.Sprint(value)) {
+		return true
+	}
+	return d.HasChange(key)
 }

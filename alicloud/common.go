@@ -12,9 +12,14 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/denverdino/aliyungo/cs"
 
@@ -258,6 +263,12 @@ const (
 	Gre   = Protocol("gre")
 )
 
+const (
+	// HeaderEnableEBTrigger header key for enabling eventbridge trigger
+	// TODO: delete the header after eventbridge trigger is totally exposed to user
+	HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
+)
+
 // ValidProtocols network protocol list
 var ValidProtocols = []Protocol{Http, Https, Tcp, Udp}
 
@@ -348,6 +359,37 @@ func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 	return
 }
 
+func encodeToBase64String(configured []string) string {
+	result := ""
+	for i, v := range configured {
+		result += v
+		if i < len(configured)-1 {
+			result += ","
+		}
+	}
+	return base64.StdEncoding.EncodeToString([]byte(result))
+}
+
+func decodeFromBase64String(configured string) (result []string, err error) {
+
+	decodeString, err := base64.StdEncoding.DecodeString(configured)
+	if err != nil {
+		return result, err
+	}
+
+	result = strings.Split(string(decodeString), ",")
+	return result, nil
+}
+
+func convertJsonStringToMap(configured string) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(configured), &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // Convert the result for an array and returns a comma separate
 func convertListToCommaSeparate(configured []interface{}) string {
 	if len(configured) < 1 {
@@ -368,6 +410,11 @@ func convertBoolToString(configured bool) string {
 	return strconv.FormatBool(configured)
 }
 
+func convertStringToBool(configured string) bool {
+	v, _ := strconv.ParseBool(configured)
+	return v
+}
+
 func convertIntergerToString(configured int) string {
 	return strconv.Itoa(configured)
 }
@@ -386,16 +433,44 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 }
 
 func convertMaptoJsonString(m map[string]interface{}) (string, error) {
-	sm := make(map[string]string, len(m))
-	for k, v := range m {
-		sm[k] = v.(string)
-	}
+	//sm := make(map[string]string, len(m))
+	//for k, v := range m {
+	//	sm[k] = v.(string)
+	//}
 
-	if result, err := json.Marshal(sm); err != nil {
+	if result, err := json.Marshal(m); err != nil {
 		return "", err
 	} else {
 		return string(result), nil
 	}
+}
+
+func convertListMapToJsonString(configured []map[string]interface{}) (string, error) {
+	if len(configured) < 1 {
+		return "[]", nil
+	}
+
+	result := "["
+	for i, m := range configured {
+		if m == nil {
+			continue
+		}
+
+		sm := make(map[string]interface{}, len(m))
+		for k, v := range m {
+			sm[k] = v
+		}
+
+		item, err := json.Marshal(sm)
+		if err == nil {
+			result += string(item)
+			if i < len(configured)-1 {
+				result += ","
+			}
+		}
+	}
+	result += "]"
+	return result, nil
 }
 
 func convertMapFloat64ToJsonString(m map[string]interface{}) (string, error) {
@@ -452,21 +527,11 @@ const (
 	TagResourceInstance      = TagResourceType("instance")
 	TagResourceAcl           = TagResourceType("acl")
 	TagResourceCertificate   = TagResourceType("certificate")
-	TagResourceSnapshot      = TagResourceType("snapshot")
-	TagResourceKeypair       = TagResourceType("keypair")
 	TagResourceDisk          = TagResourceType("disk")
 	TagResourceSecurityGroup = TagResourceType("securitygroup")
-	TagResourceEni           = TagResourceType("eni")
 	TagResourceCdn           = TagResourceType("DOMAIN")
-	TagResourceVpc           = TagResourceType("VPC")
-	TagResourceVSwitch       = TagResourceType("VSWITCH")
-	TagResourceRouteTable    = TagResourceType("ROUTETABLE")
-	TagResourceEip           = TagResourceType("EIP")
-	TagResourcePlugin        = TagResourceType("plugin")
-	TagResourceApiGroup      = TagResourceType("apiGroup")
 	TagResourceApp           = TagResourceType("app")
 	TagResourceTopic         = TagResourceType("topic")
-	TagResourceConsumerGroup = TagResourceType("consumergroup")
 	TagResourceCluster       = TagResourceType("cluster")
 )
 
@@ -775,6 +840,17 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 				requestContent = fmt.Sprintf("%#v", requestInfo[1])
 			}
 
+			if len(requestInfo) == 1 {
+				if v, ok := requestInfo[0].(map[string]interface{}); ok {
+					if res, err := json.Marshal(&v); err == nil {
+						requestContent = string(res)
+					}
+					if res, err := json.Marshal(&content); err == nil {
+						content = string(res)
+					}
+				}
+			}
+
 			content = fmt.Sprintf("%vDomain:%v, Version:%v, ActionName:%v, Method:%v, Product:%v, Region:%v\n\n"+
 				"*************** %s Request ***************\n%#v\n",
 				content, request.Domain, request.Version, request.ActionName,
@@ -928,7 +1004,7 @@ func checkWaitForReady(object interface{}, conditions map[string]interface{}) (b
 	return true, values, nil
 }
 
-// When using teadsl, we need to convert float, int64 and int32 to int for comparison.
+// When  using teadsl, we need to convert float, int64 and int32 to int for comparison.
 func formatInt(src interface{}) int {
 	if src == nil {
 		return 0
@@ -960,5 +1036,223 @@ func formatInt(src interface{}) int {
 	default:
 		panic(fmt.Sprintf("Not support type %s", attrType.String()))
 	}
-	return 0
+}
+
+func convertArrayObjectToJsonString(src interface{}) (string, error) {
+	res, err := json.Marshal(&src)
+	if err != nil {
+		return "", err
+	}
+	return string(res), nil
+}
+
+func convertArrayToString(src interface{}, sep string) string {
+	if src == nil {
+		return ""
+	}
+	items := make([]string, 0)
+	for _, v := range src.([]interface{}) {
+		items = append(items, fmt.Sprint(v))
+	}
+	return strings.Join(items, sep)
+}
+
+func splitMultiZoneId(id string) (ids []string) {
+	if !(strings.Contains(id, MULTI_IZ_SYMBOL) || strings.Contains(id, "(")) {
+		return
+	}
+	firstIndex := strings.Index(id, MULTI_IZ_SYMBOL)
+	secondIndex := strings.Index(id, "(")
+	for _, p := range strings.Split(id[secondIndex+1:len(id)-1], COMMA_SEPARATED) {
+		ids = append(ids, id[:firstIndex]+string(p))
+	}
+	return
+}
+
+func Case2Camel(name string) string {
+	name = strings.Replace(name, "_", " ", -1)
+	name = strings.Title(name)
+	return strings.Replace(name, " ", "", -1)
+}
+
+func FirstLower(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToLower(s[:1]) + s[1:]
+}
+
+// SplitSlice Divides the slice into blocks of the specified size
+func SplitSlice(xs []interface{}, chunkSize int) [][]interface{} {
+	if len(xs) == 0 {
+		return nil
+	}
+	divided := make([][]interface{}, (len(xs)+chunkSize-1)/chunkSize)
+	prev := 0
+	i := 0
+	till := len(xs) - chunkSize
+	for prev < till {
+		next := prev + chunkSize
+		divided[i] = xs[prev:next]
+		prev = next
+		i++
+	}
+	divided[i] = xs[prev:]
+	return divided
+}
+
+func isPagingRequest(d *schema.ResourceData) bool {
+	v, ok := d.GetOk("page_number")
+	return ok && v.(int) > 0
+}
+
+func setPagingRequest(d *schema.ResourceData, request map[string]interface{}, maxPageSize int) {
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
+	return
+}
+
+func mapMerge(target, merged map[string]interface{}) map[string]interface{} {
+	for key, value := range merged {
+		if _, exist := target[key]; !exist {
+			target[key] = value
+		} else {
+			// key existed in both src,target
+			switch merged[key].(type) {
+			case []interface{}:
+				sourceSlice := value.([]interface{})
+				targetSlice := make([]interface{}, len(sourceSlice))
+				copy(targetSlice, target[key].([]interface{}))
+
+				for index, val := range sourceSlice {
+					switch val.(type) {
+					case map[string]interface{}:
+						targetMap, ok := targetSlice[index].(map[string]interface{})
+						if ok {
+							targetSlice[index] = mapMerge(targetMap, val.(map[string]interface{}))
+						} else {
+							targetSlice[index] = mapMerge(map[string]interface{}{}, val.(map[string]interface{}))
+						}
+					default:
+						targetSlice[index] = val
+					}
+				}
+				target[key] = targetSlice
+			case map[string]interface{}:
+				target[key] = mapMerge(target[key].(map[string]interface{}), merged[key].(map[string]interface{}))
+			default:
+				target[key] = merged[key]
+			}
+		}
+	}
+	return target
+}
+
+func mapSort(target map[string]string) []string {
+	result := make([]string, 0)
+	for key, _ := range target {
+		result = append(result, key)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]interface{}, state *terraform.InstanceState) (*terraform.InstanceDiff, error) {
+
+	p := Provider().(*schema.Provider).ResourcesMap
+	dOld, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	dNew, _ := schema.InternalMap(p[resourceName].Schema).Data(state, nil)
+	for key, value := range attributes {
+		err := dOld.Set(key, value)
+		if err != nil {
+			return nil, WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+	for key, value := range attributesDiff {
+		attributes[key] = value
+	}
+
+	for key, value := range attributes {
+		err := dNew.Set(key, value)
+		if err != nil {
+			return nil, WrapErrorf(err, "[ERROR] the field %s setting error.", key)
+		}
+	}
+
+	diff := terraform.NewInstanceDiff()
+	objectKey := ""
+	for _, key := range mapSort(dNew.State().Attributes) {
+		newValue := dNew.State().Attributes[key]
+		if objectKey != "" && !strings.HasPrefix(key, objectKey) {
+			objectKey = ""
+		}
+		if objectKey == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					objectKey = strings.TrimSuffix(key, suffix)
+					break
+				}
+			}
+		}
+		oldValue, ok := dOld.State().Attributes[key]
+		if ok && oldValue == newValue {
+			continue
+		}
+		if oldValue == "" {
+			for _, suffix := range []string{"#", "%"} {
+				if strings.HasSuffix(key, suffix) {
+					oldValue = "0"
+				}
+			}
+		}
+		diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
+
+		if objectKey != "" {
+			for removeKey, removeValue := range dOld.State().Attributes {
+				if strings.HasPrefix(removeKey, objectKey) {
+					if _, ok := dNew.State().Attributes[removeKey]; !ok {
+						// If the attribue has complex elements, there should remove the key, not setting it to empty
+						if len(strings.Split(removeKey, ".")) > 2 {
+							diff.DelAttribute(removeKey)
+						} else {
+							diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+						}
+					}
+				}
+			}
+			objectKey = ""
+		}
+	}
+	return diff, nil
+}
+
+func compareMapWithIgnoreEquivalent(tem1, tem2 map[string]interface{}, ignore []string) bool {
+
+	if len(tem1) != len(tem2) {
+		return false
+	}
+
+OuterLoop:
+	for key1, val1 := range tem1 {
+		for _, item := range ignore {
+			if key1 == item {
+				continue OuterLoop
+			}
+		}
+
+		val2 := tem2[key1]
+		if val2 != val1 {
+			return false
+		}
+	}
+
+	return true
 }

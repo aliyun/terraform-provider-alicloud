@@ -144,6 +144,10 @@ func resourceAlicloudOnsGroupRead(d *schema.ResourceData, meta interface{}) erro
 func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	onsService := OnsService{client}
+	conn, err := client.NewOnsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -164,10 +168,6 @@ func resourceAlicloudOnsGroupUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 		request["ReadEnable"] = d.Get("read_enable")
 		action := "OnsGroupConsumerUpdate"
-		conn, err := client.NewOnsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-02-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

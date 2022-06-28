@@ -56,8 +56,8 @@ func resourceAlicloudGaIpSet() *schema.Resource {
 				Default:      "IPv4",
 			},
 			"status": {
-				Type:     schema.TypeString,
 				Computed: true,
+				Type:     schema.TypeString,
 			},
 		},
 	}
@@ -66,9 +66,9 @@ func resourceAlicloudGaIpSet() *schema.Resource {
 func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	var response map[string]interface{}
-	action := "CreateIpSets"
-	request := make(map[string]interface{})
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
@@ -83,21 +83,23 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 		request["AccelerateRegion.1.IpVersion"] = v
 	}
 
-	request["RegionId"] = client.RegionId
+	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	request["ClientToken"] = buildClientToken("CreateIpSets")
+	action := "CreateIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateIpSets")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
@@ -109,11 +111,10 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	response = v.([]interface{})[0].(map[string]interface{})
 	d.SetId(fmt.Sprint(response["IpSetId"]))
-	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	return resourceAlicloudGaIpSetRead(d, meta)
 }
 func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error {
@@ -138,42 +139,43 @@ func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	var response map[string]interface{}
+	conn, err := client.NewGaplusClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	update := false
 	request := map[string]interface{}{
-		"IpSetId": d.Id(),
+		"IpSetId":  d.Id(),
+		"RegionId": client.RegionId,
 	}
 	if d.HasChange("bandwidth") {
 		update = true
 	}
 	request["Bandwidth"] = d.Get("bandwidth")
-	request["RegionId"] = client.RegionId
+
 	if update {
-		action := "UpdateIpSet"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
+		action := "UpdateIpSet"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateIpSet")
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			addDebug(action, resp, request)
 			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -183,38 +185,38 @@ func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
-	action := "DeleteIpSet"
-	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"IpSetId": d.Id(),
+		"IpSetIds.1": d.Id(),
+		"RegionId":   client.RegionId,
 	}
-
-	request["AcceleratorId"] = d.Get("accelerator_id")
-	request["RegionId"] = client.RegionId
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	action := "DeleteIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
+		addDebug(action, resp, request)
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.IpSets"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, gaService.GaIpSetStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

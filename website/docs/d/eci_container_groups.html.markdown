@@ -19,7 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_eci_container_groups" "example" {
-  ids        = ["example_value"]
+  ids = ["example_value"]
 }
 
 output "first_eci_container_group_id" {

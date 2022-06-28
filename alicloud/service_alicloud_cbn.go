@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -75,22 +79,27 @@ func (s *CbnService) WaitForCenFlowlog(id string, expected map[string]interface{
 	}
 }
 
-func (s *CbnService) DescribeCenInstance(id string) (object cbn.Cen, err error) {
-	request := cbn.CreateDescribeCensRequest()
-	request.RegionId = s.client.RegionId
-	filters := make([]cbn.DescribeCensFilter, 0)
-	filters = append(filters, cbn.DescribeCensFilter{
-		Key:   "CenId",
-		Value: &[]string{id},
-	})
-	request.Filter = &filters
+func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
 
-	var raw interface{}
+	request := map[string]interface{}{}
+	filterMaps := make([]map[string]interface{}, 0)
+	filterMaps = append(filterMaps, map[string]interface{}{
+		"Key":   "CenId",
+		"Value": []string{id},
+	})
+	request["Filter"] = filterMaps
+
+	var response map[string]interface{}
+	action := "DescribeCens"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.DescribeCens(request)
-		})
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -98,40 +107,38 @@ func (s *CbnService) DescribeCenInstance(id string) (object cbn.Cen, err error) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response = resp
+		addDebug(action, resp, request)
 		return nil
 	})
-
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	response, _ := raw.(*cbn.DescribeCensResponse)
-
-	if len(response.Cens.Cen) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CenInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return
+	v, err := jsonpath.Get("$.Cens.Cen", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Cens.Cen", response)
 	}
-	return response.Cens.Cen[0], nil
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CenInstance", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 
-func (s *CbnService) CenInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCenInstance(id)
+		object, err := s.DescribeCenInstance(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
 				return nil, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
-
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
-		return object, object.Status, nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 
@@ -465,45 +472,81 @@ func (s *CbnService) CenBandwidthPackageStateRefreshFunc(id string, failStates [
 }
 
 func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-	oldItems, newItems := d.GetChange("tags")
-	added := make([]cbn.TagResourcesTag, 0)
-	for key, value := range newItems.(map[string]interface{}) {
-		added = append(added, cbn.TagResourcesTag{
-			Key:   key,
-			Value: value.(string),
-		})
-	}
-	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
-		removed = append(removed, key)
-	}
-	if len(removed) > 0 {
-		request := cbn.CreateUntagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.TagKey = &removed
-		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.UntagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewCbnClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-	}
-	if len(added) > 0 {
-		request := cbn.CreateTagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.Tag = &added
-		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.TagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
 		}
+		if len(removedTagKeys) > 0 {
+			action := "UntagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "TagResources"
+			request := map[string]interface{}{
+				"RegionId":     s.client.RegionId,
+				"ResourceType": resourceType,
+				"ResourceId.1": d.Id(),
+			}
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("tags")
 	}
 	return nil
 }
@@ -569,5 +612,646 @@ func (s *CbnService) CenRouteServiceStateRefreshFunc(id string, failStates []str
 			}
 		}
 		return object, object.Status, nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouter(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTransitRouters"
+	request := map[string]interface{}{
+		"Region_id":       s.client.RegionId,
+		"CenId":           parts[0],
+		"TransitRouterId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouters", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouters", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+
+		object, err := s.DescribeCenTransitRouter(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouterPeerAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	action := "ListTransitRouterPeerAttachments"
+	request := map[string]interface{}{
+		"RegionId":                  s.client.RegionId,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterPeerAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterPeerAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterVbrAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	action := "ListTransitRouterVbrAttachments"
+	request := map[string]interface{}{
+		"RegionId":                  s.client.RegionId,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterVbrAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterVbrAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterVpcAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	action := "ListTransitRouterVpcAttachments"
+	request := map[string]interface{}{
+		"RegionId":                  s.client.RegionId,
+		"CenId":                     parts[0],
+		"TransitRouterAttachmentId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterAttachments", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterRouteEntry(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	action := "ListTransitRouterRouteEntries"
+	request := map[string]interface{}{
+		"TransitRouterRouteTableId":  parts[0],
+		"TransitRouterRouteEntryIds": []string{parts[1]},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidTransitRouterRouteTableId.NotFound"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter RouteTable ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterRouteEntries", response)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterRouteEntries", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteEntryId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterRouteEntryStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterRouteEntry(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["TransitRouterRouteEntryStatus"]) == failState {
+				return object, fmt.Sprint(object["TransitRouterRouteEntryStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["TransitRouterRouteEntryStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["TransitRouterRouteEntryStatus"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterRouteTable(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	action := "ListTransitRouterRouteTables"
+	request := map[string]interface{}{
+		"RegionId":                   s.client.RegionId,
+		"TransitRouterId":            parts[0],
+		"TransitRouterRouteTableIds": []string{parts[1]},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidTransitRouterId.NotFound"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN TransitRouter ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterRouteTables", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterRouteTables", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterRouteTableId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterRouteTableStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterRouteTable(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["TransitRouterRouteTableStatus"]) == failState {
+				return object, fmt.Sprint(object["TransitRouterRouteTableStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["TransitRouterRouteTableStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["TransitRouterRouteTableStatus"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterRouteTableAssociation(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTransitRouterRouteTableAssociations"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"TransitRouterAttachmentId": parts[0],
+		"TransitRouterRouteTableId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterAssociations", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAssociations", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterRouteTableAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterRouteTableAssociation(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+func (s *CbnService) DescribeCenTransitRouterRouteTablePropagation(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTransitRouterRouteTablePropagations"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"TransitRouterAttachmentId": parts[0],
+		"TransitRouterRouteTableId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterPropagations", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterPropagations", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TransitRouterAttachmentId"].(string) != parts[0] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterRouteTablePropagationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterRouteTablePropagation(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTrafficMarkingPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	action := "ListTrafficMarkingPolicies"
+	request := map[string]interface{}{
+		"TransitRouterId":        parts[0],
+		"TrafficMarkingPolicyId": parts[1],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TrafficMarkingPolicies", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficMarkingPolicies", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	} else {
+		if v.([]interface{})[0].(map[string]interface{})["TrafficMarkingPolicyId"].(string) != parts[1] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *CbnService) CenTrafficMarkingPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTrafficMarkingPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["TrafficMarkingPolicyStatus"]) == failState {
+				return object, fmt.Sprint(object["TrafficMarkingPolicyStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["TrafficMarkingPolicyStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["TrafficMarkingPolicyStatus"]), nil
 	}
 }

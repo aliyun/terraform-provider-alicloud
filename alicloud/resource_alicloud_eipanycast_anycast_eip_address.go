@@ -98,7 +98,19 @@ func resourceAlicloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("AllocateAnycastEipAddress")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eipanycast_anycast_eip_address", action, AlibabaCloudSdkGoERROR)
 	}
@@ -135,6 +147,10 @@ func resourceAlicloudEipanycastAnycastEipAddressRead(d *schema.ResourceData, met
 }
 func resourceAlicloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewEipanycastClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -144,10 +160,6 @@ func resourceAlicloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 		}
 		request["Bandwidth"] = d.Get("bandwidth")
 		action := "ModifyAnycastEipAddressSpec"
-		conn, err := client.NewEipanycastClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -180,10 +192,6 @@ func resourceAlicloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	}
 	if update {
 		action := "ModifyAnycastEipAddressAttribute"
-		conn, err := client.NewEipanycastClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

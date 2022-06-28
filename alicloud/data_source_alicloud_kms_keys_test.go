@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsKeysDataSource(t *testing.T) {
+func TestAccAlicloudKMSKeysDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_kms_keys.default"
 
@@ -91,7 +91,7 @@ func dataSourceKmsKeysConfigDependence(name string) string {
 	return fmt.Sprintf(`
 resource "alicloud_kms_key" "default" {
     description = "%s"
-    deletion_window_in_days = 7
+    pending_window_in_days = 7
 }
 `, name)
 }

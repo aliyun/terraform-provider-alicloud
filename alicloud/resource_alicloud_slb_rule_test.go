@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
+func TestAccAlicloudSLBRuleUpdate(t *testing.T) {
 	var v *slb.DescribeRuleAttributeResponse
 	resourceId := "alicloud_slb_rule.default"
 	ra := resourceAttrInit(resourceId, ruleMap)
@@ -32,7 +32,7 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb.default.id}",
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":    "${alicloud_slb_listener.default.frontend_port}",
 					"domain":           "*.aliyun.com",
 					"url":              "/image",
@@ -239,7 +239,7 @@ func TestAccAlicloudSlbRuleUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                      "${var.name}",
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":             "${alicloud_slb_listener.default.frontend_port}",
 					"domain":                    "*.aliyun.com",
 					"url":                       "/image",
@@ -297,27 +297,32 @@ variable "name" {
 data "alicloud_instance_types" "default" {
   cpu_core_count    = 1
   memory_size       = 2
+  availability_zone = data.alicloud_slb_zones.default.zones.0.id
+}
+data "alicloud_instance_types" "new" {
+	eni_amount = 2
+    availability_zone = data.alicloud_slb_zones.default.zones.0.id
 }
 data "alicloud_images" "default" {
-        name_regex = "^ubuntu"
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
   owners = "system"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  name = "${var.name}"
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_instance" "default" {
@@ -329,18 +334,18 @@ resource "alicloud_instance" "default" {
   availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
   instance_name = "${var.name}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 22
   frontend_port = 22
   protocol = "http"
@@ -349,7 +354,7 @@ resource "alicloud_slb_listener" "default" {
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   servers {
       server_ids = "${alicloud_instance.default.*.id}"
       port = 80

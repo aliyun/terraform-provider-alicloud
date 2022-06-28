@@ -74,9 +74,9 @@ variable "password" {
 }
 
 variable "enable_public" {
-  default =  false
+  default = false
 }
 
 variable "ip_white" {
-  default =  "127.0.0.1"
+  default = "127.0.0.1"
 }

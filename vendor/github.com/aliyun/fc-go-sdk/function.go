@@ -78,9 +78,11 @@ func (c *Code) WithFiles(files ...string) *Code {
 
 // CustomContainerConfig defines the code docker image
 type CustomContainerConfig struct {
-	Image   *string `json:"image"`
-	Command *string `json:"command"`
-	Args    *string `json:"args"`
+	Image            *string `json:"image"`
+	Command          *string `json:"command"`
+	Args             *string `json:"args"`
+	AccelerationType *string `json:"accelerationType"`
+	InstanceID       *string `json:"instanceID"`
 }
 
 func NewCustomContainerConfig() *CustomContainerConfig {
@@ -99,6 +101,16 @@ func (c *CustomContainerConfig) WithCommand(cmd string) *CustomContainerConfig {
 
 func (c *CustomContainerConfig) WithArgs(args string) *CustomContainerConfig {
 	c.Args = &args
+	return c
+}
+
+func (c *CustomContainerConfig) WithAccelerationType(accelerationType string) *CustomContainerConfig {
+	c.AccelerationType = &accelerationType
+	return c
+}
+
+func (c *CustomContainerConfig) WithInstanceID(instanceID string) *CustomContainerConfig {
+	c.InstanceID = &instanceID
 	return c
 }
 
@@ -123,6 +135,7 @@ type FunctionCreateObject struct {
 	CustomContainerConfig *CustomContainerConfig `json:"customContainerConfig"`
 	CAPort                *int32                 `json:"caPort"`
 	InstanceType          *string                `json:"instanceType"`
+	Layers                []string               `json:"layers"`
 
 	err error `json:"-"`
 }
@@ -193,6 +206,13 @@ func (i *CreateFunctionInput) WithInitializationTimeout(initializationTimeout in
 func (i *CreateFunctionInput) WithCustomContainerConfig(customContainerConfig *CustomContainerConfig) *CreateFunctionInput {
 	if customContainerConfig != nil {
 		i.CustomContainerConfig = customContainerConfig
+	}
+	return i
+}
+
+func (i *CreateFunctionInput) WithLayers(layers []string) *CreateFunctionInput {
+	if layers != nil {
+		i.Layers = layers
 	}
 	return i
 }
@@ -270,6 +290,7 @@ type FunctionUpdateObject struct {
 	CustomContainerConfig *CustomContainerConfig `json:"customContainerConfig"`
 	CAPort                *int32                 `json:"caPort"`
 	InstanceType          *string                `json:"instanceType"`
+	Layers                []string               `json:"layers"`
 
 	err error `json:"-"`
 }
@@ -350,6 +371,13 @@ func (i *UpdateFunctionInput) WithInitializationTimeout(initializationTimeout in
 func (i *UpdateFunctionInput) WithCustomContainerConfig(customContainerConfig *CustomContainerConfig) *UpdateFunctionInput {
 	if customContainerConfig != nil {
 		i.CustomContainerConfig = customContainerConfig
+	}
+	return i
+}
+
+func (i *UpdateFunctionInput) WithLayers(layers []string) *UpdateFunctionInput {
+	if layers != nil {
+		i.Layers = layers
 	}
 	return i
 }
@@ -510,6 +538,7 @@ type functionMetadata struct {
 	CreatedTime           *string                `json:"createdTime"`
 	LastModifiedTime      *string                `json:"lastModifiedTime"`
 	InstanceType          *string                `json:"instanceType"`
+	Layers                []string               `json:"layers"`
 }
 
 // GetFunctionCodeInput ...
@@ -667,18 +696,28 @@ type DeleteFunctionInput struct {
 	ServiceName  *string
 	FunctionName *string
 	IfMatch      *string
+	headers      Header
 }
 
 func NewDeleteFunctionInput(serviceName string, functionName string) *DeleteFunctionInput {
 	return &DeleteFunctionInput{
 		ServiceName:  &serviceName,
 		FunctionName: &functionName,
+		headers:      make(Header),
 	}
 }
 
 func (s *DeleteFunctionInput) WithIfMatch(ifMatch string) *DeleteFunctionInput {
 	s.IfMatch = &ifMatch
 	return s
+}
+
+func (i *DeleteFunctionInput) WithHeader(key, value string) *DeleteFunctionInput {
+	if i.headers == nil {
+		i.headers = make(Header)
+	}
+	i.headers[key] = value
+	return i
 }
 
 func (i *DeleteFunctionInput) GetQueryParams() url.Values {
@@ -691,7 +730,10 @@ func (i *DeleteFunctionInput) GetPath() string {
 }
 
 func (i *DeleteFunctionInput) GetHeaders() Header {
-	header := make(Header)
+	if i.headers == nil {
+		i.headers = make(Header)
+	}
+	header := i.headers
 	if i.IfMatch != nil {
 		header[ifMatch] = *i.IfMatch
 	}
@@ -746,6 +788,11 @@ func NewInvokeFunctionInput(serviceName string, functionName string) *InvokeFunc
 
 func (i *InvokeFunctionInput) WithPayload(payload []byte) *InvokeFunctionInput {
 	i.Payload = &payload
+	return i
+}
+func (i *InvokeFunctionInput) WithStatefulAsyncInvocationID(id string) *InvokeFunctionInput {
+	i.WithInvocationType(invocationTypeAsync)
+	i.headers[HTTPHeaderStatefulAsyncInvocationID] = id
 	return i
 }
 

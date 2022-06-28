@@ -52,7 +52,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `dry_run` - (Optional, ForceNew, Available in 1.121.0+) Specifies whether to only precheck the request.
 * `nat_gateway_name` - (Optional, ForceNew, Available in 1.121.0+) The name of NAT gateway.
-* `nat_type` - (Optional, ForceNew, Available in 1.121.0+) The nat type of NAT gateway. Valid values `Enhanced` and `Normal`. Default value `Normal`.
+* `nat_type` - (Optional, ForceNew, Available in 1.121.0+) The nat type of NAT gateway. Valid values `Enhanced` and `Normal`.
 * `payment_type` - (Optional, ForceNew, Available in 1.121.0+) The payment type of NAT gateway. Valid values `PayAsYouGo` and `Subscription`.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.121.0+) The resource group id of NAT gateway.
 * `specification` - (Optional, ForceNew, Available in 1.121.0+) The specification of NAT gateway. Valid values `Middle`, `Large`, `Small` and `XLarge.1`. Default value is `Small`.
@@ -86,6 +86,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `internet_charge_type` - The metering method of the NAT gateway.  
   * `nat_gateway_id` - The ID of the NAT gateway.
   * `nat_gateway_name` - The name of the NAT gateway.
+  * `network_type` - (Available in 1.137.0+) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`.
   * `nat_type` - The type of the NAT gateway. 
   * `payment_type` - The billing method of the NAT gateway. 
   * `resource_group_id` - The ID of the resource group.

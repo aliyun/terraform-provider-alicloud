@@ -96,7 +96,7 @@ The following attributes are exported:
 
 ## Import
 
-The havip attachemnt can be imported using the id, e.g.
+The havip attachment can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_havip_attachment.foo havip-abc123456:i-abc123456

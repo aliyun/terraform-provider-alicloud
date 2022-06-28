@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_backend_servers"
 sidebar_current: "docs-alicloud-datasource-slb-backend_servers"
@@ -17,7 +17,7 @@ This data source provides the server load balancer backend servers related to a 
 
 ```
 data "alicloud_slb_backend_servers" "sample_ds" {
-  load_balancer_id = "${alicloud_slb.sample_slb.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.sample_slb.id}"
 }
 
 output "first_slb_backend_server_id" {

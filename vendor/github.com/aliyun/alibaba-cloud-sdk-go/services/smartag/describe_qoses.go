@@ -73,6 +73,7 @@ type DescribeQosesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	QosIds               string           `position:"Query" name:"QosIds"`
@@ -84,10 +85,10 @@ type DescribeQosesRequest struct {
 // DescribeQosesResponse is the response struct for api DescribeQoses
 type DescribeQosesResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	TotalCount int    `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int    `json:"PageSize" xml:"PageSize"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	PageNumber int    `json:"PageNumber" xml:"PageNumber"`
 	Qoses      Qoses  `json:"Qoses" xml:"Qoses"`
 }
 

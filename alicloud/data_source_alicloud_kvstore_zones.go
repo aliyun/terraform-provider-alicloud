@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -33,7 +37,13 @@ func dataSourceAlicloudKVStoreZones() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "redis",
-				ValidateFunc: validation.StringInSlice([]string{"redis", "memcache"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"redis", "memcache"}, true),
+			},
+			"product_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Local", "Tair_rdb", "Tair_scm", "Tair_essd", "OnECS"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -75,18 +85,36 @@ func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{})
 	request.RegionId = client.RegionId
 	request.InstanceChargeType = instanceChargeType
 	request.Engine = d.Get("engine").(string)
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
-		return rkvClient.DescribeAvailableResource(request)
+	request.ProductType = d.Get("product_type").(string)
+
+	var response *r_kvstore.DescribeAvailableResourceResponse
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+			return rkvClient.DescribeAvailableResource(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*r_kvstore.DescribeAvailableResourceResponse)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_kvstore_zones", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	zones, _ := raw.(*r_kvstore.DescribeAvailableResourceResponse)
-	if len(zones.AvailableZones.AvailableZone) <= 0 {
+
+	if len(response.AvailableZones.AvailableZone) <= 0 {
 		return WrapError(fmt.Errorf("[ERROR] There is no available zones for KVStore"))
 	}
-	for _, zone := range zones.AvailableZones.AvailableZone {
+	for _, zone := range response.AvailableZones.AvailableZone {
 		if multi && strings.Contains(zone.ZoneId, MULTI_IZ_SYMBOL) {
 			zoneIds = append(zoneIds, zone.ZoneId)
 			continue

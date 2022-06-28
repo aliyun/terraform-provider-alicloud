@@ -35,6 +35,15 @@ resource "alicloud_yundun_dbaudit_instance" "default" {
   vswitch_id        = "v-testVswitch"
 }
 ```
+
+### Deleting `alicloud_yundun_dbaudit_instance` or removing it from your configuration
+
+The `alicloud_yundun_dbaudit_instance` resource allows you to manage yundun dbaudit instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration
+will remove it from your state file and management, but will not destroy the `yundun_dbaudit_instance`.
+You can resume managing the subscription yundun_dbaudit_instance via the AlibabaCloud Console.
+
+
 ## Argument Reference
 
 The following arguments are supported:

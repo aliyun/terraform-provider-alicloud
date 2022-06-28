@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -15,6 +16,38 @@ func TestMain(m *testing.M) {
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a given region
+func sharedClientForRegionWithBackendRegions(region string, supported bool, regions []connectivity.Region) (interface{}, error) {
+	find := false
+	backupRegion := string(connectivity.APSouthEast1)
+	backupRegionFind := false
+	for _, r := range regions {
+		if region == string(r) {
+			find = true
+			break
+		}
+		if string(r) == backupRegion {
+			backupRegionFind = true
+		}
+	}
+
+	if (find && !supported) || (!find && supported) {
+		if supported {
+			if backupRegionFind {
+				log.Printf("Skipping unsupported region %s. Supported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				region = backupRegion
+			}
+		} else {
+			if !backupRegionFind {
+				log.Printf("Skipping unsupported region %s. Unsupported regions: %s. Using %s as this test region", region, regions, backupRegion)
+				region = backupRegion
+			}
+		}
+	}
+	return sharedClientForRegion(region)
+}
+
+// sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
+// functions for a give n region
 func sharedClientForRegion(region string) (interface{}, error) {
 	var accessKey, secretKey string
 	if accessKey = os.Getenv("ALICLOUD_ACCESS_KEY"); accessKey == "" {

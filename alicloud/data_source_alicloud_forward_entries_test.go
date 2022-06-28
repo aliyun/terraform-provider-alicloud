@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudForwardEntriesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPCForwardEntriesDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	forwardTableIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudForwardEntriesDataSourceConfigBasic(rand, map[string]string{
@@ -125,22 +125,24 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_nat_gateway" "default" {
 	vpc_id = "${alicloud_vswitch.default.vpc_id}"
-	specification = "Small"
-	name = "${var.name}"
+    internet_charge_type = "PayByLcu"
+	nat_gateway_name = "${var.name}"
+    nat_type = "Enhanced"
+	vswitch_id = alicloud_vswitch.default.id
 }
 
-resource "alicloud_eip" "default" {
-	name = "${var.name}"
+resource "alicloud_eip_address" "default" {
+	address_name = "${var.name}"
 }
 
 resource "alicloud_eip_association" "default" {
-	allocation_id = "${alicloud_eip.default.id}"
+	allocation_id = "${alicloud_eip_address.default.id}"
 	instance_id = "${alicloud_nat_gateway.default.id}"
 }
 
 resource "alicloud_forward_entry" "default"{
 	forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-	external_ip = "${alicloud_eip.default.ip_address}"
+	external_ip = "${alicloud_eip_address.default.ip_address}"
 	external_port = "80"
 	ip_protocol = "tcp"
 	internal_ip = "172.16.0.3"

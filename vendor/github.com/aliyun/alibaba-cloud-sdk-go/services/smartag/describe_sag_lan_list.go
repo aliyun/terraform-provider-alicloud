@@ -83,8 +83,8 @@ type DescribeSagLanListRequest struct {
 type DescribeSagLanListResponse struct {
 	*responses.BaseResponse
 	RequestId  string      `json:"RequestId" xml:"RequestId"`
-	Lans       []Lan       `json:"Lans" xml:"Lans"`
 	TaskStates []TaskState `json:"TaskStates" xml:"TaskStates"`
+	Lans       []Lan       `json:"Lans" xml:"Lans"`
 }
 
 // CreateDescribeSagLanListRequest creates a request to invoke DescribeSagLanList API

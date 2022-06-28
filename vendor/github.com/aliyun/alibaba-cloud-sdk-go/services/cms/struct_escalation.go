@@ -18,6 +18,6 @@ package cms
 // Escalation is a nested struct in cms response
 type Escalation struct {
 	Times      int    `json:"Times" xml:"Times"`
-	Expression string `json:"Expression" xml:"Expression"`
 	Level      string `json:"Level" xml:"Level"`
+	Expression string `json:"Expression" xml:"Expression"`
 }

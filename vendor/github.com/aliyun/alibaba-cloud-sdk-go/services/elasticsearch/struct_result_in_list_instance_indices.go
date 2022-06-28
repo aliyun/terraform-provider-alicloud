@@ -17,5 +17,5 @@ package elasticsearch
 
 // ResultInListInstanceIndices is a nested struct in elasticsearch response
 type ResultInListInstanceIndices struct {
-	Result []string `json:"Result" xml:"Result"`
+	ResultItem []ResultItem `json:"Result" xml:"Result"`
 }

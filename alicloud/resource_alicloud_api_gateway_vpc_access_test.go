@@ -34,8 +34,8 @@ func testSweepApiGatewayVpcAccess(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	req := cloudapi.CreateDescribeVpcAccessesRequest()
@@ -107,7 +107,7 @@ func TestAccAlicloudApigatewayVpcAccess_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}",
-					"vpc_id":      "${alicloud_vpc.default.id}",
+					"vpc_id":      "${data.alicloud_vpcs.default.ids.0}",
 					"instance_id": "${alicloud_instance.default.id}",
 					"port":        "8080",
 				}),
@@ -153,31 +153,40 @@ const ApigatewayVpcAccessConfigDependence = `
 	}
 
 	data "alicloud_images" "default" {
-	  name_regex = "^ubuntu"
+	  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
 	  most_recent = true
 	  owners = "system"
 	}
 
-	resource "alicloud_vpc" "default" {
-	  vpc_name = "${var.name}"
-	  cidr_block = "172.16.0.0/12"
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+	data "alicloud_vswitches" "default" {
+		vpc_id = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+	
+	resource "alicloud_vswitch" "vswitch" {
+	  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	  vpc_id            = data.alicloud_vpcs.default.ids.0
+	  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	  zone_id           = data.alicloud_zones.default.zones.0.id
+	  vswitch_name      = var.name
+	}
+	
+	locals {
+	  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
 
-	resource "alicloud_vswitch" "default" {
-	  vpc_id = "${alicloud_vpc.default.id}"
-	  cidr_block = "172.16.0.0/21"
-	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	  vswitch_name = "${var.name}"
-	}
 
 	resource "alicloud_security_group" "default" {
 	  name = "${var.name}"
 	  description = "foo"
-	  vpc_id = "${alicloud_vpc.default.id}"
+	  vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 
 	resource "alicloud_instance" "default" {
-	  vswitch_id = "${alicloud_vswitch.default.id}"
+	  vswitch_id = local.vswitch_id
 	  image_id = "${data.alicloud_images.default.images.0.id}"
 
 	  # series III

@@ -87,27 +87,26 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 
 	var exisMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"instances.#":                 CHECKSET,
-			"instances.0.name":            fmt.Sprintf("tf-testAccMongoDBInstance_datasource_%d", rand),
-			"instances.0.instance_class":  "dds.mongo.mid",
-			"instances.0.engine":          "MongoDB",
-			"instances.0.engine_version":  "3.4",
-			"instances.0.charge_type":     string(PostPaid),
-			"instances.0.storage":         "10",
-			"instances.0.instance_type":   "replicate",
-			"instances.0.id":              CHECKSET,
-			"instances.0.expiration_time": CHECKSET,
-			"instances.0.creation_time":   CHECKSET,
-			"instances.0.region_id":       CHECKSET,
-			"instances.0.status":          CHECKSET,
-			"instances.0.network_type":    CHECKSET,
-			"instances.0.lock_mode":       CHECKSET,
-			"instances.0.tags.%":          "2",
-			"instances.0.tags.Created":    "TF",
-			"instances.0.tags.For":        "acceptance test",
-			"ids.#":                       "1",
-			"ids.0":                       CHECKSET,
-			"names.#":                     "1",
+			"instances.#":                CHECKSET,
+			"instances.0.name":           fmt.Sprintf("tf-testAccMongoDBInstance_datasource_%d", rand),
+			"instances.0.instance_class": "dds.mongo.mid",
+			"instances.0.engine":         "MongoDB",
+			"instances.0.engine_version": "3.4",
+			"instances.0.charge_type":    string(PostPaid),
+			"instances.0.storage":        "10",
+			"instances.0.instance_type":  "replicate",
+			"instances.0.id":             CHECKSET,
+			"instances.0.creation_time":  CHECKSET,
+			"instances.0.region_id":      CHECKSET,
+			"instances.0.status":         CHECKSET,
+			"instances.0.network_type":   CHECKSET,
+			"instances.0.lock_mode":      CHECKSET,
+			"instances.0.tags.%":         "2",
+			"instances.0.tags.Created":   "TF",
+			"instances.0.tags.For":       "acceptance test",
+			"ids.#":                      "1",
+			"ids.0":                      CHECKSET,
+			"names.#":                    "1",
 		}
 	}
 	var fakeMapFunc = func(rand int) map[string]string {
@@ -123,10 +122,7 @@ func TestAccAlicloudMongoDBInstancesDataSource(t *testing.T) {
 		existMapFunc: exisMapFunc,
 		fakeMapFunc:  fakeMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	CheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, tagsConf, instanceTypeConf, instanceClassConf, availabilityZoneConf, allConf)
+	CheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, tagsConf, instanceTypeConf, instanceClassConf, availabilityZoneConf, allConf)
 }
 
 func testAccCheckAlicloudMongoDBDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -138,7 +134,7 @@ func testAccCheckAlicloudMongoDBDataSourceConfig(rand int, attrMap map[string]st
 data "alicloud_mongodb_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {

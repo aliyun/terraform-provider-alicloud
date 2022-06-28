@@ -24,10 +24,6 @@ func init() {
 }
 
 func testSweepNetworkAclAttachment(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.NetworkAclSupportedRegions) {
-		log.Printf("[INFO] Skipping Network Acl unsupported region: %s", region)
-		return nil
-	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -107,14 +103,15 @@ func testSweepNetworkAclAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNetworkAclAttachment_basic(t *testing.T) {
+// Skip the test because 'resources' is conflict with 'alicloud_network_acl'.
+func SkipTestAccAlicloudVPCNetworkAclAttachment_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_attachment.default"
 	ra := resourceAttrInit(resourceId, testAccNaclAttachmentCheckMap)
 	rand := acctest.RandInt()
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.NetworkAclSupportedRegions)
+			testAccPreCheck(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -208,6 +205,12 @@ func testAccCheckNetworkAclAttachmentDestroy(s *terraform.State) error {
 		networkAclId := parts[0]
 
 		object, err := vpcService.DescribeNetworkAcl(networkAclId)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return WrapError(err)
+		}
 		vpcResource := []vpc.Resource{}
 		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
 		for _, e := range resources {

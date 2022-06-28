@@ -17,9 +17,10 @@ package cms
 
 // ResourceQuota is a nested struct in cms response
 type ResourceQuota struct {
-	ExpireTime               string                   `json:"ExpireTime" xml:"ExpireTime"`
 	SuitInfo                 string                   `json:"SuitInfo" xml:"SuitInfo"`
 	InstanceId               string                   `json:"InstanceId" xml:"InstanceId"`
+	ExpireTime               string                   `json:"ExpireTime" xml:"ExpireTime"`
+	CRMType                  string                   `json:"CRMType" xml:"CRMType"`
 	SiteMonitorEcsProbe      SiteMonitorEcsProbe      `json:"SiteMonitorEcsProbe" xml:"SiteMonitorEcsProbe"`
 	SiteMonitorOperatorProbe SiteMonitorOperatorProbe `json:"SiteMonitorOperatorProbe" xml:"SiteMonitorOperatorProbe"`
 	SiteMonitorTask          SiteMonitorTask          `json:"SiteMonitorTask" xml:"SiteMonitorTask"`
@@ -29,4 +30,6 @@ type ResourceQuota struct {
 	Api                      Api                      `json:"Api" xml:"Api"`
 	SMS                      SMS                      `json:"SMS" xml:"SMS"`
 	Phone                    Phone                    `json:"Phone" xml:"Phone"`
+	EnterpriseQuota          EnterpriseQuota          `json:"EnterpriseQuota" xml:"EnterpriseQuota"`
+	NAAM                     NAAM                     `json:"NAAM" xml:"NAAM"`
 }

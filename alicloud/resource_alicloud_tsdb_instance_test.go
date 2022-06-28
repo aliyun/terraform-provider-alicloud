@@ -143,7 +143,7 @@ func TestAccAlicloudTsdbInstance_basic(t *testing.T) {
 					"payment_type":     "PayAsYouGo",
 					"instance_class":   "tsdb.1x.basic",
 					"instance_storage": "50",
-					"vswitch_id":       "${alicloud_vswitch.default.id}",
+					"vswitch_id":       "${local.vswitch_id}",
 					"engine_type":      "tsdb_tsdb",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -207,7 +207,7 @@ func TestAccAlicloudTsdbInstance_basic(t *testing.T) {
 					"payment_type":     "PayAsYouGo",
 					"instance_class":   "tsdb.1x.basic",
 					"instance_storage": "150",
-					"vswitch_id":       "${alicloud_vswitch.default.id}",
+					"vswitch_id":       "${local.vswitch_id}",
 					"engine_type":      "tsdb_tsdb",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -236,15 +236,24 @@ variable "name" {
 
 data "alicloud_tsdb_zones" "default" {}
 
-resource "alicloud_vpc" "default" {
-  vpc_name = var.name
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_tsdb_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "default" {
-  availability_zone = data.alicloud_tsdb_zones.default.ids.0
-  cidr_block = "192.168.1.0/24"
-  vpc_id = alicloud_vpc.default.id
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_tsdb_zones.default.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 `, name)

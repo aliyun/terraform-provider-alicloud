@@ -17,6 +17,7 @@ package edas
 
 // ComponentsItem is a nested struct in edas response
 type ComponentsItem struct {
-	ComponentId  string `json:"ComponentId" xml:"ComponentId"`
+	Type         string `json:"Type" xml:"Type"`
 	ComponentKey string `json:"ComponentKey" xml:"ComponentKey"`
+	ComponentId  string `json:"ComponentId" xml:"ComponentId"`
 }

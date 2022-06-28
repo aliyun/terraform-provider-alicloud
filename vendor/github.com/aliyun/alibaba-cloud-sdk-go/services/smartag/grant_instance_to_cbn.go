@@ -73,10 +73,11 @@ type GrantInstanceToCbnRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	CcnInstanceId        string           `position:"Query" name:"CcnInstanceId"`
+	GrantTrafficService  requests.Boolean `position:"Query" name:"GrantTrafficService"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
-	CenUid               string           `position:"Query" name:"CenUid"`
+	CenUid               requests.Integer `position:"Query" name:"CenUid"`
 	CenInstanceId        string           `position:"Query" name:"CenInstanceId"`
 }
 

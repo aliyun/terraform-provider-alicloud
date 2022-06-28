@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_domain_extension"
 sidebar_current: "docs-alicloud-resource-slb-domain-extension"
@@ -21,8 +21,8 @@ Please refer to the [documentation](https://www.alibabacloud.com/help/doc-detail
 ```
 # Create a new load balancer and domain extension
 
-resource "alicloud_slb" "instance" {
-  name                 = "tffTestDomainExtension"
+resource "alicloud_slb_load_balancer" "instance" {
+  load_balancer_name   = "tffTestDomainExtension"
   internet_charge_type = "PayByTraffic"
   internet             = "true"
 }
@@ -34,7 +34,7 @@ resource "alicloud_slb_server_certificate" "foo" {
 }
 
 resource "alicloud_slb_listener" "https" {
-  load_balancer_id          = alicloud_slb.instance.id
+  load_balancer_id          = alicloud_slb_load_balancer.instance.id
   backend_port              = 80
   frontend_port             = 443
   protocol                  = "https"
@@ -55,7 +55,7 @@ resource "alicloud_slb_listener" "https" {
 }
 
 resource "alicloud_slb_domain_extension" "example1" {
-  load_balancer_id      = alicloud_slb.instance.id
+  load_balancer_id      = alicloud_slb_load_balancer.instance.id
   frontend_port         = alicloud_slb_listener.https.frontend_port
   domain                = "www.test.com"
   server_certificate_id = alicloud_slb_server_certificate.foo.id
@@ -67,7 +67,7 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The ID of the SLB instance.
 * `frontend_port` - (Required, ForceNew) The frontend port used by the HTTPS listener of the SLB instance. Valid values: 1–65535.
-* `domain` - (Optional, ForceNew) The domain name,
+* `domain` - (Required, ForceNew) The domain name.
 * `server_certificate_id` - (Required) The ID of the certificate used by the domain name.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 

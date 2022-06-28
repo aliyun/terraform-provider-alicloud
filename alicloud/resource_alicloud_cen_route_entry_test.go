@@ -12,8 +12,8 @@ import (
 )
 
 func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.CenNoSkipRegions)
 	var routeEntry cbn.PublishedRouteEntry
-
 	resourceId := "alicloud_cen_route_entry.default"
 	ra := resourceAttrInit(resourceId, cenRouteEntryBasicMap)
 
@@ -32,7 +32,6 @@ func TestAccAlicloudCenRouteEntry_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenNoSkipRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,

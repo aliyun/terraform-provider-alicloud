@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Monitor"
+subcategory: "Cloud Monitor Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cms_monitor_group"
 sidebar_current: "docs-alicloud-resource-cms-monitor-group"
@@ -24,6 +24,15 @@ resource "alicloud_cms_monitor_group" "example" {
   monitor_group_name = "tf-testaccmonitorgroup"
 }
 
+resource "alicloud_cms_monitor_group" "default2" {
+  contact_groups      = ["your_contact_groups"]
+  resource_group_id   = "your_resource_group_id"
+  resource_group_name = "resource_group_name"
+  tags = {
+    Created = "TF"
+    For     = "Acceptance-test"
+  }
+}
 ```
 
 ## Argument Reference
@@ -31,7 +40,10 @@ resource "alicloud_cms_monitor_group" "example" {
 The following arguments are supported:
 
 * `contact_groups` - (Optional) The alert group to which alert notifications will be sent.
-* `monitor_group_name` - (Required) The name of the application group.
+* `monitor_group_name` - (Optional) The name of the application group.
+* `resource_group_id` - (Optional, Available in v1.141.0+) The ID of the resource group.
+* `resource_group_name` - (Optional, Available in v1.141.0+) The name of the resource group.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

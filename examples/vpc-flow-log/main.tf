@@ -12,11 +12,11 @@ variable "project_name" {
 
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/24"
-  name       = var.name
+  vpc_name   = var.name
 }
 
 resource "alicloud_vpc_flow_log" "default" {
-  depends_on     = ["alicloud_vpc.default"]
+  depends_on     = [alicloud_vpc.default]
   resource_id    = alicloud_vpc.default.id
   resource_type  = "VPC"
   traffic_type   = "All"

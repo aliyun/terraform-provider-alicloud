@@ -71,3 +71,14 @@ variable "client_node_spec" {
 variable "protocol" {
   default = "HTTPS"
 }
+
+variable "setting_config" {
+  type = map(string)
+  default = {
+    "action.auto_create_index": "+.*,-*",
+    "action.destructive_requires_name": "true",
+    "xpack.security.audit.enabled": "true",
+    "xpack.security.audit.outputs": "index",
+    "xpack.watcher.enabled": "false"
+  }
+}

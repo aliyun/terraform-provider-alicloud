@@ -1,10 +1,7 @@
 package alicloud
 
 import (
-	"fmt"
 	"time"
-
-	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -79,13 +76,9 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 			request := ess.CreateAttachInstancesRequest()
 			request.RegionId = client.RegionId
 			request.ScalingGroupId = d.Id()
-			s := reflect.ValueOf(request).Elem()
+			request.InstanceId = &add
 
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-				for i, id := range add {
-					s.FieldByName(fmt.Sprintf("InstanceId%d", i+1)).Set(reflect.ValueOf(id))
-				}
-
 				raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 					return essClient.AttachInstances(request)
 				})

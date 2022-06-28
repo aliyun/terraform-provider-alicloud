@@ -17,6 +17,6 @@ package cbn
 
 // Region is a nested struct in cbn response
 type Region struct {
-	RegionId  string `json:"RegionId" xml:"RegionId"`
 	LocalName string `json:"LocalName" xml:"LocalName"`
+	RegionId  string `json:"RegionId" xml:"RegionId"`
 }

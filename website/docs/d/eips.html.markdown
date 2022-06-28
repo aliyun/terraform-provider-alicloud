@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_eips
 
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.126.0`. Please use new datasource [alicloud_eip_addresses](https://www.terraform.io/docs/providers/alicloud/d/eip_addresses).
+
 This data source provides a list of EIPs (Elastic IP address) owned by an Alibaba Cloud account.
 
 ## Example Usage
@@ -49,3 +51,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `instance_type` - The instance type of that the EIP is bound.
   * `creation_time` - Time of creation.
   * `resource_group_id` - The Id of resource group which the eips belongs.
+  * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not.

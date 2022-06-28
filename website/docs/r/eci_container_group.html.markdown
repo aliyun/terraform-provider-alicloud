@@ -82,18 +82,29 @@ The following arguments are supported:
 * `containers` - (Required) The list of containers.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container group.
 * `dns_config` - (Optional) The structure of dnsConfig.
+* `eci_security_context` - (Optional) The security context of the container group.
 * `host_aliases` - (Optional, ForceNew) HostAliases.
 * `init_containers` - (Optional) The list of initContainers.
 * `instance_type` - (Optional, ForceNew) The type of the ECS instance.
 * `memory` - (Optional) The amount of memory resources allocated to the container group.
 * `ram_role_name` - (Optional, ForceNew) The RAM role that the container group assumes. ECI and ECS share the same RAM role.
 * `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
-* `restart_policy` - (Optional) The restart policy of the container group. Default to `Always`.
+* `restart_policy` - (Optional, Computed) The restart policy of the container group. Valid values: `Always`, `Never`, `OnFailure`.
 * `security_group_id` - (Required, ForceNew) The ID of the security group to which the container group belongs. Container groups within the same security group can access each other.
 * `volumes` - (Optional) The list of volumes.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch. Currently, container groups can only be deployed in VPC networks. The number of IP addresses in the VSwitch CIDR block determines the maximum number of container groups that can be created in the VSwitch. Before you can create an ECI instance, plan the CIDR block of the VSwitch.
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone where you want to deploy the container group. If no value is specified, the system assigns a zone to the container group. By default, no value is specified.
-
+* `image_registry_credential` - (Optional, Available in 1.141.0+) The image registry credential. The details see Block `image_registry_credential`.
+* `auto_match_image_cache` - (Optional, Available in 1.166.0+) Specifies whether to automatically match the image cache. Default value: false.
+* `insecure_registry` - (Optional, Available in 1.170.0+) The address of the self-built mirror warehouse. When creating an image cache using an image in a self-built image repository with a self-signed certificate, you need to configure this parameter to skip certificate authentication to avoid image pull failure due to certificate authentication failure.
+* `plain_http_registry` - (Optional, Available in 1.170.0+) The address of the self-built mirror warehouse. When creating an image cache from an image in a self-built image repository using the HTTP protocol, you need to configure this parameter so that the ECI uses the HTTP protocol to pull the image to avoid image pull failure due to different protocols.
+* `auto_create_eip` - (Optional, Available in 1.170.0+) Specifies whether to automatically create an EIP and bind the EIP to the elastic container instance.
+* `eip_bandwidth` - (Optional, Available in 1.170.0+) The bandwidth of the EIP. The default value is `5`.
+* `eip_instance_id` - (Optional, Available in 1.170.0+) The ID of the elastic IP address (EIP).
+* `tags` - (Optional) A mapping of tags to assign to the resource.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  
 #### Block volumes
 
 The volumes supports the following: 
@@ -167,6 +178,12 @@ The host_aliases supports the following:
 * `hostnames` - (Optional, ForceNew) Adds a host name.
 * `ip` - (Optional, ForceNew) Adds an IP address.
 
+#### Block image_registry_credential
+The image_registry_credential supports the following:
+* `password` - (Optional) The password used to log on to the image repository. It is required when `image_registry_credential` is configured.
+* `server` - (Optional) The address of the image repository. It is required when `image_registry_credential` is configured.
+* `user_name` - (Optional) The username used to log on to the image repository. It is required when `image_registry_credential` is configured.
+
 #### Block dns_config
 
 The dns_config supports the following: 
@@ -221,12 +238,26 @@ The environment_vars supports the following:
 * `key` - (Optional) The name of the variable. The name can be 1 to 128 characters in length and can contain letters, digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
 
+#### Block eci_security_context
+
+The eci_security_context supports the following:
+* `sysctls` - (Optional) system.
+
+#### Block sysctls
+
+The sysctls supports the following:
+
+* `name` - (Optional, ForceNew) The name of the security context that the container group runs.
+* `value` - (Optional, ForceNew) The variable value of the security context that the container group runs.
+
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Container Group. Value as `container_group_id`.
 * `status` - The status of container group.
+* `internet_ip` - (Available in v1.170.0+) The Public IP of the container group.
+* `intranet_ip` - (Available in v1.170.0+) The Private IP of the container group.
 
 ### Timeouts
 

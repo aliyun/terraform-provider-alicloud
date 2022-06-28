@@ -47,7 +47,6 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Normal",
 				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
 			},
 			"payment_type": {
@@ -65,7 +64,6 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "Small",
 				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
 			},
 			"status": {
@@ -83,6 +81,15 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  50,
 			},
 			"gateways": {
 				Type:     schema.TypeList,
@@ -180,6 +187,10 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -187,6 +198,10 @@ func dataSourceAlicloudNatGateways() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"total_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 		},
 	}
@@ -232,9 +247,17 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-	var objects []map[string]interface{}
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
+	var objects []interface{}
 	var natGatewayNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -272,6 +295,10 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.NatGateways.NatGateway", response)
 		}
 		result, _ := resp.([]interface{})
+		if isPagingRequest(d) {
+			objects = result
+			break
+		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if natGatewayNameRegex != nil {
@@ -286,7 +313,7 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < request["PageSize"].(int) {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -294,7 +321,8 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
-	for _, object := range objects {
+	for _, v := range objects {
+		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
 			"business_status":      object["BusinessStatus"],
 			"deletion_protection":  object["DeletionProtection"],
@@ -308,6 +336,7 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 			"nat_gateway_name":     object["Name"],
 			"name":                 object["Name"],
 			"nat_type":             object["NatType"],
+			"network_type":         object["NetworkType"],
 			"payment_type":         convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)),
 			"resource_group_id":    object["ResourceGroupId"],
 			"snat_table_ids":       object["SnatTableIds"].(map[string]interface{})["SnatTableId"],
@@ -357,6 +386,9 @@ func dataSourceAlicloudNatGatewaysRead(d *schema.ResourceData, meta interface{})
 	}
 
 	if err := d.Set("gateways", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

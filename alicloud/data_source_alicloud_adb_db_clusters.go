@@ -55,6 +55,15 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"page_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"page_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  100,
+			},
 			"clusters": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -229,6 +238,10 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -236,6 +249,10 @@ func dataSourceAlicloudAdbDbClusters() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"total_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 		},
 	}
@@ -266,9 +283,17 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		}
 		request["Tag.*"] = tags
 	}
-	request["PageSize"] = PageSizeLarge
-	request["PageNumber"] = 1
-	var objects []map[string]interface{}
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
+		request["PageSize"] = v.(int)
+	} else {
+		request["PageSize"] = PageSizeLarge
+	}
+	var objects []interface{}
 	var descriptionRegex *regexp.Regexp
 	if v, ok := d.GetOk("description_regex"); ok {
 		r, err := regexp.Compile(v.(string))
@@ -306,6 +331,10 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Items.DBCluster", response)
 		}
 		result, _ := resp.([]interface{})
+		if isPagingRequest(d) {
+			objects = result
+			break
+		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if descriptionRegex != nil {
@@ -320,7 +349,7 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < request["PageSize"].(int) {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
@@ -328,7 +357,8 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	descriptions := make([]string, 0)
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
-	for _, object := range objects {
+	for _, v := range objects {
+		object := v.(map[string]interface{})
 		mapping := map[string]interface{}{
 			"commodity_code":          object["CommodityCode"],
 			"compute_resource":        object["ComputeResource"],
@@ -365,6 +395,8 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 			"vpc_id":                  object["VPCId"],
 			"vswitch_id":              object["VSwitchId"],
 			"zone_id":                 object["ZoneId"],
+			"mode":                    object["Mode"],
+			"db_cluster_version":      object["DBVersion"],
 		}
 		descriptions = append(descriptions, object["DBClusterDescription"].(string))
 
@@ -409,12 +441,6 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		mapping["engine_version"] = getResp2["EngineVersion"]
 		mapping["maintain_time"] = getResp2["MaintainTime"]
 
-		getResp3, err := adbService.DescribeDBClusters(id)
-		if err != nil {
-			return WrapError(err)
-		}
-		mapping["db_cluster_version"] = getResp3["DBVersion"]
-
 		ids = append(ids, fmt.Sprint(object["DBClusterId"]))
 		s = append(s, mapping)
 	}
@@ -429,6 +455,9 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 	}
 
 	if err := d.Set("clusters", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("total_count", formatInt(response["TotalCount"])); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

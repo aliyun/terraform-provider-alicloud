@@ -10,13 +10,13 @@ import (
 
 func TestAccAlicloudRdsAccountsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	accountNameConf := dataSourceTestAccConfig{
+	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"account_name":   `"${alicloud_rds_account.default.account_name}"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"account_name":   `"${alicloud_rds_account.default.account_name}_fake"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}_fake"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 		}),
 	}
@@ -32,25 +32,25 @@ func TestAccAlicloudRdsAccountsDataSource(t *testing.T) {
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"ids":            `"${alicloud_rds_account.default.account_name}"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 			"status":         `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"ids":            `"${alicloud_rds_account.default.account_name}_fake"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}_fake"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 			"status":         `"Unavailable"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"ids":            `"${alicloud_rds_account.default.account_name}"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 			"name_regex":     `"${alicloud_rds_account.default.account_name}"`,
 			"status":         `"Available"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRdsAccountsDataSourceName(rand, map[string]string{
-			"ids":            `"${alicloud_rds_account.default.account_name}_fake"`,
+			"ids":            `["${alicloud_rds_account.default.account_name}_fake"]`,
 			"db_instance_id": `"${alicloud_rds_account.default.db_instance_id}"`,
 			"name_regex":     `"${alicloud_rds_account.default.account_name}_fake"`,
 			"status":         `"Unavailable"`,
@@ -65,7 +65,7 @@ func TestAccAlicloudRdsAccountsDataSource(t *testing.T) {
 			"accounts.0.account_name":          "tftestnormal000",
 			"accounts.0.account_type":          `Normal`,
 			"accounts.0.database_privileges.#": `0`,
-			"accounts.0.priv_exceeded":         `0`,
+			"accounts.0.priv_exceeded":         "0",
 			"accounts.0.status":                `Available`,
 		}
 	}
@@ -80,7 +80,7 @@ func TestAccAlicloudRdsAccountsDataSource(t *testing.T) {
 		existMapFunc: existAlicloudRdsAccountsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudRdsAccountsDataSourceNameMapFunc,
 	}
-	alicloudRdsAccountsCheckInfo.dataSourceTestCheck(t, rand, accountNameConf, nameRegexConf, statusConf, allConf)
+	alicloudRdsAccountsCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudRdsAccountsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

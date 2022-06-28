@@ -95,7 +95,7 @@ func resourceAlicloudPolarDBAccountCreate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapError(err)
 		}
-		request.AccountPassword = decryptResp.Plaintext
+		request.AccountPassword = decryptResp
 	}
 
 	request.AccountType = d.Get("account_type").(string)
@@ -220,7 +220,7 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 			if err != nil {
 				return WrapError(err)
 			}
-			request.NewAccountPassword = decryptResp.Plaintext
+			request.NewAccountPassword = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 		}

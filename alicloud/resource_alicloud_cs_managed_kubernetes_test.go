@@ -59,6 +59,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"cluster_spec":                "ack.pro.small",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"deletion_protection":         "true",
+					"enable_rrsa":                 "true",
 					"timezone":                    "Asia/Shanghai",
 					"os_type":                     "Linux",
 					"platform":                    "CentOS",
@@ -114,7 +115,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr",
 					"service_cidr", "enable_ssh", "password", "install_cloud_monitor", "user_ca", "force_update",
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
-					"worker_instance_charge_type", "worker_instance_types", "log_config",
+					"worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes",
 					"cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "encryption_provider_key", "rds_instances", "load_balancer_spec"},
 			},
@@ -130,11 +131,11 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": "tf-managed-k8s",
+					"name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-managed-k8s",
+						"name": name + "_update",
 					}),
 				),
 			},
@@ -145,6 +146,16 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_rrsa": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_rrsa": "null",
 					}),
 				),
 			},
@@ -207,7 +218,6 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EssdSupportRegions)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -282,7 +292,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"worker_instance_charge_type", "worker_instance_types", "log_config", "tags", "worker_data_disk_category", "worker_data_disk_size",
 					"master_vswitch_ids", "worker_number", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain",
 					"custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "worker_disk_snapshot_policy_id", "worker_disk_performance_level",
-					"taints", "encryption_provider_key", "worker_data_disks", "rds_instances", "load_balancer_spec"},
+					"taints", "encryption_provider_key", "worker_data_disks", "rds_instances", "load_balancer_spec", "worker_number"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -341,6 +351,114 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
+	var v *cs.KubernetesClusterDetail
+
+	resourceId := "alicloud_cs_managed_kubernetes.default"
+	ra := resourceAttrInit(resourceId, map[string]string{})
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccmanagedkubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSManagedKubernetesConfig)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                         name,
+					"cluster_spec":                 "ack.pro.small",
+					"is_enterprise_security_group": "true",
+					"deletion_protection":          "false",
+					"node_cidr_mask":               "26",
+					"pod_cidr":                     "172.20.0.0/16",
+					"service_cidr":                 "172.21.0.0/20",
+					"os_type":                      "Linux",
+					"platform":                     "AliyunLinux",
+					"password":                     "Test12345",
+					"worker_number":                "0",
+					"worker_vswitch_ids":           []string{"${alicloud_vswitch.default.id}"},
+					"worker_instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_disk_size":             "50",
+					"worker_disk_category":         "cloud_ssd",
+					"control_plane_log_ttl":        "30",
+					"control_plane_log_components": []string{"apiserver", "kcm", "scheduler"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"cluster_spec":         "ack.pro.small",
+						"deletion_protection":  "false",
+						"pod_cidr":             "172.20.0.0/16",
+						"service_cidr":         "172.21.0.0/20",
+						"os_type":              "Linux",
+						"platform":             "AliyunLinux",
+						"password":             "Test12345",
+						"worker_number":        "0",
+						"worker_disk_size":     "50",
+						"worker_disk_category": "cloud_ssd",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name", "new_nat_gateway", "pod_cidr", "service_cidr", "control_plane_log_ttl",
+					"node_cidr_mask", "vswitch_ids", "worker_disk_category", "worker_disk_size", "control_plane_log_components",
+					"worker_instance_charge_type", "worker_instance_types", "os_type", "platform", "timezone", "password",
+					"exclude_autoscaler_nodes", "install_cloud_monitor", "proxy_mode", "slb_internet_enabled", "worker_vswitch_ids",
+					"cpu_policy", "enable_ssh", "is_enterprise_security_group", "worker_number",
+				},
+			},
+		},
+	})
+}
+
+func resourceCSManagedKubernetesConfig(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_zones" default {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count = 4
+	memory_size = 8
+	kubernetes_node_role = "Worker"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name = "${var.name}"
+  cidr_block = "10.1.0.0/21"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "10.1.1.0/24"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+`, name)
+}
+
 func resourceCSManagedKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -362,6 +480,39 @@ data "alicloud_instance_types" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_kms_keys" "default" {}
+
+variable "roles" {
+  type = list(object({
+    name = string
+    policy_document = string
+    description = string
+    policy_name = string
+  }))
+  default = [
+    {
+      name = "AliyunCSManagedSecurityRole"
+      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"cs.aliyuncs.com\"]}}],\"Version\":\"1\"}"
+      description = "CS使用此角色来访问您在其他云产品中的资源。"
+      policy_name = "AliyunCSManagedSecurityRolePolicy"
+    }
+  ]
+}
+
+resource "alicloud_ram_role" "role" {
+    for_each    = {for r in var.roles:r.name => r}
+    name        = each.value.name
+    document    = each.value.policy_document
+    description = each.value.description
+    force       = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "attach" {
+  for_each    = {for r in var.roles:r.name => r}
+  policy_name = each.value.policy_name
+  policy_type = "System"
+  role_name   = each.value.name
+  depends_on  = [alicloud_ram_role.role]
+}
 
 resource "alicloud_vpc" "default" {
   vpc_name = "${var.name}"
@@ -443,7 +594,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
-					"version":                     "1.14.8-aliyun.1",
+					"version":                     "1.18.8-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -456,7 +607,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
-						"version":                   "1.14.8-aliyun.1",
+						"version":                   "1.18.8-aliyun.1",
 					}),
 				),
 			},
@@ -473,11 +624,11 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.16.9-aliyun.1",
+					"version": "1.20.4-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.16.9-aliyun.1",
+						"version": "1.20.4-aliyun.1",
 					}),
 				),
 			},

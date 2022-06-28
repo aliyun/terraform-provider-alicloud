@@ -95,6 +95,7 @@ type DescribeLoadBalancersRequest struct {
 	BusinessStatus        string                      `position:"Query" name:"BusinessStatus"`
 	Address               string                      `position:"Query" name:"Address"`
 	ResourceOwnerAccount  string                      `position:"Query" name:"ResourceOwnerAccount"`
+	FilterByTagOrName     requests.Boolean            `position:"Query" name:"FilterByTagOrName"`
 	OwnerAccount          string                      `position:"Query" name:"OwnerAccount"`
 	LoadBalancerStatus    string                      `position:"Query" name:"LoadBalancerStatus"`
 	VpcId                 string                      `position:"Query" name:"VpcId"`
@@ -122,7 +123,7 @@ func CreateDescribeLoadBalancersRequest() (request *DescribeLoadBalancersRequest
 	request = &DescribeLoadBalancersRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancers", "slb", "openAPI")
+	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancers", "Slb", "openAPI")
 	request.Method = requests.POST
 	return
 }

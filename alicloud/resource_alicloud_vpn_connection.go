@@ -2,7 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -23,6 +26,11 @@ func resourceAliyunVpnConnection() *schema.Resource {
 		Delete: resourceAliyunVpnConnectionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -76,6 +84,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"psk": {
@@ -104,7 +113,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 						"ike_auth_alg": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							Default:      VPN_AUTH_SHA,
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{VPN_AUTH_SHA, VPN_AUTH_MD5, VPN_AUTH_SHA256, VPN_AUTH_SHA386, VPN_AUTH_SHA512}, false),
 						},
 						"ike_pfs": {
@@ -137,6 +146,7 @@ func resourceAliyunVpnConnection() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ipsec_enc_alg": {
@@ -166,6 +176,85 @@ func resourceAliyunVpnConnection() *schema.Resource {
 				},
 			},
 
+			"health_check_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"dip": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"sip": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"interval": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"retry": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+
+			"enable_dpd": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+
+			"enable_nat_traversal": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+
+			"bgp_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"local_asn": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"tunnel_cidr": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"local_bgp_ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -176,156 +265,394 @@ func resourceAliyunVpnConnection() *schema.Resource {
 
 func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-	request, err := buildAliyunVpnConnectionArgs(d, meta)
+	action := "CreateVpnConnection"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response *vpc.CreateVpnConnectionResponse
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.CreateVpnConnection(&args)
-		})
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+
+	request["CustomerGatewayId"] = d.Get("customer_gateway_id")
+	request["VpnGatewayId"] = d.Get("vpn_gateway_id")
+
+	if v, ok := d.GetOk("local_subnet"); ok {
+		request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
+	}
+
+	if v, ok := d.GetOk("remote_subnet"); ok {
+		request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
+	}
+
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+
+	if v, ok := d.GetOkExists("effect_immediately"); ok {
+		request["EffectImmediately"] = v
+	}
+
+	if v, ok := d.GetOk("ike_config"); ok {
+		ikeConfigsArg := v.([]interface{})[0].(map[string]interface{})
+		ikeConfigsMap := map[string]interface{}{
+			"IkeAuthAlg":  ikeConfigsArg["ike_auth_alg"],
+			"IkeEncAlg":   ikeConfigsArg["ike_enc_alg"],
+			"IkeLifetime": ikeConfigsArg["ike_lifetime"],
+			"LocalId":     ikeConfigsArg["ike_local_id"],
+			"IkeMode":     ikeConfigsArg["ike_mode"],
+			"IkePfs":      ikeConfigsArg["ike_pfs"],
+			"RemoteId":    ikeConfigsArg["ike_remote_id"],
+			"IkeVersion":  ikeConfigsArg["ike_version"],
+			"Psk":         ikeConfigsArg["psk"],
+		}
+		ikeConfigsMapsStrting, _ := convertMaptoJsonString(ikeConfigsMap)
+		request["IkeConfig"] = ikeConfigsMapsStrting
+	}
+
+	if v, ok := d.GetOk("ipsec_config"); ok {
+		ipsecsArg := v.([]interface{})[0].(map[string]interface{})
+		ipsecsMap := map[string]interface{}{
+			"IpsecAuthAlg":  ipsecsArg["ipsec_auth_alg"],
+			"IpsecEncAlg":   ipsecsArg["ipsec_enc_alg"],
+			"IpsecLifetime": ipsecsArg["ipsec_lifetime"],
+			"IpsecPfs":      ipsecsArg["ipsec_pfs"],
+		}
+		ipsecsMapsStrting, _ := convertMaptoJsonString(ipsecsMap)
+		request["IpsecConfig"] = ipsecsMapsStrting
+	}
+
+	if v, ok := d.GetOk("bgp_config"); ok {
+		bgpsArg := v.([]interface{})[0].(map[string]interface{})
+		bgpsMap := map[string]interface{}{
+			"EnableBgp":  bgpsArg["enable"],
+			"LocalAsn":   bgpsArg["local_asn"],
+			"TunnelCidr": bgpsArg["tunnel_cidr"],
+			"LocalBgpIp": bgpsArg["local_bgp_ip"],
+		}
+		bgpsMapsStrting, _ := convertMaptoJsonString(bgpsMap)
+		request["BgpConfig "] = bgpsMapsStrting
+	}
+
+	if v, ok := d.GetOk("health_check_config"); ok {
+		healthChecksArg := v.([]interface{})[0].(map[string]interface{})
+		healthChecksMap := map[string]interface{}{
+			"enable":   healthChecksArg["enable"],
+			"dip":      healthChecksArg["dip"],
+			"sip":      healthChecksArg["sip"],
+			"interval": formatInt(healthChecksArg["interval"]),
+			"retry":    formatInt(healthChecksArg["retry"]),
+		}
+
+		healthChecksMapsStrting, _ := convertMaptoJsonString(healthChecksMap)
+		request["HealthCheckConfig "] = healthChecksMapsStrting
+	}
+
+	if v, ok := d.GetOkExists("enable_dpd"); ok {
+		request["EnableDpd"] = v
+	}
+
+	if v, ok := d.GetOkExists("enable_nat_traversal"); ok {
+		request["EnableNatTraversal"] = v
+	}
+
+	request["ClientToken"] = buildClientToken(action)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
-				time.Sleep(10 * time.Second)
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ = raw.(*vpc.CreateVpnConnectionResponse)
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_connection", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_connection", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(response.VpnConnectionId)
-
-	if err := vpnGatewayService.WaitForVpnConnection(d.Id(), Null, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
-	}
-
+	d.SetId(fmt.Sprint(response["VpnConnectionId"]))
 	return resourceAliyunVpnConnectionRead(d, meta)
 }
 
 func resourceAliyunVpnConnectionRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-	response, err := vpnGatewayService.DescribeVpnConnection(d.Id())
+	vpcService := VpcService{client}
+	object, err := vpcService.DescribeVpnConnection(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpn_gateway vpcService.DescribeVpnConnection Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("customer_gateway_id", response.CustomerGatewayId)
-	d.Set("vpn_gateway_id", response.VpnGatewayId)
-	d.Set("name", response.Name)
 
-	localSubnet := strings.Split(response.LocalSubnet, ",")
+	d.Set("customer_gateway_id", object["CustomerGatewayId"])
+	d.Set("vpn_gateway_id", object["VpnGatewayId"])
+	d.Set("name", object["Name"])
+
+	localSubnet := strings.Split(object["LocalSubnet"].(string), ",")
 	d.Set("local_subnet", localSubnet)
 
-	remoteSubnet := strings.Split(response.RemoteSubnet, ",")
+	remoteSubnet := strings.Split(object["RemoteSubnet"].(string), ",")
 	d.Set("remote_subnet", remoteSubnet)
 
-	d.Set("effect_immediately", response.EffectImmediately)
-	d.Set("status", response.Status)
+	d.Set("effect_immediately", object["EffectImmediately"])
+	d.Set("status", object["Status"])
 
-	if err := d.Set("ike_config", vpnGatewayService.ParseIkeConfig(response.IkeConfig)); err != nil {
-		return WrapError(err)
+	if ipsecConfig, ok := object["IpsecConfig"]; ok {
+		ipsecConfigArg := ipsecConfig.(map[string]interface{})
+		ipsecConfigMaps := make([]map[string]interface{}, 0)
+
+		ipsecConfigMaps = append(ipsecConfigMaps,
+			map[string]interface{}{
+				"ipsec_auth_alg": ipsecConfigArg["IpsecAuthAlg"],
+				"ipsec_enc_alg":  ipsecConfigArg["IpsecEncAlg"],
+				"ipsec_lifetime": ipsecConfigArg["IpsecLifetime"],
+				"ipsec_pfs":      ipsecConfigArg["IpsecPfs"],
+			})
+		d.Set("ipsec_config", ipsecConfigMaps)
 	}
 
-	if err := d.Set("ipsec_config", vpnGatewayService.ParseIpsecConfig(response.IpsecConfig)); err != nil {
-		return WrapError(err)
+	if ipsecConfig, ok := object["IkeConfig"]; ok {
+		ikeConfig := ipsecConfig.(map[string]interface{})
+		ipsecConfigMaps := make([]map[string]interface{}, 0)
+		ipsecConfigMaps = append(ipsecConfigMaps,
+			map[string]interface{}{
+				"ike_auth_alg":  ikeConfig["IkeAuthAlg"],
+				"ike_enc_alg":   ikeConfig["IkeEncAlg"],
+				"ike_lifetime":  ikeConfig["IkeLifetime"],
+				"ike_local_id":  ikeConfig["LocalId"],
+				"ike_mode":      ikeConfig["IkeMode"],
+				"ike_pfs":       ikeConfig["IkePfs"],
+				"ike_remote_id": ikeConfig["RemoteId"],
+				"ike_version":   ikeConfig["IkeVersion"],
+				"psk":           ikeConfig["Psk"],
+			})
+		d.Set("ike_config", ipsecConfigMaps)
 	}
+
+	if ipsecConfig, ok := object["VpnBgpConfig"]; ok {
+		bgpConfig := ipsecConfig.(map[string]interface{})
+		bgpConfigMaps := make([]map[string]interface{}, 0)
+		bgpConfigMaps = append(bgpConfigMaps, map[string]interface{}{
+			"enable":       convertStringToBool(bgpConfig["EnableBgp"].(string)),
+			"local_asn":    bgpConfig["LocalAsn"],
+			"tunnel_cidr":  bgpConfig["TunnelCidr"],
+			"local_bgp_ip": bgpConfig["LocalBgpIp"],
+		})
+		d.Set("bgp_config", bgpConfigMaps)
+	}
+
+	if ipsecConfig, ok := object["VcoHealthCheck"]; ok {
+		healthCheckConfig := ipsecConfig.(map[string]interface{})
+		healthChecksMaps := make([]map[string]interface{}, 0)
+		healthChecksMaps = append(healthChecksMaps,
+			map[string]interface{}{
+				"enable":   convertStringToBool(healthCheckConfig["Enable"].(string)),
+				"dip":      healthCheckConfig["Dip"],
+				"sip":      healthCheckConfig["Sip"],
+				"interval": formatInt(healthCheckConfig["Interval"]),
+				"retry":    formatInt(healthCheckConfig["Retry"]),
+			})
+		d.Set("health_check_config", healthChecksMaps)
+	}
+
+	d.Set("enable_dpd", object["EnableDpd"])
+	d.Set("enable_nat_traversal", object["EnableNatTraversal"])
 
 	return nil
 }
 
 func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-	request := vpc.CreateModifyVpnConnectionAttributeRequest()
-	request.RegionId = client.RegionId
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.VpnConnectionId = d.Id()
-
-	if d.HasChange("name") {
-		request.Name = d.Get("name").(string)
+	action := "ModifyVpnConnectionAttribute"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"RegionId":        client.RegionId,
+		"VpnConnectionId": d.Id(),
 	}
 
-	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
-	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+	update := false
+	if d.HasChange("name") {
+		update = true
+		if v, ok := d.GetOk("name"); ok {
+			request["Name"] = v
+		}
+	}
 
-	/* If not set effect_immediately value, VPN connection will automatically set the value to false*/
-	if v, ok := d.GetOk("effect_immediately"); ok {
-		request.EffectImmediately = requests.NewBoolean(v.(bool))
+	if d.HasChange("local_subnet") {
+		update = true
+	}
+	if v, ok := d.GetOk("local_subnet"); ok {
+		request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
+	}
+
+	if d.HasChange("remote_subnet") {
+		update = true
+	}
+	if v, ok := d.GetOk("remote_subnet"); ok {
+		request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
+	}
+
+	if d.HasChange("effect_immediately") {
+		update = true
+		if v, ok := d.GetOkExists("effect_immediately"); ok {
+			request["EffectImmediately"] = v
+		}
 	}
 
 	if d.HasChange("ike_config") {
-		ike_config, err := vpnGatewayService.AssembleIkeConfig(d.Get("ike_config").([]interface{}))
-		if err != nil {
-			return WrapError(err)
+		update = true
+		if v, ok := d.GetOk("ike_config"); ok {
+			ikeConfigsArg := v.([]interface{})[0].(map[string]interface{})
+			ikeConfigsMap := map[string]interface{}{
+				"IkeAuthAlg":  ikeConfigsArg["ike_auth_alg"],
+				"IkeEncAlg":   ikeConfigsArg["ike_enc_alg"],
+				"IkeLifetime": ikeConfigsArg["ike_lifetime"],
+				"LocalId":     ikeConfigsArg["ike_local_id"],
+				"IkeMode":     ikeConfigsArg["ike_mode"],
+				"IkePfs":      ikeConfigsArg["ike_pfs"],
+				"RemoteId":    ikeConfigsArg["ike_remote_id"],
+				"IkeVersion":  ikeConfigsArg["ike_version"],
+				"Psk":         ikeConfigsArg["psk"],
+			}
+			ikeConfigsMapsStrting, _ := convertMaptoJsonString(ikeConfigsMap)
+			request["IkeConfig"] = ikeConfigsMapsStrting
 		}
-		request.IkeConfig = ike_config
 	}
 
 	if d.HasChange("ipsec_config") {
-		ipsec_config, err := vpnGatewayService.AssembleIpsecConfig(d.Get("ipsec_config").([]interface{}))
-		if err != nil {
-			return WrapError(err)
+		update = true
+		if v, ok := d.GetOk("ipsec_config"); ok {
+			ipsecsArg := v.([]interface{})[0].(map[string]interface{})
+			ipsecsMap := map[string]interface{}{
+				"IpsecAuthAlg":  ipsecsArg["ipsec_auth_alg"],
+				"IpsecEncAlg":   ipsecsArg["ipsec_enc_alg"],
+				"IpsecLifetime": ipsecsArg["ipsec_lifetime"],
+				"IpsecPfs":      ipsecsArg["ipsec_pfs"],
+			}
+			ipsecsMapsStrting, _ := convertMaptoJsonString(ipsecsMap)
+			request["IpsecConfig"] = ipsecsMapsStrting
 		}
-		request.IpsecConfig = ipsec_config
 	}
 
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.ModifyVpnConnectionAttribute(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	if d.HasChange("bgp_config") {
+		update = true
+		if v, ok := d.GetOk("bgp_config"); ok {
+			bgpsArg := v.([]interface{})[0].(map[string]interface{})
+			bgpsMap := map[string]interface{}{
+				"EnableBgp":  bgpsArg["enable"],
+				"LocalAsn":   bgpsArg["local_asn"],
+				"TunnelCidr": bgpsArg["tunnel_cidr"],
+				"LocalBgpIp": bgpsArg["local_bgp_ip"],
+			}
+			bgpsMapsStrting, _ := convertMaptoJsonString(bgpsMap)
+			request["BgpConfig "] = bgpsMapsStrting
+		}
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	if d.HasChange("health_check_config") {
+		update = true
+		if v, ok := d.GetOk("health_check_config"); ok {
+			healthChecksArg := v.([]interface{})[0].(map[string]interface{})
+			healthChecksMap := map[string]interface{}{
+				"enable":   healthChecksArg["enable"],
+				"dip":      healthChecksArg["dip"],
+				"sip":      healthChecksArg["sip"],
+				"interval": healthChecksArg["interval"],
+				"retry":    healthChecksArg["retry"],
+			}
+			healthChecksMapsStrting, _ := convertMaptoJsonString(healthChecksMap)
+			request["HealthCheckConfig "] = healthChecksMapsStrting
+		}
+	}
+
+	if d.HasChange("enable_dpd") {
+		update = true
+		if v, ok := d.GetOkExists("enable_dpd"); ok {
+			request["EnableDpd"] = v
+		}
+	}
+
+	if d.HasChange("enable_nat_traversal") {
+		update = true
+		if v, ok := d.GetOkExists("enable_nat_traversal"); ok {
+			request["EnableNatTraversal"] = v
+		}
+	}
+
+	if update {
+		request["ClientToken"] = buildClientToken(action)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_connection", action, AlibabaCloudSdkGoERROR)
+		}
+	}
 
 	return resourceAliyunVpnConnectionRead(d, meta)
+
 }
 
 func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-	request := vpc.CreateDeleteVpnConnectionRequest()
-	request.RegionId = client.RegionId
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.VpnConnectionId = d.Id()
+	action := "DeleteVpnConnection"
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"VpnConnectionId": d.Id(),
+	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DeleteVpnConnection(&args)
-		})
-
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) {
-				time.Sleep(10 * time.Second)
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
-
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVpnConnectionInstanceId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpnGatewayService.WaitForVpnConnection(d.Id(), Deleted, DefaultTimeout))
+
+	return nil
 }
 
 func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVpnConnectionRequest, error) {
@@ -336,8 +663,8 @@ func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vp
 	request.RegionId = client.RegionId
 	request.CustomerGatewayId = d.Get("customer_gateway_id").(string)
 	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
-	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").(*schema.Set).List())
-	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").(*schema.Set).List())
+	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").([]interface{}))
+	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").([]interface{}))
 
 	if v := d.Get("name").(string); v != "" {
 		request.Name = v

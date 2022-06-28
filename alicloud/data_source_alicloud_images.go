@@ -4,7 +4,10 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
@@ -37,6 +40,11 @@ func dataSourceAlicloudImages() *schema.Resource {
 				// must contain a valid Image owner, expected ImageOwnerSystem, ImageOwnerSelf, ImageOwnerOthers, ImageOwnerMarketplace, ImageOwnerDefault
 				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
 			},
+			"image_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -51,6 +59,14 @@ func dataSourceAlicloudImages() *schema.Resource {
 				Optional:     true,
 				Default:      "Available",
 				ValidateFunc: validation.StringInSlice([]string{"Available", "Creating", "Waiting", "UnAvailable", "CreateFailed", "Deprecated"}, false),
+			},
+			"image_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"image_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"is_support_io_optimized": {
 				Type:     schema.TypeBool,
@@ -233,14 +249,15 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	nameRegex, nameRegexOk := d.GetOk("name_regex")
 	owners, ownersOk := d.GetOk("owners")
 	mostRecent, mostRecentOk := d.GetOk("most_recent")
+	_, imageOwnerIdOk := d.GetOk("image_owner_id")
 
-	if nameRegexOk == false && ownersOk == false && mostRecentOk == false {
-		return WrapError(Error("One of name_regex, owners or most_recent must be assigned"))
+	if !nameRegexOk && !ownersOk && !mostRecentOk && !imageOwnerIdOk {
+		return WrapError(Error("One of name_regex, owners, most_recent or image_owner_id must be assigned"))
 	}
 
 	request := ecs.CreateDescribeImagesRequest()
 	request.PageNumber = requests.NewInteger(1)
-	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageSize = requests.NewInteger(PageSizeXLarge)
 
 	if ownersOk {
 		request.ImageOwnerAlias = owners.(string)
@@ -248,6 +265,14 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 
 	if status, ok := d.GetOk("status"); ok && status.(string) != "" {
 		request.Status = status.(string)
+	}
+
+	if v, ok := d.GetOk("image_id"); ok && v.(string) != "" {
+		request.ImageId = v.(string)
+	}
+
+	if v, ok := d.GetOk("image_name"); ok && v.(string) != "" {
+		request.ImageName = v.(string)
 	}
 
 	if v, ok := d.GetOk("snapshot_id"); ok && v.(string) != "" {
@@ -293,6 +318,10 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("dry_run"); ok {
 		request.DryRun = requests.NewBoolean(v.(bool))
 	}
+	if v, ok := d.GetOk("image_owner_id"); ok {
+		imageId, _ := strconv.Atoi(v.(string))
+		request.ImageOwnerId = requests.NewInteger(imageId)
+	}
 
 	if v, ok := d.GetOk("tags"); ok {
 		var reqTags []ecs.DescribeImagesTag
@@ -306,15 +335,27 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	var allImages []ecs.Image
-
+	var response *ecs.DescribeImagesResponse
 	for {
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeImages(request)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeImages(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			response, _ = raw.(*ecs.DescribeImagesResponse)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_images", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		response, _ := raw.(*ecs.DescribeImagesResponse)
 		if response == nil || len(response.Images.Image) < 1 {
 			break
 		}
@@ -334,7 +375,10 @@ func dataSourceAlicloudImagesRead(d *schema.ResourceData, meta interface{}) erro
 
 	var filteredImages []ecs.Image
 	if nameRegexOk {
-		r := regexp.MustCompile(nameRegex.(string))
+		r, err := regexp.Compile(nameRegex.(string))
+		if err != nil {
+			return WrapError(err)
+		}
 		for _, image := range allImages {
 			// Check for a very rare case where the response would include no
 			// image name. No name means nothing to attempt a match against,

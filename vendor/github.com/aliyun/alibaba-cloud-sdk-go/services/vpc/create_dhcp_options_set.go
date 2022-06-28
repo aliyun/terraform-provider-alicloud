@@ -71,8 +71,10 @@ func (client *Client) CreateDhcpOptionsSetWithCallback(request *CreateDhcpOption
 // CreateDhcpOptionsSetRequest is the request struct for api CreateDhcpOptionsSet
 type CreateDhcpOptionsSetRequest struct {
 	*requests.RpcRequest
+	BootFileName              string           `position:"Query" name:"BootFileName"`
 	ResourceOwnerId           requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken               string           `position:"Query" name:"ClientToken"`
+	TFTPServerName            string           `position:"Query" name:"TFTPServerName"`
 	DomainNameServers         string           `position:"Query" name:"DomainNameServers"`
 	DhcpOptionsSetDescription string           `position:"Query" name:"DhcpOptionsSetDescription"`
 	DryRun                    requests.Boolean `position:"Query" name:"DryRun"`
@@ -86,8 +88,8 @@ type CreateDhcpOptionsSetRequest struct {
 // CreateDhcpOptionsSetResponse is the response struct for api CreateDhcpOptionsSet
 type CreateDhcpOptionsSetResponse struct {
 	*responses.BaseResponse
-	RequestId        string `json:"RequestId" xml:"RequestId"`
 	DhcpOptionsSetId string `json:"DhcpOptionsSetId" xml:"DhcpOptionsSetId"`
+	RequestId        string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateCreateDhcpOptionsSetRequest creates a request to invoke CreateDhcpOptionsSet API

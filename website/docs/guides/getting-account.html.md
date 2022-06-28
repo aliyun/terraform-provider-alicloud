@@ -23,7 +23,7 @@ To sign up for an International-Site account, visit [Alibaba Cloud International
 
 ## Sign Up for an Alibaba Cloud China-Site Account
 
-The China-Site website has a diferent URL. To sign up for a China-Site account, visit
+The China-Site website has a different URL. To sign up for a China-Site account, visit
 [Alibaba Cloud China-Site Website](https://www.aliyun.com/).
 For more account registration details, see [Sign up with Alibaba Cloud](https://help.aliyun.com/knowledge_detail/37195.html)
 

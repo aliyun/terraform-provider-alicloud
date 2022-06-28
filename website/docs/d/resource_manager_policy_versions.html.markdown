@@ -17,8 +17,8 @@ This data source provides the Resource Manager Policy Versions of the current Al
 
 ```terraform
 data "alicloud_resource_manager_policy_versions" "default" {
-    policy_name = "tftest"
-    policy_type = "Custom"
+  policy_name = "tftest"
+  policy_type = "Custom"
 }
 
 output "first_policy_version_id" {

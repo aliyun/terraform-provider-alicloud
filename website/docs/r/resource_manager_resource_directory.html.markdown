@@ -27,15 +27,15 @@ Basic Usage
 
 ```terraform
 resource "alicloud_resource_manager_resource_directory" "example" {
-   // Enable the control policy
-    status = "Enabled"
+  // Enable the control policy
+  status = "Enabled"
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `status` - (Optional, Available in v1.120.0+) The status of control policy. Valid values:`Enabled` and `Disabled`. Default value is `Disabled`.
+* `status` - (Optional, Available in v1.120.0+) The status of control policy. Valid values:`Enabled` and `Disabled`. 
 
 ## Attributes Reference
 
@@ -45,6 +45,8 @@ The following arguments are supported:
 * `root_folder_id` - The ID of the root folder.
 
 -> **NOTE:** Available in 1.120.0+.
+
+### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

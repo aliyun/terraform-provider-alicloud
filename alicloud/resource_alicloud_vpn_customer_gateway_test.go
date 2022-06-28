@@ -122,7 +122,7 @@ func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudVpnCustomerGatewayBasic(t *testing.T) {
+func TestAccAlicloudVPNCustomerGatewayBasic(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default"
@@ -189,7 +189,7 @@ func TestAccAlicloudVpnCustomerGatewayBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVpnCustomerGatewayMulti(t *testing.T) {
+func TestAccAlicloudVPNCustomerGatewayMulti(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default.4"
@@ -272,4 +272,66 @@ resource "alicloud_vpn_customer_gateway" "default" {
 	ip_address = "43.104.22.${ 221 + count.index }"
 }
 `, rand)
+}
+
+func TestAccAlicloudVPNCustomerGateway_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_customer_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpnCustomerGatewayMap3)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpnCustomerGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpnCustomerGatewayBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":       name,
+					"ip_address": "192.104.22.228",
+					"asn":        "12345",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":       name,
+						"ip_address": "192.104.22.228",
+						"asn":        "12345",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AlicloudVpnCustomerGatewayMap3 = map[string]string{}
+
+func AlicloudVpnCustomerGatewayBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_vpcs" "default"	{
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
+`, name)
 }

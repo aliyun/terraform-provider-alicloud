@@ -1,6 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -8,6 +13,9 @@ import (
 )
 
 type R_kvstoreService struct {
+	client *connectivity.AliyunClient
+}
+type RKvstoreService struct {
 	client *connectivity.AliyunClient
 }
 
@@ -56,6 +64,13 @@ func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.Secu
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return object, err
+	} else {
+		for _, v := range response.SecurityIpGroups.SecurityIpGroup {
+			if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
+				continue
+			}
+			return v, nil
+		}
 	}
 	return response.SecurityIpGroups.SecurityIpGroup[0], nil
 }
@@ -174,12 +189,28 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object r_kvstore.DBInstanceAttribute, err error) {
 	request := r_kvstore.CreateDescribeInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
-
 	request.InstanceId = id
 
-	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-		return r_kvstoreClient.DescribeInstanceAttribute(request)
+	var response *r_kvstore.DescribeInstanceAttributeResponse
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.DescribeInstanceAttribute(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*r_kvstore.DescribeInstanceAttributeResponse)
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
@@ -188,8 +219,6 @@ func (s *R_kvstoreService) DescribeKvstoreInstance(id string) (object r_kvstore.
 		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		return object, err
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*r_kvstore.DescribeInstanceAttributeResponse)
 
 	if len(response.Instances.DBInstanceAttribute) < 1 {
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
@@ -218,7 +247,7 @@ func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates
 	}
 }
 
-func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstore.InstanceNetInfo, err error) {
+func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvstore.InstanceNetInfo, err error) {
 	request := r_kvstore.CreateDescribeDBInstanceNetInfoRequest()
 	request.RegionId = s.client.RegionId
 
@@ -242,16 +271,7 @@ func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object r_kvstor
 		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreConnection", id)), NotFoundMsg, ProviderERROR, response.RequestId)
 		return
 	}
-
-	for _, netInfo := range response.NetInfoItems.InstanceNetInfo {
-		// DBInstanceNetType is 0 means public network
-		if netInfo.DBInstanceNetType == "0" {
-			return netInfo, nil
-
-		}
-	}
-	err = WrapErrorf(Error("The instance is not bound to the public IP"), DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	return
+	return response.NetInfoItems.InstanceNetInfo, nil
 }
 
 func (s *R_kvstoreService) DescribeKvstoreAccount(id string) (object r_kvstore.Account, err error) {
@@ -326,4 +346,279 @@ func (s *R_kvstoreService) DescribeBackupPolicy(id string) (object r_kvstore.Des
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*r_kvstore.DescribeBackupPolicyResponse)
 	return *response, nil
+}
+
+func (s *RKvstoreService) DescribeKvstoreAuditLogConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeAuditLogConfig"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis:AuditLogConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *RKvstoreService) DescribeInstanceAttribute(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceAttribute"
+	request := map[string]interface{}{
+		"InstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis:AuditLogConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Instances.DBInstanceAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.DBInstanceAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RKvstoreService) KvstoreAuditLogConfigStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeInstanceAttribute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["InstanceStatus"]) == failState {
+				return object, fmt.Sprint(object["InstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["InstanceStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["InstanceStatus"]), nil
+	}
+}
+
+func (s *RKvstoreService) DescribeInstanceAutoRenewalAttribute(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceAutoRenewalAttribute"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+		"RegionId":     s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidOrderCharge.NotSupport"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.Item", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.Item", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RKvstoreService) DescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceSSL"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"RegionId":   s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IncorrectEngineVersion"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
+}
+
+func (s *RKvstoreService) DescribeSecurityGroupConfiguration(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSecurityGroupConfiguration"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"RegionId":   s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.EcsSecurityGroupRelation", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.EcsSecurityGroupRelation", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *RKvstoreService) DescribeSecurityIps(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSecurityIps"
+	request := map[string]interface{}{
+		"InstanceId": id,
+		"RegionId":   s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.SecurityIpGroups.SecurityIpGroup", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityIpGroups.SecurityIpGroup", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	} else {
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["SecurityIpGroupName"]) != "default" {
+				return v.(map[string]interface{}), nil
+			}
+		}
+	}
+
+	return object, nil
 }

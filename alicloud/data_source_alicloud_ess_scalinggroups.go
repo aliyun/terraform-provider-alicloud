@@ -102,7 +102,36 @@ func dataSourceAlicloudEssScalingGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"health_check_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"suspended_processes": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Computed: true,
+						},
+						"group_deletion_protection": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"modification_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"total_capacity": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"total_instance_count": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
@@ -122,6 +151,7 @@ func dataSourceAlicloudEssScalingGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": tagsSchema(),
 					},
 				},
 			},
@@ -180,7 +210,10 @@ func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interfa
 	if okNameRegex || okIds {
 		for _, group := range allScalingGroups {
 			if okNameRegex && nameRegex != "" {
-				var r = regexp.MustCompile(nameRegex.(string))
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
 				if r != nil && !r.MatchString(group.ScalingGroupName) {
 					continue
 				}
@@ -195,13 +228,15 @@ func dataSourceAlicloudEssScalingGroupsRead(d *schema.ResourceData, meta interfa
 	} else {
 		filteredScalingGroupsTemp = allScalingGroups
 	}
-	return scalingGroupsDescriptionAttribute(d, filteredScalingGroupsTemp, meta)
+	return scalingGroupsDescriptionAttribute(d, filteredScalingGroupsTemp, meta, client)
 }
 
-func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []ess.ScalingGroup, meta interface{}) error {
+func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []ess.ScalingGroup, meta interface{}, client *connectivity.AliyunClient) error {
 	var ids []string
 	var names []string
 	var s = make([]map[string]interface{}, 0)
+	essService := EssService{client}
+
 	for _, scalingGroup := range scalingGroups {
 		mapping := map[string]interface{}{
 			"id":                           scalingGroup.ScalingGroupId,
@@ -222,8 +257,22 @@ func scalingGroupsDescriptionAttribute(d *schema.ResourceData, scalingGroups []e
 			"active_capacity":              scalingGroup.ActiveCapacity,
 			"pending_capacity":             scalingGroup.PendingCapacity,
 			"removing_capacity":            scalingGroup.RemovingCapacity,
+			"total_instance_count":         scalingGroup.TotalInstanceCount,
+			"vpc_id":                       scalingGroup.VpcId,
+			"vswitch_id":                   scalingGroup.VSwitchId,
+			"health_check_type":            scalingGroup.HealthCheckType,
+			"suspended_processes":          scalingGroup.SuspendedProcesses.SuspendedProcess,
+			"group_deletion_protection":    scalingGroup.GroupDeletionProtection,
+			"modification_time":            scalingGroup.ModificationTime,
 			"creation_time":                scalingGroup.CreationTime,
 		}
+
+		listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["tags"] = tagsToMap(listTagResourcesObject)
+
 		ids = append(ids, scalingGroup.ScalingGroupId)
 		names = append(names, scalingGroup.ScalingGroupName)
 		s = append(s, mapping)

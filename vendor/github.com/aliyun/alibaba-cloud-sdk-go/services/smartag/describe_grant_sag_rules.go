@@ -83,10 +83,10 @@ type DescribeGrantSagRulesRequest struct {
 // DescribeGrantSagRulesResponse is the response struct for api DescribeGrantSagRules
 type DescribeGrantSagRulesResponse struct {
 	*responses.BaseResponse
-	RequestId  string                            `json:"RequestId" xml:"RequestId"`
 	TotalCount int                               `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int                               `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int                               `json:"PageSize" xml:"PageSize"`
+	RequestId  string                            `json:"RequestId" xml:"RequestId"`
+	PageNumber int                               `json:"PageNumber" xml:"PageNumber"`
 	GrantRules GrantRulesInDescribeGrantSagRules `json:"GrantRules" xml:"GrantRules"`
 }
 

@@ -42,7 +42,8 @@ resource "alicloud_ecs_key_pair" "publickey" {
 The following arguments are supported:
 
 * `key_file` - (Optional, ForceNew) The key file.
-* `key_name` - (Optional, ForceNew) The key pair's name. It is the only in one Alicloud account.
+* `key_pair_name` - (Optional, ForceNew) The key pair's name. It is the only in one Alicloud account, the key pair's name. must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
+* `key_name` - (Optional, ForceNew, Deprecated in v1.121.0+) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
 * `key_name_prefix` - (Optional, ForceNew) The key pair name's prefix. It is conflict with `key_pair_name`. If it is specified, terraform will using it to build the only key name.
 * `public_key` - (Optional, ForceNew) You can import an existing public key and using Alicloud key pair to manage it. If this parameter is specified, `resource_group_id` is the key pair belongs.
 * `resource_group_id` - (Optional) The Id of resource group which the key pair belongs.
@@ -56,6 +57,12 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Key Pair. Value as `key_pair_name`.
 * `finger_print` The finger print of the key pair.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `delete` - (Defaults to 5 mins, Available in 1.173.0+) Used when delete the key pair.
 
 ## Import
 

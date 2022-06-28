@@ -224,12 +224,21 @@ func GetEncodePath(path *string) *string {
 	return tea.String(uri)
 }
 
+func GetEncodeParam(param *string) *string {
+	uri := tea.StringValue(param)
+	uri = url.QueryEscape(uri)
+	uri = strings.Replace(uri, "+", "%20", -1)
+	uri = strings.Replace(uri, "*", "%2A", -1)
+	uri = strings.Replace(uri, "%7E", "~", -1)
+	return tea.String(uri)
+}
+
 func GetAuthorization(request *tea.Request, signatureAlgorithm, payload, acesskey, secret *string) *string {
 	canonicalURI := tea.StringValue(request.Pathname)
 	if canonicalURI == "" {
 		canonicalURI = "/"
 	}
-	
+
 	canonicalURI = strings.Replace(canonicalURI, "+", "%20", -1)
 	canonicalURI = strings.Replace(canonicalURI, "*", "%2A", -1)
 	canonicalURI = strings.Replace(canonicalURI, "%7E", "~", -1)
@@ -332,6 +341,10 @@ func getCanonicalHeaders(headers map[string]*string) (string, []string) {
 }
 
 func getCanonicalQueryString(query map[string]*string) string {
+	canonicalQueryString := ""
+	if tea.BoolValue(util.IsUnset(query)) {
+		return canonicalQueryString
+	}
 	tmp := make(map[string]string)
 	for k, v := range query {
 		tmp[k] = tea.StringValue(v)
@@ -341,7 +354,6 @@ func getCanonicalQueryString(query map[string]*string) string {
 
 	// Sort the temp by the ascending order
 	hs.Sort()
-	canonicalQueryString := ""
 	for i := range hs.Keys {
 		if hs.Vals[i] != "" {
 			canonicalQueryString += "&" + hs.Keys[i] + "=" + url.QueryEscape(hs.Vals[i])
@@ -449,7 +461,7 @@ func GetTimestamp() (_result *string) {
  * @param filter query param
  * @return the object
  */
-func Query(filter map[string]interface{}) (_result map[string]*string) {
+func Query(filter interface{}) (_result map[string]*string) {
 	tmp := make(map[string]interface{})
 	byt, _ := json.Marshal(filter)
 	d := json.NewDecoder(bytes.NewReader(byt))

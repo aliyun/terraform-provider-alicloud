@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -40,7 +41,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithDirection(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -73,7 +74,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithGroupId(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.EcsClassicSupportedRegions)
@@ -81,7 +82,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type,
+				Config: testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAlicloudDataSourceID("data.alicloud_security_group_rules.egress"),
 					resource.TestCheckResourceAttr("data.alicloud_security_group_rules.egress", "rules.#", "1"),
@@ -106,7 +107,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithNic_Type(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -140,7 +141,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithPolicy(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -173,7 +174,7 @@ func TestAccAlicloudSecurityGroupRulesDataSourceWithIp_Protocol(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupRulesDataSourceEmpty(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupRulesDataSourceEmpty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -204,15 +205,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigDirection = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig_1"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -241,21 +241,20 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigGroup_id = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig0"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group" "bar" {
   name = "tf-testAccCheckAlicloudSecurityGroupRules"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -279,7 +278,7 @@ data "alicloud_security_group_rules" "egress" {
 }
 `
 
-const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNic_Type = `
+const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigNicType = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig1"
 }
@@ -317,15 +316,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigIp_Protocol = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig2"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -356,15 +354,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigPolicy = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig3"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "rule_ingress" {
@@ -396,15 +393,14 @@ const testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEmpty = `
 variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
 }
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/12"
-  name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "group" {
   name = "${var.name}"
   description = "alicloud security group"
-  vpc_id      = "${alicloud_vpc.foo.id}"
+  vpc_id      = data.alicloud_vpcs.default.ids.0
 }
 
 data "alicloud_security_group_rules" "empty" {

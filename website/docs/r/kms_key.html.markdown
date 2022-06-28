@@ -21,24 +21,55 @@ Basic Usage
 resource "alicloud_kms_key" "key" {
   description             = "Hello KMS"
   pending_window_in_days  = "7"
-  key_state               = "Enabled"
+  status                  = "Enabled"
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `description` - (Optional) The description of the key as viewed in Alicloud console.
-* `key_usage` - (Optional, ForceNew) Specifies the usage of CMK. Currently, default to 'ENCRYPT/DECRYPT', indicating that CMK is used for encryption and decryption.
-* `deletion_window_in_days` - (Optional) Field 'deletion_window_in_days' has been deprecated from provider version 1.85.0. New field 'pending_window_in_days' instead.
-* `is_enabled` - (Optional) Field 'is_enabled' has been deprecated from provider version 1.85.0. New field 'key_state' instead.
-* `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Default:"Disabled".
-* `key_spec`   - (Optional, ForceNew) The type of the CMK.
-* `key_state` - (Optional) The status of CMK. Defaults to Enabled.
-* `origin` - (Optional, ForceNew) The source of the key material for the CMK. Defaults to "Aliyun_KMS".
-* `pending_window_in_days` - (Optional) Duration in days after which the key is deleted after destruction of the resource, must be between 7 and 30 days. Defaults to 30 days.
-* `protection_level` - (Optional, ForceNew) The protection level of the CMK. Defaults to "SOFTWARE".
-* `rotation_interval` - (Optional) The period of automatic key rotation. Unit: seconds. 
+* `description` - (Optional) The description of the CMK. The description can be 0 to 8,192 characters in length.
+* `key_usage` - (Optional, ForceNew) The usage of the CMK. Valid values:
+  - ENCRYPT/DECRYPT(default value): encrypts or decrypts data. 
+  - SIGN/VERIFY: generates or verifies a digital signature.
+* `deletion_window_in_days` - (Optional) Field `deletion_window_in_days` has been deprecated from provider version 1.85.0. New field `pending_window_in_days` instead.
+* `is_enabled` - (Optional) Field `is_enabled` has been deprecated from provider version 1.85.0. New field `key_state` instead.
+* `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Valid values: 
+  - Enabled
+  - Disabled (default value)
+  **NOTE**: If you set the origin parameter to EXTERNAL or the key_spec parameter to an asymmetric CMK type, automatic key rotation is unavailable.
+    
+* `key_spec`   - (Optional, ForceNew) The type of the CMK. Valid values: 
+  "Aliyun_AES_256", "Aliyun_AES_128", "Aliyun_AES_192", "Aliyun_SM4", "RSA_2048", "RSA_3072", "EC_P256", "EC_P256K", "EC_SM2".
+  Note: The default type of the CMK is Aliyun_AES_256. Only Dedicated KMS supports Aliyun_AES_128 and Aliyun_AES_192.
+* `key_state` - (Optional) Field `key_state` has been deprecated from provider version 1.123.1. New field `status` instead.
+* `status` - (Optional, Available in 1.123.1+) The status of CMK. Valid Values: 
+  - Disabled
+  - Enabled (default value)
+  - PendingDeletion
+  
+* `origin` - (Optional, ForceNew) The source of key material. Valid values: 
+  - Aliyun_KMS (default value)
+  - EXTERNAL
+  **NOTE**: The value of this parameter is case-sensitive. If you set the `key_spec` to an asymmetric CMK type, 
+    you are not allowed to set the `origin` to EXTERNAL. If you set the `origin` to EXTERNAL, you must import key material. 
+    For more information, see [import key material](https://www.alibabacloud.com/help/en/doc-detail/68523.htm).
+    
+* `pending_window_in_days` - (Optional) The number of days before the CMK is deleted. 
+  During this period, the CMK is in the PendingDeletion state. 
+  After this period ends, you cannot cancel the deletion. Valid values: 7 to 30. Unit: days.
+* `protection_level` - (Optional, ForceNew) The protection level of the CMK. Valid values:
+  - SOFTWARE (default value)
+  - HSM
+  **NOTE**: The value of this parameter is case-sensitive. Assume that you set this parameter to HSM. 
+    If you set the origin parameter to Aliyun_KMS, the CMK is created in a managed hardware security module (HSM). 
+    If you set the origin parameter to EXTERNA, you can import an external key to the managed HSM.
+    
+* `rotation_interval` - (Optional) The interval for automatic key rotation. Specify the value in the integer[unit] format.
+  The following units are supported: d (day), h (hour), m (minute), and s (second). 
+  For example, you can use either 7d or 604800s to specify a seven-day interval. 
+  The interval can range from 7 days to 730 days. 
+  **NOTE**: It is Required when `automatic_rotation = "Enabled"`
                                            
 -> **NOTE:** When the pre-deletion days elapses, the key is permanently deleted and cannot be recovered.
 

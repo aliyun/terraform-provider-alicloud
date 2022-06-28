@@ -22,7 +22,7 @@ func init() {
 		//When implemented, these should be removed firstly
 		Dependencies: []string{
 			"alicloud_instance",
-			"alicloud_network_interface",
+			"alicloud_ecs_network_interface",
 			"alicloud_yundun_bastionhost_instance",
 			"alicloud_cs_kubernetes",
 		},
@@ -122,7 +122,7 @@ func testAccCheckSecurityGroupDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupBasic(t *testing.T) {
 	var v ecs.DescribeSecurityGroupAttributeResponse
 	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityBasicMap)
@@ -197,7 +197,7 @@ func TestAccAlicloudSecurityGroupBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSecurityGroupMulti(t *testing.T) {
+func TestAccAlicloudECSSecurityGroupMulti(t *testing.T) {
 	var v ecs.DescribeSecurityGroupAttributeResponse
 	resourceId := "alicloud_security_group.default.9"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityBasicMap)

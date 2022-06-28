@@ -31,7 +31,7 @@ func testSweepCenRouteService(region string) error {
 
 	prefixes := []string{
 		"tf-testAcc",
-		"tf-test",
+		"tf_testAcc",
 	}
 
 	request := cbn.CreateDescribeCensRequest()
@@ -155,6 +155,56 @@ func TestAccAlicloudCenRouteService_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenRouteService_basic1(t *testing.T) {
+	var v cbn.RouteServiceEntry
+	resourceId := "alicloud_cen_route_service.default"
+	ra := resourceAttrInit(resourceId, CenRouteServiceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenRouteService")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCenRouteService%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, CenRouteServiceBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_region_id": "${alicloud_cen_instance_attachment.vpc.child_instance_region_id}",
+					"cen_id":           "${alicloud_cen_instance_attachment.vpc.instance_id}",
+					"host":             "100.118.28.52/32",
+					"host_region_id":   "${alicloud_cen_instance_attachment.vpc.child_instance_region_id}",
+					"host_vpc_id":      "${alicloud_cen_instance_attachment.vpc.child_instance_id}",
+					"description":      name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_region_id": defaultRegionToTest,
+						"cen_id":           CHECKSET,
+						"host":             "100.118.28.52/32",
+						"host_region_id":   defaultRegionToTest,
+						"host_vpc_id":      CHECKSET,
+						"description":      name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var CenRouteServiceMap = map[string]string{
 	"status": CHECKSET,
 }
@@ -164,16 +214,15 @@ func CenRouteServiceBasicdependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-resource "alicloud_vpc" "default"{
-  name       = "tf-testaccCenRouteService"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 resource "alicloud_cen_instance" "default" {
     cen_instance_name = var.name
 }
 resource "alicloud_cen_instance_attachment" "vpc" {
     instance_id = alicloud_cen_instance.default.id
-    child_instance_id = alicloud_vpc.default.id
+    child_instance_id = data.alicloud_vpcs.default.ids.0
 	child_instance_type = "VPC"
     child_instance_region_id = "%s"
 }

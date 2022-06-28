@@ -96,7 +96,7 @@ func testAlicloudEcsLaunchTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEcsLaunchTemplateBasic(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_launch_template.default"
 	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap)
@@ -583,7 +583,7 @@ func TestAccAlicloudEcsLaunchTemplateBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
+func TestAccAlicloudECSLaunchTemplateMulti(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_ecs_launch_template.default.4"
@@ -685,6 +685,135 @@ func TestAccAlicloudLaunchTemplateMulti(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_launch_template.default"
+	ra := resourceAttrInit(resourceId, testAccLaunchTemplateCheckMap1)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testaccLaunchTemplateBasic%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLaunchTemplateConfigDependence1)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"launch_template_name":          name,
+					"description":                   name,
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"host_name":                     name,
+					"instance_charge_type":          "PrePaid",
+					"instance_name":                 name,
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"internet_charge_type":          "PayByBandwidth",
+					"internet_max_bandwidth_in":     "5",
+					"internet_max_bandwidth_out":    "5",
+					"io_optimized":                  "optimized",
+					"key_pair_name":                 name,
+					"ram_role_name":                 name,
+					"network_type":                  "vpc",
+					"security_enhancement_strategy": "Active",
+					"spot_price_limit":              "5",
+					"spot_strategy":                 "SpotWithPriceLimit",
+					"security_group_ids":            []string{"${alicloud_security_group.default.id}"},
+					"auto_release_time":             time.Now().Add(10 * time.Hour).Format("2021-12-30T12:05:05Z"),
+					"deployment_set_id":             "${alicloud_ecs_deployment_set.default.id}",
+					"enable_vm_os_config":           "false",
+					"image_owner_alias":             "system",
+					"password_inherit":              "false",
+					"period":                        "1",
+					"private_ip_address":            "172.16.0.10",
+					"template_resource_group_id":    "rg-zkdfjahg9zxncv0",
+					"version_description":           name,
+
+					"system_disk_category":    "cloud_ssd",
+					"system_disk_description": name,
+					"system_disk_name":        name,
+					"system_disk_size":        "40",
+
+					"resource_group_id": "rg-zkdfjahg9zxncv0",
+					"userdata":          "xxxxxxx",
+					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+
+					"tags": map[string]string{
+						"tag1": "hello",
+						"tag2": "world",
+					},
+					"template_tags": map[string]string{
+						"tag1": "hello",
+						"tag2": "world",
+					},
+					"network_interfaces": []map[string]string{
+						{
+							"name":              "eth0",
+							"description":       "hello1",
+							"primary_ip":        "10.0.0.2",
+							"security_group_id": "xxxx",
+							"vswitch_id":        "xxxxxxx",
+						},
+					},
+					"data_disks": []map[string]string{
+						{
+							"name":                 "disk1",
+							"description":          "test1",
+							"delete_with_instance": "true",
+							"category":             "cloud",
+							"encrypted":            "false",
+							"performance_level":    "PL0",
+							"size":                 "20",
+						},
+						{
+							"name":                 "disk2",
+							"description":          "test2",
+							"delete_with_instance": "true",
+							"category":             "cloud",
+							"encrypted":            "false",
+							"performance_level":    "PL0",
+							"size":                 "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_name": name,
+						"description":          name,
+						"host_name":            name,
+						"instance_name":        name,
+						"key_pair_name":        name,
+						"ram_role_name":        name,
+						"auto_release_time":    CHECKSET,
+						"deployment_set_id":    CHECKSET,
+						"enable_vm_os_config":  CHECKSET,
+						"image_owner_alias":    CHECKSET,
+						"period":               "1",
+						"private_ip_address":   CHECKSET,
+						"version_description":  name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template_resource_group_id"},
+			},
+		},
+	})
+}
+
 func resourceLaunchTemplateConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -699,12 +828,12 @@ data "alicloud_instance_types" "default" {
   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 }
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
+  name_regex  = "^ubuntu"
   most_recent = true
   owners      = "system"
 }
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
@@ -741,4 +870,67 @@ var testAccLaunchTemplateCheckMap = map[string]string{
 	"zone_id":                       CHECKSET,
 	"network_interfaces.#":          "1",
 	"data_disks.#":                  "2",
+}
+
+var testAccLaunchTemplateCheckMap1 = map[string]string{
+	"image_id":                      CHECKSET,
+	"instance_charge_type":          "PrePaid",
+	"instance_type":                 CHECKSET,
+	"internet_charge_type":          "PayByBandwidth",
+	"internet_max_bandwidth_in":     "5",
+	"internet_max_bandwidth_out":    "5",
+	"io_optimized":                  "optimized",
+	"network_type":                  "vpc",
+	"security_enhancement_strategy": "Active",
+	"spot_price_limit":              "5",
+	"spot_strategy":                 "SpotWithPriceLimit",
+	"security_group_ids.#":          "1",
+	"system_disk.#":                 "1",
+	"resource_group_id":             CHECKSET,
+	"userdata":                      CHECKSET,
+	"vswitch_id":                    CHECKSET,
+	"network_interfaces.#":          "1",
+	"data_disks.#":                  "2",
+}
+
+func resourceLaunchTemplateConfigDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu"
+  most_recent = true
+  owners      = "system"
+}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+ vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+}
+resource "alicloud_security_group" "update" {
+  name   = "${var.name}1"
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+resource "alicloud_ecs_deployment_set" "default" {
+  strategy            = "Availability"
+  domain              = "Default"
+  granularity         = "Host"
+  deployment_set_name = var.name
+  description         = var.name
+}
+`, name)
 }

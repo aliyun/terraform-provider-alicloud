@@ -117,6 +117,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"enable_backup_log": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -131,7 +135,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0"}, false),
-				Default:      "5.0",
+				Computed:     true,
 			},
 			"force_upgrade": {
 				Type:     schema.TypeBool,
@@ -229,6 +233,11 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"private_connection_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -253,6 +262,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable", "Update"}, false),
+			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"security_group_id": {
 				Type:             schema.TypeString,
@@ -394,14 +407,6 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.Capacity = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("config"); ok {
-		respJson, err := convertMaptoJsonString(v.(map[string]interface{}))
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		request.Config = respJson
-	}
-
 	if v, ok := d.GetOk("coupon_no"); ok {
 		request.CouponNo = v.(string)
 	}
@@ -414,6 +419,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("dedicated_host_group_id"); ok {
 		request.DedicatedHostGroupId = v.(string)
+	}
+
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request.DryRun = requests.NewBoolean(v.(bool))
 	}
 
 	if v, ok := d.GetOk("engine_version"); ok {
@@ -449,7 +458,7 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 		}
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
@@ -482,6 +491,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.ZoneId = v.(string)
 	} else if v, ok := d.GetOk("availability_zone"); ok {
 		request.ZoneId = v.(string)
+	}
+
+	if v, ok := d.GetOk("secondary_zone_id"); ok {
+		request.SecondaryZoneId = v.(string)
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
@@ -529,10 +542,16 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("enable_public", false)
 	d.Set("connection_string", "")
 	net, _ := r_kvstoreService.DescribeKvstoreConnection(d.Id())
-	if net.DBInstanceNetType == "0" {
-		d.Set("enable_public", true)
-		d.Set("connection_string", net.ConnectionString)
+	for _, instanceNetInfo := range net {
+		if instanceNetInfo.DBInstanceNetType == "0" {
+			d.Set("enable_public", true)
+			d.Set("connection_string", instanceNetInfo.ConnectionString)
+		}
+		if instanceNetInfo.DBInstanceNetType == "2" {
+			d.Set("private_connection_port", instanceNetInfo.Port)
+		}
 	}
+
 	d.Set("bandwidth", object.Bandwidth)
 	d.Set("capacity", object.Capacity)
 	d.Set("config", object.Config)
@@ -566,6 +585,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vpc_auth_mode", object.VpcAuthMode)
 	d.Set("zone_id", object.ZoneId)
 	d.Set("availability_zone", object.ZoneId)
+	d.Set("secondary_zone_id", object.SecondaryZoneId)
 	describeBackupPolicyObject, err := r_kvstoreService.DescribeBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -609,7 +629,12 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.Set("auto_renew", describeInstanceAutoRenewalAttributeObject.AutoRenew)
+		autoRenew, err := strconv.ParseBool(describeInstanceAutoRenewalAttributeObject.AutoRenew)
+		if err != nil {
+			// invalid request response
+			return WrapError(err)
+		}
+		d.Set("auto_renew", autoRenew)
 		d.Set("auto_renew_period", describeInstanceAutoRenewalAttributeObject.Duration)
 	}
 	//refresh parameters
@@ -664,7 +689,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("tags")
 	}
-	if !d.IsNewResource() && d.HasChange("config") {
+	if d.HasChange("config") {
 		request := r_kvstore.CreateModifyInstanceConfigRequest()
 		request.InstanceId = d.Id()
 		respJson, err := convertMaptoJsonString(d.Get("config").(map[string]interface{}))
@@ -836,6 +861,10 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		migrateToOtherZoneReq.VSwitchId = d.Get("vswitch_id").(string)
 	}
+	if !d.IsNewResource() && d.HasChange("secondary_zone_id") {
+		update = true
+		migrateToOtherZoneReq.SecondaryZoneId = d.Get("secondary_zone_id").(string)
+	}
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.MigrateToOtherZone(migrateToOtherZoneReq)
@@ -913,7 +942,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			modifyInstanceAttributeReq.NewPassword = decryptResp.Plaintext
+			modifyInstanceAttributeReq.NewPassword = decryptResp
 		}
 	}
 	if update {
@@ -940,8 +969,12 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	modifyDBInstanceConnectionStringReq.DBInstanceId = d.Id()
 	if d.HasChange("private_connection_prefix") {
 		update = true
+		modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
 	}
-	modifyDBInstanceConnectionStringReq.NewConnectionString = d.Get("private_connection_prefix").(string)
+	if d.HasChange("private_connection_port") {
+		update = true
+		modifyDBInstanceConnectionStringReq.Port = d.Get("private_connection_port").(string)
+	}
 	modifyDBInstanceConnectionStringReq.IPType = "Private"
 	if update {
 		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
@@ -958,6 +991,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("private_connection_prefix")
+		d.SetPartial("private_connection_port")
 	}
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()
@@ -985,7 +1019,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySecurityIpsReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1027,7 +1061,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return r_kvstoreClient.ModifyInstanceSpec(&args)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem"}) {
+				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1172,7 +1206,7 @@ func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	m := make(map[string]interface{})
 	err = json.Unmarshal([]byte(object.Config), &m)
 	if err != nil {
-		fmt.Println(err)
+		return WrapError(err)
 	}
 
 	for k, v := range m {

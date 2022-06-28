@@ -33,8 +33,8 @@ func testSweepRamUsers(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testacc",
+		"tf_testacc",
 	}
 
 	var users []ram.UserInListUsers
@@ -64,7 +64,7 @@ func testSweepRamUsers(region string) error {
 		id := v.UserId
 		skip := true
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+			if strings.HasPrefix(strings.ToLower(name), prefix) {
 				skip = false
 				break
 			}
@@ -164,7 +164,7 @@ func testSweepRamUsers(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRamUser(t *testing.T) {
+func TestAccAlicloudRAMUser(t *testing.T) {
 	var v *ram.UserInGetUser
 	randInt := acctest.RandIntRange(1000000, 99999999)
 

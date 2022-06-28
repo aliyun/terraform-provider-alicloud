@@ -47,11 +47,12 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs", "eci"}, false),
 						},
 						"server_ip": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -188,6 +189,9 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 						"weight":    adds["weight"],
 						"type":      adds["type"],
 					}
+					if v, ok := adds["server_ip"]; ok && fmt.Sprint(v) != "" {
+						addsm["server_ip"] = v
+					}
 					addservers = append(addservers, addsm)
 				}
 			}
@@ -222,6 +226,10 @@ func resourceAliyunSlbBackendServersUpdate(d *schema.ResourceData, meta interfac
 					"server_id": s["server_id"],
 					"weight":    s["weight"],
 					"type":      s["type"],
+				}
+
+				if v, ok := s["server_ip"]; ok && fmt.Sprint(v) != "" {
+					sm["server_ip"] = v
 				}
 				servers = append(servers, sm)
 			}
@@ -305,7 +313,7 @@ func resourceAliyunSlbBackendServersDelete(d *schema.ResourceData, meta interfac
 					return slbClient.RemoveBackendServers(request)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{"RspoolVipExist", "ObtainIpFail"}) {
+					if IsExpectedErrors(err, []string{"RspoolVipExist", "ObtainIpFail", "ServiceIsStopping"}) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)

@@ -35,41 +35,40 @@ var checkCassandraDcInfo = dataSourceAttr{
 	fakeMapFunc:  fakeCassandraDcMapFunc,
 }
 
-func TestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
+func SkipTestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
+	// Cloud database Cassandra has been closed for sale
+	t.Skip("Cloud database Cassandra has been closed for sale")
 	rand := acctest.RandInt()
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"name_regex": `"${alicloud_cassandra_data_center.dc_2.data_center_name}"`,
+			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"name_regex": `"${alicloud_cassandra_data_center.dc_2.data_center_name}_fake"`,
+			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}_fake"`,
 		}),
 	}
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"ids": `["${alicloud_cassandra_data_center.dc_2.id}"]`,
+			"ids": `["${alicloud_cassandra_data_center.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"ids": `["${alicloud_cassandra_data_center.dc_2.id}_fake"]`,
+			"ids": `["${alicloud_cassandra_data_center.default.id}_fake"]`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"name_regex": `"${alicloud_cassandra_data_center.dc_2.data_center_name}"`,
-			"ids":        `["${alicloud_cassandra_data_center.dc_2.id}"]`,
+			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
+			"ids":        `["${alicloud_cassandra_data_center.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand, map[string]string{
-			"name_regex": `"${alicloud_cassandra_data_center.dc_2.data_center_name}"`,
-			"ids":        `["${alicloud_cassandra_data_center.dc_2.id}_fake"]`,
+			"name_regex": `"${alicloud_cassandra_data_center.default.data_center_name}"`,
+			"ids":        `["${alicloud_cassandra_data_center.default.id}_fake"]`,
 		}),
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	checkCassandraDcInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	checkCassandraDcInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 }
 
 // new a cluster and a dataCenter config
@@ -86,32 +85,32 @@ func testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand i
 		}
 		
 		data "alicloud_vpcs" "default" {
-			is_default = true
+			name_regex = "default-NODELETING"
 		}
 		
 		data "alicloud_vswitches" "default" {
 		  vpc_id = data.alicloud_vpcs.default.ids[0]
-		  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
+		  zone_id = data.alicloud_cassandra_zones.default.zones[0].id
 		}
 		
 		resource "alicloud_vswitch" "this" {
 		  count = "${length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1}"
 		  vswitch_name = "${var.name}"
 		  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-		  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-1].id
-		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)}"
+		  zone_id = data.alicloud_cassandra_zones.default.zones[0].id
+		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 24)}"
 		}
 		
 		data "alicloud_vswitches" "default_2" {
 		  vpc_id = data.alicloud_vpcs.default.ids[0]
-		  zone_id = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-2].id
+		  zone_id = data.alicloud_cassandra_zones.default.zones[1].id
 		}
 		
 		resource "alicloud_vswitch" "this_2" {
 		  count = "${length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1}"
 		  vswitch_name = "${var.name}_2"
 		  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-		  availability_zone = data.alicloud_cassandra_zones.default.zones[length(data.alicloud_cassandra_zones.default.ids)-2].id
+		  zone_id = data.alicloud_cassandra_zones.default.zones[1].id
 		  cidr_block = "${cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 10)}"
 		}
 		
@@ -131,7 +130,7 @@ func testAccCheckAlicloudCassandraDataCenterDataSourceConfigNewDataCenter(rand i
 		  ip_white = "127.0.0.1"
 		}
 		
-		resource "alicloud_cassandra_data_center" "dc_2" {
+		resource "alicloud_cassandra_data_center" "default" {
 		  cluster_id = "${alicloud_cassandra_cluster.default.id}"
 		  data_center_name = "${var.name}"
 		  auto_renew = false

@@ -12,7 +12,7 @@ func TestAccAlicloudSslVpnServersDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 9999)
 	PreCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithAccountSiteType(t, IntlSite)
+		testAccPreCheckWithTime(t, []int{1})
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSslVpnServerConfig(rand, map[string]string{
@@ -72,24 +72,16 @@ data "alicloud_zones" "default" {
 	available_resource_creation= "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-	cidr_block = "172.16.0.0/12"
-	name = "${var.name}"
-}
-
-resource "alicloud_vswitch" "default" {
-	vpc_id = "${alicloud_vpc.default.id}"
-	cidr_block = "172.16.0.0/21"
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	vswitch_name = "${var.name}"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
-	vpc_id = "${alicloud_vpc.default.id}"
+	vpc_id = data.alicloud_vpcs.default.ids.0
 	bandwidth = "10"
 	enable_ssl = true
-	instance_charge_type = "PostPaid"
+	instance_charge_type = "PrePaid"
 }
 
 resource "alicloud_ssl_vpn_server" "default" {

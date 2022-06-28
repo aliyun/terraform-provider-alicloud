@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsSecretsDataSource(t *testing.T) {
+func TestAccAlicloudKMSSecretsDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kms_secrets.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKmsSecret-%d", rand)

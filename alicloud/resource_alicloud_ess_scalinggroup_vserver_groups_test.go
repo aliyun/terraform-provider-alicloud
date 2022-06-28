@@ -92,14 +92,14 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 	  scaling_group_name = "${var.name}"
 	  removal_policies = ["OldestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  loadbalancer_ids = ["${alicloud_slb_load_balancer.default.0.id}","${alicloud_slb_load_balancer.default.1.id}"]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				loadbalancer_id = "${alicloud_slb_load_balancer.default.0.id}"
 				vserver_attributes {
 					vserver_group_id = "${alicloud_slb_server_group.vserver0.0.id}"
 					port = "100"
@@ -107,7 +107,7 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 				}
 			}
       vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.1.id}"
+				loadbalancer_id = "${alicloud_slb_load_balancer.default.1.id}"
 				vserver_attributes {
 					vserver_group_id = "${alicloud_slb_server_group.vserver1.0.id}"
 					port = "200"
@@ -122,28 +122,28 @@ func testAccEssScalingGroupVserverGroup(common string, rand int) string {
 	force = true
 	}
 
-	resource "alicloud_slb" "default" {
+	resource "alicloud_slb_load_balancer" "default" {
 	  count=2
-	  name = "${var.name}"
+	  load_balancer_name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
-      specification = "slb.s1.small"
+      load_balancer_spec = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  load_balancer_id = "${alicloud_slb_load_balancer.default.0.id}"
 	  name = "test"
 	}
 
 	resource "alicloud_slb_server_group" "vserver1" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  load_balancer_id = "${alicloud_slb_load_balancer.default.1.id}"
 	  name = "test"
 	}
 
 	resource "alicloud_slb_listener" "default" {
 	  count = 2
-	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  load_balancer_id = "${element(alicloud_slb_load_balancer.default.*.id, count.index)}"
 	  backend_port = "22"
 	  frontend_port = "22"
 	  protocol = "tcp"
@@ -167,14 +167,14 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 	  scaling_group_name = "${var.name}"
 	  removal_policies = ["OldestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
-	  loadbalancer_ids = ["${alicloud_slb.default.0.id}","${alicloud_slb.default.1.id}"]
+	  loadbalancer_ids = ["${alicloud_slb_load_balancer.default.0.id}","${alicloud_slb_load_balancer.default.1.id}"]
 	  depends_on = ["alicloud_slb_listener.default"]
 	}
 
 	resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 		vserver_groups {
-				loadbalancer_id = "${alicloud_slb.default.0.id}"
+				loadbalancer_id = "${alicloud_slb_load_balancer.default.0.id}"
 				vserver_attributes {
 					vserver_group_id = "${alicloud_slb_server_group.vserver0.1.id}"
 					port = "110"
@@ -184,28 +184,28 @@ func testAccEssScalingGroupVserverGroupUpdate(common string, rand int) string {
 		force = false
 	}
 
-	resource "alicloud_slb" "default" {
+	resource "alicloud_slb_load_balancer" "default" {
 	  count=2
-	  name = "${var.name}"
+	  load_balancer_name = "${var.name}"
 	  vswitch_id = "${alicloud_vswitch.default.id}"
-      specification = "slb.s1.small"
+      load_balancer_spec = "slb.s1.small"
 	}
 
 	resource "alicloud_slb_server_group" "vserver0" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.0.id}"
+	  load_balancer_id = "${alicloud_slb_load_balancer.default.0.id}"
 	  name = "test"
 	}
 
 	resource "alicloud_slb_server_group" "vserver1" {
  	  count = "2"
-	  load_balancer_id = "${alicloud_slb.default.1.id}"
+	  load_balancer_id = "${alicloud_slb_load_balancer.default.1.id}"
 	  name = "test"
 	}
 
 	resource "alicloud_slb_listener" "default" {
 	  count = 2
-	  load_balancer_id = "${element(alicloud_slb.default.*.id, count.index)}"
+	  load_balancer_id = "${element(alicloud_slb_load_balancer.default.*.id, count.index)}"
 	  backend_port = "22"
 	  frontend_port = "22"
 	  protocol = "tcp"

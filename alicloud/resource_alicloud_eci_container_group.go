@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -383,9 +385,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"restart_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "Always",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -477,6 +480,58 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"image_registry_credential": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"password": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"server": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"user_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"auto_match_image_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"plain_http_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"insecure_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"intranet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"auto_create_eip": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"eip_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"eip_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -714,6 +769,40 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			request["ZoneId"] = vsw.ZoneId
 		}
 	}
+	if v, ok := d.GetOk("image_registry_credential"); ok {
+		imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.(*schema.Set).List() {
+			obj := raw.(map[string]interface{})
+			imageRegisryCredentialMaps = append(imageRegisryCredentialMaps, map[string]interface{}{
+				"Password": obj["password"],
+				"Server":   obj["server"],
+				"UserName": obj["user_name"],
+			})
+		}
+		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
+	}
+
+	if v, ok := d.GetOk("auto_match_image_cache"); ok {
+		request["AutoMatchImageCache"] = v
+	}
+	if v, ok := d.GetOkExists("auto_create_eip"); ok {
+		request["AutoCreateEip"] = v
+	}
+	if v, ok := d.GetOkExists("eip_bandwidth"); ok {
+		request["EipBandwidth"] = v
+	}
+	if v, ok := d.GetOk("eip_instance_id"); ok {
+		request["EipInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("plain_http_registry"); ok {
+		request["PlainHttpRegistry"] = v
+	}
+
+	if v, ok := d.GetOk("insecure_registry"); ok {
+		request["InsecureRegistry"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
@@ -744,6 +833,8 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	d.Set("container_group_name", object["ContainerGroupName"])
+	d.Set("internet_ip", object["InternetIp"])
+	d.Set("intranet_ip", object["IntranetIp"])
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := object["Containers"].([]interface{}); ok {
@@ -1144,6 +1235,21 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 		}
 		request["Volume"] = Volumes
 
+	}
+	if d.HasChange("image_registry_credential") {
+		update = true
+		if v, ok := d.GetOk("image_registry_credential"); ok {
+			imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+				imageRegisryCredentialMaps = append(imageRegisryCredentialMaps, map[string]interface{}{
+					"Password": obj["password"],
+					"Server":   obj["server"],
+					"UserName": obj["user_name"],
+				})
+			}
+			request["ImageRegistryCredential"] = imageRegisryCredentialMaps
+		}
 	}
 	if update {
 		action := "UpdateContainerGroup"

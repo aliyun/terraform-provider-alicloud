@@ -40,8 +40,8 @@ func resourceAlicloudResourceManagerResourceDirectory() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled"}, false),
-				Default:      "Disabled",
 			},
 		},
 	}
@@ -98,6 +98,10 @@ func resourceAlicloudResourceManagerResourceDirectoryRead(d *schema.ResourceData
 func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -111,10 +115,6 @@ func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 			if target == "Disabled" {
 				request := map[string]interface{}{}
 				action := "DisableControlPolicy"
-				conn, err := client.NewResourcemanagerClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -139,10 +139,6 @@ func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 			if target == "Enabled" {
 				request := map[string]interface{}{}
 				action := "EnableControlPolicy"
-				conn, err := client.NewResourcemanagerClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

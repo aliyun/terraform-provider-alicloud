@@ -82,6 +82,7 @@ type ModifyScalingConfigurationRequest struct {
 	PrivatePoolOptionsId            string                                            `position:"Query" name:"PrivatePoolOptions.Id"`
 	Ipv6AddressCount                requests.Integer                                  `position:"Query" name:"Ipv6AddressCount"`
 	Cpu                             requests.Integer                                  `position:"Query" name:"Cpu"`
+	SystemDiskCategories            *[]string                                         `position:"Query" name:"SystemDiskCategories"  type:"Repeated"`
 	OwnerId                         requests.Integer                                  `position:"Query" name:"OwnerId"`
 	ScalingConfigurationName        string                                            `position:"Query" name:"ScalingConfigurationName"`
 	Tags                            string                                            `position:"Query" name:"Tags"`
@@ -90,6 +91,7 @@ type ModifyScalingConfigurationRequest struct {
 	InstanceName                    string                                            `position:"Query" name:"InstanceName"`
 	InternetChargeType              string                                            `position:"Query" name:"InternetChargeType"`
 	ZoneId                          string                                            `position:"Query" name:"ZoneId"`
+	InstancePatternInfo             *[]ModifyScalingConfigurationInstancePatternInfo  `position:"Query" name:"InstancePatternInfo"  type:"Repeated"`
 	Affinity                        string                                            `position:"Query" name:"Affinity"`
 	ImageId                         string                                            `position:"Query" name:"ImageId"`
 	Memory                          requests.Integer                                  `position:"Query" name:"Memory"`
@@ -113,8 +115,8 @@ type ModifyScalingConfigurationRequest struct {
 	RamRoleName                     string                                            `position:"Query" name:"RamRoleName"`
 	DedicatedHostId                 string                                            `position:"Query" name:"DedicatedHostId"`
 	CreditSpecification             string                                            `position:"Query" name:"CreditSpecification"`
-	SecurityGroupIds                *[]string                                         `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
 	SpotDuration                    requests.Integer                                  `position:"Query" name:"SpotDuration"`
+	SecurityGroupIds                *[]string                                         `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
 	DataDisk                        *[]ModifyScalingConfigurationDataDisk             `position:"Query" name:"DataDisk"  type:"Repeated"`
 	InstanceTypeOverride            *[]ModifyScalingConfigurationInstanceTypeOverride `position:"Query" name:"InstanceTypeOverride"  type:"Repeated"`
 	LoadBalancerWeight              requests.Integer                                  `position:"Query" name:"LoadBalancerWeight"`
@@ -129,19 +131,28 @@ type ModifyScalingConfigurationSpotPriceLimit struct {
 	PriceLimit   string `name:"PriceLimit"`
 }
 
+// ModifyScalingConfigurationInstancePatternInfo is a repeated param struct in ModifyScalingConfigurationRequest
+type ModifyScalingConfigurationInstancePatternInfo struct {
+	Cores               string `name:"Cores"`
+	InstanceFamilyLevel string `name:"InstanceFamilyLevel"`
+	Memory              string `name:"Memory"`
+	MaxPrice            string `name:"MaxPrice"`
+}
+
 // ModifyScalingConfigurationDataDisk is a repeated param struct in ModifyScalingConfigurationRequest
 type ModifyScalingConfigurationDataDisk struct {
-	DiskName             string `name:"DiskName"`
-	SnapshotId           string `name:"SnapshotId"`
-	Size                 string `name:"Size"`
-	Encrypted            string `name:"Encrypted"`
-	PerformanceLevel     string `name:"PerformanceLevel"`
-	AutoSnapshotPolicyId string `name:"AutoSnapshotPolicyId"`
-	Description          string `name:"Description"`
-	Category             string `name:"Category"`
-	KMSKeyId             string `name:"KMSKeyId"`
-	Device               string `name:"Device"`
-	DeleteWithInstance   string `name:"DeleteWithInstance"`
+	DiskName             string    `name:"DiskName"`
+	SnapshotId           string    `name:"SnapshotId"`
+	Encrypted            string    `name:"Encrypted"`
+	Size                 string    `name:"Size"`
+	PerformanceLevel     string    `name:"PerformanceLevel"`
+	AutoSnapshotPolicyId string    `name:"AutoSnapshotPolicyId"`
+	Description          string    `name:"Description"`
+	Categories           *[]string `name:"Categories" type:"Repeated"`
+	Category             string    `name:"Category"`
+	KMSKeyId             string    `name:"KMSKeyId"`
+	Device               string    `name:"Device"`
+	DeleteWithInstance   string    `name:"DeleteWithInstance"`
 }
 
 // ModifyScalingConfigurationInstanceTypeOverride is a repeated param struct in ModifyScalingConfigurationRequest

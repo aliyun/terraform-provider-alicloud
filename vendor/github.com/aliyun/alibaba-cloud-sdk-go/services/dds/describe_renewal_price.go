@@ -86,8 +86,8 @@ type DescribeRenewalPriceResponse struct {
 	*responses.BaseResponse
 	RequestId string                          `json:"RequestId" xml:"RequestId"`
 	Order     OrderInDescribeRenewalPrice     `json:"Order" xml:"Order"`
-	Rules     RulesInDescribeRenewalPrice     `json:"Rules" xml:"Rules"`
 	SubOrders SubOrdersInDescribeRenewalPrice `json:"SubOrders" xml:"SubOrders"`
+	Rules     RulesInDescribeRenewalPrice     `json:"Rules" xml:"Rules"`
 }
 
 // CreateDescribeRenewalPriceRequest creates a request to invoke DescribeRenewalPrice API
@@ -95,7 +95,7 @@ func CreateDescribeRenewalPriceRequest() (request *DescribeRenewalPriceRequest) 
 	request = &DescribeRenewalPriceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeRenewalPrice", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DescribeRenewalPrice", "dds", "openAPI")
 	request.Method = requests.POST
 	return
 }

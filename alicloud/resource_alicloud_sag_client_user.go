@@ -99,7 +99,7 @@ func resourceAlicloudSagClientUserCreate(d *schema.ResourceData, meta interface{
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 		}
 	}
 

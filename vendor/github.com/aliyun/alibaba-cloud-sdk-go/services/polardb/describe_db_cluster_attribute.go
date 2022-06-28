@@ -81,35 +81,42 @@ type DescribeDBClusterAttributeRequest struct {
 // DescribeDBClusterAttributeResponse is the response struct for api DescribeDBClusterAttribute
 type DescribeDBClusterAttributeResponse struct {
 	*responses.BaseResponse
-	RequestId                 string   `json:"RequestId" xml:"RequestId"`
-	RegionId                  string   `json:"RegionId" xml:"RegionId"`
-	DBClusterNetworkType      string   `json:"DBClusterNetworkType" xml:"DBClusterNetworkType"`
-	VPCId                     string   `json:"VPCId" xml:"VPCId"`
-	VSwitchId                 string   `json:"VSwitchId" xml:"VSwitchId"`
-	PayType                   string   `json:"PayType" xml:"PayType"`
-	DBClusterId               string   `json:"DBClusterId" xml:"DBClusterId"`
-	DBClusterStatus           string   `json:"DBClusterStatus" xml:"DBClusterStatus"`
-	DBClusterDescription      string   `json:"DBClusterDescription" xml:"DBClusterDescription"`
-	Engine                    string   `json:"Engine" xml:"Engine"`
-	DBType                    string   `json:"DBType" xml:"DBType"`
-	DBVersion                 string   `json:"DBVersion" xml:"DBVersion"`
-	LockMode                  string   `json:"LockMode" xml:"LockMode"`
 	DeletionLock              int      `json:"DeletionLock" xml:"DeletionLock"`
-	CreationTime              string   `json:"CreationTime" xml:"CreationTime"`
-	ExpireTime                string   `json:"ExpireTime" xml:"ExpireTime"`
-	Expired                   string   `json:"Expired" xml:"Expired"`
-	MaintainTime              string   `json:"MaintainTime" xml:"MaintainTime"`
-	StorageUsed               int64    `json:"StorageUsed" xml:"StorageUsed"`
-	StorageMax                int64    `json:"StorageMax" xml:"StorageMax"`
-	ZoneIds                   string   `json:"ZoneIds" xml:"ZoneIds"`
-	SQLSize                   int64    `json:"SQLSize" xml:"SQLSize"`
-	IsLatestVersion           bool     `json:"IsLatestVersion" xml:"IsLatestVersion"`
+	Category                  string   `json:"Category" xml:"Category"`
 	ResourceGroupId           string   `json:"ResourceGroupId" xml:"ResourceGroupId"`
 	DataLevel1BackupChainSize int64    `json:"DataLevel1BackupChainSize" xml:"DataLevel1BackupChainSize"`
-	Category                  string   `json:"Category" xml:"Category"`
+	DBClusterId               string   `json:"DBClusterId" xml:"DBClusterId"`
+	DBType                    string   `json:"DBType" xml:"DBType"`
+	DBClusterNetworkType      string   `json:"DBClusterNetworkType" xml:"DBClusterNetworkType"`
+	IsLatestVersion           bool     `json:"IsLatestVersion" xml:"IsLatestVersion"`
+	StorageMax                int64    `json:"StorageMax" xml:"StorageMax"`
+	DBVersion                 string   `json:"DBVersion" xml:"DBVersion"`
+	ZoneIds                   string   `json:"ZoneIds" xml:"ZoneIds"`
+	MaintainTime              string   `json:"MaintainTime" xml:"MaintainTime"`
+	Engine                    string   `json:"Engine" xml:"Engine"`
+	RequestId                 string   `json:"RequestId" xml:"RequestId"`
+	VPCId                     string   `json:"VPCId" xml:"VPCId"`
+	DBClusterStatus           string   `json:"DBClusterStatus" xml:"DBClusterStatus"`
+	VSwitchId                 string   `json:"VSwitchId" xml:"VSwitchId"`
+	DBClusterDescription      string   `json:"DBClusterDescription" xml:"DBClusterDescription"`
+	Expired                   string   `json:"Expired" xml:"Expired"`
+	PayType                   string   `json:"PayType" xml:"PayType"`
+	LockMode                  string   `json:"LockMode" xml:"LockMode"`
+	StorageUsed               int64    `json:"StorageUsed" xml:"StorageUsed"`
 	DBVersionStatus           string   `json:"DBVersionStatus" xml:"DBVersionStatus"`
-	Tags                      []Tag    `json:"Tags" xml:"Tags"`
+	CreationTime              string   `json:"CreationTime" xml:"CreationTime"`
+	SQLSize                   int64    `json:"SQLSize" xml:"SQLSize"`
+	RegionId                  string   `json:"RegionId" xml:"RegionId"`
+	ExpireTime                string   `json:"ExpireTime" xml:"ExpireTime"`
+	SubCategory               string   `json:"SubCategory" xml:"SubCategory"`
+	IsProxyLatestVersion      bool     `json:"IsProxyLatestVersion" xml:"IsProxyLatestVersion"`
+	StorageType               string   `json:"StorageType" xml:"StorageType"`
+	ProxyCpuCores             string   `json:"ProxyCpuCores" xml:"ProxyCpuCores"`
+	ProxyStandardCpuCores     string   `json:"ProxyStandardCpuCores" xml:"ProxyStandardCpuCores"`
+	ProxyType                 string   `json:"ProxyType" xml:"ProxyType"`
+	ProxyStatus               string   `json:"ProxyStatus" xml:"ProxyStatus"`
 	DBNodes                   []DBNode `json:"DBNodes" xml:"DBNodes"`
+	Tags                      []Tag    `json:"Tags" xml:"Tags"`
 }
 
 // CreateDescribeDBClusterAttributeRequest creates a request to invoke DescribeDBClusterAttribute API

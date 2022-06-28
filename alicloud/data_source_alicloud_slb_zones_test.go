@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbZonesDataSource_basic(t *testing.T) {
+func TestAccAlicloudSLBZonesDataSource_basic(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_slb_zones.default"
 
@@ -14,7 +14,7 @@ func TestAccAlicloudSlbZonesDataSource_basic(t *testing.T) {
 
 	addressTypeConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"available_slb_address_type": "Vpc",
+			"available_slb_address_type": "vpc",
 		}),
 	}
 
@@ -24,18 +24,34 @@ func TestAccAlicloudSlbZonesDataSource_basic(t *testing.T) {
 		}),
 	}
 
+	masterZoneIdConfig := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"master_zone_id": "${data.alicloud_zones.default.ids.0}",
+		}),
+	}
+
+	slaveZoneIdConfig := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"slave_zone_id": "${data.alicloud_zones.default.ids.0}",
+		}),
+	}
+
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"available_slb_address_type":       "Vpc",
+			"available_slb_address_type":       "vpc",
 			"available_slb_address_ip_version": "ipv4",
 		}),
 	}
 
 	var existSlbZonesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        CHECKSET,
-			"zones.#":                      CHECKSET,
-			"zones.0.slb_slave_zone_ids.#": CHECKSET,
+			"ids.#":                         CHECKSET,
+			"zones.#":                       CHECKSET,
+			"zones.0.master_zone_id":        CHECKSET,
+			"zones.0.slave_zone_id":         CHECKSET,
+			"zones.0.supported_resources.#": CHECKSET,
+			"zones.0.supported_resources.0.address_type":       CHECKSET,
+			"zones.0.supported_resources.0.address_ip_version": CHECKSET,
 		}
 	}
 
@@ -52,9 +68,13 @@ func TestAccAlicloudSlbZonesDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeSlbZonesMapFunc,
 	}
 
-	slbZonesCheckInfo.dataSourceTestCheck(t, rand, addressTypeConfig, ipVersionConfig, allConfig)
+	slbZonesCheckInfo.dataSourceTestCheck(t, rand, addressTypeConfig, ipVersionConfig, masterZoneIdConfig, slaveZoneIdConfig, allConfig)
 }
 
 func dataSourceslbZonesConfigDependence(name string) string {
-	return ""
+	return `
+		data "alicloud_zones" "default" {
+			available_resource_creation = "Slb"
+		}
+	`
 }

@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_rule"
 sidebar_current: "docs-alicloud-resource-slb-rule"
@@ -76,13 +76,13 @@ resource "alicloud_instance" "default" {
   instance_name              = var.name
 }
 
-resource "alicloud_slb" "default" {
-  name       = var.name
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = var.name
   vswitch_id = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id          = alicloud_slb.default.id
+  load_balancer_id          = alicloud_slb_load_balancer.default.id
   backend_port              = 22
   frontend_port             = 22
   protocol                  = "http"
@@ -91,7 +91,7 @@ resource "alicloud_slb_listener" "default" {
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = alicloud_slb.default.id
+  load_balancer_id = alicloud_slb_load_balancer.default.id
   servers {
     server_ids = alicloud_instance.default.*.id
     port       = 80
@@ -100,7 +100,7 @@ resource "alicloud_slb_server_group" "default" {
 }
 
 resource "alicloud_slb_rule" "default" {
-  load_balancer_id          = alicloud_slb.default.id
+  load_balancer_id          = alicloud_slb_load_balancer.default.id
   frontend_port             = alicloud_slb_listener.default.frontend_port
   name                      = var.name
   domain                    = "*.aliyun.com"
@@ -160,6 +160,16 @@ and characters '-' '/' '?' '%' '#' and '&' are allowed. URLs must be started wit
 The following attributes are exported:
 
 * `id` - The ID of the forwarding rule.
+
+### Timeouts
+
+-> **NOTE:** Available in v1.163.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when create the forwarding rule.
+* `update` - (Defaults to 1 mins) Used when update the forwarding rule.
+* `delete` - (Defaults to 1 mins) Used when delete the forwarding rule.
                                                                                              
 ## Import
 

@@ -83,10 +83,10 @@ type DescribeFlowLogSagsRequest struct {
 // DescribeFlowLogSagsResponse is the response struct for api DescribeFlowLogSags
 type DescribeFlowLogSagsResponse struct {
 	*responses.BaseResponse
-	RequestId  string                    `json:"RequestId" xml:"RequestId"`
 	TotalCount int                       `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int                       `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int                       `json:"PageSize" xml:"PageSize"`
+	RequestId  string                    `json:"RequestId" xml:"RequestId"`
+	PageNumber int                       `json:"PageNumber" xml:"PageNumber"`
 	Sags       SagsInDescribeFlowLogSags `json:"Sags" xml:"Sags"`
 }
 

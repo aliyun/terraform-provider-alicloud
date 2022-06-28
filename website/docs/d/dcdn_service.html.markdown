@@ -19,7 +19,7 @@ For information about DCDN and how to use it, see [What is DCDN](https://help.al
 
 ```terraform
 data "alicloud_dcdn_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

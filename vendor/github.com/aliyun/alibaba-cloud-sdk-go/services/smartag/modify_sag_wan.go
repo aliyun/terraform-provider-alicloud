@@ -72,17 +72,24 @@ func (client *Client) ModifySagWanWithCallback(request *ModifySagWanRequest, cal
 type ModifySagWanRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	ISP                  string           `position:"Query" name:"ISP"`
 	Password             string           `position:"Query" name:"Password"`
+	Vlan                 string           `position:"Query" name:"Vlan"`
 	Mask                 string           `position:"Query" name:"Mask"`
+	StartIp              string           `position:"Query" name:"StartIp"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	Bandwidth            requests.Integer `position:"Query" name:"Bandwidth"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	IP                   string           `position:"Query" name:"IP"`
+	Weight               requests.Integer `position:"Query" name:"Weight"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	IPType               string           `position:"Query" name:"IPType"`
 	Priority             requests.Integer `position:"Query" name:"Priority"`
+	SourceIps            string           `position:"Query" name:"SourceIps"`
 	SmartAGId            string           `position:"Query" name:"SmartAGId"`
 	SmartAGSn            string           `position:"Query" name:"SmartAGSn"`
 	PortName             string           `position:"Query" name:"PortName"`
+	StopIp               string           `position:"Query" name:"StopIp"`
 	Gateway              string           `position:"Query" name:"Gateway"`
 	Username             string           `position:"Query" name:"Username"`
 }

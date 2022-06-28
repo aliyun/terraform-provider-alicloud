@@ -2,14 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPCsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandInt()
 	initVswitchConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
@@ -91,7 +90,17 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 	resourceGroupIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${var.name}"`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+			"resource_group_id": `alicloud_vpc.default.resource_group_id`,
+		}),
+	}
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"vpc_name":    `"${var.name}"`,
+			"page_number": `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
+			"vpc_name":    `"${var.name}"`,
+			"page_number": `2`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
@@ -102,7 +111,9 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"status":            `"Available"`,
 			"is_default":        `"false"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+			"resource_group_id": `alicloud_vpc.default.resource_group_id`,
+			"vpc_name":          `"${var.name}"`,
+			"page_number":       `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpcsDataSourceConfig(rand, map[string]string{
 			"name_regex":        `"${var.name}"`,
@@ -111,11 +122,13 @@ func TestAccAlicloudVpcsDataSourceBasic(t *testing.T) {
 			"status":            `"Available"`,
 			"is_default":        `"false"`,
 			"vswitch_id":        `"${alicloud_vswitch.default.id}_fake"`,
-			"resource_group_id": fmt.Sprintf(`"%s"`, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID")),
+			"resource_group_id": `alicloud_vpc.default.resource_group_id`,
+			"vpc_name":          `"${var.name}"`,
+			"page_number":       `2`,
 		}),
 	}
 
-	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, allConf)
+	vpcsCheckInfo.dataSourceTestCheck(t, rand, initVswitchConf, nameRegexConf, idsConf, cidrBlockConf, statusConf, idDefaultConf, vswitchIdConf, tagsConf, resourceGroupIdConf, pagingConf, allConf)
 }
 
 func testAccCheckAlicloudVpcsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -129,6 +142,10 @@ variable "name" {
   default = "tf-testAccVpcsdatasource%d"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
 resource "alicloud_vpc" "default" {
   vpc_name = "${var.name}"
   cidr_block = "172.16.0.0/12"
@@ -136,7 +153,7 @@ resource "alicloud_vpc" "default" {
 		Created = "TF"
 		For 	= "acceptance test"
   }
-  resource_group_id = "%s"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 
 data "alicloud_zones" "default" {
@@ -154,27 +171,29 @@ data "alicloud_vpcs" "default" {
 	enable_details = true
   %s
 }
-`, rand, os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"), strings.Join(pairs, "\n  "))
+`, rand, strings.Join(pairs, "\n  "))
 	return config
 }
 
 var existVpcsMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"ids.#":                 "1",
-		"names.#":               "1",
-		"vpcs.#":                "1",
-		"vpcs.0.id":             CHECKSET,
-		"vpcs.0.region_id":      CHECKSET,
-		"vpcs.0.status":         "Available",
-		"vpcs.0.vpc_name":       fmt.Sprintf("tf-testAccVpcsdatasource%d", rand),
-		"vpcs.0.vswitch_ids.#":  "1",
-		"vpcs.0.cidr_block":     "172.16.0.0/12",
-		"vpcs.0.vrouter_id":     CHECKSET,
-		"vpcs.0.router_id":      CHECKSET,
-		"vpcs.0.route_table_id": CHECKSET,
-		"vpcs.0.description":    "",
-		"vpcs.0.is_default":     "false",
-		"vpcs.0.creation_time":  CHECKSET,
+		"ids.#":                    "1",
+		"names.#":                  "1",
+		"vpcs.#":                   "1",
+		"total_count":              CHECKSET,
+		"vpcs.0.id":                CHECKSET,
+		"vpcs.0.region_id":         CHECKSET,
+		"vpcs.0.status":            "Available",
+		"vpcs.0.vpc_name":          fmt.Sprintf("tf-testAccVpcsdatasource%d", rand),
+		"vpcs.0.vswitch_ids.#":     "1",
+		"vpcs.0.cidr_block":        "172.16.0.0/12",
+		"vpcs.0.vrouter_id":        CHECKSET,
+		"vpcs.0.router_id":         CHECKSET,
+		"vpcs.0.route_table_id":    CHECKSET,
+		"vpcs.0.description":       "",
+		"vpcs.0.is_default":        "false",
+		"vpcs.0.creation_time":     CHECKSET,
+		"vpcs.0.resource_group_id": CHECKSET,
 	}
 }
 

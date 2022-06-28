@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_snapshot\_policy
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_auto_snapshot_policy](https://www.terraform.io/docs/providers/alicloud/r/ecs_auto_snapshot_policy.html) from version 1.117.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_auto_snapshot_policy](https://www.terraform.io/docs/providers/alicloud/r/ecs_auto_snapshot_policy) from version 1.117.0.
 
 Provides an ECS snapshot policy resource.
 

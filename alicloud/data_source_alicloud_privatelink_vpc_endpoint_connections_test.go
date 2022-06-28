@@ -55,7 +55,6 @@ func TestAccAlicloudPrivatelinkVpcEndpointConnectionsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
-		testAccPreCheckWithNoDefaultVpc(t)
 	}
 
 	PrivatelinkVpcEndpointConnectionsInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, statusConf)
@@ -64,10 +63,10 @@ func TestAccAlicloudPrivatelinkVpcEndpointConnectionsDataSource(t *testing.T) {
 func dataSourcePrivatelinkVpcEndpointConnectionsDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	 is_default = true
+	 name_regex = "default-NODELETING"
 	}
 	resource "alicloud_security_group" "default" {
-	 name = "tftest"
+	 name = "tf-testacc-forprivatelink"
 	 description = "privatelink test security group"
 	 vpc_id = data.alicloud_vpcs.default.ids.0
 	}

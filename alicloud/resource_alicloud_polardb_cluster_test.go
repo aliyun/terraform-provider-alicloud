@@ -128,7 +128,6 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -139,11 +138,12 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":           "MySQL",
-					"db_version":        "8.0",
-					"pay_type":          "PostPaid",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":        "${local.vswitch_id}",
+					"db_type":       "MySQL",
+					"db_version":    "8.0",
+					"pay_type":      "PostPaid",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":    "${local.vswitch_id}",
+
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -158,7 +158,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type"},
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -183,6 +183,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "3",
+					"imci_switch":   "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -221,6 +222,26 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
 					testAccCheck(map[string]string{
 						"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
+						"security_ips.#":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name": "default",
+						"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
+					}, {
+						"db_cluster_ip_array_name": "test_ips1",
+						"security_ips":             []string{"10.168.1.13"},
+					}, {
+						"db_cluster_ip_array_name": "test_ips2",
+						"security_ips":             []string{"100.69.7.113"},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_ip_array.#": "3",
 					}),
 				),
 			},
@@ -258,23 +279,64 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
 					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
+					"db_cluster_ip_array": []map[string]interface{}{{
+						"db_cluster_ip_array_name": "default",
+						"security_ips":             []string{"10.168.1.13", "100.69.7.113"},
+					}, {
+						"db_cluster_ip_array_name": "test_ips1",
+						"security_ips":             []string{"10.168.1.14"},
+					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   "tf-testaccPolarDBClusterUpdate1",
-						"maintain_time": "02:00Z-03:00Z",
-						"db_node_class": CHECKSET,
+						"description":           "tf-testaccPolarDBClusterUpdate1",
+						"maintain_time":         "02:00Z-03:00Z",
+						"db_node_class":         CHECKSET,
+						"security_ips.#":        "2",
+						"db_cluster_ip_array.#": "2",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enabled",
+					"tde_status":         "Enabled",
+					"encrypt_new_tables": "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tde_status": "Enabled",
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": "${alicloud_security_group.default.*.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_lock": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_lock": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_lock": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_lock": "0",
 					}),
 				),
 			},
@@ -307,7 +369,6 @@ func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -362,5 +423,12 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 		status = "OK"
 	}
+
+	resource "alicloud_security_group" "default" {
+		count = 2
+		name   = "${var.name}"
+	    vpc_id = "${local.vpc_id}"
+	}
+
 `, PolarDBCommonTestCase, name)
 }

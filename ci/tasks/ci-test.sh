@@ -13,6 +13,7 @@
 : ${CONCOURSE_TARGET_URL:=""}
 : ${CONCOURSE_TARGET_USER:=""}
 : ${CONCOURSE_TARGET_PASSWORD:=""}
+: ${TRIGGER_TARGET_PIPELINE:=true}
 
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
 export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY}
@@ -52,10 +53,10 @@ diffFiles=$(git diff --name-only HEAD~ HEAD)
 
 for fileName in ${diffFiles[@]};
 do
-    echo -e "\nchecking diff file $fileName ..."
+    echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
     if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
         if [[ ${fileName} == *?_test.go ]]; then
-            echo -e "skipping the file $fileName, continue..."
+            echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
             continue
         fi
         fileName=(${fileName//\.go/_test\.go })
@@ -68,7 +69,8 @@ do
             continue
           fi
           go clean -cache -modcache -i -r
-          echo -e "TF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m"
+          echo -e "\033[34m################################################################################\033[0m"
+          echo -e "\033[34mTF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m\033[0m"
           TF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m | {
           while read LINE
           do
@@ -83,18 +85,22 @@ do
           done
           # send child var to an failed file
           if [[ $FAILED_COUNT -gt 0 ]]; then
-            echo -e "record the failed count $FAILED_COUNT into a temp file"
+            echo -e "\033[31mrecord the failed count $FAILED_COUNT into a temp file\033[0m"
             echo $FAILED_COUNT > failed.txt
           fi
           }
         done
-        echo -e "finished"
+        echo -e "\033[34mFinished\033[0m"
     fi
 done
 
 # read var from failed file and remove this file
 read FAILED_COUNT < failed.txt
-echo -e "There gets $FAILED_COUNT failed testcase."
+if [[ $FAILED_COUNT -gt 0 ]]; then
+  echo -e "\033[31mThere gets $FAILED_COUNT failed testcase.\033[0m"
+else
+  echo -e "\033[32mThere gets $FAILED_COUNT failed testcase.\033[0m"
+fi
 rm -rf failed.txt
 
 # Notify Ding Talk if failed
@@ -115,7 +121,7 @@ exit 1
 fi
 
 ## If success, it should trigger an job in the China region
-if [[ ${ALICLOUD_REGION} != "cn-"* ]]; then
+if [[ ${TRIGGER_TARGET_PIPELINE} = true && ${ALICLOUD_REGION} != "cn-"* ]]; then
   echo -e "\nDownloading the fly ..."
   wget https://github.com/concourse/concourse/releases/download/v5.0.1/fly-5.0.1-linux-amd64.tgz
   tar -xzf fly-5.0.1-linux-amd64.tgz

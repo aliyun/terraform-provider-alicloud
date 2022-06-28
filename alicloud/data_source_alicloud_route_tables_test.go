@@ -11,7 +11,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
+func TestAccAlicloudVPCRouteTablesDataSourceBasic(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheck(t)
 		testAccPreCheckWithRegions(t, false, connectivity.RouteTableNoSupportedRegions)
@@ -86,6 +86,17 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	pagingConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"route_table_name": `"${alicloud_route_table.default.name}"`,
+			"page_number":      `1`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"route_table_name": `"${alicloud_route_table.default.name}"`,
+			"page_number":      `2`,
+		}),
+	}
+
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex":        `"${alicloud_route_table.default.name}"`,
@@ -93,6 +104,8 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
 			"resource_group_id": `""`,
 			"status":            `"Available"`,
+			"route_table_name":  `"${alicloud_route_table.default.name}"`,
+			"page_number":       `1`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex":        `"${alicloud_route_table.default.name}_fake"`,
@@ -100,10 +113,12 @@ func TestAccAlicloudRouteTablesDataSourceBasic(t *testing.T) {
 			"ids":               `[ "${alicloud_route_table.default.id}" ]`,
 			"resource_group_id": `""`,
 			"status":            `"Pending"`,
+			"route_table_name":  `"${alicloud_route_table.default.name}_fake"`,
+			"page_number":       `2`,
 		}),
 	}
 
-	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, statusConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, allConfig)
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, statusConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, pagingConf, allConfig)
 }
 
 func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
@@ -144,6 +159,7 @@ var existRouteTablesMapFunc = func(rand int) map[string]string {
 		"ids.#":                      "1",
 		"names.#":                    "1",
 		"tables.#":                   "1",
+		"total_count":                CHECKSET,
 		"tables.0.id":                CHECKSET,
 		"tables.0.route_table_type":  CHECKSET,
 		"tables.0.router_id":         CHECKSET,

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudOtsInstanceAttachmentsDataSource_basic(t *testing.T) {
+func TestAccAlicloudOtsInstanceAttachmentsDataSourceBasic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
 	resourceId := "data.alicloud_ots_instance_attachments.default"
 
@@ -85,21 +85,29 @@ func dataSourceOtsInstanceAttachmentsConfigDependence(name string) string {
 	data "alicloud_zones" "foo" {
 	  available_resource_creation = "VSwitch"
 	}
-	resource "alicloud_vpc" "foo" {
-	  cidr_block = "172.16.0.0/16"
-	  name = "${var.name}"
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
 	}
-
-	resource "alicloud_vswitch" "foo" {
-	  vpc_id = "${alicloud_vpc.foo.id}"
-	  name = "${var.name}"
-	  cidr_block = "172.16.1.0/24"
-	  availability_zone = "${data.alicloud_zones.foo.zones.0.id}"
+	data "alicloud_vswitches" "default" {
+		vpc_id = data.alicloud_vpcs.default.ids.0
+		zone_id      = data.alicloud_zones.foo.zones.0.id
+	}
+	
+	resource "alicloud_vswitch" "vswitch" {
+	  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	  vpc_id            = data.alicloud_vpcs.default.ids.0
+	  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	  zone_id           = data.alicloud_zones.foo.zones.0.id
+	  vswitch_name      = var.name
+	}
+	
+	locals {
+	  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 	}
 	resource "alicloud_ots_instance_attachment" "foo" {
 	  instance_name = "${alicloud_ots_instance.foo.name}"
 	  vpc_name = "testvpc"
-	  vswitch_id = "${alicloud_vswitch.foo.id}"
+	  vswitch_id = local.vswitch_id
 	}
 	`, name)
 }

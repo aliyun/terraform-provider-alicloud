@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.PolarDBSupportRegions)
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_polardb_node_classes.default"
 
@@ -30,11 +33,6 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 			"db_type":    "Mysql",
 			"db_version": "5.6",
 		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"pay_type":   "PostPaid",
-			"db_type":    "Mysql",
-			"db_version": "fake",
-		}),
 	}
 
 	EngineVersionConfpgsql := dataSourceTestAccConfig{
@@ -42,11 +40,6 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 			"pay_type":   "PostPaid",
 			"db_type":    "PostgreSQL",
 			"db_version": "11",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"pay_type":   "PostPaid",
-			"db_type":    "PostgreSQL",
-			"db_version": "fake",
 		}),
 	}
 
@@ -68,12 +61,13 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 		}),
 	}
 
-	ZoneIdConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"pay_type": "PostPaid",
-			"zone_id":  "${data.alicloud_zones.resources.zones.0.id}",
-		}),
-	}
+	// TODO: There is an api bug. It should reopen after the bug has been fixed.
+	//ZoneIdConf := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"pay_type": "PostPaid",
+	//		"zone_id":  "${data.alicloud_polardb_zones.resources.zones.0.id}",
+	//	}),
+	//}
 
 	var existPolardbInstanceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
@@ -98,13 +92,11 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 
 	PolardbInstanceCheckInfo.dataSourceTestCheck(t, rand, PayTypeConfPrepaid,
 		PayTypeConfPostpaid, EngineVersionConfMysql, EngineVersionConfpgsql,
-		DBNodeClassConf, RegionIdConf, ZoneIdConf)
+		DBNodeClassConf, RegionIdConf)
 }
 
 func polardbConfigHeader(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_zones" "resources" {
-	available_resource_creation= "%s"
-}
-`, name)
+data "alicloud_polardb_zones" "resources" {}
+`)
 }

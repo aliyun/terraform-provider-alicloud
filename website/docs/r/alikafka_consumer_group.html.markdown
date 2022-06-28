@@ -14,7 +14,7 @@ Provides an ALIKAFKA consumer group resource.
 -> **NOTE:** Available in 1.56.0+
 
 -> **NOTE:**  Only the following regions support create alikafka consumer group.
-[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`ap-southeast-1`,`ap-south-1`,`ap-southeast-5`]
+[`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
 ## Example Usage
 
@@ -62,6 +62,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
 * `consumer_id` - (Required, ForceNew) ID of the consumer group. The length cannot exceed 64 characters.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
+* `description` - (Optional, ForceNew Available in v1.157.0+) The description of the resource.
 
 ## Attributes Reference
 

@@ -76,28 +76,35 @@ type InsertK8sApplicationRequest struct {
 	Envs                   string           `position:"Query" name:"Envs"`
 	RequestsMem            requests.Integer `position:"Query" name:"RequestsMem"`
 	StorageType            string           `position:"Query" name:"StorageType"`
+	ConfigMountDescs       string           `position:"Query" name:"ConfigMountDescs"`
 	AppName                string           `position:"Query" name:"AppName"`
 	RequestsmCpu           requests.Integer `position:"Query" name:"RequestsmCpu"`
 	DeployAcrossZones      string           `position:"Query" name:"DeployAcrossZones"`
 	IntranetSlbPort        requests.Integer `position:"Query" name:"IntranetSlbPort"`
 	DeployAcrossNodes      string           `position:"Query" name:"DeployAcrossNodes"`
 	PreStop                string           `position:"Query" name:"PreStop"`
+	BuildPackId            string           `position:"Query" name:"BuildPackId"`
 	LocalVolume            string           `position:"Query" name:"LocalVolume"`
 	UseBodyEncoding        requests.Boolean `position:"Query" name:"UseBodyEncoding"`
+	EmptyDirs              string           `position:"Query" name:"EmptyDirs"`
 	PackageType            string           `position:"Query" name:"PackageType"`
 	RuntimeClassName       string           `position:"Query" name:"RuntimeClassName"`
 	PostStart              string           `position:"Query" name:"PostStart"`
+	CustomAffinity         string           `position:"Query" name:"CustomAffinity"`
 	RepoId                 string           `position:"Query" name:"RepoId"`
 	InternetTargetPort     requests.Integer `position:"Query" name:"InternetTargetPort"`
 	WebContainer           string           `position:"Query" name:"WebContainer"`
+	EnableAsm              requests.Boolean `position:"Query" name:"EnableAsm"`
 	EnableAhas             requests.Boolean `position:"Query" name:"EnableAhas"`
 	SlsConfigs             string           `position:"Query" name:"SlsConfigs"`
 	CommandArgs            string           `position:"Query" name:"CommandArgs"`
 	Readiness              string           `position:"Query" name:"Readiness"`
 	Liveness               string           `position:"Query" name:"Liveness"`
+	CsClusterId            string           `position:"Query" name:"CsClusterId"`
 	InternetSlbPort        requests.Integer `position:"Query" name:"InternetSlbPort"`
 	PackageVersion         string           `position:"Query" name:"PackageVersion"`
 	Timeout                requests.Integer `position:"Query" name:"Timeout"`
+	EnvFroms               string           `position:"Query" name:"EnvFroms"`
 	LimitMem               requests.Integer `position:"Query" name:"LimitMem"`
 	LimitmCpu              requests.Integer `position:"Query" name:"LimitmCpu"`
 	EdasContainerVersion   string           `position:"Query" name:"EdasContainerVersion"`
@@ -108,6 +115,7 @@ type InsertK8sApplicationRequest struct {
 	MountDescs             string           `position:"Query" name:"MountDescs"`
 	Replicas               requests.Integer `position:"Query" name:"Replicas"`
 	LimitCpu               requests.Integer `position:"Query" name:"LimitCpu"`
+	CustomTolerations      string           `position:"Query" name:"CustomTolerations"`
 	WebContainerConfig     string           `position:"Query" name:"WebContainerConfig"`
 	IsMultilingualApp      requests.Boolean `position:"Query" name:"IsMultilingualApp"`
 	ClusterId              string           `position:"Query" name:"ClusterId"`
@@ -117,6 +125,7 @@ type InsertK8sApplicationRequest struct {
 	UriEncoding            string           `position:"Query" name:"UriEncoding"`
 	IntranetSlbProtocol    string           `position:"Query" name:"IntranetSlbProtocol"`
 	ImageUrl               string           `position:"Query" name:"ImageUrl"`
+	PvcMountDescs          string           `position:"Query" name:"PvcMountDescs"`
 	Namespace              string           `position:"Query" name:"Namespace"`
 	ApplicationDescription string           `position:"Query" name:"ApplicationDescription"`
 	RequestsCpu            requests.Integer `position:"Query" name:"RequestsCpu"`

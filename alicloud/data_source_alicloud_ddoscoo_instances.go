@@ -1,11 +1,15 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
-	"strconv"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -69,6 +73,42 @@ func dataSourceAlicloudDdoscooInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"remark": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ip_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"debt_status": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"edition": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"ip_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"enabled": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"expire_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"create_time": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -79,11 +119,11 @@ func dataSourceAlicloudDdoscooInstances() *schema.Resource {
 func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := ddoscoo.CreateDescribeInstancesRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = strconv.Itoa(PageSizeSmall)
-	request.PageNumber = "1"
-	var instances []ddoscoo.Instance
+	action := "DescribeInstances"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeSmall
+	request["PageNumber"] = 1
 
 	var nameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -93,94 +133,133 @@ func dataSourceAlicloudDdoscooInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		ids := expandStringList(v.([]interface{}))
-		request.InstanceIds = &ids
+		request["InstanceIds"] = v
+	}
+
+	var response map[string]interface{}
+	var objects []map[string]interface{}
+	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
 	}
 	// describe ddoscoo instance filtered by name_regex
 	for {
-		raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-			return ddoscooClient.DescribeInstances(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ddoscoo.DescribeInstancesResponse)
-		if len(response.Instances) < 1 {
-			break
-		}
-
-		for _, item := range response.Instances {
-			if nameRegex != nil {
-				if !nameRegex.MatchString(item.Remark) {
-					continue
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
 				}
+				return resource.NonRetryableError(err)
 			}
-			instances = append(instances, item)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", action, AlibabaCloudSdkGoERROR)
 		}
 
-		if len(response.Instances) < PageSizeLarge {
+		resp, err := jsonpath.Get("$.Instances", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Instances", response)
+		}
+		result, _ := resp.([]interface{})
+
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if nameRegex != nil && !nameRegex.MatchString(fmt.Sprint(item["Remark"])) {
+				continue
+			}
+
+			objects = append(objects, item)
+		}
+
+		if len(result) < PageSizeSmall {
 			break
 		}
-
-		currentPageNo, err := strconv.Atoi(request.PageNumber)
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		if page, err := getNextpageNumber(requests.NewInteger(currentPageNo)); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = string(page)
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	// describe instance spec filtered by instanceids
-	nameMap := make(map[string]string)
 	var instanceIds []string
-	for _, instance := range instances {
-		instanceIds = append(instanceIds, instance.InstanceId)
-		nameMap[instance.InstanceId] = instance.Remark
+	for _, item := range objects {
+		instanceIds = append(instanceIds, fmt.Sprint(item["InstanceId"]))
 	}
 
 	if len(instanceIds) < 1 {
-		return WrapError(extractDdoscooInstance(d, nameMap, []ddoscoo.InstanceSpec{}))
+		return WrapError(extractDdoscooInstance(d, map[string]map[string]interface{}{}, objects))
 	}
 
-	specReq := ddoscoo.CreateDescribeInstanceSpecsRequest()
-	specReq.InstanceIds = &instanceIds
-
-	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.DescribeInstanceSpecs(specReq)
+	specAction := "DescribeInstanceSpecs"
+	specReq := make(map[string]interface{})
+	specReq["InstanceIds"] = instanceIds
+	var specResponse map[string]interface{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		specResponse, err = conn.DoRequest(StringPointer(specAction), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, specReq, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-
+	addDebug(specAction, specResponse, specReq)
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddoscoo_instances", specAction, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.InstanceSpecs", specResponse)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, specAction, "$.InstanceSpecs", specResponse)
+	}
+	result, _ := resp.([]interface{})
+	specObjects := make(map[string]map[string]interface{}, len(instanceIds))
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		specObjects[fmt.Sprint(item["InstanceId"])] = item
 	}
 
-	addDebug(specReq.GetActionName(), raw, specReq.RpcRequest, specReq)
-	response, _ := raw.(*ddoscoo.DescribeInstanceSpecsResponse)
-
-	return WrapError(extractDdoscooInstance(d, nameMap, response.InstanceSpecs))
+	return WrapError(extractDdoscooInstance(d, specObjects, objects))
 }
 
-func extractDdoscooInstance(d *schema.ResourceData, nameMap map[string]string, instanceSpecs []ddoscoo.InstanceSpec) error {
+func extractDdoscooInstance(d *schema.ResourceData, instanceSpecs map[string]map[string]interface{}, instance []map[string]interface{}) error {
 	var instanceIds []string
 	var names []string
 	var s []map[string]interface{}
 
-	for _, item := range instanceSpecs {
+	for _, item := range instance {
 		mapping := map[string]interface{}{
-			"id":                item.InstanceId,
-			"name":              nameMap[item.InstanceId],
-			"bandwidth":         item.ElasticBandwidth,
-			"base_bandwidth":    item.BaseBandwidth,
-			"service_bandwidth": item.BandwidthMbps,
-			"port_count":        item.PortLimit,
-			"domain_count":      item.DomainLimit,
+			"id":          fmt.Sprint(item["InstanceId"]),
+			"name":        item["Remark"],
+			"remark":      item["Remark"],
+			"ip_mode":     item["IpMode"],
+			"debt_status": formatInt(item["DebtStatus"]),
+			"edition":     formatInt(item["Edition"]),
+			"ip_version":  item["IpVersion"],
+			"status":      formatInt(item["Status"]),
+			"enabled":     formatInt(item["Enabled"]),
+			"expire_time": formatInt(item["ExpireTime"]),
+			"create_time": formatInt(item["CreateTime"]),
 		}
-		instanceIds = append(instanceIds, item.InstanceId)
-		names = append(names, nameMap[item.InstanceId])
+
+		if v, ok := instanceSpecs[fmt.Sprint(item["InstanceId"])]; ok {
+			mapping["bandwidth"] = formatInt(v["ElasticBandwidth"])
+			mapping["base_bandwidth"] = formatInt(v["BaseBandwidth"])
+			mapping["service_bandwidth"] = formatInt(v["BandwidthMbps"])
+			mapping["port_count"] = formatInt(v["PortLimit"])
+			mapping["domain_count"] = formatInt(v["DomainLimit"])
+		}
+
+		instanceIds = append(instanceIds, fmt.Sprint(mapping["id"]))
+		names = append(names, fmt.Sprint(mapping["name"]))
 		s = append(s, mapping)
 	}
 

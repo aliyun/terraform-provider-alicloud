@@ -1,13 +1,16 @@
 package alicloud
 
 import (
-	"strconv"
+	"fmt"
+	"log"
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -55,34 +58,91 @@ func resourceAlicloudDdoscooInstance() *schema.Resource {
 				Default:      1,
 				ForceNew:     true,
 			},
+			"product_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "ddoscoo",
+				ValidateFunc: validation.StringInSlice([]string{"ddoscoo", "ddoscoo_intl"}, false),
+			},
 		},
 	}
 }
 
 func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ddoscooService := DdoscooService{client}
 
-	request := buildDdoscooCreateRequest(d, meta)
-	request.RegionId = client.RegionId
-
-	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.CreateInstance(request)
-	})
-
+	var response map[string]interface{}
+	action := "CreateInstance"
+	request := make(map[string]interface{})
+	conn, err := client.NewBssopenapiClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response := raw.(*bssopenapi.CreateInstanceResponse)
-	// execute errors including in the bssopenapi response
-	if !response.Success {
-		return WrapError(Error(response.Message))
+	request["Period"] = requests.NewInteger(d.Get("period").(int))
+	request["ProductCode"] = "ddos"
+	request["ProductType"] = d.Get("product_type").(string)
+	request["SubscriptionType"] = "Subscription"
+	request["Parameter"] = []map[string]string{
+		{
+			"Code":  "ServicePartner",
+			"Value": "coop-line-001",
+		},
+		{
+			"Code":  "Bandwidth",
+			"Value": d.Get("bandwidth").(string),
+		},
+		{
+			"Code":  "BaseBandwidth",
+			"Value": d.Get("base_bandwidth").(string),
+		},
+		{
+			"Code":  "DomainCount",
+			"Value": d.Get("domain_count").(string),
+		},
+		{
+			"Code":  "PortCount",
+			"Value": d.Get("port_count").(string),
+		},
+		{
+			"Code":  "ServiceBandwidth",
+			"Value": d.Get("service_bandwidth").(string),
+		},
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if err != nil {
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
+	}
+	if response["Code"].(string) != "Success" {
+		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["Data"].(map[string]interface{})
+	d.SetId(fmt.Sprint(response["InstanceId"]))
+	stateConf := BuildStateConf([]string{"Pending"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	d.SetId(response.Data.InstanceId)
-
-	return resourceAlicloudDdoscooInstanceUpdate(d, meta)
+	return resourceAlicloudDdoscooInstanceUpdate(d, client)
 }
 
 func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -105,16 +165,15 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
 
-	d.Set("name", insInfo.Remark)
-	d.Set("bandwidth", strconv.Itoa(specInfo.ElasticBandwidth))
-	d.Set("base_bandwidth", strconv.Itoa(specInfo.BaseBandwidth))
-	d.Set("domain_count", strconv.Itoa(specInfo.DomainLimit))
-	d.Set("port_count", strconv.Itoa(specInfo.PortLimit))
-	d.Set("service_bandwidth", strconv.Itoa(specInfo.BandwidthMbps))
+	d.Set("name", insInfo["Remark"])
+	d.Set("bandwidth", specInfo["ElasticBandwidth"])
+	d.Set("base_bandwidth", specInfo["BaseBandwidth"])
+	d.Set("domain_count", specInfo["DomainLimit"])
+	d.Set("port_count", specInfo["PortLimit"])
+	d.Set("service_bandwidth", specInfo["BandwidthMbps"])
 
 	return nil
 }
@@ -176,6 +235,10 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		d.SetPartial("service_bandwidth")
 	}
+	stateConf := BuildStateConf([]string{""}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	d.Partial(false)
 	return resourceAlicloudDdoscooInstanceRead(d, meta)
@@ -183,58 +246,39 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	action := "ReleaseInstance"
+	var response map[string]interface{}
+	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   "cn-hangzhou",
+	}
 
-	request := ddoscoo.CreateReleaseInstanceRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-
-	raw, err := client.WithDdoscooClient(func(ddoscooClient *ddoscoo.Client) (interface{}, error) {
-		return ddoscooClient.ReleaseInstance(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
-
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"InstanceNotExpire"}) {
+			log.Printf("[INFO]  instance cannot be deleted and must wait it to be expired and release it automatically")
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
-}
-
-func buildDdoscooCreateRequest(d *schema.ResourceData, meta interface{}) *bssopenapi.CreateInstanceRequest {
-	request := bssopenapi.CreateCreateInstanceRequest()
-	request.ProductCode = "ddos"
-	request.ProductType = "ddoscoo"
-	request.SubscriptionType = "Subscription"
-	request.Period = requests.NewInteger(d.Get("period").(int))
-
-	request.Parameter = &[]bssopenapi.CreateInstanceParameter{
-		{
-			Code:  "ServicePartner",
-			Value: "coop-line-001",
-		},
-		{
-			Code:  "Bandwidth",
-			Value: d.Get("bandwidth").(string),
-		},
-		{
-			Code:  "BaseBandwidth",
-			Value: d.Get("base_bandwidth").(string),
-		},
-		{
-			Code:  "DomainCount",
-			Value: d.Get("domain_count").(string),
-		},
-		{
-			Code:  "PortCount",
-			Value: d.Get("port_count").(string),
-		},
-		{
-			Code:  "ServiceBandwidth",
-			Value: d.Get("service_bandwidth").(string),
-		},
-	}
-
-	return request
 }

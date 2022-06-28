@@ -39,6 +39,7 @@ func testSweepRosStackGroup(region string) error {
 		"PageSize":   PageSizeLarge,
 		"PageNumber": 1,
 		"RegionId":   region,
+		"Status":     "ACTIVE",
 	}
 	var response map[string]interface{}
 	action := "ListStackGroups"
@@ -95,7 +96,7 @@ func testSweepRosStackGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRosStackGroup_basic(t *testing.T) {
+func TestAccAlicloudROSStackGroup_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ros_stack_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudRosStackGroupMap)

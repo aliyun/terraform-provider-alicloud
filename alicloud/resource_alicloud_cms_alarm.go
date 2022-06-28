@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"strconv"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -25,6 +26,11 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 		Delete: resourceAlicloudCmsAlarmDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -43,10 +49,30 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				ForceNew: true,
 			},
 			"dimensions": {
-				Type:     schema.TypeMap,
-				Required: true,
-				ForceNew: true,
-				Elem:     schema.TypeString,
+				Type:          schema.TypeMap,
+				Optional:      true,
+				Computed:      true,
+				Elem:          schema.TypeString,
+				ConflictsWith: []string{"metric_dimensions"},
+				Deprecated:    "Field 'dimensions' has been deprecated from version 1.173.0. Use 'metric_dimensions' instead.",
+			},
+			"metric_dimensions": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				ConflictsWith: []string{"dimensions"},
 			},
 			"period": {
 				Type:     schema.TypeInt,
@@ -62,7 +88,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -95,7 +121,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -128,7 +154,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -156,7 +182,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum}, false),
+				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
 				Deprecated:   "Field 'statistics' has been deprecated from provider version 1.94.0. New field 'escalations_critical.statistics' instead.",
 			},
 			"operator": {
@@ -255,157 +281,175 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	d.Set("name", alarm.RuleName)
-	d.Set("project", alarm.Namespace)
-	d.Set("metric", alarm.MetricName)
-	if period, err := strconv.Atoi(alarm.Period); err != nil {
-		return WrapError(err)
-	} else {
-		d.Set("period", period)
-	}
+	d.Set("name", alarm["RuleName"])
+	d.Set("project", alarm["Namespace"])
+	d.Set("metric", alarm["MetricName"])
+	d.Set("period", alarm["Period"])
 
-	d.Set("statistics", alarm.Escalations.Critical.Statistics)
-	oper := convertOperator(alarm.Escalations.Critical.ComparisonOperator)
-	if oper == MoreThan && d.Get("operator").(string) == Equal {
-		oper = Equal
-	}
-	d.Set("operator", oper)
-	d.Set("threshold", alarm.Escalations.Critical.Threshold)
-	d.Set("triggered_count", alarm.Escalations.Critical.Times)
-
-	escalationsCritical := make([]map[string]interface{}, 1)
-
-	mapping := map[string]interface{}{
-		"statistics":          alarm.Escalations.Critical.Statistics,
-		"comparison_operator": convertOperator(alarm.Escalations.Critical.ComparisonOperator),
-		"threshold":           alarm.Escalations.Critical.Threshold,
-		"times":               alarm.Escalations.Critical.Times,
-	}
-	escalationsCritical[0] = mapping
-	d.Set("escalations_critical", escalationsCritical)
-
-	escalationsWarn := make([]map[string]interface{}, 1)
-	if alarm.Escalations.Warn.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Warn.Times); err != nil {
-			return WrapError(err)
-		} else {
-			mappingWarn := map[string]interface{}{
-				"statistics":          alarm.Escalations.Warn.Statistics,
-				"comparison_operator": convertOperator(alarm.Escalations.Warn.ComparisonOperator),
-				"threshold":           alarm.Escalations.Warn.Threshold,
-				"times":               count,
+	if escalations, ok := alarm["Escalations"].(map[string]interface{}); ok {
+		if critical, ok := escalations["Critical"].(map[string]interface{}); ok {
+			d.Set("statistics", critical["Statistics"])
+			oper := convertOperator(fmt.Sprint(critical["ComparisonOperator"]))
+			if oper == MoreThan && d.Get("operator").(string) == Equal {
+				oper = Equal
 			}
-			escalationsWarn[0] = mappingWarn
-			d.Set("escalations_warn", escalationsWarn)
+			d.Set("operator", oper)
+
+			d.Set("threshold", critical["Threshold"])
+			d.Set("triggered_count", critical["Times"])
+
+			mapping := map[string]interface{}{
+				"statistics":          critical["Statistics"],
+				"comparison_operator": convertOperator(fmt.Sprint(critical["ComparisonOperator"])),
+				"threshold":           critical["Threshold"],
+				"times":               formatInt(critical["Times"]),
+			}
+			d.Set("escalations_critical", []map[string]interface{}{mapping})
+		}
+		if warn, ok := escalations["Warn"].(map[string]interface{}); ok {
+			if warn["Times"] != "" {
+				mappingWarn := map[string]interface{}{
+					"statistics":          warn["Statistics"],
+					"comparison_operator": convertOperator(fmt.Sprint(warn["ComparisonOperator"])),
+					"threshold":           warn["Threshold"],
+					"times":               formatInt(warn["Times"]),
+				}
+				d.Set("escalations_warn", []map[string]interface{}{mappingWarn})
+			}
+		}
+		if info, ok := escalations["Info"].(map[string]interface{}); ok {
+			if fmt.Sprint(info["Times"]) != "" {
+				mappingInfo := map[string]interface{}{
+					"statistics":          info["Statistics"],
+					"comparison_operator": convertOperator(fmt.Sprint(info["ComparisonOperator"])),
+					"threshold":           info["Threshold"],
+					"times":               formatInt(info["Times"]),
+				}
+				d.Set("escalations_info", []map[string]interface{}{mappingInfo})
+			}
 		}
 	}
 
-	escalationsInfo := make([]map[string]interface{}, 1)
-	if alarm.Escalations.Info.Times != "" {
-		if count, err := strconv.Atoi(alarm.Escalations.Info.Times); err != nil {
-			return WrapError(err)
-		} else {
-			mappingInfo := map[string]interface{}{
-				"statistics":          alarm.Escalations.Info.Statistics,
-				"comparison_operator": convertOperator(alarm.Escalations.Info.ComparisonOperator),
-				"threshold":           alarm.Escalations.Info.Threshold,
-				"times":               count,
-			}
-			escalationsInfo[0] = mappingInfo
-			d.Set("escalations_info", escalationsInfo)
-		}
-	}
+	d.Set("effective_interval", alarm["EffectiveInterval"])
 
-	d.Set("effective_interval", alarm.EffectiveInterval)
-	//d.Set("start_time", parts[0])
-	//d.Set("end_time", parts[1])
+	d.Set("silence_time", alarm["SilenceTime"])
 
-	d.Set("silence_time", alarm.SilenceTime)
+	d.Set("status", alarm["AlertState"])
+	d.Set("enabled", alarm["EnableState"])
+	d.Set("webhook", alarm["Webhook"])
+	d.Set("contact_groups", strings.Split(alarm["ContactGroups"].(string), ","))
 
-	d.Set("status", alarm.AlertState)
-	d.Set("enabled", alarm.EnableState)
-	d.Set("webhook", alarm.Webhook)
-	d.Set("contact_groups", strings.Split(alarm.ContactGroups, ","))
-
-	var dims []string
-	if alarm.Dimensions != "" {
-		if err := json.Unmarshal([]byte(alarm.Dimensions), &dims); err != nil {
+	dims := make([]map[string]interface{}, 0)
+	if fmt.Sprint(alarm["Resources"]) != "" {
+		if err := json.Unmarshal([]byte(alarm["Resources"].(string)), &dims); err != nil {
 			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
 		}
 	}
-	d.Set("dimensions", dims)
 
+	dimensionList := make(map[string]interface{}, 0)
+	for _, raw := range dims {
+		for k, v := range raw {
+			if dimensionListValue, ok := dimensionList[k]; ok {
+				dimensionList[k] = fmt.Sprint(dimensionListValue.(string), ",", v.(string))
+			} else {
+				dimensionList[k] = v
+			}
+		}
+	}
+
+	metricDimensionList := make([]map[string]interface{}, 0)
+	for _, raw := range dims {
+		for k, v := range raw {
+			dimensionMap := make(map[string]interface{})
+			dimensionMap["key"] = k
+			dimensionMap["value"] = v
+			metricDimensionList = append(metricDimensionList, dimensionMap)
+		}
+	}
+
+	if err := d.Set("dimensions", dimensionList); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("metric_dimensions", metricDimensionList); err != nil {
+		return WrapError(err)
+	}
 	return nil
 }
 
 func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "PutResourceMetricRule"
+	request := make(map[string]interface{})
+	conn, err := client.NewCmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	cmsService := CmsService{client}
 	d.Partial(true)
 
-	request := cms.CreatePutResourceMetricRuleRequest()
-	request.RuleId = d.Id()
-	request.RuleName = d.Get("name").(string)
-	request.Namespace = d.Get("project").(string)
-	request.MetricName = d.Get("metric").(string)
-	request.Period = strconv.Itoa(d.Get("period").(int))
-	request.ContactGroups = strings.Join(expandStringList(d.Get("contact_groups").([]interface{})), ",")
+	request["RuleId"] = d.Id()
+	request["RuleName"] = d.Get("name").(string)
+	request["Namespace"] = d.Get("project").(string)
+	request["MetricName"] = d.Get("metric").(string)
+	request["Period"] = strconv.Itoa(d.Get("period").(int))
+	request["ContactGroups"] = strings.Join(expandStringList(d.Get("contact_groups").([]interface{})), ",")
 
 	// 兼容弃用参数
-	request.EscalationsCriticalStatistics = d.Get("statistics").(string)
-	request.EscalationsCriticalComparisonOperator = convertOperator(d.Get("operator").(string))
+	request["Escalations.Critical.Statistics"] = d.Get("statistics").(string)
+	request["Escalations.Critical.ComparisonOperator"] = convertOperator(d.Get("operator").(string))
 	if v, ok := d.GetOk("threshold"); ok && v.(string) != "" {
-		request.EscalationsCriticalThreshold = v.(string)
+		request["Escalations.Critical.Threshold"] = v.(string)
 	}
-	request.EscalationsCriticalThreshold = d.Get("threshold").(string)
-	request.EscalationsCriticalTimes = requests.NewInteger(d.Get("triggered_count").(int))
+	request["Escalations.Critical.Threshold"] = d.Get("threshold").(string)
+	request["Escalations.Critical.Times"] = requests.NewInteger(d.Get("triggered_count").(int))
 
 	// Critical
 	if v, ok := d.GetOk("escalations_critical"); ok && len(v.([]interface{})) != 0 {
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
-			request.EscalationsCriticalStatistics = val["statistics"].(string)
-			request.EscalationsCriticalComparisonOperator = convertOperator(val["comparison_operator"].(string))
-			request.EscalationsCriticalThreshold = val["threshold"].(string)
-			request.EscalationsCriticalTimes = requests.NewInteger(val["times"].(int))
+			request["Escalations.Critical.Statistics"] = val["statistics"].(string)
+			request["Escalations.Critical.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
+			request["Escalations.Critical.Threshold"] = val["threshold"].(string)
+			request["Escalations.Critical.Times"] = requests.NewInteger(val["times"].(int))
 		}
 	}
 	// Warn
 	if v, ok := d.GetOk("escalations_warn"); ok && len(v.([]interface{})) != 0 {
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
-			request.EscalationsWarnStatistics = val["statistics"].(string)
-			request.EscalationsWarnComparisonOperator = convertOperator(val["comparison_operator"].(string))
-			request.EscalationsWarnThreshold = val["threshold"].(string)
-			request.EscalationsWarnTimes = requests.NewInteger(val["times"].(int))
+			request["Escalations.Warn.Statistics"] = val["statistics"].(string)
+			request["Escalations.Warn.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
+			request["Escalations.Warn.Threshold"] = val["threshold"].(string)
+			request["Escalations.Warn.Times"] = requests.NewInteger(val["times"].(int))
 		}
 	}
 	// Info
 	if v, ok := d.GetOk("escalations_info"); ok && len(v.([]interface{})) != 0 {
 		for _, val := range v.([]interface{}) {
 			val := val.(map[string]interface{})
-			request.EscalationsInfoStatistics = val["statistics"].(string)
-			request.EscalationsInfoComparisonOperator = convertOperator(val["comparison_operator"].(string))
-			request.EscalationsInfoThreshold = val["threshold"].(string)
-			request.EscalationsInfoTimes = requests.NewInteger(val["times"].(int))
+			request["Escalations.Info.Statistics"] = val["statistics"].(string)
+			request["Escalations.Info.ComparisonOperator"] = convertOperator(fmt.Sprint(val["comparison_operator"]))
+			request["Escalations.Info.Threshold"] = val["threshold"].(string)
+			request["Escalations.Info.Times"] = requests.NewInteger(val["times"].(int))
 
 		}
 	}
 
 	if v, ok := d.GetOk("effective_interval"); ok && v.(string) != "" {
-		request.EffectiveInterval = v.(string)
+		request["EffectiveInterval"] = v.(string)
 	} else {
 		start, startOk := d.GetOk("start_time")
 		end, endOk := d.GetOk("end_time")
 		if startOk && endOk && end.(int) > 0 {
 			// The EffectiveInterval valid value between 00:00 and 23:59
-			request.EffectiveInterval = fmt.Sprintf("%d:00-%d:59", start.(int), end.(int)-1)
+			request["EffectiveInterval"] = fmt.Sprintf("%d:00-%d:59", start.(int), end.(int)-1)
 		}
 	}
-	request.SilenceTime = requests.NewInteger(d.Get("silence_time").(int))
+	request["SilenceTime"] = requests.NewInteger(d.Get("silence_time").(int))
 
 	if webhook, ok := d.GetOk("webhook"); ok && webhook.(string) != "" {
-		request.Webhook = webhook.(string)
+		request["Webhook"] = webhook.(string)
 	}
 
 	var dimList []map[string]string
@@ -426,12 +470,41 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		if bytes, err := json.Marshal(dimList); err != nil {
 			return fmt.Errorf("Marshaling dimensions to json string got an error: %#v.", err)
 		} else {
-			request.Resources = string(bytes[:])
+			request["Resources"] = string(bytes[:])
 		}
 	}
-	_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-		return cmsClient.PutResourceMetricRule(request)
+
+	var metricList []map[string]string
+	if v, ok := d.GetOk("metric_dimensions"); ok {
+		for _, dimensions := range v.(*schema.Set).List() {
+			dimensionsArg := dimensions.(map[string]interface{})
+			metricList = append(metricList, map[string]string{dimensionsArg["key"].(string): dimensionsArg["value"].(string)})
+		}
+	}
+	if len(metricList) > 0 {
+		if bytes, err := json.Marshal(metricList); err != nil {
+			return fmt.Errorf("marshaling metric_dimensions to json string got an error: %#v", err)
+		} else {
+			request["Resources"] = string(bytes[:])
+		}
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
 	if err != nil {
 		return fmt.Errorf("Putting alarm got an error: %#v", err)
 	}
@@ -450,49 +523,41 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	d.SetPartial("webhook")
 
 	if d.Get("enabled").(bool) {
-		request := cms.CreateEnableMetricRulesRequest()
-		request.RuleId = &[]string{d.Id()}
+		action := "EnableMetricRules"
+		enableMetricRequest := make(map[string]interface{})
+		enableMetricRequest["RuleId"] = []string{d.Id()}
 
-		wait := incrementalWait(1*time.Second, 2*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-				return cmsClient.EnableMetricRules(request)
-			})
-
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, enableMetricRequest, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Enabling alarm got an error: %#v", err))
+				return resource.NonRetryableError(err)
 			}
 			return nil
 		})
-		if err != nil {
-			return fmt.Errorf("Enabling alarm got an error: %#v", err)
-		}
+		addDebug(action, response, enableMetricRequest)
 	} else {
-		request := cms.CreateDisableMetricRulesRequest()
-		request.RuleId = &[]string{d.Id()}
+		action := "DisableMetricRules"
+		disableMetricRequest := make(map[string]interface{})
+		disableMetricRequest["RuleId"] = []string{d.Id()}
 
-		wait := incrementalWait(1*time.Second, 2*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-				return cmsClient.DisableMetricRules(request)
-			})
-
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, disableMetricRequest, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser}) {
+				if IsExpectedErrors(err, []string{ThrottlingUser}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(fmt.Errorf("Disableing alarm got an error: %#v", err))
+				return resource.NonRetryableError(err)
 			}
 			return nil
 		})
-		if err != nil {
-			return fmt.Errorf("Disableing alarm got an error: %#v", err)
-		}
+		addDebug(action, response, disableMetricRequest)
 	}
 	if err := cmsService.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
 		return err
@@ -506,24 +571,26 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
-	request := cms.CreateDeleteMetricRulesRequest()
+	action := "DeleteMetricRules"
+	var response map[string]interface{}
+	conn, err := client.NewCmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"Id": []string{d.Id()},
+	}
 
-	request.Id = &[]string{d.Id()}
-
-	wait := incrementalWait(1*time.Second, 2*time.Second)
-	return resource.Retry(10*time.Minute, func() *resource.RetryError {
-		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
-			return cmsClient.DeleteMetricRules(request)
-		})
-
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) {
+			if IsExpectedErrors(err, []string{ThrottlingUser}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
+			return resource.NonRetryableError(err)
 		}
-
 		_, err = cmsService.DescribeAlarm(d.Id())
 		if err != nil {
 			if NotFoundError(err) {
@@ -531,9 +598,14 @@ func resourceAlicloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %#v", err))
 		}
-
-		return resource.RetryableError(fmt.Errorf("Deleting alarm rule got an error: %#v", err))
+		return nil
 	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
 }
 
 func convertOperator(operator string) string {

@@ -26,26 +26,34 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
 		}),
 	}
+	pagingConf := dataSourceTestAccConfig{
+		fakeConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
+			"page_number": `2`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}"]`,
 			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}_fake"]`,
-			"name_regex": `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
+			"ids":         `["${alicloud_cloud_storage_gateway_storage_bundle.default.id}_fake"]`,
+			"name_regex":  `"${alicloud_cloud_storage_gateway_storage_bundle.default.storage_bundle_name}_fake"`,
+			"page_number": `2`,
 		}),
 	}
 	var existAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#":                         "1",
 			"names.#":                       "1",
+			"total_count":                   CHECKSET,
 			"bundles.#":                     "1",
 			"bundles.0.description":         "",
 			"bundles.0.location":            CHECKSET,
 			"bundles.0.id":                  CHECKSET,
 			"bundles.0.storage_bundle_id":   CHECKSET,
 			"bundles.0.storage_bundle_name": fmt.Sprintf("tf-testAccStorageBundle-%d", rand),
+			"bundles.0.create_time":         CHECKSET,
 		}
 	}
 	var fakeAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -60,7 +68,7 @@ func TestAccAlicloudCloudStorageGatewayStorageBundlesDataSource(t *testing.T) {
 		existMapFunc: existAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCloudStorageGatewayStorageBundlesDataSourceNameMapFunc,
 	}
-	alicloudCloudStorageGatewayStorageBundlesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, allConf)
+	alicloudCloudStorageGatewayStorageBundlesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, pagingConf, allConf)
 }
 func testAccCheckAlicloudCloudStorageGatewayStorageBundlesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

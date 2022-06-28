@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -101,34 +103,45 @@ func (s *ResourcemanagerService) ResourceManagerResourceGroupStateRefreshFunc(id
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerFolder(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	conn, err := s.client.NewResourcemanagerClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "GetFolder"
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
 		"FolderId": id,
 	}
+
+	var response map[string]interface{}
+	action := "GetFolder"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, resp, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Folder", "EntityNotExists.ResourceDirectory"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerFolder", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.Folder", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Folder", response)
 	}
-	object = v.(map[string]interface{})
-	return object, nil
+	return v.(map[string]interface{}), nil
 }
 
 func (s *ResourcemanagerService) DescribeResourceManagerHandshake(id string) (object map[string]interface{}, err error) {
@@ -242,16 +255,25 @@ func (s *ResourcemanagerService) DescribeResourceManagerAccount(id string) (obje
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.Account", "EntityNotExists.ResourceDirectory"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerAccount", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:Account", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.Account", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Account", response)
@@ -468,4 +490,40 @@ func (s *ResourcemanagerService) ResourceManagerResourceDirectoryStateRefreshFun
 		}
 		return object, object["ScpStatus"].(string), nil
 	}
+}
+func (s *ResourcemanagerService) GetPayerForAccount(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewResourcemanagerClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetPayerForAccount"
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"AccountId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }

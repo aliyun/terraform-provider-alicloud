@@ -180,7 +180,6 @@ func resourceAliyunInstance() *schema.Resource {
 			"system_disk_auto_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"data_disks": {
 				Type:     schema.TypeList,
@@ -327,7 +326,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
-				Default:      "Running",
+				Computed:     true,
 			},
 
 			"user_data": {
@@ -406,6 +405,45 @@ func resourceAliyunInstance() *schema.Resource {
 					return diff
 				},
 			},
+			"hpc_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"secondary_private_ips": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed:      true,
+				ConflictsWith: []string{"secondary_private_ip_address_count"},
+			},
+			"secondary_private_ip_address_count": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"secondary_private_ips"},
+			},
+			"deployment_set_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"deployment_set_group_no": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"operator_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"upgrade", "downgrade"}, false),
+			},
+			"stopped_mode": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging"}, false),
+			},
 		},
 	}
 }
@@ -437,7 +475,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 			return ecsClient.RunInstances(request)
 		})
 		if err != nil {
-			if IsThrottling(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -472,6 +510,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 			d.SetId("")
 			return nil
 		}
+
 		return WrapError(err)
 	}
 	var disk ecs.Disk
@@ -513,7 +552,10 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("credit_specification", instance.CreditSpecification)
 	d.Set("auto_release_time", instance.AutoReleaseTime)
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
-
+	d.Set("hpc_cluster_id", instance.HpcClusterId)
+	d.Set("deployment_set_id", instance.DeploymentSetId)
+	d.Set("deployment_set_group_no", instance.DeploymentSetGroupNo)
+	d.Set("stopped_mode", instance.StoppedMode)
 	if len(instance.PublicIpAddress.IpAddress) > 0 {
 		d.Set("public_ip", instance.PublicIpAddress.IpAddress[0])
 	} else {
@@ -609,6 +651,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		//}
 		d.Set("period_unit", periodUnit)
 	}
+	networkInterfaceId := ""
+	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+		if obj.Type == "Primary" {
+			networkInterfaceId = obj.NetworkInterfaceId
+			break
+		}
+	}
+	if len(networkInterfaceId) != 0 {
+		object, err := ecsService.DescribeEcsNetworkInterface(networkInterfaceId)
+		if err != nil {
+			return WrapError(err)
+		}
+		secondaryPrivateIpsSli := make([]interface{}, 0, len(object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{})))
+		for _, v := range object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{}) {
+			if !v.(map[string]interface{})["Primary"].(bool) {
+				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, v.(map[string]interface{})["PrivateIpAddress"])
+			}
+		}
+		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
+		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
+	}
 
 	return nil
 }
@@ -616,7 +679,10 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Partial(true)
 
 	if !d.IsNewResource() {
@@ -633,10 +699,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			"ResourceId":      d.Id(),
 			"RegionId":        client.RegionId,
 			"ResourceGroupId": d.Get("resource_group_id"),
-		}
-		conn, err := client.NewEcsClient()
-		if err != nil {
-			return WrapError(err)
 		}
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
@@ -730,7 +792,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	if d.HasChange("auto_release_time") {
+	if !d.IsNewResource() && d.HasChange("auto_release_time") {
 		request := ecs.CreateModifyInstanceAutoReleaseTimeRequest()
 		request.InstanceId = d.Id()
 		request.RegionId = client.RegionId
@@ -748,22 +810,21 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapError(err)
 	}
-	target := d.Get("status").(string)
+	target, targetExist := d.GetOk("status")
 	statusUpdate := d.HasChange("status")
-	if d.IsNewResource() && target == string(Running) {
+	if d.IsNewResource() && targetExist && target.(string) == string(Running) {
 		statusUpdate = false
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
-		instance, errDesc := ecsService.DescribeInstance(d.Id())
-		if errDesc != nil {
-			return WrapError(errDesc)
-		}
-		if (statusUpdate && target == string(Stopped)) || instance.Status == string(Running) {
+		if statusUpdate && targetExist && target == string(Stopped) {
 			stopRequest := ecs.CreateStopInstanceRequest()
 			stopRequest.RegionId = client.RegionId
 			stopRequest.InstanceId = d.Id()
 			stopRequest.ForceStop = requests.NewBoolean(false)
+			if v, ok := d.GetOk("stopped_mode"); ok {
+				stopRequest.StoppedMode = v.(string)
+			}
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 					return ecsClient.StopInstance(stopRequest)
@@ -799,7 +860,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapError(err)
 		}
 
-		if target == string(Running) {
+		if targetExist && target == string(Running) {
 			startRequest := ecs.CreateStartInstanceRequest()
 			startRequest.InstanceId = d.Id()
 
@@ -874,6 +935,225 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
+	}
+
+	if d.HasChange("secondary_private_ips") {
+		client := meta.(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		var response map[string]interface{}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		networkInterfaceId := ""
+		for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+			if obj.Type == "Primary" {
+				networkInterfaceId = obj.NetworkInterfaceId
+				break
+			}
+		}
+		oraw, nraw := d.GetChange("secondary_private_ips")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		if len(remove) > 0 {
+			action := "UnassignPrivateIpAddresses"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"NetworkInterfaceId": networkInterfaceId,
+				"ClientToken":        buildClientToken(action),
+			}
+
+			for index, val := range remove {
+				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+			}
+
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			d.SetPartial("secondary_private_ips")
+		}
+		if len(create) > 0 {
+			action := "AssignPrivateIpAddresses"
+			request := map[string]interface{}{
+				"RegionId":           client.RegionId,
+				"NetworkInterfaceId": networkInterfaceId,
+				"ClientToken":        buildClientToken(action),
+			}
+			for index, val := range create {
+				request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("secondary_private_ips")
+		}
+
+	}
+
+	if d.HasChange("secondary_private_ip_address_count") {
+		client := meta.(*connectivity.AliyunClient)
+		ecsService := EcsService{client}
+		var response map[string]interface{}
+		instance, err := ecsService.DescribeInstance(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		// query for the Primary NetworkInterfaceId
+		networkInterfaceId := ""
+		for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+			if obj.Type == "Primary" {
+				networkInterfaceId = obj.NetworkInterfaceId
+				break
+			}
+		}
+		privateIpList := expandStringList(d.Get("secondary_private_ips").(*schema.Set).List())
+		oldIpsCount, newIpsCount := d.GetChange("secondary_private_ip_address_count")
+		if oldIpsCount != nil && newIpsCount != nil && newIpsCount != len(privateIpList) {
+			diff := newIpsCount.(int) - oldIpsCount.(int)
+			if diff > 0 {
+				action := "AssignPrivateIpAddresses"
+				request := map[string]interface{}{
+					"RegionId":                       client.RegionId,
+					"NetworkInterfaceId":             networkInterfaceId,
+					"ClientToken":                    buildClientToken(action),
+					"SecondaryPrivateIpAddressCount": diff,
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				d.SetPartial("secondary_private_ip_address_count")
+			}
+			if diff < 0 {
+				diff *= -1
+				action := "UnassignPrivateIpAddresses"
+				request := map[string]interface{}{
+					"RegionId":           client.RegionId,
+					"NetworkInterfaceId": networkInterfaceId,
+					"ClientToken":        buildClientToken(action),
+				}
+				for index, val := range privateIpList[:diff] {
+					request[fmt.Sprintf("PrivateIpAddress.%d", index+1)] = val
+				}
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				addDebug(action, response, request)
+				d.SetPartial("secondary_private_ip_address_count")
+			}
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("deployment_set_id") {
+		action := "ModifyInstanceDeployment"
+		var response map[string]interface{}
+		request := map[string]interface{}{
+			"RegionId":    client.RegionId,
+			"InstanceId":  d.Id(),
+			"ClientToken": buildClientToken(action),
+		}
+		if v, ok := d.GetOk("deployment_set_id"); ok {
+			request["DeploymentSetId"] = v
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("deployment_set_id")
+	}
+
+	if !d.IsNewResource() && d.HasChange("system_disk_auto_snapshot_policy_id") {
+		Disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "ApplyAutoSnapshotPolicy"
+		var response map[string]interface{}
+		request := map[string]interface{}{
+			"RegionId": client.RegionId,
+		}
+		request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+		request["diskIds"] = convertListToJsonString([]interface{}{Disk["DiskId"]})
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("system_disk_auto_snapshot_policy_id")
 	}
 
 	d.Partial(false)
@@ -1017,7 +1297,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		if err != nil {
 			return request, WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request.Password = decryptResp
 	}
 
 	vswitchValue := d.Get("subnet_id").(string)
@@ -1036,7 +1316,9 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	}
 
 	if request.InstanceChargeType == string(PrePaid) {
-		request.Period = requests.NewInteger(d.Get("period").(int))
+		if v, ok := d.GetOk("period"); ok {
+			request.Period = requests.NewInteger(v.(int))
+		}
 		request.PeriodUnit = d.Get("period_unit").(string)
 	} else {
 		if v := d.Get("spot_strategy").(string); v != "" {
@@ -1074,7 +1356,7 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
 
 	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
-		tags := make([]ecs.RunInstancesTag, len(v.(map[string]interface{})))
+		tags := make([]ecs.RunInstancesTag, 0)
 		for key, value := range v.(map[string]interface{}) {
 			tags = append(tags, ecs.RunInstancesTag{
 				Key:   key,
@@ -1125,6 +1407,15 @@ func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.Run
 		}
 		request.DataDisk = &dataDiskRequests
 	}
+
+	if v, ok := d.GetOk("hpc_cluster_id"); ok {
+		request.HpcClusterId = v.(string)
+	}
+
+	if v, ok := d.GetOk("deployment_set_id"); ok {
+		request.DeploymentSetId = v.(string)
+	}
+
 	return request, nil
 }
 
@@ -1148,17 +1439,19 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 		request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
 		request.ClientToken = fmt.Sprintf("terraform-modify-instance-charge-type-%s", d.Id())
 		if chargeType == string(PrePaid) {
-			request.Period = requests.NewInteger(d.Get("period").(int))
+			if v, ok := d.GetOk("period"); ok {
+				request.Period = requests.NewInteger(v.(int))
+			}
 			request.PeriodUnit = d.Get("period_unit").(string)
 		}
 		request.InstanceChargeType = chargeType
-		if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
+		if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 				return ecsClient.ModifyInstanceChargeType(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{Throttling}) {
-					time.Sleep(10 * time.Second)
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+					time.Sleep(3 * time.Second)
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -1320,7 +1613,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 			if err != nil {
 				return reboot, WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request.Password = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 			update = true
@@ -1457,6 +1750,9 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 			request := ecs.CreateModifyPrepayInstanceSpecRequest()
 			request.InstanceId = d.Id()
 			request.InstanceType = d.Get("instance_type").(string)
+			if v, ok := d.GetOk("operator_type"); ok {
+				request.OperatorType = v.(string)
+			}
 
 			err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {

@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSlbListenersDataSource_http(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_http(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfig(rand, map[string]string{
@@ -79,16 +79,16 @@ func TestAccAlicloudSlbListenersDataSource_http(t *testing.T) {
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
 		existMapFunc: existSlbRecordsMapFunc,
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_https(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigHttps(rand, map[string]string{
@@ -157,16 +157,16 @@ func TestAccAlicloudSlbListenersDataSource_https(t *testing.T) {
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
 		existMapFunc: existSlbRecordsMapFunc,
 		fakeMapFunc:  fakeSlbRecordsMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigTcp(rand, map[string]string{
@@ -199,7 +199,7 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#":                           "1",
 			"slb_listeners.0.backend_port":              "22",
@@ -221,22 +221,22 @@ func TestAccAlicloudSlbListenersDataSource_tcp(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#": "0",
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBListenersMapFunc,
+		fakeMapFunc:  fakeSLBListenersMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
-func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
+func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
 	rand := acctest.RandInt()
 	basicConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudSlbListenersDataSourceConfigUdp(rand, map[string]string{
@@ -268,7 +268,7 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 		}),
 	}
 
-	var existDnsRecordsMapFunc = func(rand int) map[string]string {
+	var existSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#":                              "1",
 			"slb_listeners.0.backend_port":                 "10",
@@ -288,19 +288,19 @@ func TestAccAlicloudSlbListenersDataSource_udp(t *testing.T) {
 		}
 	}
 
-	var fakeDnsRecordsMapFunc = func(rand int) map[string]string {
+	var fakeSLBListenersMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"slb_listeners.#": "0",
 		}
 	}
 
-	var slbListenersRecordsCheckInfo = dataSourceAttr{
+	var slbListenersCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_slb_listeners.default",
-		existMapFunc: existDnsRecordsMapFunc,
-		fakeMapFunc:  fakeDnsRecordsMapFunc,
+		existMapFunc: existSLBListenersMapFunc,
+		fakeMapFunc:  fakeSLBListenersMapFunc,
 	}
 
-	slbListenersRecordsCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
+	slbListenersCheckInfo.dataSourceTestCheck(t, rand, basicConf, descriptionConf, allConf)
 }
 
 func testAccCheckAlicloudSlbListenersDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -314,30 +314,26 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "http"
@@ -381,15 +377,15 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceHttps-%d"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   internet_charge_type = "PayByTraffic"
-  internet = true
-  specification = "slb.s2.small"
+  address_type = "internet"
+  load_balancer_spec = "slb.s2.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 80
   frontend_port = 80
   protocol = "https"
@@ -460,30 +456,26 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceTcp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 22
   frontend_port = 22
   protocol = "tcp"
@@ -515,30 +507,26 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSlbListenersDataSourceUdp-%d"
 }
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+data "alicloud_vpcs" "default"{
+	name_regex = "default-NODELETING"
+}
+data "alicloud_slb_zones" "default" {
+	available_slb_address_type = "vpc"
 }
 
-resource "alicloud_vpc" "default" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "172.16.0.0/16"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  name = "${var.name}"
-}
-
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
-  vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_listener" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   backend_port = 10
   frontend_port = 11
   protocol = "udp"

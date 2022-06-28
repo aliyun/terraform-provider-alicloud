@@ -17,17 +17,17 @@ This data source provides availability instance_types for HBase that can be acce
 
 ```terraform
 data "alicloud_hbase_instance_types" "default" {
-  charge_type = "Postpaid"
-  region_id = "cn-shanghai"
-  zone_id = "cn-shanghai-g"
-  engine = "hbaseue"
-  version = "2.0"
+  charge_type   = "Postpaid"
+  region_id     = "cn-shanghai"
+  zone_id       = "cn-shanghai-g"
+  engine        = "hbaseue"
+  version       = "2.0"
   instance_type = "hbase.sn2.large"
-  disk_type = "cloud_ssd"
+  disk_type     = "cloud_ssd"
 }
 
 resource "alicloud_hbase_instance" "hbase" {
-    core_instance_type = data.alicloud_hbase_instance_types.default.types[0].id
+  core_instance_type = data.alicloud_hbase_instance_types.default.types[0].id
 
   # Other properties...
 }

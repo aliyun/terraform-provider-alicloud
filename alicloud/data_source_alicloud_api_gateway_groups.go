@@ -122,9 +122,13 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 	}
 
 	var filteredGroups []cloudapi.ApiGroupAttribute
-	var r *regexp.Regexp
+	var gatewayGroupNameRegex *regexp.Regexp
 	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
-		r = regexp.MustCompile(nameRegex.(string))
+		r, err := regexp.Compile(nameRegex.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		gatewayGroupNameRegex = r
 	}
 
 	// ids
@@ -139,7 +143,7 @@ func dataSourceAlicloudApigatewayGroupsRead(d *schema.ResourceData, meta interfa
 	}
 
 	for _, group := range allGroups {
-		if r != nil && !r.MatchString(group.GroupName) {
+		if gatewayGroupNameRegex != nil && !gatewayGroupNameRegex.MatchString(group.GroupName) {
 			continue
 		}
 		if len(idsMap) > 0 {

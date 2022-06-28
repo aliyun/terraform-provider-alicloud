@@ -7,7 +7,7 @@ description: |-
     Provides a list of EDAS applications available to the user.
 ---
 
-# alicloud\_edas\_application
+# alicloud\_edas\_applications
 
 This data source provides a list of EDAS application in an Alibaba Cloud account according to the specified filters.
 

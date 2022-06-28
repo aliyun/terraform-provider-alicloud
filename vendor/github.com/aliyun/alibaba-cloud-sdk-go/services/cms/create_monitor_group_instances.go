@@ -72,13 +72,13 @@ func (client *Client) CreateMonitorGroupInstancesWithCallback(request *CreateMon
 type CreateMonitorGroupInstancesRequest struct {
 	*requests.RpcRequest
 	Instances *[]CreateMonitorGroupInstancesInstances `position:"Query" name:"Instances"  type:"Repeated"`
-	GroupId   requests.Integer                        `position:"Query" name:"GroupId"`
+	GroupId   string                                  `position:"Query" name:"GroupId"`
 }
 
 // CreateMonitorGroupInstancesInstances is a repeated param struct in CreateMonitorGroupInstancesRequest
 type CreateMonitorGroupInstancesInstances struct {
-	InstanceId   string `name:"InstanceId"`
 	InstanceName string `name:"InstanceName"`
+	InstanceId   string `name:"InstanceId"`
 	RegionId     string `name:"RegionId"`
 	Category     string `name:"Category"`
 }
@@ -86,10 +86,10 @@ type CreateMonitorGroupInstancesInstances struct {
 // CreateMonitorGroupInstancesResponse is the response struct for api CreateMonitorGroupInstances
 type CreateMonitorGroupInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateMonitorGroupInstancesRequest creates a request to invoke CreateMonitorGroupInstances API
@@ -97,7 +97,7 @@ func CreateCreateMonitorGroupInstancesRequest() (request *CreateMonitorGroupInst
 	request = &CreateMonitorGroupInstancesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroupInstances", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMonitorGroupInstances", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

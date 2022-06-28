@@ -1,7 +1,7 @@
 package: aliyun/serverless/lambda-go-sdk
 import:
-- package: github.com/go-resty/resty
-  version: v0.11
+- package: gopkg.in/resty.v1
+  version: v1.11.0
 - package: github.com/stretchr/testify
   version: f6abca593680b2315d2075e0f5e2a9751e3f431a
   subpackages:
@@ -9,3 +9,5 @@ import:
   - mock
   - require
   - suite
+- package: github.com/gorilla/websocket
+  version: c3dd95aea9779669bb3daafbd84ee0530c8ce1c1

@@ -102,7 +102,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_classic(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_classic(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_classic(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -113,7 +113,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_classic(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_classicUpdatePeriod(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_classicUpdatePeriod(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_period.#": "3",
@@ -121,7 +121,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_classicUpdateTime(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_classicUpdateTime(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time": "12:00Z-13:00Z",
@@ -129,7 +129,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_classicUpdateAll(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_classicUpdateAll(string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time":     "13:00Z-14:00Z",
@@ -157,7 +157,6 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 
@@ -223,7 +222,6 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KVstoreClassicNetworkInstanceSupportRegions)
 		},
 
@@ -234,7 +232,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -245,7 +243,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_period.#": "3",
@@ -253,7 +251,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time": "11:00Z-12:00Z",
@@ -261,7 +259,7 @@ func TestAccAlicloudKVStoreMemcacheBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreMemcache), memcacheInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time":     "12:00Z-13:00Z",

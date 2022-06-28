@@ -1,0 +1,35 @@
+name: Golangci-Lint
+on:
+  pull_request:
+    paths:
+      - .github/workflows/pull_requests.yml
+      - alicloud/*.go
+jobs:
+  golangci-lint-review-log:
+    name: golangci-lint-with-review-log
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          go_version: '1.16'
+          golangci_lint_flags: '--timeout=25m ./alicloud'
+          level: error
+          reporter: github-pr-check
+
+
+  errcheck:
+    name: runner / errcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: errcheck
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          golangci_lint_flags: '-tests=false --timeout=25m --disable-all -E errcheck'
+          tool_name: errcheck
+          level: info
+

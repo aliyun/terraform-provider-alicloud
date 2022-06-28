@@ -110,7 +110,6 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Default:      "cloud_efficiency",
 				ValidateFunc: validation.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd"}, false),
 			},
 			"output_file": {
@@ -121,6 +120,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"image_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			// Computed values.
 			"instance_types": {
@@ -189,6 +193,10 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"nvme_support": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"local_storage": {
 							Type:     schema.TypeMap,
 							Computed: true,
@@ -231,15 +239,15 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			continue
 		}
 		for _, r := range zone.AvailableResources.AvailableResource {
-			if r.Type == string(InstanceTypeResource) {
-				for _, t := range r.SupportedResources.SupportedResource {
-					if t.Status == string(SoldOut) {
-						continue
-					}
-
-					zones, _ := mapInstanceTypes[t.Value]
-					zones = append(zones, zone.ZoneId)
-					mapInstanceTypes[t.Value] = zones
+			for _, t := range r.SupportedResources.SupportedResource {
+				if t.Status == string(SoldOut) {
+					continue
+				}
+				if v, ok := mapInstanceTypes[t.Value]; ok {
+					v = append(v, zone.ZoneId)
+					mapInstanceTypes[t.Value] = v
+				} else {
+					mapInstanceTypes[t.Value] = []string{zone.ZoneId}
 				}
 			}
 		}
@@ -263,12 +271,36 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 	var instanceTypes []instanceTypeWithOriginalPrice
 	resp, _ := raw.(*ecs.DescribeInstanceTypesResponse)
 	if resp != nil {
+		imageSupportInstanceTypesMap := make(map[string]struct{}, 0)
+		imageId := strings.TrimSpace(d.Get("image_id").(string))
+		if imageId != "" {
+			reqImageId := ecs.CreateDescribeImageSupportInstanceTypesRequest()
+			reqImageId.ImageId = imageId
+
+			raw1, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DescribeImageSupportInstanceTypes(reqImageId)
+			})
+			if err != nil {
+				return err
+			}
+			imageSupportInstanceTypes, _ := raw1.(*ecs.DescribeImageSupportInstanceTypesResponse)
+
+			for _, types := range imageSupportInstanceTypes.InstanceTypes.InstanceType {
+				imageSupportInstanceTypesMap[types.InstanceTypeId] = struct{}{}
+			}
+		}
 
 		eniAmount := d.Get("eni_amount").(int)
 		k8sNode := strings.TrimSpace(d.Get("kubernetes_node_role").(string))
 		for _, types := range resp.InstanceTypes.InstanceType {
 			if _, ok := mapInstanceTypes[types.InstanceTypeId]; !ok {
 				continue
+			}
+
+			if len(imageSupportInstanceTypesMap) > 0 {
+				if _, ok := imageSupportInstanceTypesMap[types.InstanceTypeId]; !ok {
+					continue
+				}
 			}
 
 			if cpu > 0 && types.CpuCoreCount != cpu {
@@ -348,6 +380,7 @@ func instanceTypesDescriptionAttributes(d *schema.ResourceData, types []instance
 			"memory_size":    t.InstanceType.MemorySize,
 			"family":         t.InstanceType.InstanceTypeFamily,
 			"eni_amount":     t.InstanceType.EniQuantity,
+			"nvme_support":   t.InstanceType.NvmeSupport,
 		}
 		if sortedBy == "Price" {
 			mapping["price"] = fmt.Sprintf("%.4f", t.OriginalPrice)

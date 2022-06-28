@@ -300,6 +300,57 @@ func TestAccAlicloudFCFunctionAsyncInvokeConfigUpdate(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudFCFunctionAsyncInvokeStatefulInvocationUpdate(t *testing.T) {
+	var v *fc.GetFunctionAsyncInvokeConfigOutput
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("%s-%d", gNamePrefix, rand)
+	var basicMap = map[string]string{
+		"created_time":       CHECKSET,
+		"last_modified_time": CHECKSET,
+	}
+	resourceId := "alicloud_fc_function_async_invoke_config.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &FcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcFunctionAsyncInvokeConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_name":  "${alicloud_fc_service.default.name}",
+					"function_name": "${alicloud_fc_function.default.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"stateful_invocation": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"stateful_invocation": "true",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func getMnsQueueArn(queueName string) string {
 	region := os.Getenv("ALICLOUD_REGION")
 	account := os.Getenv("ALICLOUD_ACCOUNT_ID")

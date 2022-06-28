@@ -80,8 +80,8 @@ type DescribeSiteMonitorAttributeResponse struct {
 	*responses.BaseResponse
 	Code         string       `json:"Code" xml:"Code"`
 	Message      string       `json:"Message" xml:"Message"`
-	Success      bool         `json:"Success" xml:"Success"`
 	RequestId    string       `json:"RequestId" xml:"RequestId"`
+	Success      bool         `json:"Success" xml:"Success"`
 	SiteMonitors SiteMonitors `json:"SiteMonitors" xml:"SiteMonitors"`
 	MetricRules  MetricRules  `json:"MetricRules" xml:"MetricRules"`
 }
@@ -91,7 +91,7 @@ func CreateDescribeSiteMonitorAttributeRequest() (request *DescribeSiteMonitorAt
 	request = &DescribeSiteMonitorAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorAttribute", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorAttribute", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

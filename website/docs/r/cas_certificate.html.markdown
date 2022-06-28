@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_cas\_certificate
 
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.129.0`. Please use new datasource [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate).
+
 Provides a CAS Certificate resource.
 
 -> **NOTE:** The Certificate name which you want to add must be already registered and had not added by another account. Every Certificate name can only exist in a unique group.

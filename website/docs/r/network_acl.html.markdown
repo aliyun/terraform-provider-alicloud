@@ -18,9 +18,20 @@ Provides a network acl resource to add network acls.
 Basic Usage
 
 ```terraform
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
   vpc_name   = "VpcConfig"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  vswitch_name = "vswitch"
+  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 4, 4)
+  zone_id      = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_network_acl" "default" {
@@ -43,6 +54,10 @@ resource "alicloud_network_acl" "default" {
     port                   = "-1/-1"
     protocol               = "all"
   }
+  resources {
+    resource_id   = alicloud_vswitch.default.id
+    resource_type = "VSwitch"
+  }
 }
 ```
 
@@ -56,6 +71,7 @@ The following arguments are supported:
 * `description` - (Optional) The description of the network acl instance.
 * `ingress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. The details see Block `ingress_acl_entries`.
 * `egress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the egress entries of the network acl. The order of the egress entries determines the priority. The details see Block `egress_acl_entries`.
+* `resources` - (Optional, Available in 1.124.0+) The associated resources.
 
 ### Block ingress_acl_entries
 
@@ -74,6 +90,11 @@ The following arguments are supported:
 * `port` - (Optional) The port of egress entries.
 * `protocol` - (Optional) The protocol of egress entries. Valid values `icmp`,`gre`,`tcp`,`udp`, and `all`.
 * `destination_cidr_ip` - (Optional) The destination cidr ip of egress entries.
+
+### Block resources 
+
+* `resource_id` - (Optional, Available in 1.124.0+) The ID of the associated resource.
+* `resource_type` - (Optional, Available in 1.124.0+) The type of the associated resource. Valid values `VSwitch`.
 
 ## Attributes Reference
 

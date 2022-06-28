@@ -20,9 +20,9 @@ func resourceAlicloudKvstoreConnection() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
-			Update: schema.DefaultTimeout(2 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"connection_string": {
@@ -85,8 +85,12 @@ func resourceAlicloudKvstoreConnectionRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("connection_string", object.ConnectionString)
-	d.Set("port", object.Port)
+	for _, instanceNetInfo := range object {
+		if instanceNetInfo.DBInstanceNetType == "0" {
+			d.Set("connection_string", instanceNetInfo.ConnectionString)
+			d.Set("port", instanceNetInfo.Port)
+		}
+	}
 	return nil
 }
 func resourceAlicloudKvstoreConnectionUpdate(d *schema.ResourceData, meta interface{}) error {

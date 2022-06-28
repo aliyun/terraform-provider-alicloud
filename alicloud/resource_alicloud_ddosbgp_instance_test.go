@@ -116,7 +116,6 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithTime(t, []int{-1})
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},
@@ -179,58 +178,9 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudDdosbgpInstance_multi(t *testing.T) {
-	var v ddosbgp.Instance
 
-	resourceId := "alicloud_ddosbgp_instance.default.1"
-	ra := resourceAttrInit(resourceId, ddosbgpInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &DdosbgpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdosbgpInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"count":          "10",
-					"name":           name + "${count.index}",
-					"base_bandwidth": "20",
-					"bandwidth":      "201",
-					"ip_count":       "100",
-					"ip_type":        "IPv4",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
-}
 func resourceDdosbgpInstanceDependence(name string) string {
-	return `
-    provider "alicloud" {
-       endpoints {
-           bssopenapi = "business.aliyuncs.com"
-       }
-    }
-`
+	return ``
 }
 
 var ddosbgpInstanceBasicMap = map[string]string{

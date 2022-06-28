@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGpdbConnectionUpdate(t *testing.T) {
+func SkipTestAccAlicloudGPDBConnectionUpdate(t *testing.T) {
 	var v *gpdb.DBInstanceNetInfo
 
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
@@ -34,7 +34,6 @@ func TestAccAlicloudGpdbConnectionUpdate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -78,7 +77,7 @@ func testGpdbConnectionConfigDependence(name string) string {
         }
         
 		data "alicloud_vpcs" "default" {
-			is_default = true
+			name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
 		  vpc_id = data.alicloud_vpcs.default.ids.0

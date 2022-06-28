@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Service for Kubernetes (CSK)"
+subcategory: "Container Service for Kubernetes (ACK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cs_kubernetes_autoscaler"
 sidebar_current: "docs-alicloud-resource-cs-kubernetes-autoscaler"
@@ -19,13 +19,15 @@ This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 -> **NOTE:** Available in 1.65.0+.
 
+-> **NOTE:** From version v1.127.0+. Resource `alicloud_cs_kubernetes_autoscaler` is replaced by resource [alicloud_cs_autoscaling_config](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_autoscaling_config). If you have used resource `alicloud_cs_kubernetes_autoscaler`, please refer to [Use Terraform to create an auto-scaling node pool](https://www.alibabacloud.com/help/doc-detail/197717.htm) to switch to `alicloud_cs_autoscaling_config`.
+
 ## Example Usage
 
 cluster-autoscaler in Kubernetes Cluster.
 
 ```terraform
 variable "name" {
-  default     = "autoscaler"
+  default = "autoscaler"
 }
 
 data "alicloud_vpcs" "default" {}
@@ -45,17 +47,17 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_security_group" "default" {
-  name                 = var.name
-  vpc_id               = data.alicloud_vpcs.default.vpcs.0.id
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.vpcs.0.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
-  scaling_group_name   = var.name
-  
-  min_size             = var.min_size
-  max_size             = var.max_size
-  vswitch_ids          = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0] 
-  removal_policies     = ["OldestInstance", "NewestInstance"]
+  scaling_group_name = var.name
+
+  min_size         = var.min_size
+  max_size         = var.max_size
+  vswitch_ids      = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+  removal_policies = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
@@ -70,16 +72,16 @@ resource "alicloud_ess_scaling_configuration" "default" {
 
   # ... ignore the change about tags and user_data
   lifecycle {
-    ignore_changes = [tags,user_data]
+    ignore_changes = [tags, user_data]
   }
 
 }
 
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id              = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
+  cluster_id = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
   nodepools {
-    id                    = alicloud_ess_scaling_group.default.id
-    labels                = "a=b"
+    id     = alicloud_ess_scaling_group.default.id
+    labels = "a=b"
   }
 
   utilization             = var.utilization

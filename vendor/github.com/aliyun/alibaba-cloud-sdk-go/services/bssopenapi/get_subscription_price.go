@@ -95,11 +95,11 @@ type GetSubscriptionPriceModuleList struct {
 // GetSubscriptionPriceResponse is the response struct for api GetSubscriptionPrice
 type GetSubscriptionPriceResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	Code      string                     `json:"Code" xml:"Code"`
+	Message   string                     `json:"Message" xml:"Message"`
+	RequestId string                     `json:"RequestId" xml:"RequestId"`
+	Success   bool                       `json:"Success" xml:"Success"`
+	Data      DataInGetSubscriptionPrice `json:"Data" xml:"Data"`
 }
 
 // CreateGetSubscriptionPriceRequest creates a request to invoke GetSubscriptionPrice API

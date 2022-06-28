@@ -17,10 +17,9 @@ package emr
 
 // ConfigItemValue is a nested struct in emr response
 type ConfigItemValue struct {
-	ChangeType  string `json:"ChangeType" xml:"ChangeType"`
+	ItemName    string `json:"ItemName" xml:"ItemName"`
 	Value       string `json:"Value" xml:"Value"`
-	OldValue    string `json:"OldValue" xml:"OldValue"`
 	IsCustom    bool   `json:"IsCustom" xml:"IsCustom"`
 	Description string `json:"Description" xml:"Description"`
-	ItemName    string `json:"ItemName" xml:"ItemName"`
+	ValueScope  string `json:"ValueScope" xml:"ValueScope"`
 }

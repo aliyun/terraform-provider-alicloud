@@ -74,6 +74,7 @@ type CreateSslVpnServerRequest struct {
 	ResourceOwnerId       requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken           string           `position:"Query" name:"ClientToken"`
 	LocalSubnet           string           `position:"Query" name:"LocalSubnet"`
+	IDaaSRegionId         string           `position:"Query" name:"IDaaSRegionId"`
 	EnableMultiFactorAuth requests.Boolean `position:"Query" name:"EnableMultiFactorAuth"`
 	IDaaSInstanceId       string           `position:"Query" name:"IDaaSInstanceId"`
 	Cipher                string           `position:"Query" name:"Cipher"`
@@ -91,8 +92,8 @@ type CreateSslVpnServerRequest struct {
 // CreateSslVpnServerResponse is the response struct for api CreateSslVpnServer
 type CreateSslVpnServerResponse struct {
 	*responses.BaseResponse
-	RequestId      string `json:"RequestId" xml:"RequestId"`
 	SslVpnServerId string `json:"SslVpnServerId" xml:"SslVpnServerId"`
+	RequestId      string `json:"RequestId" xml:"RequestId"`
 	Name           string `json:"Name" xml:"Name"`
 }
 

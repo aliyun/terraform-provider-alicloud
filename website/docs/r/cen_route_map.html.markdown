@@ -128,12 +128,14 @@ The following arguments are supported:
 * `operate_community_set` - (Optional) An action statement that operates the community attribute. The format of each community is nn:nn, which ranges from 1 to 65535. You can enter a maximum of 32 communities. Communities must comply with RFC 1997. Large communities (RFC 8092) are not supported. 
 * `preference` - (Optional) An action statement that modifies the priority of the route. Value range: 1 to 100. The default priority of a route is 50. A lower value indicates a higher preference. 
 * `prepend_as_path` - (Optional) An action statement that indicates an AS path is prepended when the regional gateway receives or advertises a route.
+* `transit_router_route_table_id` - (Optional, ForceNew, Computed, Available in v1.167.0+) The routing table ID of the forwarding router. If you do not enter the routing table ID, the routing policy is automatically associated with the default routing table of the forwarding router.
 
 ## Attributes Reference
 
 The RouteMapId attributes are exported:
 
-* `id` - ID of the RouteMap.
+* `id` - ID of the RouteMap. It formats as `<cen_id>:<route_map_id>`
+* `route_map_id` - ID of the RouteMap. It is available in 1.161.0+.
 * `status` - (Computed) The status of route map. Valid values: ["Creating", "Active", "Deleting"].
 
 ## Import
@@ -141,6 +143,6 @@ The RouteMapId attributes are exported:
 CEN RouteMap can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_cen_route_map.default cenrmap-tig1xxxxxx
+$ terraform import alicloud_cen_route_map.default <cen_id>:<route_map_id>.
 ```
 

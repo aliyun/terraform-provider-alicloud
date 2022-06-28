@@ -34,7 +34,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12, 24, 36}),
-				Default:          1,
+				Computed:         true,
 				DiffSuppressFunc: adbPostPaidAndRenewDiffSuppressFunc,
 			},
 			"compute_resource": {
@@ -118,7 +118,6 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ForceNew:      true,
 				ValidateFunc:  validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				ConflictsWith: []string{"pay_type"},
 			},
@@ -126,9 +125,9 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ForceNew:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				ConflictsWith: []string{"payment_type"},
+				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				Deprecated:    "Attribute 'pay_type' has been deprecated from the provider version 1.166.0 and it will be remove in the future version. Please use the new attribute 'payment_type' instead.",
 			},
 			"period": {
 				Type:             schema.TypeInt,
@@ -140,7 +139,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"AutoRenewal", "Normal", "NotRenewal"}, false),
-				Default:          "NotRenewal",
+				Computed:         true,
 				DiffSuppressFunc: adbPostPaidDiffSuppressFunc,
 			},
 			"resource_group_id": {
@@ -444,10 +443,62 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	}
 	update := false
 	request := map[string]interface{}{
+		"DbClusterId": d.Id(),
+	}
+
+	if !d.IsNewResource() && (d.HasChange("pay_type") || d.HasChange("payment_type")) {
+		update = true
+	}
+	if pay_type, ok := d.GetOk("pay_type"); ok {
+		request["PayType"] = convertAdbDbClusterDBClusterPayTypeRequest(pay_type.(string))
+	}
+
+	if payment_type, ok := d.GetOk("payment_type"); ok {
+		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(payment_type.(string))
+	}
+	if request["PayType"] == "Prepaid" {
+		request["Period"] = d.Get("period")
+		period := d.Get("period").(int)
+		request["UsedTime"] = strconv.Itoa(period)
+		request["Period"] = string(Month)
+		if period > 9 {
+			request["UsedTime"] = strconv.Itoa(period / 12)
+			request["Period"] = string(Year)
+		}
+	}
+
+	if update {
+		action := "ModifyDBClusterPayType"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("payment_type")
+		d.SetPartial("pay_type")
+	}
+
+	update = false
+	request = map[string]interface{}{
 		"DBClusterId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription" && d.HasChange("auto_renew_period") {
+	if (d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription") && d.HasChange("auto_renew_period") {
 		update = true
 		if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
 			period := d.Get("auto_renew_period").(int)
@@ -459,7 +510,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
-	if d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription" && d.HasChange("renewal_status") {
+	if (d.Get("pay_type").(string) == string(PrePaid) || d.Get("payment_type").(string) == "Subscription") && d.HasChange("renewal_status") {
 		update = true
 		request["RenewalStatus"] = d.Get("renewal_status")
 	}
@@ -592,6 +643,10 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("elastic_io_resource")
 	}
 	d.Partial(false)
+	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return resourceAlicloudAdbDbClusterRead(d, meta)
 }
 func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
@@ -627,7 +682,7 @@ func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{"Waiting", "Running", "Failed", "Retry", "Pause", "Stop"}, []string{"Finished", "Closed", "Cancel"}, d.Timeout(schema.TimeoutDelete), 10*time.Minute, adbService.AdbTaskStateRefreshFunc(d.Id(), taskId))
+	stateConf := BuildStateConf([]string{"Waiting", "Running", "Failed", "Retry", "Pause", "Stop"}, []string{"Finished", "Closed", "Cancel"}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, adbService.AdbTaskStateRefreshFunc(d.Id(), taskId))
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

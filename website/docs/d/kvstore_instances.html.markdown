@@ -16,10 +16,10 @@ Filters support regular expression for the instance name, searches by tags, and 
 
 ```terraform
 data "alicloud_kvstore_instances" "default" {
-    name_regex = "testname"
+  name_regex = "testname"
 }
 output "first_instance_name" {
-    value = data.alicloud_kvstore_instances.default.instances.0.name
+  value = data.alicloud_kvstore_instances.default.instances.0.name
 }
 ```
 
@@ -93,5 +93,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `create_time` - Creation time of the instance.
   * `user_name` - The username of the instance.
   * `connection_domain` - Instance connection domain (only Intranet access supported).
+  * `secondary_zone_id` - (Optional, Available in 1.128.0+) The ID of the secondary zone to which you want to migrate the ApsaraDB for Redis instance.
+
     
     

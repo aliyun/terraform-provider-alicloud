@@ -63,7 +63,7 @@ func testAccCheckRouterInterfaceConnectionDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudRouterInterfaceConnectionBasic(t *testing.T) {
+func TestAccAlicloudVPCRouterInterfaceConnectionBasic(t *testing.T) {
 	resourceId := "alicloud_router_interface_connection.foo"
 	ra := resourceAttrInit(resourceId, testAccRouterInterfaceConnectionCheckMap)
 	rand := acctest.RandInt()

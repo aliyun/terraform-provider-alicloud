@@ -148,6 +148,24 @@ func (client Client) CreateBucket(bucketName string, options ...Option) error {
 	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
 }
 
+// create bucket xml
+func (client Client) CreateBucketXml(bucketName string, xmlBody string, options ...Option) error {
+    buffer := new(bytes.Buffer)
+	buffer.Write([]byte(xmlBody))
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := map[string]string{}
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
+	if err != nil {
+	    return err
+	}
+	
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
 // ListBuckets lists buckets of the current account under the given endpoint, with optional filters.
 //
 // options    specifies the filters such as Prefix, Marker and MaxKeys. Prefix is the bucket name's prefix filter.
@@ -222,10 +240,10 @@ func (client Client) DeleteBucket(bucketName string, options ...Option) error {
 // string    bucket's datacenter location
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketLocation(bucketName string) (string, error) {
+func (client Client) GetBucketLocation(bucketName string, options ...Option) (string, error) {
 	params := map[string]interface{}{}
 	params["location"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return "", err
 	}
@@ -243,11 +261,11 @@ func (client Client) GetBucketLocation(bucketName string) (string, error) {
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) SetBucketACL(bucketName string, bucketACL ACLType) error {
+func (client Client) SetBucketACL(bucketName string, bucketACL ACLType, options ...Option) error {
 	headers := map[string]string{HTTPHeaderOssACL: string(bucketACL)}
 	params := map[string]interface{}{}
 	params["acl"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, nil)
+	resp, err := client.do("PUT", bucketName, params, headers, nil, options...)
 	if err != nil {
 		return err
 	}
@@ -262,11 +280,11 @@ func (client Client) SetBucketACL(bucketName string, bucketACL ACLType) error {
 // GetBucketAclResponse    the result object, and it's only valid when error is nil.
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketACL(bucketName string) (GetBucketACLResult, error) {
+func (client Client) GetBucketACL(bucketName string, options ...Option) (GetBucketACLResult, error) {
 	var out GetBucketACLResult
 	params := map[string]interface{}{}
 	params["acl"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -287,7 +305,7 @@ func (client Client) GetBucketACL(bucketName string) (GetBucketACLResult, error)
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) SetBucketLifecycle(bucketName string, rules []LifecycleRule) error {
+func (client Client) SetBucketLifecycle(bucketName string, rules []LifecycleRule, options ...Option) error {
 	err := verifyLifecycleRules(rules)
 	if err != nil {
 		return err
@@ -306,7 +324,26 @@ func (client Client) SetBucketLifecycle(bucketName string, rules []LifecycleRule
 
 	params := map[string]interface{}{}
 	params["lifecycle"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, buffer)
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// SetBucketLifecycleXml sets the bucket's lifecycle rule from xml config
+func (client Client) SetBucketLifecycleXml(bucketName string, xmlBody string, options ...Option) error {
+	buffer := new(bytes.Buffer)
+	buffer.Write([]byte(xmlBody))
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := map[string]string{}
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["lifecycle"] = nil
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
 	if err != nil {
 		return err
 	}
@@ -321,10 +358,10 @@ func (client Client) SetBucketLifecycle(bucketName string, rules []LifecycleRule
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) DeleteBucketLifecycle(bucketName string) error {
+func (client Client) DeleteBucketLifecycle(bucketName string, options ...Option) error {
 	params := map[string]interface{}{}
 	params["lifecycle"] = nil
-	resp, err := client.do("DELETE", bucketName, params, nil, nil)
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return err
 	}
@@ -339,11 +376,11 @@ func (client Client) DeleteBucketLifecycle(bucketName string) error {
 // GetBucketLifecycleResponse    the result object upon successful request. It's only valid when error is nil.
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketLifecycle(bucketName string) (GetBucketLifecycleResult, error) {
+func (client Client) GetBucketLifecycle(bucketName string, options ...Option) (GetBucketLifecycleResult, error) {
 	var out GetBucketLifecycleResult
 	params := map[string]interface{}{}
 	params["lifecycle"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -376,7 +413,7 @@ func (client Client) GetBucketLifecycle(bucketName string) (GetBucketLifecycleRe
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) SetBucketReferer(bucketName string, referers []string, allowEmptyReferer bool) error {
+func (client Client) SetBucketReferer(bucketName string, referers []string, allowEmptyReferer bool, options ...Option) error {
 	rxml := RefererXML{}
 	rxml.AllowEmptyReferer = allowEmptyReferer
 	if referers == nil {
@@ -400,7 +437,7 @@ func (client Client) SetBucketReferer(bucketName string, referers []string, allo
 
 	params := map[string]interface{}{}
 	params["referer"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, buffer)
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
 	if err != nil {
 		return err
 	}
@@ -415,11 +452,11 @@ func (client Client) SetBucketReferer(bucketName string, referers []string, allo
 // GetBucketRefererResponse    the result object upon successful request. It's only valid when error is nil.
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketReferer(bucketName string) (GetBucketRefererResult, error) {
+func (client Client) GetBucketReferer(bucketName string, options ...Option) (GetBucketRefererResult, error) {
 	var out GetBucketRefererResult
 	params := map[string]interface{}{}
 	params["referer"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -442,7 +479,7 @@ func (client Client) GetBucketReferer(bucketName string) (GetBucketRefererResult
 // error    it's nil if no error, otherwise it's an error object.
 //
 func (client Client) SetBucketLogging(bucketName, targetBucket, targetPrefix string,
-	isEnable bool) error {
+	isEnable bool, options ...Option) error {
 	var err error
 	var bs []byte
 	if isEnable {
@@ -468,7 +505,7 @@ func (client Client) SetBucketLogging(bucketName, targetBucket, targetPrefix str
 
 	params := map[string]interface{}{}
 	params["logging"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, buffer)
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
 	if err != nil {
 		return err
 	}
@@ -482,10 +519,10 @@ func (client Client) SetBucketLogging(bucketName, targetBucket, targetPrefix str
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) DeleteBucketLogging(bucketName string) error {
+func (client Client) DeleteBucketLogging(bucketName string, options ...Option) error {
 	params := map[string]interface{}{}
 	params["logging"] = nil
-	resp, err := client.do("DELETE", bucketName, params, nil, nil)
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return err
 	}
@@ -500,11 +537,11 @@ func (client Client) DeleteBucketLogging(bucketName string) error {
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketLogging(bucketName string) (GetBucketLoggingResult, error) {
+func (client Client) GetBucketLogging(bucketName string, options ...Option) (GetBucketLoggingResult, error) {
 	var out GetBucketLoggingResult
 	params := map[string]interface{}{}
 	params["logging"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -525,7 +562,7 @@ func (client Client) GetBucketLogging(bucketName string) (GetBucketLoggingResult
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) SetBucketWebsite(bucketName, indexDocument, errorDocument string) error {
+func (client Client) SetBucketWebsite(bucketName, indexDocument, errorDocument string, options ...Option) error {
 	wxml := WebsiteXML{}
 	wxml.IndexDocument.Suffix = indexDocument
 	wxml.ErrorDocument.Key = errorDocument
@@ -543,7 +580,7 @@ func (client Client) SetBucketWebsite(bucketName, indexDocument, errorDocument s
 
 	params := map[string]interface{}{}
 	params["website"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, buffer)
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
 	if err != nil {
 		return err
 	}
@@ -619,10 +656,10 @@ func (client Client) SetBucketWebsiteXml(bucketName string, webXml string, optio
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) DeleteBucketWebsite(bucketName string) error {
+func (client Client) DeleteBucketWebsite(bucketName string, options ...Option) error {
 	params := map[string]interface{}{}
 	params["website"] = nil
-	resp, err := client.do("DELETE", bucketName, params, nil, nil)
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return err
 	}
@@ -637,11 +674,11 @@ func (client Client) DeleteBucketWebsite(bucketName string) error {
 // GetBucketWebsiteResponse    the result object upon successful request. It's only valid when error is nil.
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketWebsite(bucketName string) (GetBucketWebsiteResult, error) {
+func (client Client) GetBucketWebsite(bucketName string, options ...Option) (GetBucketWebsiteResult, error) {
 	var out GetBucketWebsiteResult
 	params := map[string]interface{}{}
 	params["website"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -658,10 +695,10 @@ func (client Client) GetBucketWebsite(bucketName string) (GetBucketWebsiteResult
 // string   the bucket's xml config, It's only valid when error is nil.
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketWebsiteXml(bucketName string) (string, error) {
+func (client Client) GetBucketWebsiteXml(bucketName string, options ...Option) (string, error) {
 	params := map[string]interface{}{}
 	params["website"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return "", err
 	}
@@ -682,7 +719,7 @@ func (client Client) GetBucketWebsiteXml(bucketName string) (string, error) {
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) SetBucketCORS(bucketName string, corsRules []CORSRule) error {
+func (client Client) SetBucketCORS(bucketName string, corsRules []CORSRule, options ...Option) error {
 	corsxml := CORSXML{}
 	for _, v := range corsRules {
 		cr := CORSRule{}
@@ -707,7 +744,7 @@ func (client Client) SetBucketCORS(bucketName string, corsRules []CORSRule) erro
 
 	params := map[string]interface{}{}
 	params["cors"] = nil
-	resp, err := client.do("PUT", bucketName, params, headers, buffer)
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
 	if err != nil {
 		return err
 	}
@@ -721,10 +758,10 @@ func (client Client) SetBucketCORS(bucketName string, corsRules []CORSRule) erro
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) DeleteBucketCORS(bucketName string) error {
+func (client Client) DeleteBucketCORS(bucketName string, options ...Option) error {
 	params := map[string]interface{}{}
 	params["cors"] = nil
-	resp, err := client.do("DELETE", bucketName, params, nil, nil)
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return err
 	}
@@ -739,11 +776,11 @@ func (client Client) DeleteBucketCORS(bucketName string) error {
 //
 // error    it's nil if no error, otherwise it's an error object.
 //
-func (client Client) GetBucketCORS(bucketName string) (GetBucketCORSResult, error) {
+func (client Client) GetBucketCORS(bucketName string, options ...Option) (GetBucketCORSResult, error) {
 	var out GetBucketCORSResult
 	params := map[string]interface{}{}
 	params["cors"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -967,11 +1004,11 @@ func (client Client) DeleteBucketTagging(bucketName string, options ...Option) e
 // GetBucketStat get bucket stat
 // bucketName    the bucket name.
 // error    it's nil if no error, otherwise it's an error object.
-func (client Client) GetBucketStat(bucketName string) (GetBucketStatResult, error) {
+func (client Client) GetBucketStat(bucketName string, options ...Option) (GetBucketStatResult, error) {
 	var out GetBucketStatResult
 	params := map[string]interface{}{}
 	params["stat"] = nil
-	resp, err := client.do("GET", bucketName, params, nil, nil)
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
 	if err != nil {
 		return out, err
 	}
@@ -1527,6 +1564,214 @@ func (client Client) GetBucketWorm(bucketName string, options ...Option) (WormCo
 	return out, err
 }
 
+// SetBucketTransferAcc set bucket transfer acceleration configuration
+// bucketName the bucket name.
+// accConf bucket transfer acceleration configuration
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) SetBucketTransferAcc(bucketName string, accConf TransferAccConfiguration, options ...Option) error {
+	bs, err := xml.Marshal(accConf)
+	if err != nil {
+		return err
+	}
+	buffer := new(bytes.Buffer)
+	buffer.Write(bs)
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := make(map[string]string)
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["transferAcceleration"] = nil
+	resp, err := client.do("PUT", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// GetBucketTransferAcc get bucket transfer acceleration configuration
+// bucketName the bucket name.
+// accConf bucket transfer acceleration configuration
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketTransferAcc(bucketName string, options ...Option) (TransferAccConfiguration, error) {
+	var out TransferAccConfiguration
+	params := map[string]interface{}{}
+	params["transferAcceleration"] = nil
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return out, err
+	}
+	defer resp.Body.Close()
+
+	err = xmlUnmarshal(resp.Body, &out)
+	return out, err
+}
+
+// DeleteBucketTransferAcc delete bucket transfer acceleration configuration
+// bucketName the bucket name.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) DeleteBucketTransferAcc(bucketName string, options ...Option) error {
+	params := map[string]interface{}{}
+	params["transferAcceleration"] = nil
+	resp, err := client.do("DELETE", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusNoContent})
+}
+
+// PutBucketReplication put bucket replication configuration
+// bucketName    the bucket name.
+// xmlBody    the replication configuration.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) PutBucketReplication(bucketName string, xmlBody string, options ...Option) error {
+	buffer := new(bytes.Buffer)
+	buffer.Write([]byte(xmlBody))
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := map[string]string{}
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["replication"] = nil
+	params["comp"] = "add"
+	resp, err := client.do("POST", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// GetBucketReplication get bucket replication configuration
+// bucketName    the bucket name.
+// string    the replication configuration.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketReplication(bucketName string, options ...Option) (string, error) {
+	params := map[string]interface{}{}
+	params["replication"] = nil
+
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), err
+}
+
+// DeleteBucketReplication delete bucket replication configuration
+// bucketName    the bucket name.
+// ruleId    the ID of the replication configuration.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) DeleteBucketReplication(bucketName string, ruleId string, options ...Option) error {
+	replicationxml := ReplicationXML{}
+	replicationxml.ID = ruleId
+
+	bs, err := xml.Marshal(replicationxml)
+	if err != nil {
+		return err
+	}
+
+	buffer := new(bytes.Buffer)
+	buffer.Write(bs)
+
+	contentType := http.DetectContentType(buffer.Bytes())
+	headers := map[string]string{}
+	headers[HTTPHeaderContentType] = contentType
+
+	params := map[string]interface{}{}
+	params["replication"] = nil
+	params["comp"] = "delete"
+	resp, err := client.do("POST", bucketName, params, headers, buffer, options...)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return CheckRespCode(resp.StatusCode, []int{http.StatusOK})
+}
+
+// GetBucketReplicationLocation get the locations of the target bucket that can be copied to
+// bucketName    the bucket name.
+// string    the locations of the target bucket that can be copied to.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketReplicationLocation(bucketName string, options ...Option) (string, error) {
+	params := map[string]interface{}{}
+	params["replicationLocation"] = nil
+
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), err
+}
+
+// GetBucketReplicationProgress get the replication progress of bucket
+// bucketName    the bucket name.
+// ruleId    the ID of the replication configuration.
+// string    the replication progress of bucket.
+// error    it's nil if no error, otherwise it's an error object.
+//
+func (client Client) GetBucketReplicationProgress(bucketName string, ruleId string, options ...Option) (string, error) {
+	params := map[string]interface{}{}
+	params["replicationProgress"] = nil
+	if ruleId != "" {
+		params["rule-id"] = ruleId
+	}
+
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), err
+}
+
+// GetBucketCname get bucket's binding cname
+// bucketName    the bucket name.
+// string    the xml configuration of bucket.
+// error    it's nil if no error, otherwise it's an error object.
+func (client Client) GetBucketCname(bucketName string, options ...Option) (string, error) {
+	params := map[string]interface{}{}
+	params["cname"] = nil
+
+	resp, err := client.do("GET", bucketName, params, nil, nil, options...)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), err
+}
+
 // LimitUploadSpeed set upload bandwidth limit speed,default is 0,unlimited
 // upSpeed KB/s, 0 is unlimited,default is 0
 // error it's nil if success, otherwise failure
@@ -1535,6 +1780,16 @@ func (client Client) LimitUploadSpeed(upSpeed int) error {
 		return fmt.Errorf("client config is nil")
 	}
 	return client.Config.LimitUploadSpeed(upSpeed)
+}
+
+// LimitDownloadSpeed set download bandwidth limit speed,default is 0,unlimited
+// downSpeed KB/s, 0 is unlimited,default is 0
+// error it's nil if success, otherwise failure
+func (client Client) LimitDownloadSpeed(downSpeed int) error {
+	if client.Config == nil {
+		return fmt.Errorf("client config is nil")
+	}
+	return client.Config.LimitDownloadSpeed(downSpeed)
 }
 
 // UseCname sets the flag of using CName. By default it's false.
@@ -1707,6 +1962,13 @@ func AdditionalHeaders(headers []string) ClientOption {
 func RedirectEnabled(enabled bool) ClientOption {
 	return func(client *Client) {
 		client.Config.RedirectEnabled = enabled
+	}
+}
+
+// skip verifying tls certificate file
+func InsecureSkipVerify(enabled bool) ClientOption {
+	return func(client *Client) {
+		client.Config.InsecureSkipVerify = enabled
 	}
 }
 

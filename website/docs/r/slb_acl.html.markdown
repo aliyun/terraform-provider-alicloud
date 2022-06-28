@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_acl"
 sidebar_current: "docs-alicloud-resource-slb-acl"
@@ -31,7 +31,7 @@ when you create a listener or change access control configuration after a listen
 
 For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
 
-For information about acl and how to use it, see [Configure an access control list](https://www.alibabacloud.com/help/doc-detail/85978.htm).
+For information about acl and how to use it, see [Configure an access control list](https://www.alibabacloud.com/help/doc-detail/70015.htm).
 
 
 ## Example Usage
@@ -65,7 +65,7 @@ The following arguments are supported:
 
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
-* `entry_list` - (Optional) A list of entry (IP addresses or CIDR blocks) to be added. At most 50 etnry can be supported in one resource. It contains two sub-fields as `Entry Block` follows.
+* `entry_list` - (Optional, Computed) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
 
@@ -73,8 +73,8 @@ The following arguments are supported:
 
 The entry mapping supports the following:
 
-* `entry` - (Required) An IP addresses or CIDR blocks.
-* `comment` - (Optional) the comment of the entry.
+* `entry` - (Optional, Computed) The CIDR blocks.
+* `comment` - (Optional, Computed) The comment of the entry.
 
 ## Attributes Reference
 

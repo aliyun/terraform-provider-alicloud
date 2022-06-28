@@ -83,8 +83,8 @@ type DescribeSagUserDnsRequest struct {
 type DescribeSagUserDnsResponse struct {
 	*responses.BaseResponse
 	RequestId  string      `json:"RequestId" xml:"RequestId"`
-	MasterDns  string      `json:"MasterDns" xml:"MasterDns"`
 	SlaveDns   string      `json:"SlaveDns" xml:"SlaveDns"`
+	MasterDns  string      `json:"MasterDns" xml:"MasterDns"`
 	TaskStates []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 

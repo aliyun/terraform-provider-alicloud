@@ -34,7 +34,7 @@ output "first_kvstore_instance_class" {
 ```
 
 ## Argument Reference
-
+    
 The following arguments are supported:
 
 * `zone_id` - (Required) The Zone to launch the KVStore instance.
@@ -50,6 +50,9 @@ The following arguments are supported:
 * `edition_type` - (Optional, Available in 1.68.0+) The KVStore instance edition type required by the user. Valid values: `Community` and `Enterprise`.
 * `series_type` - (Optional, Available in 1.68.0+) The KVStore instance series type required by the user. Valid values: `enhanced_performance_type` and `hybrid_storage`.
 * `shard_number` - (Optional, Available in 1.68.0+) The number of shard.Valid values: `1`, `2`, `4`, `8`, `16`, `32`, `64`, `128`, `256`.
+* product_type - (Optional, Available in v1.130.0+) The type of the service. Valid values:
+    * Local: an ApsaraDB for Redis instance with a local disk.
+    * OnECS: an ApsaraDB for Redis instance with a standard disk. This type is available only on the Alibaba Cloud China site.
 
 ## Attributes Reference
 

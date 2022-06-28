@@ -93,8 +93,8 @@ type DescribePriceResponse struct {
 	TraceId     string                   `json:"TraceId" xml:"TraceId"`
 	OrderParams string                   `json:"OrderParams" xml:"OrderParams"`
 	Order       Order                    `json:"Order" xml:"Order"`
-	Rules       RulesInDescribePrice     `json:"Rules" xml:"Rules"`
 	SubOrders   SubOrdersInDescribePrice `json:"SubOrders" xml:"SubOrders"`
+	Rules       RulesInDescribePrice     `json:"Rules" xml:"Rules"`
 }
 
 // CreateDescribePriceRequest creates a request to invoke DescribePrice API
@@ -102,7 +102,7 @@ func CreateDescribePriceRequest() (request *DescribePriceRequest) {
 	request = &DescribePriceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Dds", "2015-12-01", "DescribePrice", "Dds", "openAPI")
+	request.InitWithApiInfo("Dds", "2015-12-01", "DescribePrice", "dds", "openAPI")
 	request.Method = requests.POST
 	return
 }

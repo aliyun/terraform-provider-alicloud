@@ -127,16 +127,15 @@ func resourceEdasDeployGroupConfigDependence(name string) string {
 		  default = "%v"
 		}
 
-		resource "alicloud_vpc" "default" {
-		  cidr_block = "172.16.0.0/12"
-		  vpc_name       = "${var.name}"
+		data "alicloud_vpcs" "default" {
+			name_regex = "default-NODELETING"
 		}
 
 		resource "alicloud_edas_cluster" "default" {
 		  cluster_name = "${var.name}"
 		  cluster_type = 2
 		  network_mode = 2
-		  vpc_id       = "${alicloud_vpc.default.id}"
+		  vpc_id       = data.alicloud_vpcs.default.ids.0
 		}
 
 		resource "alicloud_edas_application" "default" {

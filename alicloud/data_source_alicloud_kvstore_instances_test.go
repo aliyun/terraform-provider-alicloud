@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
+func TestAccAlicloudKVStoreInstancesDataSource(t *testing.T) {
 	resourceId := "data.alicloud_kvstore_instances.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreInstance-%d", rand)
@@ -66,7 +66,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_kvstore_instance.default.id}"},
 			"engine_version": "4.0",
-			"instance_class": "redis.master.mid.default",
+			"instance_class": "${data.alicloud_kvstore_instance_classes.default.instance_classes.0}",
 			"instance_type":  "Redis",
 			"payment_type":   "PostPaid",
 			"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
@@ -76,7 +76,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"enable_details": "true",
 			"ids":            []string{"${alicloud_kvstore_instance.default.id}-fake"},
 			"engine_version": "4.0",
-			"instance_class": "redis.master.mid.default",
+			"instance_class": "${data.alicloud_kvstore_instance_classes.default.instance_classes.0}",
 			"instance_type":  "Redis",
 			"payment_type":   "PostPaid",
 			"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
@@ -90,7 +90,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"status":         "Normal",
 			"name_regex":     name,
 			"engine_version": "4.0",
-			"instance_class": "redis.master.mid.default",
+			"instance_class": "${data.alicloud_kvstore_instance_classes.default.instance_classes.0}",
 			"instance_type":  "Redis",
 			"payment_type":   "PostPaid",
 			"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
@@ -102,7 +102,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"status":         "Normal",
 			"name_regex":     name,
 			"engine_version": "4.0",
-			"instance_class": "redis.master.mid.default",
+			"instance_class": "${data.alicloud_kvstore_instance_classes.default.instance_classes.0}",
 			"instance_type":  "Redis",
 			"payment_type":   "PostPaid",
 			"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
@@ -129,7 +129,7 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"instances.0.end_time":                    "",
 			"instances.0.engine_version":              "4.0",
 			"instances.0.has_renew_change_order":      CHECKSET,
-			"instances.0.instance_class":              "redis.master.mid.default",
+			"instances.0.instance_class":              CHECKSET,
 			"instances.0.instance_type":               "Redis",
 			"instances.0.is_rds":                      CHECKSET,
 			"instances.0.max_connections":             CHECKSET,
@@ -155,9 +155,10 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 			"instances.0.auto_renew":                  CHECKSET,
 			"instances.0.auto_renew_period":           CHECKSET,
 			"instances.0.security_group_id":           "",
-			"instances.0.security_ip_group_attribute": "",
+			"instances.0.security_ip_group_attribute": CHECKSET,
 			"instances.0.security_ip_group_name":      CHECKSET,
-			"instances.0.security_ips.#":              "1",
+			"instances.0.security_ips.#":              CHECKSET,
+			"instances.0.secondary_zone_id":           "",
 		}
 	}
 
@@ -174,44 +175,45 @@ func TestAccAlicloudKvstoreInstancesDataSource(t *testing.T) {
 		existMapFunc: existKvstoreInstanceMapFunc,
 		fakeMapFunc:  fakeKvstoreInstanceMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-	}
-	kvstoreInstancesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
+	kvstoreInstancesInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, tagsConf, statusConf, paramsConf, allConf)
 }
 
 func dataSourceKvstoreInstancesDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_kvstore_zones" "default"{
-		instance_charge_type = "PostPaid"
+	data "alicloud_kvstore_zones" "default" {
+	  	instance_charge_type = "PostPaid"
 	}
 	data "alicloud_vpcs" "default" {
-	  is_default = true
+	  	name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
-	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  	zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+	  	vpc_id  = data.alicloud_vpcs.default.ids.0
+	}
+	data "alicloud_kvstore_instance_classes" "default" {
+	  	zone_id        = data.alicloud_kvstore_zones.default.zones.0.id
+	  	engine         = "Redis"
+	  	engine_version = "4.0"
 	}
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 	resource "alicloud_kvstore_instance" "default" {
-     vswitch_id = data.alicloud_vswitches.default.ids.0
-	 db_instance_name = "%s"
-	 security_ips = [
-		"10.23.12.24"]
-	 instance_type = "Redis"
-	 engine_version = "4.0"
-	 config = {
-		appendonly = "yes",
-		lazyfree-lazy-eviction = "yes",
-	 }
-	 tags = {
-		Created = "TF",
-		For = "update test",
-	 }
-	 resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.1
-	 zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
-	 instance_class="redis.master.mid.default"
+		vswitch_id       = data.alicloud_vswitches.default.ids.0
+	  	db_instance_name = "%s"
+	  	security_ips = ["10.23.12.24"]
+	  	instance_type  = "Redis"
+	  	engine_version = "4.0"
+	  	config = {
+			appendonly             = "yes",
+			lazyfree-lazy-eviction = "yes",
+		}
+	  	tags = {
+			Created = "TF",
+			For     = "update test",
+	  	}
+		resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.1
+	  	zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+	  	instance_class    = data.alicloud_kvstore_instance_classes.default.instance_classes.0
 	}
 	`, name)
 }

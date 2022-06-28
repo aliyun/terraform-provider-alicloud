@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func SkipTestAccAlicloudNetworkAclEntries_basic(t *testing.T) {
+func SkipTestAccAlicloudVPCNetworkAclEntries_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_entries.default"
 	ra := resourceAttrInit(resourceId, testAccNaclEntriesCheckMap)
 	rand := acctest.RandInt()

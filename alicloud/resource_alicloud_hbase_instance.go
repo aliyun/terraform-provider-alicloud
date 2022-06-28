@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
@@ -24,8 +25,8 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -154,7 +155,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				DiffSuppressFunc: whiteIpListDiffSuppressFunc,
 			},
 			"security_groups": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -244,16 +245,18 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 	request.NodeCount = requests.NewInteger(d.Get("core_instance_quantity").(int))
 	request.DiskType = Trim(d.Get("core_disk_type").(string))
 	request.DiskSize = requests.NewInteger(d.Get("core_disk_size").(int))
-	request.PayType = Trim(d.Get("pay_type").(string))
-	if d.Get("duration").(int) > 9 {
-		request.PeriodUnit = "year"
-		request.Period = requests.NewInteger(d.Get("duration").(int) / 12)
-	} else {
-		request.PeriodUnit = "month"
-		request.Period = requests.NewInteger(d.Get("duration").(int))
+	request.PayType = convertHbaseInstancePayTypeRequest(d.Get("pay_type")).(string)
+	if v, ok := d.GetOk("duration"); ok {
+		if v.(int) > 9 {
+			request.PeriodUnit = "year"
+			request.Period = requests.NewInteger(v.(int) / 12)
+		} else {
+			request.PeriodUnit = "month"
+			request.Period = requests.NewInteger(v.(int))
+		}
 	}
 
-	if d.Get("auto_renew").(bool) {
+	if _, ok := d.GetOkExists("auto_renew"); ok {
 		request.AutoRenewPeriod = requests.NewInteger(1)
 	}
 
@@ -333,40 +336,34 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("name", instance.InstanceName)
-	d.Set("zone_id", instance.ZoneId)
-	d.Set("engine", instance.Engine)
-	d.Set("engine_version", instance.MajorVersion)
-	d.Set("master_instance_type", instance.MasterInstanceType)
-	d.Set("master_instance_quantity", instance.MasterNodeCount)
-	d.Set("core_instance_type", instance.CoreInstanceType)
-	d.Set("core_instance_quantity", instance.CoreNodeCount)
-	diskCount, err := strconv.Atoi(instance.CoreDiskCount)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("core_disk_size", diskCount*instance.CoreDiskSize)
-	d.Set("core_disk_type", instance.CoreDiskType)
+	d.Set("name", instance["InstanceName"])
+	d.Set("zone_id", instance["ZoneId"])
+	d.Set("engine", instance["Engine"])
+	d.Set("engine_version", instance["MajorVersion"])
+	d.Set("master_instance_type", instance["MasterInstanceType"])
+	d.Set("master_instance_quantity", instance["MasterNodeCount"])
+	d.Set("core_instance_type", instance["CoreInstanceType"])
+	d.Set("core_instance_quantity", instance["CoreNodeCount"])
+	d.Set("core_disk_size", formatInt(instance["CoreDiskCount"])*formatInt(instance["CoreDiskSize"]))
+	d.Set("core_disk_type", instance["CoreDiskType"])
 	// Postpaid -> PostPaid
-	if instance.PayType == string(Postpaid) {
-		d.Set("pay_type", string(PostPaid))
-	} else if instance.PayType == string(Prepaid) {
-		d.Set("pay_type", string(PrePaid))
-		period, err := computePeriodByUnit(instance.CreatedTimeUTC, instance.ExpireTimeUTC, d.Get("duration").(int), "Month")
+	d.Set("pay_type", convertHbaseInstancePayTypeResponse(instance["PayType"]))
+	if instance["PayType"] == string(Prepaid) {
+		period, err := computePeriodByUnit(instance["CreatedTimeUTC"], instance["ExpireTimeUTC"], d.Get("duration").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
 		d.Set("duration", period)
 	}
 	// now sdk can not get right value, "auto_renew", "is_cold_storage".
-	d.Set("auto_renew", instance.AutoRenewal)
-	d.Set("cold_storage_size", instance.ColdStorageSize)
-	d.Set("vpc_id", instance.VpcId)
-	d.Set("vswitch_id", instance.VswitchId)
-	d.Set("maintain_start_time", instance.MaintainStartTime)
-	d.Set("maintain_end_time", instance.MaintainEndTime)
-	d.Set("deletion_protection", instance.IsDeletionProtection)
-	d.Set("tags", hbaseService.tagsToMap(instance.Tags.Tag))
+	d.Set("auto_renew", instance["AutoRenewal"])
+	d.Set("cold_storage_size", instance["ColdStorageSize"])
+	d.Set("vpc_id", instance["VpcId"])
+	d.Set("vswitch_id", instance["VswitchId"])
+	d.Set("maintain_start_time", instance["MaintainStartTime"])
+	d.Set("maintain_end_time", instance["MaintainEndTime"])
+	d.Set("deletion_protection", instance["IsDeletionProtection"])
+	d.Set("tags", tagsToMap(instance["Tags"]))
 
 	ipWhitelist, err := hbaseService.DescribeIpWhitelist(d.Id())
 	if err != nil {
@@ -434,13 +431,10 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 		target := strings.ToLower(d.Get("pay_type").(string))
-		if strings.ToLower(object.PayType) != target {
+		if strings.ToLower(object["PayType"].(string)) != target {
 			request := hbase.CreateConvertInstanceRequest()
 			request.ClusterId = d.Id()
-			request.PayType = string(Postpaid)
-			if target == "prepaid" {
-				request.PayType = string(Prepaid)
-			}
+			request.PayType = convertHbaseInstancePayTypeRequest(d.Get("pay_type")).(string)
 			if d.Get("duration").(int) > 9 {
 				request.PricingCycle = "year"
 				request.Duration = requests.NewInteger(d.Get("duration").(int) / 12)
@@ -483,7 +477,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("security_groups") {
 		request := hbase.CreateModifySecurityGroupsRequest()
 		request.ClusterId = d.Id()
-		securityGroups := d.Get("security_groups").([]interface{})
+		securityGroups := d.Get("security_groups").(*schema.Set).List()
 		if securityGroups != nil && len(securityGroups) > 0 {
 			request.SecurityGroupIds = strings.Join(expandStringList(securityGroups), ",")
 		} else {
@@ -684,11 +678,21 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 		request.ImmediateDeleteFlag = requests.NewBoolean(v.(bool))
 	}
 
-	raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
-		return hbaseClient.DeleteInstance(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		raw, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.DeleteInstance(request)
+		})
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Instance.InvalidStatus"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
@@ -700,4 +704,24 @@ func resourceAlicloudHBaseInstanceDelete(d *schema.ResourceData, meta interface{
 	stateConf := BuildStateConf([]string{Hb_DELETING}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, hbaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
 	return WrapError(err)
+}
+
+func convertHbaseInstancePayTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PrePaid":
+		return "Prepaid"
+	case "PostPaid":
+		return "Postpaid"
+	}
+	return source
+}
+
+func convertHbaseInstancePayTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "Prepaid":
+		return "PrePaid"
+	case "Postpaid":
+		return "PostPaid"
+	}
+	return source
 }

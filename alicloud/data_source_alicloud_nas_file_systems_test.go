@@ -8,27 +8,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
+func TestAccAlicloudNASFileSystem_DataSource(t *testing.T) {
 	rand := acctest.RandIntRange(100000, 999999)
 	storageTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
 			"storage_type":      `"${alicloud_nas_file_system.default.storage_type}"`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
 		}),
-		//fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-		//	"storage_type":      `"${alicloud_nas_file_system.default.storage_type}_fake"`,
-		//	"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
-		//}),
 	}
 	protocolTypeConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
 			"protocol_type":     `"${alicloud_nas_file_system.default.protocol_type}"`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
 		}),
-		//fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-		//	"protocol_type":     `"${alicloud_nas_file_system.default.protocol_type}_fake"`,
-		//	"description_regex": `"^${alicloud_nas_file_system.default.description}"`,
-		//}),
 	}
 	descriptionConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
@@ -54,15 +46,13 @@ func TestAccAlicloudNasFileSystem_DataSource(t *testing.T) {
 			"ids":               `["${alicloud_nas_file_system.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudFileSystemDataSourceConfig(rand, map[string]string{
-			//"storage_type":      `"${alicloud_nas_file_system.default.storage_type}_fake"`,
-			//"protocol_type":     `"${alicloud_nas_file_system.default.protocol_type}_fake"`,
 			"description_regex": `"^${alicloud_nas_file_system.default.description}_fake"`,
 			"ids":               `["${alicloud_nas_file_system.default.id}_fake"]`,
 		}),
 	}
 
-	fileSystemCheckInfo.dataSourceTestCheck(t, rand, storageTypeConf, protocolTypeConf, descriptionConf,
-		idsConf, allConf)
+	fileSystemCheckInfo.dataSourceTestCheck(t, rand, storageTypeConf, protocolTypeConf,
+		descriptionConf, idsConf, allConf)
 }
 
 func testAccCheckAlicloudFileSystemDataSourceConfig(rand int, attrMap map[string]string) string {

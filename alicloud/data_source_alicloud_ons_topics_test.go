@@ -102,7 +102,6 @@ resource "alicloud_ons_topic" "default" {
   topic_name = "${var.topic}"
   message_type = "0"
   remark = "alicloud_ons_topic_remark"
-  perm = "6"
   tags 	 = {
 	Created = "TF"
 	For 	= "acceptance test"

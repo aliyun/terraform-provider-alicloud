@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -203,82 +207,6 @@ func (s *SagService) DescribeSagAclRule(id string) (c smartag.Acr, err error) {
 		}
 	}
 	return c, WrapErrorf(Error(GetNotFoundMessage("Sag Acl Rule", id)), NotFoundMsg, ProviderERROR)
-}
-
-func (s *SagService) DescribeSagNetworkopt(id string) (c smartag.NetworkOptimization, err error) {
-	request := smartag.CreateDescribeNetworkOptimizationsRequest()
-	request.RegionId = s.client.RegionId
-	request.NetworkOptId = id
-
-	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.DescribeNetworkOptimizations(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"SagNetworkoptNotExist"}) {
-			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*smartag.DescribeNetworkOptimizationsResponse)
-	if len(response.NetworkOptimizations.NetworkOptimization) <= 0 || response.NetworkOptimizations.NetworkOptimization[0].InstanceId != id {
-		return c, WrapErrorf(Error(GetNotFoundMessage("Sag Networkopt", id)), NotFoundMsg, ProviderERROR)
-	}
-	c = response.NetworkOptimizations.NetworkOptimization[0]
-	return c, nil
-}
-
-func (s *SagService) DescribeSagNetworkoptSetting(id string) (c smartag.Setting, err error) {
-	parts, err := ParseResourceId(id, 3)
-	if err != nil {
-		return c, WrapError(err)
-	}
-
-	request := smartag.CreateDescribeNetworkOptimizationSettingsRequest()
-	request.RegionId = s.client.RegionId
-	request.NetworkOptId = parts[0]
-
-	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-			return sagClient.DescribeNetworkOptimizationSettings(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{AliyunGoClientFailure, "ServiceUnavailable", Throttling, "Throttling.User"}) {
-				time.Sleep(DefaultIntervalShort * time.Second)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"SagNetworkoptSettingNotExist"}) {
-			return c, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
-		}
-		return c, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	response, _ := raw.(*smartag.DescribeNetworkOptimizationSettingsResponse)
-	for _, value := range response.Settings.Setting {
-		if value.Type == parts[1] && value.Domain == parts[2] {
-			return value, nil
-		}
-	}
-	return c, WrapErrorf(Error(GetNotFoundMessage("Sag Networkopt Setting", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *SagService) DescribeSagClientUser(id string) (c smartag.User, err error) {
@@ -808,4 +736,68 @@ func (s *SagService) WaitForSagClientUser(id string, status Status, timeout int)
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
+}
+
+func (s *SagService) DescribeSmartagFlowLog(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewSmartagClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeFlowLogs"
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"FlowLogId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-03-13"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.FlowLogs.FlowLogSetType", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FlowLogs.FlowLogSetType", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Smartag", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["FlowLogId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Smartag", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *SagService) SmartagFlowLogStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSmartagFlowLog(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }

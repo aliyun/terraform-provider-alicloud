@@ -49,3 +49,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `location` - The location of storage bundle.
 	* `storage_bundle_id` - The id of storage bundle.
 	* `storage_bundle_name` - The name of storage bundle.
+	* `create_time` - The created time of storage bundle.

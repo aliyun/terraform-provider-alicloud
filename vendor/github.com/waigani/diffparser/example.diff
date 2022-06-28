@@ -1,0 +1,57 @@
+diff --git a/file1 b/file1
+index 504d2a1..50ccec3 100644
+--- a/file1
++++ b/file1
+@@ -1,4 +1,4 @@
++add a line
+ some
+ lines
+-in
+ file1
+diff --git a/file2 b/file2
+deleted file mode 100644
+index c0dafd8..0000000
+--- a/file2
++++ /dev/null
+@@ -1,4 +0,0 @@
+-other
+-lines
+-in
+-file2
+diff --git a/file3 b/file3
+deleted file mode 100644
+index 576bba8..0000000
+--- a/file3
++++ /dev/null
+@@ -1,4 +0,0 @@
+-still
+-more
+-in
+-file3
+\ No newline at end of file
+diff --git a/file4 b/file4
+new file mode 100644
+index 0000000..57271b1
+--- /dev/null
++++ b/file4
+@@ -0,0 +1 @@
++added new file
+\ No newline at end of file
+diff --git a/newname b/newname
+new file mode 100644
+index 0000000..c0dafd8
+--- /dev/null
++++ b/newname
+@@ -0,0 +1,4 @@
++other
++lines
++in
++file2
+diff --git a/symlink b/symlink
+deleted file mode 120000
+index 03b9162..0000000
+--- a/symlink
++++ /dev/null
+@@ -1 +0,0 @@
+-symlink-destination
+\ No newline at end of file

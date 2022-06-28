@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -14,10 +16,6 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-)
-
-const (
-	ManagedKubernetesCreationDefaultTimeoutInMinute = 60
 )
 
 func resourceAlicloudCSManagedKubernetes() *schema.Resource {
@@ -59,8 +57,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         1,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MinItems: 1,
 			},
 
 			"worker_instance_types": {
@@ -104,16 +101,14 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 			},
 			"worker_data_disk_category": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"worker_instance_charge_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:          PostPaid,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				Default:      PostPaid,
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -202,32 +197,27 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MaxItems:         10,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				MaxItems: 10,
 			},
 			"pod_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"service_cidr": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 
 			"node_cidr_mask": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc:     validation.IntBetween(24, 28),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      KubernetesClusterNodeCIDRMasksByDefault,
+				ValidateFunc: validation.IntBetween(24, 28),
 			},
 			"enable_ssh": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          false,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -235,17 +225,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:  true,
 			},
 			"password": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Sensitive:        true,
-				ConflictsWith:    []string{"key_name", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
 			},
 			"key_name": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ConflictsWith:    []string{"password", "kms_encrypted_password"},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
@@ -261,19 +249,17 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Elem: schema.TypeString,
 			},
 			"user_ca": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"install_cloud_monitor": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 			"version": {
 				Type:     schema.TypeString,
@@ -315,10 +301,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 			},
 			"slb_internet_enabled": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				Default:          true,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
 			},
 			"load_balancer_spec": {
 				Type:         schema.TypeString,
@@ -331,6 +316,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
@@ -347,7 +336,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"platform": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  "CentOS",
+				Computed: true,
 				ForceNew: true,
 			},
 			"node_port_range": {
@@ -547,10 +536,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MinItems:         3,
-				MaxItems:         5,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'vswitch_ids' has been deprecated from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
+				MinItems: 3,
+				MaxItems: 5,
+				Removed:  "Field 'vswitch_ids' has been deprecated from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
 			},
 			// force update is a high risk operation
 			"force_update": {
@@ -567,17 +555,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:    schema.TypeInt,
 					Default: 3,
 				},
-				MinItems:         1,
-				MaxItems:         3,
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
+				MinItems: 1,
+				MaxItems: 3,
+				Removed:  "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
 			},
 			"cluster_network_type": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
+				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			// too hard to use this config
 			"log_config": {
@@ -597,8 +583,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
-				DiffSuppressFunc: csForceUpdateSuppressFunc,
-				Removed:          "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
+				Removed: "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"worker_instance_type": {
 				Type:     schema.TypeString,
@@ -671,6 +656,32 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Required: true,
 						},
 					},
+				},
+			},
+			"control_plane_log_ttl": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"control_plane_log_project": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"control_plane_log_components": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MinItems: 1,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"retain_resources": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
 				},
 			},
 		},
@@ -813,4 +824,99 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	return nil
+}
+
+func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	enableRRSA := false
+	if v, ok := d.GetOk("enable_rrsa"); ok {
+		enableRRSA = v.(bool)
+	}
+	// it's not allowed to disable rrsa
+	if !enableRRSA {
+		return fmt.Errorf("It's not supported to disable RRSA! " +
+			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+	}
+
+	// version check
+	clusterVersion := d.Get("version").(string)
+	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
+		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+	}
+
+	action := "ModifyClusterRRSA"
+	client := meta.(*connectivity.AliyunClient)
+
+	var requestInfo cs.ModifyClusterArgs
+	requestInfo.EnableRRSA = enableRRSA
+
+	var response interface{}
+	if err := invoker.Run(func() error {
+		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
+		})
+		return err
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = d.Id()
+		requestMap["enable_rrsa"] = requestInfo.EnableRRSA
+		addDebug(action, response, requestInfo, requestMap)
+	}
+	d.SetPartial("enable_rrsa")
+	return nil
+}
+
+//versionCompare check version,
+//if cueVersion is newer than neededVersion return 1
+//if curVersion is equal neededVersion return 0
+//if curVersion is older than neededVersion return -1
+//example: neededVersion = 1.20.11-aliyun.1, curVersion = 1.22.3-aliyun.1, it will return 1
+func versionCompare(neededVersion, curVersion string) (int, error) {
+	if neededVersion == "" || curVersion == "" {
+		if neededVersion == "" && curVersion == "" {
+			return 0, nil
+		} else {
+			if neededVersion == "" {
+				return 1, nil
+			} else {
+				return -1, nil
+			}
+		}
+	}
+
+	// 取出版本号
+	regx := regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+`)
+	neededVersion = regx.FindString(neededVersion)
+	curVersion = regx.FindString(curVersion)
+
+	currentVersions := strings.Split(neededVersion, ".")
+	newVersions := strings.Split(curVersion, ".")
+
+	compare := 0
+
+	for index, val := range currentVersions {
+		newVal := newVersions[index]
+		v1, err1 := strconv.Atoi(val)
+		v2, err2 := strconv.Atoi(newVal)
+
+		if err1 != nil || err2 != nil {
+			return -2, fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion)
+		}
+
+		if v1 > v2 {
+			compare = -1
+		} else if v1 == v2 {
+			compare = 0
+		} else {
+			compare = 1
+		}
+
+		if compare != 0 {
+			break
+		}
+	}
+
+	return compare, nil
 }

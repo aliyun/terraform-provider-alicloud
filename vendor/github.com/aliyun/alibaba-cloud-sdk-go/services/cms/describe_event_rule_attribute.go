@@ -71,17 +71,18 @@ func (client *Client) DescribeEventRuleAttributeWithCallback(request *DescribeEv
 // DescribeEventRuleAttributeRequest is the request struct for api DescribeEventRuleAttribute
 type DescribeEventRuleAttributeRequest struct {
 	*requests.RpcRequest
-	RuleName string `position:"Query" name:"RuleName"`
+	RuleName    string `position:"Query" name:"RuleName"`
+	SilenceTime string `position:"Query" name:"SilenceTime"`
 }
 
 // DescribeEventRuleAttributeResponse is the response struct for api DescribeEventRuleAttribute
 type DescribeEventRuleAttributeResponse struct {
 	*responses.BaseResponse
-	Success   bool                               `json:"Success" xml:"Success"`
-	Code      string                             `json:"Code" xml:"Code"`
-	Message   string                             `json:"Message" xml:"Message"`
-	RequestId string                             `json:"RequestId" xml:"RequestId"`
-	Result    ResultInDescribeEventRuleAttribute `json:"Result" xml:"Result"`
+	Code      string `json:"Code" xml:"Code"`
+	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
+	Result    Result `json:"Result" xml:"Result"`
 }
 
 // CreateDescribeEventRuleAttributeRequest creates a request to invoke DescribeEventRuleAttribute API
@@ -89,7 +90,7 @@ func CreateDescribeEventRuleAttributeRequest() (request *DescribeEventRuleAttrib
 	request = &DescribeEventRuleAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleAttribute", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeEventRuleAttribute", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

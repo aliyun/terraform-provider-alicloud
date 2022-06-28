@@ -1,5 +1,5 @@
 ---
-subcategory: "Server Load Balancer (SLB)"
+subcategory: "Classic Load Balancer (CLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slbs"
 sidebar_current: "docs-alicloud-datasource-slbs"
@@ -8,6 +8,8 @@ description: |-
 ---
 
 # alicloud\_slbs
+
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_slb_load_balancers](https://www.terraform.io/docs/providers/alicloud/d/slb_load_balancers) from version 1.123.1.
 
 This data source provides the server load balancers of the current Alibaba Cloud user.
 

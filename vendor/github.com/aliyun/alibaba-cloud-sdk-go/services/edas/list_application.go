@@ -71,19 +71,20 @@ func (client *Client) ListApplicationWithCallback(request *ListApplicationReques
 // ListApplicationRequest is the request struct for api ListApplication
 type ListApplicationRequest struct {
 	*requests.RoaRequest
-	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
-	AppName         string `position:"Query" name:"AppName"`
-	LogicalRegionId string `position:"Query" name:"LogicalRegionId"`
-	ClusterId       string `position:"Query" name:"ClusterId"`
+	ResourceGroupId       string `position:"Query" name:"ResourceGroupId"`
+	AppName               string `position:"Query" name:"AppName"`
+	LogicalRegionId       string `position:"Query" name:"LogicalRegionId"`
+	ClusterId             string `position:"Query" name:"ClusterId"`
+	LogicalRegionIdFilter string `position:"Query" name:"LogicalRegionIdFilter"`
 }
 
 // ListApplicationResponse is the response struct for api ListApplication
 type ListApplicationResponse struct {
 	*responses.BaseResponse
-	Code            int                              `json:"Code" xml:"Code"`
-	Message         string                           `json:"Message" xml:"Message"`
-	RequestId       string                           `json:"RequestId" xml:"RequestId"`
-	ApplicationList ApplicationListInListApplication `json:"ApplicationList" xml:"ApplicationList"`
+	Code            int             `json:"Code" xml:"Code"`
+	Message         string          `json:"Message" xml:"Message"`
+	RequestId       string          `json:"RequestId" xml:"RequestId"`
+	ApplicationList ApplicationList `json:"ApplicationList" xml:"ApplicationList"`
 }
 
 // CreateListApplicationRequest creates a request to invoke ListApplication API

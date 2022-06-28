@@ -75,11 +75,19 @@ type DescribeCenBandwidthPackagesRequest struct {
 	IncludeReservationData requests.Boolean                      `position:"Query" name:"IncludeReservationData"`
 	PageNumber             requests.Integer                      `position:"Query" name:"PageNumber"`
 	IsOrKey                requests.Boolean                      `position:"Query" name:"IsOrKey"`
+	ResourceGroupId        string                                `position:"Query" name:"ResourceGroupId"`
 	PageSize               requests.Integer                      `position:"Query" name:"PageSize"`
+	Tag                    *[]DescribeCenBandwidthPackagesTag    `position:"Query" name:"Tag"  type:"Repeated"`
 	ResourceOwnerAccount   string                                `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount           string                                `position:"Query" name:"OwnerAccount"`
 	OwnerId                requests.Integer                      `position:"Query" name:"OwnerId"`
 	Filter                 *[]DescribeCenBandwidthPackagesFilter `position:"Query" name:"Filter"  type:"Repeated"`
+}
+
+// DescribeCenBandwidthPackagesTag is a repeated param struct in DescribeCenBandwidthPackagesRequest
+type DescribeCenBandwidthPackagesTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // DescribeCenBandwidthPackagesFilter is a repeated param struct in DescribeCenBandwidthPackagesRequest
@@ -91,10 +99,10 @@ type DescribeCenBandwidthPackagesFilter struct {
 // DescribeCenBandwidthPackagesResponse is the response struct for api DescribeCenBandwidthPackages
 type DescribeCenBandwidthPackagesResponse struct {
 	*responses.BaseResponse
-	RequestId            string               `json:"RequestId" xml:"RequestId"`
-	TotalCount           int                  `json:"TotalCount" xml:"TotalCount"`
-	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
 	PageSize             int                  `json:"PageSize" xml:"PageSize"`
+	RequestId            string               `json:"RequestId" xml:"RequestId"`
+	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
+	TotalCount           int                  `json:"TotalCount" xml:"TotalCount"`
 	CenBandwidthPackages CenBandwidthPackages `json:"CenBandwidthPackages" xml:"CenBandwidthPackages"`
 }
 
@@ -103,7 +111,7 @@ func CreateDescribeCenBandwidthPackagesRequest() (request *DescribeCenBandwidthP
 	request = &DescribeCenBandwidthPackagesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cbn", "2017-09-12", "DescribeCenBandwidthPackages", "cbn", "openAPI")
+	request.InitWithApiInfo("Cbn", "2017-09-12", "DescribeCenBandwidthPackages", "", "")
 	request.Method = requests.POST
 	return
 }

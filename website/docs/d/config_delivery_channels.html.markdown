@@ -9,11 +9,14 @@ description: |-
 
 # alicloud\_config\_delivery\_channels
 
+-> **DEPRECATED:**  This resource is based on Config's old version OpenAPI, and it has been deprecated from version `1.173.0`.
+Please use new datasource [alicloud_config_deliveries](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/config_deliveries) instead.
+
 This data source provides the Config Delivery Channels of the current Alibaba Cloud user.
 
 -> **NOTE:**  Available in 1.99.0+.
 
--> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-northeast-1`.
+-> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-southeast-1`.
 
 ## Example Usage
 
@@ -23,7 +26,7 @@ data "alicloud_config_delivery_channels" "example" {
   name_regex = "tftest"
 }
 
-output "first_config_delivery_channel_id"{
+output "first_config_delivery_channel_id" {
   value = data.alicloud_config_delivery_channels.example.channels.0.id
 }
 ```
@@ -50,6 +53,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `delivery_channel_id` - The ID of the delivery channel.
     * `delivery_channel_name` - The name of the delivery channel.
     * `delivery_channel_target_arn` - The ARN of the delivery destination.
-    * `delivery_channel_type` - The type of the delivery method.
-    * `description` - The description of the delivery method.
-    * `status` - The status of the delivery method.
+    * `delivery_channel_type` - The type of the delivery channel.
+    * `description` - The description of the delivery channel.
+    * `status` - The status of the delivery channel.

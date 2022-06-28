@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudKmsKeyVersionsDataSource(t *testing.T) {
+func TestAccAlicloudKMSKeyVersionsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_kms_key_versions.default"
 
@@ -30,7 +30,7 @@ func TestAccAlicloudKmsKeyVersionsDataSource(t *testing.T) {
 			"ids.#":                     "1",
 			"ids.0":                     CHECKSET,
 			"versions.#":                "1",
-			"versions.0.creation_date":  CHECKSET,
+			"versions.0.create_time":    CHECKSET,
 			"versions.0.key_version_id": CHECKSET,
 		}
 	}

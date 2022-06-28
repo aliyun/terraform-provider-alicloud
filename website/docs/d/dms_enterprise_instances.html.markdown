@@ -18,11 +18,11 @@ This data source provides a list of DMS Enterprise Instances in an Alibaba Cloud
 ```terraform
 # Declare the data source
 data "alicloud_dms_enterprise_instances" "dms_enterprise_instances_ds" {
-  net_type             = "CLASSIC",
-  instance_type        = "mysql",
-  env_type"            = "test",
-  name_regex           = "tf_testAcc",
-  output_file          = "dms_enterprise_instances.json"
+  net_type      = "CLASSIC"
+  instance_type = "mysql"
+  env_type      = "test"
+  name_regex    = "tf_testAcc"
+  output_file   = "dms_enterprise_instances.json"
 }
 
 output "first_database_instance_id" {

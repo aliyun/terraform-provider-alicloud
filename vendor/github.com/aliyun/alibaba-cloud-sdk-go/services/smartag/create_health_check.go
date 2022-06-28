@@ -94,24 +94,24 @@ type CreateHealthCheckRequest struct {
 // CreateHealthCheckResponse is the response struct for api CreateHealthCheck
 type CreateHealthCheckResponse struct {
 	*responses.BaseResponse
-	RequestId          string `json:"RequestId" xml:"RequestId"`
-	CreateTime         int64  `json:"CreateTime" xml:"CreateTime"`
-	InstanceId         string `json:"InstanceId" xml:"InstanceId"`
-	SmartAGId          string `json:"SmartAGId" xml:"SmartAGId"`
-	Name               string `json:"Name" xml:"Name"`
-	RegionId           string `json:"RegionId" xml:"RegionId"`
-	Description        string `json:"Description" xml:"Description"`
-	Type               string `json:"Type" xml:"Type"`
-	DstIpAddr          string `json:"DstIpAddr" xml:"DstIpAddr"`
-	DstPort            int    `json:"DstPort" xml:"DstPort"`
-	SrcIpAddr          string `json:"SrcIpAddr" xml:"SrcIpAddr"`
 	SrcPort            int    `json:"SrcPort" xml:"SrcPort"`
-	ProbeInterval      int    `json:"ProbeInterval" xml:"ProbeInterval"`
+	Description        string `json:"Description" xml:"Description"`
+	RequestId          string `json:"RequestId" xml:"RequestId"`
+	InstanceId         string `json:"InstanceId" xml:"InstanceId"`
+	SrcIpAddr          string `json:"SrcIpAddr" xml:"SrcIpAddr"`
+	CreateTime         int64  `json:"CreateTime" xml:"CreateTime"`
+	FailCountThreshold int    `json:"FailCountThreshold" xml:"FailCountThreshold"`
+	DstPort            int    `json:"DstPort" xml:"DstPort"`
+	Name               string `json:"Name" xml:"Name"`
 	ProbeCount         int    `json:"ProbeCount" xml:"ProbeCount"`
+	Type               string `json:"Type" xml:"Type"`
 	ProbeTimeout       int    `json:"ProbeTimeout" xml:"ProbeTimeout"`
 	RttThreshold       int    `json:"RttThreshold" xml:"RttThreshold"`
+	RegionId           string `json:"RegionId" xml:"RegionId"`
+	ProbeInterval      int    `json:"ProbeInterval" xml:"ProbeInterval"`
+	SmartAGId          string `json:"SmartAGId" xml:"SmartAGId"`
 	RttFailThreshold   int    `json:"RttFailThreshold" xml:"RttFailThreshold"`
-	FailCountThreshold int    `json:"FailCountThreshold" xml:"FailCountThreshold"`
+	DstIpAddr          string `json:"DstIpAddr" xml:"DstIpAddr"`
 }
 
 // CreateCreateHealthCheckRequest creates a request to invoke CreateHealthCheck API

@@ -71,22 +71,28 @@ func (client *Client) QuerySavingsPlansInstanceWithCallback(request *QuerySaving
 // QuerySavingsPlansInstanceRequest is the request struct for api QuerySavingsPlansInstance
 type QuerySavingsPlansInstanceRequest struct {
 	*requests.RpcRequest
-	EndTime    string           `position:"Query" name:"EndTime"`
-	StartTime  string           `position:"Query" name:"StartTime"`
-	Locale     string           `position:"Query" name:"Locale"`
-	PageNum    requests.Integer `position:"Query" name:"PageNum"`
-	InstanceId string           `position:"Query" name:"InstanceId"`
-	RequestId  string           `position:"Query" name:"RequestId"`
-	PageSize   requests.Integer `position:"Query" name:"PageSize"`
+	EndTime    string                          `position:"Query" name:"EndTime"`
+	StartTime  string                          `position:"Query" name:"StartTime"`
+	Locale     string                          `position:"Query" name:"Locale"`
+	PageNum    requests.Integer                `position:"Query" name:"PageNum"`
+	InstanceId string                          `position:"Query" name:"InstanceId"`
+	PageSize   requests.Integer                `position:"Query" name:"PageSize"`
+	Tag        *[]QuerySavingsPlansInstanceTag `position:"Query" name:"Tag"  type:"Repeated"`
+}
+
+// QuerySavingsPlansInstanceTag is a repeated param struct in QuerySavingsPlansInstanceRequest
+type QuerySavingsPlansInstanceTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // QuerySavingsPlansInstanceResponse is the response struct for api QuerySavingsPlansInstance
 type QuerySavingsPlansInstanceResponse struct {
 	*responses.BaseResponse
 	Code      string                          `json:"Code" xml:"Code"`
+	Message   string                          `json:"Message" xml:"Message"`
 	RequestId string                          `json:"RequestId" xml:"RequestId"`
 	Success   bool                            `json:"Success" xml:"Success"`
-	Message   string                          `json:"Message" xml:"Message"`
 	Data      DataInQuerySavingsPlansInstance `json:"Data" xml:"Data"`
 }
 

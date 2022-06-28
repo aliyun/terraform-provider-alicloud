@@ -17,8 +17,8 @@ package smartag
 
 // SnatEntry is a nested struct in smartag response
 type SnatEntry struct {
-	InstanceId string `json:"InstanceId" xml:"InstanceId"`
 	CidrBlock  string `json:"CidrBlock" xml:"CidrBlock"`
-	SnatIp     string `json:"SnatIp" xml:"SnatIp"`
 	CreateTime int64  `json:"CreateTime" xml:"CreateTime"`
+	InstanceId string `json:"InstanceId" xml:"InstanceId"`
+	SnatIp     string `json:"SnatIp" xml:"SnatIp"`
 }

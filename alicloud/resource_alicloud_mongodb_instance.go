@@ -2,14 +2,16 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -40,13 +42,12 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Required: true,
 			},
 			"db_instance_storage": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(10, 2000),
-				Required:     true,
+				Type:     schema.TypeInt,
+				Required: true,
 			},
 			"replication_factor": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{3, 5, 7}),
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 5, 7}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -156,113 +157,190 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-
 			"maintain_end_time": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"order_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
 			"ssl_status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"replica_sets": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"replica_set_role": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connection_domain": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_cloud_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Classic", "VPC"}, false),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
 
-func buildMongoDBCreateRequest(d *schema.ResourceData, meta interface{}) (*dds.CreateDBInstanceRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-
-	request := dds.CreateCreateDBInstanceRequest()
-	request.RegionId = string(client.Region)
-	request.EngineVersion = Trim(d.Get("engine_version").(string))
-	request.Engine = "MongoDB"
-	request.DBInstanceStorage = requests.NewInteger(d.Get("db_instance_storage").(int))
-	request.DBInstanceClass = Trim(d.Get("db_instance_class").(string))
-	request.DBInstanceDescription = d.Get("name").(string)
-
-	request.AccountPassword = d.Get("account_password").(string)
-	if request.AccountPassword == "" {
-		if v := d.Get("kms_encrypted_password").(string); v != "" {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-			if err != nil {
-				return request, WrapError(err)
-			}
-			request.AccountPassword = decryptResp.Plaintext
-		}
-	}
-
-	request.ZoneId = d.Get("zone_id").(string)
-	request.StorageEngine = d.Get("storage_engine").(string)
-
-	if replication_factor, ok := d.GetOk("replication_factor"); ok {
-		request.ReplicationFactor = strconv.Itoa(replication_factor.(int))
-	}
-
-	request.NetworkType = string(Classic)
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
-		// check vswitchId in zone
-		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
-		if err != nil {
-			return nil, WrapError(err)
-		}
-
-		if request.ZoneId == "" {
-			request.ZoneId = vsw.ZoneId
-		} else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
-			zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
-			if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-				return nil, WrapError(fmt.Errorf("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
-			}
-		} else if request.ZoneId != vsw.ZoneId {
-			return nil, WrapError(fmt.Errorf("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
-		}
-		request.VSwitchId = vswitchId
-		request.NetworkType = strings.ToUpper(string(Vpc))
-		request.VpcId = vsw.VpcId
-	}
-
-	request.ChargeType = d.Get("instance_charge_type").(string)
-	period, ok := d.GetOk("period")
-	if PayType(request.ChargeType) == PrePaid && ok {
-		request.Period = requests.NewInteger(period.(int))
-	}
-
-	request.SecurityIPList = LOCAL_HOST_IP
-	if len(d.Get("security_ip_list").(*schema.Set).List()) > 0 {
-		request.SecurityIPList = strings.Join(expandStringList(d.Get("security_ip_list").(*schema.Set).List())[:], COMMA_SEPARATED)
-	}
-
-	request.ClientToken = buildClientToken(request.GetActionName())
-	return request, nil
-}
-
 func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	ddsService := MongoDBService{client}
-
-	request, err := buildMongoDBCreateRequest(d, meta)
+	var response map[string]interface{}
+	action := "CreateDBInstance"
+	request := make(map[string]interface{})
+	conn, err := client.NewDdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
 
-	raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-		return client.CreateDBInstance(request)
-	})
-
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	request["RegionId"] = string(client.Region)
+	request["EngineVersion"] = Trim(d.Get("engine_version").(string))
+	request["Engine"] = "MongoDB"
+	request["DBInstanceStorage"] = d.Get("db_instance_storage")
+	request["DBInstanceClass"] = Trim(d.Get("db_instance_class").(string))
+	if v, ok := d.GetOk("name"); ok {
+		request["DBInstanceDescription"] = v
 	}
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*dds.CreateDBInstanceResponse)
+	if v, ok := d.GetOk("account_password"); ok {
+		request["AccountPassword"] = v
+	} else if v, ok := d.GetOk("kms_encrypted_password"); ok {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["AccountPassword"] = decryptResp
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("storage_engine"); ok {
+		request["StorageEngine"] = v
+	}
+	if v, ok := d.GetOk("replication_factor"); ok {
+		request["ReplicationFactor"] = strconv.Itoa(v.(int))
+	}
+	if v, ok := d.GetOk("network_type"); ok {
+		request["NetworkType"] = v
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
+	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
+		// check vswitchId in zone
+		vpcService := VpcService{client}
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		if request["ZoneId"] == nil {
+			request["ZoneId"] = vsw["ZoneId"]
+		} else if strings.Contains(request["ZoneId"].(string), MULTI_IZ_SYMBOL) {
+			zoneStr := strings.Split(strings.SplitAfter(request["ZoneId"].(string), "(")[1], ")")[0]
+			if !strings.Contains(zoneStr, string([]byte(vsw["ZoneId"].(string))[len(vsw["ZoneId"].(string))-1])) {
+				return WrapError(Error("The specified vswitch " + request["VSwitchId"].(string) + " isn't in multi the zone " + request["ZoneId"].(string)))
+			}
+		} else if request["ZoneId"].(string) != vsw["ZoneId"] {
+			return WrapError(Error("The specified vswitch " + request["VSwitchId"].(string) + " isn't in the zone " + request["ZoneId"].(string)))
+		}
+		if request["VpcId"] == nil {
+			request["VpcId"] = vsw["VpcId"]
+		}
+	}
+	if request["NetworkType"] == nil && request["VSwitchId"] != nil {
+		request["NetworkType"] = "VPC"
+	}
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		request["ChargeType"] = v
+		if vv, ok := d.GetOk("period"); ok && PayType(v.(string)) == PrePaid {
+			request["Period"] = vv
+		}
+	}
+	request["SecurityIPList"] = LOCAL_HOST_IP
+	if v, ok := d.GetOk("security_ip_list"); ok {
+		request["SecurityIPList"] = strings.Join(expandStringList(v.(*schema.Set).List()), COMMA_SEPARATED)
+	}
+	if v, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenew"] = strconv.FormatBool(v.(bool))
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	request["ClientToken"] = buildClientToken(action)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_instance", action, AlibabaCloudSdkGoERROR)
+	}
 
-	d.SetId(response.DBInstanceId)
-
+	d.SetId(fmt.Sprint(response["DBInstanceId"]))
+	ddsService := MongoDBService{client}
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
@@ -283,14 +361,35 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
+	if v, ok := instance["ReplicaSets"]; ok {
+		replicaSets := v.(map[string]interface{})
+		if replicaSetList, ok := replicaSets["ReplicaSet"]; ok {
+			if replicaSet, ok := replicaSetList.([]interface{}); ok && len(replicaSet) > 0 {
+				replicaSets := make([]map[string]interface{}, 0)
+				for _, v := range replicaSet {
+					item := v.(map[string]interface{})
+					replicaSets = append(replicaSets, map[string]interface{}{
+						"vswitch_id":            item["VSwitchId"],
+						"connection_port":       item["ConnectionPort"],
+						"replica_set_role":      item["ReplicaSetRole"],
+						"connection_domain":     item["ConnectionDomain"],
+						"vpc_cloud_instance_id": item["VPCCloudInstanceId"],
+						"network_type":          item["NetworkType"],
+						"vpc_id":                item["VPCId"],
+					})
+				}
+				d.Set("replica_sets", replicaSets)
+			}
+		}
+	}
 
 	backupPolicy, err := ddsService.DescribeMongoDBBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("backup_time", backupPolicy.PreferredBackupTime)
-	d.Set("backup_period", strings.Split(backupPolicy.PreferredBackupPeriod, ","))
-	d.Set("retention_period", backupPolicy.BackupRetentionPeriod)
+	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
+	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
+	d.Set("retention_period", backupPolicy["BackupRetentionPeriod"])
 
 	ips, err := ddsService.DescribeMongoDBSecurityIps(d.Id())
 	if err != nil {
@@ -302,66 +401,90 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	if len(groupIp.Items.RdsEcsSecurityGroupRel) > 0 {
-		d.Set("security_group_id", groupIp.Items.RdsEcsSecurityGroupRel[0].SecurityGroupId)
+	if len(groupIp) > 0 {
+		if groupIpItem, ok := groupIp[0].(map[string]interface{}); ok {
+			d.Set("security_group_id", groupIpItem["SecurityGroupId"])
+		}
 	}
 
-	d.Set("name", instance.DBInstanceDescription)
-	d.Set("engine_version", instance.EngineVersion)
-	d.Set("db_instance_class", instance.DBInstanceClass)
-	d.Set("db_instance_storage", instance.DBInstanceStorage)
-	d.Set("zone_id", instance.ZoneId)
-	d.Set("instance_charge_type", instance.ChargeType)
-	if instance.ChargeType == "PrePaid" {
-		period, err := computePeriodByUnit(instance.CreationTime, instance.ExpireTime, d.Get("period").(int), "Month")
+	d.Set("name", instance["DBInstanceDescription"])
+	d.Set("engine_version", instance["EngineVersion"])
+	d.Set("db_instance_class", instance["DBInstanceClass"])
+	d.Set("db_instance_storage", instance["DBInstanceStorage"])
+	d.Set("zone_id", instance["ZoneId"])
+	d.Set("network_type", instance["NetworkType"])
+	d.Set("instance_charge_type", instance["ChargeType"])
+	if fmt.Sprint(instance["ChargeType"]) == "PrePaid" {
+		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
 		if err != nil {
 			return WrapError(err)
 		}
 		d.Set("period", period)
 	}
-	d.Set("vswitch_id", instance.VSwitchId)
-	d.Set("storage_engine", instance.StorageEngine)
-	d.Set("maintain_start_time", instance.MaintainStartTime)
-	d.Set("maintain_end_time", instance.MaintainEndTime)
-	d.Set("replica_set_name", instance.ReplicaSetName)
+	d.Set("vswitch_id", instance["VSwitchId"])
+	d.Set("storage_engine", instance["StorageEngine"])
+	d.Set("maintain_start_time", instance["MaintainStartTime"])
+	d.Set("maintain_end_time", instance["MaintainEndTime"])
+	d.Set("replica_set_name", instance["ReplicaSetName"])
+	d.Set("resource_group_id", instance["ResourceGroupId"])
+	d.Set("vpc_id", instance["VPCId"])
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("ssl_status", sslAction.SSLStatus)
+	d.Set("ssl_status", sslAction["SSLStatus"])
 
-	if replication_factor, err := strconv.Atoi(instance.ReplicationFactor); err == nil {
-		d.Set("replication_factor", replication_factor)
+	d.Set("replication_factor", formatInt(instance["ReplicationFactor"]))
+	if instance["ReplicationFactor"] != "" && instance["ReplicationFactor"] != "1" {
+		tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("tde_Status", tdeInfo["TDEStatus"])
 	}
-	tdeInfo, err := ddsService.DescribeMongoDBTDEInfo(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("tde_Status", tdeInfo.TDEStatus)
 
-	d.Set("tags", ddsService.tagsInAttributeToMap(instance.Tags.Tag))
+	if v, ok := instance["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
+	}
 	return nil
 }
 
 func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
-
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Partial(true)
 
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
-		prePaidRequest := dds.CreateTransformToPrePaidRequest()
-		prePaidRequest.InstanceId = d.Id()
-		prePaidRequest.AutoPay = requests.NewBoolean(true)
-		prePaidRequest.Period = requests.NewInteger(d.Get("period").(int))
-		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-			return client.TransformToPrePaid(prePaidRequest)
+		var response map[string]interface{}
+		action := "TransformToPrePaid"
+		prePaidRequest := make(map[string]interface{})
+		prePaidRequest["InstanceId"] = d.Id()
+		prePaidRequest["AutoPay"] = requests.NewBoolean(true)
+		prePaidRequest["Period"] = requests.NewInteger(d.Get("period").(int))
+		if v, ok := d.GetOk("auto_renew"); ok {
+			prePaidRequest["AutoRenew"] = strconv.FormatBool(v.(bool))
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, prePaidRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), prePaidRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(prePaidRequest.GetActionName(), raw, prePaidRequest.RpcRequest, prePaidRequest)
+		addDebug(action, response, prePaidRequest)
 		// wait instance status is running after modifying
 		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -380,63 +503,87 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("tde_status") {
-		request := dds.CreateModifyDBInstanceTDERequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		request.TDEStatus = d.Get("tde_status").(string)
-		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-			return client.ModifyDBInstanceTDE(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("tde_status")
-	}
-
-	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
-		request := dds.CreateModifyDBInstanceMaintainTimeRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		request.MaintainStartTime = d.Get("maintain_start_time").(string)
-		request.MaintainEndTime = d.Get("maintain_end_time").(string)
-
-		raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-			return client.ModifyDBInstanceMaintainTime(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("maintain_start_time")
-		d.SetPartial("maintain_end_time")
-	}
-
-	if d.HasChange("security_group_id") {
-		request := dds.CreateModifySecurityGroupConfigurationRequest()
-		request.RegionId = client.RegionId
-		request.DBInstanceId = d.Id()
-		request.SecurityGroupId = d.Get("security_group_id").(string)
-
-		wait := incrementalWait(2*time.Second, 3*time.Second)
-		err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithDdsClient(func(client *dds.Client) (interface{}, error) {
-				return client.ModifySecurityGroupConfiguration(request)
-			})
-
+		var response map[string]interface{}
+		action := "ModifyDBInstanceTDE"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		request["TDEStatus"] = d.Get("tde_status").(string)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InstanceStatusInvalid"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
-
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("tde_status")
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if d.HasChange("maintain_start_time") || d.HasChange("maintain_end_time") {
+		var response map[string]interface{}
+		action := "ModifyDBInstanceMaintainTime"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		request["MaintainStartTime"] = d.Get("maintain_start_time").(string)
+		request["MaintainEndTime"] = d.Get("maintain_end_time").(string)
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("maintain_start_time")
+		d.SetPartial("maintain_end_time")
+	}
+
+	if d.HasChange("security_group_id") {
+		var response map[string]interface{}
+		action := "ModifySecurityGroupConfiguration"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		request["SecurityGroupId"] = d.Get("security_group_id").(string)
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InstanceStatusInvalid", "OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("security_group_id")
 	}
@@ -450,19 +597,53 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		return resourceAlicloudMongoDBInstanceRead(d, meta)
 	}
 
-	if d.HasChange("name") {
-		request := dds.CreateModifyDBInstanceDescriptionRequest()
-		request.DBInstanceId = d.Id()
-		request.DBInstanceDescription = d.Get("name").(string)
-
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.ModifyDBInstanceDescription(request)
-		})
-
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	if d.HasChange("resource_group_id") {
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapError(err)
+			}
+			action := "ModifyResourceGroup"
+			request := map[string]interface{}{
+				"DBInstanceId":    d.Id(),
+				"ResourceGroupId": v,
+				"RegionId":        client.RegionId,
+			}
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			d.SetPartial("resource_group_id")
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+
+	if d.HasChange("name") {
+		var response map[string]interface{}
+		action := "ModifyDBInstanceDescription"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		if v, ok := d.GetOk("name"); ok {
+			request["DBInstanceDescription"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 		d.SetPartial("name")
 	}
 
@@ -474,7 +655,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			ipstr = LOCAL_HOST_IP
 		}
 
-		if err := ddsService.ModifyMongoDBSecurityIps(d.Id(), ipstr); err != nil {
+		if err := ddsService.ModifyMongoDBSecurityIps(d, ipstr); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("security_ip_list")
@@ -490,7 +671,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapError(err)
 			}
-			accountPassword = decryptResp.Plaintext
+			accountPassword = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 		}
@@ -502,57 +683,84 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("ssl_action") {
-		request := dds.CreateModifyDBInstanceSSLRequest()
-		request.DBInstanceId = d.Id()
-		request.RegionId = client.RegionId
-		request.SSLAction = d.Get("ssl_action").(string)
+		var response map[string]interface{}
+		action := "ModifyDBInstanceSSL"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		request["SSLAction"] = d.Get("ssl_action")
 
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.ModifyDBInstanceSSL(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		d.SetPartial("ssl_action")
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	if d.HasChange("db_instance_storage") ||
 		d.HasChange("db_instance_class") ||
 		d.HasChange("replication_factor") {
 
-		request := dds.CreateModifyDBInstanceSpecRequest()
-		request.DBInstanceId = d.Id()
+		var response map[string]interface{}
+		action := "ModifyDBInstanceSpec"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		if v, ok := d.GetOk("name"); ok {
+			request["DBInstanceDescription"] = v
+		}
 
-		request.DBInstanceClass = d.Get("db_instance_class").(string)
-		request.DBInstanceStorage = strconv.Itoa(d.Get("db_instance_storage").(int))
-		request.ReplicationFactor = strconv.Itoa(d.Get("replication_factor").(int))
+		if d.Get("instance_charge_type").(string) == "PrePaid" {
+			if v, ok := d.GetOk("order_type"); ok {
+				request["OrderType"] = v.(string)
+			}
+		}
+		request["DBInstanceClass"] = d.Get("db_instance_class").(string)
+		request["DBInstanceStorage"] = strconv.Itoa(d.Get("db_instance_storage").(int))
+		request["ReplicationFactor"] = strconv.Itoa(d.Get("replication_factor").(int))
 
-		// wait instance status is running before modifying
 		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.ModifyDBInstanceSpec(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		addDebug(action, response, request)
 
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
-
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("db_instance_class")
 		d.SetPartial("db_instance_storage")
 		d.SetPartial("replication_factor")
 
-		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
@@ -562,34 +770,46 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	// Pre paid instance can not be release.
+	if d.Get("instance_charge_type").(string) == string(PrePaid) {
+		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
-	request := dds.CreateDeleteDBInstanceRequest()
-	request.DBInstanceId = d.Id()
+	action := "DeleteDBInstance"
+	var response map[string]interface{}
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+		"RegionId":     client.RegionId,
+	}
 
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DeleteDBInstance(request)
-		})
-
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-				return resource.NonRetryableError(err)
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
-			return resource.RetryableError(err)
+			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	stateConf := BuildStateConf([]string{"Creating", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
-	return WrapError(err)
+	return nil
 }

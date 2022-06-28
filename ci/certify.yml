@@ -1,0 +1,84 @@
+---
+groups:
+- name: All
+  jobs:
+    - certify-terraform-v13
+    - certify-terraform-v14
+
+shared:
+- &validate
+  task: validate
+  file: terraform-provider-alicloud/ci/tasks/validate.yml
+  params: &validate-params
+    ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+    ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+    ALICLOUD_REGION: {{alicloud_region}}
+    DING_TALK_TOKEN: {{ding_talk_token}}
+    ACCESS_URL: {{access_ci_url}}
+    CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "certify"
+    remote_state_bucket: {{terraform_backend_bucket}}
+    remote_state_region: {{terraform_backend_region}}
+    remote_state_tablestore_endpoint: {{terraform_backend_tablestore_endpoint}}
+    remote_state_tablestore_table: {{terraform_backend_tablestore_table}}
+    terraform_configuration_names: {{terraform_configuration_names}}
+    terraform_configuration_ignore_names: {{terraform_configuration_ignore_names}}
+
+jobs:
+- name: certify-terraform-v13
+  serial: true
+  plan:
+    - get: terraform-provider-alicloud
+      trigger: true
+      resource: terraform-provider-alicloud
+    - get: aliyun-cli
+      trigger: false
+      resource: aliyun-cli
+    - task: build-next-provider
+      file: terraform-provider-alicloud/ci/tasks/build-provider-next.yml
+    - <<: *validate
+      params:
+        <<: *validate-params
+        terraform_version: "0.13.7"
+        CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "certify-terraform-v13"
+
+- name: certify-terraform-v14
+  serial: true
+  plan:
+    - get: terraform-provider-alicloud
+      trigger: true
+      resource: terraform-provider-alicloud
+      passed: [certify-terraform-v13]
+    - get: aliyun-cli
+      trigger: false
+      resource: aliyun-cli
+    - task: build-next-provider
+      file: terraform-provider-alicloud/ci/tasks/build-provider-next.yml
+    - <<: *validate
+      params:
+        <<: *validate-params
+        terraform_version: "0.14.11"
+        CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME: "certify-terraform-v14"
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/aliyun/terraform-provider-alicloud.git
+      branch: master
+      paths:
+        - alicloud/*
+        - examples/*
+        - vendor/*
+        - go.mod
+        - main.go
+        - ci/*
+
+  - name: aliyun-cli
+    type: s3
+    source:
+      access_key_id: {{aliyun_cli_access_key}}
+      secret_access_key: {{aliyun_cli_secret_key}}
+      bucket: {{aliyun_cli_bucket}}
+      regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+      region_name: {{aliyun_cli_region}}
+      endpoint: oss-((aliyun_cli_region)).aliyuncs.com

@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsHpcClustersDataSource(t *testing.T) {
+func TestAccAlicloudECSHpcClustersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ecs_hpc_clusters.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccEcsHpcClustersTest%d", rand)

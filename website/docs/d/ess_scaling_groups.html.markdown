@@ -53,10 +53,18 @@ The following attributes are exported in addition to the arguments listed above:
   * `db_instance_ids` - Db instances id which the ECS instance attached to.
   * `vswitch_ids` - Vswitches id in which the ECS instance launched.
   * `lifecycle_state` - Lifecycle state of scaling group.
+  * `vpc_id` - The ID of the VPC to which the scaling group belongs.
+  * `vswitch_id` - The ID of the vSwitch to which the scaling group belongs.
+  * `health_check_type` - The health check method of the scaling group.
+  * `suspended_processes` - The Process in suspension.
+  * `group_deletion_protection` - Whether the scaling group deletion protection is enabled.
+  * `modification_time` - The modification time.
   * `total_capacity` - Number of instances in scaling group.
+  * `total_instance_count` - The number of all ECS instances in the scaling group.
   * `active_capacity` - Number of active instances in scaling group.
   * `pending_capacity` - Number of pending instances in scaling group.
   * `removing_capacity` - Number of removing instances in scaling group.
   * `creation_time` - Creation time of scaling group.
+  * `tags` - A mapping of tags to assign to the resource.
   
   

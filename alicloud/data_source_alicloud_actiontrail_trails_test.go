@@ -60,7 +60,6 @@ func TestAccAlicloudActiontrailTrailsDataSource(t *testing.T) {
 			"trails.0.event_rw":           "Write",
 			"trails.0.oss_bucket_name":    CHECKSET,
 			"trails.0.oss_key_prefix":     "",
-			"trails.0.oss_write_role_arn": CHECKSET,
 			"trails.0.sls_project_arn":    "",
 			"trails.0.sls_write_role_arn": "",
 			"trails.0.status":             "Disable",
@@ -91,14 +90,9 @@ func dataSourceActiontrailTrailsDependence(name string) string {
 	resource "alicloud_oss_bucket" "default" {
 		bucket  =  "%[1]s"
 	}
-	
-	data "alicloud_ram_roles" "default" {
-		name_regex = "AliyunActionTrailDefaultRole"
-	}
 
 	resource "alicloud_actiontrail_trail" "default" {
 	  trail_name = "%[1]s"
-	  oss_write_role_arn = data.alicloud_ram_roles.default.roles.0.arn
 	  oss_bucket_name = alicloud_oss_bucket.default.id
 	  status= "Disable"
 	}`, name)

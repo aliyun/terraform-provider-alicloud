@@ -73,6 +73,7 @@ type UpdateAppRequest struct {
 	*requests.RpcRequest
 	AppName     string `position:"Query" name:"AppName"`
 	DisplayName string `position:"Query" name:"DisplayName"`
+	ClientIp    string `position:"Query" name:"ClientIp"`
 	Config      string `position:"Body" name:"Config"`
 }
 
@@ -90,7 +91,7 @@ func CreateUpdateAppRequest() (request *UpdateAppRequest) {
 	request = &UpdateAppRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Sls", "2019-10-23", "UpdateApp", "", "")
+	request.InitWithApiInfo("Sls", "2019-10-23", "UpdateApp", "sls", "openAPI")
 	request.Method = requests.POST
 	return
 }

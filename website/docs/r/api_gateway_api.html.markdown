@@ -20,11 +20,17 @@ For information about Api Gateway Api and how to use it, see [Create an API](htt
 Basic Usage
 
 ```
+resource "alicloud_api_gateway_group" "apiGroup" {
+  name        = "ApiGatewayGroup"
+  description = "description of the api group"
+}
+
 resource "alicloud_api_gateway_api" "apiGatewayApi" {
-  name        = "terraformapi"
-  group_id    = alicloud_api_gateway_group.apiGatewayGroup.id
-  description = "description"
+  name        = alicloud_api_gateway_group.apiGroup.name
+  group_id    = alicloud_api_gateway_group.apiGroup.id
+  description = "your description"
   auth_type   = "APP"
+  force_nonce_check = false
 
   request_config {
     protocol = "HTTP"
@@ -75,17 +81,18 @@ The following arguments are supported:
 * `request_parameters` - (Required, Type: list) request_parameters defines the request parameters of the api.
 * `constant_parameters` - (Required, Type: list) constant_parameters defines the constant parameters of the api.
 * `system_parameters` - (Required, Type: list) system_parameters defines the system parameters of the api.
-* `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: RELEASE | PRE | TEST.
+* `stage_names` - (Optional, Type: list) Stages that the api need to be deployed. Valid value: `RELEASE`,`PRE`,`TEST`.
+* `force_nonce_check` - (Optional, Type: bool, Available in v1.140+) Whether to prevent API replay attack. Default value: `false`.
 
 ### Block request_config
 
 The request_config mapping supports the following:
 
-* `protocol` - (Required) The protocol of api which supports values of 'HTTP','HTTPS' or 'HTTP,HTTPS'
-* `method` - (Required) The method of the api, including 'GET','POST','PUT' and etc..
+* `protocol` - (Required) The protocol of api which supports values of 'HTTP','HTTPS' or 'HTTP,HTTPS'.
+* `method` - (Required) The method of the api, including 'GET','POST','PUT' etc.
 * `path` - (Required) The request path of the api.
-* `mode` - (Required) The mode of the parameters between request parameters and service parameters, which support the values of 'MAPPING' and 'PASSTHROUGH'
-* `body_format` - (Optional) The body format of the api, which support the values of 'STREAM' and 'FORM'
+* `mode` - (Required) The mode of the parameters between request parameters and service parameters, which support the values of 'MAPPING' and 'PASSTHROUGH'.
+* `body_format` - (Optional) The body format of the api, which support the values of 'STREAM' and 'FORM'.
 
 ### Block http_service_config
 
@@ -103,7 +110,7 @@ The http_vpc_service_config mapping supports the following:
 * `name` - (Required) The name of vpc instance.
 * `path` - (Required) The path of backend service.
 * `method` - (Required) The http method of backend service.
-* `timeout` - (Required) Backend service time-out time; unit: millisecond.
+* `timeout` - (Required) Backend service time-out time. Unit: millisecond.
 
 ### Block fc_vpc_service_config
 
@@ -126,7 +133,7 @@ The mock_service_config mapping supports the following:
 The request_parameters mapping supports the following:
 
 * `name` - (Required) Request's parameter name.
-* `type` - (Required) Parameter type which supports values of 'STRING','INT','BOOLEAN','LONG',"FLOAT" and "DOUBLE"
+* `type` - (Required) Parameter type which supports values of 'STRING','INT','BOOLEAN','LONG',"FLOAT" and "DOUBLE".
 * `required` - (Required) Parameter required or not; values: REQUIRED and OPTIONAL.
 * `in` - (Required) Request's parameter location; values: BODY, HEAD, QUERY, and PATH.
 * `in_service` - (Required) Backend service's parameter location; values: BODY, HEAD, QUERY, and PATH.
@@ -147,7 +154,7 @@ The constant_parameters mapping supports the following:
 
 The system_parameters mapping supports the following:
 
-* `name` - (Required) System parameter name which supports values including in [system parameter list](https://www.alibabacloud.com/help/doc-detail/43677.html)
+* `name` - (Required) System parameter name which supports values including in [system parameter list](https://www.alibabacloud.com/help/doc-detail/43677.html).
 * `in` - (Required) System parameter location; values: 'HEAD' and 'QUERY'.
 * `name_service` - (Required) Backend service's parameter name.
 

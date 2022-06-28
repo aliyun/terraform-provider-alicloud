@@ -40,12 +40,12 @@ The following arguments are supported:
 
 * `topic_name`- (Required, ForceNew) The topic which The subscription belongs to was named with the name.A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
 * `name` - (Required, ForceNew) Two topics subscription on a single account in the same topic cannot have the same name. A topic subscription name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 256 characters.
-* `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. the attribute has two value EXPONENTIAL_DECAY_RETR or BACKOFF_RETRY. Default value to BACKOFF_RETRY .
-* `notify_content_format` - (Optional, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. The valid values: 'SIMPLIFIED', 'XML' and 'JSON'. Default to 'SIMPLIFIED'.
+* `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. The Valid values: `EXPONENTIAL_DECAY_RETRY` and `BACKOFF_RETRY`. Default value to `BACKOFF_RETRY` .
+* `notify_content_format` - (Optional, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. The valid values: `SIMPLIFIED`, `XML` and `JSON`. Default to `SIMPLIFIED`.
 * `endpoint` - (Required, ForceNew) The endpoint has three format. Available values format:
- - HTTP Format: http://xxx.com/xxx
- - Queue Format: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
- - Email Format: mail:directmail:{MailAddress}
+ - `HTTP Format`: http://xxx.com/xxx
+ - `Queue Format`: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
+ - `Email Format`: mail:directmail:{MailAddress}
 
 * `filter_tag` - (Optional, ForceNew) The length should be shorter than 16.
 

@@ -4,7 +4,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/kms"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -47,29 +50,51 @@ func dataSourceAlicloudKmsPlaintextRead(d *schema.ResourceData, meta interface{}
 	// current unix time.
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 16))
 
-	request := kms.CreateDecryptRequest()
-	request.CiphertextBlob = d.Get("ciphertext_blob").(string)
-	request.RegionId = client.RegionId
+	action := "Decrypt"
+	request := make(map[string]interface{})
+	request["CiphertextBlob"] = d.Get("ciphertext_blob")
+	request["RegionId"] = client.RegionId
 
 	if context := d.Get("encryption_context"); context != nil {
 		cm := context.(map[string]interface{})
 		contextJson, err := convertMaptoJsonString(cm)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_plaintext", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_plaintext", action, AlibabaCloudSdkGoERROR)
 		}
-		request.EncryptionContext = string(contextJson)
+		request["EncryptionContext"] = contextJson
 	}
 
-	raw, err := client.WithKmsClient(func(kmsClient *kms.Client) (interface{}, error) {
-		return kmsClient.Decrypt(request)
-	})
+	var response map[string]interface{}
+	conn, err := client.NewKmsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_plaintext", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*kms.DecryptResponse)
-	d.Set("plaintext", response.Plaintext)
-	d.Set("key_id", response.KeyId)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_ciphertext", action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.Plaintext", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Plaintext", response)
+	}
+	d.Set("plaintext", resp)
+	resp, err = jsonpath.Get("$.KeyId", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.KeyId", response)
+	}
+	d.Set("key_id", resp)
 
 	return nil
 }

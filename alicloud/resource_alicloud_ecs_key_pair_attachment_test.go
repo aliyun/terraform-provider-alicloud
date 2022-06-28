@@ -39,7 +39,7 @@ func testAccCheckKeyPairAttachmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudEcsKeyPairAttachmentBasic(t *testing.T) {
+func TestAccAlicloudECSKeyPairAttachmentBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_key_pair_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsKeyPairAttachmentMap)
@@ -90,7 +90,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {

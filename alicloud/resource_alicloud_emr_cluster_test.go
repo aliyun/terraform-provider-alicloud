@@ -41,7 +41,7 @@ func testSweepEmrCluster(region string) error {
 	req.PageNumber = requests.Integer(strconv.Itoa(1))
 	req.PageSize = requests.Integer(strconv.Itoa(PageSizeMedium))
 	req.DefaultStatus = requests.Boolean(strconv.FormatBool(true))
-	vpcService := VpcService{client}
+	//vpcService := VpcService{client}
 	for {
 		raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
 			return emrClient.ListClusters(req)
@@ -58,23 +58,23 @@ func testSweepEmrCluster(region string) error {
 		for _, v := range resp.Clusters.ClusterInfo {
 			skip := true
 			for _, prefix := range prefixes {
-				if strings.HasPrefix(v.ClusterId, prefix) {
+				if strings.HasPrefix(v.Id, prefix) {
 					skip = false
 				}
 			}
 			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			//if skip {
+			//	if need, err := vpcService.needSweepVpc(v., v.VSwitchId); err == nil {
+			//		skip = !need
+			//	}
+			//
+			//}
 			if skip {
-				if need, err := vpcService.needSweepVpc(v.VpcId, v.VSwitchId); err == nil {
-					skip = !need
-				}
-
-			}
-			if skip {
-				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.ClusterId)
+				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.Id)
 				continue
 			}
 			request := emr.CreateReleaseClusterRequest()
-			request.Id = v.ClusterId
+			request.Id = v.Id
 			request.ForceRelease = requests.NewBoolean(true)
 
 			raw, err := client.WithEmrClient(func(emrClient *emr.Client) (interface{}, error) {
@@ -82,7 +82,7 @@ func testSweepEmrCluster(region string) error {
 			})
 
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, v.ClusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, v.Id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -225,8 +225,20 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 					"ssh_enable":                "true",
 					"master_pwd":                "ABCtest1234!",
 
+					"bootstrap_action": []map[string]interface{}{
+						{
+							"name":                    "bootstrap_test",
+							"path":                    "oss://emrtf/tf.sh",
+							"arg":                     "--a=b",
+							"execution_target":        "core_group",
+							"execution_moment":        "BEFORE_INSTALL",
+							"execution_fail_strategy": "FAILED_CONTINUE",
+						},
+					},
+
 					"host_group": []map[string]interface{}{
 						{
+							"host_group_name":   "master_group",
 							"host_group_type":   "MASTER",
 							"node_count":        "1",
 							"instance_type":     "${data.alicloud_emr_instance_types.cloud_disk.types.0.id}",
@@ -237,6 +249,7 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 							"sys_disk_capacity": "${data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160}",
 						},
 						{
+							"host_group_name":   "core_group",
 							"host_group_type":   "CORE",
 							"node_count":        "3",
 							"instance_type":     "${data.alicloud_emr_instance_types.local_disk.types.0.id}",

@@ -26,15 +26,15 @@ Basic Usage
 
 ```terraform
 resource "alicloud_nas_file_system" "example" {
-  protocol_type     = "NFS"
-  storage_type      = "Performance"
-  description       = "test file system"
+  protocol_type = "NFS"
+  storage_type  = "Performance"
+  description   = "test file system"
 }
 
 resource "alicloud_nas_access_group" "example" {
-  access_group_name        = "test_name"
-  access_group_type        = "Classic"
-  description              = "test access group"
+  access_group_name = "test_name"
+  access_group_type = "Classic"
+  description       = "test access group"
 }
 
 resource "alicloud_nas_mount_target" "example" {
@@ -57,7 +57,17 @@ The following arguments are supported:
 
 The following attributes are exported:
 
- *`id`  - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
+*`id` - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
+* `mount_target_domain` - The IPv4 domain name of the mount target. **NOTE:** Available in v1.161.0+.
+### Timeouts
+
+-> **NOTE:** Available in v1.153.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 40 mins) Used when create the mount target (until it reaches the initial `Active` status).
+* `delete` - (Defaults to 40 mins) Used when delete the mount target.
+
 
 ## Import
 

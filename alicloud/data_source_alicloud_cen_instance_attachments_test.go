@@ -79,12 +79,7 @@ func TestAccAlicloudCenInstanceAttachmentsDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCenInstanceAttachmentsRecordsMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheckWithNoDefaultVpc(t)
-		testAccPreCheck(t)
-	}
-
-	cenInstanceAttachmentsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, statusConf, childInstanceRegionIdConf, childInstanceTypeConf, allConf)
+	cenInstanceAttachmentsCheckInfo.dataSourceTestCheck(t, rand, statusConf, childInstanceRegionIdConf, childInstanceTypeConf, allConf)
 
 }
 
@@ -98,9 +93,8 @@ variable "name" {
 	default = "tf-testAccCen%d"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name       = "tf-testaccCenInstanceAttachment"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -109,7 +103,7 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_cen_instance_attachment" "default" {
-  child_instance_id = alicloud_vpc.default.id
+  child_instance_id = data.alicloud_vpcs.default.ids.0
   child_instance_region_id = "%s"
   instance_id = alicloud_cen_instance.default.id
   child_instance_type = "VPC"

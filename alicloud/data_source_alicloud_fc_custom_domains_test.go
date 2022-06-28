@@ -5,10 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.FCCustomDomainSupportRegions)
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_fc_custom_domains.default"
 	name := fmt.Sprintf("tf-testacc-fc-custom-domains-%d", rand)
@@ -48,8 +51,8 @@ func TestAccAlicloudFCCustomDomainsDataSource(t *testing.T) {
 			"domains.#":                              "1",
 			"ids.#":                                  "1",
 			"names.#":                                "1",
-			"domains.0.id":                           "terraform.functioncompute.com",
-			"domains.0.domain_name":                  "terraform.functioncompute.com",
+			"domains.0.id":                           "alicloud-provider.shop",
+			"domains.0.domain_name":                  "alicloud-provider.shop",
 			"domains.0.protocol":                     "HTTP,HTTPS",
 			"domains.0.account_id":                   CHECKSET,
 			"domains.0.api_version":                  CHECKSET,
@@ -90,7 +93,7 @@ variable "name" {
 }
 
 resource "alicloud_fc_custom_domain" "default" {
-	domain_name = "terraform.functioncompute.com"
+	domain_name = "alicloud-provider.shop"
 	protocol = "HTTP,HTTPS"
 	route_config {
 		path = "/*"

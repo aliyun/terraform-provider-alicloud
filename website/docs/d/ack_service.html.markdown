@@ -1,5 +1,5 @@
 ---
-subcategory: "Container Service for Kubernetes (CSK)"
+subcategory: "Container Service for Kubernetes (ACK)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ack_service"
 sidebar_current: "docs-alicloud-datasource-ack-service"

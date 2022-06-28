@@ -19,7 +19,9 @@ func resourceAlicloudLogProject() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -37,6 +39,7 @@ func resourceAlicloudLogProject() *schema.Resource {
 
 func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	logService := LogService{client}
 	var requestInfo *sls.Client
 	request := map[string]string{
 		"name":        d.Get("name").(string),
@@ -60,6 +63,10 @@ func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_project", "CreateProject", AliyunLogGoSdkERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, logService.LogProjectStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudLogProjectUpdate(d, meta)
@@ -96,7 +103,7 @@ func buildTags(projectName string, tags map[string]interface{}) *sls.ResourceTag
 	slsTags := []sls.ResourceTag{}
 
 	for key, value := range tags {
-		tag := sls.ResourceTag{key, value.(string)}
+		tag := sls.ResourceTag{Key: key, Value: value.(string)}
 		slsTags = append(slsTags, tag)
 	}
 	projectTags := sls.NewProjectTags(projectName, slsTags)

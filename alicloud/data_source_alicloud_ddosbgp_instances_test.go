@@ -74,8 +74,8 @@ func TestAccAlicloudDdosbgpInstanceDataSource_basic(t *testing.T) {
 		fakeMapFunc:  fakeDdosbgpInstanceMapFunc,
 	}
 	preCheck := func() {
+		testAccPreCheckWithTime(t, []int{15})
 		testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
-
 	}
 	ddosbgpInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }

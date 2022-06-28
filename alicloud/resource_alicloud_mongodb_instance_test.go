@@ -1,16 +1,20 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -20,102 +24,85 @@ func init() {
 	})
 }
 
-func testAccCheckMongoDBInstanceDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	ddsService := MongoDBService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_mongodb_instance" {
-			continue
-		}
-		_, err := ddsService.DescribeMongoDBInstance(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-		return err
-	}
-	return nil
-}
-
 func testSweepMongoDBInstances(region string) error {
+
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapError(err)
+		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+	action := "DescribeDBInstances"
+	request := map[string]interface{}{}
+	request["RegionId"] = client.RegionId
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	request["ChargeType"] = "PostPaid"
 
-	var insts []dds.DBInstance
-	request := dds.CreateDescribeDBInstancesRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
+	var response map[string]interface{}
+	conn, err := client.NewDdsClient()
+	if err != nil {
+		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		return nil
+	}
 	for {
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DescribeDBInstances(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "testSweepMongoDBInstances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		response, _ := raw.(*dds.DescribeDBInstancesResponse)
-		addDebug(request.GetActionName(), response)
-
-		if response == nil || len(response.DBInstances.DBInstance) < 1 {
-			break
-		}
-		insts = append(insts, response.DBInstances.DBInstance...)
-
-		if len(response.DBInstances.DBInstance) < PageSizeLarge {
-			break
-		}
-
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
-	}
-
-	sweeped := false
-	for _, v := range insts {
-		name := v.DBInstanceDescription
-		id := v.DBInstanceId
-		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-		}
-
-		if skip {
-			log.Printf("[INFO] Skipping MongoDB instance: %s (%s)\n", name, id)
-			continue
-		}
-		log.Printf("[INFO] Deleting MongoDB instance: %s (%s)\n", name, id)
-		request := dds.CreateDeleteDBInstanceRequest()
-		request.DBInstanceId = id
-		raw, err := client.WithDdsClient(func(ddsClient *dds.Client) (interface{}, error) {
-			return ddsClient.DeleteDBInstance(request)
+			return nil
 		})
-
+		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[error] Failed to delete MongoDB instance,ID:%v(%v)\n", id, request.GetActionName())
-		} else {
-			sweeped = true
+			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			return nil
 		}
-		addDebug(request.GetActionName(), raw)
-	}
-	if sweeped {
-		// Waiting 30 seconds to eusure these DB instances have been deleted.
-		time.Sleep(30 * time.Second)
+
+		resp, err := jsonpath.Get("$.DBInstances.DBInstance", response)
+		if err != nil {
+			log.Printf("[ERROR] Getting resource %s attribute by path %s failed!!! Body: %v.", "$.DBInstances.DBInstance", action, err)
+			return nil
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Mongodb Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
+				continue
+			}
+			action := "DeleteDBInstance"
+			request := map[string]interface{}{
+				"DBInstanceId": item["DBInstanceId"],
+				"RegionId":     client.RegionId,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to delete Mongodb Instance (%s): %s", fmt.Sprint(item["DBInstanceDescription"]), err)
+			}
+			log.Printf("[INFO] Delete Mongodb Instance success: %s ", fmt.Sprint(item["DBInstanceDescription"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 	return nil
 }
@@ -130,25 +117,36 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceClassicConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBInstance_classic_base,
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":             "${local.zone_id}",
+					"engine_version":      "3.4",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 name,
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"ssl_status":           CHECKSET,
 					}),
 				),
 			},
@@ -156,26 +154,15 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
-				Config: testMongoDBInstance_classic_ssl_action,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_status": "Open",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_classic_ssl_action_update,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_status": "Closed",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_classic_tags,
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
@@ -185,18 +172,20 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":         "tf-testAccMongoDBInstance_test",
-						"tags.%":       REMOVEKEY,
-						"tags.Created": REMOVEKEY,
-						"tags.For":     REMOVEKEY,
+						"name": name + "update",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_configure,
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "30",
@@ -205,7 +194,9 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_account_password,
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_123",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_password": "YourPassword_123",
@@ -213,16 +204,19 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_security_ip_list,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ip_list.#":          "1",
-						"security_ip_list.4095458986": "10.168.1.12",
+						"security_ip_list.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_security_group_id,
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"security_group_id": CHECKSET,
@@ -230,17 +224,22 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_backup,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "11:00Z-12:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
+						"backup_period.#": "1",
+						"backup_time":     "11:00Z-12:00Z",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_maintain_time,
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintain_start_time": "02:00Z",
@@ -249,10 +248,20 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_classic_together,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"account_password":    "YourPassword_",
+					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+					"backup_period":       []string{"Tuesday", "Wednesday"},
+					"backup_time":         "10:00Z-11:00Z",
+					"maintain_start_time": REMOVEKEY,
+					"maintain_end_time":   REMOVEKEY,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBInstance_test_together",
+						"name":                        name,
 						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
@@ -265,7 +274,17 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 						"backup_time":                 "10:00Z-11:00Z",
 						"maintain_start_time":         REMOVEKEY,
 						"maintain_end_time":           REMOVEKEY,
-						"ssl_status":                  "Open",
+						"ssl_status":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
 					}),
 				),
 			},
@@ -273,7 +292,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
+func TestAccAlicloudMongoDBInstance_classic1(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -283,25 +302,36 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceClassicConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		//CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBInstance_classic_base4,
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":             "${local.zone_id}",
+					"engine_version":      "4.0",
+					"db_instance_storage": "2000",
+					"db_instance_class":   "dds.mongo.2xlarge",
+					"name":                name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_version":       "4.0",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"db_instance_storage":  "2000",
+						"db_instance_class":    "dds.mongo.2xlarge",
+						"name":                 name,
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"ssl_status":           CHECKSET,
 					}),
 				),
 			},
@@ -309,18 +339,29 @@ func TestAccAlicloudMongoDBInstance_Version4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
-			},
-			{
-				Config: testMongoDBInstance_classic_tde,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tde_status": "enabled",
-					}),
-				),
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 		},
 	})
+}
+
+func resourceMongodbInstanceClassicConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_mongodb_zones" "default" {
+	}
+
+	locals {
+  		zone_id = data.alicloud_mongodb_zones.default.zones[length(data.alicloud_mongodb_zones.default.zones) - 1].id
+	}
+
+	resource "alicloud_security_group" "default" {
+		name = var.name
+	}
+`, name)
 }
 
 func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
@@ -333,26 +374,35 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBInstance_vpc_base,
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "4.0",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "3.4",
+						"engine_version":       "4.0",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 name,
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -360,18 +410,23 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
-				Config: testMongoDBInstance_vpc_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBInstance_test",
+						"name": name + "update",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_vpc_configure,
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "30",
@@ -380,7 +435,9 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_vpc_account_password,
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_123",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_password": "YourPassword_123",
@@ -388,29 +445,40 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_vpc_security_ip_list,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ip_list.#":          "1",
-						"security_ip_list.4095458986": "10.168.1.12",
+						"security_ip_list.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_vpc_backup,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "11:00Z-12:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
+						"backup_period.#": "1",
+						"backup_time":     "11:00Z-12:00Z",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_vpc_together,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"account_password":    "YourPassword_",
+					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+					"backup_period":       []string{"Tuesday", "Wednesday"},
+					"backup_time":         "10:00Z-11:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBInstance_test_together",
+						"name":                        name,
 						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
@@ -418,13 +486,118 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 						"db_instance_storage":         "30",
 						"db_instance_class":           "dds.mongo.standard",
 						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
 						"backup_time":                 "10:00Z-11:00Z",
 					}),
 				),
 			}},
 	})
+}
+
+func TestAccAlicloudMongoDBInstance_vpc1(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "4.0",
+					"network_type":        "VPC",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"zone_id":             "${local.zone_id}",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.0",
+						"network_type":         "VPC",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 name,
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"zone_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func resourceMongodbInstanceVpcConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
+	
+	data "alicloud_mongodb_zones" "default" {
+	}
+	
+	data "alicloud_vpcs" "default" {
+	  	name_regex = "default-NODELETING"
+	}
+	
+	data "alicloud_vswitches" "default" {
+	  	vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	
+	resource "alicloud_vswitch" "this" {
+	  	count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	  	vswitch_name = var.name
+	  	vpc_id       = data.alicloud_vpcs.default.ids.0
+	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
+	  	cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+	}
+	
+	locals {
+	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
+	  	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
+	}
+`, name)
 }
 
 func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
@@ -437,26 +610,36 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceMultiAZConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceMultiAZConfig)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithRegions(t, true, connectivity.MongoDBMultiAzSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testMongoDBInstance_multiAZ_base,
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":             "${local.zone_id}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "3.4",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_version":       "3.4",
 						"db_instance_storage":  "10",
 						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
+						"name":                 name,
 						"storage_engine":       "WiredTiger",
 						"instance_charge_type": "PostPaid",
 						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
 					}),
 				),
 			},
@@ -464,18 +647,23 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action"},
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_name,
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBInstance_test",
+						"name": name + "update",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_configure,
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "30",
@@ -484,7 +672,9 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_account_password,
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_123",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"account_password": "YourPassword_123",
@@ -492,29 +682,40 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 				),
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_security_ip_list,
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ip_list.#":          "1",
-						"security_ip_list.4095458986": "10.168.1.12",
+						"security_ip_list.#": "1",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_backup,
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+					"backup_time":   "11:00Z-12:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
+						"backup_period.#": "1",
+						"backup_time":     "11:00Z-12:00Z",
 					}),
 				),
 			},
 			{
-				Config: testMongoDBInstance_multiAZ_together,
+				Config: testAccConfig(map[string]interface{}{
+					"name":                name,
+					"account_password":    "YourPassword_",
+					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
+					"db_instance_storage": "30",
+					"db_instance_class":   "dds.mongo.standard",
+					"backup_period":       []string{"Tuesday", "Wednesday"},
+					"backup_time":         "10:00Z-11:00Z",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBInstance_test_together",
+						"name":                        name,
 						"account_password":            "YourPassword_",
 						"security_ip_list.#":          "2",
 						"security_ip_list.4095458986": "10.168.1.12",
@@ -522,788 +723,38 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 						"db_instance_storage":         "30",
 						"db_instance_class":           "dds.mongo.standard",
 						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
 						"backup_time":                 "10:00Z-11:00Z",
 					}),
 				),
-			}},
-	})
-}
-
-func TestAccAlicloudMongoDBInstance_multi_instance(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default.2"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
+			},
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckMongoDBInstanceDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testMongoDBInstance_multi_instance_base,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":       "3.4",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 "",
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_name,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": "tf-testAccMongoDBInstance_test",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_configure,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_storage": "30",
-						"db_instance_class":   "dds.mongo.standard",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_account_password,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "YourPassword_123",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_security_ip_list,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"security_ip_list.#":          "1",
-						"security_ip_list.4095458986": "10.168.1.12",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_backup,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"backup_period.#":          "1",
-						"backup_period.1970423419": "Wednesday",
-						"backup_time":              "11:00Z-12:00Z",
-					}),
-				),
-			},
-			{
-				Config: testMongoDBInstance_multi_instance_together,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                        "tf-testAccMongoDBInstance_test_together",
-						"account_password":            "YourPassword_",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"db_instance_storage":         "30",
-						"db_instance_class":           "dds.mongo.standard",
-						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
-						"backup_time":                 "10:00Z-11:00Z",
-					}),
-				),
-			}},
 	})
 }
 
-const testMongoDBInstance_classic_base = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-}`
-
-const testMongoDBInstance_classic_ssl_action = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  ssl_action          = "Open"
-}`
-
-const testMongoDBInstance_classic_ssl_action_update = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_base4 = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "4.0"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-}`
-
-const testMongoDBInstance_classic_tags = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  ssl_action          = "Close"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}`
-
-const testMongoDBInstance_classic_name = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  name                = "tf-testAccMongoDBInstance_test"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_configure = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_tde = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "4.0"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  tde_status    = "enabled"
-}`
-
-const testMongoDBInstance_classic_security_ip_list = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_security_group_id = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_security_group" "default" {
-	name = "tf-testAccMongoDBInstance_test"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_group_id    = alicloud_security_group.default.id
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_backup = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  backup_period       = ["Wednesday"]
-  backup_time         = "11:00Z-12:00Z"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_maintain_time = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  backup_period       = ["Wednesday"]
-  backup_time         = "11:00Z-12:00Z"
-  maintain_start_time = "02:00Z"
-  maintain_end_time   = "03:00Z"
-  ssl_action          = "Close"
-}`
-
-const testMongoDBInstance_classic_together = `
-data "alicloud_mongodb_zones" "default" {}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword_"
-  security_ip_list    = ["10.168.1.12", "10.168.1.13"]
-  backup_period       = ["Tuesday", "Wednesday"]
-  backup_time         = "10:00Z-11:00Z"
-  ssl_action          = "Open"
-}`
-
-const testMongoDBInstance_vpc_base = `
-data "alicloud_mongodb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-}`
-
-const testMongoDBInstance_vpc_name = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_vpc_configure = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_vpc_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-}`
-
-const testMongoDBInstance_vpc_security_ip_list = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-}`
-
-const testMongoDBInstance_vpc_backup = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  backup_period       = ["Wednesday"]
-  backup_time         = "11:00Z-12:00Z"
-}`
-
-const testMongoDBInstance_vpc_together = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_vpc"
-}
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword_"
-  security_ip_list    = ["10.168.1.12", "10.168.1.13"]
-  backup_period       = ["Tuesday", "Wednesday"]
-  backup_time         = "10:00Z-11:00Z"
-}`
-
-const testMongoDBInstance_multiAZ_base = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-}`
-
-const testMongoDBInstance_multiAZ_name = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_multiAZ_configure = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
+func resourceMongodbInstanceMultiAZConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_mongodb_zones" "default" {
+		multi = true
+	}
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+
+	locals {
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids[length(data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids) - 1]
+	}
+	
+	data "alicloud_vswitches" "default" {
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	  zone_id = local.zone_id
+	}
+	
+	locals {
+	  vswitch_id = data.alicloud_vswitches.default.ids[0]
+	}
+`, name)
 }
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_multiAZ_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-}`
-
-const testMongoDBInstance_multiAZ_security_ip_list = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-}`
-
-const testMongoDBInstance_multiAZ_backup = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  backup_period       = ["Wednesday"]
-  backup_time         = "11:00Z-12:00Z"
-}`
-
-const testMongoDBInstance_multiAZ_together = `
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multiAZ"
-}
-resource "alicloud_mongodb_instance" "default" {
-  zone_id             = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword_"
-  security_ip_list    = ["10.168.1.12", "10.168.1.13"]
-  backup_period       = ["Tuesday", "Wednesday"]
-  backup_time         = "10:00Z-11:00Z"
-}`
-
-const testMongoDBInstance_multi_instance_base = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-}`
-
-const testMongoDBInstance_multi_instance_name = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 10
-  db_instance_class   = "dds.mongo.mid"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_multi_instance_configure = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-}`
-
-const testMongoDBInstance_multi_instance_account_password = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-}`
-
-const testMongoDBInstance_multi_instance_security_ip_list = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-}`
-
-const testMongoDBInstance_multi_instance_backup = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test"
-  account_password    = "YourPassword_123"
-  security_ip_list    = ["10.168.1.12"]
-  backup_period       = ["Wednesday"]
-  backup_time         = "11:00Z-12:00Z"
-}`
-
-const testMongoDBInstance_multi_instance_together = `
-data "alicloud_mongodb_zones" "default" {}
-variable "name" {
-  default = "tf-testAccMongoDBInstance_multi_instance"
-}
-data "alicloud_vpcs" "default" {
-	is_default = true
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_mongodb_instance" "default" {
-  vswitch_id          = data.alicloud_vswitches.default.ids.0
-  count               = 3
-  engine_version      = "3.4"
-  db_instance_storage = 30
-  db_instance_class   = "dds.mongo.standard"
-  name                = "tf-testAccMongoDBInstance_test_together"
-  account_password    = "YourPassword_"
-  security_ip_list    = ["10.168.1.12", "10.168.1.13"]
-  backup_period       = ["Tuesday", "Wednesday"]
-  backup_time         = "10:00Z-11:00Z"
-}`

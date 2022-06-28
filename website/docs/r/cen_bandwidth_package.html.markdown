@@ -18,20 +18,27 @@ For information about CEN and how to use it, see [Manage bandwidth packages](htt
 Basic Usage
 
 ```terraform
-resource "alicloud_cen_bandwidth_package" "example" {   
-    bandwidth                  = 5
-    cen_bandwidth_package_name = "tf-testAccCenBandwidthPackageConfig"
-    geographic_region_a_id     = "China"
-    geographic_region_b_id     = "China"
+resource "alicloud_cen_bandwidth_package" "example" {
+  bandwidth                  = 5
+  cen_bandwidth_package_name = "tf-testAccCenBandwidthPackageConfig"
+  geographic_region_a_id     = "China"
+  geographic_region_b_id     = "China"
 }
 ```
+
+### Deleting `alicloud_cen_bandwidth_package` or removing it from your configuration
+
+The `alicloud_cen_bandwidth_package` resource allows you to manage `payment_type = "PrePaid"` bandwidth package, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your statefile and management, but will not destroy the Bandwidth Package.
+You can resume managing the subscription bandwidth package via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth in Mbps of the bandwidth package. Cannot be less than 2Mbps.
 * `geographic_region_ids` - (Required, Deprecated in 1.98.0+) Field `geographic_region_ids` has been deprecated from version 1.97.0. Use `geographic_region_a_id` and `geographic_region_b_id` instead.
-* `name` - (Optional, Deprecated in 1.98.0+) Field 'name' has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
+* `name` - (Optional, Deprecated in 1.98.0+) Field `name` has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
 * `description` - (Optional) The description of the bandwidth package. Default to null.
 * `charge_type` - (Optional, Deprecated in 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
 * `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`.

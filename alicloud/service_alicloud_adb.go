@@ -539,8 +539,23 @@ func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoRespo
 	request.DBClusterId = id
 	request.TaskId = requests.Integer(taskId)
 
-	raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
-		return adbClient.DescribeTaskInfo(request)
+	var response *adb.DescribeTaskInfoResponse
+	wait := incrementalWait(2*time.Second, 1*time.Second)
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithAdbClient(func(adbClient *adb.Client) (interface{}, error) {
+			return adbClient.DescribeTaskInfo(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*adb.DescribeTaskInfoResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
@@ -548,9 +563,6 @@ func (s *AdbService) DescribeTask(id, taskId string) (*adb.DescribeTaskInfoRespo
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*adb.DescribeTaskInfoResponse)
 
 	return response, nil
 }
@@ -676,7 +688,7 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 
@@ -708,7 +720,7 @@ func (s *AdbService) SetResourceTags(d *schema.ResourceData, resourceType string
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
 				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if IsThrottling(err) {
+					if NeedRetry(err) {
 						wait()
 						return resource.RetryableError(err)
 

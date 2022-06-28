@@ -16,7 +16,6 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -701,20 +700,47 @@ func (s *SlbService) sweepSlb(id string) error {
 		return nil
 	}
 	log.Printf("[DEBUG] Set SLB DeleteProtection to off before deleting %s ...", id)
-	request := slb.CreateSetLoadBalancerDeleteProtectionRequest()
-	request.LoadBalancerId = id
-	request.DeleteProtection = "off"
-	_, err := s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.SetLoadBalancerDeleteProtection(request)
+	action := "SetLoadBalancerDeleteProtection"
+	request := map[string]interface{}{
+		"RegionId":         s.client.RegionId,
+		"LoadBalancerId":   id,
+		"DeleteProtection": "off",
+	}
+	conn, err := s.client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 10*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		log.Printf("[ERROR] Set SLB %s DeleteProtection to off failed.", id)
 	}
 	log.Printf("[DEBUG] Deleting SLB %s ...", id)
-	delRequest := slb.CreateDeleteLoadBalancerRequest()
-	delRequest.LoadBalancerId = id
-	_, err = s.client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.DeleteLoadBalancer(delRequest)
+	delRequest := map[string]interface{}{
+		"RegionId":       s.client.RegionId,
+		"LoadBalancerId": id,
+	}
+	action = "DeleteLoadBalancer"
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, delRequest, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err == nil {
 		time.Sleep(1 * time.Second)
@@ -796,29 +822,10 @@ resource "alicloud_security_group_rule" "default" {
   	cidr_ip = "172.16.0.0/24"
 }
 `
-
-const RdsCommonTestCase = `
-data "alicloud_zones" "default" {
-  available_resource_creation = "${var.creation}"
-}
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.sub_zone_ids.0}"
-	name              = "${var.name}"
-	timeouts {
-    delete = "30m"
-  }
-}
-`
 const PolarDBCommonTestCase = `
 data "alicloud_polardb_zones" "default"{}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = local.zone_id
@@ -826,12 +833,13 @@ data "alicloud_vswitches" "default" {
 }
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- name = "tf_testAccPolarDB"
+ vswitch_name = "tf_testAccPolarDB"
  vpc_id = data.alicloud_vpcs.default.ids.0
- availability_zone = data.alicloud_polardb_zones.default.ids.0
+ zone_id = data.alicloud_polardb_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
+  vpc_id = data.alicloud_vpcs.default.ids.0
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
   zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 }
@@ -839,22 +847,15 @@ locals {
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_adb_zones.default.ids.0
 }
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id = data.alicloud_adb_zones.default.ids.0
-  vswitch_name              = var.name
-}
 
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id = data.alicloud_vswitches.default.ids.0
 }
 `
 
@@ -863,7 +864,7 @@ data "alicloud_kvstore_zones" "default"{
 	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
-	is_default = true
+	name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
@@ -889,14 +890,19 @@ resource "alicloud_vswitch" "default" {
 `
 
 const ElasticsearchInstanceCommonTestCase = `
-data "alicloud_zones" "default" {
-    available_resource_creation = "${var.creation}"
+data "alicloud_elasticsearch_zones" "default" {}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_elasticsearch_zones.default.ids.0
 }
 
-data "alicloud_vswitches" "default" {
-  zone_id = data.alicloud_zones.default.ids[0]
-  name_regex = "default-tf--testAcc-00"
+locals {
+  vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
+
 `
 
 const SlbVpcCommonTestCase = `
@@ -1132,7 +1138,7 @@ data "alicloud_emr_instance_types" "local_disk" {
     cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
     support_local_storage = true
     instance_charge_type = "PostPaid"
-    support_node_type = ["CORE"]
+    support_node_type = ["MASTER","CORE"]
 }
 
 data "alicloud_emr_instance_types" "cloud_disk" {
@@ -1204,11 +1210,11 @@ const SlbListenerCommonTestCase = `
 variable "ip_version" {
   default = "ipv4"
 }	
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   internet_charge_type = "PayByTraffic"
   address_type = "internet"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 resource "alicloud_slb_acl" "default" {
   name = "${var.name}"
@@ -1270,19 +1276,19 @@ resource "alicloud_instance" "default" {
   vswitch_id = "${alicloud_vswitch.default.id}"
 }
 
-resource "alicloud_slb" "default" {
-  name = "${var.name}"
+resource "alicloud_slb_load_balancer" "default" {
+  load_balancer_name = "${var.name}"
   vswitch_id = "${alicloud_vswitch.default.id}"
-  specification = "slb.s1.small"
+  load_balancer_spec = "slb.s1.small"
 }
 
 resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   name = "${var.name}"
 }
 
 resource "alicloud_slb_master_slave_server_group" "default" {
-  load_balancer_id = "${alicloud_slb.default.id}"
+  load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   name = "${var.name}"
   servers {
       server_id = "${alicloud_instance.default.0.id}"

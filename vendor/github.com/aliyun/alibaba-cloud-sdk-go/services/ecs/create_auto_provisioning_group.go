@@ -76,9 +76,11 @@ type CreateAutoProvisioningGroupRequest struct {
 	LaunchConfigurationSystemDiskCategory          string                                                    `position:"Query" name:"LaunchConfiguration.SystemDiskCategory"`
 	AutoProvisioningGroupType                      string                                                    `position:"Query" name:"AutoProvisioningGroupType"`
 	LaunchConfigurationSystemDiskPerformanceLevel  string                                                    `position:"Query" name:"LaunchConfiguration.SystemDiskPerformanceLevel"`
+	LaunchConfigurationHostNames                   *[]string                                                 `position:"Query" name:"LaunchConfiguration.HostNames"  type:"Repeated"`
 	ResourceGroupId                                string                                                    `position:"Query" name:"ResourceGroupId"`
 	LaunchConfigurationImageId                     string                                                    `position:"Query" name:"LaunchConfiguration.ImageId"`
 	LaunchConfigurationResourceGroupId             string                                                    `position:"Query" name:"LaunchConfiguration.ResourceGroupId"`
+	LaunchConfigurationPassword                    string                                                    `position:"Query" name:"LaunchConfiguration.Password"`
 	PayAsYouGoAllocationStrategy                   string                                                    `position:"Query" name:"PayAsYouGoAllocationStrategy"`
 	DefaultTargetCapacityType                      string                                                    `position:"Query" name:"DefaultTargetCapacityType"`
 	LaunchConfigurationKeyPairName                 string                                                    `position:"Query" name:"LaunchConfiguration.KeyPairName"`
@@ -90,6 +92,7 @@ type CreateAutoProvisioningGroupRequest struct {
 	LaunchConfigurationSystemDiskSize              requests.Integer                                          `position:"Query" name:"LaunchConfiguration.SystemDiskSize"`
 	LaunchConfigurationInternetMaxBandwidthOut     requests.Integer                                          `position:"Query" name:"LaunchConfiguration.InternetMaxBandwidthOut"`
 	LaunchConfigurationHostName                    string                                                    `position:"Query" name:"LaunchConfiguration.HostName"`
+	MinTargetCapacity                              string                                                    `position:"Query" name:"MinTargetCapacity"`
 	MaxSpotPrice                                   requests.Float                                            `position:"Query" name:"MaxSpotPrice"`
 	LaunchConfigurationPasswordInherit             requests.Boolean                                          `position:"Query" name:"LaunchConfiguration.PasswordInherit"`
 	ClientToken                                    string                                                    `position:"Query" name:"ClientToken"`
@@ -111,6 +114,7 @@ type CreateAutoProvisioningGroupRequest struct {
 	SpotInstanceInterruptionBehavior               string                                                    `position:"Query" name:"SpotInstanceInterruptionBehavior"`
 	LaunchConfigurationSecurityEnhancementStrategy string                                                    `position:"Query" name:"LaunchConfiguration.SecurityEnhancementStrategy"`
 	LaunchConfigurationTag                         *[]CreateAutoProvisioningGroupLaunchConfigurationTag      `position:"Query" name:"LaunchConfiguration.Tag"  type:"Repeated"`
+	LaunchConfigurationDeploymentSetId             string                                                    `position:"Query" name:"LaunchConfiguration.DeploymentSetId"`
 	ResourceOwnerAccount                           string                                                    `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount                                   string                                                    `position:"Query" name:"OwnerAccount"`
 	SpotInstancePoolsToUseCount                    requests.Integer                                          `position:"Query" name:"SpotInstancePoolsToUseCount"`
@@ -124,18 +128,18 @@ type CreateAutoProvisioningGroupRequest struct {
 	AutoProvisioningGroupName                      string                                                    `position:"Query" name:"AutoProvisioningGroupName"`
 }
 
-// CreateAutoProvisioningGroupLaunchConfiguration.DataDisk is a repeated param struct in CreateAutoProvisioningGroupRequest
+// CreateAutoProvisioningGroupLaunchConfigurationDataDisk is a repeated param struct in CreateAutoProvisioningGroupRequest
 type CreateAutoProvisioningGroupLaunchConfigurationDataDisk struct {
-	Size               string `name:"Size"`
-	Category           string `name:"Category"`
 	PerformanceLevel   string `name:"PerformanceLevel"`
-	Device             string `name:"Device"`
+	KmsKeyId           string `name:"KmsKeyId"`
+	Description        string `name:"Description"`
 	SnapshotId         string `name:"SnapshotId"`
+	Size               string `name:"Size"`
+	Device             string `name:"Device"`
+	DiskName           string `name:"DiskName"`
+	Category           string `name:"Category"`
 	DeleteWithInstance string `name:"DeleteWithInstance"`
 	Encrypted          string `name:"Encrypted"`
-	KmsKeyId           string `name:"KmsKeyId"`
-	DiskName           string `name:"DiskName"`
-	Description        string `name:"Description"`
 }
 
 // CreateAutoProvisioningGroupSystemDiskConfig is a repeated param struct in CreateAutoProvisioningGroupRequest
@@ -150,14 +154,14 @@ type CreateAutoProvisioningGroupDataDiskConfig struct {
 
 // CreateAutoProvisioningGroupLaunchTemplateConfig is a repeated param struct in CreateAutoProvisioningGroupRequest
 type CreateAutoProvisioningGroupLaunchTemplateConfig struct {
-	InstanceType     string `name:"InstanceType"`
-	MaxPrice         string `name:"MaxPrice"`
 	VSwitchId        string `name:"VSwitchId"`
-	WeightedCapacity string `name:"WeightedCapacity"`
+	MaxPrice         string `name:"MaxPrice"`
 	Priority         string `name:"Priority"`
+	InstanceType     string `name:"InstanceType"`
+	WeightedCapacity string `name:"WeightedCapacity"`
 }
 
-// CreateAutoProvisioningGroupLaunchConfiguration.Tag is a repeated param struct in CreateAutoProvisioningGroupRequest
+// CreateAutoProvisioningGroupLaunchConfigurationTag is a repeated param struct in CreateAutoProvisioningGroupRequest
 type CreateAutoProvisioningGroupLaunchConfigurationTag struct {
 	Key   string `name:"Key"`
 	Value string `name:"Value"`
@@ -166,8 +170,8 @@ type CreateAutoProvisioningGroupLaunchConfigurationTag struct {
 // CreateAutoProvisioningGroupResponse is the response struct for api CreateAutoProvisioningGroup
 type CreateAutoProvisioningGroupResponse struct {
 	*responses.BaseResponse
-	RequestId               string        `json:"RequestId" xml:"RequestId"`
 	AutoProvisioningGroupId string        `json:"AutoProvisioningGroupId" xml:"AutoProvisioningGroupId"`
+	RequestId               string        `json:"RequestId" xml:"RequestId"`
 	LaunchResults           LaunchResults `json:"LaunchResults" xml:"LaunchResults"`
 }
 

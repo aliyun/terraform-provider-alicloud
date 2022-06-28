@@ -134,7 +134,10 @@ func dataSourceAlicloudEssLifecycleHooksRead(d *schema.ResourceData, meta interf
 	if okNameRegex || okIds {
 		for _, hook := range allLifecycleHooks {
 			if okNameRegex && nameRegex != "" {
-				var r = regexp.MustCompile(nameRegex.(string))
+				r, err := regexp.Compile(nameRegex.(string))
+				if err != nil {
+					return WrapError(err)
+				}
 				if r != nil && !r.MatchString(hook.LifecycleHookName) {
 					continue
 				}

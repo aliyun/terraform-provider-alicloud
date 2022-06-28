@@ -82,7 +82,6 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 			"duration": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -105,6 +104,19 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Basic", "CrossDomain"}, false),
+			},
+			"auto_renew_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"renewal_status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(RenewAutoRenewal),
+					string(RenewNormal),
+					string(RenewNotRenewal)}, false),
 			},
 		},
 	}
@@ -203,56 +215,105 @@ func resourceAlicloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	if val, ok := d.GetOk("auto_use_coupon"); ok {
 		d.Set("auto_use_coupon", val)
 	}
+	describeBandwidthPackageAutoRenewAttributeObject, err := gaService.DescribeBandwidthPackageAutoRenewAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := describeBandwidthPackageAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
+		d.Set("auto_renew_duration", formatInt(v))
+	}
+	d.Set("renewal_status", describeBandwidthPackageAutoRenewAttributeObject["RenewalStatus"])
 	return nil
 }
 func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
+	d.Partial(true)
+	conn, err := client.NewGaplusClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	update := false
 	request := map[string]interface{}{
-		"BandwidthPackageId": d.Id(),
+		"InstanceId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("bandwidth") {
+	if d.HasChange("auto_renew_duration") {
 		update = true
-		request["Bandwidth"] = d.Get("bandwidth")
 	}
-	if d.HasChange("bandwidth_package_name") {
-		update = true
-		request["Name"] = d.Get("bandwidth_package_name")
+	if v, ok := d.GetOk("auto_renew_duration"); ok {
+		request["AutoRenewDuration"] = v
 	}
-	if !d.IsNewResource() && d.HasChange("bandwidth_type") {
+	if d.HasChange("renewal_status") {
 		update = true
-		request["BandwidthType"] = d.Get("bandwidth_type")
 	}
-	if d.HasChange("description") {
-		update = true
-		request["Description"] = d.Get("description")
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
 	}
 	if update {
-		if _, ok := d.GetOkExists("auto_pay"); ok {
-			request["AutoPay"] = d.Get("auto_pay")
-		}
-		if _, ok := d.GetOkExists("auto_use_coupon"); ok {
-			request["AutoUseCoupon"] = d.Get("auto_use_coupon")
-		}
-		action := "UpdateBandwidthPackage"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		action := "UpdateBandwidthPackagaAutoRenewAttribute"
+		request["ClientToken"] = buildClientToken("UpdateBandwidthPackagaAutoRenewAttribute")
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage", "StateError.BandwidthPackage", "UpgradeError.BandwidthPackage"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("auto_renew_duration")
+		d.SetPartial("renewal_status")
+	}
+	update = false
+	updateBandwidthPackageReq := map[string]interface{}{
+		"BandwidthPackageId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		update = true
+		updateBandwidthPackageReq["Bandwidth"] = d.Get("bandwidth")
+	}
+	if d.HasChange("bandwidth_package_name") {
+		update = true
+		updateBandwidthPackageReq["Name"] = d.Get("bandwidth_package_name")
+	}
+	if !d.IsNewResource() && d.HasChange("bandwidth_type") {
+		update = true
+		updateBandwidthPackageReq["BandwidthType"] = d.Get("bandwidth_type")
+	}
+	if d.HasChange("description") {
+		update = true
+		updateBandwidthPackageReq["Description"] = d.Get("description")
+	}
+	if update {
+		if _, ok := d.GetOkExists("auto_pay"); ok {
+			updateBandwidthPackageReq["AutoPay"] = d.Get("auto_pay")
+		}
+		if _, ok := d.GetOkExists("auto_use_coupon"); ok {
+			updateBandwidthPackageReq["AutoUseCoupon"] = d.Get("auto_use_coupon")
+		}
+		action := "UpdateBandwidthPackage"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateBandwidthPackageReq, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage", "StateError.BandwidthPackage", "UpgradeError.BandwidthPackage", "GreaterThanGa.IpSetBandwidth"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, updateBandwidthPackageReq)
 			return nil
 		})
 		if err != nil {
@@ -262,7 +323,12 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("bandwidth")
+		d.SetPartial("bandwidth_package_name")
+		d.SetPartial("bandwidth_type")
+		d.SetPartial("description")
 	}
+	d.Partial(false)
 	return resourceAlicloudGaBandwidthPackageRead(d, meta)
 }
 func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {

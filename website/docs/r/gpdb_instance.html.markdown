@@ -19,6 +19,9 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 -> **NOTE:**  Create instance or change instance would cost 10~15 minutes. Please make full preparation.
 
+-> **NOTE:**  This resource is used to manage a Reserved Storage Mode instance, and creating a new reserved storage mode instance is no longer supported since v1.127.0. 
+You can still use this resource to manage the instance which has been already created, but can not create a new one. 
+
 ## Example Usage
 
 ### Create a Gpdb instance
@@ -74,7 +77,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+* `create` - (Defaults to 60 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
+* `delete` - (Defaults to 10 mins) Used when terminating the ADB PG instance.
 
 ## Attributes Reference
 

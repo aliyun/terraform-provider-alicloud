@@ -120,6 +120,12 @@ The following arguments are supported:
 * `spot_instance_pools` - (Optional, Available in v1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
 * `spot_instance_remedy` - (Optional, Available in v1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
 * `group_deletion_protection` - (Optional, Available in v1.102.0+) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
+* `launch_template_id` - (Optional, Available in v1.141.0+) Instance launch template ID, scaling group obtains launch configuration from instance launch template, see [Launch Template](https://www.alibabacloud.com/help/doc-detail/73916.html). Creating scaling group from launch template enable group automatically.
+* `launch_template_version` - (Optional, Available in v1.159.0+) The version number of the launch template. Valid values are the version number, `Latest`, or `Default`, Default value: `Default`.
+* `group_type` - (Optional, Available in v1.164.0+) Resource type within scaling group. Optional values: ECS, ECI. Default to ECS.
+* `tags` - (Optional, Available in v1.160.0+) A mapping of tags to assign to the resource.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 
@@ -141,6 +147,8 @@ The following attributes are exported:
 * `db_instance_ids` - The db instances id which the ECS instance attached to.
 * `loadbalancer_ids` - The slb instances id which the ECS instance attached to.
 * `vswitch_ids` - The vswitches id in which the ECS instance launched.
+* `launch_template_id` - The instance launch template ID.
+* `launch_template_version` - The version number of the launch template.
 
 ## Import
 

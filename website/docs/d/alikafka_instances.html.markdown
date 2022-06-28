@@ -87,5 +87,20 @@ The following attributes are exported in addition to the arguments listed above:
   * `security_group` - The security group of the instance.
   * `service_version` - The kafka openSource version of the instance.
   * `config` - The config the instance.
-
-
+  * `expired_time` - The expired time  of the instance.
+  * `msg_retain` - The msg retain of the instance.
+  * `ssl_end_point` - The SSL end point of the instance.
+  * `upgrade_service_detail_info` - The UpgradeServiceDetailInfo List.
+    * `current2_open_source_version` - The Current2OpenSourceVersion of the instance.
+  * `domain_endpoint` - The domain point of the instance.
+  * `ssl_domain_endpoint` - The SSL domain point of the instance.
+  * `sasl_domain_endpoint` - The SASL domain point of the instance.
+  * `tags` - A mapping of tags to assign to the instance.
+  * `allowed_list` - The allowed list of the instance.
+    * `deploy_type` - The deployed type of the instance.
+    * `vpc_list` - The vpc list of the instance.
+      * `allowed_ip_list` - The allowed ip list of the vpc_list.
+      * `port_range` - The port range of the vpc_list.
+    * `internet_list` - The internet list of the instance.
+      * `allowed_ip_list` - The allowed ip list of the internet_list.
+      * `port_range` - The port range of the internet_list.

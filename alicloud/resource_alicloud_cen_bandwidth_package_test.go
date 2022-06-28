@@ -34,8 +34,8 @@ func testSweepCenBandwidthPackage(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	var insts []cbn.CenBandwidthPackage
@@ -345,6 +345,198 @@ func TestAccAlicloudCenBandwidthPackage_upgrade(t *testing.T) {
 						"geographic_region_b_id": "China",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCenBandwidthPackage_basic1(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":                  "5",
+					"geographic_region_ids":      []string{"China", "China"},
+					"cen_bandwidth_package_name": "${var.name}",
+					"payment_type":               "PrePaid",
+					"period":                     "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":                  "5",
+						"geographic_region_ids.#":    "1",
+						"cen_bandwidth_package_name": name,
+						"payment_type":               "PrePaid",
+						"period":                     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCenBandwidthPackage_basic2(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":             "5",
+					"geographic_region_ids": []string{"China", "China"},
+					"name":                  "${var.name}",
+					"charge_type":           "PrePaid",
+					"period":                "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":               "5",
+						"geographic_region_ids.#": "1",
+						"name":                    name,
+						"charge_type":             "PrePaid",
+						"period":                  "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCenBandwidthPackage_basic3(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":                  "5",
+					"geographic_region_ids":      []string{"China", "China"},
+					"cen_bandwidth_package_name": "${var.name}",
+					"payment_type":               "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":                  "5",
+						"geographic_region_ids.#":    "1",
+						"cen_bandwidth_package_name": name,
+						"payment_type":               "PostPaid",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCenBandwidthPackage_basic4(t *testing.T) {
+	var v cbn.CenBandwidthPackage
+	resourceId := "alicloud_cen_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCen%sBandwidthPackage-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCenBandwidthPackageConfigDependence_upgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":             "5",
+					"geographic_region_ids": []string{"China", "China"},
+					"name":                  "${var.name}",
+					"charge_type":           "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":               "5",
+						"geographic_region_ids.#": "1",
+						"name":                    name,
+						"charge_type":             "PostPaid",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period"},
 			},
 		},
 	})

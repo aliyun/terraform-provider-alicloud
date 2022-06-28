@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -58,22 +60,21 @@ func resourceAlicloudCrEENamespaceCreate(d *schema.ResourceData, meta interface{
 	request.NamespaceName = namespace
 	request.AutoCreateRepo = requests.NewBoolean(autoCreate)
 	request.DefaultRepoType = visibility
-	resource := crService.GenResourceId(instanceId, namespace)
 	action := request.GetActionName()
 	raw, err := crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 		return creeClient.CreateNamespace(request)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, resource, action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_namespace", action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, raw, request.RpcRequest, request)
 
 	response, _ = raw.(*cr_ee.CreateNamespaceResponse)
 	if !response.CreateNamespaceIsSuccess {
-		return crService.wrapCrServiceError(resource, action, response.Code)
+		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_namespace", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(crService.GenResourceId(instanceId, namespace))
+	d.SetId(fmt.Sprint(instanceId, ":", namespace))
 
 	return resourceAlicloudCrEENamespaceRead(d, meta)
 }
@@ -101,31 +102,32 @@ func resourceAlicloudCrEENamespaceRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudCrEENamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := &CrService{client}
-	instanceId := d.Get("instance_id").(string)
-	namespace := d.Get("name").(string)
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	if d.HasChanges("auto_create", "default_visibility") {
 		autoCreate := d.Get("auto_create").(bool)
 		visibility := d.Get("default_visibility").(string)
 		response := &cr_ee.UpdateNamespaceResponse{}
 		request := cr_ee.CreateUpdateNamespaceRequest()
 		request.RegionId = crService.client.RegionId
-		request.InstanceId = instanceId
-		request.NamespaceName = namespace
+		request.InstanceId = parts[0]
+		request.NamespaceName = parts[1]
 		request.AutoCreateRepo = requests.NewBoolean(autoCreate)
 		request.DefaultRepoType = visibility
-		resource := crService.GenResourceId(instanceId, namespace)
 		action := request.GetActionName()
 		raw, err := crService.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.UpdateNamespace(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, resource, action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, raw, request.RpcRequest, request)
 
 		response, _ = raw.(*cr_ee.UpdateNamespaceResponse)
 		if !response.UpdateNamespaceIsSuccess {
-			return crService.wrapCrServiceError(resource, action, response.Code)
+			return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -135,9 +137,7 @@ func resourceAlicloudCrEENamespaceUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudCrEENamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	crService := &CrService{client}
-	instanceId := d.Get("instance_id").(string)
-	namespace := d.Get("name").(string)
-	_, err := crService.DeleteCrEENamespace(instanceId, namespace)
+	_, err := crService.DeleteCrEENamespace(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
@@ -146,5 +146,5 @@ func resourceAlicloudCrEENamespaceDelete(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	return WrapError(crService.WaitForCrEENamespace(instanceId, namespace, Deleted, DefaultTimeout))
+	return WrapError(crService.WaitForCrEENamespace(d.Id(), Deleted, DefaultTimeout))
 }

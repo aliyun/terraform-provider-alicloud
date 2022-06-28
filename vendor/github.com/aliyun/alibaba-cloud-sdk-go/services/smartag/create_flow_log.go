@@ -75,6 +75,7 @@ type CreateFlowLogRequest struct {
 	NetflowVersion       string           `position:"Query" name:"NetflowVersion"`
 	Description          string           `position:"Query" name:"Description"`
 	InactiveAging        requests.Integer `position:"Query" name:"InactiveAging"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SlsRegionId          string           `position:"Query" name:"SlsRegionId"`
 	ActiveAging          requests.Integer `position:"Query" name:"ActiveAging"`
 	OutputType           string           `position:"Query" name:"OutputType"`
@@ -91,8 +92,9 @@ type CreateFlowLogRequest struct {
 // CreateFlowLogResponse is the response struct for api CreateFlowLog
 type CreateFlowLogResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	FlowLogId string `json:"FlowLogId" xml:"FlowLogId"`
+	RequestId       string `json:"RequestId" xml:"RequestId"`
+	FlowLogId       string `json:"FlowLogId" xml:"FlowLogId"`
+	ResourceGroupId string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateCreateFlowLogRequest creates a request to invoke CreateFlowLog API

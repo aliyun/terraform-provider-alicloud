@@ -17,9 +17,10 @@ package vpc
 
 // IpList is a nested struct in vpc response
 type IpList struct {
-	AllocationId     string `json:"AllocationId" xml:"AllocationId"`
+	PrivateIpAddress string `json:"PrivateIpAddress" xml:"PrivateIpAddress"`
 	IpAddress        string `json:"IpAddress" xml:"IpAddress"`
-	UsingStatus      string `json:"UsingStatus" xml:"UsingStatus"`
 	ApAccessEnabled  bool   `json:"ApAccessEnabled" xml:"ApAccessEnabled"`
+	UsingStatus      string `json:"UsingStatus" xml:"UsingStatus"`
 	SnatEntryEnabled bool   `json:"SnatEntryEnabled" xml:"SnatEntryEnabled"`
+	AllocationId     string `json:"AllocationId" xml:"AllocationId"`
 }

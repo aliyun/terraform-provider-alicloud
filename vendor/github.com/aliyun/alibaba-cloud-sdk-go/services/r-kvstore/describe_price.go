@@ -80,6 +80,7 @@ type DescribePriceRequest struct {
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	BusinessInfo         string           `position:"Query" name:"BusinessInfo"`
 	Period               requests.Integer `position:"Query" name:"Period"`
+	Product              string           `position:"Query" name:"Product"`
 	Quantity             requests.Integer `position:"Query" name:"Quantity"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -88,6 +89,7 @@ type DescribePriceRequest struct {
 	InstanceId           string           `position:"Query" name:"InstanceId"`
 	ZoneId               string           `position:"Query" name:"ZoneId"`
 	ChargeType           string           `position:"Query" name:"ChargeType"`
+	Category             string           `position:"Query" name:"Category"`
 	ForceUpgrade         requests.Boolean `position:"Query" name:"ForceUpgrade"`
 	OrderType            string           `position:"Query" name:"OrderType"`
 }
@@ -95,8 +97,8 @@ type DescribePriceRequest struct {
 // DescribePriceResponse is the response struct for api DescribePrice
 type DescribePriceResponse struct {
 	*responses.BaseResponse
-	RequestId   string    `json:"RequestId" xml:"RequestId"`
 	OrderParams string    `json:"OrderParams" xml:"OrderParams"`
+	RequestId   string    `json:"RequestId" xml:"RequestId"`
 	Order       Order     `json:"Order" xml:"Order"`
 	Rules       Rules     `json:"Rules" xml:"Rules"`
 	SubOrders   SubOrders `json:"SubOrders" xml:"SubOrders"`

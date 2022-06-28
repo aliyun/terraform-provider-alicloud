@@ -10,7 +10,6 @@ import (
 
 	"log"
 	"strings"
-	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -35,8 +34,8 @@ func testSweepDRDSInstances(region string) error {
 	client := rawClient.(*connectivity.AliyunClient)
 
 	prefixes := []string{
-		fmt.Sprintf("tf-testAcc%s", region),
-		fmt.Sprintf("tf_testAcc%s", region),
+		"tf-testAcc",
+		"tf_testAcc",
 	}
 
 	request := drds.CreateDescribeDrdsInstancesRequest()
@@ -48,9 +47,8 @@ func testSweepDRDSInstances(region string) error {
 	}
 	response, _ := raw.(*drds.DescribeDrdsInstancesResponse)
 
-	sweeped := false
 	vpcService := VpcService{client}
-	for _, v := range response.Data.Instance {
+	for _, v := range response.Instances.Instance {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true
@@ -84,7 +82,6 @@ func testSweepDRDSInstances(region string) error {
 			continue
 		}
 
-		sweeped = true
 		log.Printf("[INFO] Deleting DRDS Instance: %s (%s)", name, id)
 		req := drds.CreateRemoveDrdsInstanceRequest()
 		req.DrdsInstanceId = id
@@ -94,10 +91,6 @@ func testSweepDRDSInstances(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete DRDS Instance (%s (%s)): %s", name, id, err)
 		}
-	}
-	if sweeped {
-		// Waiting 30 seconds to ensure these DB instances have been deleted.
-		time.Sleep(30 * time.Second)
 	}
 	return nil
 }
@@ -124,7 +117,6 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -198,7 +190,6 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
 			testAccPreCheckWithRegions(t, false, connectivity.DrdsClassicNoSupportedRegions)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -239,7 +230,7 @@ func resourceDRDSInstanceConfigDependence(name string) string {
 	}
 	
 	data "alicloud_vpcs" "default"	{
-        is_default = "true"
+        name_regex = "default-NODELETING"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"

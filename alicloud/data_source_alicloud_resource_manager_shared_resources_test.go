@@ -78,20 +78,30 @@ variable "name" {
 data "alicloud_zones" "example" {
   available_resource_creation = "VSwitch"
 }
-resource "alicloud_vpc" "example" {
-  name = var.name
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "example" {
-  availability_zone = data.alicloud_zones.example.ids.0
-  cidr_block = "192.168.0.0/16"
-  vpc_id = alicloud_vpc.example.id
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.example.ids.0
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.example.ids.0
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 resource "alicloud_resource_manager_resource_share" "example" {
 	resource_share_name = var.name
 }
 resource "alicloud_resource_manager_shared_resource" "example" {
-  resource_id       = alicloud_vswitch.example.id
+  resource_id       = local.vswitch_id
   resource_share_id = alicloud_resource_manager_resource_share.example.id
   resource_type     = "VSwitch"
 }

@@ -71,10 +71,11 @@ func (client *Client) DescribeSiteMonitorISPCityListWithCallback(request *Descri
 // DescribeSiteMonitorISPCityListRequest is the request struct for api DescribeSiteMonitorISPCityList
 type DescribeSiteMonitorISPCityListRequest struct {
 	*requests.RpcRequest
-	City string           `position:"Query" name:"City"`
-	Isp  string           `position:"Query" name:"Isp"`
-	IPV4 requests.Boolean `position:"Query" name:"IPV4"`
-	IPV6 requests.Boolean `position:"Query" name:"IPV6"`
+	City     string           `position:"Query" name:"City"`
+	Isp      string           `position:"Query" name:"Isp"`
+	APIProbe requests.Boolean `position:"Query" name:"APIProbe"`
+	IPV4     requests.Boolean `position:"Query" name:"IPV4"`
+	IPV6     requests.Boolean `position:"Query" name:"IPV6"`
 }
 
 // DescribeSiteMonitorISPCityListResponse is the response struct for api DescribeSiteMonitorISPCityList
@@ -82,8 +83,8 @@ type DescribeSiteMonitorISPCityListResponse struct {
 	*responses.BaseResponse
 	Code        string      `json:"Code" xml:"Code"`
 	Message     string      `json:"Message" xml:"Message"`
-	Success     string      `json:"Success" xml:"Success"`
 	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	Success     string      `json:"Success" xml:"Success"`
 	IspCityList IspCityList `json:"IspCityList" xml:"IspCityList"`
 }
 
@@ -92,7 +93,7 @@ func CreateDescribeSiteMonitorISPCityListRequest() (request *DescribeSiteMonitor
 	request = &DescribeSiteMonitorISPCityListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "Cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

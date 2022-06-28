@@ -12,7 +12,7 @@ description: |-
 The `alicloud_adb_clusters` data source provides a collection of ADB clusters available in Alibaba Cloud account.
 Filters support regular expression for the cluster description, searches by tags, and other filters which are listed below.
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new datasource [alicloud_adb_db_clusters](https://www.terraform.io/docs/providers/alicloud/r/adb_db_clusters.html).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.121.0`. Please use new datasource [alicloud_adb_db_clusters](https://www.terraform.io/docs/providers/alicloud/d/adb_db_clusters).
 
 -> **NOTE:** Available in v1.71.0+.
 

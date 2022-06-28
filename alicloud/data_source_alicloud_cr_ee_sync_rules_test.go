@@ -8,12 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCrEESyncRulesDataSource(t *testing.T) {
+func TestAccAlicloudCREESyncRulesDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc-cr-ee-sr-%d", rand)
 	resourceId := "data.alicloud_cr_ee_sync_rules.default"
 	region := os.Getenv("ALICLOUD_REGION")
-	sourceInstanceId, targetInstanceId := getCrEESyncRuleTestEnv(t)
 
 	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name,
 		dataSourceCrEESyncRulesConfigDependence)
@@ -99,7 +98,7 @@ func TestAccAlicloudCrEESyncRulesDataSource(t *testing.T) {
 			"names.#":                       "1",
 			"names.0":                       name,
 			"rules.#":                       "1",
-			"rules.0.instance_id":           sourceInstanceId,
+			"rules.0.instance_id":           CHECKSET,
 			"rules.0.namespace_name":        name,
 			"rules.0.id":                    CHECKSET,
 			"rules.0.name":                  name,
@@ -109,7 +108,7 @@ func TestAccAlicloudCrEESyncRulesDataSource(t *testing.T) {
 			"rules.0.sync_scope":            "REPO",
 			"rules.0.sync_trigger":          "PASSIVE",
 			"rules.0.tag_filter":            ".*",
-			"rules.0.target_instance_id":    targetInstanceId,
+			"rules.0.target_instance_id":    CHECKSET,
 			"rules.0.target_namespace_name": name,
 			"rules.0.target_region_id":      region,
 			"rules.0.target_repo_name":      name,
@@ -131,17 +130,13 @@ func TestAccAlicloudCrEESyncRulesDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheck(t)
-		getCrEESyncRuleTestEnv(t)
 	}
 	crEESyncRulesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, namespaceConf,
 		repoConf, targetInstanceIdConf, allConf)
 }
 
 func dataSourceCrEESyncRulesConfigDependence(name string) string {
-	region := os.Getenv("ALICLOUD_REGION")
-	sourceInstanceId := os.Getenv("CR_EE_TEST_SOURCE_INSTANCE_ID")
-	targetInstanceId := os.Getenv("CR_EE_TEST_TARGET_INSTANCE_ID")
-	configTemplate := `
+	return fmt.Sprintf(`
 variable "region" {
 	default = "%s"
 }
@@ -149,16 +144,17 @@ variable "region" {
 variable "name" {
 	default = "%s"
 }
+data "alicloud_cr_ee_instances" "default" {}
 
 resource "alicloud_cr_ee_namespace" "source_ns" {
-	instance_id = "%s"
+	instance_id = data.alicloud_cr_ee_instances.default.ids.0
 	name = "${var.name}"
 	auto_create	= true
 	default_visibility = "PRIVATE"
 }
 
 resource "alicloud_cr_ee_namespace" "target_ns" {
-	instance_id = "%s"
+	instance_id = data.alicloud_cr_ee_instances.default.ids.1
 	name = "${var.name}"
 	auto_create	= true
 	default_visibility = "PRIVATE"
@@ -193,6 +189,5 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 	repo_name = "${alicloud_cr_ee_repo.source_repo.name}"
 	target_repo_name = "${alicloud_cr_ee_repo.target_repo.name}"
 }
-`
-	return fmt.Sprintf(configTemplate, region, name, sourceInstanceId, targetInstanceId)
+`, defaultRegionToTest, name)
 }

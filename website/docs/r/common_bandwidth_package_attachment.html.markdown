@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "EIP Bandwidth Plan (CBWP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_common_bandwidth_package_attachment"
 sidebar_current: "docs-alicloud-resource-common-bandwidth-package-attachment"
@@ -26,14 +26,14 @@ resource "alicloud_common_bandwidth_package" "foo" {
   description = "test_common_bandwidth_package"
 }
 
-resource "alicloud_eip" "foo" {
+resource "alicloud_eip_address" "foo" {
   bandwidth            = "2"
   internet_charge_type = "PayByBandwidth"
 }
 
 resource "alicloud_common_bandwidth_package_attachment" "foo" {
   bandwidth_package_id = alicloud_common_bandwidth_package.foo.id
-  instance_id          = alicloud_eip.foo.id
+  instance_id          = alicloud_eip_address.foo.id
 }
 ```
 ## Argument Reference
@@ -51,7 +51,7 @@ The following attributes are exported:
 
 ## Import
 
-The common bandwidth package attachemnt can be imported using the id, e.g.
+The common bandwidth package attachment can be imported using the id, e.g.
 
 ```
 $ terraform import alicloud_common_bandwidth_package_attachment.foo cbwp-abc123456:eip-abc123456

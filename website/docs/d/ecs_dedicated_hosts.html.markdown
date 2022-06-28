@@ -37,11 +37,18 @@ The following arguments are supported:
 * `dedicated_host_id` - (Optional) The ID of ECS Dedicated Host.
 * `dedicated_host_name` - (Optional) The name of ECS Dedicated Host.
 * `dedicated_host_type` - (Optional) The type of the dedicated host.
+* `operation_locks` - (Optional, Available in 1.123.1+) The reason why the dedicated host resource is locked.
 * `resource_group_id` - (Optional) The ID of the resource group to which the ECS Dedicated Host belongs.
 * `status` - (Optional) The status of the ECS Dedicated Host. validate value: `Available`, `Creating`, `PermanentFailure`, `Released`, `UnderAssessment`.
 * `zone_id` - (Optional) The zone ID of the ECS Dedicated Host.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `output_file` - (Optional) Save the result to the file.
+
+#### Block operation_locks
+
+The operation_locks supports the following: 
+
+* `lock_reason` - (Optional, ForceNew) The reason why the dedicated host resource is locked.
 
 ## Attributes Reference
 
@@ -68,4 +75,25 @@ The following attributes are exported in addition to the arguments listed above:
   * `sale_cycle` - The unit of the subscription billing method.
   * `sockets` - The number of physical CPUs.
   * `status` - The service status of the dedicated host.
-  * `supported_instance_types_list` - The list of ECS instanc
+  * `supported_instance_types_list` - The list of ECS instance
+  * `capacity` - (Available in 1.123.1+) A collection of proprietary host performance indicators.
+    * `available_local_storage` - The remaining local disk capacity. Unit: GiB.
+    * `available_memory` - The remaining memory capacity, unit: GiB.
+    * `available_vcpus` - The number of remaining vCPU cores.
+    * `available_vgpus` - The number of available virtual GPUs.
+    * `local_storage_category` - Local disk type.
+    * `total_local_storage` - The total capacity of the local disk, in GiB.
+    * `total_memory` - The total memory capacity, unit: GiB.
+    * `total_vcpus` - The total number of vCPU cores.
+    * `total_vgpus` - The total number of virtual GPUs.
+  * `cpu_over_commit_ratio` - (Available in 1.123.1+) CPU oversold ratio.
+  * `network_attributes` - dedicated host network parameters. contains the following attributes:
+    * `slb_udp_timeout` - The timeout period for a UDP session between Server Load Balancer (SLB) and the dedicated host. Unit: seconds.
+    * `udp_timeout` - (Available in 1.123.1+) The timeout period for a UDP session between a user and an Alibaba Cloud service on the dedicated host. Unit: seconds.
+  * `operation_locks` - (Available in 1.123.1+) The operation_locks. contains the following attribute:
+    * `lock_reason` - The reason why the dedicated host resource is locked.
+  * `supported_instance_type_families` - (Available in 1.123.1+) ECS instance type family supported by the dedicated host.
+  * `supported_custom_instance_type_families` - (Available in 1.123.1+) A custom instance type family supported by a dedicated host.
+  
+   
+    

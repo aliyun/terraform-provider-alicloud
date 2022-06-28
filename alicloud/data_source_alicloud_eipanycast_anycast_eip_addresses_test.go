@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -103,11 +101,7 @@ func TestAccAlicloudEipanycastAnycastEipAddressDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudEipanycastAnycastEipAddressDataSourceNameMapFunc,
 	}
 
-	preCheck := func() {
-		testAccPreCheck(t)
-		testAccPreCheckWithRegions(t, true, connectivity.EipanycastSupportRegions)
-	}
-	alicloudEipanycastAnycastEipAddressCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, anycastEipAddressNameConf, serviceLocationConf, idsConf, nameRegexConf, statusConf, allConf)
+	alicloudEipanycastAnycastEipAddressCheckInfo.dataSourceTestCheck(t, rand, anycastEipAddressNameConf, serviceLocationConf, idsConf, nameRegexConf, statusConf, allConf)
 }
 func testAccCheckAlicloudEipanycastAnycastEipAddressDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

@@ -10,7 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
+func SkipTestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
+	// Cassandra has been offline
+	t.Skip("Cassandra has been offline")
 	var v cassandra.DescribeDataCenterResponse
 	resourceId := "alicloud_cassandra_data_center.default"
 	ra := resourceAttrInit(resourceId, CassandraDataCenterMap)
@@ -25,7 +27,6 @@ func TestAccAlicloudCassandraDataCenter_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -141,7 +142,7 @@ func CassandraDataCenterBasicdependence(name string) string {
 		}
 		
 		data "alicloud_vpcs" "default" {
-		  is_default = true
+		  name_regex = "default-NODELETING"
 		}
 		
 		data "alicloud_vswitches" "default_1" {

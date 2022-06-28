@@ -89,10 +89,10 @@ type ScaleoutApplicationWithNewInstancesRequest struct {
 // ScaleoutApplicationWithNewInstancesResponse is the response struct for api ScaleoutApplicationWithNewInstances
 type ScaleoutApplicationWithNewInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId     string   `json:"RequestId" xml:"RequestId"`
+	ChangeOrderId string   `json:"ChangeOrderId" xml:"ChangeOrderId"`
 	Code          int      `json:"Code" xml:"Code"`
 	Message       string   `json:"Message" xml:"Message"`
-	ChangeOrderId string   `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	RequestId     string   `json:"RequestId" xml:"RequestId"`
 	InstanceIds   []string `json:"InstanceIds" xml:"InstanceIds"`
 }
 

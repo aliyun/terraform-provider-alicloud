@@ -71,12 +71,14 @@ func (client *Client) ModifyACLRuleWithCallback(request *ModifyACLRuleRequest, c
 // ModifyACLRuleRequest is the request struct for api ModifyACLRule
 type ModifyACLRuleRequest struct {
 	*requests.RpcRequest
+	DpiGroupIds          *[]string        `position:"Query" name:"DpiGroupIds"  type:"Repeated"`
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	SourcePortRange      string           `position:"Query" name:"SourcePortRange"`
 	SourceCidr           string           `position:"Query" name:"SourceCidr"`
 	Description          string           `position:"Query" name:"Description"`
 	Type                 string           `position:"Query" name:"Type"`
 	DestCidr             string           `position:"Query" name:"DestCidr"`
+	DpiSignatureIds      *[]string        `position:"Query" name:"DpiSignatureIds"  type:"Repeated"`
 	Direction            string           `position:"Query" name:"Direction"`
 	Policy               string           `position:"Query" name:"Policy"`
 	AclId                string           `position:"Query" name:"AclId"`
@@ -93,20 +95,22 @@ type ModifyACLRuleRequest struct {
 // ModifyACLRuleResponse is the response struct for api ModifyACLRule
 type ModifyACLRuleResponse struct {
 	*responses.BaseResponse
-	RequestId       string `json:"RequestId" xml:"RequestId"`
-	AcrId           string `json:"AcrId" xml:"AcrId"`
-	AclId           string `json:"AclId" xml:"AclId"`
-	Description     string `json:"Description" xml:"Description"`
-	Direction       string `json:"Direction" xml:"Direction"`
-	SourceCidr      string `json:"SourceCidr" xml:"SourceCidr"`
-	DestCidr        string `json:"DestCidr" xml:"DestCidr"`
-	IpProtocol      string `json:"IpProtocol" xml:"IpProtocol"`
-	SourcePortRange string `json:"SourcePortRange" xml:"SourcePortRange"`
-	DestPortRange   string `json:"DestPortRange" xml:"DestPortRange"`
-	Policy          string `json:"Policy" xml:"Policy"`
-	Priority        int    `json:"Priority" xml:"Priority"`
-	GmtCreate       int64  `json:"GmtCreate" xml:"GmtCreate"`
-	Name            string `json:"Name" xml:"Name"`
+	Policy          string                         `json:"Policy" xml:"Policy"`
+	Description     string                         `json:"Description" xml:"Description"`
+	RequestId       string                         `json:"RequestId" xml:"RequestId"`
+	SourcePortRange string                         `json:"SourcePortRange" xml:"SourcePortRange"`
+	SourceCidr      string                         `json:"SourceCidr" xml:"SourceCidr"`
+	Priority        int                            `json:"Priority" xml:"Priority"`
+	AclId           string                         `json:"AclId" xml:"AclId"`
+	AcrId           string                         `json:"AcrId" xml:"AcrId"`
+	DestPortRange   string                         `json:"DestPortRange" xml:"DestPortRange"`
+	Direction       string                         `json:"Direction" xml:"Direction"`
+	Name            string                         `json:"Name" xml:"Name"`
+	GmtCreate       int64                          `json:"GmtCreate" xml:"GmtCreate"`
+	DestCidr        string                         `json:"DestCidr" xml:"DestCidr"`
+	IpProtocol      string                         `json:"IpProtocol" xml:"IpProtocol"`
+	DpiGroupIds     DpiGroupIdsInModifyACLRule     `json:"DpiGroupIds" xml:"DpiGroupIds"`
+	DpiSignatureIds DpiSignatureIdsInModifyACLRule `json:"DpiSignatureIds" xml:"DpiSignatureIds"`
 }
 
 // CreateModifyACLRuleRequest creates a request to invoke ModifyACLRule API

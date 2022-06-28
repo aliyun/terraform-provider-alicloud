@@ -50,7 +50,8 @@ func testSweepFcFunction(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("Error retrieving FC services: %s", err)
+		return nil
 	}
 
 	swept := false
@@ -61,7 +62,7 @@ func testSweepFcFunction(region string) error {
 			return fcClient.ListFunctions(fc.NewListFunctionsInput(*serviceName))
 		})
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		} else {
 			functions := raw.(*fc.ListFunctionsOutput)
 			for _, v := range functions.Functions {
@@ -331,7 +332,6 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFCFunctionConfigDependence)
 
 	// REQUIREMENT: the image must be in the repo already.
-	imgUrl := "registry.cn-hangzhou.aliyuncs.com/yhr-work/helloworld:v1beta1"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
 		Providers:    testAccProviders,
@@ -345,14 +345,14 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 					"runtime": "custom-container",
 					"custom_container_config": []map[string]string{
 						{
-							"image": imgUrl,
+							"image": fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
 						},
 					},
 					"ca_port": "9527",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"custom_container_config.0.image": imgUrl,
+						"custom_container_config.0.image": fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
 						"ca_port":                         "9527",
 					}),
 				),
@@ -365,7 +365,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 					"runtime": "custom-container",
 					"custom_container_config": []map[string]string{
 						{
-							"image":   imgUrl,
+							"image":   fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
 							"command": "${local.container_command}",
 							"args":    "${local.container_args}",
 						},
@@ -374,7 +374,7 @@ func TestAccAlicloudFCFunction_custom_container(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"custom_container_config.0.image":   imgUrl,
+						"custom_container_config.0.image":   fmt.Sprintf("registry.%s.aliyuncs.com/eci_open/nginx:alpine", os.Getenv("ALICLOUD_REGION")),
 						"custom_container_config.0.command": `["python", "server.py"]`,
 						"custom_container_config.0.args":    `["a1", "a2"]`,
 						"ca_port":                           "9900",

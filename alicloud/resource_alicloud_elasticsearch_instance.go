@@ -1,16 +1,19 @@
 package alicloud
 
 import (
-	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -153,6 +156,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			// Kibana node configuration
+			"kibana_node_spec": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
+
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -227,6 +237,11 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"setting_config": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -234,26 +249,42 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
+	action := "createInstance"
 
-	request, err := buildElasticsearchCreateRequest(d, meta)
-	if err != nil {
-		return WrapError(err)
-	}
+	requestBody, err := buildElasticsearchCreateRequestBody(d, meta)
+	var response map[string]interface{}
 
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{"TokenPreviousRequestProcessError"}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.CreateInstance(request)
+	conn, err := elasticsearchService.client.NewElasticsearchClient()
+	requestQuery := map[string]*string{
+		"clientToken": StringPointer(buildClientToken(action)),
+	}
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer("/openapi/instances"), requestQuery, nil, requestBody, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, errorCodeList) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
 	})
 
+	addDebug(action, response, nil)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_elasticsearch_instance", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
-	response, _ := raw.(*elasticsearch.CreateInstanceResponse)
-	d.SetId(response.Result.InstanceId)
+	resp, err := jsonpath.Get("$.body.Result.instanceId", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.Result.instanceId", response)
+	}
+	d.SetId(resp.(string))
 
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
@@ -277,46 +308,57 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("description", object.Result.Description)
-	d.Set("status", object.Result.Status)
-	d.Set("vswitch_id", object.Result.NetworkConfig.VswitchId)
+	d.Set("description", object["description"])
+	d.Set("status", object["status"])
+	d.Set("vswitch_id", object["networkConfig"].(map[string]interface{})["vswitchId"])
 
-	d.Set("private_whitelist", filterWhitelist(object.Result.EsIPWhitelist, d.Get("private_whitelist").(*schema.Set)))
-	d.Set("public_whitelist", filterWhitelist(object.Result.PublicIpWhitelist, d.Get("public_whitelist").(*schema.Set)))
-	d.Set("enable_public", object.Result.EnablePublic)
-	d.Set("version", object.Result.EsVersion)
-	d.Set("instance_charge_type", getChargeType(object.Result.PaymentType))
+	esIPWhitelist := object["esIPWhitelist"].([]interface{})
+	publicIpWhitelist := object["publicIpWhitelist"].([]interface{})
+	d.Set("private_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(esIPWhitelist), d.Get("private_whitelist").(*schema.Set)))
+	d.Set("public_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(publicIpWhitelist), d.Get("public_whitelist").(*schema.Set)))
+	d.Set("enable_public", object["enablePublic"])
+	d.Set("version", object["esVersion"])
+	d.Set("instance_charge_type", getChargeType(object["paymentType"].(string)))
 
-	d.Set("domain", object.Result.Domain)
-	d.Set("port", object.Result.Port)
+	d.Set("domain", object["domain"])
+	d.Set("port", object["port"])
 
 	// Kibana configuration
-	d.Set("enable_kibana_public_network", object.Result.EnableKibanaPublicNetwork)
-	d.Set("kibana_whitelist", filterWhitelist(object.Result.KibanaIPWhitelist, d.Get("kibana_whitelist").(*schema.Set)))
-	if object.Result.EnableKibanaPublicNetwork {
-		d.Set("kibana_domain", object.Result.KibanaDomain)
-		d.Set("kibana_port", object.Result.KibanaPort)
+	d.Set("enable_kibana_public_network", object["enableKibanaPublicNetwork"])
+	kibanaIPWhitelist := object["kibanaIPWhitelist"].([]interface{})
+	d.Set("kibana_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(kibanaIPWhitelist), d.Get("kibana_whitelist").(*schema.Set)))
+	if object["enableKibanaPublicNetwork"].(bool) {
+		d.Set("kibana_domain", object["kibanaDomain"])
+		d.Set("kibana_port", object["kibanaPort"])
 	}
 
-	d.Set("enable_kibana_private_network", object.Result.EnableKibanaPrivateNetwork)
-	d.Set("kibana_private_whitelist", filterWhitelist(object.Result.KibanaPrivateIPWhitelist, d.Get("kibana_private_whitelist").(*schema.Set)))
+	d.Set("enable_kibana_private_network", object["enableKibanaPrivateNetwork"])
+	kibanaPrivateIPWhitelist := object["kibanaPrivateIPWhitelist"].([]interface{})
+	d.Set("kibana_private_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(kibanaPrivateIPWhitelist), d.Get("kibana_private_whitelist").(*schema.Set)))
 
 	// Data node configuration
-	d.Set("data_node_amount", object.Result.NodeAmount)
-	d.Set("data_node_spec", object.Result.NodeSpec.Spec)
-	d.Set("data_node_disk_size", object.Result.NodeSpec.Disk)
-	d.Set("data_node_disk_type", object.Result.NodeSpec.DiskType)
-	d.Set("data_node_disk_encrypted", object.Result.NodeSpec.DiskEncryption)
-	d.Set("master_node_spec", object.Result.MasterConfiguration.Spec)
+	d.Set("data_node_amount", object["nodeAmount"])
+	d.Set("data_node_spec", object["nodeSpec"].(map[string]interface{})["spec"])
+	d.Set("data_node_disk_size", object["nodeSpec"].(map[string]interface{})["disk"])
+	d.Set("data_node_disk_type", object["nodeSpec"].(map[string]interface{})["diskType"])
+	d.Set("data_node_disk_encrypted", object["nodeSpec"].(map[string]interface{})["diskEncryption"])
+	d.Set("master_node_spec", object["masterConfiguration"].(map[string]interface{})["spec"])
 	// Client node configuration
-	d.Set("client_node_amount", object.Result.ClientNodeConfiguration.Amount)
-	d.Set("client_node_spec", object.Result.ClientNodeConfiguration.Spec)
+	d.Set("client_node_amount", object["clientNodeConfiguration"].(map[string]interface{})["amount"])
+	d.Set("client_node_spec", object["clientNodeConfiguration"].(map[string]interface{})["spec"])
+	// Kibana node configuration
+	d.Set("kibana_node_spec", object["kibanaConfiguration"].(map[string]interface{})["spec"])
 	// Protocol: HTTP/HTTPS
-	d.Set("protocol", object.Result.Protocol)
+	d.Set("protocol", object["protocol"])
 
 	// Cross zone configuration
-	d.Set("zone_count", object.Result.ZoneCount)
-	d.Set("resource_group_id", object.Result.ResourceGroupId)
+	d.Set("zone_count", object["zoneCount"])
+	d.Set("resource_group_id", object["resourceGroupId"])
+
+	esConfig := object["esConfig"].(map[string]interface{})
+	if esConfig != nil {
+		d.Set("setting_config", esConfig)
+	}
 
 	// tags
 	tags, err := elasticsearchService.DescribeElasticsearchTags(d.Id())
@@ -381,7 +423,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("public_whitelist")
 	}
 
-	if d.HasChange("enable_kibana_public_network") {
+	if d.HasChange("enable_kibana_public_network") || d.IsNewResource() {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PUBLIC)
 		content["nodeType"] = string(KIBANA)
@@ -451,6 +493,19 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("client_node_amount")
 	}
 
+	if d.HasChange("kibana_node_spec") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if err := updateKibanaNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("kibana_node_spec")
+	}
+
 	if d.HasChange("protocol") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -472,6 +527,46 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("protocol")
+	}
+
+	if d.HasChange("setting_config") {
+		conn, err := client.NewElasticsearchClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action := "UpdateInstanceSettings"
+		content := make(map[string]interface{})
+		config := d.Get("setting_config").(map[string]interface{})
+		content["esConfig"] = config
+		requestQuery := map[string]*string{
+			"clientToken": StringPointer(buildClientToken(action)),
+		}
+
+		// retry
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("POST"), StringPointer("AK"),
+				String(fmt.Sprintf("/openapi/instances/%s/instance-settings", d.Id())), requestQuery, nil, content, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"ConcurrencyUpdateInstanceConflict", "InstanceStatusNotSupportCurrentAction", "InstanceDuplicateScheduledTask"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, content)
+			return nil
+		})
+
+		if err != nil && !IsExpectedErrors(err, []string{"MustChangeOneResource", "CssCheckUpdowngradeError"}) {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+		stateConf.PollInterval = 5 * time.Second
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("setting_config")
 	}
 
 	if d.IsNewResource() {
@@ -556,31 +651,41 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	elasticsearchService := ElasticsearchService{client}
+	action := "DeleteInstance"
 
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == strings.ToLower(string(PrePaid)) {
 		return WrapError(Error("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
 	}
-
-	request := elasticsearch.CreateDeleteInstanceRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
-	request.InstanceId = d.Id()
-	request.SetContentType("application/json")
-
+	var response map[string]interface{}
+	requestQuery := map[string]*string{
+		"clientToken": StringPointer(buildClientToken(action)),
+	}
 	// retry
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	errorCodeList := []string{"InstanceActivating", "TokenPreviousRequestProcessError"}
-	raw, err := elasticsearchService.ElasticsearchRetryFunc(wait, errorCodeList, func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.DeleteInstance(request)
+	conn, err := elasticsearchService.client.NewElasticsearchClient()
+
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequestWithAction(StringPointer(action), StringPointer("2017-06-13"), nil, StringPointer("DELETE"), StringPointer("AK"),
+			String(fmt.Sprintf("/openapi/instances/%s", d.Id())), requestQuery, nil, nil, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, errorCodeList) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, nil)
+		return nil
 	})
 
+	addDebug(action, response, nil)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RoaRequest, request)
 
 	stateConf := BuildStateConf([]string{"activating", "inactive", "active"}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{}))
 	stateConf.PollInterval = 5 * time.Second
@@ -594,11 +699,8 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (*elasticsearch.CreateInstanceRequest, error) {
+func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
-	request := elasticsearch.CreateCreateInstanceRequest()
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RegionId = client.RegionId
 	vpcService := VpcService{client}
 
 	content := make(map[string]interface{})
@@ -622,6 +724,7 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 	content["nodeAmount"] = d.Get("data_node_amount")
 	content["esVersion"] = d.Get("version")
+	content["description"] = d.Get("description")
 
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
@@ -636,9 +739,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 		kmsService := KmsService{client}
 		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
-			return request, WrapError(err)
+			return content, WrapError(err)
 		}
-		content["esAdminPassword"] = decryptResp.Plaintext
+		content["esAdminPassword"] = decryptResp
 	}
 
 	// Data node configuration
@@ -650,9 +753,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	content["nodeSpec"] = dataNodeSpec
 
 	// Master node configuration
-	if d.Get("master_node_spec") != nil && d.Get("master_node_spec") != "" {
+	if v, ok := d.GetOk("master_node_spec"); ok {
 		masterNode := make(map[string]interface{})
-		masterNode["spec"] = d.Get("master_node_spec")
+		masterNode["spec"] = v.(string)
 		masterNode["amount"] = "3"
 		masterNode["disk"] = "20"
 		masterNode["diskType"] = "cloud_ssd"
@@ -661,9 +764,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 	}
 
 	// Client node configuration
-	if d.Get("client_node_spec") != nil && d.Get("client_node_spec") != "" {
+	if v, ok := d.GetOk("client_node_spec"); ok {
 		clientNode := make(map[string]interface{})
-		clientNode["spec"] = d.Get("client_node_spec")
+		clientNode["spec"] = v.(string)
 		clientNode["disk"] = "20"
 		clientNode["diskType"] = "cloud_efficiency"
 		if d.Get("client_node_amount") == nil {
@@ -674,6 +777,17 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 		content["haveClientNode"] = true
 		content["clientNodeConfiguration"] = clientNode
+	}
+
+	// Kibana node configuration
+
+	if v, ok := d.GetOk("kibana_node_spec"); ok {
+		kibanaNode := make(map[string]interface{})
+		kibanaNode["spec"] = v.(string)
+		kibanaNode["disk"] = "0"
+		kibanaNode["amount"] = 1
+		content["haveKibana"] = true
+		content["kibanaConfiguration"] = kibanaNode
 	}
 
 	// Network configuration
@@ -691,16 +805,9 @@ func buildElasticsearchCreateRequest(d *schema.ResourceData, meta interface{}) (
 
 	content["networkConfig"] = network
 
-	if d.Get("zone_count") != nil && d.Get("zone_count") != "" {
-		content["zoneCount"] = d.Get("zone_count")
+	if v, ok := d.GetOk("zone_count"); ok {
+		content["zoneCount"] = v
 	}
 
-	data, err := json.Marshal(content)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	request.SetContent(data)
-	request.SetContentType("application/json")
-
-	return request, nil
+	return content, nil
 }

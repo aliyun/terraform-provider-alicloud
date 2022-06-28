@@ -83,14 +83,14 @@ type DescribeSagRouteProtocolOspfRequest struct {
 type DescribeSagRouteProtocolOspfResponse struct {
 	*responses.BaseResponse
 	RequestId          string      `json:"RequestId" xml:"RequestId"`
-	RouterId           string      `json:"RouterId" xml:"RouterId"`
-	AreaId             string      `json:"AreaId" xml:"AreaId"`
-	AreaType           string      `json:"AreaType" xml:"AreaType"`
 	DeadTime           int         `json:"DeadTime" xml:"DeadTime"`
-	HelloTime          int         `json:"HelloTime" xml:"HelloTime"`
-	AuthenticationType string      `json:"AuthenticationType" xml:"AuthenticationType"`
 	Md5KeyId           int         `json:"Md5KeyId" xml:"Md5KeyId"`
+	AreaId             string      `json:"AreaId" xml:"AreaId"`
+	RouterId           string      `json:"RouterId" xml:"RouterId"`
+	HelloTime          int         `json:"HelloTime" xml:"HelloTime"`
+	AreaType           string      `json:"AreaType" xml:"AreaType"`
 	Md5Key             string      `json:"Md5Key" xml:"Md5Key"`
+	AuthenticationType string      `json:"AuthenticationType" xml:"AuthenticationType"`
 	TaskStates         []TaskState `json:"TaskStates" xml:"TaskStates"`
 }
 

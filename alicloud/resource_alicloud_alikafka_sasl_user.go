@@ -1,9 +1,12 @@
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
+	util "github.com/alibabacloud-go/tea-utils/service"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,6 +54,12 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
+			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"plain", "scram"}, false),
+			},
 		},
 	}
 }
@@ -58,11 +67,20 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	var response map[string]interface{}
+	action := "CreateSaslUser"
+	request := make(map[string]interface{})
+	conn, err := client.NewAlikafkaClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request["InstanceId"] = d.Get("instance_id")
+	request["Username"] = d.Get("username")
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
 
-	instanceId := d.Get("instance_id").(string)
-	regionId := client.RegionId
-	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	kmsPassword := d.Get("kms_encrypted_password").(string)
 
@@ -70,45 +88,40 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
 
-	request := alikafka.CreateCreateSaslUserRequest()
-	request.InstanceId = instanceId
-	request.RegionId = regionId
-	request.Username = username
-
 	if password != "" {
-		request.Password = password
+		request["Password"] = password
 	} else {
 		kmsService := KmsService{client}
 		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
-		request.Password = decryptResp.Plaintext
+		request["Password"] = decryptResp
 	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.CreateSaslUser(request)
-		})
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
-				time.Sleep(2 * time.Second)
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	// Server may have cache, sleep a while.
 	time.Sleep(2 * time.Second)
-	d.SetId(instanceId + ":" + username)
-	return resourceAlicloudAlikafkaSaslUserUpdate(d, meta)
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Username"]))
+	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
 }
 
 func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface{}) error {
@@ -116,44 +129,51 @@ func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	object, err := alikafkaService.DescribeAliKafkaSaslUser(d.Id())
 	if err != nil {
-		return WrapError(err)
-	}
-	object, err := alikafkaService.DescribeAlikafkaSaslUser(d.Id())
-	if err != nil {
-		// Handle exceptions
 		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_ali_kafka_consumer_group alikafkaService.DescribeAlikafkaSaslUser Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Set("instance_id", parts[0])
-	d.Set("username", object.Username)
-
+	d.Set("username", parts[1])
+	d.Set("type", object["Type"])
 	return nil
 }
 
 func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
+	var response map[string]interface{}
+	conn, err := client.NewAlikafkaClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	instanceId := parts[0]
-	username := parts[1]
+
+	request := map[string]interface{}{
+		"InstanceId": parts[0],
+		"Username":   parts[1],
+		"RegionId":   client.RegionId,
+	}
+
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
-
-		request := alikafka.CreateCreateSaslUserRequest()
-		request.InstanceId = instanceId
-		request.RegionId = client.RegionId
-		request.Username = username
 
 		password := d.Get("password").(string)
 		kmsPassword := d.Get("kms_encrypted_password").(string)
@@ -163,76 +183,85 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 		}
 
 		if password != "" {
-			request.Password = password
+			request["Password"] = password
 		} else {
 			kmsService := KmsService{client}
 			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp.Plaintext
+			request["Password"] = decryptResp
 		}
 
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-				return alikafkaClient.CreateSaslUser(request)
-			})
+		action := "CreateSaslUser"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
-					time.Sleep(2 * time.Second)
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
 		// Server may have cache, sleep a while.
 		time.Sleep(1000)
 	}
+
 	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
 }
 
 func resourceAlicloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
-	alikafkaService := AlikafkaService{client}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	instanceId := parts[0]
-	username := parts[1]
+	action := "DeleteSaslUser"
+	var response map[string]interface{}
+	conn, err := client.NewAlikafkaClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
-	request := alikafka.CreateDeleteSaslUserRequest()
-	request.RegionId = client.RegionId
-	request.InstanceId = instanceId
-	request.Username = username
+	request := map[string]interface{}{
+		"Username":   parts[1],
+		"InstanceId": parts[0],
+	}
 
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
-			return alikafkaClient.DeleteSaslUser(request)
-		})
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+
+	request["RegionId"] = client.RegionId
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
-				time.Sleep(10 * time.Second)
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-
-	return WrapError(alikafkaService.WaitForAlikafkaSaslUser(d.Id(), Deleted, DefaultTimeoutMedium))
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	return nil
 }

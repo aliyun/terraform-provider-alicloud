@@ -47,7 +47,8 @@ func testSweepFCServices(region string) error {
 		return fcClient.ListServices(fc.NewListServicesInput())
 	})
 	if err != nil {
-		return fmt.Errorf("Error retrieving FC services: %s", err)
+		log.Printf("Error retrieving FC services: %s", err)
+		return nil
 	}
 	services, _ := raw.(*fc.ListServicesOutput)
 	for _, v := range services.Services {
@@ -402,7 +403,7 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name_prefix"},
+				ImportStateVerifyIgnore: []string{"name_prefix", "publish"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -599,7 +600,7 @@ resource "alicloud_log_store" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  is_default = true
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {

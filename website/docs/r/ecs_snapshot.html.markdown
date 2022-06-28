@@ -21,15 +21,15 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_snapshot" "default" {
-	category       = "standard"
-	description    = "Test For Terraform"
-	disk_id        = "d-gw8csgxxxxxxxxx"
-	retention_days = "20"
-	snapshot_name  = "tf-test"
-	tags 				 = {
-		Created = "TF"
-		For 	= "Acceptance-test"
-	}
+  category       = "standard"
+  description    = "Test For Terraform"
+  disk_id        = "d-gw8csgxxxxxxxxx"
+  retention_days = "20"
+  snapshot_name  = "tf-test"
+  tags = {
+    Created = "TF"
+    For     = "Acceptance-test"
+  }
 }
 
 ```
@@ -47,6 +47,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `retention_days` - (Optional, ForceNew) The retention period of the snapshot.
 * `snapshot_name` - (Optional) The name of the snapshot.
+* `name` - (Optional, Deprecated in v1.120.0+) Field `name` has been deprecated from provider version 1.120.0. New field `snapshot_name` instead. 
 * `tags` - (Optional) A mapping of tags to assign to the snapshot.
 
 -> **NOTE:** If `force` is true, After an snapshot is deleted, the disks created from this snapshot cannot be re-initialized.

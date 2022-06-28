@@ -269,7 +269,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 		}
 		WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForRouterInterface(d.Id(), client.RegionId, Deleted, DefaultTimeoutMedium))
+	return WrapError(vpcService.WaitForRouterInterface(d.Id(), client.RegionId, Deleted, DefaultLongTimeout))
 }
 
 func buildAlicloudRouterInterfaceCreateArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateRouterInterfaceRequest, error) {

@@ -36,7 +36,6 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 
 		// module name
@@ -189,8 +188,8 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 	var v ecs.AutoProvisioningGroup
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccautoprovisioninggroup-%d", rand)
-	validFrom := time.Now().Format("2006-01-02T15:04:05Z")
-	validUntil := time.Now().AddDate(0, 1, 0).Format("2006-01-02T15:04:05Z")
+	validFrom := time.Now().AddDate(0, 0, 1).UTC().Format("2006-01-02T15:04:05Z")
+	validUntil := time.Now().AddDate(0, 0, 3).UTC().Format("2006-01-02T15:04:05Z")
 	var basicMap = map[string]string{
 		"launch_template_id":                         CHECKSET,
 		"total_target_capacity":                      "4",
@@ -214,7 +213,6 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithNoDefaultVpc(t)
 		},
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),

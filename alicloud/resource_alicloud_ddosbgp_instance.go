@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"strconv"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -74,19 +77,35 @@ func resourceAlicloudDdosbgpInstanceCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 
 	request := buildDdosbgpCreateRequest(client.RegionId, d, meta)
+	var response *bssopenapi.CreateInstanceResponse
+	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
+			return bssopenapiClient.CreateInstance(request)
+		})
 
-	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		return bssopenapiClient.CreateInstance(request)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request.RegionId = string(connectivity.APSouthEast1)
+				request.Domain = connectivity.BssOpenAPIEndpointInternational
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response = raw.(*bssopenapi.CreateInstanceResponse)
+
+		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddosbgp_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	resp := raw.(*bssopenapi.CreateInstanceResponse)
-
-	d.SetId(resp.Data.InstanceId)
+	instanceId := response.Data.InstanceId
+	if !response.Success {
+		return WrapError(Error(response.Message))
+	}
+	d.SetId(instanceId)
 
 	return resourceAlicloudDdosbgpInstanceUpdate(d, meta)
 }

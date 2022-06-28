@@ -9,7 +9,7 @@ require (
 	github.com/go-kit/kit v0.10.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
-	github.com/pierrec/lz4 v2.5.2+incompatible
+	github.com/pierrec/lz4 v2.6.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/atomic v1.5.0

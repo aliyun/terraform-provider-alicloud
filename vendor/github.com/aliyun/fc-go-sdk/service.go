@@ -11,6 +11,7 @@ import (
 const (
 	servicesPath        = "/services"
 	provisionConfigPath = "/provision-configs"
+	onDemandConfigPath  = "/on-demand-configs"
 	singleServicePath   = servicesPath + "/%s"
 	functionsPath       = singleServicePath + "/functions"
 	singleFunctionPath  = functionsPath + "/%s"
@@ -29,9 +30,15 @@ const (
 	functionCodeWithQualifierPath    = singleFunctionWithQualifierPath + "/code"
 	invokeFunctionWithQualifierPath  = singleFunctionWithQualifierPath + "/invocations"
 	provisionConfigWithQualifierPath = singleFunctionWithQualifierPath + "/provision-config"
-	asyncConfigPath = singleFunctionPath + "/async-invoke-config"
-	asyncConfigWithQualifierPath = singleFunctionWithQualifierPath + "/async-invoke-config"
-	listAsyncConfigsPath = singleFunctionPath + "/async-invoke-configs"
+	onDemandConfigWithQualifierPath  = singleFunctionWithQualifierPath + "/on-demand-config"
+	asyncConfigPath                  = singleFunctionPath + "/async-invoke-config"
+	asyncConfigWithQualifierPath     = singleFunctionWithQualifierPath + "/async-invoke-config"
+	listAsyncConfigsPath             = singleFunctionPath + "/async-invoke-configs"
+
+	statefulAsyncInvocationPath                   = singleFunctionPath + "/stateful-async-invocations/%s"
+	statefulAsyncInvocationWithQualifierPath      = singleFunctionWithQualifierPath + "/stateful-async-invocations/%s"
+	listStatefulAsyncInvocationsPath              = singleFunctionPath + "/stateful-async-invocations"
+	listStatefulAsyncInvocationsWithQualifierPath = singleFunctionWithQualifierPath + "/stateful-async-invocations"
 
 	printIndent = "  "
 
@@ -50,8 +57,10 @@ type ServiceInput interface {
 
 // LogConfig defines the log config for service
 type LogConfig struct {
-	Project  *string `json:"project"`
-	Logstore *string `json:"logstore"`
+	Project               *string `json:"project"`
+	Logstore              *string `json:"logstore"`
+	EnableRequestMetrics  *bool   `json:"enableRequestMetrics"`
+	EnableInstanceMetrics *bool   `json:"enableInstanceMetrics"`
 }
 
 func NewLogConfig() *LogConfig {
@@ -65,6 +74,16 @@ func (l *LogConfig) WithProject(project string) *LogConfig {
 
 func (l *LogConfig) WithLogstore(logstore string) *LogConfig {
 	l.Logstore = &logstore
+	return l
+}
+
+func (l *LogConfig) WithEnableRequestMetrics(enableRequestMetrics bool) *LogConfig {
+	l.EnableRequestMetrics = &enableRequestMetrics
+	return l
+}
+
+func (l *LogConfig) WithEnableInstanceMetrics(enableInstanceMetrics bool) *LogConfig {
+	l.EnableInstanceMetrics = &enableInstanceMetrics
 	return l
 }
 
@@ -134,54 +153,99 @@ func (n *NASConfig) WithMountPoints(mountPoints []NASMountConfig) *NASConfig {
 	return n
 }
 
+type TracingConfig struct {
+	Type   *string     `json:"type"`
+	Params interface{} `json:"params"`
+}
+
+func NewTracingConfig() *TracingConfig {
+	return &TracingConfig{}
+}
+
+func (t *TracingConfig) WithType(tracingType string) *TracingConfig {
+	t.Type = &tracingType
+	return t
+}
+
+func (t *TracingConfig) WithParams(params interface{}) *TracingConfig {
+	t.Params = params
+	return t
+}
+
+func (t *TracingConfig) WithJaegerConfig(config *JaegerConfig) *TracingConfig {
+	jaegerType := TracingTypeJaeger
+	t.Type = &jaegerType
+	t.Params = config
+	return t
+}
+
+type JaegerConfig struct {
+	Endpoint *string `json:"endpoint"`
+}
+
+func NewJaegerConfig() *JaegerConfig {
+	return &JaegerConfig{}
+}
+
+func (j *JaegerConfig) WithEndpoint(endpoint string) *JaegerConfig {
+	j.Endpoint = &endpoint
+	return j
+}
+
 // CreateServiceInput defines input to create service
 type CreateServiceInput struct {
-	ServiceName    *string    `json:"serviceName"`
-	Description    *string    `json:"description"`
-	Role           *string    `json:"role"`
-	LogConfig      *LogConfig `json:"logConfig"`
-	VPCConfig      *VPCConfig `json:"vpcConfig"`
-	InternetAccess *bool      `json:"internetAccess"`
-	NASConfig      *NASConfig `json:"nasConfig"`
+	ServiceName    *string        `json:"serviceName"`
+	Description    *string        `json:"description"`
+	Role           *string        `json:"role"`
+	LogConfig      *LogConfig     `json:"logConfig"`
+	VPCConfig      *VPCConfig     `json:"vpcConfig"`
+	InternetAccess *bool          `json:"internetAccess"`
+	NASConfig      *NASConfig     `json:"nasConfig"`
+	TracingConfig  *TracingConfig `json:"tracingConfig"`
 }
 
 func NewCreateServiceInput() *CreateServiceInput {
 	return &CreateServiceInput{}
 }
 
-func (s *CreateServiceInput) WithServiceName(serviceName string) *CreateServiceInput {
-	s.ServiceName = &serviceName
-	return s
+func (i *CreateServiceInput) WithServiceName(serviceName string) *CreateServiceInput {
+	i.ServiceName = &serviceName
+	return i
 }
 
-func (s *CreateServiceInput) WithDescription(description string) *CreateServiceInput {
-	s.Description = &description
-	return s
+func (i *CreateServiceInput) WithDescription(description string) *CreateServiceInput {
+	i.Description = &description
+	return i
 }
 
-func (s *CreateServiceInput) WithRole(role string) *CreateServiceInput {
-	s.Role = &role
-	return s
+func (i *CreateServiceInput) WithRole(role string) *CreateServiceInput {
+	i.Role = &role
+	return i
 }
 
-func (s *CreateServiceInput) WithLogConfig(logConfig *LogConfig) *CreateServiceInput {
-	s.LogConfig = logConfig
-	return s
+func (i *CreateServiceInput) WithLogConfig(logConfig *LogConfig) *CreateServiceInput {
+	i.LogConfig = logConfig
+	return i
 }
 
-func (s *CreateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *CreateServiceInput {
-	s.VPCConfig = vpcConfig
-	return s
+func (i *CreateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *CreateServiceInput {
+	i.VPCConfig = vpcConfig
+	return i
 }
 
-func (s *CreateServiceInput) WithNASConfig(nasConfig *NASConfig) *CreateServiceInput {
-	s.NASConfig = nasConfig
-	return s
+func (i *CreateServiceInput) WithInternetAccess(access bool) *CreateServiceInput {
+	i.InternetAccess = &access
+	return i
 }
 
-func (s *CreateServiceInput) WithInternetAccess(access bool) *CreateServiceInput {
-	s.InternetAccess = &access
-	return s
+func (i *CreateServiceInput) WithNASConfig(nasConfig *NASConfig) *CreateServiceInput {
+	i.NASConfig = nasConfig
+	return i
+}
+
+func (i *CreateServiceInput) WithTracingConfig(tracingConfig *TracingConfig) *CreateServiceInput {
+	i.TracingConfig = tracingConfig
+	return i
 }
 
 func (i *CreateServiceInput) GetQueryParams() url.Values {
@@ -229,12 +293,13 @@ func (o CreateServiceOutput) GetEtag() string {
 
 // ServiceUpdateObject defines the service update fields
 type ServiceUpdateObject struct {
-	Description    *string    `json:"description"`
-	Role           *string    `json:"role"`
-	LogConfig      *LogConfig `json:"logConfig"`
-	VPCConfig      *VPCConfig `json:"vpcConfig"`
-	InternetAccess *bool      `json:"internetAccess"`
-	NASConfig      *NASConfig `json:"nasConfig"`
+	Description    *string        `json:"description"`
+	Role           *string        `json:"role"`
+	LogConfig      *LogConfig     `json:"logConfig"`
+	VPCConfig      *VPCConfig     `json:"vpcConfig"`
+	InternetAccess *bool          `json:"internetAccess"`
+	NASConfig      *NASConfig     `json:"nasConfig"`
+	TracingConfig  *TracingConfig `json:"tracingConfig"`
 }
 
 type UpdateServiceInput struct {
@@ -247,39 +312,44 @@ func NewUpdateServiceInput(serviceName string) *UpdateServiceInput {
 	return &UpdateServiceInput{ServiceName: &serviceName}
 }
 
-func (s *UpdateServiceInput) WithDescription(description string) *UpdateServiceInput {
-	s.Description = &description
-	return s
+func (i *UpdateServiceInput) WithDescription(description string) *UpdateServiceInput {
+	i.Description = &description
+	return i
 }
 
-func (s *UpdateServiceInput) WithRole(role string) *UpdateServiceInput {
-	s.Role = &role
-	return s
+func (i *UpdateServiceInput) WithRole(role string) *UpdateServiceInput {
+	i.Role = &role
+	return i
 }
 
-func (s *UpdateServiceInput) WithLogConfig(logConfig *LogConfig) *UpdateServiceInput {
-	s.LogConfig = logConfig
-	return s
+func (i *UpdateServiceInput) WithLogConfig(logConfig *LogConfig) *UpdateServiceInput {
+	i.LogConfig = logConfig
+	return i
 }
 
-func (s *UpdateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *UpdateServiceInput {
-	s.VPCConfig = vpcConfig
-	return s
+func (i *UpdateServiceInput) WithVPCConfig(vpcConfig *VPCConfig) *UpdateServiceInput {
+	i.VPCConfig = vpcConfig
+	return i
 }
 
-func (s *UpdateServiceInput) WithNASConfig(nasConfig *NASConfig) *UpdateServiceInput {
-	s.NASConfig = nasConfig
-	return s
+func (i *UpdateServiceInput) WithInternetAccess(access bool) *UpdateServiceInput {
+	i.InternetAccess = &access
+	return i
 }
 
-func (s *UpdateServiceInput) WithInternetAccess(access bool) *UpdateServiceInput {
-	s.InternetAccess = &access
-	return s
+func (i *UpdateServiceInput) WithNASConfig(nasConfig *NASConfig) *UpdateServiceInput {
+	i.NASConfig = nasConfig
+	return i
 }
 
-func (s *UpdateServiceInput) WithIfMatch(ifMatch string) *UpdateServiceInput {
-	s.IfMatch = &ifMatch
-	return s
+func (i *UpdateServiceInput) WithTracingConfig(tracingConfig *TracingConfig) *UpdateServiceInput {
+	i.TracingConfig = tracingConfig
+	return i
+}
+
+func (i *UpdateServiceInput) WithIfMatch(ifMatch string) *UpdateServiceInput {
+	i.IfMatch = &ifMatch
+	return i
 }
 
 func (i *UpdateServiceInput) GetQueryParams() url.Values {
@@ -366,6 +436,7 @@ type serviceMetadata struct {
 	CreatedTime      *string           `json:"createdTime"`
 	LastModifiedTime *string           `json:"lastModifiedTime"`
 	NASConfig        *NASConfig        `json:"nasConfig"`
+	TracingConfig    *TracingConfig    `json:"tracingConfig"`
 	Tags             map[string]string `json:"tags"`
 }
 
@@ -513,9 +584,9 @@ func NewDeleteServiceInput(serviceName string) *DeleteServiceInput {
 	return &DeleteServiceInput{ServiceName: &serviceName}
 }
 
-func (s *DeleteServiceInput) WithIfMatch(ifMatch string) *DeleteServiceInput {
-	s.IfMatch = &ifMatch
-	return s
+func (i *DeleteServiceInput) WithIfMatch(ifMatch string) *DeleteServiceInput {
+	i.IfMatch = &ifMatch
+	return i
 }
 
 func (i *DeleteServiceInput) GetQueryParams() url.Values {

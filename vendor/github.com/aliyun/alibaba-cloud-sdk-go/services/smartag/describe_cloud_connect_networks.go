@@ -74,6 +74,7 @@ type DescribeCloudConnectNetworksRequest struct {
 	ResourceOwnerId      requests.Integer                   `position:"Query" name:"ResourceOwnerId"`
 	CcnId                string                             `position:"Query" name:"CcnId"`
 	PageNumber           requests.Integer                   `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string                             `position:"Query" name:"ResourceGroupId"`
 	PageSize             requests.Integer                   `position:"Query" name:"PageSize"`
 	Tag                  *[]DescribeCloudConnectNetworksTag `position:"Query" name:"Tag"  type:"Repeated"`
 	ResourceOwnerAccount string                             `position:"Query" name:"ResourceOwnerAccount"`
@@ -91,10 +92,10 @@ type DescribeCloudConnectNetworksTag struct {
 // DescribeCloudConnectNetworksResponse is the response struct for api DescribeCloudConnectNetworks
 type DescribeCloudConnectNetworksResponse struct {
 	*responses.BaseResponse
-	RequestId            string               `json:"RequestId" xml:"RequestId"`
 	TotalCount           int                  `json:"TotalCount" xml:"TotalCount"`
-	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
 	PageSize             int                  `json:"PageSize" xml:"PageSize"`
+	RequestId            string               `json:"RequestId" xml:"RequestId"`
+	PageNumber           int                  `json:"PageNumber" xml:"PageNumber"`
 	CloudConnectNetworks CloudConnectNetworks `json:"CloudConnectNetworks" xml:"CloudConnectNetworks"`
 }
 

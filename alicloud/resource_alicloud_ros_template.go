@@ -18,6 +18,9 @@ func resourceAlicloudRosTemplate() *schema.Resource {
 		Read:   resourceAlicloudRosTemplateRead,
 		Update: resourceAlicloudRosTemplateUpdate,
 		Delete: resourceAlicloudRosTemplateDelete,
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -117,6 +120,10 @@ func resourceAlicloudRosTemplateRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudRosTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rosService := RosService{client}
+	conn, err := client.NewRosClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -147,10 +154,6 @@ func resourceAlicloudRosTemplateUpdate(d *schema.ResourceData, meta interface{})
 			request["TemplateURL"] = d.Get("template_url")
 		}
 		action := "UpdateTemplate"
-		conn, err := client.NewRosClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

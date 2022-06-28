@@ -85,11 +85,11 @@ type QueryAccountTransactionDetailsRequest struct {
 // QueryAccountTransactionDetailsResponse is the response struct for api QueryAccountTransactionDetails
 type QueryAccountTransactionDetailsResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	Data      Data   `json:"Data" xml:"Data"`
+	Code      string                               `json:"Code" xml:"Code"`
+	Message   string                               `json:"Message" xml:"Message"`
+	RequestId string                               `json:"RequestId" xml:"RequestId"`
+	Success   bool                                 `json:"Success" xml:"Success"`
+	Data      DataInQueryAccountTransactionDetails `json:"Data" xml:"Data"`
 }
 
 // CreateQueryAccountTransactionDetailsRequest creates a request to invoke QueryAccountTransactionDetails API

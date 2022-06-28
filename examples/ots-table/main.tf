@@ -3,15 +3,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "example-ots-table"
+  vpc_name   = "example-ots-table"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  name              = "example-ots-table"
-  cidr_block        = "172.16.1.0/24"
-  vpc_id            = alicloud_vpc.default.id
-  availability_zone = data.alicloud_zones.default.zones[0].id
+  vswitch_name = "example-ots-table"
+  cidr_block   = "172.16.1.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_ots_instance" "default" {

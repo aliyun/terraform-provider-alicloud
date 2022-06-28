@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
+func TestAccAlicloudSLBListener_http_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -38,7 +38,7 @@ func TestAccAlicloudSlbListener_http_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "http",
@@ -349,7 +349,7 @@ func TestAccCheckSlbListenerForward(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSlbListener_same_port(t *testing.T) {
+func TestAccAlicloudSLBListener_same_port(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -385,7 +385,7 @@ func TestAccAlicloudSlbListener_same_port(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSlbListener_https_update(t *testing.T) {
+func TestAccAlicloudSLBListener_https_update(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -409,7 +409,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "https",
@@ -420,6 +420,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 					"cookie":                    "testslblistenercookie",
 					"health_check":              "on",
 					"health_check_uri":          "/cons",
+					"health_check_domain":       "internal-health-check",
 					"health_check_connect_port": "20",
 					"healthy_threshold":         "8",
 					"unhealthy_threshold":       "8",
@@ -456,6 +457,7 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 						"cookie_timeout":            "86400",
 						"health_check":              "on",
 						"health_check_connect_port": "20",
+						"health_check_domain":       "internal-health-check",
 						"healthy_threshold":         "8",
 						"unhealthy_threshold":       "8",
 						"health_check_timeout":      "8",
@@ -632,11 +634,22 @@ func TestAccAlicloudSlbListener_https_update(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_status": "off",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_status":          "off",
+						"health_check_domain": "internal-health-check",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
+func TestAccAlicloudSLBListener_tcp_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -660,7 +673,7 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":             "22",
 					"backend_port":              "22",
 					"protocol":                  "tcp",
@@ -830,7 +843,7 @@ func TestAccAlicloudSlbListener_tcp_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
+func TestAccAlicloudSLBListener_tcp_server_group(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -854,7 +867,7 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"frontend_port":             "22",
 					"protocol":                  "tcp",
 					"backend_port":              "22",
@@ -916,7 +929,7 @@ func TestAccAlicloudSlbListener_tcp_server_group(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
+func TestAccAlicloudSLBListener_udp_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -940,7 +953,7 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "2001",
 					"frontend_port":             "2001",
 					"protocol":                  "udp",
@@ -1069,7 +1082,7 @@ func TestAccAlicloudSlbListener_udp_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSlbListener_http_healcheckmethod(t *testing.T) {
+func TestAccAlicloudSLBListener_http_healcheckmethod(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1094,7 +1107,7 @@ func TestAccAlicloudSlbListener_http_healcheckmethod(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "http",
@@ -1180,7 +1193,7 @@ func TestAccAlicloudSlbListener_http_healcheckmethod(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSlbListener_https_healcheckmethod(t *testing.T) {
+func TestAccAlicloudSLBListener_https_healcheckmethod(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1205,7 +1218,7 @@ func TestAccAlicloudSlbListener_https_healcheckmethod(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":          "${alicloud_slb.default.id}",
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
 					"backend_port":              "80",
 					"frontend_port":             "80",
 					"protocol":                  "https",
@@ -1296,14 +1309,14 @@ func testAccSlbListenerHttpForward(name string) string {
 	return fmt.Sprintf(`
 	%s
 	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "http"
   		listener_forward = "on"
   		forward_port = "${alicloud_slb_listener.default-1.frontend_port}"
 	}
 	resource "alicloud_slb_listener" "default-1" {
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		backend_port = 80
   		frontend_port = 443
   		protocol = "https"
@@ -1329,14 +1342,14 @@ func testAccSlbListenerSamePort(name string) string {
   		default = "%s"
 	}
 	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "tcp"
 		bandwidth = "10"
 		backend_port = 80
 	}
 	resource "alicloud_slb_listener" "default-1" {
-  		load_balancer_id = "${alicloud_slb.default.id}"
+  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		frontend_port = 80
   		protocol = "udp"
 		bandwidth = "10"
@@ -1370,7 +1383,7 @@ func resourceSlbHTTPSListenerConfigDependence(name string) string {
 	}
 
     resource "alicloud_slb_ca_certificate" "default" {
-	  name           = "${var.name}"
+	  ca_certificate_name           = "${var.name}"
 	  ca_certificate = "-----BEGIN CERTIFICATE-----\nMIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV\nBAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP\nMA0GA1UECxMGQUxJWVVOMQ0wCwYDVQQDEwR0ZXN0MR8wHQYJKoZIhvcNAQkBFhB0\nZXN0QGhvdG1haWwuY29tMB4XDTE0MTEyNDA2MDQyNVoXDTI0MTEyMTA2MDQyNVow\ndjELMAkGA1UEBhMCQ04xCzAJBgNVBAgTAkJKMQswCQYDVQQHEwJCSjEMMAoGA1UE\nChMDQUxJMQ8wDQYDVQQLEwZBTElZVU4xDTALBgNVBAMTBHRlc3QxHzAdBgkqhkiG\n9w0BCQEWEHRlc3RAaG90bWFpbC5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ\nAoGBAM7SS3e9+Nj0HKAsRuIDNSsS3UK6b+62YQb2uuhKrp1HMrOx61WSDR2qkAnB\ncoG00Uz38EE+9DLYNUVQBK7aSgLP5M1Ak4wr4GqGyCgjejzzh3DshUzLCCy2rook\nKOyRTlPX+Q5l7rE1fcSNzgepcae5i2sE1XXXzLRIDIvQxcspAgMBAAGjgdswgdgw\nHQYDVR0OBBYEFBdy+OuMsvbkV7R14f0OyoLoh2z4MIGoBgNVHSMEgaAwgZ2AFBdy\n+OuMsvbkV7R14f0OyoLoh2z4oXqkeDB2MQswCQYDVQQGEwJDTjELMAkGA1UECBMC\nQkoxCzAJBgNVBAcTAkJKMQwwCgYDVQQKEwNBTEkxDzANBgNVBAsTBkFMSVlVTjEN\nMAsGA1UEAxMEdGVzdDEfMB0GCSqGSIb3DQEJARYQdGVzdEBob3RtYWlsLmNvbYIJ\nAJn3ox4K13PoMAwGA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQEFBQADgYEAY7KOsnyT\ncQzfhiiG7ASjiPakw5wXoycHt5GCvLG5htp2TKVzgv9QTliA3gtfv6oV4zRZx7X1\nOfi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd\nDUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=\n-----END CERTIFICATE-----"
     }
     resource "alicloud_slb_server_certificate" "default" {

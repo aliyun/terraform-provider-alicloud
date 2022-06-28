@@ -83,12 +83,12 @@ type ModifySagRemoteAccessRequest struct {
 // ModifySagRemoteAccessResponse is the response struct for api ModifySagRemoteAccess
 type ModifySagRemoteAccessResponse struct {
 	*responses.BaseResponse
-	RequestId      string `json:"RequestId" xml:"RequestId"`
-	Success        bool   `json:"Success" xml:"Success"`
-	Code           string `json:"Code" xml:"Code"`
-	Message        string `json:"Message" xml:"Message"`
 	SerialNumber   string `json:"SerialNumber" xml:"SerialNumber"`
+	RequestId      string `json:"RequestId" xml:"RequestId"`
+	Message        string `json:"Message" xml:"Message"`
 	RemoteAccessIp string `json:"RemoteAccessIp" xml:"RemoteAccessIp"`
+	Code           string `json:"Code" xml:"Code"`
+	Success        bool   `json:"Success" xml:"Success"`
 }
 
 // CreateModifySagRemoteAccessRequest creates a request to invoke ModifySagRemoteAccess API

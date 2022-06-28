@@ -19,7 +19,7 @@ For information about Cloud Storage Gateway and how to use it, see [What is Clou
 
 ```terraform
 data "alicloud_cloud_storage_gateway_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

@@ -3,10 +3,13 @@ package alicloud
 import (
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudBrainIndustrialServiceDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.BrainIndustrialSupportRegions)
 	resourceId := "data.alicloud_brain_industrial_service.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{

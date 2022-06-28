@@ -82,15 +82,16 @@ type DescribeSAGDeviceInfoRequest struct {
 // DescribeSAGDeviceInfoResponse is the response struct for api DescribeSAGDeviceInfo
 type DescribeSAGDeviceInfoResponse struct {
 	*responses.BaseResponse
+	ServiceIP                   string `json:"ServiceIP" xml:"ServiceIP"`
+	ControllerState             string `json:"ControllerState" xml:"ControllerState"`
 	RequestId                   string `json:"RequestId" xml:"RequestId"`
+	SynStatus                   string `json:"SynStatus" xml:"SynStatus"`
+	SmartAGType                 string `json:"SmartAGType" xml:"SmartAGType"`
 	Version                     string `json:"Version" xml:"Version"`
 	VpnState                    string `json:"VpnState" xml:"VpnState"`
-	SmartAGType                 string `json:"SmartAGType" xml:"SmartAGType"`
-	ControllerState             string `json:"ControllerState" xml:"ControllerState"`
 	StartupTime                 string `json:"StartupTime" xml:"StartupTime"`
 	LastConnectedControllerTime string `json:"LastConnectedControllerTime" xml:"LastConnectedControllerTime"`
-	ServiceIP                   string `json:"ServiceIP" xml:"ServiceIP"`
-	SynStatus                   string `json:"SynStatus" xml:"SynStatus"`
+	ResettableStatus            string `json:"ResettableStatus" xml:"ResettableStatus"`
 }
 
 // CreateDescribeSAGDeviceInfoRequest creates a request to invoke DescribeSAGDeviceInfo API

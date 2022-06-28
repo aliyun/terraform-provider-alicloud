@@ -67,8 +67,19 @@ func resourceAlicloudResourceManagerControlPolicyCreate(d *schema.ResourceData, 
 	request["PolicyDocument"] = d.Get("policy_document")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
 	request["ClientToken"] = buildClientToken("CreateControlPolicy")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_control_policy", action, AlibabaCloudSdkGoERROR)
 	}
@@ -98,6 +109,10 @@ func resourceAlicloudResourceManagerControlPolicyRead(d *schema.ResourceData, me
 }
 func resourceAlicloudResourceManagerControlPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -117,10 +132,6 @@ func resourceAlicloudResourceManagerControlPolicyUpdate(d *schema.ResourceData, 
 	}
 	if update {
 		action := "UpdateControlPolicy"
-		conn, err := client.NewResourcemanagerClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

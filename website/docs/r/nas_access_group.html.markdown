@@ -33,10 +33,10 @@ Example after v1.92.0
 
 ```terraform
 resource "alicloud_nas_access_group" "foo" {
-  access_group_name  = "CreateAccessGroup"
-  access_group_type  = "Vpc"
-  description        = "test_AccessG"
-  file_system_type   = "extreme"
+  access_group_name = "CreateAccessGroup"
+  access_group_type = "Vpc"
+  description       = "test_AccessG"
+  file_system_type  = "extreme"
 }
 ```
 
@@ -44,10 +44,10 @@ resource "alicloud_nas_access_group" "foo" {
 
 The following arguments are supported:
 
-* `name` - (Required, ForceNew, Deprecated in v1.92.0+) Replaced by `access_group_name` after version 1.92.0.
-* `type` - (Required, ForceNew, Deprecated in v1.92.0+) Replaced by `access_group_type` after version 1.92.0.
-* `access_group_name` - (Required, ForceNew, Available in v1.92.0+) A Name of one Access Group.
-* `access_group_type` - (Required, ForceNew, Available in v1.92.0+) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
+* `name` - (Optional, ForceNew, Deprecated in v1.92.0+) Replaced by `access_group_name` after version 1.92.0.
+* `type` - (Optional, ForceNew, Deprecated in v1.92.0+) Replaced by `access_group_type` after version 1.92.0.
+* `access_group_name` - (Optional, ForceNew, Available in v1.92.0+) A Name of one Access Group.
+* `access_group_type` - (Optional, ForceNew, Available in v1.92.0+) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
 * `description` - (Optional) The Access Group description.
 * `file_system_type` - (Optional, ForceNew, Available in v1.92.0+) The type of file system. Valid values: `standard` and `extreme`. Default to `standard`. Note that the extreme only support Vpc Network.
 
