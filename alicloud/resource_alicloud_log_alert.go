@@ -305,15 +305,47 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
-			"schedule_interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "60s",
-			},
-			"schedule_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "FixedRate",
+			"schedule": {
+				Type:     schema.TypeSet,
+				Required: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"FixedRate", "Cron", "Hourly", "Daily", "Weekly"}, false),
+						},
+						"interval": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cron_expression": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"day_of_week": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"hour": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"delay": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"run_immediately": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"time_zone": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -325,15 +357,27 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	alert_name := d.Get("alert_name").(string)
 	alert_displayname := d.Get("alert_displayname").(string)
 
+	schedule := &sls.Schedule{}
+	if v, ok := d.GetOk("schedule"); ok {
+		for _, e := range v.(*schema.Set).List() {
+			scheduleMap := e.(map[string]interface{})
+			schedule.Type, _ = scheduleMap["type"].(string)
+			schedule.Interval, _ = scheduleMap["interval"].(string)
+			schedule.CronExpression, _ = scheduleMap["cron_expression"].(string)
+			schedule.Hour = int32(scheduleMap["hour"].(int))
+			schedule.DayOfWeek = int32(scheduleMap["day_of_week"].(int))
+			schedule.Delay = int32(scheduleMap["delay"].(int))
+			schedule.RunImmediately, _ = scheduleMap["run_immediately"].(bool)
+			schedule.TimeZone, _ = scheduleMap["time_zone"].(string)
+		}
+	}
+
 	alert := &sls.Alert{
 		Name:        alert_name,
 		DisplayName: alert_displayname,
 		Description: d.Get("alert_description").(string),
 		State:       "Enabled",
-		Schedule: &sls.Schedule{
-			Type:     d.Get("schedule_type").(string),
-			Interval: d.Get("schedule_interval").(string),
-		},
+		Schedule:    schedule,
 	}
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
@@ -385,14 +429,26 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("alert_displayname", object.DisplayName)
 	d.Set("alert_description", object.Description)
 	d.Set("mute_until", object.Configuration.MuteUntil)
-	d.Set("schedule_interval", object.Schedule.Interval)
-	d.Set("schedule_type", object.Schedule.Type)
 	d.Set("throttling", object.Configuration.Throttling)
 	d.Set("notify_threshold", object.Configuration.NotifyThreshold)
 	d.Set("condition", object.Configuration.Condition)
 	d.Set("dashboard", object.Configuration.Dashboard)
-	var notiList []map[string]interface{}
 
+	var schedules []map[string]interface{}
+	scheduleConf := map[string]interface{}{
+		"type":            object.Schedule.Type,
+		"interval":        object.Schedule.Interval,
+		"cron_expression": object.Schedule.CronExpression,
+		"delay":           object.Schedule.Delay,
+		"day_of_week":     object.Schedule.DayOfWeek,
+		"hour":            object.Schedule.Hour,
+		"run_immediately": object.Schedule.RunImmediately,
+		"time_zone":       object.Schedule.TimeZone,
+	}
+	schedules = append(schedules, scheduleConf)
+	d.Set("schedule", schedules)
+
+	var notiList []map[string]interface{}
 	for _, v := range object.Configuration.NotificationList {
 		mapping := getNotiMap(v)
 		notiList = append(notiList, mapping)
@@ -510,15 +566,26 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	client := meta.(*connectivity.AliyunClient)
+	schedule := &sls.Schedule{}
+	if v, ok := d.GetOk("schedule"); ok {
+		for _, e := range v.(*schema.Set).List() {
+			scheduleMap := e.(map[string]interface{})
+			schedule.Type, _ = scheduleMap["type"].(string)
+			schedule.Interval, _ = scheduleMap["interval"].(string)
+			schedule.CronExpression, _ = scheduleMap["cron_expression"].(string)
+			schedule.Hour = int32(scheduleMap["hour"].(int))
+			schedule.DayOfWeek = int32(scheduleMap["day_of_week"].(int))
+			schedule.Delay = int32(scheduleMap["delay"].(int))
+			schedule.RunImmediately, _ = scheduleMap["run_immediately"].(bool)
+			schedule.TimeZone, _ = scheduleMap["time_zone"].(string)
+		}
+	}
 	params := &sls.Alert{
 		Name:        parts[1],
 		DisplayName: d.Get("alert_displayname").(string),
 		Description: d.Get("alert_description").(string),
 		State:       "Enabled",
-		Schedule: &sls.Schedule{
-			Type:     d.Get("schedule_type").(string),
-			Interval: d.Get("schedule_interval").(string),
-		},
+		Schedule:    schedule,
 	}
 
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {

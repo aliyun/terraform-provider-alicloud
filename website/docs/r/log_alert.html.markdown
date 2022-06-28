@@ -42,6 +42,14 @@ resource "alicloud_log_alert" "example" {
   alert_displayname = "tf-test-alert-displayname"
   condition         = "count> 100"
   dashboard         = "tf-test-dashboard"
+  schedule {
+    type            = "FixedRate"
+    interval        = "5m"
+    hour            = 0
+    day_of_week     = 0
+    delay           = 0
+    run_immediately = false
+  }
   query_list {
     logstore    = "tf-test-logstore"
     chart_title = "chart_title"
@@ -95,9 +103,15 @@ resource "alicloud_log_alert" "example-2" {
   no_data_fire      = "false"
   no_data_severity  = 8
   send_resolved     = true
-  schedule_interval = "5m"
-  schedule_type     = "FixedRate"
   auto_annotation   = true
+  schedule {
+    type            = "FixedRate"
+    interval        = "5m"
+    hour            = 0
+    day_of_week     = 0
+    delay           = 0
+    run_immediately = false
+  }
   query_list {
     store       = "tf-test-logstore"
     store_type  = "log"
@@ -233,8 +247,16 @@ The following arguments are supported:
 * `join_configurations` - (Optional, Available in 1.161.0+) Join configuration for different queries.
     * `type` - (Required) Join type, including cross_join, inner_join, left_join, right_join, full_join, left_exclude, right_exclude, concat, no_join.
     * `condition` - (Required) Join condition.
-* `schedule_interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h.
-* `schedule_type` - (Optional)  Default FixedRate. No need to configure this parameter.
+* `schedule_interval` - (Optional, Deprecated) Execution interval. 60 seconds minimum, such as 60s, 1h. Deprecated from 1.174.0+. use interval in schedule.
+* `schedule_type` - (Optional, Deprecated)  Default FixedRate. No need to configure this parameter. Deprecated from 1.174.0+. use type in schedule.
+* `schedule` - (Required, Available in 1.174.0+) schedule for alert.
+    * `type` - (Required) including FixedRate,Hourly,Daily,Weekly,Cron.
+    * `interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h. used when type is FixedRate.
+    * `cron_expression` - (Optional) Cron expression when type is Cron.
+    * `day_of_week` - (Optional) Day of week when type is Weekly, including 0,1,2,3,4,5,6, 0 for Sunday, 1 for Monday
+    * `hour` - (Optional) Hour of day when type is Weekly/Daily.
+    * `time_zone` - (Optional) Time zone for schedule.
+
 
 ## Attributes Reference
 
