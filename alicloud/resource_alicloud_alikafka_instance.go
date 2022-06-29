@@ -191,7 +191,7 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Computed: true,
 			},
 			"msg_retain": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"expired_time": {
