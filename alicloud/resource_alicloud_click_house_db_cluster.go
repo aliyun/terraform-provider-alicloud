@@ -476,7 +476,10 @@ func resourceAlicloudClickHouseDbClusterDelete(d *schema.ResourceData, meta inte
 	request := map[string]interface{}{
 		"DBClusterId": d.Id(),
 	}
-
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+		log.Printf("[WARN] Cannot destroy resourceClickHouseDbCluster. Because payment_type = 'Subscription'. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -501,15 +504,16 @@ func convertClickHouseDbClusterPaymentTypeRequest(source string) string {
 	case "PayAsYouGo":
 		return "Postpaid"
 	case "Subscription":
-		return "Prepay"
+		return "Prepaid"
 	}
 	return source
 }
+
 func convertClickHouseDbClusterPaymentTypeResponse(source string) string {
 	switch source {
 	case "Postpaid":
 		return "PayAsYouGo"
-	case "Prepay":
+	case "Prepaid":
 		return "Subscription"
 	}
 	return source
