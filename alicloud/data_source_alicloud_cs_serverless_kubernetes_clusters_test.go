@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -10,6 +11,10 @@ import (
 )
 
 func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
+	prevRegion := os.Getenv("ALICLOUD_REGION")
+	os.Setenv("ALICLOUD_REGION", "ap-southeast-1")
+	defer os.Setenv("ALICLOUD_REGION", prevRegion)
+
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_serverless_kubernetes_clusters.default"
 

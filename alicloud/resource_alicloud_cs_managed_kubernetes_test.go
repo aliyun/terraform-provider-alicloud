@@ -230,7 +230,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"name":                name,
 					"password":            "Test12345",
 					"pod_cidr":            "172.20.0.0/16",
-					"version":             "1.18.8-aliyun.1",
+					"version":             "1.20.11-aliyun.1",
 					"service_cidr":        "172.21.0.0/20",
 					"deletion_protection": "true",
 					"cluster_spec":        "ack.standard",
@@ -261,7 +261,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// cluster args
 						"name":                name,
-						"version":             "1.18.8-aliyun.1",
+						"version":             "1.20.11-aliyun.1",
 						"password":            "Test12345",
 						"pod_cidr":            "172.20.0.0/16",
 						"service_cidr":        "172.21.0.0/20",
@@ -436,7 +436,7 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
@@ -465,13 +465,12 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	instance_type_family = "ecs.c6"
 	cpu_core_count = 2
 	memory_size = 4
 	kubernetes_node_role = "Worker"
@@ -480,39 +479,6 @@ data "alicloud_instance_types" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_kms_keys" "default" {}
-
-variable "roles" {
-  type = list(object({
-    name = string
-    policy_document = string
-    description = string
-    policy_name = string
-  }))
-  default = [
-    {
-      name = "AliyunCSManagedSecurityRole"
-      policy_document="{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"cs.aliyuncs.com\"]}}],\"Version\":\"1\"}"
-      description = "CS使用此角色来访问您在其他云产品中的资源。"
-      policy_name = "AliyunCSManagedSecurityRolePolicy"
-    }
-  ]
-}
-
-resource "alicloud_ram_role" "role" {
-    for_each    = {for r in var.roles:r.name => r}
-    name        = each.value.name
-    document    = each.value.policy_document
-    description = each.value.description
-    force       = true
-}
-
-resource "alicloud_ram_role_policy_attachment" "attach" {
-  for_each    = {for r in var.roles:r.name => r}
-  policy_name = each.value.policy_name
-  policy_type = "System"
-  role_name   = each.value.name
-  depends_on  = [alicloud_ram_role.role]
-}
 
 resource "alicloud_vpc" "default" {
   vpc_name = "${var.name}"
@@ -594,7 +560,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
-					"version":                     "1.18.8-aliyun.1",
+					"version":                     "1.20.11-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -607,7 +573,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
-						"version":                   "1.18.8-aliyun.1",
+						"version":                   "1.20.11-aliyun.1",
 					}),
 				),
 			},
@@ -624,11 +590,11 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.20.4-aliyun.1",
+					"version": "1.22.3-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.20.4-aliyun.1",
+						"version": "1.22.3-aliyun.1",
 					}),
 				),
 			},

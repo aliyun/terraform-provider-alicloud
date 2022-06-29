@@ -569,7 +569,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// global args
 					"name":                name,
-					"version":             "1.18.8-aliyun.1",
+					"version":             "1.20.11-aliyun.1",
 					"password":            "Yourpassword1234",
 					"pod_cidr":            "10.99.0.0/16",
 					"service_cidr":        "172.16.0.0/16",
@@ -598,7 +598,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// global args
 						"name":                name,
-						"version":             "1.18.8-aliyun.1",
+						"version":             "1.20.11-aliyun.1",
 						"password":            "Yourpassword1234",
 						"pod_cidr":            "10.99.0.0/16",
 						"service_cidr":        "172.16.0.0/16",
