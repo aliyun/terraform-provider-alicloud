@@ -191,7 +191,7 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Computed: true,
 			},
 			"msg_retain": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"expired_time": {
@@ -370,7 +370,7 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	}
 	d.Set("tags", alikafkaService.tagsToMap(tags))
 
-	d.Set("service_status", object["ServiceStatus"])
+	d.Set("status", object["ServiceStatus"])
 	d.Set("create_time", object["CreateTime"])
 	d.Set("expired_time", object["ExpiredTime"])
 	d.Set("msg_retain", object["MsgRetain"])
