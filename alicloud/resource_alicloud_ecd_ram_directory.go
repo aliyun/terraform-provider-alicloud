@@ -24,7 +24,6 @@ func resourceAlicloudEcdRamDirectory() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -32,21 +31,24 @@ func resourceAlicloudEcdRamDirectory() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"VPC", "INTERNET", "ANY"}, false),
 			},
 			"enable_admin_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"enable_internet_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"ram_directory_name": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_:-]{1,254}$`), "It must be `2` to `255` characters in length, The name must start with a letter, and can contain letters, digits, colons (:), underscores (_), and hyphens (-).")),
 			},
@@ -82,9 +84,7 @@ func resourceAlicloudEcdRamDirectoryCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOkExists("enable_internet_access"); ok {
 		request["EnableInternetAccess"] = v
 	}
-	if v, ok := d.GetOk("ram_directory_name"); ok {
-		request["DirectoryName"] = v
-	}
+	request["DirectoryName"] = d.Get("ram_directory_name")
 	request["RegionId"] = client.RegionId
 	request["VSwitchId"] = d.Get("vswitch_ids")
 	wait := incrementalWait(3*time.Second, 3*time.Second)

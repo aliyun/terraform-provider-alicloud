@@ -40,7 +40,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Ram Directory IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Ram Directory name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `status` - (Optional, ForceNew) The status of directory. Valid values: `REGISTERING`, `REGISTERED`.
+* `status` - (Optional, ForceNew) The status of directory. Valid values: `REGISTERING`, `REGISTERED`, `DEREGISTERING`, `NEEDCONFIGTRUST`, `CONFIGTRUSTFAILED`, `DEREGISTERED`, `ERROR`, `CONFIGTRUSTING`, `NEEDCONFIGUSER`.
 
 ## Argument Reference
 
@@ -74,7 +74,7 @@ The following attributes are exported in addition to the arguments listed above:
 		* `step` - The step of log.
 		* `time_stamp` - The time stamp of log.
 	* `mfa_enabled` - Whether to enable MFA.
-	* `ram_directory_id` - The directory of ID.
+	* `ram_directory_id` - The ID of ram directory.
 	* `ram_directory_name` - The name of directory.
 	* `sso_enabled` - Whether to enable SSO.
 	* `status` - The status of directory.

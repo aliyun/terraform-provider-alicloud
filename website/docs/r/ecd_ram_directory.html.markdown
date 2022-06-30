@@ -40,10 +40,10 @@ resource "alicloud_ecd_ram_directory" "default" {
 
 The following arguments are supported:
 
-* `desktop_access_type` - (Optional, ForceNew) The desktop access type. Valid values: `VPC`, `INTERNET`, `ANY`.
-* `enable_admin_access` - (Optional, ForceNew) Whether to enable public network access.
-* `enable_internet_access` - (Optional, ForceNew) Whether to grant local administrator rights to users who use cloud desktops.
-* `ram_directory_name` - (Optional, ForceNew) The name of the directory. The name must be 2 to 255 characters in length. It must start with a letter but cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
+* `desktop_access_type` - (Optional, ForceNew, Computed) The desktop access type. Valid values: `VPC`, `INTERNET`, `ANY`.
+* `enable_admin_access` - (Optional, ForceNew, Computed) Whether to enable public network access.
+* `enable_internet_access` - (Optional, ForceNew, Computed) Whether to grant local administrator rights to users who use cloud desktops.
+* `ram_directory_name` - (Required, ForceNew) The name of the directory. The name must be 2 to 255 characters in length. It must start with a letter but cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
 * `vswitch_ids` - (Required, ForceNew) List of VSwitch IDs in the directory.
 
 ## Attributes Reference
@@ -59,7 +59,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 1 mins) Used when create the Ram Directory.
 * `delete` - (Defaults to 1 mins) Used when delete the Ram Directory.
-* `update` - (Defaults to 1 mins) Used when update the Ram Directory.
 
 
 ## Import
