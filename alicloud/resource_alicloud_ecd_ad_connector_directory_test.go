@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -25,16 +24,16 @@ import (
 
 func init() {
 	resource.AddTestSweepers(
-		"alicloud_ecd_ram_directory",
+		"alicloud_ecd_ad_connector_directory",
 		&resource.Sweeper{
-			Name: "alicloud_ecd_ram_directory",
-			F:    testSweepEcdRamDirectory,
+			Name: "alicloud_ecd_ad_connector_directory",
+			F:    testSweepEcdAdConnectorDirectory,
 		})
 }
 
-func testSweepEcdRamDirectory(region string) error {
+func testSweepEcdAdConnectorDirectory(region string) error {
 	if testSweepPreCheckWithRegions(region, true, connectivity.EcdSupportRegions) {
-		log.Printf("[INFO] Skipping Ecd Ram Directory unsupported region: %s", region)
+		log.Printf("[INFO] Skipping Ecd Ad Connector Directory unsupported region: %s", region)
 		return nil
 	}
 
@@ -51,7 +50,7 @@ func testSweepEcdRamDirectory(region string) error {
 	request := map[string]interface{}{}
 	request["RegionId"] = aliyunClient.RegionId
 	request["MaxResults"] = PageSizeLarge
-
+	request["DirectoryType"] = "AD_CONNECTOR"
 	var response map[string]interface{}
 	conn, err := aliyunClient.NewGwsecdClient()
 	if err != nil {
@@ -95,7 +94,7 @@ func testSweepEcdRamDirectory(region string) error {
 				}
 			}
 			if skip {
-				log.Printf("[INFO] Skipping Ecd Ram Directory: %s", item["Name"].(string))
+				log.Printf("[INFO] Skipping Ecd Ad Connector Directory: %s", item["Name"].(string))
 				continue
 			}
 			action := "DeleteDirectories"
@@ -105,9 +104,9 @@ func testSweepEcdRamDirectory(region string) error {
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Ecd Ram Directory (%s): %s", item["Name"].(string), err)
+				log.Printf("[ERROR] Failed to delete Ecd Ad Connector Directory (%s): %s", item["Name"].(string), err)
 			}
-			log.Printf("[INFO] Delete Ecd Ram Directory success: %s ", item["Name"].(string))
+			log.Printf("[INFO] Delete Ecd Ad Connector Directory success: %s ", item["Name"].(string))
 		}
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
@@ -118,19 +117,19 @@ func testSweepEcdRamDirectory(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDRamDirectory_basic0(t *testing.T) {
+func TestAccAlicloudECDAdConnectorDirectory_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_ecd_ram_directory.default"
+	resourceId := "alicloud_ecd_ad_connector_directory.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDRamDirectoryMap0)
+	ra := resourceAttrInit(resourceId, AlicloudECDAdConnectorDirectoryMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEcdRamDirectory")
+	}, "DescribeEcdAdConnectorDirectory")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secdramdirectory%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDRamDirectoryBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%secdadconnectordirectory%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDAdConnectorDirectoryBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -141,61 +140,20 @@ func TestAccAlicloudECDRamDirectory_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ram_directory_name": "${var.name}",
-					"vswitch_ids":        []string{"${data.alicloud_vswitches.default.ids.0}"},
+					"domain_name":      "corp.example.com",
+					"vswitch_ids":      []string{"${data.alicloud_vswitches.default.ids.0}"},
+					"dns_address":      []string{"127.0.0.2"},
+					"domain_password":  "YourPassword1234",
+					"domain_user_name": "sAMAccountName",
+					"directory_name":   "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ram_directory_name": name,
-						"vswitch_ids.#":      "1",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccAlicloudECDRamDirectory_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ecd_ram_directory.default"
-	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudECDRamDirectoryMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEcdRamDirectory")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secdramdirectory%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDRamDirectoryBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_internet_access": "true",
-					"enable_admin_access":    "true",
-					"desktop_access_type":    "INTERNET",
-					"ram_directory_name":     "${var.name}",
-					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_internet_access": "true",
-						"enable_admin_access":    "true",
-						"desktop_access_type":    "INTERNET",
-						"ram_directory_name":     name,
-						"vswitch_ids.#":          "1",
+						"domain_name":      "corp.example.com",
+						"vswitch_ids.#":    "1",
+						"dns_address.#":    "1",
+						"domain_user_name": "sAMAccountName",
+						"directory_name":   name,
 					}),
 				),
 			},
@@ -203,18 +161,80 @@ func TestAccAlicloudECDRamDirectory_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"specification", "domain_password"},
 			},
 		},
 	})
 }
 
-var AlicloudECDRamDirectoryMap0 = map[string]string{
-	"vswitch_ids.#": CHECKSET,
-	"status":        CHECKSET,
+func TestAccAlicloudECDAdConnectorDirectory_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_ad_connector_directory.default"
+	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudECDAdConnectorDirectoryMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdAdConnectorDirectory")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdadconnectordirectory%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDAdConnectorDirectoryBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name":            "corp.example.com",
+					"vswitch_ids":            []string{"${data.alicloud_vswitches.default.ids.0}"},
+					"dns_address":            []string{"127.0.0.2"},
+					"desktop_access_type":    "INTERNET",
+					"domain_password":        "YourPassword1234",
+					"domain_user_name":       "sAMAccountName",
+					"directory_name":         "${var.name}",
+					"specification":          "1",
+					"sub_domain_dns_address": []string{"127.0.0.3"},
+					"sub_domain_name":        "child.example.com",
+					"enable_admin_access":    "true",
+					"mfa_enabled":            "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name":              "corp.example.com",
+						"vswitch_ids.#":            "1",
+						"dns_address.#":            "1",
+						"desktop_access_type":      "INTERNET",
+						"domain_user_name":         "sAMAccountName",
+						"directory_name":           name,
+						"sub_domain_dns_address.#": "1",
+						"sub_domain_name":          "child.example.com",
+						"enable_admin_access":      "true",
+						"mfa_enabled":              "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"specification", "domain_password"},
+			},
+		},
+	})
 }
 
-func AlicloudECDRamDirectoryBasicDependence0(name string) string {
+var AlicloudECDAdConnectorDirectoryMap0 = map[string]string{
+	"dns_address.#": CHECKSET,
+	"status":        CHECKSET,
+	"vswitch_ids.#": CHECKSET,
+}
+
+func AlicloudECDAdConnectorDirectoryBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -226,20 +246,28 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_ecd_zones.default.ids.0
-}`, name)
+}
+`, name)
 }
 
-func TestUnitAlicloudECDRamDirectory(t *testing.T) {
+func TestUnitAlicloudECDAdConnectorDirectory(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(nil, nil)
+	dInit, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"enable_internet_access": true,
+		"domain_name":            "CreateEcdAdConnectorDirectoryValue",
+		"dns_address":            []string{"CreateEcdAdConnectorDirectoryValue"},
+		"domain_password":        "CreateEcdAdConnectorDirectoryValue",
+		"domain_user_name":       "CreateEcdAdConnectorDirectoryValue",
+		"directory_name":         "CreateEcdAdConnectorDirectoryValue",
+		"specification":          1,
+		"sub_domain_dns_address": []string{"CreateEcdAdConnectorDirectoryValue"},
+		"sub_domain_name":        "CreateEcdAdConnectorDirectoryValue",
+		"mfa_enabled":            false,
 		"enable_admin_access":    true,
-		"desktop_access_type":    "CreateEcdRamDirectoryValue",
-		"ram_directory_name":     "CreateEcdRamDirectoryValue",
-		"vswitch_ids":            []string{"CreateEcdRamDirectoryValue"},
+		"desktop_access_type":    "CreateEcdAdConnectorDirectoryValue",
+		"vswitch_ids":            []string{"CreateEcdAdConnectorDirectoryValue"},
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -262,21 +290,24 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 		"Directories": []interface{}{
 			map[string]interface{}{
 				"Status":                   "REGISTERED",
-				"VSwitchIds":               []string{"CreateEcdRamDirectoryValue"},
+				"VSwitchIds":               []string{"CreateEcdAdConnectorDirectoryValue"},
+				"SubDnsAddress":            []string{"CreateEcdAdConnectorDirectoryValue"},
+				"DnsAddress":               []string{"CreateEcdAdConnectorDirectoryValue"},
 				"EnableAdminAccess":        true,
 				"MfaEnabled":               false,
-				"DirectoryType":            "CreateEcdRamDirectoryValue",
-				"Name":                     "CreateEcdRamDirectoryValue",
-				"DirectoryId":              "CreateEcdRamDirectoryValue",
-				"VpcId":                    "CreateEcdRamDirectoryValue",
+				"DirectoryType":            "CreateEcdAdConnectorDirectoryValue",
+				"SubDomainName":            "CreateEcdAdConnectorDirectoryValue",
+				"Name":                     "CreateEcdAdConnectorDirectoryValue",
+				"DirectoryId":              "CreateEcdAdConnectorDirectoryValue",
+				"VpcId":                    "CreateEcdAdConnectorDirectoryValue",
 				"EnableCrossDesktopAccess": false,
-				"DesktopAccessType":        "CreateEcdRamDirectoryValue",
+				"DesktopAccessType":        "CreateEcdAdConnectorDirectoryValue",
 				"EnableInternetAccess":     true,
 			},
 		},
 	}
 	CreateMockResponse := map[string]interface{}{
-		"DirectoryId": "CreateEcdRamDirectoryValue",
+		"DirectoryId": "CreateEcdAdConnectorDirectoryValue",
 	}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
 		return nil, &tea.SDKError{
@@ -287,7 +318,7 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ecd_ram_directory", errorCode))
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ecd_ad_connector_directory", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -304,7 +335,7 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEcdRamDirectoryCreate(dInit, rawClient)
+	err = resourceAlicloudEcdAdConnectorDirectoryCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -312,7 +343,7 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateRAMDirectory" {
+			if *action == "CreateADConnectorDirectory" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -327,14 +358,14 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcdRamDirectoryCreate(dInit, rawClient)
+		err := resourceAlicloudEcdAdConnectorDirectoryCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -345,13 +376,17 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 		}
 	}
 
+	// Update
+	err = resourceAlicloudEcdAdConnectorDirectoryUpdate(dExisted, rawClient)
+	assert.Nil(t, err)
+
 	// Read
 	attributesDiff := map[string]interface{}{}
-	diff, err := newInstanceDiff("alicloud_ecd_ram_directory", attributes, attributesDiff, dInit.State())
+	diff, err := newInstanceDiff("alicloud_ecd_ad_connector_directory", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -372,7 +407,7 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcdRamDirectoryRead(dExisted, rawClient)
+		err := resourceAlicloudEcdAdConnectorDirectoryRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -391,15 +426,15 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEcdRamDirectoryDelete(dExisted, rawClient)
+	err = resourceAlicloudEcdAdConnectorDirectoryDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_ecd_ram_directory", attributes, attributesDiff, dInit.State())
+	diff, err = newInstanceDiff("alicloud_ecd_ad_connector_directory", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_ecd_ram_directory"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_ecd_ad_connector_directory"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
@@ -419,7 +454,7 @@ func TestUnitAlicloudECDRamDirectory(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcdRamDirectoryDelete(dExisted, rawClient)
+		err := resourceAlicloudEcdAdConnectorDirectoryDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
