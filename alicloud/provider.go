@@ -1309,6 +1309,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_traffic_marking_policy":                           resourceAlicloudCenTrafficMarkingPolicy(),
 			"alicloud_ecs_instance_set":                                     resourceAlicloudEcsInstanceSet(),
 			"alicloud_ecd_ram_directory":                                    resourceAlicloudEcdRamDirectory(),
+			"alicloud_service_mesh_user_permission":                         resourceAlicloudServiceMeshUserPermission(),
 		},
 
 		ConfigureFunc: providerConfigure,
