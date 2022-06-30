@@ -79,6 +79,29 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 										Optional: true,
 										Computed: true,
 									},
+									"project": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"control_plane_log": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							ForceNew: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+									"project": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -416,6 +439,21 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 							if v, ok := AccessLogArg["enabled"]; ok {
 								request["AccessLogEnabled"] = v
 							}
+							if v, ok := AccessLogArg["project"]; ok {
+								request["AccessLogProject"] = v
+							}
+						}
+					}
+				}
+				if ControlPlaneLog, ok := meshConfigArg["control_plane_log"]; ok {
+					for _, ControlPlaneLogMap := range ControlPlaneLog.(*schema.Set).List() {
+						if ControlPlaneLogArg, ok := ControlPlaneLogMap.(map[string]interface{}); ok {
+							if v, ok := ControlPlaneLogArg["enabled"]; ok {
+								request["ControlPlaneLogEnabled"] = v
+							}
+							if v, ok := ControlPlaneLogArg["project"]; ok {
+								request["ControlPlaneLogProject"] = v
+							}
 						}
 					}
 				}
@@ -558,10 +596,21 @@ func resourceAlicloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 						if accessLogArg, ok := accessLog.(map[string]interface{}); ok && len(accessLogArg) > 0 {
 							accessLogMap := make(map[string]interface{})
 							accessLogMap["enabled"] = accessLogArg["Enabled"]
+							accessLogMap["project"] = accessLogArg["Project"]
 							accessLogSli = append(accessLogSli, accessLogMap)
 						}
 					}
 					meshConfigMap["access_log"] = accessLogSli
+					controlPlaneLogSli := make([]map[string]interface{}, 0)
+					if controlPlaneLog, ok := meshConfigArg["ControlPlaneLogInfo"]; ok {
+						if controlPlaneLogArg, ok := controlPlaneLog.(map[string]interface{}); ok && len(controlPlaneLogArg) > 0 {
+							controlPlaneLogMap := make(map[string]interface{})
+							controlPlaneLogMap["enabled"] = controlPlaneLogArg["Enabled"]
+							controlPlaneLogMap["project"] = controlPlaneLogArg["Project"]
+							controlPlaneLogSli = append(controlPlaneLogSli, controlPlaneLogMap)
+						}
+					}
+					meshConfigMap["control_plane_log"] = controlPlaneLogSli
 					auditSli := make([]map[string]interface{}, 0)
 					if audit, ok := meshConfigArg["Audit"]; ok {
 						if auditArg, ok := audit.(map[string]interface{}); ok && len(auditArg) > 0 {
@@ -732,6 +781,9 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
 							if v, ok := AccessLogArg["enabled"]; ok {
 								updateMeshFeatureReq["AccessLogEnabled"] = v
+							}
+							if v, ok := AccessLogArg["project"]; ok {
+								updateMeshFeatureReq["AccessLogProject"] = v
 							}
 						}
 					}

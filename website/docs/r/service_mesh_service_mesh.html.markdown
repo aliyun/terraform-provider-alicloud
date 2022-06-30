@@ -85,6 +85,7 @@ The extra_configuration supports the following:
 The mesh_config supports the following: 
 
 * `access_log` - (Optional) The configuration of the access logging.
+* `control_plane_log` - (Optional, ForceNew, Available in 1.174.0+) The configuration of the control plane logging. 
 * `audit` - (Optional) The configuration of the audit. See the following `Block audit`.
 * `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
@@ -96,6 +97,20 @@ The mesh_config supports the following:
 * `sidecar_injector` - (Optional)The configuration of the Sidecar injector. See the following `Block sidecar_injector`.
 * `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
 * `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
+
+#### Block access_log
+
+The access_log supports the following:
+
+* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the access logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available in 1.174.0+) The SLS Project of the access logging.
+
+#### Block control_plane_log
+
+The control_plane_log supports the following:
+
+* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the control plane logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available in 1.174.0+) The SLS Project of the control plane logging.
 
 #### Block sidecar_injector
 

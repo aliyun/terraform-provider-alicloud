@@ -76,6 +76,11 @@ The following attributes are exported in addition to the arguments listed above:
         * `pilot_public_loadbalancer_id` - The IP address of a public network exposure Istio Pilot corresponds to the Load Balance.
     * `mesh_config` - The configuration of the Service grid.
         * `access_log` - The configuration of the access logging.
+            * `enabled` - Whether to enable of the access logging. Valid values: `true` and `false`.
+            * `project` - The SLS Project of the access logging.
+        * `control_plane_log` - The configuration of the control plane logging. **NOTE:** Available in 1.174.0+
+            * `enabled` - Whether to enable of the control plane logging. Valid values: `true` and `false`.
+            * `project` - The SLS Project of the control plane logging.            
         * `customized_zipkin` - Whether or not to enable the use of a custom zipkin.
         * `enable_locality_lb` - Whether to enable service can access the service through the nearest node access.
         * `tracing` - Whether to enable link trace.
