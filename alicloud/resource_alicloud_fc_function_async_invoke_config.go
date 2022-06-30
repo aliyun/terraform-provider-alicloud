@@ -51,7 +51,7 @@ func resourceAlicloudFCFunctionAsyncInvokeConfig() *schema.Resource {
 			"maximum_retry_attempts": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      2,
+				Computed:     true,
 				ValidateFunc: validation.IntBetween(0, 8),
 			},
 			"stateful_invocation": {
