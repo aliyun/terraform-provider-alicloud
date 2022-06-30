@@ -335,6 +335,7 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 		return rule, WrapError(err)
 	}
 	groupId, direction, ipProtocol, portRange, nicType, cidr_ip, policy := parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]
+	cidr_ip = strings.Replace(cidr_ip, "_", ":", -1)
 	priority, err := strconv.Atoi(parts[7])
 	if err != nil {
 		return rule, WrapError(err)
@@ -361,13 +362,23 @@ func (s *EcsService) DescribeSecurityGroupRule(id string) (rule ecs.Permission, 
 
 	for _, ru := range response.Permissions.Permission {
 		if strings.ToLower(string(ru.IpProtocol)) == ipProtocol && ru.PortRange == portRange {
-			cidr := ru.SourceCidrIp
-			if direction == string(DirectionIngress) && cidr == "" {
-				cidr = ru.SourceGroupId
+
+			var cidr string
+			if direction == string(DirectionIngress) {
+				if cidr = ru.SourceCidrIp; cidr == "" {
+					cidr = ru.SourceGroupId
+				}
+				if cidr == "" {
+					cidr = ru.Ipv6SourceCidrIp
+				}
 			}
+
 			if direction == string(DirectionEgress) {
 				if cidr = ru.DestCidrIp; cidr == "" {
 					cidr = ru.DestGroupId
+				}
+				if cidr == "" {
+					cidr = ru.Ipv6DestCidrIp
 				}
 			}
 
