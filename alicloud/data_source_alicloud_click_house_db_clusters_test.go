@@ -96,7 +96,7 @@ func TestAccAlicloudClickHouseDbClusterDataSource(t *testing.T) {
 			"clusters.0.scale_out_status.#":       "0",
 			"clusters.0.storage_type":             "CloudESSD",
 			"clusters.0.support_backup":           "1",
-			"clusters.0.support_https_port":       "true",
+			"clusters.0.support_https_port":       "false",
 			"clusters.0.support_mysql_port":       "true",
 			"clusters.0.vswitch_id":               CHECKSET,
 			"clusters.0.vpc_cloud_instance_id":    CHECKSET,
