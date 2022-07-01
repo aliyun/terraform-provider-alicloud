@@ -61,12 +61,6 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"dimensions"},
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if old != new {
-						return true
-					}
-					return false
-				},
 			},
 			"period": {
 				Type:     schema.TypeInt,
