@@ -57,16 +57,11 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Deprecated:    "Field 'dimensions' has been deprecated from version 1.173.0. Use 'metric_dimensions' instead.",
 			},
 			"metric_dimensions": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"dimensions"},
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if old != new {
-						return true
-					}
-					return false
-				},
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ConflictsWith:    []string{"dimensions"},
+				DiffSuppressFunc: CmsAlarmDiffSuppressFunc,
 			},
 			"period": {
 				Type:     schema.TypeInt,
