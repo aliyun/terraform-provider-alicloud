@@ -69,7 +69,8 @@ func TestConsistencyWithDocument(t *testing.T) {
 	mergeMaps(objSchema, objMd.Arguments, objMd.Attributes)
 
 	if consistencyCheck(t, *resourceName, objSchema, obj) {
-		t.Fatal()
+		t.Fatal("the consistency with document has occurred")
+		os.Exit(1)
 	}
 }
 
@@ -100,6 +101,7 @@ func TestFieldCompatibilityCheck(t *testing.T) {
 	}
 	if res {
 		t.Fatal("incompatible changes occurred")
+		os.Exit(1)
 	}
 }
 
