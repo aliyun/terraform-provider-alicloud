@@ -623,3 +623,29 @@ func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 	}
 	return true
 }
+
+func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	if old == "" {
+		return false
+	}
+	if new == old {
+		return false
+	}
+
+	new = strings.TrimSuffix(strings.TrimPrefix(new, "["), "]")
+	old = strings.TrimSuffix(strings.TrimPrefix(old, "["), "]")
+	var newvlist, oldvlist []string
+	for _, v := range strings.Split(new, "}") {
+		newvlist = append(newvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
+	}
+	for _, v := range strings.Split(old, "}") {
+		oldvlist = append(oldvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
+	}
+	sort.Strings(newvlist)
+	sort.Strings(oldvlist)
+	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
+
+}
