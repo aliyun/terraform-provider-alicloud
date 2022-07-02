@@ -1,4 +1,34 @@
 ## 1.174.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecd_ram_directory` [GH-5108]
+- **New Resource:** `alicloud_service_mesh_user_permission` [GH-4996]	
+- **New Resource:** `alicloud_ecd_ad_connector_directory` [GH-5122]
+- **New Data Source:** `alicloud_ecd_ad_connector_directories` [GH-5122]	
+- **New Data Source:** `alicloud_ecd_ram_directories` [GH-5108]
+- **New Data Source:** `alicloud_rds_modify_parameter_logs` [GH-5036]
+- **New Data Source:** `alicloud_ecd_zones` [GH-5108]
+
+ENHANCEMENTS:
+
+- resource/alicloud_service_mesh_service_mesh: Adds new attribute control_plane_log_enabled,control_plane_log_project,access_log_project [GH-5124]
+- resource/alicloud_security_group_rule: Add support for new parameter ipv6_cidr_ip [GH-5120]
+- resource/alicloud_cms_alarm: Update attribute metric_dimensions [GH-5115]
+- testcase: Adds new unit test case for resource alicloud_ga_additional_certificate alicloud_ecs_dedicated_host alicloud_ecs_disk [GH-5107]
+- docs/alicloud_click_house_regions: Optimize document format [GH-5126]
+- docs/alicloud_ecd_bundles: Optimize document format [GH-5126]
+- docs/alicloud_ess_eci_scaling_configuration: Optimize document format [GH-5126]
+- docs/alicloud_cdn_domain: Delete the cdn_domain.html.markdown file [GH-5126]
+- Rmc add param tmp [GH-5118]
+- Rmc add param [GH-5112]
+- Return type repair [GH-5116]
+
+BUG FIXES:
+
+- testcase: fixes the kubernetes resource's testcase error [GH-5114]
+- docs: Fix errors in link addresses in documents [GH-5062]
+- doc/cs_kubernetes_version: fix doc field error [GH-5113]	
+- ci/field_check: fix the error [GH-5128]
+
 ## 1.173.0 (June 26, 2022)
 
 - **New Resource:** `alicloud_edas_namespace` ([#5064](https://github.com/aliyun/terraform-provider-alicloud/issues/5064))
