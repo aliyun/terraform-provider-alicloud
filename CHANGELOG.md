@@ -1,33 +1,32 @@
-## 1.174.0 (Unreleased)
+## 1.175.0 (Unreleased)
+## 1.174.0 (July 03, 2022)
 
-- **New Resource:** `alicloud_ecd_ram_directory` [GH-5108]
-- **New Resource:** `alicloud_service_mesh_user_permission` [GH-4996]	
-- **New Resource:** `alicloud_ecd_ad_connector_directory` [GH-5122]
-- **New Data Source:** `alicloud_ecd_ad_connector_directories` [GH-5122]	
-- **New Data Source:** `alicloud_ecd_ram_directories` [GH-5108]
-- **New Data Source:** `alicloud_rds_modify_parameter_logs` [GH-5036]
-- **New Data Source:** `alicloud_ecd_zones` [GH-5108]
+- **New Resource:** `alicloud_ecd_ram_directory` ([#5108](https://github.com/aliyun/terraform-provider-alicloud/issues/5108))
+- **New Resource:** `alicloud_service_mesh_user_permission` ([#4996](https://github.com/aliyun/terraform-provider-alicloud/issues/4996))	
+- **New Resource:** `alicloud_ecd_ad_connector_directory` ([#5122](https://github.com/aliyun/terraform-provider-alicloud/issues/5122))
+- **New Data Source:** `alicloud_ecd_ad_connector_directories` ([#5122](https://github.com/aliyun/terraform-provider-alicloud/issues/5122))	
+- **New Data Source:** `alicloud_ecd_ram_directories` ([#5108](https://github.com/aliyun/terraform-provider-alicloud/issues/5108))
+- **New Data Source:** `alicloud_rds_modify_parameter_logs` ([#5036](https://github.com/aliyun/terraform-provider-alicloud/issues/5036))
+- **New Data Source:** `alicloud_ecd_zones` ([#5108](https://github.com/aliyun/terraform-provider-alicloud/issues/5108))
 
 ENHANCEMENTS:
 
-- resource/alicloud_service_mesh_service_mesh: Adds new attribute control_plane_log_enabled,control_plane_log_project,access_log_project [GH-5124]
-- resource/alicloud_security_group_rule: Add support for new parameter ipv6_cidr_ip [GH-5120]
-- resource/alicloud_cms_alarm: Update attribute metric_dimensions [GH-5115]
-- testcase: Adds new unit test case for resource alicloud_ga_additional_certificate alicloud_ecs_dedicated_host alicloud_ecs_disk [GH-5107]
-- docs/alicloud_click_house_regions: Optimize document format [GH-5126]
-- docs/alicloud_ecd_bundles: Optimize document format [GH-5126]
-- docs/alicloud_ess_eci_scaling_configuration: Optimize document format [GH-5126]
-- docs/alicloud_cdn_domain: Delete the cdn_domain.html.markdown file [GH-5126]
-- Rmc add param tmp [GH-5118]
-- Rmc add param [GH-5112]
-- Return type repair [GH-5116]
+- resource/alicloud_service_mesh_service_mesh: Adds new attribute control_plane_log_enabled,control_plane_log_project,access_log_project ([#5124](https://github.com/aliyun/terraform-provider-alicloud/issues/5124))
+- resource/alicloud_security_group_rule: Add support for new parameter ipv6_cidr_ip ([#5120](https://github.com/aliyun/terraform-provider-alicloud/issues/5120))
+- resource/alicloud_cms_alarm: Update attribute metric_dimensions ([#5115](https://github.com/aliyun/terraform-provider-alicloud/issues/5115))
+- testcase: Adds new unit test case for resource alicloud_ga_additional_certificate alicloud_ecs_dedicated_host alicloud_ecs_disk ([#5107](https://github.com/aliyun/terraform-provider-alicloud/issues/5107))
+- docs/alicloud_click_house_regions: Optimize document format ([#5126](https://github.com/aliyun/terraform-provider-alicloud/issues/5126))
+- docs/alicloud_ecd_bundles: Optimize document format ([#5126](https://github.com/aliyun/terraform-provider-alicloud/issues/5126))
+- docs/alicloud_ess_eci_scaling_configuration: Optimize document format ([#5126](https://github.com/aliyun/terraform-provider-alicloud/issues/5126))
+- docs/alicloud_cdn_domain: Delete the cdn_domain.html.markdown file ([#5126](https://github.com/aliyun/terraform-provider-alicloud/issues/5126))
 
 BUG FIXES:
 
-- testcase: fixes the kubernetes resource's testcase error [GH-5114]
-- docs: Fix errors in link addresses in documents [GH-5062]
-- doc/cs_kubernetes_version: fix doc field error [GH-5113]	
-- ci/field_check: fix the error [GH-5128]
+- resource/alicloud_cms_alarm: Fix diff caused by metric_dimensions property ([#5129](https://github.com/aliyun/terraform-provider-alicloud/issues/5129))
+- testcase: fixes the kubernetes resource's testcase error ([#5114](https://github.com/aliyun/terraform-provider-alicloud/issues/5114))
+- docs: Fix errors in link addresses in documents ([#5062](https://github.com/aliyun/terraform-provider-alicloud/issues/5062))
+- doc/cs_kubernetes_version: fix doc field error ([#5113](https://github.com/aliyun/terraform-provider-alicloud/issues/5113))	
+- ci/field_check: fix the error ([#5128](https://github.com/aliyun/terraform-provider-alicloud/issues/5128))
 
 ## 1.173.0 (June 26, 2022)
 
