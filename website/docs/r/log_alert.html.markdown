@@ -247,8 +247,6 @@ The following arguments are supported:
 * `join_configurations` - (Optional, Available in 1.161.0+) Join configuration for different queries.
     * `type` - (Required) Join type, including cross_join, inner_join, left_join, right_join, full_join, left_exclude, right_exclude, concat, no_join.
     * `condition` - (Required) Join condition.
-* `schedule_interval` - (Optional, Deprecated) Execution interval. 60 seconds minimum, such as 60s, 1h. Deprecated from 1.175.0+. use interval in schedule.
-* `schedule_type` - (Optional, Deprecated)  Default FixedRate. No need to configure this parameter. Deprecated from 1.175.0+. use type in schedule.
 * `schedule` - (Required, Available in 1.175.0+) schedule for alert.
     * `type` - (Required) including FixedRate,Hourly,Daily,Weekly,Cron.
     * `interval` - (Optional) Execution interval. 60 seconds minimum, such as 60s, 1h. used when type is FixedRate.
