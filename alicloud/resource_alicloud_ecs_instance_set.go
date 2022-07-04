@@ -384,23 +384,61 @@ func resourceAlicloudEcsInstanceSet() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"exclude_instance_filter": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"key": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"InstanceId", "InstanceName"}, false),
+						},
+						"value": {
+							MinItems: 1,
+							MaxItems: 100,
+							Required: true,
+							Type:     schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
 
 func resourceAlicloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface{}) error {
+
+	amount := 1
+	if v, ok := d.GetOk("amount"); ok {
+		amount = formatInt(v)
+	}
+
+	err, instanceIds := buildEcsInstanceSetRunInstanceRequest(d, meta, amount)
+	if err != nil {
+		return err
+	}
+
+	d.Set("instance_ids", instanceIds)
+	d.SetId(encodeToBase64String(instanceIds))
+	return resourceAlicloudEcsInstanceSetUpdate(d, meta)
+}
+
+func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interface{}, amount int) (error, []string) {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "RunInstances"
 	request := make(map[string]interface{})
 	conn, err := client.NewEcsClient()
 	if err != nil {
-		return WrapError(err)
+		return WrapError(err), nil
 	}
 	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("amount"); ok {
-		request["Amount"] = v
-	}
+	request["Amount"] = amount
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
@@ -574,12 +612,12 @@ func resourceAlicloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "resource_alicloud_ecs_instance_set", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "resource_alicloud_ecs_instance_set", action, AlibabaCloudSdkGoERROR), nil
 	}
 
 	resp, err := jsonpath.Get("$.InstanceIdSets.InstanceIdSet", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, "resource_alicloud_ecs_instance_set", "$.InstanceIdSets.InstanceIdSet", response)
+		return WrapErrorf(err, FailedGetAttributeMsg, "resource_alicloud_ecs_instance_set", "$.InstanceIdSets.InstanceIdSet", response), nil
 	}
 
 	instanceIds := make([]string, 0)
@@ -587,16 +625,13 @@ func resourceAlicloudEcsInstanceSetCreate(d *schema.ResourceData, meta interface
 		instanceIds = append(instanceIds, fmt.Sprint(v))
 	}
 
-	d.Set("instance_ids", instanceIds)
-	d.SetId(encodeToBase64String(instanceIds))
-
 	ecsService := EcsService{client}
-	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecsService.EcsInstanceSetStateRefreshFunc(d.Id(), []string{"Stopping"}))
+	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecsService.EcsInstanceSetStateRefreshFunc(encodeToBase64String(instanceIds), []string{"Stopping"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsg, d.Id()), nil
 	}
 
-	return resourceAlicloudEcsInstanceSetUpdate(d, meta)
+	return nil, instanceIds
 }
 
 func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}) error {
@@ -612,6 +647,17 @@ func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 		}
 
 		return WrapError(err)
+	}
+
+	amount := d.Get("amount")
+	if len(objects) != formatInt(amount) {
+
+		instanceIds := make([]string, 0)
+		for _, object := range objects {
+			instanceIds = append(instanceIds, fmt.Sprint(object["InstanceId"]))
+		}
+		d.Set("instance_ids", instanceIds)
+		d.SetId(encodeToBase64String(instanceIds))
 	}
 
 	instance := objects[0]
@@ -688,20 +734,140 @@ func resourceAlicloudEcsInstanceSetUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("tags")
 	}
 
+	if d.HasChange("exclude_instance_filter") {
+		curInstanceIds := make([]string, 0)
+		for _, v := range d.Get("instance_ids").([]interface{}) {
+			curInstanceIds = append(curInstanceIds, fmt.Sprint(v))
+		}
+
+		oraw, nraw := d.GetChange("exclude_instance_filter")
+		removed := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		created := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+
+		objects, err := ecsService.DescribeEcsInstanceSet(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if len(removed) > 0 {
+			removeInstanceIds := make([]string, 0)
+
+			removeItem := removed[0].(map[string]interface{})
+			excludeType := fmt.Sprint(removeItem["key"])
+
+			if strings.EqualFold(excludeType, "InstanceId") {
+				instanceIds := removeItem["value"].([]interface{})
+				for _, v := range instanceIds {
+					instanceId := fmt.Sprint(v)
+					for _, id := range curInstanceIds {
+						if strings.EqualFold(instanceId, id) {
+							removeInstanceIds = append(removeInstanceIds, instanceId)
+							break
+						}
+					}
+				}
+			} else if strings.EqualFold(excludeType, "InstanceName") {
+				instanceNames := removeItem["value"].([]interface{})
+				for _, v := range instanceNames {
+					instanceName := fmt.Sprint(v)
+					for _, object := range objects {
+						if strings.EqualFold(instanceName, fmt.Sprint(object["InstanceName"])) {
+							removeInstanceIds = append(removeInstanceIds, fmt.Sprint(object["InstanceId"]))
+							break
+						}
+					}
+				}
+			}
+
+			if len(removeInstanceIds) > 0 {
+				err = buildEcsInstanceSetDeleteInstancesRequest(d, meta, removeInstanceIds)
+				if err != nil {
+					return WrapError(err)
+				}
+
+				tmpInstanceIds := make([]string, 0)
+				for _, cur := range curInstanceIds {
+					flag := true
+					for _, remove := range removeInstanceIds {
+						if strings.EqualFold(cur, remove) {
+							flag = false
+							break
+						}
+					}
+
+					if flag {
+						tmpInstanceIds = append(tmpInstanceIds, cur)
+					}
+				}
+				curInstanceIds = tmpInstanceIds
+			}
+		}
+
+		if len(created) > 0 {
+			addInstanceNames := make([]string, 0)
+			instanceNamePrefix := d.Get("instance_name").(string)
+
+			addItem := created[0].(map[string]interface{})
+			excludeType := fmt.Sprint(addItem["key"])
+
+			if strings.EqualFold(excludeType, "InstanceId") {
+				instanceIds := addItem["value"].([]interface{})
+				for _, v := range instanceIds {
+					addInstanceNames = append(addInstanceNames, fmt.Sprintf("%s-%s", instanceNamePrefix, fmt.Sprint(v)))
+				}
+			} else if strings.EqualFold(excludeType, "InstanceName") {
+				instanceNames := addItem["value"].([]interface{})
+				for _, v := range instanceNames {
+					addInstanceNames = append(addInstanceNames, fmt.Sprint(v))
+				}
+			}
+
+			amount := len(addInstanceNames)
+			if amount > 0 {
+				err, instanceIds := buildEcsInstanceSetRunInstanceRequest(d, meta, amount)
+				if err != nil {
+					return err
+				}
+
+				curInstanceIds = append(curInstanceIds, instanceIds...)
+				for index, name := range addInstanceNames {
+					err = modifyEcsInstanceRequest(d, meta, instanceIds[index], name)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		// 更新InstanceIds
+		d.Set("instance_ids", curInstanceIds)
+		d.SetId(encodeToBase64String(curInstanceIds))
+	}
+
 	return resourceAlicloudEcsInstanceSetRead(d, meta)
 }
 
 func resourceAlicloudEcsInstanceSetDelete(d *schema.ResourceData, meta interface{}) error {
+
+	instanceIds, err := decodeFromBase64String(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	err = buildEcsInstanceSetDeleteInstancesRequest(d, meta, instanceIds)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	return nil
+}
+
+func buildEcsInstanceSetDeleteInstancesRequest(d *schema.ResourceData, meta interface{}, instanceIds []string) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "DeleteInstances"
 	request := make(map[string]interface{})
 	conn, err := client.NewEcsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
-	instanceIds, err := decodeFromBase64String(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
@@ -733,6 +899,41 @@ func resourceAlicloudEcsInstanceSetDelete(d *schema.ResourceData, meta interface
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, "resource_alicloud_ecs_instance_set", action, AlibabaCloudSdkGoERROR)
+	}
+
+	return nil
+}
+
+func modifyEcsInstanceRequest(d *schema.ResourceData, meta interface{}, instanceId, instanceName string) error {
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "ModifyInstanceAttribute"
+	request := make(map[string]interface{})
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request["InstanceId"] = instanceId
+	request["InstanceName"] = instanceName
+	request["RegionId"] = client.RegionId
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapError(err)
 	}
 
 	return nil

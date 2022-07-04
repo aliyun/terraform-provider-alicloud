@@ -2,6 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -12,9 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"reflect"
-	"testing"
 )
 
 func TestAccAlicloudServiceMeshUserPermission_basic0(t *testing.T) {
