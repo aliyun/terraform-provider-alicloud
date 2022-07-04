@@ -178,7 +178,7 @@ The following example is the definition of tags block. The type of this field is
 ### Network
 
 * `pod_cidr` - (**Required**) - [Flannel Specific] The CIDR block for the pod network when using Flannel. 
-* `pod_vswitch_ids` - (**Required**) - [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswtich_ids` or `master_vswtich_ids` but must be in same availability zones.
+* `pod_vswitch_ids` - (**Required**) - [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswitch_ids` or `master_vswitch_ids` but must be in same availability zones.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
 * `service_cidr` - (Optional) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
@@ -191,7 +191,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 * `worker_number` - (Optional) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
 * `worker_instance_types` - (Optional) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
-* `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
+* `worker_vswitch_ids` - (**Required**) The vswitches used by workers.
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
@@ -220,14 +220,14 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
-##### worker_vswtich_ids
+##### worker_vswitch_ids
 
-The following example is the definition of `worker_vswtich_ids` block.
+The following example is the definition of `worker_vswitch_ids` block.
 
 ```
   # the ID can be the same, At least one.
 
-  worker_vswtich_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
+  worker_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
 ```
 
 ##### taints

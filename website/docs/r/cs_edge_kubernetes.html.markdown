@@ -104,7 +104,7 @@ The following arguments are supported:
 * `password` - (**Required**, Sensitive) The password of ssh login cluster node. You have to specify one of `password`, `key_name` `kms_encrypted_password` fields.
 * `key_name` - (**Required**) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `worker_number` - (**Required**) The cloud worker node number of the edge kubernetes cluster. Default to 1. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
+* `worker_vswitch_ids` - (**Required**) The vswitches used by workers.
 * `worker_instance_types` - (**Required**, ForceNew) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_efficiency`, `cloud_ssd` and `cloud_essd` and . Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
