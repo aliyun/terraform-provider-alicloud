@@ -209,7 +209,7 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -370,7 +370,7 @@ func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
