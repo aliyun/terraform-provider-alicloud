@@ -250,6 +250,10 @@ func resourceAlicloudSddpRuleRead(d *schema.ResourceData, meta interface{}) erro
 }
 func resourceAlicloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewSddpClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -272,10 +276,6 @@ func resourceAlicloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if update {
 		action := "ModifyRuleStatus"
-		conn, err := client.NewSddpClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -366,10 +366,6 @@ func resourceAlicloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	if update {
 		action := "ModifyRule"
-		conn, err := client.NewSddpClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, modifyRuleReq, &util.RuntimeOptions{})
