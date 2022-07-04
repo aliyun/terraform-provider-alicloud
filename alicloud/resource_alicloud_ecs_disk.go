@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -471,11 +470,11 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 	modifyDiskAttributeReq := map[string]interface{}{
 		"DiskId": d.Id(),
 	}
-	if needUpdate(d, "delete_auto_snapshot", true) {
+	if d.HasChange("delete_auto_snapshot") {
 		update = true
 		modifyDiskAttributeReq["DeleteAutoSnapshot"] = d.Get("delete_auto_snapshot")
 	}
-	if needUpdate(d, "delete_with_instance", true) {
+	if d.HasChange("delete_with_instance") {
 		update = true
 		modifyDiskAttributeReq["DeleteWithInstance"] = d.Get("delete_with_instance")
 	}
@@ -587,12 +586,4 @@ func convertEcsDiskPaymentTypeRequest(source interface{}) interface{} {
 		return "PrePaid"
 	}
 	return source
-}
-
-func needUpdate(d *schema.ResourceData, key string, value interface{}) bool {
-	v, _ := d.GetOkExists(key)
-	if d.IsNewResource() && strings.EqualFold(fmt.Sprint(v), fmt.Sprint(value)) {
-		return true
-	}
-	return d.HasChange(key)
 }

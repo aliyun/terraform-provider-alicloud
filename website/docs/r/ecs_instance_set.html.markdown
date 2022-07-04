@@ -131,6 +131,7 @@ The following arguments are supported:
 * `deployment_set_id` - (Optional, ForceNew) The ID of the deployment set to which to deploy the instance.
 * `network_interfaces` - (Optional, ForceNew) A list of NetworkInterface. See the following `Block network_interfaces`.
 * `unique_suffix` - (Optional, ForceNew) Whether to automatically append incremental suffixes to the hostname specified by the HostName parameter and to the instance name specified by the InstanceName parameter when you batch create instances. The incremental suffixes can range from `001` to `999`.
+* `exclude_instance_filter` - (Optional, Available in v1.175.0+) The instances that need to be excluded from the Instance Set. See the following `Block exclude_instance_filter`.
 
 
 #### Block data_disks
@@ -159,6 +160,13 @@ The `network_interfaces` supports the following:
 * `description` - (Optional, ForceNew) The description of ENI.
 * `network_interface_name` - (Optional, ForceNew) The name of ENI.
 * `primary_ip_address` - (Optional, ForceNew) The primary private IP address of ENI.
+
+#### Block exclude_instance_filter
+
+The `exclude_instance_filter` supports the following:
+
+* `key` - (Required) The type of the excluded. Valid values: `InstanceId`, `InstanceName`.
+* `value` - (Required) The value of the excluded. The identification of the excluded instances. It is a list of instance Ids or names.
 
 ## Attributes Reference
 
