@@ -305,9 +305,23 @@ func resourceAlicloudLogAlert() *schema.Resource {
 					},
 				},
 			},
+			"schedule_interval": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'schedule_interval' has been deprecated from provider version 1.175.0. New field 'schedule' instead.",
+				ConflictsWith: []string{"schedule"},
+			},
+			"schedule_type": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				Deprecated:    "Field 'schedule_type' has been deprecated from provider version 1.175.0. New field 'schedule' instead.",
+				ConflictsWith: []string{"schedule"},
+			},
 			"schedule": {
 				Type:     schema.TypeSet,
-				Required: true,
+				Optional: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -346,6 +360,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 						},
 					},
 				},
+				ConflictsWith: []string{"schedule_type", "schedule_interval"},
 			},
 		},
 	}
@@ -357,7 +372,10 @@ func resourceAlicloudLogAlertCreate(d *schema.ResourceData, meta interface{}) er
 	alert_name := d.Get("alert_name").(string)
 	alert_displayname := d.Get("alert_displayname").(string)
 
-	schedule := &sls.Schedule{}
+	schedule := &sls.Schedule{
+		Type:     d.Get("schedule_type").(string),
+		Interval: d.Get("schedule_interval").(string),
+	}
 	if v, ok := d.GetOk("schedule"); ok {
 		for _, e := range v.(*schema.Set).List() {
 			scheduleMap := e.(map[string]interface{})
@@ -429,6 +447,8 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("alert_displayname", object.DisplayName)
 	d.Set("alert_description", object.Description)
 	d.Set("mute_until", object.Configuration.MuteUntil)
+	d.Set("schedule_interval", object.Schedule.Interval)
+	d.Set("schedule_type", object.Schedule.Type)
 	d.Set("throttling", object.Configuration.Throttling)
 	d.Set("notify_threshold", object.Configuration.NotifyThreshold)
 	d.Set("condition", object.Configuration.Condition)
@@ -566,7 +586,10 @@ func resourceAlicloudLogAlertUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-	schedule := &sls.Schedule{}
+	schedule := &sls.Schedule{
+		Type:     d.Get("schedule_type").(string),
+		Interval: d.Get("schedule_interval").(string),
+	}
 	if v, ok := d.GetOk("schedule"); ok {
 		for _, e := range v.(*schema.Set).List() {
 			scheduleMap := e.(map[string]interface{})
