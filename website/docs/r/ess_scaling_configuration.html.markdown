@@ -121,6 +121,7 @@ The following arguments are supported:
 * `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
 * `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
+* `instance_pattern_info` - (Optional,Available in 1.178.0+) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
@@ -165,6 +166,15 @@ The datadisk mapping supports the following:
 * `description` - (Optional, Available in 1.92.0+) The description of data disk N. Valid values of N: 1 to 16. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as data disk.
+
+## Block instancePatternInfo
+
+The instancePatternInfo mapping supports the following:
+
+* `cores` - (Optional) The number of vCPUs that are specified for an instance type in instancePatternInfo.
+* `instance_family_level` - (Optional) The instance family level in instancePatternInfo.
+* `max_price` - (Optional) The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.
+* `memory` - (Optional) The memory size that is specified for an instance type in instancePatternInfo.
 
 ## Block spotPriceLimit
 
