@@ -2415,30 +2415,26 @@ func resourceInstanceTypeConfigDependence(name string) string {
 
 	data "alicloud_instance_types" "new1" {
 		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 0.5
-		instance_type_family = "ecs.t5"
+		cpu_core_count = 2
+		memory_size = 4
 	}
 
 	data "alicloud_instance_types" "new2" {
 		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 1
-		instance_type_family = "ecs.t5"
+		cpu_core_count = 4
+		memory_size = 8
 	}
 
 	data "alicloud_instance_types" "new3" {
 		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 2
-		instance_type_family = "ecs.t5"
+		cpu_core_count = 8
+		memory_size = 16 
 	}
 
 	data "alicloud_instance_types" "new4" {
 		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 2
-		memory_size = 4
-		instance_type_family = "ecs.t5"
+		cpu_core_count = 16
+		memory_size = 32
 	}
 
 
