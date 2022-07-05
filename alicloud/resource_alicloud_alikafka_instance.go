@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -244,7 +245,7 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
 
-	object, err := alikafkaService.DescribeAlikafkaInstance(d.Id())
+	object, err := alikafkaService.DescribeAliKafkaInstancesReadObject(d.Id())
 	if err != nil {
 		// Handle exceptions
 		if NotFoundError(err) {
@@ -254,32 +255,87 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("name", object.Name)
-	d.Set("topic_quota", object.TopicNumLimit)
-	d.Set("disk_type", object.DiskType)
-	d.Set("disk_size", object.DiskSize)
-	d.Set("deploy_type", object.DeployType)
-	d.Set("io_max", object.IoMax)
-	d.Set("eip_max", object.EipMax)
-	d.Set("vpc_id", object.VpcId)
-	d.Set("vswitch_id", object.VSwitchId)
-	d.Set("zone_id", object.ZoneId)
+	d.Set("name", object["Name"])
+	d.Set("topic_quota", object["TopicNumLimit"])
+	d.Set("disk_type", object["DiskType"])
+	d.Set("disk_size", object["DiskSize"])
+	d.Set("deploy_type", object["DeployType"])
+	d.Set("io_max", object["IoMax"])
+	d.Set("eip_max", object["EipMax"])
+	d.Set("vpc_id", object["VpcId"])
+	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("zone_id", object["ZoneId"])
 	d.Set("paid_type", PostPaid)
-	d.Set("spec_type", object.SpecType)
-	d.Set("security_group", object.SecurityGroup)
-	d.Set("end_point", object.EndPoint)
-	// object.UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO[0].Current2OpenSourceVersion can guaranteed not to be null
-	d.Set("service_version", object.UpgradeServiceDetailInfo.Current2OpenSourceVersion)
-	d.Set("config", object.AllConfig)
-	if object.PaidType == 0 {
+	d.Set("spec_type", object["SpecType"])
+	d.Set("security_group", object["SecurityGroup"])
+	d.Set("end_point", object["EndPoint"])
+
+	d.Set("config", object["AllConfig"])
+	if fmt.Sprint(object["PaidType"]) == "0" {
 		d.Set("paid_type", PrePaid)
 	}
-
 	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("tags", alikafkaService.tagsToMap(tags))
+
+	d.Set("status", object["ServiceStatus"])
+	d.Set("create_time", object["CreateTime"])
+	d.Set("expired_time", object["ExpiredTime"])
+	d.Set("msg_retain", object["MsgRetain"])
+	d.Set("ssl_end_point", object["SslEndPoint"])
+	d.Set("domain_endpoint", object["DomainEndpoint"])
+	d.Set("ssl_domain_endpoint", object["SslDomainEndpoint"])
+	d.Set("sasl_domain_endpoint", object["SaslDomainEndpoint"])
+
+	DetailInfoMaps := make([]map[string]interface{}, 0)
+	if _, ok := object["UpgradeServiceDetailInfo"].(map[string]interface{}); ok {
+		UpgradeServiceDetailInfoMap := map[string]interface{}{}
+		UpgradeServiceDetailInfoMap["current2_open_source_version"] = object["UpgradeServiceDetailInfo"].(map[string]interface{})["Current2OpenSourceVersion"]
+		d.Set("service_version", UpgradeServiceDetailInfoMap["current2_open_source_version"])
+		DetailInfoMaps = append(DetailInfoMaps, UpgradeServiceDetailInfoMap)
+	}
+	d.Set("upgrade_service_detail_info", DetailInfoMaps)
+	// object["UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO[0].Current2OpenSourceVersion can guaranteed not to be null
+
+	getResp, err := alikafkaService.GetAllowedIpList(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	allowedListMaps := make([]map[string]interface{}, 0)
+	if defaultActionsList, ok := getResp["AllowedList"].(map[string]interface{}); ok {
+		defaultActionsMap := map[string]interface{}{}
+		defaultActionsMap["deploy_type"] = defaultActionsList["DeployType"]
+		if forwardGroupConfigArg, ok := defaultActionsList["VpcList"].([]interface{}); ok {
+			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+			for _, serverGroupTuples := range forwardGroupConfigArg {
+				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+				serverGroupTuplesMap := map[string]interface{}{}
+				serverGroupTuplesMap["port_range"] = serverGroupTuplesArg["PortRange"]
+				serverGroupTuplesMap["allowed_ip_list"] = serverGroupTuplesArg["AllowedIpList"]
+				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+			}
+			defaultActionsMap["vpc_list"] = serverGroupTuplesMaps
+		}
+
+		if forwardGroupConfigArg, ok := defaultActionsList["InternetList"].([]interface{}); ok {
+			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+			for _, serverGroupTuples := range forwardGroupConfigArg {
+				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+				serverGroupTuplesMap := map[string]interface{}{}
+				serverGroupTuplesMap["port_range"] = serverGroupTuplesArg["PortRange"]
+				serverGroupTuplesMap["allowed_ip_list"] = serverGroupTuplesArg["AllowedIpList"]
+				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+			}
+			defaultActionsMap["internet_list"] = serverGroupTuplesMaps
+		}
+
+		allowedListMaps = append(allowedListMaps, defaultActionsMap)
+
+	}
+	d.Set("allowed_list", allowedListMaps)
 
 	return nil
 }
