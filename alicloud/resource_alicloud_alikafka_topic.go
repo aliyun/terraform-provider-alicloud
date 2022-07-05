@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -235,6 +236,10 @@ func resourceAlicloudAlikafkaTopicRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	d.Set("tags", alikafkaService.tagsToMap(tags))
+
+	d.Set("create_time", fmt.Sprint(object.CreateTime))
+	d.Set("status_name", object.StatusName)
+	d.Set("status", object.Status)
 
 	return nil
 }
