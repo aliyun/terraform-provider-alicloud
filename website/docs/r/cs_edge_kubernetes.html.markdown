@@ -37,10 +37,10 @@ resource "alicloud_vpc" "vpc" {
 
 # According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "vswitches" {
-  count             = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
-  vpc_id            = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block        = element(var.vswitch_cidrs, count.index)
-  availability_zone = element(var.availability_zone, count.index)
+  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
+  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block = element(var.vswitch_cidrs, count.index)
+  zone_id    = element(var.availability_zone, count.index)
 }
 
 resource "alicloud_cs_edge_kubernetes" "k8s" {
@@ -84,7 +84,7 @@ The following arguments are supported:
 * `is_enterprise_security_group` - (Optional) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 * `rds_instance` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.103.2+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
+* `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection. Default to `false`.
 * `force_update` - (Optional, ForceNew, Available in 1.113.0+) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional, Available in 1.120.0+) Default nil, A map of tags assigned to the kubernetes cluster and work node.
 * `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
@@ -107,17 +107,17 @@ The following arguments are supported:
 * `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
 * `worker_instance_types` - (**Required**, ForceNew) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_efficiency`, `cloud_ssd` and `cloud_essd` and . Default to `cloud_efficiency`.
-* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
+* `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to `40`.
 * `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category` - The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
   * `size` - The size of a data disk, at least 40. Unit: GiB.
-  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default is `false`.
-  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
   * `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
-* `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true`.
-* `proxy_mode` - Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
+* `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. Default to `true`.
+* `proxy_mode` - Proxy mode is option of kube-proxy. options: `iptables`|`ipvs`. Default to `ipvs`.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
-* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
 * `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
 ### Addons

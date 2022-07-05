@@ -43,7 +43,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "10.1.0.0/21"
 }
 
@@ -101,7 +101,7 @@ The following arguments are supported:
 * `version` - (Optional, Available since 1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
 * `vswitch_ids` - (Required) The vswitches where new kubernetes cluster will be located.
-* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
+* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default to `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
 * `service_discovery_types` - (ForceNew, Available in 1.123.1+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
@@ -116,7 +116,7 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (Optional, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `load_balancer_spec` - (Optional, Available in 1.117.0+) The cluster api server load balance instance specification. Default to `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 * `addons` - (Available in 1.91.0+)) You can specific network plugin,log component,ingress component and so on.Detailed below.
 * `time_zone` - (Optional, ForceNew, Available in 1.123.1+) The time zone of the cluster.
 * `zone_id` - (Optional, ForceNew, Available in 1.123.1+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
@@ -133,7 +133,7 @@ It is a new field since 1.91.0. You can specific network plugin,log component,in
 The following arguments are optional:
 * `name` - Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
 * `config` - The ACK add-on configurations.
-* `disabled` -  Disables the automatic installation of a component. Default is `false`.
+* `disabled` -  Disables the automatic installation of a component. Default to `false`.
 
 The following example is the definition of addons block, The type of this field is list:
 
