@@ -3,11 +3,9 @@ package alicloud
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"strconv"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -65,6 +63,18 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"tags": tagsSchema(),
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"status_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }

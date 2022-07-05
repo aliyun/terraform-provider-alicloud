@@ -113,6 +113,96 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"status": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"upgrade_service_detail_info": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"current2_open_source_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"allowed_list": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"deploy_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_list": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"allowed_ip_list": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"port_range": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"internet_list": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"allowed_ip_list": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"port_range": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"sasl_domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"msg_retain": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"expired_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_end_point": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
