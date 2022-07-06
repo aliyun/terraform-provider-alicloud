@@ -43,7 +43,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
-					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_number":               "2",
 					"password":                    "Test12345",
@@ -236,7 +236,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					"cluster_spec":        "ack.standard",
 					// worker args
 					"worker_number":                  "2",
-					"worker_vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":             []string{"${local.vswitch_id}"},
 					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_charge_type":    "PostPaid",
 					"worker_data_disk_category":      "cloud_ssd",
@@ -471,8 +471,8 @@ data "alicloud_zones" "default" {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
+	cpu_core_count = 4
+	memory_size = 8
 	kubernetes_node_role = "Worker"
 }
 
@@ -480,16 +480,25 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_kms_keys" "default" {}
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
-  cidr_block = "10.1.1.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_log_project" "log" {
@@ -504,7 +513,7 @@ resource "alicloud_db_instance" "default" {
   instance_storage     = "30"
   instance_charge_type = "Postpaid"
   instance_name        = "${var.name}"
-  vswitch_id           = "${alicloud_vswitch.default.id}"
+  vswitch_id           = "${local.vswitch_id}"
   monitoring_period    = "60"
 }
 
@@ -548,7 +557,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
-					"worker_vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_number":               "3",
 					"password":                    "Test12345",
