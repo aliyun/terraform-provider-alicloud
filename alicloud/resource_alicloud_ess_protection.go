@@ -202,10 +202,8 @@ func resourceAliyunEssProtectionDelete(d *schema.ResourceData, meta interface{})
 			}
 			return resource.RetryableError(WrapError(Error("ECS instances are still protection status in the scaling group.")))
 		}
-
 		return nil
-	});
-		err != nil {
+	}); err != nil {
 		return WrapError(err)
 	}
 	//return WrapError(essService.WaitForEssProtection(d.Id(), Protected, DefaultTimeout))
