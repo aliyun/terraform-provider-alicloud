@@ -543,6 +543,35 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	return response.ScalingInstances.ScalingInstance, nil
 }
 
+func (srv *EssService) DescribeEssProtection(id string, instanceIds []string) (instances []ess.ScalingInstance, err error) {
+	request := ess.CreateDescribeScalingInstancesRequest()
+	request.RegionId = srv.client.RegionId
+	request.ScalingGroupId = id
+	if len(instanceIds) > 0 {
+		request.InstanceId = &instanceIds
+	}
+	request.LifecycleState = "Protected"
+
+	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingInstances(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ess.DescribeScalingInstancesResponse)
+	if len(response.ScalingInstances.ScalingInstance) < 1 {
+		err = WrapErrorf(Error(GetNotFoundMessage("EssProtection", id)), NotFoundMsg, ProviderERROR)
+		return
+	}
+	return response.ScalingInstances.ScalingInstance, nil
+}
+
 func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.ScalingConfiguration, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
 	request.ScalingGroupId = id
@@ -658,6 +687,78 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 	return nil
 }
 
+//将实例移出保护状态
+
+func (srv *EssService) EssDetachProtectionInstances(id string, instanceIds []string) error {
+
+	if len(instanceIds) < 1 {
+		return nil
+	}
+	group, err := srv.DescribeEssScalingGroup(id)
+
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if group.LifecycleState == string(Inactive) {
+		return WrapError(Error("Scaling group current status is %s, please active it before setting protection status on ECS instances.", group.LifecycleState))
+	} else {
+		if err := srv.WaitForEssScalingGroup(group.ScalingGroupId, Active, DefaultTimeout); err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return WrapError(err)
+		}
+	}
+
+	removed := instanceIds
+	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		request := ess.CreateSetInstancesProtectionRequest()
+		request.ScalingGroupId = id
+		request.RegionId = srv.client.RegionId
+		request.ProtectedFromScaleIn = "false"
+		if len(removed) > 0 {
+			request.InstanceId = &removed
+		} else {
+			return nil
+		}
+		raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.SetInstancesProtection(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
+				return nil
+			}
+			if IsExpectedErrors(err, []string{"ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
+				time.Sleep(5)
+				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+			}
+			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
+		}
+
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		time.Sleep(3 * time.Second)
+		instances, err := srv.DescribeEssProtection(id, instanceIds)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
+			return resource.NonRetryableError(WrapError(err))
+		}
+		if len(instances) > 0 {
+			removed = make([]string, 0)
+			for _, inst := range instances {
+				removed = append(removed, inst.InstanceId)
+			}
+			return resource.RetryableError(WrapError(Error("ECS instances are still protection status in the scaling group.")))
+		}
+		return nil
+	}); err != nil {
+		return WrapError(err)
+	}
+	return nil
+}
+
 // WaitForScalingGroup waits for group to given status
 func (s *EssService) WaitForEssScalingGroup(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
@@ -719,6 +820,24 @@ func (s *EssService) WaitForEssAttachment(id string, status Status, timeout int)
 	}
 }
 
+//func (s *EssService) WaitForEssProtection(id string, status Status, timeout int) error {
+//	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+//	for {
+//		object, err := s.DescribeEssProtection(id, make([]string, 0))
+//		if err != nil {
+//			if NotFoundError(err) {
+//				return WrapError(err)
+//			}
+//		}
+//		if len(object) > 0 && status != Protected {
+//			return nil
+//		}
+//		time.Sleep(DefaultIntervalShort * time.Second)
+//		if time.Now().After(deadline) {
+//			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, Null, string(status), ProviderERROR)
+//		}
+//	}
+//}
 func (s *EssService) WaitForEssAlarm(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {

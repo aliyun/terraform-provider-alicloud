@@ -155,6 +155,7 @@ const (
 	SoldOut = Status("SoldOut")
 
 	InService      = Status("InService")
+	Protected      = Status("Protected")
 	Removing       = Status("Removing")
 	DisabledStatus = Status("Disabled")
 
