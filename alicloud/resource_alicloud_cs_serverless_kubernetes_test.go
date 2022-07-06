@@ -14,6 +14,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+const (
+	testRegionForCSSeverless = "cn-beijing"
+)
+
 func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 	var timeZoneMap = map[string]string{
 		"eu-central-1": "Europe/London",
@@ -23,11 +27,11 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 	}
 
 	var regionId string
-	if v := os.Getenv("ALICLOUD_REGION"); v != "" {
+	if v := os.Getenv("ALICLOUD_REGION"); v == testRegionForCSSeverless {
 		regionId = v
 	} else {
-		log.Println("[INFO] Test: Using cn-beijing as test region")
-		regionId = "cn-beijing"
+		log.Printf("[INFO] Test: Using %s as test region", testRegionForCSSeverless)
+		regionId = testRegionForCSSeverless
 	}
 
 	var timeZone string
@@ -64,8 +68,8 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"vpc_id":                         "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_ids":                    []string{"${local.vswitch_id}"},
+					"vpc_id":                         "${alicloud_vpc.default.id}",
+					"vswitch_ids":                    []string{"${alicloud_vswitch.default.id}"},
 					"new_nat_gateway":                "true",
 					"deletion_protection":            "false",
 					"enable_rrsa":                    "true",
@@ -131,25 +135,16 @@ data "alicloud_eci_zones" "default" {}
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+	vpc_name   = "${var.name}"
+	cidr_block = "10.1.0.0/21"
 }
 
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_eci_zones.default.zones.0.zone_ids.0
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+resource "alicloud_vswitch" "default" {
+	vswitch_name      = "${var.name}"
+	vpc_id            = "${alicloud_vpc.default.id}"
+	cidr_block        = "10.1.1.0/24"
+	availability_zone = "${data.alicloud_eci_zones.default.zones.0.zone_ids.0}"
 }
 `, name)
 }

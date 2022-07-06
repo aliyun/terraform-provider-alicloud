@@ -105,21 +105,21 @@ func dataSourceCSKubernetesClustersConfigDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
 data "alicloud_instance_types" "default_m" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
+	cpu_core_count = 4
+	memory_size = 8
 	kubernetes_node_role = "Master"
 }
 
 data "alicloud_instance_types" "default_w" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
+	cpu_core_count = 4
+	memory_size = 8
 	kubernetes_node_role = "Worker"
 }
 
@@ -150,10 +150,10 @@ resource "alicloud_cs_kubernetes" "default" {
   new_nat_gateway = true
   master_instance_types = ["${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}","${data.alicloud_instance_types.default_m.instance_types.0.id}"]
   worker_instance_types = ["${data.alicloud_instance_types.default_w.instance_types.0.id}"]
-  worker_number = "1"
+  worker_number = 1
   password = "Yourpassword1234"
-  pod_cidr = "192.168.1.0/24"
-  service_cidr = "192.168.2.0/24"
+  pod_cidr = "172.20.0.0/16"
+  service_cidr = "172.21.0.0/20"
   enable_ssh = true
   install_cloud_monitor = true
   worker_disk_category  = "cloud_ssd"

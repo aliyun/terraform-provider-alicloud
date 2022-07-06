@@ -746,6 +746,15 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
 }
 
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
 resource "alicloud_security_group" "group" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
@@ -754,13 +763,7 @@ resource "alicloud_security_group" "group1" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
+
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
@@ -775,7 +778,7 @@ locals {
 }
 
 resource "alicloud_key_pair" "default" {
-	key_name                   = var.name
+	key_name = var.name
 }
 
 resource "alicloud_ecs_deployment_set" "default" {
@@ -792,8 +795,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   is_enterprise_security_group = true
   worker_number                = 2
   password                     = "Hello1234"
-  pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "172.16.0.0/16"
+  pod_cidr                     = "172.20.0.0/16"
+  service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = [local.vswitch_id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
@@ -815,7 +818,7 @@ variable "name" {
 }
 
 variable "alicloud_zone" {
-    default = "cn-hongkong-b"
+    default = "cn-hongkong-c"
 }
 
 data "alicloud_kms_keys" "default" {
@@ -826,8 +829,8 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = var.alicloud_zone
-	cpu_core_count             = 2
-	memory_size                = 4
+	cpu_core_count             = 4
+	memory_size                = 8
 	kubernetes_node_role       = "Worker"
 }
 
@@ -871,8 +874,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   is_enterprise_security_group = true
   worker_number                = 2
   password                     = "Hello1234"
-  pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "172.16.0.0/16"
+  pod_cidr                     = "172.20.0.0/16"
+  service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = [local.vswitch_id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
