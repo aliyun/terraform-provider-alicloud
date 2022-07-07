@@ -63,7 +63,7 @@ func resourceAlicloudCommonBandwidthPackage() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayBy95", "PayByBandwidth", "PayByTraffic"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PayBy95", "PayByBandwidth", "PayByTraffic", "PayByDominantTraffic"}, false),
 				Default:      "PayByTraffic",
 			},
 			"ratio": {
