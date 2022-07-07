@@ -348,6 +348,55 @@ func TestAccAlicloudCommonBandwidthPackage_basic2(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCommonBandwidthPackage_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_common_bandwidth_package.default"
+	ra := resourceAttrInit(resourceId, AlicloudCommonBandwidthPackageMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCommonBandwidthPackage")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scommonbandwidthpackage%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCommonBandwidthPackageBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":              `10`,
+					"isp":                    "BGP",
+					"internet_charge_type":   "PayByDominantTraffic",
+					"ratio":                  `100`,
+					"bandwidth_package_name": name,
+					"description":            name,
+					"zone":                   "${data.alicloud_zones.default.zones.0.id}",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":              "10",
+						"isp":                    "BGP",
+						"internet_charge_type":   "PayByDominantTraffic",
+						"ratio":                  "100",
+						"bandwidth_package_name": name,
+						"description":            name,
+						"zone":                   CHECKSET,
+						"resource_group_id":      CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AlicloudCommonBandwidthPackageMap0 = map[string]string{
 	"isp":                  "BGP",
 	"internet_charge_type": "PayByBandwidth",
