@@ -1349,7 +1349,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":                 REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.nano",
+						"instance_type":                 CHECKSET,
 						"user_data":                     REMOVEKEY,
 						"security_enhancement_strategy": REMOVEKEY,
 					}),
@@ -1361,7 +1361,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
+						"instance_type": CHECKSET,
 					}),
 				),
 			},
@@ -1393,7 +1393,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.large",
+						"instance_type": CHECKSET,
 					}),
 				),
 			},
@@ -2168,6 +2168,7 @@ data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
+
 resource "alicloud_security_group" "default" {
   name   = var.name
   vpc_id = data.alicloud_vpcs.default.ids[0]
@@ -2184,6 +2185,7 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids[0]
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 `, name)
@@ -2375,74 +2377,72 @@ resource "alicloud_key_pair" "default" {
 
 func resourceInstanceTypeConfigDependence(name string) string {
 	return fmt.Sprintf(`
-    data "alicloud_zones" "default" {
-	  available_disk_category     = "cloud_efficiency"
-	  available_resource_creation = "VSwitch"
+	data "alicloud_zones" "default" {
+	  	available_disk_category     = "cloud_efficiency"
+	  	available_resource_creation = "VSwitch"
 	}
+	
 	data "alicloud_images" "default" {
-      name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-	  most_recent = true
-	  owners      = "system"
+	  	name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+	  	most_recent = true
+	  	owners      = "system"
 	}
+	
 	resource "alicloud_vpc" "default" {
-	  name       = "${var.name}"
-	  cidr_block = "172.16.0.0/16"
+	  	vpc_name   = var.name
+	  	cidr_block = "172.16.0.0/16"
 	}
+	
 	resource "alicloud_vswitch" "default" {
-	  vpc_id            = "${alicloud_vpc.default.id}"
-	  cidr_block        = "172.16.0.0/24"
-	  availability_zone = "${reverse(data.alicloud_zones.default.zones).1.id}"
-	  name              = "${var.name}"
+	  	vpc_id       = alicloud_vpc.default.id
+	  	cidr_block   = "172.16.0.0/24"
+	  	zone_id      = data.alicloud_zones.default.zones.0.id
+	  	vswitch_name = var.name
 	}
+	
 	resource "alicloud_security_group" "default" {
-	  name   = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
+	  	name   = var.name
+	  	vpc_id = alicloud_vpc.default.id
 	}
+	
 	resource "alicloud_security_group_rule" "default" {
-	  	type = "ingress"
-	  	ip_protocol = "tcp"
-	  	nic_type = "intranet"
-	  	policy = "accept"
-	  	port_range = "22/22"
-	  	priority = 1
-	  	security_group_id = "${alicloud_security_group.default.id}"
-	  	cidr_ip = "172.16.0.0/24"
+	  	type              = "ingress"
+	  	ip_protocol       = "tcp"
+	  	nic_type          = "intranet"
+	  	policy            = "accept"
+	  	port_range        = "22/22"
+	  	priority          = 1
+	  	security_group_id = alicloud_security_group.default.id
+	  	cidr_ip           = "172.16.0.0/24"
 	}
-
+	
 	variable "name" {
-		default = "%s"
+	  	default = "%s"
 	}
-
+	
 	data "alicloud_instance_types" "new1" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 0.5
-		instance_type_family = "ecs.t5"
+	  	availability_zone = alicloud_vswitch.default.availability_zone
+	  	cpu_core_count    = 2
+	  	memory_size       = 4
 	}
-
+	
 	data "alicloud_instance_types" "new2" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 1
-		instance_type_family = "ecs.t5"
+	  	availability_zone = alicloud_vswitch.default.availability_zone
+	  	cpu_core_count    = 2
+	  	memory_size       = 8
 	}
-
+	
 	data "alicloud_instance_types" "new3" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 2
-		instance_type_family = "ecs.t5"
+	  	availability_zone = alicloud_vswitch.default.availability_zone
+	  	cpu_core_count    = 4
+	  	memory_size       = 16
 	}
-
+	
 	data "alicloud_instance_types" "new4" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 2
-		memory_size = 4
-		instance_type_family = "ecs.t5"
+	  	availability_zone = alicloud_vswitch.default.availability_zone
+	  	cpu_core_count    = 8
+	  	memory_size       = 32
 	}
-
-
-
 `, name)
 }
 
