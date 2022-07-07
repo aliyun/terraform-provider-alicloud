@@ -709,6 +709,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_zones":                                   dataSourceAlicloudEcdZones(),
 			"alicloud_ecd_ad_connector_directories":                dataSourceAlicloudEcdAdConnectorDirectories(),
 			"alicloud_ecd_custom_properties":                       dataSourceAlicloudEcdCustomProperties(),
+			"alicloud_ecd_ad_connector_office_sites":               dataSourceAlicloudEcdAdConnectorOfficeSites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1314,6 +1315,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_mesh_user_permission":                         resourceAlicloudServiceMeshUserPermission(),
 			"alicloud_ecd_ad_connector_directory":                           resourceAlicloudEcdAdConnectorDirectory(),
 			"alicloud_ecd_custom_property":                                  resourceAlicloudEcdCustomProperty(),
+			"alicloud_ecd_ad_connector_office_site":                         resourceAlicloudEcdAdConnectorOfficeSite(),
 		},
 
 		ConfigureFunc: providerConfigure,
