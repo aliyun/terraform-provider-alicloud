@@ -744,11 +744,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.InternetMaxBandwidthOut = v.(int)
 	}
 
-	if v, ok := d.GetOk("platform"); ok {
-		update = true
-		args.Platform = v.(string)
-	}
-
 	if d.HasChange("scaling_policy") {
 		update = true
 		args.ScalingPolicy = d.Get("scaling_policy").(string)
@@ -1030,7 +1025,6 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 			SystemDiskSize:     int64(d.Get("system_disk_size").(int)),
 			SecurityGroupId:    d.Get("security_group_id").(string),
 			ImageId:            d.Get("image_id").(string),
-			Platform:           d.Get("platform").(string),
 		},
 		KubernetesConfig: cs.KubernetesConfig{
 			NodeNameMode: d.Get("node_name_mode").(string),
@@ -1133,6 +1127,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	if v, ok := d.GetOk("security_group_ids"); ok {
 		creationArgs.SecurityGroupIds = expandStringList(v.([]interface{}))
+	}
+
+	if v, ok := d.GetOk("platform"); ok {
+		creationArgs.Platform = v.(string)
 	}
 
 	if v, ok := d.GetOk("image_type"); ok {

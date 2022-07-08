@@ -649,6 +649,79 @@ func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCSKubernetesNodePool_AliyunLinux3(t *testing.T) {
+	var v *cs.NodePoolDetail
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                  name,
+					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
+					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"desired_size":          "1",
+					"key_name":              "${alicloud_key_pair.default.key_name}",
+					"system_disk_category":  "cloud_efficiency",
+					"system_disk_size":      "40",
+					"install_cloud_monitor": "false",
+					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
+					"image_type":            "AliyunLinux3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"cluster_id":       CHECKSET,
+						"vswitch_ids.#":    "1",
+						"instance_types.#": "1",
+						"desired_size":     "1",
+						"key_name":         CHECKSET,
+						"image_type":       "AliyunLinux3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}"},
+					"desired_size":   "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desired_size":     "2",
+						"instance_types.#": "2",
+						"image_type":       "AliyunLinux3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
+
 var csdKubernetesNodePoolBasicMap = map[string]string{
 	"system_disk_size":     "40",
 	"system_disk_category": "cloud_efficiency",
@@ -668,8 +741,8 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 2
-	memory_size                = 4
+	cpu_core_count             = 4
+	memory_size                = 8
 	kubernetes_node_role       = "Worker"
 }
 
