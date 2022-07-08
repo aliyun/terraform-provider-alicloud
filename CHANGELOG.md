@@ -1,4 +1,25 @@
 ## 1.175.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecd_custom_property` ([#5133](https://github.com/aliyun/terraform-provider-alicloud/pull/5133))
+- **New Resource:** `alicloud_ecd_ad_connector_office_site` ([#5155](https://github.com/aliyun/terraform-provider-alicloud/pull/5155))
+- **New Data Source:** `alicloud_ecd_custom_properties` ([#5133](https://github.com/aliyun/terraform-provider-alicloud/pull/5133))
+- **New Data Source:** `alicloud_ecd_ad_connector_office_sites` ([#5155](https://github.com/aliyun/terraform-provider-alicloud/pull/5155))
+
+ENHANCEMENTS:
+
+- resource/resource_alicloud_log_alert: Replace schedule_type, schedule_intervsl with schedule ([#5131](https://github.com/aliyun/terraform-provider-alicloud/pull/5131))
+- resource/alicloud_ecs_instance_set: support for exclude_instance_filter ([#5134](https://github.com/aliyun/terraform-provider-alicloud/pull/5134))
+- resource/alicloud_alikafka_instance: Supports new output status, upgrade_service_detail_info, allowed_list, domain_endpoint, ssl_domain_endpoint, sasl_domain_endpoint, create_time, msg_retain, expired_time, ssl_end_point ([#5141](https://github.com/aliyun/terraform-provider-alicloud/pull/5141))
+- resource/alicloud_alikafka_topic: Supports new output create_time, status and status_name ([#5141](https://github.com/aliyun/terraform-provider-alicloud/pull/5141))
+- resource/alicloud_common_bandwidth_package: support for PayByDominantTraffic ([#5149](https://github.com/aliyun/terraform-provider-alicloud/pull/5149))
+
+BUG FIXES:
+
+- datasource/alicloud_alikafka_instances: Fixes the paid_type incorrect value when it is PrePaid ([#5137](https://github.com/aliyun/terraform-provider-alicloud/pull/5137))
+- resource/alicloud_alikafka_instance: Fixes alikafka paid_type ([#5140](https://github.com/aliyun/terraform-provider-alicloud/pull/5140))
+- testcase: fix ci test error for ack datasource and resource ([#5146](https://github.com/aliyun/terraform-provider-alicloud/pull/5146))
+- resource/alicloud_cs_node_pool: fix image_type export error ([#5156](https://github.com/aliyun/terraform-provider-alicloud/pull/5156))
+
 ## 1.174.0 (July 03, 2022)
 
 - **New Resource:** `alicloud_ecd_ram_directory` ([#5108](https://github.com/aliyun/terraform-provider-alicloud/issues/5108))
