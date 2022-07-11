@@ -153,7 +153,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"cpu": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  2,
+				Computed: true,
 			},
 			"dns_config": {
 				Type:     schema.TypeSet,
@@ -371,7 +371,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"memory": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  4,
+				Computed: true,
 			},
 			"ram_role_name": {
 				Type:     schema.TypeString,
