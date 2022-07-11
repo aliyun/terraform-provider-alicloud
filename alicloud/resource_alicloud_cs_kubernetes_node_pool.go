@@ -95,14 +95,6 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"password", "key_name"},
 			},
-			"kms_encryption_context": {
-				Type:     schema.TypeMap,
-				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("kms_encrypted_password").(string) == ""
-				},
-				Elem: schema.TypeString,
-			},
 			"security_group_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -131,10 +123,6 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional: true,
 			},
 			"system_disk_kms_key": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"system_disk_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -655,11 +643,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.ScalingGroup.SystemDiskKMSKeyId = d.Get("system_disk_kms_key").(string)
 	}
 
-	if d.HasChanges("system_disk_snapshot_policy_id") {
-		update = true
-		args.ScalingGroup.WorkerSnapshotPolicyId = d.Get("system_disk_snapshot_policy_id").(string)
-	}
-
 	// password is required by update method
 	args.ScalingGroup.LoginPassword = d.Get("password").(string)
 	if d.HasChange("password") {
@@ -911,7 +894,6 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_encrypted", object.SystemDiskEncrypted)
 	d.Set("system_disk_kms_key", object.SystemDiskKMSKeyId)
 	d.Set("system_disk_encrypt_algorithm", object.SystemDiskEncryptAlgorithm)
-	d.Set("system_disk_snapshot_policy_id", object.WorkerSnapshotPolicyId)
 
 	d.Set("rds_instances", object.RdsInstances)
 
@@ -1134,10 +1116,6 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	if v, ok := d.GetOk("system_disk_performance_level"); ok {
 		creationArgs.SystemDiskPerformanceLevel = v.(string)
-	}
-
-	if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
-		creationArgs.WorkerSnapshotPolicyId = v.(string)
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
