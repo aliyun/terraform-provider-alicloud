@@ -458,11 +458,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			"node_port_range": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Default:    "30000-32767",
-				ForceNew:   true,
-				Deprecated: "Field 'node_port_range' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "30000-32767",
+				ForceNew: true,
 			},
 			"runtime": {
 				Type:     schema.TypeMap,
@@ -509,7 +508,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'taints' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Deprecated: "Field 'taints' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'taints' to replace it",
 			},
 			"rds_instances": {
 				Type:     schema.TypeList,

@@ -95,6 +95,14 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional:      true,
 				ConflictsWith: []string{"password", "key_name"},
 			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
+				},
+				Elem: schema.TypeString,
+			},
 			"security_group_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -126,6 +134,10 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"system_disk_snapshot_policy_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"system_disk_encrypt_algorithm": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -142,6 +154,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"cpu_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
@@ -636,6 +653,11 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.ScalingGroup.SystemDiskKMSKeyId = d.Get("system_disk_kms_key").(string)
 	}
 
+	if d.HasChanges("system_disk_snapshot_policy_id") {
+		update = true
+		args.ScalingGroup.WorkerSnapshotPolicyId = d.Get("system_disk_snapshot_policy_id").(string)
+	}
+
 	// password is required by update method
 	args.ScalingGroup.LoginPassword = d.Get("password").(string)
 	if d.HasChange("password") {
@@ -749,6 +771,11 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.ScalingPolicy = d.Get("scaling_policy").(string)
 	}
 
+	if d.HasChange("cpu_policy") {
+		update = true
+		args.CpuPolicy = d.Get("cpu_policy").(string)
+	}
+
 	// spot
 	if d.HasChange("spot_strategy") {
 		update = true
@@ -760,7 +787,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-
 		var resoponse interface{}
 		if err := invoker.Run(func() error {
 			var err error
@@ -851,6 +877,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
 	d.Set("image_id", object.ImageId)
 	d.Set("platform", object.Platform)
+	d.Set("cpu_policy", object.CpuPolicy)
 	d.Set("scaling_policy", object.ScalingPolicy)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)
@@ -884,6 +911,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_encrypted", object.SystemDiskEncrypted)
 	d.Set("system_disk_kms_key", object.SystemDiskKMSKeyId)
 	d.Set("system_disk_encrypt_algorithm", object.SystemDiskEncryptAlgorithm)
+	d.Set("system_disk_snapshot_policy_id", object.WorkerSnapshotPolicyId)
 
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
 		d.Set("password", passwd)
@@ -1110,6 +1138,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		creationArgs.ResourceGroupId = v.(string)
 	}
 
+	if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
+		creationArgs.WorkerSnapshotPolicyId = v.(string)
+	}
+
 	// setting spot instance
 	if v, ok := d.GetOk("spot_strategy"); ok {
 		creationArgs.SpotStrategy = v.(string)
@@ -1161,6 +1193,10 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 		creationArgs.CisEnabled = tea.Bool(cisEnabled)
 	} else if socEnabled {
 		creationArgs.SocEnabled = tea.Bool(socEnabled)
+	}
+
+	if v, ok := d.GetOk("cpu_policy"); ok {
+		creationArgs.CpuPolicy = v.(string)
 	}
 
 	return creationArgs, nil

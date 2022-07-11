@@ -201,7 +201,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"exclude_autoscaler_nodes": {
 				Type:       schema.TypeBool,
 				Optional:   true,
-				Deprecated: "Field 'worker_auto_renew_period' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
+				Deprecated: "Field 'exclude_autoscaler_nodes' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
 			},
 			// global configurations
 			"pod_vswitch_ids": {
@@ -362,11 +362,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Deprecated: "Field 'platform' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'platform' to replace it.",
 			},
 			"node_port_range": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Default:    "30000-32767",
-				ForceNew:   true,
-				Deprecated: "Field 'platform' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "30000-32767",
+				ForceNew: true,
 			},
 			"cluster_domain": {
 				Type:        schema.TypeString,
