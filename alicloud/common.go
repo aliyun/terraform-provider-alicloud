@@ -216,6 +216,19 @@ const (
 	IntlSite     = AccountSite("International")
 )
 
+type SensitiveString string
+
+func (c SensitiveString) String() string {
+	if c == "" {
+		return ""
+	}
+	return "*****"
+}
+
+func (c SensitiveString) Value() string {
+	return string(c)
+}
+
 const (
 	SnapshotCreatingInProcessing = Status("progressing")
 	SnapshotCreatingAccomplished = Status("accomplished")
@@ -1255,4 +1268,59 @@ OuterLoop:
 	}
 
 	return true
+}
+
+func Interface2String(val interface{}) string {
+	if v, ok := val.(SensitiveString); ok {
+		return string(v)
+	}
+	if v, ok := val.(string); ok {
+		return v
+	}
+	return fmt.Sprint(val)
+}
+
+func Interface2Bool(i interface{}) bool {
+	if i == nil {
+		return false
+	}
+	t := reflect.TypeOf(i).Kind()
+	switch t {
+	case reflect.String:
+		return convertStringToBool(i.(string))
+	case reflect.Bool:
+		return i.(bool)
+	default:
+		return false
+	}
+}
+
+func IsEmpty(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.String:
+		return fmt.Sprint(i) == ""
+	case reflect.Int:
+		return i.(int) <= 0
+	case reflect.Int8:
+		return i.(int8) <= 0
+	case reflect.Int16:
+		return i.(int16) <= 0
+	case reflect.Int32:
+		return i.(int32) <= 0
+	case reflect.Int64:
+		return i.(int64) <= 0
+	case reflect.Float32:
+		return i.(float32) <= 0
+	case reflect.Float64:
+		return i.(float64) <= 0
+	case reflect.Map:
+		return len(i.(map[string]interface{})) <= 0
+	case reflect.Ptr:
+		return reflect.ValueOf(i).IsNil()
+	default:
+		return false
+	}
 }

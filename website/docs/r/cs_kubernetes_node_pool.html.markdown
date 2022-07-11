@@ -35,6 +35,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
 
+-> **NOTE:** From version 1.175.0+, We Suggest you using this resource to manage your cluster worker nodes.
+
 ## Example Usage
 
 The managed cluster configuration,
@@ -70,12 +72,9 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
-  worker_number                = 2
-  password                     = "Hello1234"
   pod_cidr                     = "172.20.0.0/16"
   service_cidr                 = "172.21.0.0/20"
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
 }
 ```
 

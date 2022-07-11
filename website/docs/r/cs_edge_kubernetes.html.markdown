@@ -28,7 +28,7 @@ after creating cluster successfully, and you can put them into the specified loc
 
 ## Example Usage
 
-```
+```terraform
 # If vpc_id is not specified, a new one will be created
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -37,10 +37,10 @@ resource "alicloud_vpc" "vpc" {
 
 # According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "vswitches" {
-  count             = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
-  vpc_id            = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block        = element(var.vswitch_cidrs, count.index)
-  availability_zone = element(var.availability_zone, count.index)
+  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
+  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block = element(var.vswitch_cidrs, count.index)
+  zone_id    = element(var.availability_zone, count.index)
 }
 
 resource "alicloud_cs_edge_kubernetes" "k8s" {
@@ -61,11 +61,12 @@ resource "alicloud_cs_edge_kubernetes" "k8s" {
   dynamic "addons" {
       for_each = var.cluster_addons
       content {
-        name                    = lookup(addons.value, "name", var.cluster_addons)
-        config                  = lookup(addons.value, "config", var.cluster_addons)
+        name   = lookup(addons.value, "name", var.cluster_addons)
+        config = lookup(addons.value, "config", var.cluster_addons)
       }
   }
-  slb_internet_enabled = var.slb_enabled
+  
+  slb_internet_enabled         = var.slb_enabled
   is_enterprise_security_group = var.enterprise_sg
 }
 

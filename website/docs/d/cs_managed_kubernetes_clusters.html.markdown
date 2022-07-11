@@ -15,7 +15,7 @@ This data source provides a list Container Service Managed Kubernetes Clusters o
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_cs_managed_kubernetes_clusters" "k8s_clusters" {
   name_regex  = "my-first-k8s"

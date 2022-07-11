@@ -47,10 +47,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name      = var.name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 # Create a managed cluster
