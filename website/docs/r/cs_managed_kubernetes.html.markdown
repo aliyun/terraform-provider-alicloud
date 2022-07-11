@@ -35,11 +35,11 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.120.0, Support for cluster migration from Standard cluster to professional.
 
--> **NOTE:** From version 1.175.0+, We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
+-> **NOTE:** From version 1.176.0+, We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
 
 ## Example Usage
 
-```terraform
+```
 # If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -101,9 +101,9 @@ The following arguments are supported:
 * `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Deprecated from version 1.175.0)(Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
-* `enable_ssh` - (Deprecated from version 1.175.0)(Optional) Enable login to the node through SSH. Default to `false`.
-* `rds_instances` - (Deprecated from version 1.175.0)(Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `runtime` - (Deprecated from version 1.176.0)(Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `enable_ssh` - (Deprecated from version 1.176.0)(Optional) Enable login to the node through SSH. Default to `false`.
+* `rds_instances` - (Deprecated from version 1.176.0)(Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 * `proxy_mode` - (Optional) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
@@ -113,7 +113,7 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
 * `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa for version 1.22.3+. Default to `false`. Once the rrsa function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. Default to `true`.
-* `exclude_autoscaler_nodes` - (Deprecated from version 1.175.0)(Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
+* `exclude_autoscaler_nodes` - (Deprecated from version 1.176.0)(Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well).
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well.
 * `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes . Detailed below.
@@ -187,45 +187,45 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 ### Worker params
 
-* `worker_number` - (Deprecated from version 1.175.0)(Optional) The worker node number of the kubernetes cluster. Default to `3`. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1+, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
-* `worker_instance_types` - (Deprecated from version 1.175.0)(Optional) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
-* `password` - (Deprecated from version 1.175.0)(Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
-* `key_name` - (Deprecated from version 1.175.0)(Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
-* `kms_encrypted_password` - (Deprecated from version 1.175.0)(Optional, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `kms_encryption_context` - (Deprecated from version 1.175.0)(Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `worker_instance_charge_type` - (Deprecated from version 1.175.0)(Optional) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Default to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
-* `worker_period` - (Deprecated from version 1.175.0)(Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
-* `worker_period_unit` - (Deprecated from version 1.175.0)(Optional) Worker payment period unit, the valid value is `Month`.
-* `worker_auto_renew` - (Deprecated from version 1.175.0)(Optional) Enable worker payment auto-renew. Default to `false`.
-* `worker_auto_renew_period` - (Deprecated from version 1.175.0)(Optional) Worker payment auto-renew period,, it can be one of {1, 2, 3, 6, 12}.
-* `worker_disk_category` - (Deprecated from version 1.175.0)(Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Deprecated from version 1.175.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to `40`.
-* `worker_data_disks` - (Deprecated from version 1.175.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category` - (Deprecated from version 1.175.0)The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-  * `size` - (Deprecated from version 1.175.0)The size of a data disk, at least 40. Unit: GiB.
-  * `encrypted` - (Deprecated from version 1.175.0)Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-  * `performance_level` - (Deprecated from version 1.175.0)(Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
-  * `auto_snapshot_policy_id` - (Deprecated from version 1.175.0)(Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
-* `node_name_mode` - (Deprecated from version 1.175.0)(Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
-* `node_port_range`- (Deprecated from version 1.175.0)(Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
-* `os_type` - (Deprecated from version 1.175.0)(Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
-* `platform` - (Deprecated from version 1.175.0)(Optional, ForceNew, Available in 1.103.2+) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
-* `image_id` - (Deprecated from version 1.175.0)(Optional) Custom Image support. Must based on `CentOS7` or `AliyunLinux2`.
-* `cpu_policy` - (Deprecated from version 1.175.0)(Optional) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
-* `user_data` - (Deprecated from version 1.175.0)(Optional, Available in 1.81.0+) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
-* `taints` - (Deprecated from version 1.175.0)(Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
-* `worker_disk_performance_level` - (Deprecated from version 1.175.0)(Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
-* `worker_disk_snapshot_policy_id` - (Deprecated from version 1.175.0)(Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
-* `install_cloud_monitor` - (Deprecated from version 1.175.0)(Optional) Install cloud monitor agent on ECS. Default to `true`.
+* `worker_number` - (Deprecated from version 1.176.0)(Optional) The worker node number of the kubernetes cluster. Default to `3`. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1+, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
+* `worker_instance_types` - (Deprecated from version 1.176.0)(Optional) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
+* `password` - (Deprecated from version 1.176.0)(Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
+* `key_name` - (Deprecated from version 1.176.0)(Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
+* `kms_encrypted_password` - (Deprecated from version 1.176.0)(Optional, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `kms_encryption_context` - (Deprecated from version 1.176.0)(Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `worker_instance_charge_type` - (Deprecated from version 1.176.0)(Optional) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Default to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
+* `worker_period` - (Deprecated from version 1.176.0)(Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
+* `worker_period_unit` - (Deprecated from version 1.176.0)(Optional) Worker payment period unit, the valid value is `Month`.
+* `worker_auto_renew` - (Deprecated from version 1.176.0)(Optional) Enable worker payment auto-renew. Default to `false`.
+* `worker_auto_renew_period` - (Deprecated from version 1.176.0)(Optional) Worker payment auto-renew period,, it can be one of {1, 2, 3, 6, 12}.
+* `worker_disk_category` - (Deprecated from version 1.176.0)(Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `worker_disk_size` - (Deprecated from version 1.176.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to `40`.
+* `worker_data_disks` - (Deprecated from version 1.176.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
+  * `category` - (Deprecated from version 1.176.0)The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
+  * `size` - (Deprecated from version 1.176.0)The size of a data disk, at least 40. Unit: GiB.
+  * `encrypted` - (Deprecated from version 1.176.0)Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+  * `performance_level` - (Deprecated from version 1.176.0)(Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
+  * `auto_snapshot_policy_id` - (Deprecated from version 1.176.0)(Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
+* `node_name_mode` - (Deprecated from version 1.176.0)(Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be `aliyun.com00055test`.
+* `node_port_range`- (Deprecated from version 1.176.0)(Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
+* `os_type` - (Deprecated from version 1.176.0)(Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
+* `platform` - (Deprecated from version 1.176.0)(Optional, ForceNew, Available in 1.103.2+) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
+* `image_id` - (Deprecated from version 1.176.0)(Optional) Custom Image support. Must based on `CentOS7` or `AliyunLinux2`.
+* `cpu_policy` - (Deprecated from version 1.176.0)(Optional) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
+* `user_data` - (Deprecated from version 1.176.0)(Optional, Available in 1.81.0+) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
+* `taints` - (Deprecated from version 1.176.0)(Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
+* `worker_disk_performance_level` - (Deprecated from version 1.176.0)(Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default to `PL1`.
+* `worker_disk_snapshot_policy_id` - (Deprecated from version 1.176.0)(Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
+* `install_cloud_monitor` - (Deprecated from version 1.176.0)(Optional) Install cloud monitor agent on ECS. Default to `true`.
 
-##### worker_vswtich_ids
+##### worker_vswitch_ids
 
-The following example is the definition of `worker_vswtich_ids` block.
+The following example is the definition of `worker_vswitch_ids` block.
 
 ```
   # the ID can be the same, At least one.
 
-  worker_vswtich_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
+  worker_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
 ```
 
 ##### taints
@@ -474,10 +474,10 @@ The following attributes are exported:
 * `slb_id` - The ID of public load balancer where the current cluster master node is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
-* `worker_nodes` - (Deprecated from version 1.175.0) List of cluster worker nodes.
-  * `id` - (Deprecated from version 1.175.0) ID of the node.
-  * `name` - (Deprecated from version 1.175.0) Node name.
-  * `private_ip` - (Deprecated from version 1.175.0) The private IP address of node.
+* `worker_nodes` - (Deprecated from version 1.176.0) List of cluster worker nodes.
+  * `id` - (Deprecated from version 1.176.0) ID of the node.
+  * `name` - (Deprecated from version 1.176.0) Node name.
+  * `private_ip` - (Deprecated from version 1.176.0) The private IP address of node.
   * `role` - (Deprecated from version 1.9.4).
 * `connections` - Map of kubernetes cluster connection information.
   * `api_server_internet` - API Server Internet endpoint.
