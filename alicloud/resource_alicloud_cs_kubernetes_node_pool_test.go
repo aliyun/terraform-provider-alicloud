@@ -59,6 +59,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"image_type":            "AliyunLinux",
 					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
 					"cis_enabled":           "true",
+					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,6 +89,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"image_type":                   "AliyunLinux",
 						"deployment_set_id":            CHECKSET,
 						"cis_enabled":                  "true",
+						"rds_instances.#":              "1",
 					}),
 				),
 			},
@@ -786,6 +788,15 @@ resource "alicloud_ecs_deployment_set" "default" {
   domain              = "Default"
   granularity         = "Host"
   deployment_set_name = var.name
+}
+
+resource "alicloud_db_instance" "default" {
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    = "rds.mysql.s1.small"
+  instance_storage = "10"
+  vswitch_id       = local.vswitch_id
+  instance_name    = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
