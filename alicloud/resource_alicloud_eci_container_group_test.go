@@ -337,6 +337,8 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 					"auto_match_image_cache": "true",
 					"auto_create_eip":        "true",
 					"eip_bandwidth":          "5",
+					"cpu":                    "2",
+					"memory":                 "4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -347,6 +349,8 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 						"security_group_id":    CHECKSET,
 						"vswitch_id":           CHECKSET,
 						"internet_ip":          CHECKSET,
+						"cpu":                  "2",
+						"memory":               "4",
 					}),
 				),
 			},
@@ -523,8 +527,6 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 }
 
 var AlicloudEciContainerGroupMap = map[string]string{
-	"cpu":               "2",
-	"memory":            "4",
 	"resource_group_id": CHECKSET,
 	"restart_policy":    "Always",
 	"status":            CHECKSET,

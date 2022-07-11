@@ -80,13 +80,13 @@ The following arguments are supported:
 
 * `container_group_name` - (Required, ForceNew) The name of the container group.
 * `containers` - (Required) The list of containers.
-* `cpu` - (Optional) The amount of CPU resources allocated to the container group.
+* `cpu` - (Optional, Computed) The amount of CPU resources allocated to the container group.
 * `dns_config` - (Optional) The structure of dnsConfig.
 * `eci_security_context` - (Optional) The security context of the container group.
 * `host_aliases` - (Optional, ForceNew) HostAliases.
 * `init_containers` - (Optional) The list of initContainers.
 * `instance_type` - (Optional, ForceNew) The type of the ECS instance.
-* `memory` - (Optional) The amount of memory resources allocated to the container group.
+* `memory` - (Optional, Computed) The amount of memory resources allocated to the container group.
 * `ram_role_name` - (Optional, ForceNew) The RAM role that the container group assumes. ECI and ECS share the same RAM role.
 * `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
 * `restart_policy` - (Optional, Computed) The restart policy of the container group. Valid values: `Always`, `Never`, `OnFailure`.
