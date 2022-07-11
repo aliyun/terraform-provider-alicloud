@@ -206,6 +206,16 @@ func TestAccAlicloudOOSTemplate_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -224,7 +234,11 @@ var OosTemplateMap = map[string]string{
 }
 
 func OosTemplateBasicdependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+`)
 }
 
 func TestAccAlicloudOOSTemplate_unit(t *testing.T) {
