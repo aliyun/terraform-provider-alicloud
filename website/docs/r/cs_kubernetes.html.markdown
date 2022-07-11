@@ -428,8 +428,8 @@ You can set some file paths to save kube_config information, but this way is cum
 
 ### Removed params
 
-* `master_instance_type` - (Deprecated from version 1.16.0)(Optional, ForceNew resource) The instance type of master node.
-* `worker_instance_type` - (Deprecated from version 1.16.0)(Optional, ForceNew resource) The instance type of worker node.
+* `master_instance_type` - (Deprecated from version 1.16.0)(Optional, Force new resource) The instance type of master node.
+* `worker_instance_type` - (Deprecated from version 1.16.0)(Optional, Force new resource) The instance type of worker node.
 * `vswitch_id` - (Deprecated from version 1.16.0)(Force new resource) The vswitch where new kubernetes cluster will be located. If it is not specified, a new vpc and vswicth will be created. It must be in the zone which `availability_zone` specified.
 * `vswitch_ids` - (Optional) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
 * `force_update` - (Optional, Available in 1.50.0+) Whether to force the update of kubernetes cluster arguments. Default to false.
