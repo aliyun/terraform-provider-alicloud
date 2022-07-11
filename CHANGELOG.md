@@ -1,5 +1,5 @@
 ## 1.176.0 (Unreleased)
-## 1.175.0 (July 10, 2022)
+## 1.175.1 (July 11, 2022)
 
 - **New Resource:** `alicloud_ecd_custom_property` ([#5133](https://github.com/aliyun/terraform-provider-alicloud/pull/5133))
 - **New Resource:** `alicloud_ecd_ad_connector_office_site` ([#5155](https://github.com/aliyun/terraform-provider-alicloud/pull/5155))
@@ -20,6 +20,10 @@ BUG FIXES:
 - resource/alicloud_alikafka_instance: Fixes alikafka paid_type ([#5140](https://github.com/aliyun/terraform-provider-alicloud/pull/5140))
 - testcase: fix ci test error for ack datasource and resource ([#5146](https://github.com/aliyun/terraform-provider-alicloud/pull/5146))
 - resource/alicloud_cs_node_pool: fix image_type export error ([#5156](https://github.com/aliyun/terraform-provider-alicloud/pull/5156))
+
+## 1.175.0 (July 10, 2022)
+
+- **NOTE:** This version is not available and using the next version v1.175.0 instead.
 
 ## 1.174.0 (July 03, 2022)
 
