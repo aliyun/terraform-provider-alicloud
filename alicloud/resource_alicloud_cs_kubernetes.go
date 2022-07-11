@@ -397,7 +397,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
-				Deprecated:   "Field 'cpu_policy' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Deprecated:   "Field 'cpu_policy' has been deprecated from provider version 1.176.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using 'cpu_policy' to replace it",
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
