@@ -711,6 +711,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_custom_properties":                       dataSourceAlicloudEcdCustomProperties(),
 			"alicloud_ecd_ad_connector_office_sites":               dataSourceAlicloudEcdAdConnectorOfficeSites(),
 			"alicloud_ecs_activations":                             dataSourceAlicloudEcsActivations(),
+			"alicloud_cms_hybrid_monitor_datas":                    dataSourceAlicloudCmsHybridMonitorDatas(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
