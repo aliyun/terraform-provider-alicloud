@@ -13,7 +13,7 @@ Provides a ECD Custom Property resource.
 
 For information about ECD Custom Property and how to use it, see [What is Custom Property](https://help.aliyun.com/document_detail/436381.html).
 
--> **NOTE:** Available in v1.175.0+.
+-> **NOTE:** Available in v1.176.0+.
 
 -> **NOTE:** Up to 10 different attributes can be created under an alibaba cloud account. Up to 50 different attribute values can be added under an attribute.
 

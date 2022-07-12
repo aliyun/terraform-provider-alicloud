@@ -34,7 +34,7 @@ resource "alicloud_common_bandwidth_package" "foo" {
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth of the common bandwidth package. Unit: Mbps.
-* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`, `PayByDominantTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International Account doesn't supports `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`. **NOTE:** From 1.175.0+, `PayByDominantTraffic` is available. 
+* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`, `PayByDominantTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International Account doesn't supports `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`. **NOTE:** From 1.176.0+, `PayByDominantTraffic` is available. 
 * `ratio` - (Optional, ForceNew, Available in 1.55.3+) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to `100`. Valid values: [10-100].
 * `name` - (Optional, Deprecated form v1.120.0) Field `name` has been deprecated from provider version 1.120.0. New field `bandwidth_package_name` instead.
 * `bandwidth_package_name` - (Optional, Available in 1.120.0+) The name of the common bandwidth package.

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides the Ecd Custom Properties of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.175.0+.
+-> **NOTE:** Available in v1.176.0+.
 
 ## Example Usage
 

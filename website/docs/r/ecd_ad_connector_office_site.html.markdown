@@ -13,7 +13,7 @@ Provides a ECD Ad Connector Office Site resource.
 
 For information about ECD Ad Connector Office Site and how to use it, see [What is Ad Connector Office Site](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/createadconnectorofficesite).
 
--> **NOTE:** Available in v1.175.0+.
+-> **NOTE:** Available in v1.176.0+.
 
 ## Example Usage
 

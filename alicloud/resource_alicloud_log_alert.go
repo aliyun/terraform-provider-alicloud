@@ -309,14 +309,14 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'schedule_interval' has been deprecated from provider version 1.175.0. New field 'schedule' instead.",
+				Deprecated:    "Field 'schedule_interval' has been deprecated from provider version 1.176.0. New field 'schedule' instead.",
 				ConflictsWith: []string{"schedule"},
 			},
 			"schedule_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'schedule_type' has been deprecated from provider version 1.175.0. New field 'schedule' instead.",
+				Deprecated:    "Field 'schedule_type' has been deprecated from provider version 1.176.0. New field 'schedule' instead.",
 				ConflictsWith: []string{"schedule"},
 			},
 			"schedule": {
