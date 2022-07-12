@@ -716,6 +716,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_hana_instances":                          dataSourceAlicloudHbrHanaInstances(),
 			"alicloud_cms_hybrid_monitor_sls_tasks":                dataSourceAlicloudCmsHybridMonitorSlsTasks(),
 			"alicloud_hbr_hana_backup_plans":                       dataSourceAlicloudHbrHanaBackupPlans(),
+			"alicloud_cms_hybrid_monitor_fc_tasks":                 dataSourceAlicloudCmsHybridMonitorFcTasks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1328,6 +1329,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_hana_instance":                                    resourceAlicloudHbrHanaInstance(),
 			"alicloud_cms_hybrid_monitor_sls_task":                          resourceAlicloudCmsHybridMonitorSlsTask(),
 			"alicloud_hbr_hana_backup_plan":                                 resourceAlicloudHbrHanaBackupPlan(),
+			"alicloud_cms_hybrid_monitor_fc_task":                           resourceAlicloudCmsHybridMonitorFcTask(),
 		},
 
 		ConfigureFunc: providerConfigure,

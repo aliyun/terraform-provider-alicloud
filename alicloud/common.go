@@ -1337,3 +1337,44 @@ func GetDaysBetween2Date(format string, date1Str string, date2Str string) (int, 
 
 	return day, nil
 }
+
+func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bool, error) {
+	type MetricList struct {
+		MetricList []string `yaml:"metric_list"`
+	}
+	type Product struct {
+		MetricInfo []MetricList `yaml:"metric_info"`
+		Namespace  string       `yaml:"namespace"`
+	}
+	type Products struct {
+		Products []Product
+	}
+
+	var P1 Products
+	err := yaml.Unmarshal([]byte(tem1), &P1)
+	if err != nil {
+		fmt.Sprintln(false)
+	}
+
+	y1 := make([]string, 0)
+	for _, product := range P1.Products {
+		s1, _ := json.Marshal(product)
+		y1 = append(y1, string(s1))
+	}
+
+	var P2 Products
+	err = yaml.Unmarshal([]byte(tem2), &P2)
+	if err != nil {
+		fmt.Sprintln(false)
+	}
+
+	y2 := make([]string, 0)
+	for _, product := range P2.Products {
+		s2, _ := json.Marshal(product)
+		y2 = append(y2, string(s2))
+	}
+
+	sort.Strings(y1)
+	sort.Strings(y2)
+	return reflect.DeepEqual(y1, y2), nil
+}
