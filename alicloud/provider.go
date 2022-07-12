@@ -2851,7 +2851,7 @@ func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error
 
 	var client *sts.Client
 	var err error
-	if config.StsEndpoint == "" {
+	if config.SecurityToken == "" {
 		client, err = sts.NewClientWithAccessKey(config.RegionId, config.AccessKey, config.SecretKey)
 	} else {
 		client, err = sts.NewClientWithStsToken(config.RegionId, config.AccessKey, config.SecretKey, config.SecurityToken)
