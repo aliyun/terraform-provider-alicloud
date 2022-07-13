@@ -202,6 +202,13 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -263,6 +270,9 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -300,7 +310,7 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudLindormInstanceRead(d, meta)
+	return resourceAlicloudLindormInstanceUpdate(d, meta)
 }
 func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -325,6 +335,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("status", object["InstanceStatus"])
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	engineType := formatInt(object["EngineType"])
 	d.Set("enabled_file_engine", engineType&0x08 == 8)
@@ -365,6 +376,12 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("time_series_engine_node_count", formatInt(v))
 	}
 	d.Set("time_serires_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
+
+	listTagResourcesObject, err := hitsdbService.ListTagResources(d.Id(), "INSTANCE")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(listTagResourcesObject))
 	return nil
 }
 func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -373,6 +390,12 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	d.Partial(true)
 
+	if d.HasChange("tags") {
+		if err := hitsdbService.SetResourceTags(d, "INSTANCE"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 	update := false
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
@@ -414,13 +437,13 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	updateLindormInstanceAttributeReq := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
-	if d.HasChange("instance_name") {
+	if d.HasChange("instance_name") && !d.IsNewResource() {
 		update = true
+		if v, ok := d.GetOk("instance_name"); ok {
+			updateLindormInstanceAttributeReq["InstanceAlias"] = v
+		}
 	}
-	if v, ok := d.GetOk("instance_name"); ok {
-		updateLindormInstanceAttributeReq["InstanceAlias"] = v
-	}
-	if d.HasChange("deletion_proection") || d.IsNewResource() {
+	if d.HasChange("deletion_proection") {
 		update = true
 		if v, ok := d.GetOkExists("deletion_proection"); ok {
 			updateLindormInstanceAttributeReq["DeletionProtection"] = v
@@ -456,7 +479,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	upgradeLindormInstanceColdStorageReq := map[string]interface{}{
 		"UpgradeType": "upgrade-cold-storage",
 	}
-	if d.HasChange("cold_storage") {
+	if d.HasChange("cold_storage") && !d.IsNewResource() {
 		update = true
 		if v, ok := d.GetOk("cold_storage"); ok {
 			upgradeLindormInstanceColdStorageReq["ColdStorage"] = v
@@ -474,7 +497,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	upgradeLindormInstanceFilestoreNumReq := map[string]interface{}{
 		"UpgradeType": "upgrade-file-core-num",
 	}
-	if d.HasChange("file_engine_node_count") {
+	if d.HasChange("file_engine_node_count") && !d.IsNewResource() {
 		update = true
 		if v, ok := d.GetOk("file_engine_node_count"); ok {
 			upgradeLindormInstanceFilestoreNumReq["FilestoreNum"] = v
@@ -495,7 +518,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	upgradeLindormInstanceFilestoreSpecReq := map[string]interface{}{
 		"UpgradeType": "upgrade-file-engine",
 	}
-	if d.HasChange("file_engine_specification") {
+	if d.HasChange("file_engine_specification") && !d.IsNewResource() {
 		update = true
 		if v, ok := d.GetOk("file_engine_specification"); ok {
 			upgradeLindormInstanceFilestoreSpecReq["FilestoreSpec"] = v
@@ -512,7 +535,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("file_engine_specification")
 	}
 
-	if d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification") {
+	if d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification") && !d.IsNewResource() {
 		newSolrSpec := d.Get("search_engine_specification")
 		newSolrNum := d.Get("search_engine_node_count")
 		enabled := d.Get("enabled_search_engine").(bool)
@@ -555,7 +578,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("search_engine_node_count")
 	}
 
-	if d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") {
+	if d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") && !d.IsNewResource() {
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
@@ -598,7 +621,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("table_engine_node_count")
 	}
 
-	if d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") {
+	if d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") && !d.IsNewResource() {
 		newTsdbSpec := d.Get("time_serires_engine_specification")
 		newTsdbNum := d.Get("time_series_engine_node_count")
 		enabled := d.Get("enabled_time_serires_engine").(bool)
@@ -704,7 +727,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceReq["CoreNum"] = v
 		}
 	}
-	if d.HasChange("core_spec") {
+	if d.HasChange("core_spec") && !d.IsNewResource() {
 		update = true
 		if v, ok := d.GetOk("core_spec"); ok {
 			upgradeLindormInstanceReq["CoreSpec"] = v
@@ -725,7 +748,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	upgradeLindormInstanceClusterStorageReq := map[string]interface{}{
 		"UpgradeType": "upgrade-disk-size",
 	}
-	if d.HasChange("instance_storage") {
+	if d.HasChange("instance_storage") && !d.IsNewResource() {
 		object, err := hitsdbService.DescribeLindormInstance(d.Id())
 		if err != nil {
 			return WrapError(err)
