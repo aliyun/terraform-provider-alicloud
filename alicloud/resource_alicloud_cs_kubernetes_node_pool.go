@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"regexp"
 	"time"
 
@@ -467,6 +468,85 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 			"soc_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+
+			// custom kubelet parameter
+			// todo: 需要openapi文档
+			"kubelet_config": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"registry_pull_qps": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"registry_burst": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"event_record_qps": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"event_burst": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"kube_api_qps": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"kube_api_burst": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Default:      0,
+							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						},
+						"serialize_image_pulls": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"cpu_manager_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "",
+							ValidateFunc: validation.StringInSlice([]string{}, false),
+						},
+						"eviction_hard": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"eviction_soft": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"eviction_soft_grace_period": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"system_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"kube_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
