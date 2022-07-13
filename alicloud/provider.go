@@ -715,6 +715,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_firewall_address_books":                dataSourceAlicloudCloudFirewallAddressBooks(),
 			"alicloud_hbr_hana_instances":                          dataSourceAlicloudHbrHanaInstances(),
 			"alicloud_cms_hybrid_monitor_sls_tasks":                dataSourceAlicloudCmsHybridMonitorSlsTasks(),
+			"alicloud_hbr_hana_backup_plans":                       dataSourceAlicloudHbrHanaBackupPlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1326,6 +1327,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sms_short_url":                                        resourceAlicloudSmsShortUrl(),
 			"alicloud_hbr_hana_instance":                                    resourceAlicloudHbrHanaInstance(),
 			"alicloud_cms_hybrid_monitor_sls_task":                          resourceAlicloudCmsHybridMonitorSlsTask(),
+			"alicloud_hbr_hana_backup_plan":                                 resourceAlicloudHbrHanaBackupPlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
