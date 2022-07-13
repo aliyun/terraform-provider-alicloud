@@ -83,6 +83,8 @@ The following arguments are supported:
 * `upgrade_type` - (Optional) The upgrade type. **NOTE:** Field 'upgrade_type' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Valid values:  `open-lindorm-engine`, `open-phoenix-engine`, `open-search-engine`, `open-tsdb-engine`,  `upgrade-cold-storage`, `upgrade-disk-size`,  `upgrade-lindorm-core-num`, `upgrade-lindorm-engine`,  `upgrade-search-core-num`, `upgrade-search-engine`, `upgrade-tsdb-core-num`, `upgrade-tsdb-engine`.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `zone_id` - (Optional, Computed, ForceNew) The zone ID of the instance.
+* `resource_group_id` - (Optional, Computed, ForceNew, Available in v1.177.0+) The ID of the resource group.
+* `tags` - (Optional, Available in v1.177.0+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
