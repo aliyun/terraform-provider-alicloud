@@ -1180,7 +1180,6 @@ func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 			}
 		}
 	}
-
 	return tags, nil
 }
 
@@ -1205,7 +1204,6 @@ func setNodePoolLabels(config *cs.KubernetesConfig, d *schema.ResourceData) erro
 		}
 	}
 	config.Labels = labels
-
 	return nil
 }
 
