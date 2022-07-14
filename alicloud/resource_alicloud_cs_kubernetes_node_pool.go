@@ -289,7 +289,6 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 			"management": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -729,7 +728,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if v, ok := d.Get("management").([]interface{}); len(v) > 0 && ok {
+	if v, ok := d.Get("management").([]interface{}); ok {
 		update = true
 		args.Management = setManagedNodepoolConfig(v)
 	}
@@ -1186,12 +1185,9 @@ func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
 }
 
 func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) error {
-	if _, ok := d.GetOk("tags"); ok {
-		if tags, err := ConvertCsTags(d); err == nil {
-			scalingGroup.Tags = tags
-		}
+	if tags, err := ConvertCsTags(d); err == nil {
+		scalingGroup.Tags = tags
 	}
-
 	return nil
 }
 

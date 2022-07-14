@@ -386,7 +386,7 @@ The following arguments are supported:
 
 The tags example：
 ```
-tags {
+tags = {
   "key-a" = "value-a"
   "key-b" = "value-b"
   "env"   = "prod"
