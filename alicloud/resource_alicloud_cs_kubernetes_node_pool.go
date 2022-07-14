@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"math"
 	"regexp"
 	"time"
 
@@ -472,78 +471,150 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 
 			// custom kubelet parameter
 			// todo: 需要openapi文档
-			"kubelet_config": {
+			"kubelet_configuration": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"registry_pull_qps": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"eventRecordQPS": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"registry_burst": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"eventBurst": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"event_record_qps": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"kubeAPIQPS": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"event_burst": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"kubeAPIBurst": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"kube_api_qps": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"registryPullQPS": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"kube_api_burst": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Default:      0,
-							ValidateFunc: validation.IntBetween(0, math.MaxInt32),
+						"registryBurst": {
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
-						"serialize_image_pulls": {
+						"serializeImagePulls": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
 						},
-						"cpu_manager_policy": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      "",
-							ValidateFunc: validation.StringInSlice([]string{}, false),
-						},
-						"eviction_hard": {
-							Type:     schema.TypeMap,
+						"evictionHard": {
+							Type:     schema.TypeSet,
 							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"memory.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"nodefs.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"nodefs.inodesFree": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"imagefs.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"imagefs.inodesFree": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"pid.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
 						},
-						"eviction_soft": {
-							Type:     schema.TypeMap,
+						"evictionSoft": {
+							Type:     schema.TypeSet,
 							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"memory.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"nodefs.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"nodefs.inodesFree": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"imagefs.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"imagefs.inodesFree": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"pid.available": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
 						},
-						"eviction_soft_grace_period": {
-							Type:     schema.TypeMap,
+						"kubeReserved": {
+							Type:     schema.TypeSet,
 							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"cpu": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"memory": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"ephemeral-storage": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"pid": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
 						},
-						"system_reserved": {
-							Type:     schema.TypeMap,
+						"systemReserved": {
+							Type:     schema.TypeSet,
 							Optional: true,
-						},
-						"kube_reserved": {
-							Type:     schema.TypeMap,
-							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"cpu": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"memory": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"ephemeral-storage": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"pid": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
