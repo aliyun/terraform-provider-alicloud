@@ -713,6 +713,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_activations":                             dataSourceAlicloudEcsActivations(),
 			"alicloud_cms_hybrid_monitor_datas":                    dataSourceAlicloudCmsHybridMonitorDatas(),
 			"alicloud_cloud_firewall_address_books":                dataSourceAlicloudCloudFirewallAddressBooks(),
+			"alicloud_hbr_hana_instances":                          dataSourceAlicloudHbrHanaInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1322,6 +1323,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_activation":                                       resourceAlicloudEcsActivation(),
 			"alicloud_cloud_firewall_address_book":                          resourceAlicloudCloudFirewallAddressBook(),
 			"alicloud_sms_short_url":                                        resourceAlicloudSmsShortUrl(),
+			"alicloud_hbr_hana_instance":                                    resourceAlicloudHbrHanaInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
