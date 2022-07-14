@@ -64,18 +64,18 @@ func resourceAlicloudCSKubernetesAddon() *schema.Resource {
 func resourceAlicloudCSKubernetesAddonRead(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "InitializeClient", ProviderERROR)
 	}
 	csClient := CsClient{client}
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "ParseResourceId", ProviderERROR)
 	}
 
 	addon, err := csClient.DescribeCsKubernetesAddon(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddon", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "DescribeCsKubernetesAddon", AlibabaCloudSdkGoERROR)
 	}
 
 	d.Set("cluster_id", parts[0])
@@ -96,13 +96,13 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "InitializeClient", ProviderERROR)
 	}
 	csClient := CsClient{client}
 
 	status, err := csClient.DescribeCsKubernetesAddonStatus(clusterId, name)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonStatus", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "DescribeCsKubernetesAddonStatus", AlibabaCloudSdkGoERROR)
 	}
 
 	changed := false
@@ -112,14 +112,14 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 		changed = true
 		err := csClient.installAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "installAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "InstallAddon", AlibabaCloudSdkGoERROR)
 		}
 	} else if status.Version != "" && status.Version != version {
 		// Addon has been installed
 		changed = true
 		err := csClient.upgradeAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "UpgradeAddon", AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -128,7 +128,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if changed {
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudCSKubernetesAddonRead(d, meta)
@@ -137,7 +137,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "InitializeClient", ProviderERROR)
 	}
 	csClient := CsClient{client}
 
@@ -147,17 +147,17 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("version") {
 		err := csClient.upgradeAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "UpgradeAddon", AlibabaCloudSdkGoERROR)
 		}
 	} else if d.HasChange("config") {
 		err := csClient.updateAddonConfig(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "UpgradeAddonConfig", AlibabaCloudSdkGoERROR)
 		}
 	}
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudCSKubernetesAddonRead(d, meta)
@@ -169,18 +169,18 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "InitializeClient", ProviderERROR)
 	}
 	csClient := CsClient{client}
 
 	err = csClient.uninstallAddon(d)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_addon", "UninstallAddon", AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterDelete", d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil

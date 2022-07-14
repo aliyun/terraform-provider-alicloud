@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
@@ -157,7 +158,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(fmt.Errorf("regex error: %++v, please check 'name_regex'", err), DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -294,7 +295,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 					return resource.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
 				})
 				if err != nil {
-					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
 				}
 
 			}
@@ -359,7 +360,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 	d.Set("names", names)
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "SetClusterInfo", ProviderERROR)
 	}
 
 	// create a json file in current directory and write data source to it.

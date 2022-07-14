@@ -14,8 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-const ResourceName = "resource_alicloud_cs_kubernetes_permissions"
-
 func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSKubernetesPermissionsCreate,
@@ -78,7 +76,7 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "InitializeClient", ProviderERROR)
 	}
 
 	// Query existing permissions
@@ -93,10 +91,10 @@ func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta 
 			return resource.NonRetryableError(err)
 		}
 		time.Sleep(5 * time.Second)
-		return resource.RetryableError(Error("[ERROR] Grant user permission failed %s", d.Id()))
+		return resource.RetryableError(Error(DefaultErrorMsg, d.Id(), "GrantPermissions", err))
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "GrantPermissions", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "GrantPermissions", AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug("GrantPermissions", grantPermissionsRequest, err)
@@ -114,7 +112,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "InitializeClient", ProviderERROR)
 	}
 
 	uid := d.Get("uid").(string)
@@ -131,7 +129,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 		if len(n) == 0 {
 			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(o))
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "RemoveSomeClustersPermissions", AlibabaCloudSdkGoERROR)
 			}
 			d.Partial(false)
 			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
@@ -143,7 +141,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 			clusters := difference(parseClusterIds(o), parseClusterIds(n))
 			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, clusters)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "RemoveSomeClustersPermissions", AlibabaCloudSdkGoERROR)
 			}
 			d.Partial(false)
 		}
@@ -151,7 +149,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 		updatePermissionsRequest := buildPermissionArgs(d)
 		err := grantPermissionsForUpdateSomeClusterPerms(client, uid, updatePermissionsRequest)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceName, "UpdateClusterPermissions", err)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "UpdateClusterPermissions", AlibabaCloudSdkGoERROR)
 		}
 		d.Partial(false)
 		return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
@@ -167,7 +165,7 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "InitializeClient", ProviderERROR)
 	}
 
 	uid := d.Id()
@@ -177,7 +175,7 @@ func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta 
 		if perms := v.(*schema.Set).List(); len(perms) > 0 {
 			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(perms))
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "RemoveSomeClustersPermissions", AlibabaCloudSdkGoERROR)
 			}
 		}
 	}
@@ -254,7 +252,7 @@ func convertDescribePermissionsToGrantPermissionsRequestBody(perms []*cs.Describ
 func describeUserPermission(client *cs.Client, uid string) ([]*cs.DescribeUserPermissionResponseBody, error) {
 	resp, err := client.DescribeUserPermission(tea.String(uid))
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return resp.Body, nil
 }
@@ -268,7 +266,7 @@ func grantPermissions(client *cs.Client, uid string, body []*cs.GrantPermissions
 	}
 	_, err := client.GrantPermissions(tea.String(uid), req)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -277,7 +275,7 @@ func grantPermissions(client *cs.Client, uid string, body []*cs.GrantPermissions
 func grantPermissionsForAddPerm(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
 	existPerms, err := describeUserPermission(client, uid)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	perms := convertDescribePermissionsToGrantPermissionsRequestBody(existPerms)
 	perms = append(perms, body...)
@@ -286,7 +284,7 @@ func grantPermissionsForAddPerm(client *cs.Client, uid string, body []*cs.GrantP
 	}
 	_, err = client.GrantPermissions(tea.String(uid), req)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	return nil
 }
@@ -294,7 +292,7 @@ func grantPermissionsForAddPerm(client *cs.Client, uid string, body []*cs.GrantP
 func grantPermissionsForUpdateSomeClusterPerms(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
 	describePerms, err := describeUserPermission(client, uid)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	existPerms := convertDescribePermissionsToGrantPermissionsRequestBody(describePerms)
 	newPerms := []*cs.GrantPermissionsRequestBody{}
@@ -326,7 +324,7 @@ func grantPermissionsForUpdateSomeClusterPerms(client *cs.Client, uid string, bo
 	}
 	_, err = client.GrantPermissions(tea.String(uid), req)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	return nil
 }
@@ -334,7 +332,7 @@ func grantPermissionsForUpdateSomeClusterPerms(client *cs.Client, uid string, bo
 func grantPermissionsForDeleteSomeClusterPerms(client *cs.Client, uid string, clusters []string) error {
 	describePerms, err := describeUserPermission(client, uid)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 	existPerms := convertDescribePermissionsToGrantPermissionsRequestBody(describePerms)
 	var newPerms []*cs.GrantPermissionsRequestBody
@@ -360,7 +358,7 @@ func grantPermissionsForDeleteSomeClusterPerms(client *cs.Client, uid string, cl
 
 	_, err = client.GrantPermissions(tea.String(uid), req)
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil

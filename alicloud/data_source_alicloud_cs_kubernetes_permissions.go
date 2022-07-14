@@ -58,14 +58,14 @@ func dataSourceAlicloudCSKubernetesPermissions() *schema.Resource {
 func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "InitializeClient", ProviderERROR)
 	}
 
 	// Query existing permissions, DescribeUserPermission
 	uid := d.Get("uid").(string)
 	perms, _err := describeUserPermissions(client, uid)
 	if _err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_permissions", "DescribeUserPermission", AlibabaCloudSdkGoERROR)
 	}
 
 	_ = d.Set("permissions", flattenPermissionsConfig(perms))
@@ -78,7 +78,7 @@ func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interf
 func describeUserPermissions(client *cs.Client, uid string) ([]*cs.DescribeUserPermissionResponseBody, error) {
 	resp, err := client.DescribeUserPermission(tea.String(uid))
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return resp.Body, nil
 }

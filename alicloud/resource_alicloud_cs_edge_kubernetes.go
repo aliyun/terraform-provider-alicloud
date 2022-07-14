@@ -165,6 +165,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			// global configurations
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -388,6 +392,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
 			"tags": {
 				Type:     schema.TypeMap,
@@ -410,7 +415,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	csService := CsService{client}
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "PrepareKubernetesClusterArgs", ProviderERROR)
 	}
 	var requestInfo *cs.Client
 	var response interface{}
@@ -428,7 +433,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "CreateKubernetesCluster", response)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "CreateKubernetesCluster", DenverdinoAliyungo, response)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -458,16 +463,16 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 		oldV, newV := d.GetChange("worker_number")
 		oldValue, ok := oldV.(int)
 		if !ok {
-			return WrapErrorf(fmt.Errorf("worker_number old value can not be parsed"), "parseError %d", oldValue)
+			return WrapErrorf(fmt.Errorf("worker_number old value can not be parsed"), "ParseError %d", oldValue)
 		}
 		newValue, ok := newV.(int)
 		if !ok {
-			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "parseError %d", oldValue)
+			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "ParseError %d", newValue)
 		}
 
 		// Edge cluster node support remove nodes.
 		if newValue < oldValue {
-			return WrapErrorf(fmt.Errorf("worker_number can not be less than before"), "scaleOutCloudWorkersFailed %d:%d", newValue, oldValue)
+			return WrapErrorf(fmt.Errorf("'worker_number' cannot be less than before"), "ParseError %d", newValue)
 		}
 
 		// scale out cluster.
@@ -549,7 +554,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 				})
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleOutCloudWorkers", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ScaleOutCloudWorkers", DenverdinoAliyungo)
 			}
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
@@ -590,7 +595,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			response = raw
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ModifyClusterName", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -616,13 +621,13 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			})
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ModifyClusterDeletionProtection", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
 			requestMap["ClusterId"] = d.Id()
 			requestMap["deletion_protection"] = requestInfo.DeletionProtection
-			addDebug("ModifyCluster", response, requestInfo, requestMap)
+			addDebug("ModifyClusterDeletionProtection", response, requestInfo, requestMap)
 		}
 		d.SetPartial("deletion_protection")
 	}
@@ -631,7 +636,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, ResponseCodeMsg, "alicloud_cs_edge_kubernetes", "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.SetPartial("tags")
@@ -639,7 +644,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	// upgrade cluster version
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "UpgradeClusterVersion", DenverdinoAliyungo)
 	}
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)

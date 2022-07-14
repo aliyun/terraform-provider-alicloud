@@ -326,7 +326,7 @@ func dataSourceAlicloudCSKubernetesClustersRead(d *schema.ResourceData, meta int
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(fmt.Errorf("regex error: %++v, please check 'name_regex'", err), DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "RegexpCompile", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -417,13 +417,13 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		}
 
 		if size, err := strconv.Atoi(ct.Parameters.MasterSystemDiskSize); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 		} else {
 			mapping["master_disk_size"] = size
 		}
 
 		if size, err := strconv.Atoi(ct.Parameters.WorkerSystemDiskSize); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 		} else {
 			mapping["worker_disk_size"] = size
 		}
@@ -431,7 +431,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.Parameters.MasterInstanceChargeType == string(PrePaid) {
 			mapping["master_instance_charge_type"] = string(PrePaid)
 			if period, err := strconv.Atoi(ct.Parameters.MasterPeriod); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["master_period"] = period
 			}
@@ -440,7 +440,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["master_auto_renew"] = *ct.Parameters.MasterAutoRenew
 			}
 			if period, err := strconv.Atoi(ct.Parameters.MasterAutoRenewPeriod); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["master_auto_renew_period"] = period
 			}
@@ -451,7 +451,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.Parameters.WorkerInstanceChargeType == string(PrePaid) {
 			mapping["worker_instance_charge_type"] = string(PrePaid)
 			if period, err := strconv.Atoi(ct.Parameters.WorkerPeriod); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["worker_period"] = period
 			}
@@ -460,7 +460,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 				mapping["worker_auto_renew"] = *ct.Parameters.WorkerAutoRenew
 			}
 			if period, err := strconv.Atoi(ct.Parameters.WorkerAutoRenewPeriod); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["worker_auto_renew_period"] = period
 			}
@@ -471,12 +471,12 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if cidrMask, err := strconv.Atoi(ct.Parameters.NodeCIDRMask); err == nil {
 			mapping["node_cidr_mask"] = cidrMask
 		} else {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 		}
 
 		if ct.Parameters.WorkerDataDisk != nil && *ct.Parameters.WorkerDataDisk {
 			if size, err := strconv.Atoi(ct.Parameters.WorkerDataDiskSize); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["worker_data_disk_size"] = size
 			}
@@ -498,15 +498,15 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		if ct.MetaData.MultiAZ || ct.MetaData.SubClass == "3az" {
 			numOfNodeA, err := strconv.Atoi(ct.Parameters.NumOfNodesA)
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			}
 			numOfNodeB, err := strconv.Atoi(ct.Parameters.NumOfNodesB)
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			}
 			numOfNodeC, err := strconv.Atoi(ct.Parameters.NumOfNodesC)
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			}
 			mapping["worker_numbers"] = []int{numOfNodeA, numOfNodeB, numOfNodeC}
 			mapping["vswitch_ids"] = []string{ct.Parameters.VSwitchIdA, ct.Parameters.VSwitchIdB, ct.Parameters.VSwitchIdC}
@@ -514,7 +514,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 			mapping["worker_instance_types"] = []string{ct.Parameters.WorkerInstanceTypeA, ct.Parameters.WorkerInstanceTypeB, ct.Parameters.WorkerInstanceTypeC}
 		} else {
 			if numOfNode, err := strconv.Atoi(ct.Parameters.NumOfNodes); err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "Atoi", ProviderERROR)
 			} else {
 				mapping["worker_numbers"] = []int{numOfNode}
 			}
@@ -661,13 +661,13 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterID)
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterID, false); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterID)
 		}
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "write kubeconfig file", "")
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "write kubeconfig file", ProviderERROR)
 		}
 
 		ids = append(ids, ct.ClusterID)
@@ -679,7 +679,7 @@ func csKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTyp
 	d.Set("names", names)
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_clusters", "SetClusterInfo", ProviderERROR)
 	}
 
 	// create a json file in current directory and write data source to it.

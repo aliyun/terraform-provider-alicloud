@@ -11,8 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-const resourceName = "resource_alicloud_cs_autoscaling_config"
-
 func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSAutoscalingConfigCreate,
@@ -86,7 +84,7 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	d.Partial(true)
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_autoscaling_config", "InitializeClient", AlibabaCloudSdkGoERROR)
 	}
 
 	// cluster id
@@ -120,7 +118,7 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 
 	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "CreateAutoscalingConfig", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_autoscaling_config", "CreateAutoscalingConfig", AlibabaCloudSdkGoERROR)
 	}
 
 	addDebug("CreateAutoscalingConfig", updateAutoscalingConfigRequest, err)

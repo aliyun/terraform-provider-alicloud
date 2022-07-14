@@ -402,7 +402,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	invoker := NewInvoker()
 	rosClient, err := client.NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "InitializeClient", AlibabaCloudSdkGoERROR)
 	}
 
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
@@ -453,7 +453,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterCerts", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "GetClusterCerts", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -495,7 +495,7 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, ResponseCodeMsg, "alicloud_cs_serverless_kubernetes", "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("tags")
 	}
@@ -503,11 +503,11 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 	// upgrade cluster version
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "UpgradeClusterVersion", DenverdinoAliyungo)
 	}
 
 	if err := modifyKubernetesCluster(d, meta); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "ModifyCluster", DenverdinoAliyungo)
 	}
 
 	d.Partial(false)
@@ -518,7 +518,7 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 	csService := CsService{meta.(*connectivity.AliyunClient)}
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "InitializeClient", AlibabaCloudSdkGoERROR)
 	}
 
 	args := &roacs.DeleteClusterRequest{}
@@ -531,7 +531,7 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "DeleteCluster", AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))

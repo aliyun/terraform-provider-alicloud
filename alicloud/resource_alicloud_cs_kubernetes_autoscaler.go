@@ -191,7 +191,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 
 			poolBytes, err := json.Marshal(pool)
 			if err != nil {
-				return WrapError(fmt.Errorf("failed to marshal pool,because of %v", err))
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "MarshalPool", ProviderERROR)
 			}
 
 			pool := make(nodePool)
@@ -199,7 +199,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 			err = json.Unmarshal(poolBytes, &pool)
 
 			if err != nil {
-				return WrapError(fmt.Errorf("failed to unmarshal pool,because of %v", err))
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "UnmarshalPool", ProviderERROR)
 			}
 
 			// get params of node pool
@@ -211,19 +211,19 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 			userData, err := csService.GetUserData(clusterId, labels, taints)
 
 			if err != nil {
-				return WrapError(fmt.Errorf("failed to get permanent token,because of %v", err))
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "GetUserData", AlibabaCloudSdkGoERROR)
 			}
 
 			err = UpdateScalingGroupConfiguration(client, id, userData, labels, taints)
 			if err != nil {
-				return WrapError(fmt.Errorf("failed to update scaling group status,because of %v", err))
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "UpdateScalingGroupStatus", AlibabaCloudSdkGoERROR)
 			}
 
 			// get min max of scaling group
 			min, max, err := GetScalingGroupSizeRange(client, id)
 
 			if err != nil {
-				return WrapError(fmt.Errorf("failed to describe scaling group %s,because of %v", id, err))
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "DescribeScalingGroup", AlibabaCloudSdkGoERROR)
 			}
 
 			nodeArgs := fmt.Sprintf("--nodes=%d:%d:%s", min, max, id)
@@ -253,7 +253,7 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		kubeConfPath, err := DownloadUserKubeConf(client, clusterId)
 
 		if err != nil {
-			return WrapError(fmt.Errorf("failed to download kubeconf from cluster,because of %v", err))
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "DownloadKubeConfig", AlibabaCloudSdkGoERROR)
 		}
 
 		options := autoscalerOptions{
@@ -268,19 +268,19 @@ func resourceAlicloudCSKubernetesAutoscalerUpdate(d *schema.ResourceData, meta i
 		clientSet, err := getClientSetFromKubeconf(kubeConfPath)
 
 		if err != nil {
-			return WrapError(fmt.Errorf("failed to create kubernetes client,because of %v", err))
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "CreateKubernetesClient", "[SDK client-go ERROR]")
 		}
 
 		err = DeployAutoscaler(options, clientSet)
 
 		if err != nil {
-			return WrapError(fmt.Errorf("failed to deploy autoscaler,because of %v", err))
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "DeployAutoScaler", "[SDK client-go ERROR]")
 		}
 
 		err = createOrUpdateAutoscalerMeta(clientSet, configmapMeta)
 
 		if err != nil {
-			return WrapError(fmt.Errorf("failed to update autoscaler meta configmap,because of %v", err))
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "UpdateAutoScalerMeta", "[SDK client-go ERROR]")
 		}
 	}
 	return nil
@@ -300,7 +300,7 @@ func resourceAlicloudCSKubernetesAutoscalerDelete(d *schema.ResourceData, meta i
 	kubeConfPath, err := DownloadUserKubeConf(client, clusterId)
 
 	if err != nil {
-		return WrapError(fmt.Errorf("failed to download kubeconf from cluster,because of %v", err))
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "DownloadKubeConfig", AlibabaCloudSdkGoERROR)
 	}
 
 	return DeleteAutoscaler(kubeConfPath)
@@ -396,7 +396,7 @@ func DownloadUserKubeConf(client *connectivity.AliyunClient, clusterId string) (
 	})
 
 	if err != nil {
-		return "", WrapErrorf(err, DefaultErrorMsg, clusterId, describeClusterUserKubeconfigRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return "", WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", describeClusterUserKubeconfigRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	kubeConfResponse, ok := describeClusterUserKubeconfigResponse.(*cs.DescribeClusterUserKubeconfigResponse)
@@ -441,13 +441,13 @@ func DeleteAutoscaler(kubeconf string) error {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconf)
 
 	if err != nil {
-		return WrapError(fmt.Errorf("failed to build kubeconf from local path %s,because of %v", kubeconf, err))
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "BuildKubeConfigFromLocalPath", "[SDK client-go ERROR]")
 	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
 
 	if err != nil {
-		return WrapError(fmt.Errorf("failed to create client-go clientSet,because of %v", err))
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_autoscaler", "CreateClientSet", "[SDK client-go ERROR]")
 	}
 
 	err = clientSet.AppsV1().Deployments(defaultAutoscalerNamespace).Delete(ctx, clusterAutoscaler, metav1.DeleteOptions{})

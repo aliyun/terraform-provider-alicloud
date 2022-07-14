@@ -151,7 +151,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(fmt.Errorf("regex error: %++v, please check 'name_regex'", err), DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "RegexpCompile", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -271,7 +271,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterId)
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterId, false); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterId)
@@ -289,7 +289,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 	_ = d.Set("names", names)
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "SetClusterInfo", ProviderERROR)
 	}
 
 	// create a json file in current directory and write data source to it.

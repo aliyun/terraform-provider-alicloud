@@ -285,7 +285,7 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(fmt.Errorf("regex error: %++v, please check 'name_regex'", err), DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "RegexpCompile", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -498,13 +498,13 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterID)
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterID, false); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterID)
 		}
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "write kubeconfig file", "")
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "write kubeconfig file", ProviderERROR)
 		}
 
 		ids = append(ids, ct.ClusterID)
@@ -516,7 +516,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 	d.Set("names", names)
 	d.SetId(dataResourceIdHash(ids))
 	if err := d.Set("clusters", s); err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "SetClusterInfo", ProviderERROR)
 	}
 
 	// create a json file in current directory and write data source to it.

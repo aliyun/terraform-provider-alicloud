@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -64,11 +65,14 @@ func dataSourceAlicloudCSKubernetesVersion() *schema.Resource {
 }
 
 func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta interface{}) error {
-	client, err := meta.(*connectivity.AliyunClient)
+	client, ok := meta.(*connectivity.AliyunClient)
+	if !ok {
+		return WrapErrorf(fmt.Errorf("failed to init client"), DataDefaultErrorMsg, "alicloud_cs_kubernetes_version", "InitializeClient", ProviderERROR)
+	}
 
-	resp, _err := describeKubernetesVersionMetadata(d, client)
-	if _err != nil {
-		return WrapErrorf(_err, DefaultErrorMsg, "DescribeKubernetesVersionMetadata", err)
+	resp, err := describeKubernetesVersionMetadata(d, client)
+	if err != nil {
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_version", "DescribeKubernetesVersionMetadata", AlibabaCloudSdkGoERROR)
 	}
 
 	var results []map[string]interface{}
@@ -96,7 +100,7 @@ func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta inte
 func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectivity.AliyunClient) ([]*cs.DescribeKubernetesVersionMetadataResponseBody, error) {
 	csClient, err := client.NewRoaCsClient()
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "InitializeClient", err)
+		return nil, WrapError(err)
 	}
 	request := &cs.DescribeKubernetesVersionMetadataRequest{}
 	request.Region = tea.String(client.RegionId)
@@ -105,7 +109,7 @@ func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectiv
 	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
 	resp, err := csClient.DescribeKubernetesVersionMetadata(request)
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return resp.Body, nil
 }

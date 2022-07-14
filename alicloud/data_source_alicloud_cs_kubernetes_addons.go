@@ -85,7 +85,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(fmt.Errorf("regex error: %++v, please check 'name_regex'", err), DataDefaultErrorMsg, "alicloud_cs_kubernetes_addons", "RegexpCompile", ProviderERROR)
 			}
 			if !r.MatchString(addon.ComponentName) {
 				continue
@@ -110,7 +110,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 	}
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "describeAddonsMeta", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_addons", "DescribeAddonsMeta", AlibabaCloudSdkGoERROR)
 	}
 	result := fetchAddonsMetadata(filterAddons)
 
@@ -128,13 +128,13 @@ func describeAvailableAddons(d *schema.ResourceData, meta interface{}) (map[stri
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	csClient := CsClient{client}
 
 	availableAddons, err := csClient.DescribeCsKubernetesAllAvailableAddons(clusterId)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAllAvailableAddons", err)
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_kubernetes_addons", "DescribeCsKubernetesAllAvailableAddons", AlibabaCloudSdkGoERROR)
 	}
 
 	return availableAddons, nil
