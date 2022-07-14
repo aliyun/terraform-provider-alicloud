@@ -331,7 +331,7 @@ The following arguments are supported:
 * `kms_encryption_context` - (Optional, Available in 1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
 * `desired_size` (Optional, Available in 1.158.0+) The desired size of nodes of the node pool. From version 1.158.0, `desired_size` is not required.
-* `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd` and `cloud_efficiency`. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd`, `cloud_efficiency` and `cloud_essd`. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
 * `system_disk_performance_level` - (Optional) The performance of system disk, only valid for ESSD disk. You have to specify one of `PL0` `PL1` `PL2` `PL3` fields.
 * `data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 

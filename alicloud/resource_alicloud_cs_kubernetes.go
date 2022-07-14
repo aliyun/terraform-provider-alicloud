@@ -1235,7 +1235,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
-		if v.BasicNodePool.NodePoolInfo.Name == "default-nodepool" {
+		if tea.StringValue(v.BasicNodePool.NodePoolInfo.Name) == "default-nodepool" {
 			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
 		}
 	}
@@ -1867,7 +1867,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	}
 
 	for _, v := range response.([]cs.NodePoolDetail) {
-		if v.BasicNodePool.NodePoolInfo.Name == "default-nodepool" {
+		if tea.StringValue(v.BasicNodePool.NodePoolInfo.Name) == "default-nodepool" {
 			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
 		}
 	}
