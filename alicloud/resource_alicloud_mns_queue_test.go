@@ -2,11 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"log"
 	"strings"
 	"testing"
 
-	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -77,13 +77,13 @@ func testSweepMnsQueues(region string) error {
 }
 
 func TestAccAlicloudMnsQueue_basic(t *testing.T) {
-	var v ali_mns.QueueAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_queue.default"
 	ra := resourceAttrInit(resourceId, mnsQueueMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceQueue")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -165,11 +165,22 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"logging_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"delay_seconds":            "0",
 					"maximum_message_size":     "65536",
 					"message_retention_period": "345600",
 					"visibility_timeout":       "30",
 					"polling_wait_seconds":     "0",
+					"logging_enabled":          "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -178,6 +189,7 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 						"message_retention_period": "345600",
 						"visibility_timeout":       "30",
 						"polling_wait_seconds":     "0",
+						"logging_enabled":          "false",
 					}),
 				),
 			},
@@ -186,13 +198,13 @@ func TestAccAlicloudMnsQueue_basic(t *testing.T) {
 }
 
 func TestAccAlicloudMnsQueue_multi(t *testing.T) {
-	var v ali_mns.QueueAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_queue.default.4"
 	ra := resourceAttrInit(resourceId, mnsQueueMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceQueue")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -231,4 +243,5 @@ var mnsQueueMap = map[string]string{
 	"message_retention_period": "345600",
 	"visibility_timeout":       "30",
 	"polling_wait_seconds":     "0",
+	"logging_enabled":          "false",
 }

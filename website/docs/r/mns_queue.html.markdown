@@ -38,12 +38,25 @@ The following arguments are supported:
 * `message_retention_period` - (Optional) Messages are deleted from the queue after a specified length of time, whether they have been activated or not. This attribute defines the viability period, in seconds, for every message in the queue. Valid value range: 60-604800 seconds, i.e., 1 minutes to 7 days. Default value to 345600.
 * `visibility_timeout` - (Optional) The VisibilityTimeout attribute of the queue. A dequeued messages will change from active (visible) status to inactive (invisible) status, and this attribute defines the length of time, in seconds, that messages remain invisible. Messages return to active status after the set period. Valid value range: 1-43200 seconds, i.e., 1 seconds to 12 hours. Default value to 30.
 * `polling_wait_seconds` - (Optional) Long polling is measured in seconds. When this attribute is set to 0, long polling is disabled. When it is not set to 0, long polling is enabled and message dequeue requests will be processed only when valid messages are received or when long polling times out. Valid value range: 0-30 seconds. Default value to 0.
+* `logging_enabled` - (Optional, Available in v1.179.0+) Specifies whether to enable the log management feature. Default value: false. Valid values:
+  - `true`: enables the log management feature.
+  - `false`: disables the log management feature.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the queue is equal to name.
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.179.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when create the mns queue.
+* `update` - (Defaults to 30 mins) Used when update the mns queue.
+* `delete` - (Defaults to 30 mins) Used when delete the mns queue.
 
 ## Import
 
