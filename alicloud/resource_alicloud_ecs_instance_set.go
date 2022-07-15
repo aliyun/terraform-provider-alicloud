@@ -109,6 +109,11 @@ func resourceAlicloudEcsInstanceSet() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
+			"boot_check_os_with_assistant": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"auto_release_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -626,7 +631,16 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	}
 
 	ecsService := EcsService{client}
-	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecsService.EcsInstanceSetStateRefreshFunc(encodeToBase64String(instanceIds), []string{"Stopping"}))
+	var instanceHealthCheckFunc resource.StateRefreshFunc
+	//Not check OK. GetOk will take "value" in judgement!
+	if v, _ := d.GetOk("boot_check_os_with_assistant"); v != nil && v.(bool) == true {
+		instanceHealthCheckFunc = ecsService.EcsInstanceSetStateRefreshFunc(encodeToBase64String(instanceIds), []string{"Stopping"})
+	} else {
+		//Default is false.
+		instanceHealthCheckFunc = ecsService.EcsInstanceVmSetStateRefreshFuncWithoutOsCheck(encodeToBase64String(instanceIds), []string{"Stopping"})
+	}
+	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, instanceHealthCheckFunc)
+
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id()), nil
 	}
