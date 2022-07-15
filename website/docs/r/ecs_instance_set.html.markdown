@@ -132,6 +132,9 @@ The following arguments are supported:
 * `network_interfaces` - (Optional, ForceNew) A list of NetworkInterface. See the following `Block network_interfaces`.
 * `unique_suffix` - (Optional, ForceNew) Whether to automatically append incremental suffixes to the hostname specified by the HostName parameter and to the instance name specified by the InstanceName parameter when you batch create instances. The incremental suffixes can range from `001` to `999`.
 * `exclude_instance_filter` - (Optional, Available in v1.176.0+) The instances that need to be excluded from the Instance Set. See the following `Block exclude_instance_filter`.
+* `boot_check_os_with_assistant`  - (Optional, Available in v1.177.0+) Indicate how to check instance ready to use.
+  - `false`: Default value. Means that the instances are ready when their DescribeInstances status is Running, at which time guestOS(Ecs os) may not be ready yet.
+  - `true`: Checking instance ready with Ecs assistant, which means guestOs boots successfully. Premise is that the specified image `image_id` has built-in Ecs assistant. Most of the public images have assistant installed already.
 
 
 #### Block data_disks
