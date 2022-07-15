@@ -218,3 +218,4 @@ var EcsActivationsSupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huheh
 var CloudFirewallSupportRegions = []Region{APSouthEast1, Hangzhou}
 var SMSSupportRegions = []Region{Hangzhou, APSouthEast1, APSouthEast5}
 var CloudMonitorServiceSupportRegions = []Region{ChengDu, GuangZhou, APSouthEast3, Beijing, WuLanChaBu, ShanghaiFinance, USWest1, APSouthEast5, Hongkong, Zhangjiakou, APNorthEast1, APSouthEast2, MEEast1, Huhehaote, USEast1, APSouth1, CnNorth2Gov1, Shanghai, EUWest1, APSouthEast1, Hangzhou, Qingdao, HeYuan, EUCentral1, Shenzhen}
+var HBaseMultiZoneClusterSupportRegions = []Region{Hangzhou}
