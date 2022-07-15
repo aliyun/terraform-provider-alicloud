@@ -67,7 +67,8 @@ func resourceAliyunInstance() *schema.Resource {
 			"security_groups": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"allocate_public_ip": {
 				Type:       schema.TypeBool,
@@ -270,6 +271,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"private_ip": {
 				Type:     schema.TypeString,
@@ -441,6 +443,50 @@ func resourceAliyunInstance() *schema.Resource {
 				Computed:     true,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging"}, false),
+			},
+			"network_interfaces": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MinItems: 1,
+				MaxItems: 2,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"eni_vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"eni_network_interface_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"eni_description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"eni_security_group_ids": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+							ForceNew: true,
+						},
+						"eni_primary_ip_address": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"eni_instance_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Primary", "Secondary"}, false),
+						},
+					},
+				},
 			},
 		},
 	}
@@ -704,6 +750,36 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["IoOptimized"] = "none"
 	}
 
+	if v, ok := d.GetOk("network_interfaces"); ok {
+		networkInterfacesMaps := make([]map[string]interface{}, 0)
+		for _, networkInterfaces := range v.(*schema.Set).List() {
+			networkInterfacesMap := make(map[string]interface{})
+			networkInterfacesArg := networkInterfaces.(map[string]interface{})
+
+			if vswitchId, ok := networkInterfacesArg["eni_vswitch_id"].(string); ok && vswitchId != "" {
+				networkInterfacesMap["VSwitchId"] = vswitchId
+			}
+			if networkInterfaceName, ok := networkInterfacesArg["eni_network_interface_name"].(string); ok && networkInterfaceName != "" {
+				networkInterfacesMap["NetworkInterfaceName"] = networkInterfaceName
+			}
+			if description, ok := networkInterfacesArg["eni_description"].(string); ok && description != "" {
+				networkInterfacesMap["Description"] = description
+			}
+			if securityGroupIds, ok := networkInterfacesArg["eni_security_group_ids"]; ok {
+				networkInterfacesMap["SecurityGroupIds"] = securityGroupIds
+			}
+			if primaryIpAddress, ok := networkInterfacesArg["eni_primary_ip_address"].(string); ok && primaryIpAddress != "" {
+				networkInterfacesMap["PrimaryIpAddress"] = primaryIpAddress
+			}
+			if instanceType, ok := networkInterfacesArg["eni_instance_type"].(string); ok && instanceType != "" {
+				networkInterfacesMap["InstanceType"] = instanceType
+			}
+
+			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
+		}
+		request["NetworkInterface"] = networkInterfacesMaps
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -887,6 +963,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		//}
 		d.Set("period_unit", periodUnit)
 	}
+
 	networkInterfaceId := ""
 	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
 		if obj.Type == "Primary" {

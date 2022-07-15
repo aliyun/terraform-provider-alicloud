@@ -105,7 +105,7 @@ The following arguments are supported:
 * `instance_type` - (Required) The type of instance to start. When it is changed, the instance will reboot to make the change take effect.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
-* `security_groups` - (Required)  A list of security group ids to associate with.
+* `security_groups` - (Optional, Computed)  A list of security group ids to associate with. **NOTE:** From version 1.181.0, `security_groups` from Required to Optional. If `eni_instance_type` is set to Primary, you can not specify `security_groups`, but can specify `eni_security_group_ids`.
 * `availability_zone` - (Optional) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. If not specified, 
 Terraform will autogenerate a default name is `ECS-Instance`.
@@ -131,7 +131,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
-* `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect.
+* `vswitch_id` - (Optional, Computed) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect. **NOTE:** From version 1.181.0, if `eni_instance_type` is set to Primary, you can not specify `vswitch_id`, but can specify `eni_vswitch_id`.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
 * `resource_group_id` - (Optional, Available in 1.57.0+, Modifiable in 1.115.0+) The Id of resource group which the instance belongs.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
@@ -179,7 +179,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 * `force_delete` - (Optional, Available in 1.18.0+) If it is true, the "PrePaid" instance will be change to "PostPaid" and then deleted forcibly.
 However, because of changing instance charge type has CPU core count quota limitation, so strongly recommand that "Don't modify instance charge type frequentlly in one month".
 * `auto_release_time` - (Optional, Available in 1.70.0+) The automatic release time of the `PostPaid` instance. 
-The time follows the ISO 8601 standard and is in UTC time. Format: yyyy-MM-ddTHH:mm:ssZ. It must be at least half an hour later than the current time and less than 3 years since the current time. 
+The time follows the ISO 8601 standard and is in UTC time. Format: yyyy-MM-ddTHH:mm:ssZ. It must be at least half an hour later than the current time and less than 3 years since the current time.
 Set it to null can cancel automatic release attribute and the ECS instance will not be released automatically.
 
 * `security_enhancement_strategy` - (Optional, ForceNew) The security enhancement strategy.
@@ -221,6 +221,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `stopped_mode` - (Optional,Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
     * `KeepCharging` : standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
     * `StopCharging` : economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
+* `network_interfaces` - (Optional,Available in 1.181.0+ ) The list of ENIs created with instance.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -235,6 +236,20 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
  However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
 
 -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
+
+#### Block network_interfaces
+
+The network_interfaces supports the following:
+
+* `eni_vswitch_id` - (Optional, ForceNew) The ID of the vSwitch to which the ENI is connected. **NOTE:** If `eni_instance_type` is set to Primary, you must set this parameter. In this case, this parameter is equivalent to `vswitch_id` and you cannot specify `vswitch_id`.
+  If `eni_instance_type` is set to Secondary or left empty, this parameter is optional. The default value is the `vswitch_id` value.
+* `eni_network_interface_name` - (Optional, ForceNew) The name of the ENI. **NOTE:** If `eni_instance_type` is set to Primary, you do not need to set this parameter.
+* `eni_description` - (Optional, ForceNew) The description of the ENI. **NOTE:** The description must be 2 to 256 characters in length and cannot start with http:// or https://. If `eni_instance_type` is set to Primary, you do not need to set this parameter.
+* `eni_security_group_ids` - (Optional, ForceNew) The IDs of the security groups to which the ENI belongs. **NOTE:** If `eni_instance_type` is set to Primary, you must set this parameter. In this case, this parameter is equivalent to `security_groups` and you cannot specify `security_groups`.
+  If `eni_instance_type` is set to Secondary or left empty, this parameter is optional. The default value is the ID of the security group to which to assign the ECS instance.
+* `eni_primary_ip_address` - (Optional, ForceNew) The private IP address of the ENI. **NOTE:** If `eni_instance_type` is set to Primary, this parameter is equivalent to `private_ip` and you cannot specify `private_ip`.
+  If `eni_instance_type` is set to Secondary or left empty, the specified primary IP address is assigned to the secondary ENI. The default value is an IP address that is randomly selected from within the CIDR block of the vSwitch to which to connect the secondary ENI.
+* `eni_instance_type` - (Optional, ForceNew) The type of the ENI. Valid values: `Primary`, and `Secondary`. Default value: `Secondary`.
 
 ## Attributes Reference
 
