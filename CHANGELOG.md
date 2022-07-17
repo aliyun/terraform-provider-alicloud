@@ -1,4 +1,25 @@
 ## 1.177.0 (Unreleased)
+
+- **New Resource:** `alicloud_ecs_activation` [GH-5174]
+- **New Data Source:** `alicloud_ecs_activations` [GH-5174]
+- **New Data Source:** `alicloud_cms_hybrid_monitor_datas` [GH-5165]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cloud_firewall_control_policy: Add Support for the international site. [GH-5173]
+- resource/alicloud_lindorm_instance: Added the field resource_group_id and tags [GH-5175]
+- resource/alicloud_cen_route_map: Partial update to full update [GH-5183]
+- resource/alicloud_mse_cluster: Add support for new parameter mse_version [GH-5167]
+- resource/alicloud_oos_template: Added the field resource_group_id [GH-5163]
+- resource/alicloud_instance: Refactored resourceAliyunInstanceCreate and added support for new parameter system_disk [GH-5151]
+- resource/alicloud_eci_container_group: Delete default values for memory and cpu. [GH-5160]
+- testcase: Adds new unit test case for resource alicloud_config_aggregate_compliance_pack alicloud_ga_forwarding_rule [GH-5142]
+
+BUG FIXES:
+
+- resource/alicloud_click_house_db_cluster: Fixed value of payment_type from Prepay to Prepaid [GH-5152]
+- provider: fixes the missing security token error when using assume_role [GH-5166]
+
 ## 1.176.0 (July 12, 2022)
 
 - **New Resource:** `alicloud_ecd_custom_property` ([#5133](https://github.com/aliyun/terraform-provider-alicloud/pull/5133))
