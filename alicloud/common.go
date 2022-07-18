@@ -1307,3 +1307,33 @@ func IsEmpty(i interface{}) bool {
 		return false
 	}
 }
+
+func GetDaysBetween2Date(format string, date1Str string, date2Str string) (int, error) {
+	var day int
+	t1, err := time.ParseInLocation(format, date1Str, time.Local)
+	if err != nil {
+		return 0, err
+	}
+	t2, err := time.ParseInLocation(format, date2Str, time.Local)
+	if err != nil {
+		return 0, err
+	}
+
+	swap := false
+	if t1.Unix() > t2.Unix() {
+		t1, t2 = t2, t1
+		swap = true
+	}
+
+	t1_ := t1.Add(time.Duration(t2.Sub(t1).Milliseconds()%86400000) * time.Millisecond)
+	day = int(t2.Sub(t1).Hours() / 24)
+	if t1_.Day() != t1.Day() {
+		day += 1
+	}
+
+	if swap {
+		day = -day
+	}
+
+	return day, nil
+}
