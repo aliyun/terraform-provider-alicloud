@@ -1321,6 +1321,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_ad_connector_office_site":                         resourceAlicloudEcdAdConnectorOfficeSite(),
 			"alicloud_ecs_activation":                                       resourceAlicloudEcsActivation(),
 			"alicloud_cloud_firewall_address_book":                          resourceAlicloudCloudFirewallAddressBook(),
+			"alicloud_sms_short_url":                                        resourceAlicloudSmsShortUrl(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1543,6 +1544,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EdasschedulerxEndpoint = strings.TrimSpace(endpoints["edasschedulerx"].(string))
 		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
 		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
+		config.DysmsEndpoint = strings.TrimSpace(endpoints["dysms"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1867,6 +1869,8 @@ func init() {
 		"ehs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ehs endpoints.",
 
 		"cloudfw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfw endpoints.",
+
+		"dysmsapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dysmsapi endpoints.",
 	}
 }
 
@@ -1911,6 +1915,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"dysms": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["dysms_endpoint"],
+				},
+
 				"edas": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2782,6 +2793,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["edasschedulerx"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["dysms"].(string)))
 	return hashcode.String(buf.String())
 }
 

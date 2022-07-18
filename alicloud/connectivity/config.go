@@ -167,6 +167,7 @@ type Config struct {
 	EdasEndpoint                string
 	EdasschedulerxEndpoint      string
 	EhsEndpoint                 string
+	DysmsEndpoint               string
 }
 
 func (c *Config) loadAndValidate() error {

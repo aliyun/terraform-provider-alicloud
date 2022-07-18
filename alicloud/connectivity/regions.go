@@ -216,3 +216,4 @@ var SchedulerxSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, U
 var EhpcSupportRegions = []Region{Qingdao, HeYuan, Hongkong, APSouthEast1, Huhehaote, Shenzhen, WuLanChaBu, APNorthEast1, EUCentral1, Zhangjiakou, Hangzhou, Beijing, Shanghai, APSouthEast2}
 var EcsActivationsSupportRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, HeYuan, Hongkong}
 var CloudFirewallSupportRegions = []Region{APSouthEast1, Hangzhou}
+var SMSSupportRegions = []Region{Hangzhou, APSouthEast1, APSouthEast5}
