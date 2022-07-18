@@ -4,26 +4,24 @@ import (
 	"fmt"
 	"testing"
 
-	ali_mns "github.com/aliyun/aliyun-mns-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
-	var v *ali_mns.SubscriptionAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_topic_subscription.default"
 	ra := resourceAttrInit(resourceId, mnsTopicSubscriptionMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceSubscription")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMNSTopicSubscriptionConfig-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMnsTopicSubscriptionConfigDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -37,22 +35,24 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 					"name":                  name,
 					"topic_name":            "${alicloud_mns_topic.default.name}",
 					"endpoint":              "http://www.test.com/test",
-					"filter_tag":            "tf-test",
 					"notify_content_format": "SIMPLIFIED",
+					"filter_tag":            "tf-test",
+					"push_type":             "http",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":       name,
 						"topic_name": name,
-
-						"endpoint": "http://www.test.com/test",
+						"filter_tag": "tf-test",
+						"endpoint":   "http://www.test.com/test",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"push_type"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -79,13 +79,13 @@ func TestAccAlicloudMnsTopicSubscription_basic(t *testing.T) {
 }
 
 func TestAccAlicloudMnsTopicSubscription_multi(t *testing.T) {
-	var v *ali_mns.SubscriptionAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_topic_subscription.default.4"
 	ra := resourceAttrInit(resourceId, mnsTopicSubscriptionMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceSubscription")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -108,6 +108,7 @@ func TestAccAlicloudMnsTopicSubscription_multi(t *testing.T) {
 					"filter_tag":            "tf-test",
 					"notify_content_format": "SIMPLIFIED",
 					"count":                 "5",
+					"push_type":             "http",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),

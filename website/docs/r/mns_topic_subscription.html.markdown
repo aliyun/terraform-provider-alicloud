@@ -29,6 +29,7 @@ resource "alicloud_mns_topic_subscription" "subscription" {
   name                  = "tf-example-mnstopic-sub"
   filter_tag            = "test"
   endpoint              = "http://www.xxx.com/xxx"
+  push_type             = "http"
   notify_strategy       = "BACKOFF_RETRY"
   notify_content_format = "XML"
 }
@@ -46,7 +47,7 @@ The following arguments are supported:
  - `HTTP Format`: http://xxx.com/xxx
  - `Queue Format`: acs:mns:{REGION}:{AccountID}:queues/{QueueName}
  - `Email Format`: mail:directmail:{MailAddress}
-
+* `push_type` - (Required, ForceNew, Available in v1.179.0+) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush` and `email`.
 * `filter_tag` - (Optional, ForceNew) The length should be shorter than 16.
 
 ## Attributes Reference
@@ -54,6 +55,16 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the topic subscription.Format to topic_name:name
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.179.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when create the mns topic subscription.
+* `update` - (Defaults to 30 mins) Used when update the mns topic subscription.
+* `delete` - (Defaults to 30 mins) Used when delete the mns topic subscription.
 
 ## Import
 
