@@ -35,7 +35,7 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.166.0, Support configuring system disk encryption.
 
--> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`.
+-> **NOTE:** From version 1.177.0+, Support `kms_encryption_context`, `rds_instances`, `system_disk_snapshot_policy_id` and `cpu_policy`, add spot strategy `SpotAsPriceGo` and `NoSpot`.
 
 ## Example Usage
 
@@ -363,10 +363,10 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Available in 1.123.1+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `internet_charge_type` - (Optional, Available in 1.123.1+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
 * `internet_max_bandwidth_out` - (Optional, Available in 1.123.1+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
-* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`.
-* `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. A maximum of three decimal places are allowed.
+* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`,`SpotAsPriceGo` and `NoSpot`.
+* `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. You could enable multiple spot instances by setting this field repeatedly.
   * `instance_type` - (Optional, Available in 1.123.1+) Spot instance type.
-  * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance.
+  * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.
 * `instances` - (Optional, Available in 1.127.0+) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
 * `keep_instance_name` - (Optional, Available in 1.127.0+) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
 * `format_disk` - (Optional, Available in 1.127.0+) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
