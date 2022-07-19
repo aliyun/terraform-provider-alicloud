@@ -405,13 +405,11 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"SpotWithPriceLimit"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
 			},
 			"spot_price_limit": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"instance_type": {
@@ -1349,7 +1347,8 @@ func setAutoScalingConfig(l []interface{}) (config cs.AutoScaling) {
 	return config
 }
 
-func setSpotPriceLimit(l []interface{}) (config []cs.SpotPrice) {
+func setSpotPriceLimit(l []interface{}) []cs.SpotPrice {
+	config := make([]cs.SpotPrice, 0)
 	if len(l) == 0 || l[0] == nil {
 		return config
 	}
@@ -1362,7 +1361,7 @@ func setSpotPriceLimit(l []interface{}) (config []cs.SpotPrice) {
 		}
 	}
 
-	return
+	return config
 }
 
 func flattenSpotPriceLimit(config []cs.SpotPrice) (m []map[string]interface{}) {
