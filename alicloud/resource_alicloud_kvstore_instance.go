@@ -373,6 +373,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Deprecated:    "Field 'parameters' has been deprecated from version 1.101.0. Use 'config' instead.",
 				ConflictsWith: []string{"config"},
 			},
+			"shard_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -497,6 +501,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.SecondaryZoneId = v.(string)
 	}
 
+	if v, ok := d.GetOkExists("shard_count"); ok {
+		request.ShardCount = requests.NewInteger(v.(int))
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -573,6 +581,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("qps", object.QPS)
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("status", object.InstanceStatus)
+	d.Set("shard_count", object.ShardCount)
 
 	tags := make(map[string]string)
 	for _, t := range object.Tags.Tag {
