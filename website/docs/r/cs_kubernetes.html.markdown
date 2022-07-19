@@ -138,7 +138,7 @@ The following example is the definition of tags block. The type of this field is
 ### Network params
 
 * `pod_cidr` - (**Required**) - [Flannel Specific] The CIDR block for the pod network when using Flannel. 
-* `pod_vswitch_ids` - (**Required**) - [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswtich_ids` or `master_vswtich_ids` but must be in same availability zones.
+* `pod_vswitch_ids` - (**Required**) - [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswitch_ids` or `master_vswitch_ids` but must be in same availability zones.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
 * `service_cidr` - (Optional) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
@@ -149,7 +149,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 
 ### Master params
 
-* `master_vswtich_ids` - (**Required**) The vswitches used by master, you can specific 3 or 5 vswitches because of the amount of masters. Detailed below.
+* `master_vswitch_ids` - (**Required**) The vswitches used by master, you can specific 3 or 5 vswitches because of the amount of masters. Detailed below.
 * `master_instance_types` - (**Required**) The instance type of master node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 * `master_instance_charge_type` - (Optional) Master payment type. or `PostPaid` or `PrePaid`, defaults to `PostPaid`. If value is `PrePaid`, the files `master_period`, `master_period_unit`, `master_auto_renew` and `master_auto_renew_period` are required.
 * `master_period` - (Optional) Master payment period.Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
@@ -161,23 +161,23 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `master_disk_performance_level` - (Optional, ForceNew, Available in 1.120.0+) Master node system disk performance level. When `master_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `master_disk_snapshot_policy_id` - (Optional, ForceNew, Available in 1.120.0+) Master node system disk auto snapshot policy.
 
-##### master_vswtich_ids
+##### master_vswitch_ids
 
-The following example is the definition of `master_vswtich_ids` block, the `worker_vswtich_ids` is similar.
+The following example is the definition of `master_vswitch_ids` block, the `worker_vswitch_ids` is similar.
 
 ```
   # the ID can be the same.
   # if your master nodes have three.
-  master_vswtich_ids = ["vsw-id1", "vsw-id1", "vsw-id3"]
+  master_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id3"]
 
   # if your master nodes have five
-  master_vswtich_ids = ["vsw-id1", "vsw-id1", "vsw-id1", "vsw-id1", "vsw-id1"]
+  master_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id1", "vsw-id1", "vsw-id1"]
 ```
 
 ### Worker params
 
 * `worker_number` - (**Required**) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `worker_vswtich_ids` - (**Required**) The vswitches used by workers.
+* `worker_vswitch_ids` - (**Required**) The vswitches used by workers.
 * `worker_instance_types` - (**Required**, ForceNew) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
