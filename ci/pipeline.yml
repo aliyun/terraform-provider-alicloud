@@ -2,6 +2,7 @@ groups:
   - name: All
     jobs:
       - All
+      - Unit
       # ECS
       - Regions
       - Zones
@@ -450,6 +451,19 @@ jobs:
         params:
           <<: *run-params
           TEST_CASE_CODE: "All"
+
+  - name: Unit
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: 00Thu
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          TEST_CASE_PREFIX: "TestUnitAlicloud"
 
   - name: Apigateway
     plan:
