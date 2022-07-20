@@ -375,7 +375,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudDBInstanceRead(d, meta)
+		return resourceAlicloudDBReadonlyInstanceRead(d, meta)
 	}
 
 	if d.HasChange("instance_name") {
