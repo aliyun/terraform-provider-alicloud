@@ -210,7 +210,7 @@ locals{
 `, name)
 }
 
-func TestAccAlicloudResourceManagerPolicyAttachment_unit(t *testing.T) {
+func TestUnitAlicloudResourceManagerPolicyAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_policy_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_policy_attachment"].Schema).Data(nil, nil)

@@ -113,7 +113,7 @@ resource "alicloud_nas_file_system" "default" {
 }
 `, name)
 }
-func TestAccAlicloudNASFileset_unit(t *testing.T) {
+func TestUnitAlicloudNASFileset(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_fileset"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_fileset"].Schema).Data(nil, nil)

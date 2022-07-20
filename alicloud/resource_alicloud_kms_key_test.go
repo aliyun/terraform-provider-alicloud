@@ -235,7 +235,7 @@ func KmsKeyBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudKMSKey_unit(t *testing.T) {
+func TestUnitAlicloudKMSKey(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)

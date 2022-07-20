@@ -516,7 +516,7 @@ resource "alicloud_config_rule" "default" {
 `, name)
 }
 
-func TestAccAlicloudConfigCompliancePack_unit(t *testing.T) {
+func TestUnitAlicloudConfigCompliancePack(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_compliance_pack"].Schema).Data(nil, nil)

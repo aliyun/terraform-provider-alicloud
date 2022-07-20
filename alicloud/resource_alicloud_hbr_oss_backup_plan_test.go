@@ -184,7 +184,7 @@ resource "alicloud_oss_bucket" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBROssBackupPlan_unit(t *testing.T) {
+func TestUnitAlicloudHBROssBackupPlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_oss_backup_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_oss_backup_plan"].Schema).Data(nil, nil)

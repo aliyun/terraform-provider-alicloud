@@ -166,7 +166,7 @@ resource "alicloud_dfs_access_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudDFSMountPoint_unit(t *testing.T) {
+func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dfs_mount_point"].Schema).Data(nil, nil)

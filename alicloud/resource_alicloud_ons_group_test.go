@@ -220,7 +220,7 @@ var onsGroupBasicMap = map[string]string{
 	"remark":   "alicloud_ons_group_remark",
 }
 
-func TestAccAlicloudOnsGroup_unit(t *testing.T) {
+func TestUnitAlicloudOnsGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ons_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ons_group"].Schema).Data(nil, nil)

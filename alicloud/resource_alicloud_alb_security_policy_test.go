@@ -309,7 +309,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
-func TestAccAlicloudALBSecurityPolicy_unit(t *testing.T) {
+func TestUnitAlicloudALBSecurityPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_security_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alb_security_policy"].Schema).Data(nil, nil)

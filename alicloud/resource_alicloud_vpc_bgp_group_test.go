@@ -312,7 +312,7 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 `, name, acctest.RandIntRange(1, 2999))
 }
 
-func TestAccAlicloudVPCBgpGroup_unit(t *testing.T) {
+func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)

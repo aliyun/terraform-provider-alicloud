@@ -194,7 +194,7 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBRVault_unit(t *testing.T) {
+func TestUnitAlicloudHBRVault(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_vault"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_vault"].Schema).Data(nil, nil)

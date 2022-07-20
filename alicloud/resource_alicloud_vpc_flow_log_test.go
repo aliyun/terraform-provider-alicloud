@@ -208,7 +208,7 @@ resource "alicloud_log_store" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCFlowLog_unit(t *testing.T) {
+func TestUnitAlicloudVPCFlowLog(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)

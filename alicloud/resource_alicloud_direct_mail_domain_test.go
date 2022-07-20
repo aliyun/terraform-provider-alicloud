@@ -188,7 +188,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudDirectMailDomain_unit(t *testing.T) {
+func TestUnitAlicloudDirectMailDomain(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DmSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_direct_mail_domain"].Schema).Data(nil, nil)

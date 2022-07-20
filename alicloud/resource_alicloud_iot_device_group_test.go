@@ -173,7 +173,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudIotDeviceGroup_unit(t *testing.T) {
+func TestUnitAlicloudIotDeviceGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_iot_device_group"].Schema).Data(nil, nil)

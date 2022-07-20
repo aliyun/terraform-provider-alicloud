@@ -541,7 +541,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `)
 }
 
-func TestAccAlicloudVPC_unit(t *testing.T) {
+func TestUnitAlicloudVPC(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)

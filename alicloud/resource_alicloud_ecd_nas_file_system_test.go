@@ -187,7 +187,7 @@ resource "alicloud_ecd_simple_office_site" "default" {
 `, name)
 }
 
-func TestAccAlicloudECDNasFileSystem_unit(t *testing.T) {
+func TestUnitAlicloudECDNasFileSystem(t *testing.T) {
 
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_nas_file_system"].Schema).Data(nil, nil)

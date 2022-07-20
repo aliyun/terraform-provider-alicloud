@@ -177,7 +177,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEventBridgeEventBus_unit(t *testing.T) {
+func TestUnitAlicloudEventBridgeEventBus(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_event_bus"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_event_bus"].Schema).Data(nil, nil)

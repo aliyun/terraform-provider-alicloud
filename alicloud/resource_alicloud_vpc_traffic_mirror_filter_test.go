@@ -249,7 +249,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudVPCTrafficMirrorFilter_unit(t *testing.T) {
+func TestUnitAlicloudVPCTrafficMirrorFilter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter"].Schema).Data(nil, nil)

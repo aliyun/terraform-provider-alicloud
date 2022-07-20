@@ -191,7 +191,7 @@ default = "%s"
 `, name)
 }
 
-func TestAccAlicloudRAMSecurityPreference_unit(t *testing.T) {
+func TestUnitAlicloudRAMSecurityPreference(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ram_security_preference"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ram_security_preference"].Schema).Data(nil, nil)

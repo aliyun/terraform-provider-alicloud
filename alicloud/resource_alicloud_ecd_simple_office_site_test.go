@@ -164,7 +164,7 @@ resource "alicloud_cen_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudECDSimpleOfficeSite_unit(t *testing.T) {
+func TestUnitAlicloudECDSimpleOfficeSite(t *testing.T) {
 
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_simple_office_site"].Schema).Data(nil, nil)

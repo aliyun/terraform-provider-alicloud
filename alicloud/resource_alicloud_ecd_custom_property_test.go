@@ -291,8 +291,7 @@ func TestUnitAlicloudECDCustomProperty(t *testing.T) {
 			map[string]interface{}{
 				"PropertyValues": []interface{}{
 					map[string]interface{}{
-						"PropertyValueId": "CreateEcdCustomPropertyValue",
-						"PropertyValue":   "CreateEcdCustomPropertyValue",
+						"PropertyValue": "CreateEcdCustomPropertyValue",
 					},
 				},
 				"PropertyKey": "CreateEcdCustomPropertyValue",
@@ -398,8 +397,15 @@ func TestUnitAlicloudECDCustomProperty(t *testing.T) {
 	}
 	dExisted, _ = schema.InternalMap(p["alicloud_ecd_custom_property"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
-		"Data": map[string]interface{}{
-			"Data": "UpdateZnodeValue",
+		"Properties": []interface{}{
+			map[string]interface{}{
+				"PropertyValues": []interface{}{
+					map[string]interface{}{
+						"PropertyValue": "UpdateEcdCustomPropertyValue",
+					},
+				},
+				"PropertyKey": "UpdateEcdCustomPropertyValue",
+			},
 		},
 	}
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}

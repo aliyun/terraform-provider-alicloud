@@ -152,7 +152,7 @@ data "alicloud_ecd_bundles" "default"{
 `, name)
 }
 
-func TestAccAlicloudECDImage_unit(t *testing.T) {
+func TestUnitAlicloudECDImage(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_image"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecd_image"].Schema).Data(nil, nil)

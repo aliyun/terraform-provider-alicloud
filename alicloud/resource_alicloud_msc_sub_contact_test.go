@@ -172,7 +172,7 @@ variable "name" {
 `)
 }
 
-func TestAccAlicloudMscSubContact_unit(t *testing.T) {
+func TestUnitAlicloudMscSubContact(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_msc_sub_contact"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_msc_sub_contact"].Schema).Data(nil, nil)

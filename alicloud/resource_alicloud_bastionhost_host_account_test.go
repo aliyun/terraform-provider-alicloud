@@ -231,7 +231,7 @@ resource "alicloud_bastionhost_host" "default" {
 `, name)
 }
 
-func TestAccAlicloudBastionhostHostAccount_unit(t *testing.T) {
+func TestUnitAlicloudBastionhostHostAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_bastionhost_host_account"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_bastionhost_host_account"].Schema).Data(nil, nil)

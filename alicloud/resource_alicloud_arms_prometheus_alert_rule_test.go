@@ -289,7 +289,7 @@ resource "alicloud_arms_dispatch_rule" "default" {
 `, name)
 }
 
-func TestAccAlicloudARMSPrometheusAlertRule_unit(t *testing.T) {
+func TestUnitAlicloudARMSPrometheusAlertRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(10000, 99999)
 	d, _ := schema.InternalMap(p["alicloud_arms_prometheus_alert_rule"].Schema).Data(nil, nil)

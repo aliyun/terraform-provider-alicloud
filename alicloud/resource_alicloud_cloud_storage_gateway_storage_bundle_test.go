@@ -101,7 +101,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudCloudStorageGatewayStorageBundle_unit(t *testing.T) {
+func TestUnitAlicloudCloudStorageGatewayStorageBundle(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_storage_bundle"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_storage_bundle"].Schema).Data(nil, nil)

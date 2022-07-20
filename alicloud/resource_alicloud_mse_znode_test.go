@@ -108,7 +108,7 @@ resource "alicloud_mse_cluster" "default" {
 `, name)
 }
 
-func TestAccAlicloudMSEZnode_unit(t *testing.T) {
+func TestUnitAlicloudMSEZnode(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_znode"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mse_znode"].Schema).Data(nil, nil)

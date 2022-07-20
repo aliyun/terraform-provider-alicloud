@@ -182,7 +182,7 @@ resource "alicloud_arms_alert_contact" "default" {
 `, name)
 }
 
-func TestAccAlicloudARMSAlertContactGroup_unit(t *testing.T) {
+func TestUnitAlicloudARMSAlertContactGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_arms_alert_contact_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_arms_alert_contact_group"].Schema).Data(nil, nil)

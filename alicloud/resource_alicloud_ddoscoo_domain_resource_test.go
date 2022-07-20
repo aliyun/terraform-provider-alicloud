@@ -133,7 +133,7 @@ data "alicloud_ddoscoo_instances" "default" {}
 `)
 }
 
-func TestAccAlicloudDdoscooDomainResource_unit(t *testing.T) {
+func TestUnitAlicloudDdoscooDomainResource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_domain_resource"].Schema).Data(nil, nil)

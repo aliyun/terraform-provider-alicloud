@@ -608,7 +608,7 @@ resource "alicloud_dts_subscription_job" "default" {
 `, name, os.Getenv("ALICLOUD_REGION"))
 }
 
-func TestAccAlicloudDTSJobMonitorRule_unit(t *testing.T) {
+func TestUnitAlicloudDTSJobMonitorRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dts_job_monitor_rule"].Schema).Data(nil, nil)
