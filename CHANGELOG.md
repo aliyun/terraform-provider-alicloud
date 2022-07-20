@@ -1,5 +1,4 @@
-## 1.178.0 (Unreleased)
-## 1.177.0 (July 17, 2022)
+## 1.177.0 (Unreleased)
 
 - **New Resource:** `alicloud_ecs_activation` ([#5174](https://github.com/aliyun/terraform-provider-alicloud/issues/5174))
 - **New Data Source:** `alicloud_ecs_activations` ([#5174](https://github.com/aliyun/terraform-provider-alicloud/issues/5174))
