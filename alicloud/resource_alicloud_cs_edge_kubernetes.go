@@ -165,6 +165,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			// global configurations
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -388,6 +392,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
 			"tags": {
 				Type:     schema.TypeMap,
