@@ -255,7 +255,7 @@ resource "alicloud_ecs_network_interface_attachment" "default" {
 `, name)
 }
 
-func TestAccAlicloudECSNetworkInterfaceAttachment_unit(t *testing.T) {
+func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)

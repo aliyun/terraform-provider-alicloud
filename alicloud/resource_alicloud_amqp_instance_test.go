@@ -312,7 +312,7 @@ func resourceAmqpInstanceConfigDependence(name string) string {
 
 var AmqpInstanceBasicMap = map[string]string{}
 
-func TestAccAlicloudAmqpInstance_unit(t *testing.T) {
+func TestUnitAlicloudAmqpInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_instance"].Schema).Data(nil, nil)

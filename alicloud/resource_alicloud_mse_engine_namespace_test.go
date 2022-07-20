@@ -86,7 +86,7 @@ data "alicloud_mse_clusters" "default" {
 `, name)
 }
 
-func TestAccAlicloudMSEEngineNamespace_unit(t *testing.T) {
+func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)

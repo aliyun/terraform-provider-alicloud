@@ -208,7 +208,7 @@ var onsTopicBasicMap = map[string]string{
 	"remark":       "alicloud_ons_topic_remark",
 }
 
-func TestAccAlicloudOnsTopic_unit(t *testing.T) {
+func TestUnitAlicloudOnsTopic(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ons_topic"].Schema).Data(nil, nil)

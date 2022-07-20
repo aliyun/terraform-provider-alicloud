@@ -98,7 +98,7 @@ locals{
 `, name)
 }
 
-func TestAccAlicloudCloudSSOSCIMServerCredential_unit(t *testing.T) {
+func TestUnitAlicloudCloudSSOSCIMServerCredential(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_scim_server_credential"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_scim_server_credential"].Schema).Data(nil, nil)

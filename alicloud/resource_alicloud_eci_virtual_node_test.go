@@ -269,7 +269,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name, os.Getenv("KUBE_CONFIG"))
 }
 
-func TestAccAlicloudEciVirtualNode_unit(t *testing.T) {
+func TestUnitAlicloudEciVirtualNode(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_eci_virtual_node"].Schema).Data(nil, nil)

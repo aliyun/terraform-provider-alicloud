@@ -334,7 +334,7 @@ var alikafkaConsumerGroupBasicMap = map[string]string{
 	"consumer_id": "${var.name}",
 }
 
-func TestAccAlicloudAlikafkaConsumerGroup_unit(t *testing.T) {
+func TestUnitAlicloudAlikafkaConsumerGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_consumer_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alikafka_consumer_group"].Schema).Data(nil, nil)

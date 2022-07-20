@@ -259,7 +259,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudNASAutoSnapshotPolicy_unit(t *testing.T) {
+func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_auto_snapshot_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_auto_snapshot_policy"].Schema).Data(nil, nil)

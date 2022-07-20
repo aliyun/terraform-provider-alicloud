@@ -150,7 +150,7 @@ resource "alicloud_click_house_db_cluster" "default" {
 `, name)
 }
 
-func TestAccAlicloudClickHouseBackupPolicy_unit(t *testing.T) {
+func TestUnitAlicloudClickHouseBackupPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_click_house_backup_policy"].Schema).Data(nil, nil)

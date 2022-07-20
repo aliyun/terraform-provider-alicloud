@@ -229,7 +229,7 @@ func resourceAmqpVirtualHostConfigDependence(name string) string {
 
 var AmqpVirtualHostBasicMap = map[string]string{}
 
-func TestAccAlicloudAmqpVirtualHost_unit(t *testing.T) {
+func TestUnitAlicloudAmqpVirtualHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_virtual_host"].Schema).Data(nil, nil)

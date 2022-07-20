@@ -391,7 +391,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudALBHealthCheckTemplate_unit(t *testing.T) {
+func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_health_check_template"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alb_health_check_template"].Schema).Data(nil, nil)

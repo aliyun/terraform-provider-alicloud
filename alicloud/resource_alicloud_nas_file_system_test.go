@@ -588,7 +588,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudNASFileSystem_unit(t *testing.T) {
+func TestUnitAlicloudNASFileSystem(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)

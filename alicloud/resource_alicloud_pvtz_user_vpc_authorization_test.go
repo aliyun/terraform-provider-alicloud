@@ -71,7 +71,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudPvtzUserVpcAuthorization_unit(t *testing.T) {
+func TestUnitAlicloudPvtzUserVpcAuthorization(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_pvtz_user_vpc_authorization"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_pvtz_user_vpc_authorization"].Schema).Data(nil, nil)

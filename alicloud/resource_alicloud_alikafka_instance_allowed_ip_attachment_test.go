@@ -99,7 +99,7 @@ resource "alicloud_alikafka_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_unit(t *testing.T) {
+func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_instance_allowed_ip_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alikafka_instance_allowed_ip_attachment"].Schema).Data(nil, nil)

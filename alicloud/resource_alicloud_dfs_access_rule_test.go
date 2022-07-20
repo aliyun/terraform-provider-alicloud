@@ -128,7 +128,7 @@ resource "alicloud_dfs_access_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudDFSAccessRule_unit(t *testing.T) {
+func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dfs_access_rule"].Schema).Data(nil, nil)

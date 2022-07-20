@@ -184,7 +184,7 @@ resource "alicloud_nat_gateway" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCNatIpCidr_unit(t *testing.T) {
+func TestUnitAlicloudVPCNatIpCidr(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_nat_ip_cidr"].Schema).Data(nil, nil)

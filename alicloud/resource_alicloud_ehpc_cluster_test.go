@@ -2,14 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
@@ -449,17 +449,20 @@ func TestUnitAlicloudEhpcCluster(t *testing.T) {
 			"Location":         "CreateEhpcClusterValue",
 			"Id":               "CreateEhpcClusterValue",
 			"ClientVersion":    "CreateEhpcClusterValue",
-			"Applications": []interface{}{
-				map[string]interface{}{
-					"Tag":     "CreateEhpcClusterValue",
-					"Name":    "CreateEhpcClusterValue",
-					"Version": "CreateEhpcClusterValue",
-				},
+			"Applications": map[string]interface{}{
+				"ApplicationInfo": []interface{}{
+					map[string]interface{}{
+						"Tag":     "CreateEhpcClusterValue",
+						"Name":    "CreateEhpcClusterValue",
+						"Version": "CreateEhpcClusterValue",
+					}},
 			},
-			"PostInstallScripts": []interface{}{
-				map[string]interface{}{
-					"Url":  "CreateEhpcClusterValue",
-					"Args": "CreateEhpcClusterValue",
+			"PostInstallScripts": map[string]interface{}{
+				"PostInstallScriptInfo": []interface{}{
+					map[string]interface{}{
+						"Url":  "CreateEhpcClusterValue",
+						"Args": "CreateEhpcClusterValue",
+					},
 				},
 			},
 			"EcsInfo": map[string]interface{}{

@@ -198,7 +198,7 @@ variable "token" {
 `, name, os.Getenv("ALICLOUD_MSC_SUB_WEBHOOK_TOKEN"))
 }
 
-func TestAccAlicloudMscSubWebhook_unit(t *testing.T) {
+func TestUnitAlicloudMscSubWebhook(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_msc_sub_webhook"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_msc_sub_webhook"].Schema).Data(nil, nil)

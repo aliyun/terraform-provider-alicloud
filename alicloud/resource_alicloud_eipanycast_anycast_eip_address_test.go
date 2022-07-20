@@ -116,7 +116,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEipanycastAnycastEipAddress_unit(t *testing.T) {
+func TestUnitAlicloudEipanycastAnycastEipAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eipanycast_anycast_eip_address"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_eipanycast_anycast_eip_address"].Schema).Data(nil, nil)

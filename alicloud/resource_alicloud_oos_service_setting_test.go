@@ -159,7 +159,7 @@ resource "alicloud_log_project" "default" {
 `, name)
 }
 
-func TestAccAlicloudOOSServiceSetting_unit(t *testing.T) {
+func TestUnitAlicloudOOSServiceSetting(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_service_setting"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_service_setting"].Schema).Data(nil, nil)

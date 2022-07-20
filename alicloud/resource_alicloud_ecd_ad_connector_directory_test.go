@@ -303,6 +303,8 @@ func TestUnitAlicloudECDAdConnectorDirectory(t *testing.T) {
 				"EnableCrossDesktopAccess": false,
 				"DesktopAccessType":        "CreateEcdAdConnectorDirectoryValue",
 				"EnableInternetAccess":     true,
+				"DomainName":               "CreateEcdAdConnectorDirectoryValue",
+				"DomainUserName":           "CreateEcdAdConnectorDirectoryValue",
 			},
 		},
 	}

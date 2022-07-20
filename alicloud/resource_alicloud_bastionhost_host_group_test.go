@@ -106,7 +106,7 @@ data "alicloud_bastionhost_instances" "default" {}
 `, name)
 }
 
-func TestAccAlicloudBastionhostHostGroup_unit(t *testing.T) {
+func TestUnitAlicloudBastionhostHostGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_host_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_host_group"].Schema).Data(nil, nil)

@@ -228,7 +228,7 @@ func ActiontrailTrailBasicdependence(name string) string {
 `, name)
 }
 
-func TestAccAlicloudActiontrailTrail_unit(t *testing.T) {
+func TestUnitAlicloudActiontrailTrail(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_actiontrail_trail"].Schema).Data(nil, nil)

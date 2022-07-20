@@ -256,7 +256,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
-func TestAccAlicloudPvtzEndpoint_unit(t *testing.T) {
+func TestUnitAlicloudPvtzEndpoint(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	rand := acctest.RandIntRange(1000, 9999)
 	d, _ := schema.InternalMap(p["alicloud_pvtz_endpoint"].Schema).Data(nil, nil)

@@ -177,7 +177,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudNASAccessGroup_unit(t *testing.T) {
+func TestUnitAlicloudNASAccessGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_access_group"].Schema).Data(nil, nil)

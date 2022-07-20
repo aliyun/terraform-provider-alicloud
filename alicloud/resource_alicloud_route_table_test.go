@@ -347,7 +347,7 @@ resource "alicloud_vpc" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCRouteTable_unit(t *testing.T) {
+func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_route_table"].Schema).Data(nil, nil)
