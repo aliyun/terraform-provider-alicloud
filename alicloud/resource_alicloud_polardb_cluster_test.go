@@ -138,12 +138,11 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":       "MySQL",
-					"db_version":    "8.0",
-					"pay_type":      "PostPaid",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":    "${local.vswitch_id}",
-
+					"db_type":           "MySQL",
+					"db_version":        "8.0",
+					"pay_type":          "PostPaid",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -158,7 +157,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch"},
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -205,6 +204,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "2",
 					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+					"sub_category":  "Exclusive",
 					"modify_type":   "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -277,6 +277,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					"description":   "tf-testaccPolarDBClusterUpdate1",
 					"maintain_time": "02:00Z-03:00Z",
 					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.2.db_node_class}",
+					"sub_category":  "Exclusive",
 					"modify_type":   "Upgrade",
 					"security_ips":  []string{"10.168.1.13", "100.69.7.113"},
 					"db_cluster_ip_array": []map[string]interface{}{{
