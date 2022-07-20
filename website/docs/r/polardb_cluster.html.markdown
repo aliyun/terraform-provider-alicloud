@@ -104,7 +104,7 @@ The following arguments are supported:
 * `imci_switch` - (Optional, Available in 1.173.0+) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
 -> **NOTE:**  Only polardb MySQL Cluster version is available. The cluster with minor version number of 8.0.1 supports the column index feature, and the specific kernel version must be 8.0.1.1.22 or above.
 -> **NOTE:**  The single node, the single node version of the history library, and the cluster version of the history library do not support column save indexes.
-
+* `sub_category` - (Optional, Available in 1.177.0+)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
 ### Block db_cluster_ip_array
 
 The db_cluster_ip_array mapping supports the following:

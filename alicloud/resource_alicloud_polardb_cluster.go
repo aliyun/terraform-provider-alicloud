@@ -207,6 +207,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
+			"sub_category": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Exclusive", "General"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -520,6 +526,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		request.DBClusterId = d.Id()
 		request.ModifyType = d.Get("modify_type").(string)
 		request.DBNodeTargetClass = d.Get("db_node_class").(string)
+		if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
+			request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
+		}
 		//wait asynchronously cluster nodes num the same
 		if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
 			return WrapError(err)
@@ -854,4 +863,11 @@ func convertPolarDBPayTypeUpdateRequest(source string) string {
 		return "Prepaid"
 	}
 	return "Postpaid"
+}
+func convertPolarDBSubCategoryUpdateRequest(source string) string {
+	switch source {
+	case "Exclusive":
+		return "normal_exclusive"
+	}
+	return "normal_general"
 }
