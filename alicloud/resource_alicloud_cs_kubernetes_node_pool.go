@@ -4,7 +4,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -491,6 +493,80 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"kubelet_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"registry_pull_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"registry_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"event_record_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"event_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_api_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_api_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"serialize_image_pulls": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cpu_manager_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eviction_hard": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"eviction_soft": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"eviction_soft_grace_period": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"system_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"kube_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"rollout_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_unavailable": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -773,11 +849,27 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
 	}
 
+	// kubelet
+	if d.HasChange("kubelet_configuration") {
+		update = true
+		kubeletConfig, err := setKubeletConfigParams(d.Get("kubelet_configuration").([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		rollout, err := setRolloutPolicy(d.Get("rollout_policy").([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		args.NodeConfig = &cs.NodeConfig{}
+		args.NodeConfig.KubeletConfiguration = kubeletConfig
+		args.NodeConfig.RolloutPolicy = rollout
+	}
+
 	if update {
-		var resoponse interface{}
+		var response interface{}
 		if err := invoker.Run(func() error {
 			var err error
-			resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 				resp, err := csClient.UpdateNodePool(parts[0], parts[1], args)
 				return resp, err
 			})
@@ -790,7 +882,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			resizeRequestMap["ClusterId"] = parts[0]
 			resizeRequestMap["NodePoolId"] = parts[1]
 			resizeRequestMap["Args"] = args
-			addDebug("UpdateKubernetesNodePool", resoponse, resizeRequestMap)
+			addDebug("UpdateKubernetesNodePool", response, resizeRequestMap)
 		}
 
 		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
@@ -1191,6 +1283,16 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	if v, ok := d.GetOk("cpu_policy"); ok {
 		creationArgs.CpuPolicy = v.(string)
+	}
+
+	// kubelet
+	if v, ok := d.GetOk("kubelet_configuration"); ok {
+		config, err := setKubeletConfigParams(v.([]interface{}))
+		if err != nil {
+			return creationArgs, WrapError(err)
+		}
+		creationArgs.NodeConfig = &cs.NodeConfig{}
+		creationArgs.NodeConfig.KubeletConfiguration = config
 	}
 
 	return creationArgs, nil
@@ -1608,4 +1710,93 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return nil
+}
+
+func setKubeletConfigParams(l []interface{}) (*cs.KubeletConfiguration, error) {
+	config := &cs.KubeletConfiguration{}
+	if len(l) <= 0 || l[0] == nil {
+		return nil, nil
+	}
+
+	var (
+		intVal  int64
+		boolVal bool
+		err     error
+	)
+
+	m := l[0].(map[string]interface{})
+
+	if v, ok := m["registry_pull_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'registry_pull_qps' due to %v", err))
+		}
+		config.RegistryPullQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["registry_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'registry_burst' due to %v", err))
+		}
+		config.RegistryBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["event_record_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'event_record_qps' due to %v", err))
+		}
+		config.EventRecordQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["event_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'event_burst' due to %v", err))
+		}
+		config.EventBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["kube_api_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'kube_api_qps' due to %v", err))
+		}
+		config.KubeAPIQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["kube_api_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'kube_api_burst' due to %v", err))
+		}
+		config.KubeAPIBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["serialize_image_pulls"]; ok && reflect.ValueOf(v).String() != "" {
+		if boolVal, err = strconv.ParseBool(v.(string)); err != nil {
+			return config, WrapError(fmt.Errorf("failed to parse 'serialize_image_pulls' due to %v", err))
+		}
+		config.SerializeImagePulls = tea.Bool(boolVal)
+	}
+	if v, ok := m["cpu_manager_policy"]; ok && reflect.ValueOf(v).String() != "" {
+		config.CpuManagerPolicy = tea.String(v.(string))
+	}
+	if v, ok := m["eviction_hard"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionHard = v.(map[string]interface{})
+	}
+	if v, ok := m["eviction_soft"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionSoft = v.(map[string]interface{})
+	}
+	if v, ok := m["eviction_soft_grace_period"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionSoftGracePeriod = v.(map[string]interface{})
+	}
+	if v, ok := m["system_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.SystemReserved = v.(map[string]interface{})
+	}
+	if v, ok := m["kube_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.KubeReserved = v.(map[string]interface{})
+	}
+	return config, nil
+}
+
+func setRolloutPolicy(l []interface{}) (*cs.RolloutPolicy, error) {
+	config := &cs.RolloutPolicy{}
+	if len(l) <= 0 || l[0] == nil {
+		return nil, nil
+	}
+	m := l[0].(map[string]interface{})
+	if v, ok := m["max_unavailable"]; ok {
+		config.MaxUnavailable = tea.Int64(int64(v.(int)))
+	}
+	return config, nil
 }

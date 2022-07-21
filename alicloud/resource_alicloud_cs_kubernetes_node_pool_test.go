@@ -98,7 +98,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "cpu_policy"},
+				ImportStateVerifyIgnore: []string{"password", "cpu_policy", "kubelet_configuration"},
 			},
 			// check: scale out
 			{
@@ -131,6 +131,35 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"desired_size": "1",
+					}),
+				),
+			},
+			// check: kubelet config
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kubelet_configuration": []map[string]interface{}{{
+						"registry_pull_qps":     "0",
+						"registry_burst":        "0",
+						"event_record_qps":      "0",
+						"event_burst":           "0",
+						"serialize_image_pulls": "false",
+						"cpu_manager_policy":    "none",
+					}},
+					"rollout_policy": []map[string]interface{}{{
+						"max_unavailable": "0",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kubelet_configuration.#":                       "1",
+						"kubelet_configuration.0.registry_pull_qps":     "0",
+						"kubelet_configuration.0.registry_burst":        "0",
+						"kubelet_configuration.0.event_record_qps":      "0",
+						"kubelet_configuration.0.event_burst":           "0",
+						"kubelet_configuration.0.serialize_image_pulls": "false",
+						"kubelet_configuration.0.cpu_manager_policy":    "none",
+						"rollout_policy.#":                              "1",
+						"rollout_policy.0.max_unavailable":              "0",
 					}),
 				),
 			},

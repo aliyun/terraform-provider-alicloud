@@ -4,12 +4,12 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1
-	github.com/alibabacloud-go/cs-20151215/v3 v3.0.13-0.20220507113239-654e91033291
+	github.com/alibabacloud-go/cs-20151215/v3 v3.0.14
 	github.com/alibabacloud-go/darabonba-openapi v0.1.19-0.20220507083948-2c7e1f6567c1
 	github.com/alibabacloud-go/tea v1.1.17
 	github.com/alibabacloud-go/tea-roa v1.3.0
 	github.com/alibabacloud-go/tea-rpc v1.2.0
-	github.com/alibabacloud-go/tea-utils v1.4.3
+	github.com/alibabacloud-go/tea-utils v1.4.5
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1538
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
 	github.com/aliyun/aliyun-log-go-sdk v0.1.37
@@ -20,7 +20,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/deckarep/golang-set v1.8.0
-	github.com/denverdino/aliyungo v0.0.0-20220714084452-7034e8b75db5
+	github.com/denverdino/aliyungo v0.0.0-20220805063645-076d420db039
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
