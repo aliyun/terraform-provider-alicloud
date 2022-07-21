@@ -6,6 +6,11 @@
 
 ENHANCEMENTS:
 
+- resource/alicloud_cs_kubernetes_node_pool: support spot_strategy SpotAsPriceGo and NoSpot ([#5188](https://github.com/aliyun/terraform-provider-alicloud/issues/5188))
+- resource/alicloud_cs_kubernetes_node_pool: update sdk and optimize resource update logic ([#5177](https://github.com/aliyun/terraform-provider-alicloud/issues/5177))
+- resource/alicloud_polardb_cluster: Adds new attribute sub_category ([#5144](https://github.com/aliyun/terraform-provider-alicloud/issues/5144))
+- resource/ess_scaling_configuration:support instance_pattern_info ([#5136](https://github.com/aliyun/terraform-provider-alicloud/issues/5136))
+- resource/alicloud_ecs_instance_set: Supports new parameter boot_check_os_with_assistant to choose health check when booting. Check Ecs to Running or cloud assistant to ready. Default by checking cloud assistant, means OS ready. ([#5182](https://github.com/aliyun/terraform-provider-alicloud/issues/5182))
 - resource/alicloud_cloud_firewall_control_policy: Add Support for the international site. ([#5173](https://github.com/aliyun/terraform-provider-alicloud/issues/5173))
 - resource/alicloud_lindorm_instance: Added the field resource_group_id and tags ([#5175](https://github.com/aliyun/terraform-provider-alicloud/issues/5175))
 - resource/alicloud_cen_route_map: Partial update to full update ([#5183](https://github.com/aliyun/terraform-provider-alicloud/issues/5183))
@@ -13,10 +18,18 @@ ENHANCEMENTS:
 - resource/alicloud_oos_template: Added the field resource_group_id ([#5163](https://github.com/aliyun/terraform-provider-alicloud/issues/5163))
 - resource/alicloud_instance: Refactored resourceAliyunInstanceCreate and added support for new parameter system_disk ([#5151](https://github.com/aliyun/terraform-provider-alicloud/issues/5151))
 - resource/alicloud_eci_container_group: Delete default values for memory and cpu. ([#5160](https://github.com/aliyun/terraform-provider-alicloud/issues/5160))
+- data/alicloud_cs_kubernetes_clusters, alicloud_cs_managed_kubernetes_clusters, alicloud_cs_serverless_kubernetes_clusters: support exporting kube config file ([#5090](https://github.com/aliyun/terraform-provider-alicloud/issues/5090))
 - testcase: Adds new unit test case for resource alicloud_config_aggregate_compliance_pack alicloud_ga_forwarding_rule ([#5142](https://github.com/aliyun/terraform-provider-alicloud/issues/5142))
+- testcase: update unit test case name ([#5201](https://github.com/aliyun/terraform-provider-alicloud/issues/5201))
+- ci/unit: Adds pipeline job for unit test ([#5203](https://github.com/aliyun/terraform-provider-alicloud/issues/5203))
+- ci: Adds sweeper and unit test job ([#5204](https://github.com/aliyun/terraform-provider-alicloud/issues/5204))
+- Update gpg image for release workflow ([#5206](https://github.com/aliyun/terraform-provider-alicloud/issues/5206))
+- Update gpg image for release workflow ([#5207](https://github.com/aliyun/terraform-provider-alicloud/issues/5207))
 
 BUG FIXES:
 
+- resource/alicloud_db_readonly_instance: method invoke error bug fix. ([#5202](https://github.com/aliyun/terraform-provider-alicloud/issues/5202))
+- resource/alicloud_instance: Fixes the describing system disk failed when setting the resource_group_id ([#5194](https://github.com/aliyun/terraform-provider-alicloud/issues/5194))
 - resource/alicloud_click_house_db_cluster: Fixed value of payment_type from Prepay to Prepaid ([#5152](https://github.com/aliyun/terraform-provider-alicloud/issues/5152))
 - provider: fixes the missing security token error when using assume_role ([#5166](https://github.com/aliyun/terraform-provider-alicloud/issues/5166))
 
