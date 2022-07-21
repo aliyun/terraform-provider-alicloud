@@ -541,7 +541,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `)
 }
 
-func TestUnitAlicloudVPC(t *testing.T) {
+func TestUnitAlicloudVPCdsafa(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc"].Schema).Data(nil, nil)
@@ -893,11 +893,10 @@ func TestUnitAlicloudVPC(t *testing.T) {
 	})
 	t.Run("DeleteMockAbnormal", func(t *testing.T) {
 		retryFlag := true
-		noRetryFlag := false
+		noRetryFlag := true
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			if retryFlag {
-				// delete方法里,一直重试,直到超时
-				//retryFlag = false
+				retryFlag = false
 				return responseMock["RetryError"]("Throttling")
 			} else if noRetryFlag {
 				noRetryFlag = false
@@ -907,7 +906,7 @@ func TestUnitAlicloudVPC(t *testing.T) {
 		})
 		err := resourceAlicloudVpcDelete(d, rawClient)
 		patches.Reset()
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 	t.Run("DeleteMockNormal", func(t *testing.T) {
 		retryFlag := true
