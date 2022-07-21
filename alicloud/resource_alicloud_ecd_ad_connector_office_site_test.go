@@ -487,6 +487,9 @@ func TestUnitAlicloudECDAdConnectorOfficeSite(t *testing.T) {
 					return failedResponseMock(errorCodes[retryIndex])
 				}
 			}
+			if *action == "DescribeOfficeSites" {
+				return notFoundResponseMock("{}")
+			}
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudEcdAdConnectorOfficeSiteDelete(dExisted, rawClient)
