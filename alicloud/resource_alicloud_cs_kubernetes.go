@@ -1219,6 +1219,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	var masterNodes []map[string]interface{}
 	var workerNodes []map[string]interface{}
+	var unsupportedNodePoolCluster bool
 	var defaultNodePoolId string
 	var nodePoolDetails interface{}
 	// get the default nodepool id
@@ -1233,15 +1234,18 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterNodePools", DenverdinoAliyungo)
 	}
 
+	unsupportedNodePoolCluster = len(nodePoolDetails.([]cs.NodePoolDetail)) == 0
+
 	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
-		if tea.StringValue(v.BasicNodePool.NodePoolInfo.Name) == "default-nodepool" {
+		if tea.BoolValue(v.IsDefault) {
 			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
 		}
 	}
 
+	// kubernetes version 允许存在节点池
 	pageNumber := 1
 	for {
-		if defaultNodePoolId == "" {
+		if defaultNodePoolId == "" && !unsupportedNodePoolCluster {
 			break
 		}
 		var result []cs.KubernetesNodeType
@@ -1869,7 +1873,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	}
 
 	for _, v := range response.([]cs.NodePoolDetail) {
-		if tea.StringValue(v.BasicNodePool.NodePoolInfo.Name) == "default-nodepool" {
+		if tea.BoolValue(v.IsDefault) {
 			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
 		}
 	}
