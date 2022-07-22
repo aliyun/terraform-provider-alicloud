@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/agiledragon/gomonkey/v2"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/alibabacloud-go/tea/tea"
