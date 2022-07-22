@@ -45,10 +45,10 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `datas` - A list of Cms Hybrid Monitor Datas. Each element contains the following attributes:
-  * `metric_name` - The name of the monitoring indicator.
-  * `values` - The metric values that are collected at different timestamps.
-    * `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
-    * `value` - The value of the monitoring indicator.
-  * `labels` - The label of the time dimension.
-    * `key` - Label key.
-    * `value` - Label value.
+    * `metric_name` - The name of the monitoring indicator.
+    * `values` - The metric values that are collected at different timestamps.
+        * `ts` - The timestamp that indicates the time when the metric value is collected. Unit: seconds.
+        * `value` - The value of the monitoring indicator.
+    * `labels` - The label of the time dimension.
+        * `key` - Label key.
+        * `value` - Label value.
