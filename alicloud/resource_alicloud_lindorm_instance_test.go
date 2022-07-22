@@ -2,12 +2,120 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"log"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_lindorm_instance", &resource.Sweeper{
+		Name: "alicloud_lindorm_instance",
+		F:    testSweepLindormInstances,
+	})
+}
+
+func testSweepLindormInstances(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	conn, err := client.NewHitsdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+	action := "GetLindormInstanceList"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+	var response map[string]interface{}
+	lindormInstanceIds := make([]string, 0)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_lindorm_instances", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.InstanceList", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			skip := true
+			item := v.(map[string]interface{})
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["InstanceAlias"])), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Lindorm Instance: %v (%v)", item["InstanceAlias"], item["InstanceId"])
+				continue
+			}
+			lindormInstanceIds = append(lindormInstanceIds, fmt.Sprint(item["InstanceId"]))
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	for _, id := range lindormInstanceIds {
+		log.Printf("[INFO] Deleting Lindorm Instance: %s", id)
+		action := "ReleaseLindormInstance"
+		conn, err := client.NewHitsdbClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		request := map[string]interface{}{
+			"InstanceId": id,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete lindorm Instance (%s): %s", id, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
