@@ -1,4 +1,28 @@
 ## 1.178.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_firewall_address_book` [GH-5186]
+- **New Resource:** `alicloud_sms_short_url` [GH-5200]	
+- **New Resource:** `alicloud_hbr_hana_instance` [GH-5192]
+- **New Data Source:** `alicloud_hbr_hana_instances` [GH-5192]	
+- **New Data Source:** `alicloud_cloud_firewall_address_books` [GH-5186]
+
+ENHANCEMENTS:
+
+- resource_alicloud_adb_db_cluster: Support for new parameters vpc_id, Optimize elastic_io_resource attribute configuration logic. [GH-5225]
+- resource/alicloud_amqp_instance：supports enterprise edtion for rabbitmq [GH-5218]
+- resource/alicloud_actiontrail_trail: Remove restrictions on trail_region attributes, removes the default value and adds computed [GH-5216]
+- testcase: Adds sweeper test for lindorm_instance [GH-5217]
+- testcase: Adds new unit test case for resource alicloud_hbr_server_backup_plan alicloud_hbr_restore_job alicloud_hbr_ots_backup_plan [GH-5198]
+- doc/alicloud_cs_kubernetes_node_pool: enhance doc for field node_name_mode [GH-5195]
+- doc/alicloud_cs_kubernetes: update doc for field api_audiences and service_account_issuer [GH-5196]
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixed data_disk error. [GH-5237]
+- testcase: fix ci for datasource/alicloud_cs_kubernetes_clusters and resource/alicloud_cs_kubernetes [GH-5232]
+- testcase: fix unit test case errors [GH-5210]
+- Fixed github action error: go build signal: killed [GH-5211]
+
 ## 1.177.0 (July 21, 2022)
 
 - **New Resource:** `alicloud_ecs_activation` ([#5174](https://github.com/aliyun/terraform-provider-alicloud/issues/5174))
