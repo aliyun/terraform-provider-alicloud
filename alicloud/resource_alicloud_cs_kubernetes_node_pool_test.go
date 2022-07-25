@@ -743,7 +743,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "vpc" {
-	vpc_name   = "tf_unittest_cs"
+	vpc_name   = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -797,6 +797,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   password                     = "Hello1234"
   pod_cidr                     = "10.11.0.0/16"
   service_cidr                 = "192.168.0.0/16"
+  worker_disk_size             = 40
   worker_vswitch_ids           = [alicloud_vswitch.vswitch.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
@@ -835,7 +836,7 @@ data "alicloud_instance_types" "default" {
 }
 
 resource "alicloud_vpc" "vpc" {
-	vpc_name   = "tf_unittest_cs"
+	vpc_name   = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
@@ -865,6 +866,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
   worker_number                = 2
+  worker_disk_size             = 40
   node_port_range              = "30000-32767"
   password                     = "Hello1234"
   pod_cidr                     = "10.11.0.0/16"
