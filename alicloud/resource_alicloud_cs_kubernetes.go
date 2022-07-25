@@ -2026,7 +2026,7 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 	}
 
 	for _, clusterResource := range clusterResources.Body {
-		if tea.StringValue(clusterResource.ResourceType) == "SLB" {
+		if tea.StringValue(clusterResource.ResourceType) == "SLB" || tea.StringValue(clusterResource.ResourceType) == "ALIYUN::SLB::LoadBalancer" {
 			return tea.StringValue(clusterResource.InstanceId), nil
 		}
 	}
