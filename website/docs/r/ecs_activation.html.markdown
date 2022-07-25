@@ -3,8 +3,8 @@ subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecs_activation"
 sidebar_current: "docs-alicloud-resource-ecs-activation"
-description: |-	
-	 Provides a Alicloud ECS Activation resource.
+description: |-
+  Provides a Alicloud ECS Activation resource.
 ---
 
 # alicloud\_ecs\_activation
