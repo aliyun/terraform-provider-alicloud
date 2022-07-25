@@ -101,17 +101,18 @@ data "alicloud_zones" default {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
+	cpu_core_count = 4
+	memory_size = 8
 	kubernetes_node_role = "Worker"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -142,22 +143,25 @@ variable "disks" {
 
 
 resource "alicloud_cs_edge_kubernetes" "default" {
-  name_prefix = "${var.name}"
-  worker_vswitch_ids = ["${local.vswitch_id}"]
-  new_nat_gateway = true
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number = 2
-  password = "Yourpassword1234"
-  pod_cidr = "172.31.0.0/16"
-  service_cidr = "172.21.0.0/20"
-  install_cloud_monitor = true
-  slb_internet_enabled = true
-  worker_disk_category  = "cloud_efficiency"
+  name_prefix                 = "${var.name}"
+  worker_vswitch_ids          = [local.vswitch_id]
+  deletion_protection         = false
+  new_nat_gateway             = true
+  proxy_mode                  = "ipvs"
+  worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_number               = 2
+  password                    = "Yourpassword1234"
+  pod_cidr                    = "10.99.0.0/16"
+  service_cidr                = "172.16.0.0/16"
+  install_cloud_monitor       = true
+  slb_internet_enabled        = true
+  worker_disk_category        = "cloud_efficiency"
+  worker_instance_charge_type = "PostPaid"
   dynamic "worker_data_disks" {
       for_each = var.disks
       content {
         size       = lookup(worker_data_disks.value, "size", var.disks)
-        category       = lookup(worker_data_disks.value, "category", var.disks)
+        category   = lookup(worker_data_disks.value, "category", var.disks)
       }
   }
 }

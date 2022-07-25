@@ -79,17 +79,18 @@ data "alicloud_zones" "default" {
 
 data "alicloud_instance_types" "default" {
 	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 2
-	memory_size                = 4
+	cpu_core_count             = 4
+	memory_size                = 8
 	kubernetes_node_role       = "Worker"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -104,21 +105,28 @@ locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
-
 # Create a management cluster
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = var.name
-  count                        = 1
-  cluster_spec                 = "ack.pro.small"
-  is_enterprise_security_group = true
-  worker_number                = 2
-  deletion_protection          = false
-  password                     = "Hello1234"
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = [local.vswitch_id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  depends_on                   = ["alicloud_ram_user_policy_attachment.attach"]
+  name                        = var.name
+  count                       = 1
+  cluster_spec                = "ack.pro.small"
+  # worker_vswitch_ids          = [local.vswitch_id]
+  worker_vswitch_ids = ["vsw-bp1rvia9xz5cj2oc06qlt"]
+  new_nat_gateway             = true
+  worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_number               = 2
+  node_port_range             = "30000-32767"
+  password                    = "Hello1234"
+  pod_cidr                    = "10.99.0.0/16"
+  service_cidr                = "172.16.0.0/16"
+  install_cloud_monitor       = true
+  slb_internet_enabled        = true
+  worker_disk_category        = "cloud_efficiency"
+  worker_data_disk_category   = "cloud_ssd"
+  worker_data_disk_size       = 200
+  worker_disk_size            = 40
+  worker_instance_charge_type = "PostPaid"
+  depends_on                  = ["alicloud_ram_user_policy_attachment.attach"]
 }
 
 # Create a new RAM user.

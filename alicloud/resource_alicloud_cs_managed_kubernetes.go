@@ -76,6 +76,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntBetween(20, 32768),
 				Deprecated:   "Field 'worker_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_size' to replace it.",
 			},
@@ -163,6 +164,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Deprecated:       "Field 'worker_period_unit' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'period_unit' to replace it",
@@ -170,6 +172,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
@@ -185,6 +188,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
+				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Deprecated:       "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'auto_renew_period' to replace it",
@@ -354,6 +358,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"node_port_range": {
 				Type:       schema.TypeString,
 				Optional:   true,
+				Computed:   true,
 				ForceNew:   true,
 				Deprecated: "Field 'platform' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},

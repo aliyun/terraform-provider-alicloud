@@ -102,18 +102,19 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_instance_types" "default" {
-	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	cpu_core_count = 2
-	memory_size = 4
+	availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+	cpu_core_count       = 4
+	memory_size          = 8
 	kubernetes_node_role = "Worker"
 }
 
 data "alicloud_vpcs" "default" {
 	name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -134,20 +135,23 @@ resource "alicloud_log_project" "log" {
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name_prefix = "${var.name}"
-  cluster_spec = "ack.pro.small"
-  worker_vswitch_ids = ["${local.vswitch_id}"]
-  new_nat_gateway = true
-  worker_instance_types = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number = 2
-  password = "Yourpassword1234"
-  pod_cidr = "172.20.0.0/16"
-  service_cidr = "172.21.0.0/20"
-  install_cloud_monitor = true
-  slb_internet_enabled = true
-  worker_disk_category  = "cloud_efficiency"
-  worker_data_disk_category = "cloud_ssd"
-  worker_data_disk_size =  200
+  name_prefix                 = "${var.name}"
+  cluster_spec                = "ack.pro.small"
+  worker_vswitch_ids          = [local.vswitch_id]
+  new_nat_gateway             = true
+  worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+  worker_number               = 2
+  node_port_range             = "30000-32767"
+  password                    = "Hello1234"
+  pod_cidr                    = "10.99.0.0/16"
+  service_cidr                = "172.16.0.0/16"
+  install_cloud_monitor       = true
+  slb_internet_enabled        = true
+  worker_disk_category        = "cloud_efficiency"
+  worker_data_disk_category   = "cloud_ssd"
+  worker_data_disk_size       = 200
+  worker_disk_size            = 40
+  worker_instance_charge_type = "PostPaid"
 }
 `, name)
 }
