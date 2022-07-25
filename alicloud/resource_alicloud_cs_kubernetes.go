@@ -183,6 +183,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntBetween(20, 32768),
 				Deprecated:   "Field 'worker_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
 			},
@@ -270,6 +271,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Deprecated:       "Field 'worker_period_unit' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
@@ -277,6 +279,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
@@ -292,6 +295,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
+				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Deprecated:       "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
@@ -454,6 +458,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"node_port_range": {
 				Type:       schema.TypeString,
 				Optional:   true,
+				Computed:   true,
 				ForceNew:   true,
 				Deprecated: "Field 'node_port_range' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
@@ -1152,9 +1157,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if d.Get("platform") == "" {
 		d.Set("platform", "CentOS")
 	}
-	if d.Get("node_port_range") == "" {
-		d.Set("node_port_range", "30000-32767")
-	}
 	if d.Get("cluster_domain") == "" {
 		d.Set("cluster_domain", "cluster.local")
 	}
@@ -1201,9 +1203,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 	if v, ok := object.Parameters["WorkerAutoRenew"]; ok {
 		d.Set("worker_auto_renew", Interface2Bool(v))
-	}
-	if v, ok := object.Parameters["SNatEntry"]; ok {
-		d.Set("new_nat_gateway", Interface2Bool(v))
 	}
 	if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
 		d.Set("install_cloud_monitor", Interface2Bool(v))
@@ -2026,7 +2025,7 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 	}
 
 	for _, clusterResource := range clusterResources.Body {
-		if tea.StringValue(clusterResource.ResourceType) == "SLB" {
+		if tea.StringValue(clusterResource.ResourceType) == "SLB" || tea.StringValue(clusterResource.ResourceType) == "ALIYUN::SLB::LoadBalancer" {
 			return tea.StringValue(clusterResource.InstanceId), nil
 		}
 	}

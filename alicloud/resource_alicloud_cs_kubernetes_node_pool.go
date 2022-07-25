@@ -864,7 +864,6 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
 	d.Set("image_id", object.ImageId)
 	d.Set("platform", object.Platform)
-	d.Set("cpu_policy", object.CpuPolicy)
 	d.Set("scaling_policy", object.ScalingPolicy)
 	d.Set("node_name_mode", object.NodeNameMode)
 	d.Set("user_data", object.UserData)

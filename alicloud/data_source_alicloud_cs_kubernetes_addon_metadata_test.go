@@ -52,11 +52,12 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+  name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -79,17 +80,20 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   is_enterprise_security_group = true
   worker_number                = 2
   deletion_protection          = false
+  node_port_range              = "30000-32767"
   password                     = "Hello1234"
   pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "192.168.0.0/16"
+  service_cidr                 = "172.16.0.0/16"
   worker_vswitch_ids           = [local.vswitch_id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  worker_instance_charge_type  = "PostPaid"
+  worker_disk_size             = 40
 }
 
 data "alicloud_cs_kubernetes_addon_metadata" "default" {
   cluster_id = alicloud_cs_managed_kubernetes.default.0.id
-  name = "migrate-controller"
-  version = "v1.6.3-6fd55d8-aliyun"
+  name       = "migrate-controller"
+  version    = "v1.6.3-6fd55d8-aliyun"
 }
 `, name)
 }

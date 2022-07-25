@@ -190,9 +190,9 @@ The following example is the definition of `master_vswitch_ids` block, the `work
 * `worker_period` - (Deprecated from version 1.177.0)(Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `worker_period_unit` - (Deprecated from version 1.177.0)(Optional) Worker payment period unit, the valid value is `Month`.
 * `worker_auto_renew` - (Deprecated from version 1.177.0)(Optional) Enable worker payment auto-renew, defaults to false.
-* `worker_auto_renew_period` - (Deprecated from version 1.177.0)(Optional) Worker payment auto-renew period,, it can be one of {1, 2, 3, 6, 12}.
+* `worker_auto_renew_period` - (Deprecated from version 1.177.0)(Optional) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
 * `worker_disk_category` - (Deprecated from version 1.177.0)(Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
-* `worker_disk_size` - (Deprecated from version 1.177.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB. Default to 40.
+* `worker_disk_size` - (Deprecated from version 1.177.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB.
 * `worker_data_disks` - (Deprecated from version 1.177.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.
   * `category` - (Deprecated from version 1.177.0)The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
   * `size` - (Deprecated from version 1.177.0)The size of a data disk, Its valid value range [40~32768] in GB. Unit: GiB.

@@ -24,9 +24,8 @@ data "alicloud_zones" default {
 
 data "alicloud_instance_types" "default" {
 	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-	instance_type_family = "ecs.c6"
-	cpu_core_count = 2
-	memory_size = 4
+	cpu_core_count = 4
+	memory_size = 8
 	kubernetes_node_role = "Worker"
 }
 
@@ -117,8 +116,8 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 					"version":                     "1.16.9-aliyunedge.1",
 					"worker_number":               "1",
 					"password":                    "Test12345",
-					"pod_cidr":                    "172.20.0.0/16",
-					"service_cidr":                "172.21.0.0/20",
+					"pod_cidr":                    "10.99.0.0/16",
+					"service_cidr":                "172.16.0.0/16",
 					"worker_instance_charge_type": "PostPaid",
 					"new_nat_gateway":             "true",
 					"node_cidr_mask":              "24",
@@ -142,8 +141,8 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						"version":                       "1.16.9-aliyunedge.1",
 						"worker_number":                 "1",
 						"password":                      "Test12345",
-						"pod_cidr":                      "172.20.0.0/16",
-						"service_cidr":                  "172.21.0.0/20",
+						"pod_cidr":                      "10.99.0.0/16",
+						"service_cidr":                  "172.16.0.0/16",
 						"slb_internet_enabled":          "true",
 						"is_enterprise_security_group":  "true",
 						"deletion_protection":           "true",
@@ -250,8 +249,8 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 					"new_nat_gateway":              "true",
 					"is_enterprise_security_group": "true",
 					"deletion_protection":          "true",
-					"pod_cidr":                     "172.20.0.0/16",
-					"service_cidr":                 "172.21.0.0/20",
+					"pod_cidr":                     "10.99.0.0/16",
+					"service_cidr":                 "172.16.0.0/16",
 					// worker args
 					"password":                       "Test12345",
 					"worker_number":                  "1",
@@ -283,8 +282,8 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 						"slb_internet_enabled":         "true",
 						"is_enterprise_security_group": "true",
 						"deletion_protection":          "true",
-						"pod_cidr":                     "172.20.0.0/16",
-						"service_cidr":                 "172.21.0.0/20",
+						"pod_cidr":                     "10.99.0.0/16",
+						"service_cidr":                 "172.16.0.0/16",
 						// check worker args
 						"password": "Test12345",
 						//"worker_number":                  "1",

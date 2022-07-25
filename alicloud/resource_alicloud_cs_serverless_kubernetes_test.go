@@ -79,7 +79,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
-					"service_cidr":            "172.21.0.0/20",
+					"service_cidr":            "10.0.1.0/24",
 					"service_discovery_types": []string{"PrivateZone"},
 					"logging_type":            "SLS",
 					"time_zone":               timeZone,
@@ -89,6 +89,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":                           name,
 						"deletion_protection":            "false",
+						"enable_rrsa":                    "true",
 						"new_nat_gateway":                "true",
 						"endpoint_public_access_enabled": "true",
 						"resource_group_id":              CHECKSET,
@@ -102,7 +103,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"load_balancer_spec", "endpoint_public_access_enabled", "force_update",
-					"new_nat_gateway", "private_zone", "zone_id", "vswitch_ids", "service_cidr", "service_discovery_types", "logging_type", "time_zone"},
+					"new_nat_gateway", "private_zone", "zone_id", "vswitch_ids", "service_cidr", "service_discovery_types", "logging_type", "time_zone", "enable_rrsa"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -136,15 +137,16 @@ data "alicloud_eci_zones" "default" {}
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc" "default" {
-	vpc_name   = "${var.name}"
-	cidr_block = "10.1.0.0/21"
+	vpc_name   = var.name
+	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vswitch_name      = "${var.name}"
-	vpc_id            = "${alicloud_vpc.default.id}"
-	cidr_block        = "10.1.1.0/24"
-	availability_zone = "${data.alicloud_eci_zones.default.zones.0.zone_ids.0}"
+	count             = 1
+	vpc_id            = alicloud_vpc.vpc.id
+	cidr_block        = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
+	zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
+	vswitch_name      = var.name
 }
 `, name)
 }
