@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -43,7 +42,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":           []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"desired_size":          "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
@@ -168,7 +167,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":           []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"node_count":            "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
@@ -300,7 +299,7 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":           []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"key_name":              "${alicloud_key_pair.default.key_name}",
 					"system_disk_category":  "cloud_efficiency",
@@ -411,7 +410,7 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":           []string{"${alicloud_vswitch.vswitch.id}"},
 					"password":              "Terraform1234",
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"system_disk_category":  "cloud_efficiency",
@@ -495,7 +494,7 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                       name,
 					"cluster_id":                 "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":                []string{"${local.vswitch_id}"},
+					"vswitch_ids":                []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":             []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"system_disk_category":       "cloud_efficiency",
 					"system_disk_size":           "120",
@@ -567,11 +566,6 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 }
 
 func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
-	// modify to supported region
-	prevRegion := os.Getenv("ALICLOUD_REGION")
-	os.Setenv("ALICLOUD_REGION", "cn-hongkong")
-	defer os.Setenv("ALICLOUD_REGION", prevRegion)
-
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.default"
@@ -603,7 +597,7 @@ func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                          name,
 					"cluster_id":                    "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":                   []string{"${local.vswitch_id}"},
+					"vswitch_ids":                   []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":                []string{"ecs.c7.xlarge"},
 					"desired_size":                  "1",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
@@ -679,7 +673,7 @@ func TestAccAlicloudCSKubernetesNodePool_AliyunLinux3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"vswitch_ids":           []string{"${local.vswitch_id}"},
+					"vswitch_ids":           []string{"${alicloud_vswitch.vswitch.id}"},
 					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"desired_size":          "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
@@ -748,39 +742,29 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_security_group" "group" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_security_group" "group1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-
-
-data "alicloud_db_instances" "default" {
-	engine = "MySQL"
+resource "alicloud_vpc" "vpc" {
+	vpc_name   = "tf_unittest_cs"
+	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+	count             = 1
+	vpc_id            = alicloud_vpc.vpc.id
+	cidr_block        = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
+	zone_id           = data.alicloud_zones.default.zones.0.id
+	vswitch_name      = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+resource "alicloud_security_group" "group" {
+  vpc_id = alicloud_vpc.vpc.id
+}
+
+resource "alicloud_security_group" "group1" {
+	vpc_id = alicloud_vpc.vpc.id
+}
+
+data "alicloud_db_instances" "default" {
+	engine = "MySQL"
 }
 
 resource "alicloud_key_pair" "default" {
@@ -799,7 +783,7 @@ resource "alicloud_db_instance" "default" {
   engine_version   = data.alicloud_db_instances.default.instances.0.engine_version
   instance_type    = data.alicloud_db_instances.default.instances.0.instance_type
   instance_storage = "10"
-  vswitch_id       = alicloud_vswitch.default.id
+  vswitch_id       = alicloud_vswitch.vswitch.id
   instance_name    = var.name
 }
 
@@ -809,10 +793,11 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
   worker_number                = 2
+  node_port_range              = "30000-32767"
   password                     = "Hello1234"
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = [local.vswitch_id]
+  pod_cidr                     = "10.11.0.0/16"
+  service_cidr                 = "192.168.0.0/16"
+  worker_vswitch_ids           = [alicloud_vswitch.vswitch.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
   maintenance_window {
@@ -849,33 +834,25 @@ data "alicloud_instance_types" "default" {
 	kubernetes_node_role       = "Worker"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = var.alicloud_zone
-}
-
-resource "alicloud_security_group" "group" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_security_group" "group1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "alicloud_vpc" "vpc" {
+	vpc_name   = "tf_unittest_cs"
+	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = var.alicloud_zone
-  vswitch_name      = var.name
+	count             = 1
+	vpc_id            = alicloud_vpc.vpc.id
+	cidr_block        = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
+	zone_id           = data.alicloud_zones.default.zones.0.id
+	vswitch_name      = var.name
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+resource "alicloud_security_group" "group" {
+  vpc_id = alicloud_vpc.vpc.id
+}
+
+resource "alicloud_security_group" "group1" {
+  vpc_id = alicloud_vpc.vpc.id
 }
 
 resource "alicloud_key_pair" "default" {
@@ -888,10 +865,11 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
   worker_number                = 2
+  node_port_range              = "30000-32767"
   password                     = "Hello1234"
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = [local.vswitch_id]
+  pod_cidr                     = "10.11.0.0/16"
+  service_cidr                 = "192.168.0.0/16"
+  worker_vswitch_ids           = [alicloud_vswitch.vswitch.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   
   maintenance_window {
