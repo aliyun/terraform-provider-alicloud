@@ -32,24 +32,17 @@ data "alicloud_instance_types" "default" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+resource "alicloud_vpc" "vpc" {
+	vpc_name   = var.name
+	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	count             = 1
+	vpc_id            = alicloud_vpc.vpc.id
+	cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	vswitch_name      = var.name
 }
 
 resource "alicloud_log_project" "log" {
@@ -64,7 +57,7 @@ resource "alicloud_db_instance" "default" {
   instance_storage     = "30"
   instance_charge_type = "Postpaid"
   instance_name        = var.name
-  vswitch_id           = local.vswitch_id
+  vswitch_id           = alicloud_vswitch.vswitch.id
   monitoring_period    = "60"
 }
 
@@ -112,13 +105,13 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
-					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
+					"worker_vswitch_ids":          []string{"${alicloud_vswitch.vswitch.id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"version":                     "1.16.9-aliyunedge.1",
 					"worker_number":               "1",
 					"password":                    "Test12345",
-					"pod_cidr":                    "172.20.0.0/16",
-					"service_cidr":                "172.21.0.0/20",
+					"pod_cidr":                    "10.11.0.0/16",
+					"service_cidr":                "192.168.0.0/16",
 					"worker_instance_charge_type": "PostPaid",
 					"new_nat_gateway":             "true",
 					"node_cidr_mask":              "24",
@@ -142,8 +135,8 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 						"version":                       "1.16.9-aliyunedge.1",
 						"worker_number":                 "1",
 						"password":                      "Test12345",
-						"pod_cidr":                      "172.20.0.0/16",
-						"service_cidr":                  "172.21.0.0/20",
+						"pod_cidr":                      "10.11.0.0/16",
+						"service_cidr":                  "192.168.0.0/16",
 						"slb_internet_enabled":          "true",
 						"is_enterprise_security_group":  "true",
 						"deletion_protection":           "true",
@@ -249,13 +242,13 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 					"slb_internet_enabled":         "true",
 					"new_nat_gateway":              "true",
 					"is_enterprise_security_group": "true",
-					"deletion_protection":          "true",
-					"pod_cidr":                     "172.20.0.0/16",
-					"service_cidr":                 "172.21.0.0/20",
+					"deletion_protection":          "false",
+					"pod_cidr":                     "10.11.0.0/16",
+					"service_cidr":                 "192.168.0.0/16",
 					// worker args
 					"password":                       "Test12345",
 					"worker_number":                  "1",
-					"worker_vswitch_ids":             []string{"${local.vswitch_id}"},
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.vswitch.id}"},
 					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_instance_charge_type":    "PostPaid",
 					"worker_disk_category":           "cloud_essd",
@@ -282,9 +275,9 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 						"resource_group_id":            CHECKSET,
 						"slb_internet_enabled":         "true",
 						"is_enterprise_security_group": "true",
-						"deletion_protection":          "true",
-						"pod_cidr":                     "172.20.0.0/16",
-						"service_cidr":                 "172.21.0.0/20",
+						"deletion_protection":          "false",
+						"pod_cidr":                     "10.11.0.0/16",
+						"service_cidr":                 "192.168.0.0/16",
 						// check worker args
 						"password": "Test12345",
 						//"worker_number":                  "1",
@@ -323,19 +316,9 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"deletion_protection": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deletion_protection": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection":            "false",
 					"worker_number":                  "2",
-					"worker_vswitch_ids":             []string{"${local.vswitch_id}"},
+					"worker_vswitch_ids":             []string{"${alicloud_vswitch.vswitch.id}"},
 					"worker_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_disk_category":           "cloud_essd",
 					"worker_disk_snapshot_policy_id": "${alicloud_snapshot_policy.default.id}",
