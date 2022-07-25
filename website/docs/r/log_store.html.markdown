@@ -71,6 +71,7 @@ The following arguments are supported:
 * `retention_period` - (Optional) The data retention time (in days). Valid values: [1-3650]. Default to `30`. Log store data will be stored permanently when the value is `3650`.
 * `shard_count` - (Optional) The number of shards in this log store. Default to 2. You can modify it by "Split" or "Merge" operations. [Refer to details](https://www.alibabacloud.com/help/doc-detail/28976.htm)
 * `auto_split` - (Optional) Determines whether to automatically split a shard. Default to `false`.
+* `telemetry_type` - (Optional) Determines whether store type is metric. `Metrics` means metric store, empty means log store.
 * `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
 * `append_meta` - (Optional) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to `true`.
 * `enable_web_tracking` - (Optional) Determines whether to enable Web Tracking. Default `false`.
@@ -100,6 +101,7 @@ The following attributes are exported:
 * `id` - The ID of the log project. It formats of `<project>:<name>`.
 * `project` - The project name.
 * `name` - Log store name.
+* `telemetry_type` - Store type.
 * `retention_period` - The data retention time.
 * `shard_count` - The number of shards.
 * `shards` - The shard attribute.

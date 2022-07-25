@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -38,6 +39,10 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"telemetryType": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"retention_period": {
 				Type:         schema.TypeInt,
@@ -157,6 +162,7 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 		AutoSplit:     d.Get("auto_split").(bool),
 		MaxSplitShard: d.Get("max_split_shard_count").(int),
 		AppendMeta:    d.Get("append_meta").(bool),
+		TelemetryType: d.Get("telemetry_type").(string),
 	}
 	if encrypt := buildEncrypt(d); encrypt != nil {
 		logstore.EncryptConf = encrypt
@@ -166,6 +172,9 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestinfo = slsClient
+			if logstore.TelemetryType == "Metrics" {
+				return nil, slsClient.CreateMetricStore(d.Get("project").(string), logstore)
+			}
 			return nil, slsClient.CreateLogStoreV2(d.Get("project").(string), logstore)
 		})
 		if err != nil {
@@ -213,6 +222,7 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("name", object.Name)
 	d.Set("retention_period", object.TTL)
 	d.Set("shard_count", object.ShardCount)
+	d.Set("telemetry_type", object.TelemetryType)
 	var shards []*sls.Shard
 	err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
 		shards, err = object.ListShards()
@@ -277,6 +287,9 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Partial(true)
+	if d.HasChange("telemetry_type") {
+		return errors.New("telemetry_type can't be changed")
+	}
 
 	update := false
 	if d.HasChange("retention_period") {
@@ -313,6 +326,9 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		var requestInfo *sls.Client
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
+			if d.Get("telemetry_type").(string) == "Metrics" {
+				return nil, slsClient.UpdateMetricStore(parts[0], store)
+			}
 			return nil, slsClient.UpdateLogStoreV2(parts[0], store)
 		})
 		if err != nil {
