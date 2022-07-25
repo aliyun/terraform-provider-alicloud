@@ -92,7 +92,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			"elastic_io_resource": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  0,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("mode"); ok && v.(string) == "reserver" {
 						return true
@@ -171,6 +171,12 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -241,6 +247,10 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 		request["PayType"] = "Postpaid"
 	}
 
+	if v, ok := d.GetOkExists("elastic_io_resource"); ok {
+		request["ElasticIOResource"] = v
+	}
+
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -249,21 +259,28 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["DBClusterNetworkType"] = "VPC"
+		request["VSwitchId"] = v
+	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+	if (request["ZoneId"] == nil || request["VPCId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["DBClusterNetworkType"] = "VPC"
-		request["VPCId"] = vsw["VpcId"]
-		request["VSwitchId"] = vswitchId
-		if v, ok := request["ZoneId"].(string); !ok || v == "" {
+		if request["VPCId"] == nil {
+			request["VPCId"] = vsw["VpcId"]
+		}
+		if request["ZoneId"] == nil {
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateDBCluster")
@@ -310,6 +327,7 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("tags", tagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VPCId"])
 
 	if object["PayType"].(string) == string(Prepaid) {
 		describeAutoRenewAttributeObject, err := adbService.DescribeAutoRenewAttribute(d.Id())
@@ -598,7 +616,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		update = true
 		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
 	}
-	if d.HasChange("elastic_io_resource") {
+	if !d.IsNewResource() && d.HasChange("elastic_io_resource") {
 		update = true
 		modifyDBClusterReq["ElasticIOResource"] = d.Get("elastic_io_resource")
 	}
