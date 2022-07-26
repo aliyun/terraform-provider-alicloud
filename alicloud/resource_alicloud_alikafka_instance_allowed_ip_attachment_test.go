@@ -65,36 +65,115 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
+	checkoutSupportedRegions(t, true, connectivity.AliKafkaSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudAliKafkaInstanceAllowedIpAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAliKafkaInstanceAllowedIpAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salikafkainstanceallowedipattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_ip":   "1.1.1.1/1",
+					"port_range":   "9093/9093",
+					"instance_id":  "${alicloud_alikafka_instance.default.id}",
+					"allowed_type": "internet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_ip":   "1.1.1.1/1",
+						"port_range":   "9093/9093",
+						"instance_id":  CHECKSET,
+						"allowed_type": "internet",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudAliKafkaInstanceAllowedIpAttachmentMap0 = map[string]string{}
 
 func AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
-  default = "%s"
+	default = "%s"
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING"
+	name_regex = "^default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = var.name
-  topic_quota = "50"
-  disk_type = "1"
-  disk_size = "500"
-  deploy_type = "5"
-  io_max = "20"
-  vswitch_id = data.alicloud_vswitches.default.ids.0
-  security_group = alicloud_security_group.default.id
+	name           = var.name
+	topic_quota    = "50"
+	disk_type      = "1"
+	disk_size      = "500"
+	deploy_type    = "5"
+	io_max         = "20"
+	vswitch_id     = data.alicloud_vswitches.default.ids.0
+	security_group = alicloud_security_group.default.id
+}
+`, name)
+}
+
+func AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_alikafka_instance" "default" {
+	name           = var.name
+	topic_quota    = "50"
+	disk_type      = "1"
+	disk_size      = "500"
+	deploy_type    = "4"
+	eip_max        = "3"
+	io_max         = "20"
+	vswitch_id     = data.alicloud_vswitches.default.ids.0
+	security_group = alicloud_security_group.default.id
 }
 `, name)
 }

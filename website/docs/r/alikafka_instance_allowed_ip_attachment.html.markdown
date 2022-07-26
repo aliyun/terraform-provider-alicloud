@@ -61,11 +61,14 @@ resource "alicloud_alikafka_instance_allowed_ip_attachment" "default" {
 The following arguments are supported:
 
 * `allowed_ip` - (Required, ForceNew) The allowed ip. It can be a CIDR block.
-* `allowed_type` - (Required, ForceNew) The type of whitelist. Valid Value: `vpc`.
+* `allowed_type` - (Required, ForceNew) The type of whitelist. Valid Value: `vpc`, `internet`. **NOTE:** From version 1.179.0, `allowed_type` can be set to `internet`.
+  - `vpc`: IP address whitelist for VPC access.
+  - `internet`: IP address whitelist for Internet access.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
-* `port_range` - (Required, ForceNew) The Port range.  Valid Value: `9092/9092`.
-
-
+* `port_range` - (Required, ForceNew) The Port range.  Valid Value: `9092/9092`, `9093/9093`. **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`.
+  - `9092/9092`: port range for a VPC whitelist.
+  - `9093/9093`: port range for an Internet whitelist.
+  
 ## Attributes Reference
 
 The following attributes are exported:
