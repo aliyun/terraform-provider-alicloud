@@ -76,13 +76,13 @@ func resourceAlicloudPrivatelinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
+		vsw, err := vpcService.DescribeVswitch(vswitchId)
 		if err != nil {
 			return WrapError(err)
 		}
 		request["VSwitchId"] = vswitchId
 		if request["ZoneId"] == nil {
-			request["ZoneId"] = vsw.ZoneId
+			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
 	wait := incrementalWait(3*time.Second, 10*time.Second)
