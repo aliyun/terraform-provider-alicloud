@@ -40,7 +40,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"telemetryType": {
+			"telemetry_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
