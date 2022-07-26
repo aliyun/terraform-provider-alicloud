@@ -151,11 +151,11 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
+		vsw, err := vpcService.DescribeVswitch(vswitchId)
 		if err != nil {
 			return WrapError(err)
 		}
-		request["VpcId"] = vsw.VpcId
+		request["VpcId"] = vsw["VpcId"]
 		request["VSwitchId"] = vswitchId
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -212,6 +212,10 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	conn, err := client.NewMseClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Partial(true)
 
 	if d.HasChange("acl_entry_list") {
@@ -220,10 +224,6 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		request["AclEntryList"] = convertListToCommaSeparate(d.Get("acl_entry_list").(*schema.Set).List())
 		action := "UpdateAcl"
-		conn, err := client.NewMseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -255,10 +255,6 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "UpdateCluster"
-		conn, err := client.NewMseClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
