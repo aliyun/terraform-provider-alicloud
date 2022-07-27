@@ -126,6 +126,7 @@ locals {
 
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                        = "${var.name}"
+  count                       = 1
   cluster_spec                = "ack.pro.small"
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
@@ -133,8 +134,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 37)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 8)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"

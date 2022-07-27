@@ -154,8 +154,8 @@ resource "alicloud_cs_kubernetes" "default" {
   worker_number               = 1
   password                    = "Yourpassword1234"
   node_port_range             = "30000-32767"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 33)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 4)
   enable_ssh                  = true
   install_cloud_monitor       = true
   worker_disk_category        = "cloud_ssd"

@@ -106,7 +106,6 @@ resource "alicloud_vpc" "vpc" {
 }
 
 resource "alicloud_vswitch" "vswitch" {
-	count             = 1
 	vpc_id            = alicloud_vpc.vpc.id
 	cidr_block        = cidrsubnet(alicloud_vpc.vpc.cidr_block, 8, 8)
 	zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
