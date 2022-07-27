@@ -626,11 +626,11 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["AutoReleaseTime"] = v
 	}
 
-	if v, ok := d.GetOk("dry_run"); ok {
+	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
 
-	if v, ok := d.GetOk("deletion_protection"); ok {
+	if v, ok := d.GetOkExists("deletion_protection"); ok {
 		request["DeletionProtection"] = v
 	}
 
@@ -649,19 +649,43 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		for _, rew := range disks {
 			disksMap := make(map[string]interface{})
 			item := rew.(map[string]interface{})
-			disksMap["DiskName"] = item["name"]
-			disksMap["Size"] = item["size"]
-			disksMap["Category"] = item["category"]
-			disksMap["DeleteWithInstance"] = item["delete_with_instance"]
+
+			disksMap["DeleteWithInstance"] = item["delete_with_instance"].(bool)
+			disksMap["Encrypted"] = item["encrypted"].(bool)
+			disksMap["Size"] = item["size"].(int)
+
+			if category, ok := item["category"].(string); ok && category != "" {
+				disksMap["Category"] = category
+			}
+
+			if name, ok := item["name"].(string); ok && name != "" {
+				disksMap["DiskName"] = name
+			}
+
+			if kmsKeyId, ok := item["kms_key_id"].(string); ok && kmsKeyId != "" {
+				disksMap["KMSKeyId"] = kmsKeyId
+			}
+
+			if snapshotId, ok := item["snapshot_id"].(string); ok && snapshotId != "" {
+				disksMap["SnapshotId"] = snapshotId
+			}
+
+			if description, ok := item["description"].(string); ok && description != "" {
+				disksMap["Description"] = description
+			}
+
+			if autoSnapshotPolicyId, ok := item["auto_snapshot_policy_id"].(string); ok && autoSnapshotPolicyId != "" {
+				disksMap["AutoSnapshotPolicyId"] = autoSnapshotPolicyId
+			}
+
+			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" && disksMap["Category"] == string(DiskCloudESSD) {
+				disksMap["PerformanceLevel"] = performanceLevel
+			}
+
 			if disksMap["Category"] == string(DiskEphemeralSSD) {
 				disksMap["DeleteWithInstance"] = ""
 			}
-			disksMap["Encrypted"] = item["encrypted"]
-			disksMap["KMSKeyId"] = item["kms_key_id"]
-			disksMap["SnapshotId"] = item["snapshot_id"]
-			disksMap["AutoSnapshotPolicyId"] = item["auto_snapshot_policy_id"]
-			disksMap["Description"] = item["description"]
-			disksMap["PerformanceLevel"] = item["performance_level"]
+
 			disksMaps = append(disksMaps, disksMap)
 		}
 		request["DataDisk"] = disksMaps

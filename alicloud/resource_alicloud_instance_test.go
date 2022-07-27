@@ -1187,9 +1187,9 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":        "${data.alicloud_images.default.images.0.id}",
 					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type":   "${data.alicloud_instance_types.essd.instance_types.0.id}",
 
-					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"availability_zone":             "${data.alicloud_instance_types.essd.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
 					"key_name":                      "${alicloud_key_pair.default.key_name}",
@@ -1230,7 +1230,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 						{
 							"name":              "${var.name}-6",
 							"size":              "20",
-							"category":          "cloud_ssd",
+							"category":          "cloud_essd",
 							"performance_level": "PL1",
 						},
 					},
@@ -1292,7 +1292,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 						"data_disks.4.description":             name + " description",
 						"data_disks.4.performance_level":       "",
 						"data_disks.5.name":                    name + "-6",
-						"data_disks.5.category":                "cloud_ssd",
+						"data_disks.5.category":                "cloud_essd",
 						"data_disks.5.encrypted":               "false",
 						"data_disks.5.kms_key_id":              "",
 						"data_disks.5.snapshot_id":             "",
