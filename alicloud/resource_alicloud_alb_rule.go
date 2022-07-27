@@ -95,6 +95,27 @@ func resourceAlicloudAlbRule() *schema.Resource {
 											},
 										},
 									},
+									"server_group_sticky_session": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enabled": {
+													Type:     schema.TypeBool,
+													Optional: true,
+													Computed: true,
+												},
+												"timeout": {
+													Type:         schema.TypeInt,
+													Optional:     true,
+													Computed:     true,
+													ValidateFunc: intBetween(1, 86400),
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -447,6 +468,15 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 			}
 			forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+
+			serverGroupStickySessionMap := map[string]interface{}{}
+			for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
+				serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
+				serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
+				serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
+			}
+			forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
+
 			ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 		}
 
@@ -657,14 +687,28 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 						}
 					}
+
+					serverGroupStickySessionMaps := make([]map[string]interface{}, 0)
+					if serverGroupStickySessionArg, ok := forwardGroupConfigArg["ServerGroupStickySession"].(map[string]interface{}); ok {
+						serverGroupStickySessionMap := map[string]interface{}{}
+						serverGroupStickySessionMap["enabled"] = serverGroupStickySessionArg["Enabled"]
+						if serverGroupStickySessionMap["enabled"].(bool) {
+							serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["Timeout"]
+						}
+
+						serverGroupStickySessionMaps = append(serverGroupStickySessionMaps, serverGroupStickySessionMap)
+					}
+
 					if len(serverGroupTuplesMaps) > 0 {
 						forwardGroupConfigMaps := make([]map[string]interface{}, 0)
 						forwardGroupConfigMap := map[string]interface{}{}
 						forwardGroupConfigMap["server_group_tuples"] = serverGroupTuplesMaps
+						forwardGroupConfigMap["server_group_sticky_session"] = serverGroupStickySessionMaps
 						forwardGroupConfigMaps = append(forwardGroupConfigMaps, forwardGroupConfigMap)
 						ruleActionsMap["forward_group_config"] = forwardGroupConfigMaps
 						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 					}
+
 				}
 			}
 
@@ -940,6 +984,15 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 				}
 				forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+
+				serverGroupStickySessionMap := map[string]interface{}{}
+				for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
+					serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
+					serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
+					serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
+				}
+				forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
+
 				ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 			}
 

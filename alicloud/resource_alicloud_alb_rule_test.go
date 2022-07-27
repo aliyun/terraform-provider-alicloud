@@ -1271,3 +1271,234 @@ resource "alicloud_alb_listener" "default" {
 
 `, name)
 }
+
+func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependenceStickySession)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_id": "${alicloud_alb_listener.default.id}",
+					"rule_name":   "${var.name}",
+					"priority":    "666",
+					"rule_conditions": []map[string]interface{}{
+						{
+							"query_string_config": []map[string]interface{}{
+								{
+									"values": []map[string]interface{}{
+										{
+											"key":   "test",
+											"value": "test",
+										},
+									},
+								},
+							},
+							"type": "QueryString",
+						},
+					},
+					"rule_actions": []map[string]interface{}{
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"weight":          "100",
+										},
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[1].id}",
+											"weight":          "100",
+										},
+									},
+									"server_group_sticky_session": []map[string]interface{}{
+										{
+											"enabled": "true",
+											"timeout": "1000",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"listener_id":       CHECKSET,
+						"rule_name":         name,
+						"priority":          "666",
+						"rule_actions.#":    "1",
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"weight":          "100",
+										},
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[1].id}",
+											"weight":          "100",
+										},
+									},
+									"server_group_sticky_session": []map[string]interface{}{
+										{
+											"enabled": "true",
+											"timeout": "10",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"weight":          "100",
+										},
+										{
+											"server_group_id": "${alicloud_alb_server_group.default[1].id}",
+											"weight":          "100",
+										},
+									},
+									"server_group_sticky_session": []map[string]interface{}{
+										{
+											"enabled": "false",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+func AlicloudALBRuleBasicDependenceStickySession(name string) string {
+	return fmt.Sprintf(` 
+
+variable "name" {	
+	default = "%s"
+}
+
+data "alicloud_alb_zones" "default"{}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default_1" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_alb_zones.default.zones.0.id
+}
+
+data "alicloud_vswitches" "default_2" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_alb_zones.default.zones.1.id
+}
+
+
+resource "alicloud_alb_load_balancer" "default" {
+  vpc_id =              data.alicloud_vpcs.default.ids.0
+  address_type =        "Internet"
+  address_allocated_mode = "Fixed"
+  load_balancer_name =    var.name
+  load_balancer_edition = "Standard"
+  load_balancer_billing_config {
+    pay_type = 	"PayAsYouGo"
+  }
+  zone_mappings{
+    vswitch_id =  data.alicloud_vswitches.default_1.ids[0]
+    zone_id =  data.alicloud_alb_zones.default.zones.0.id
+  }
+  zone_mappings{
+    vswitch_id =  data.alicloud_vswitches.default_2.ids[0]
+    zone_id =   data.alicloud_alb_zones.default.zones.1.id
+  }
+}
+
+resource "alicloud_alb_server_group" "default" {
+  count = 2
+  protocol = "HTTP"
+  vpc_id = data.alicloud_vpcs.default.vpcs.0.id
+  server_group_name = var.name
+  health_check_config {
+    health_check_enabled = "false"
+  }
+  sticky_session_config {
+    sticky_session_enabled = "false"
+  }
+}
+
+
+resource "alicloud_alb_listener" "default" {
+  load_balancer_id = alicloud_alb_load_balancer.default.id
+  listener_protocol =  "HTTP"
+  listener_port = 8080
+  listener_description = var.name
+  default_actions{
+    type = "ForwardGroup"
+    forward_group_config{
+      server_group_tuples{
+        server_group_id = alicloud_alb_server_group.default[0].id
+      }
+    }
+  }
+}
+
+`, name)
+}
