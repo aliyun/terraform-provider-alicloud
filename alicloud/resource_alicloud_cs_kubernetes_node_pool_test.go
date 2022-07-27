@@ -923,8 +923,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 39)
+  service_cidr                = cidrsubnet("172.17.0.0/16", 4, 1)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"
@@ -1004,7 +1004,7 @@ resource "alicloud_db_instance" "default" {
   engine           = data.alicloud_db_instances.default.instances.0.engine
   engine_version   = data.alicloud_db_instances.default.instances.0.engine_version
   instance_type    = data.alicloud_db_instances.default.instances.0.instance_type
-  instance_storage = "10"
+  instance_storage = "40"
   vswitch_id       = local.vswitch_id
   instance_name    = var.name
 }
@@ -1019,8 +1019,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 38)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 9)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"
@@ -1100,8 +1100,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 40)
+  service_cidr                = cidrsubnet("172.17.0.0/16", 4, 2)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"

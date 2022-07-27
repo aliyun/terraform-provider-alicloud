@@ -143,8 +143,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
-  pod_cidr                    = "10.99.0.0/16"
-  service_cidr                = "172.16.0.0/16"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 35)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 6)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"

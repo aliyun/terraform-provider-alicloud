@@ -1144,7 +1144,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	slbId, err := getApiServerSlbID(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterResources", AlibabaCloudSdkGoERROR)
+		log.Printf(DefaultErrorMsg, d.Id(), "DescribeClusterResources", err.Error())
 	}
 	d.Set("slb_id", slbId)
 

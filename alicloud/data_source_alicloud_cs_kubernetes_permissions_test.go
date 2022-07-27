@@ -83,8 +83,8 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   deletion_protection          = false
   node_port_range              = "30000-32767"
   password                     = "Hello1234"
-  pod_cidr                     = "10.99.0.0/16"
-  service_cidr                 = "172.16.0.0/16"
+  pod_cidr                     = cidrsubnet("10.0.0.0/8", 8, 34)
+  service_cidr                 = cidrsubnet("172.16.0.0/16", 4, 5)
   worker_vswitch_ids           = [local.vswitch_id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   depends_on                   = ["alicloud_ram_user_policy_attachment.attach"]
