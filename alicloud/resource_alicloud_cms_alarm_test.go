@@ -238,6 +238,39 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsAlarm_prometheus(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.prometheus"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarm%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarmPrometheus(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.prometheus", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "name", "tf-testAccCmsAlarm_prometheus"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "prometheus.#", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
+			},
+		},
+	})
+}
+
 func testAccCheckCmsAlarmExists(n string, d map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		alarm, ok := s.RootModule().Resources[n]
@@ -512,6 +545,34 @@ func testAccCmsAlarm_disable(name string) string {
 	  effective_interval = "06:00-20:00"
 	  enabled            = false
 	  webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
+	}
+	`, name)
+}
+
+func testAccCmsAlarmPrometheus(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+	
+	resource "alicloud_cms_alarm" "prometheus" {
+	  name               = "tf-testAccCmsAlarm_prometheus"
+	  project            = "acs_prometheus"
+	  metric             = "tf-test-1"
+	  period             = 90
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  prometheus {
+		prom_ql = "cpuUsage{instanceId=\"xxxx\"}[1m]>90"
+		level = "Critical"
+		times = 3
+		annotations = {
+			 summary = "value"
+		}
+	  }
 	}
 	`, name)
 }

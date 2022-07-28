@@ -247,6 +247,33 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"prometheus": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"prom_ql": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Critical", "Warn", "Info"}, false),
+						},
+						"times": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"annotations": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem:     schema.TypeString,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -342,6 +369,40 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 				dimensionList[k] = fmt.Sprint(dimensionListValue.(string), ",", v.(string))
 			} else {
 				dimensionList[k] = v
+			}
+		}
+	}
+
+	if v, ok := alarm["Prometheus"]; ok {
+		if prometheus, ok := v.(map[string]interface{}); ok && len(prometheus) > 0 {
+
+			prometheusList := make([]map[string]interface{}, 0)
+			mapping := map[string]interface{}{
+				"prom_ql": prometheus["PromQL"],
+			}
+
+			if v, ok := prometheus["Level"]; ok {
+				mapping["level"] = convertCmsPrometheusLevelResponse(v.(string))
+			}
+			if v, ok := prometheus["Times"]; ok {
+				mapping["times"] = v
+			}
+			annotationsMap := make(map[string]interface{}, 0)
+			if v, ok := prometheus["Annotations"]; ok {
+				annotations := v.(map[string]interface{})
+				if v, ok := annotations["Annotations"]; ok && len(v.([]interface{})) > 0 {
+					for _, item := range v.([]interface{}) {
+						itemArg := item.(map[string]interface{})
+						annotationsMap[itemArg["Key"].(string)] = itemArg["Value"]
+					}
+				}
+			}
+			mapping["annotations"] = annotationsMap
+
+			prometheusList = append(prometheusList, mapping)
+			err = d.Set("prometheus", prometheusList)
+			if err != nil {
+				panic(err)
 			}
 		}
 	}
@@ -455,6 +516,31 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("metric_dimensions"); ok && v.(string) != "" {
 		request["Resources"] = v.(string)
+	}
+
+	if _, ok := request["Resources"]; !ok && d.Get("project").(string) != "acs_prometheus" {
+		return WrapError(fmt.Errorf("[ERROR] one of `dimensions,metric_dimensions` must be specified, When The project is not `acs_prometheus`"))
+	}
+
+	if v, ok := d.GetOk("prometheus"); ok && len(v.(*schema.Set).List()) > 0 {
+		prometheus := v.(*schema.Set).List()[0]
+
+		prometheusMap := make(map[string]interface{}, 0)
+		prometheusArg := prometheus.(map[string]interface{})
+		prometheusMap["PromQL"] = prometheusArg["prom_ql"]
+		prometheusMap["Level"] = prometheusArg["level"]
+		prometheusMap["Times"] = prometheusArg["times"]
+		if vv, ok := prometheusArg["annotations"]; ok {
+			tags := make([]map[string]interface{}, 0)
+			for key, value := range vv.(map[string]interface{}) {
+				tags = append(tags, map[string]interface{}{
+					"Key":   key,
+					"Value": value,
+				})
+			}
+			prometheusMap["Annotations"] = tags
+		}
+		request["Prometheus"], _ = convertMaptoJsonString(prometheusMap)
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -603,4 +689,16 @@ func convertOperator(operator string) string {
 	default:
 		return ""
 	}
+}
+
+func convertCmsPrometheusLevelResponse(source interface{}) interface{} {
+	switch source {
+	case "2":
+		return "Critical"
+	case "3":
+		return "Warn"
+	case "4":
+		return "Info"
+	}
+	return source
 }
