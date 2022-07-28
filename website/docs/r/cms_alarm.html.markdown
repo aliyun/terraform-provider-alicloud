@@ -12,6 +12,10 @@ description: |-
 This resource provides a alarm rule resource and it can be used to monitor several cloud services according different metrics.
 Details for [alarm rule](https://www.alibabacloud.com/help/doc-detail/28608.htm).
 
+-> **NOTE:** One of `dimensions,metric_dimensions` must be specified, When The `project` is not `acs_prometheus`.
+
+-> **NOTE:** The `dimensions` and `metric_dimensions` must be empty, When The `project` is `acs_prometheus`.
+
 ## Example Usage
 
 Basic Usage
@@ -59,6 +63,7 @@ The following arguments are supported:
 * `enabled` - (Optional) Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
 * `metric_dimensions` - (Optional, Computed, Available in 1.174.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+* `prometheus` - (Optional, ForceNew, Available in 1.179.0+) The Prometheus alert rule. See the following `Block prometheus`. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
 
@@ -88,6 +93,16 @@ The escalations_info supports the following:
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
+
+#### Block prometheus
+
+The prometheus supports the following:
+
+* `prom_ql` - The PromQL query statement. **Note:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
+* `level` - The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `times` - The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
+* `annotations` - The annotations of the Prometheus alert rule. When a Prometheus alert is triggered, the system renders the annotated keys and values to help you understand the metrics and alert rule.
+
 
 ## Attributes Reference
 
