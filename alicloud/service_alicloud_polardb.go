@@ -1453,3 +1453,23 @@ func convertPolarDBIpsSetToString(sourceIps string) []string {
 	}
 	return ips
 }
+
+func (s *PolarDBService) PolarDBClusterCategoryRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBClusterAttribute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Category == failState {
+				return object, object.Category, WrapError(Error(FailedToReachTargetStatus, object.Category))
+			}
+		}
+		return object, object.Category, nil
+	}
+}

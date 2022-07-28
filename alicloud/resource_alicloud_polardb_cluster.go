@@ -57,8 +57,8 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"db_node_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(2, 16),
-				Default:      2,
+				ValidateFunc: validation.IntBetween(1, 16),
+				Computed:     true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -213,6 +213,31 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
+			"creation_category": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
+			"creation_option": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby"}, false),
+				Optional:     true,
+				Computed:     true,
+			},
+			"source_resource_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"gdn_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"clone_data_point": {
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
+				Optional:     true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -240,6 +265,12 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		if _, err := categoryConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	return resourceAlicloudPolarDBClusterUpdate(d, meta)
 }
@@ -376,68 +407,69 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("security_ips")
 	}
 
-	if d.HasChange("db_node_count") {
-		cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		currentDbNodeCount := len(cluster.DBNodes.DBNode)
-		expectDbNodeCount := d.Get("db_node_count").(int)
-		if expectDbNodeCount > currentDbNodeCount {
-			//create node
-			expandDbNodes := &[]polardb.CreateDBNodesDBNode{
-				{
-					TargetClass: cluster.DBNodeClass,
-				},
-			}
-			request := polardb.CreateCreateDBNodesRequest()
-			request.RegionId = client.RegionId
-			request.DBClusterId = d.Id()
-			request.DBNode = expandDbNodes
-			if v, ok := d.GetOk("imci_switch"); ok && v.(string) != "" {
-				request.ImciSwitch = v.(string)
-			}
-			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-				return polarDBClient.CreateDBNodes(request)
-			})
-
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
+		if d.HasChange("db_node_count") {
+			cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
 			if err != nil {
-				return WrapErrorf(
-					err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				return WrapError(err)
 			}
-			response, _ := raw.(*polardb.CreateDBNodesResponse)
-			// wait cluster status change from DBNodeCreating to running
-			stateConf := BuildStateConf([]string{"DBNodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(response.DBClusterId, []string{"Deleting"}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, response.DBClusterId)
-			}
-		} else {
-			//delete node
-			deleteDbNodeId := ""
-			for _, dbNode := range cluster.DBNodes.DBNode {
-				if dbNode.DBNodeRole == "Reader" {
-					deleteDbNodeId = dbNode.DBNodeId
+			currentDbNodeCount := len(cluster.DBNodes.DBNode)
+			expectDbNodeCount := d.Get("db_node_count").(int)
+			if expectDbNodeCount > currentDbNodeCount {
+				//create node
+				expandDbNodes := &[]polardb.CreateDBNodesDBNode{
+					{
+						TargetClass: cluster.DBNodeClass,
+					},
+				}
+				request := polardb.CreateCreateDBNodesRequest()
+				request.RegionId = client.RegionId
+				request.DBClusterId = d.Id()
+				request.DBNode = expandDbNodes
+				if v, ok := d.GetOk("imci_switch"); ok && v.(string) != "" {
+					request.ImciSwitch = v.(string)
+				}
+				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.CreateDBNodes(request)
+				})
+
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				if err != nil {
+					return WrapErrorf(
+						err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				response, _ := raw.(*polardb.CreateDBNodesResponse)
+				// wait cluster status change from DBNodeCreating to running
+				stateConf := BuildStateConf([]string{"DBNodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(response.DBClusterId, []string{"Deleting"}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, response.DBClusterId)
+				}
+			} else {
+				//delete node
+				deleteDbNodeId := ""
+				for _, dbNode := range cluster.DBNodes.DBNode {
+					if dbNode.DBNodeRole == "Reader" {
+						deleteDbNodeId = dbNode.DBNodeId
+					}
+				}
+				request := polardb.CreateDeleteDBNodesRequest()
+				request.RegionId = client.RegionId
+				request.DBClusterId = d.Id()
+				request.DBNodeId = &[]string{
+					deleteDbNodeId,
+				}
+
+				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.DeleteDBNodes(request)
+				})
+
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				stateConf := BuildStateConf([]string{"DBNodeDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+				if _, err = stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			request := polardb.CreateDeleteDBNodesRequest()
-			request.RegionId = client.RegionId
-			request.DBClusterId = d.Id()
-			request.DBNodeId = &[]string{
-				deleteDbNodeId,
-			}
-
-			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-				return polarDBClient.DeleteDBNodes(request)
-			})
-
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			stateConf := BuildStateConf([]string{"DBNodeDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
-			if _, err = stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
 		}
-
 	}
 
 	if d.HasChange("collector_status") {
@@ -520,33 +552,35 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		return resourceAlicloudPolarDBClusterRead(d, meta)
 	}
 
-	if d.HasChange("db_node_class") {
-		request := polardb.CreateModifyDBNodeClassRequest()
-		request.RegionId = client.RegionId
-		request.DBClusterId = d.Id()
-		request.ModifyType = d.Get("modify_type").(string)
-		request.DBNodeTargetClass = d.Get("db_node_class").(string)
-		if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
-			request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
-		}
-		//wait asynchronously cluster nodes num the same
-		if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
-			return WrapError(err)
-		}
+	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
+		if d.HasChange("db_node_class") {
+			request := polardb.CreateModifyDBNodeClassRequest()
+			request.RegionId = client.RegionId
+			request.DBClusterId = d.Id()
+			request.ModifyType = d.Get("modify_type").(string)
+			request.DBNodeTargetClass = d.Get("db_node_class").(string)
+			if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
+				request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
+			}
+			//wait asynchronously cluster nodes num the same
+			if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
+				return WrapError(err)
+			}
 
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.ModifyDBNodeClass(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.ModifyDBNodeClass(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			// wait cluster status change from Creating to running
+			stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("db_node_class")
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		// wait cluster status change from Creating to running
-		stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("db_node_class")
 	}
 
 	if d.HasChange("description") {
@@ -669,6 +703,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
 	d.Set("deletion_lock", clusterAttribute.DeletionLock)
+	d.Set("creation_category", clusterAttribute.Category)
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -786,6 +821,48 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	request.DBNodeClass = d.Get("db_node_class").(string)
 	request.DBClusterDescription = d.Get("description").(string)
 	request.ClientToken = buildClientToken(request.GetActionName())
+	request.CreationCategory = d.Get("creation_category").(string)
+	request.CloneDataPoint = d.Get("clone_data_point").(string)
+
+	v, exist := d.GetOk("creation_option")
+	db, ok := d.GetOk("db_type")
+	dbv, dbvok := d.GetOk("db_version")
+
+	if exist && v.(string) == "CloneFromPolarDB" {
+		request.SourceResourceId = d.Get("source_resource_id").(string)
+		request.CreationOption = d.Get("creation_option").(string)
+	}
+
+	if exist && v.(string) == "CloneFromRDS" {
+		request.CloneDataPoint = "LATEST"
+	}
+
+	if exist && v.(string) == "CreateGdnStandby" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && dbv.(string) == "8.0" {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.GDNId = d.Get("gdn_id").(string)
+			}
+		}
+	}
+
+	if exist && v.(string) == "CloneFromRDS" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.SourceResourceId = d.Get("source_resource_id").(string)
+			}
+		}
+	}
+
+	if exist && v.(string) == "MigrationFromRDS" {
+		if ok && db.(string) == "MySQL" {
+			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
+				request.CreationOption = d.Get("creation_option").(string)
+				request.SourceResourceId = d.Get("source_resource_id").(string)
+			}
+		}
+	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request.ResourceGroupId = v.(string)
