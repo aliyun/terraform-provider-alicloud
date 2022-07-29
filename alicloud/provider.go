@@ -1330,6 +1330,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_hybrid_monitor_sls_task":                          resourceAlicloudCmsHybridMonitorSlsTask(),
 			"alicloud_hbr_hana_backup_plan":                                 resourceAlicloudHbrHanaBackupPlan(),
 			"alicloud_cms_hybrid_monitor_fc_task":                           resourceAlicloudCmsHybridMonitorFcTask(),
+			"alicloud_fc_layer_version":                                     resourceAlicloudFcLayerVersion(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -4328,3 +4328,34 @@ func (client *AliyunClient) NewDysmsClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
+func (client *AliyunClient) NewFcClient() (*roa.Client, error) {
+	productCode := "fc"
+	endpoint := ""
+	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("%s.fc.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints[productCode] = endpoint
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	accountId, err := client.AccountId()
+	if err != nil {
+		return nil, err
+	}
+
+	sdkConfig := client.teaRoaSdkConfig
+	sdkConfig.SetEndpoint(fmt.Sprintf("%s.%s", accountId, endpoint))
+	conn, err := roa.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
