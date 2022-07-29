@@ -176,8 +176,6 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deckarep/golang-set v1.8.0 h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=
 github.com/deckarep/golang-set v1.8.0/go.mod h1:5nI87KwE7wgsBU1F4GKAw2Qod7p5kyS383rP6+o6qqo=
-github.com/denverdino/aliyungo v0.0.0-20220610083100-ab5f747cb559 h1:DUSQLfEOG+8LbQ4tmN8CpM+TEsWa9CnjGlISAWQm4zM=
-github.com/denverdino/aliyungo v0.0.0-20220610083100-ab5f747cb559/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
 github.com/denverdino/aliyungo v0.0.0-20220714084452-7034e8b75db5 h1:45KtZQQezT7rQMMtci28Lsg0CQj5YgXGZiA7Ue0iTdQ=
 github.com/denverdino/aliyungo v0.0.0-20220714084452-7034e8b75db5/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
