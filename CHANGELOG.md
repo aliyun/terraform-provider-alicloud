@@ -1,4 +1,27 @@
 ## 1.179.0 (Unreleased)
+
+- **New Resource:** `alicloud_cms_hybrid_monitor_sls_task` [GH-5221]
+- **New Resource:** `alicloud_hbr_hana_backup_plan` [GH-5244]
+- **New Resource:** `alicloud_cms_hybrid_monitor_fc_task` [GH-5240]
+- **New Data Source:** `alicloud_cms_hybrid_monitor_fc_tasks` [GH-5240]
+- **New Data Source:** `alicloud_hbr_hana_backup_plans` [GH-5244]	
+- **New Data Source:** `alicloud_cms_hybrid_monitor_sls_tasks` [GH-5221]
+
+ENHANCEMENTS:
+
+- resource/alicloud_api_gateway_group: Added the field instance_id [GH-5214]
+- resource/resource_alicloud_log_store: support metric store [GH-5233]
+- resource/alicloud_alikafka_instance_allowed_ip_attachment: Added internet to the allowed_type and added "9093/9093" to the port_range. [GH-5235]
+- resource/alicloud_polardb_cluster: Adds new attribute creation_category and creation_option [GH-5243]
+- resource/alicloud_alb_rule: support for server_group_sticky_session [GH-5239]
+- testcase: Adds new unit test case for resource alicloud_privatelink_vpc_endpoint_zone alicloud_kms_secret alicloud_mse_cluster [GH-5234]
+- docs/alicloud_cms_hybrid_monitor_datas: Optimize document format. [GH-5215]
+- docs/alicloud_ecs_activation: Optimize document format. [GH-5223]
+
+BUG FIXES:
+
+- testcase: fix ci error for resource/alicloud_cs_managed_kubernetes [GH-5241]
+
 ## 1.178.0 (July 27, 2022)
 
 - **New Resource:** `alicloud_cloud_firewall_address_book` ([#5186](https://github.com/aliyun/terraform-provider-alicloud/issues/5186))
