@@ -1,26 +1,29 @@
-## 1.179.0 (Unreleased)
+## 1.180.0 (Unreleased)
+## 1.179.0 (July 31, 2022)
 
-- **New Resource:** `alicloud_cms_hybrid_monitor_sls_task` [GH-5221]
-- **New Resource:** `alicloud_hbr_hana_backup_plan` [GH-5244]
-- **New Resource:** `alicloud_cms_hybrid_monitor_fc_task` [GH-5240]
-- **New Data Source:** `alicloud_cms_hybrid_monitor_fc_tasks` [GH-5240]
-- **New Data Source:** `alicloud_hbr_hana_backup_plans` [GH-5244]	
-- **New Data Source:** `alicloud_cms_hybrid_monitor_sls_tasks` [GH-5221]
+- **New Resource:** `alicloud_cms_hybrid_monitor_sls_task` ([#5221](https://github.com/aliyun/terraform-provider-alicloud/issues/5221))
+- **New Resource:** `alicloud_hbr_hana_backup_plan` ([#5244](https://github.com/aliyun/terraform-provider-alicloud/issues/5244))
+- **New Resource:** `alicloud_cms_hybrid_monitor_fc_task` ([#5240](https://github.com/aliyun/terraform-provider-alicloud/issues/5240))
+- **New Data Source:** `alicloud_cms_hybrid_monitor_fc_tasks` ([#5240](https://github.com/aliyun/terraform-provider-alicloud/issues/5240))
+- **New Data Source:** `alicloud_hbr_hana_backup_plans` ([#5244](https://github.com/aliyun/terraform-provider-alicloud/issues/5244))	
+- **New Data Source:** `alicloud_cms_hybrid_monitor_sls_tasks` ([#5221](https://github.com/aliyun/terraform-provider-alicloud/issues/5221))
 
 ENHANCEMENTS:
 
-- resource/alicloud_api_gateway_group: Added the field instance_id [GH-5214]
-- resource/resource_alicloud_log_store: support metric store [GH-5233]
-- resource/alicloud_alikafka_instance_allowed_ip_attachment: Added internet to the allowed_type and added "9093/9093" to the port_range. [GH-5235]
-- resource/alicloud_polardb_cluster: Adds new attribute creation_category and creation_option [GH-5243]
-- resource/alicloud_alb_rule: support for server_group_sticky_session [GH-5239]
-- testcase: Adds new unit test case for resource alicloud_privatelink_vpc_endpoint_zone alicloud_kms_secret alicloud_mse_cluster [GH-5234]
-- docs/alicloud_cms_hybrid_monitor_datas: Optimize document format. [GH-5215]
-- docs/alicloud_ecs_activation: Optimize document format. [GH-5223]
+- resource/alicloud_cms_alarm: Removes the useless error and improves its docs ([#5248](https://github.com/aliyun/terraform-provider-alicloud/issues/5248))
+- resource_alicloud_cms_alarm: Adds new attribute prometheus ([#5246](https://github.com/aliyun/terraform-provider-alicloud/issues/5246))
+- resource/alicloud_api_gateway_group: Added the field instance_id ([#5214](https://github.com/aliyun/terraform-provider-alicloud/issues/5214))
+- resource/resource_alicloud_log_store: support metric store ([#5233](https://github.com/aliyun/terraform-provider-alicloud/issues/5233))
+- resource/alicloud_alikafka_instance_allowed_ip_attachment: Added internet to the allowed_type and added "9093/9093" to the port_range. ([#5235](https://github.com/aliyun/terraform-provider-alicloud/issues/5235))
+- resource/alicloud_polardb_cluster: Adds new attribute creation_category and creation_option ([#5243](https://github.com/aliyun/terraform-provider-alicloud/issues/5243))
+- resource/alicloud_alb_rule: support for server_group_sticky_session ([#5239](https://github.com/aliyun/terraform-provider-alicloud/issues/5239))
+- testcase: Adds new unit test case for resource alicloud_privatelink_vpc_endpoint_zone alicloud_kms_secret alicloud_mse_cluster ([#5234](https://github.com/aliyun/terraform-provider-alicloud/issues/5234))
+- docs/alicloud_cms_hybrid_monitor_datas: Optimize document format. ([#5215](https://github.com/aliyun/terraform-provider-alicloud/issues/5215))
+- docs/alicloud_ecs_activation: Optimize document format. ([#5223](https://github.com/aliyun/terraform-provider-alicloud/issues/5223))
 
 BUG FIXES:
 
-- testcase: fix ci error for resource/alicloud_cs_managed_kubernetes [GH-5241]
+- testcase: fix ci error for resource/alicloud_cs_managed_kubernetes ([#5241](https://github.com/aliyun/terraform-provider-alicloud/issues/5241))
 
 ## 1.178.0 (July 27, 2022)
 
