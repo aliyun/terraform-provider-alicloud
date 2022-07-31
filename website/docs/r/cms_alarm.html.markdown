@@ -12,10 +12,6 @@ description: |-
 This resource provides a alarm rule resource and it can be used to monitor several cloud services according different metrics.
 Details for [alarm rule](https://www.alibabacloud.com/help/doc-detail/28608.htm).
 
--> **NOTE:** One of `dimensions,metric_dimensions` must be specified, When The `project` is not `acs_prometheus`.
-
--> **NOTE:** The `dimensions` and `metric_dimensions` must be empty, When The `project` is `acs_prometheus`.
-
 ## Example Usage
 
 Basic Usage
@@ -44,6 +40,7 @@ The following arguments are supported:
 
 * `name` - (Required) The alarm rule name.
 * `project` - (Required, ForceNew) Monitor project name, such as "acs_ecs_dashboard" and "acs_rds_dashboard". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+  **NOTE:** The `dimensions` and `metric_dimensions` must be empty when `project` is `acs_prometheus`, otherwise, one of them must be set.
 * `metric` - (Required, ForceNew) Name of the monitoring metrics corresponding to a project, such as "CPUUtilization" and "networkin_rate". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `dimensions` - (Optional, Computed, Deprecated from 1.173.0+) Field `dimensions` has been deprecated from version 1.95.0. Use `metric_dimensions` instead.
 * `period` - (Optional) Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
