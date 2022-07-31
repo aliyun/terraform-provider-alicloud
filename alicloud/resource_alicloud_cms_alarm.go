@@ -518,10 +518,6 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request["Resources"] = v.(string)
 	}
 
-	if _, ok := request["Resources"]; !ok && d.Get("project").(string) != "acs_prometheus" {
-		return WrapError(fmt.Errorf("[ERROR] one of `dimensions,metric_dimensions` must be specified, When The project is not `acs_prometheus`"))
-	}
-
 	if v, ok := d.GetOk("prometheus"); ok && len(v.(*schema.Set).List()) > 0 {
 		prometheus := v.(*schema.Set).List()[0]
 
