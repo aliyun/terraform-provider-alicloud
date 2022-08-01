@@ -108,11 +108,6 @@ locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
-resource "alicloud_log_project" "log" {
-  name        = "${var.name}-managed-sls"
-  description = "created by terraform for managedkubernetes cluster"
-}
-
 resource "alicloud_cs_managed_kubernetes" "default" {
   name_prefix                 = "${var.name}"
   count                       = 1

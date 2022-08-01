@@ -142,7 +142,6 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-	count             = 1
 	vpc_id            = alicloud_vpc.default.id
 	cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
 	zone_id           = data.alicloud_eci_zones.default.zones.0.zone_ids.0
