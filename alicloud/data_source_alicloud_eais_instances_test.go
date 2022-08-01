@@ -53,7 +53,7 @@ func TestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"ids":    []string{"${alicloud_eais_instance.default.id}_fake"},
-			"status": "Unavailable",
+			"status": "Available",
 		}),
 	}
 
@@ -66,8 +66,8 @@ func TestAccAlicloudEaisInstancesDataSource(t *testing.T) {
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"name_regex":    "${alicloud_eais_instance.default.instance_name}",
-			"ids":           []string{"${alicloud_eais_instance.default.id}"},
-			"status":        "Unavailable",
+			"ids":           []string{"${alicloud_eais_instance.default.id}_fake"},
+			"status":        "Available",
 			"instance_type": "eais.ei-a6.2xlarge",
 		}),
 	}
