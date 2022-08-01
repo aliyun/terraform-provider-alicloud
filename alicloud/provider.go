@@ -754,6 +754,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_cluster_credential":                        dataSourceAlicloudCSClusterCredential(),
 			"alicloud_api_gateway_plugins":                          dataSourceAlicloudApiGatewayPlugins(),
 			"alicloud_message_service_queues":                       dataSourceAlicloudMessageServiceQueues(),
+			"alicloud_message_service_topics":                       dataSourceAlicloudMessageServiceTopics(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1401,6 +1402,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_grant_attachment":                  resourceAlicloudCenTransitRouterGrantAttachment(),
 			"alicloud_api_gateway_plugin":                                   resourceAlicloudApiGatewayPlugin(),
 			"alicloud_message_service_queue":                                resourceAlicloudMessageServiceQueue(),
+			"alicloud_message_service_topic":                                resourceAlicloudMessageServiceTopic(),
 		},
 
 		ConfigureFunc: providerConfigure,
