@@ -542,7 +542,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKubernetes-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence_essd)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -707,6 +707,73 @@ data "alicloud_instance_types" "default1" {
   availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
   cpu_core_count       = 4
   memory_size          = 8
+  kubernetes_node_role = "Worker"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+	
+resource "alicloud_db_instance" "default" {
+  engine               = "MySQL"
+  engine_version       = "5.6"
+  instance_type        = "rds.mysql.s2.large"
+  instance_storage     = "30"
+  instance_charge_type = "Postpaid"
+  instance_name        = "tf-testacckubernetes"
+  vswitch_id           = local.vswitch_id
+  monitoring_period    = "60"
+}
+
+resource "alicloud_snapshot_policy" "default" {
+  name            = "${var.name}"
+  repeat_weekdays = ["1", "2", "3"]
+  retention_days  = -1
+  time_points     = ["1", "22", "23"]
+}
+	`, name)
+}
+
+func resourceCSKubernetesConfigDependence_essd(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
+  kubernetes_node_role = "Master"
+}
+
+data "alicloud_instance_types" "default1" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
   kubernetes_node_role = "Worker"
 }
 

@@ -170,7 +170,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
 					"vswitch_ids":           []string{"${local.vswitch_id}"},
-					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}"},
 					"node_count":            "1",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
 					"system_disk_category":  "cloud_efficiency",
@@ -191,7 +191,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 						"name":                         name,
 						"cluster_id":                   CHECKSET,
 						"vswitch_ids.#":                "1",
-						"instance_types.#":             "1",
+						"instance_types.#":             "2",
 						"node_count":                   "1",
 						"key_name":                     CHECKSET,
 						"system_disk_category":         "cloud_efficiency",
@@ -350,13 +350,11 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 			// check: update config
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"platform":       "AliyunLinux",
 					"scaling_policy": "release",
 					"scaling_config": []map[string]string{{"min_size": "1", "max_size": "20", "type": "cpu", "is_bond_eip": "true", "eip_internet_charge_type": "PayByBandwidth", "eip_bandwidth": "5"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"platform":                                  "AliyunLinux",
 						"scaling_policy":                            "release",
 						"scaling_config.#":                          "1",
 						"scaling_config.0.min_size":                 "1",
@@ -753,11 +751,11 @@ func TestAccAlicloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 			// check: remove nodes
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"desired_size": "1",
+					"desired_size": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"desired_size": "1",
+						"desired_size": "0",
 					}),
 				),
 			},
