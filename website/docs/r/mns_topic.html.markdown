@@ -40,6 +40,16 @@ The following attributes are exported:
 
 * `id` - The ID of the topic is equal to name.
 
+#### Timeouts
+
+-> **NOTE:** Available in 1.180.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when create the mns topic.
+* `update` - (Defaults to 30 mins) Used when update the mns topic.
+* `delete` - (Defaults to 30 mins) Used when delete the mns topic.
+
 ## Import
 
 MNS Topic can be imported using the id or name, e.g.

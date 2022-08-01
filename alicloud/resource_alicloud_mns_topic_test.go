@@ -77,13 +77,13 @@ func testSweepMnsTopics(region string) error {
 }
 
 func TestAccAlicloudMnsTopic_basic(t *testing.T) {
-	var v *ali_mns.TopicAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_topic.default"
 	ra := resourceAttrInit(resourceId, mnsTopicMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceTopic")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
@@ -150,13 +150,13 @@ func TestAccAlicloudMnsTopic_basic(t *testing.T) {
 }
 
 func TestAccAlicloudMnsTopic_multi(t *testing.T) {
-	var v *ali_mns.TopicAttribute
+	var v map[string]interface{}
 	resourceId := "alicloud_mns_topic.default.4"
 	ra := resourceAttrInit(resourceId, mnsTopicMap)
 	serviceFunc := func() interface{} {
 		return &MnsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeMessageServiceTopic")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
