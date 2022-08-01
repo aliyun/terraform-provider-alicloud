@@ -262,6 +262,14 @@ func TestAccAlicloudCmsAlarm_prometheus(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccCmsAlarmPrometheusUpdate(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.prometheus", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "name", "tf-testAccCmsAlarm_prometheus"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "prometheus.#", "1"),
+				),
+			},
+			{
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -571,6 +579,40 @@ func testAccCmsAlarmPrometheus(name string) string {
 		times = 3
 		annotations = {
 			 summary = "value"
+		}
+	  }
+	}
+	`, name)
+}
+
+func testAccCmsAlarmPrometheusUpdate(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+
+	resource "alicloud_cms_namespace" "default" {
+		description   = var.name
+		namespace     = "tf-testacc-cloudmonitorservicenamespace"
+		specification = "cms.s1.large"
+	}
+	
+	resource "alicloud_cms_alarm" "prometheus" {
+	  name               = "tf-testAccCmsAlarm_prometheus"
+	  project            = "acs_prometheus"
+	  metric             = alicloud_cms_namespace.default.id
+	  period             = 90
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  prometheus {
+		prom_ql = "cpuUsage{instanceId=\"xxxx\"}[1m]>80"
+		level = "Info"
+		times = 4
+		annotations = {
+			 summary = "value1"
 		}
 	  }
 	}
