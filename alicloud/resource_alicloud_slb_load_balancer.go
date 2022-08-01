@@ -265,6 +265,8 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		request["LoadBalancerSpec"] = v
 	} else if v, ok := d.GetOk("specification"); ok {
 		request["LoadBalancerSpec"] = v
+	} else {
+		request["InstanceChargeType"] = "PayByCLCU"
 	}
 
 	if v, ok := d.GetOk("master_zone_id"); ok {
