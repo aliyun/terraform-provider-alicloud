@@ -61,6 +61,7 @@ The following arguments are supported:
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
 * `metric_dimensions` - (Optional, Computed, Available in 1.174.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `prometheus` - (Optional, Available in 1.179.0+) The Prometheus alert rule. See the following `Block prometheus`. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
+* `tags` - (Optional, Available in 1.180.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
 

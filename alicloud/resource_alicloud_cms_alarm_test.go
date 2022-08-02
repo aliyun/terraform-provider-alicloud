@@ -279,6 +279,41 @@ func TestAccAlicloudCmsAlarm_prometheus(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsAlarm_tags(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.tags"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarm%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarmTags(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.tags", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "name", "tf-testAccCmsAlarm_tags"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.%", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.Created", "TF"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.For", "Acceptance-test"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
+			},
+		},
+	})
+}
+
 func testAccCheckCmsAlarmExists(n string, d map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		alarm, ok := s.RootModule().Resources[n]
@@ -614,6 +649,50 @@ func testAccCmsAlarmPrometheusUpdate(name string) string {
 		annotations = {
 			 summary = "value1"
 		}
+	  }
+	}
+	`, name)
+}
+
+func testAccCmsAlarmTags(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+	
+	resource "alicloud_cms_alarm" "tags" {
+	  name               = "tf-testAccCmsAlarm_tags"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
+	  escalations_critical {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_warn {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_info {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+      tags = {
+		Created = "TF"
+		For 	= "Acceptance-test"
 	  }
 	}
 	`, name)

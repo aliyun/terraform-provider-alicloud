@@ -225,20 +225,17 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Default:      86400,
 				ValidateFunc: validation.IntBetween(300, 86400),
 			},
-
 			"notify_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 				Removed:      "Field 'notify_type' has been removed from provider version 1.50.0.",
 			},
-
 			"enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
 			},
-
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -273,6 +270,7 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 					},
 				},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -353,6 +351,9 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("enabled", alarm["EnableState"])
 	d.Set("webhook", alarm["Webhook"])
 	d.Set("contact_groups", strings.Split(alarm["ContactGroups"].(string), ","))
+	if tags, ok := alarm["Labels"]; ok {
+		d.Set("tags", tagsToMap(tags.(map[string]interface{})["Labels"]))
+	}
 
 	dims := make([]map[string]interface{}, 0)
 	if fmt.Sprint(alarm["Resources"]) != "" {
@@ -489,6 +490,17 @@ func resourceAlicloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if webhook, ok := d.GetOk("webhook"); ok && webhook.(string) != "" {
 		request["Webhook"] = webhook.(string)
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		request["Labels"] = tags
 	}
 
 	var dimList []map[string]string
