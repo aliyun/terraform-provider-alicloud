@@ -22,10 +22,10 @@ func TestAccAlicloudHbrHanaInstancesDataSource(t *testing.T) {
 	}
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudHbrHanaInstancesDataSourceName(rand, map[string]string{
-			"name_regex": `["${alicloud_hbr_hana_instance.default.hana_name}"]`,
+			"name_regex": `"${alicloud_hbr_hana_instance.default.hana_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrHanaInstancesDataSourceName(rand, map[string]string{
-			"name_regex": `["${alicloud_hbr_hana_instance.default.hana_name}_fake"]`,
+			"name_regex": `"${alicloud_hbr_hana_instance.default.hana_name}_fake"`,
 		}),
 	}
 	vaultIdConf := dataSourceTestAccConfig{
@@ -53,13 +53,13 @@ func TestAccAlicloudHbrHanaInstancesDataSource(t *testing.T) {
 			"ids":        `["${alicloud_hbr_hana_instance.default.id}"]`,
 			"status":     `"${alicloud_hbr_hana_instance.default.status}"`,
 			"vault_id":   `"${alicloud_hbr_hana_instance.default.vault_id}"`,
-			"name_regex": `["${alicloud_hbr_hana_instance.default.hana_name}"]`,
+			"name_regex": `"${alicloud_hbr_hana_instance.default.hana_name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudHbrHanaInstancesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_hbr_hana_instance.default.id}_fake"]`,
 			"status":     `"INVALID_HANA_NODE"`,
 			"vault_id":   `"${alicloud_hbr_hana_instance.default.vault_id}_fake"`,
-			"name_regex": `["${alicloud_hbr_hana_instance.default.hana_name}_fake"]`,
+			"name_regex": `"${alicloud_hbr_hana_instance.default.hana_name}_fake"`,
 		}),
 	}
 	var existAlicloudHbrHanaInstancesDataSourceNameMapFunc = func(rand int) map[string]string {
