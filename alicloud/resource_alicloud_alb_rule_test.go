@@ -162,6 +162,7 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 									"server_group_tuples": []map[string]interface{}{
 										{
 											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
 										},
 									},
 								},
@@ -268,6 +269,7 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 									"server_group_tuples": []map[string]interface{}{
 										{
 											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
 										},
 									},
 								},
@@ -303,6 +305,7 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 									"server_group_tuples": []map[string]interface{}{
 										{
 											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
 										},
 									},
 								},
@@ -568,6 +571,7 @@ func TestAccAlicloudALBRule_basic2(t *testing.T) {
 									"server_group_tuples": []map[string]interface{}{
 										{
 											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
 										},
 									},
 								},
@@ -808,6 +812,7 @@ func TestAccAlicloudALBRule_basic5(t *testing.T) {
 									"server_group_tuples": []map[string]interface{}{
 										{
 											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
 										},
 									},
 								},
