@@ -689,7 +689,7 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					}
 
 					serverGroupStickySessionMaps := make([]map[string]interface{}, 0)
-					if serverGroupStickySessionArg, ok := forwardGroupConfigArg["ServerGroupStickySession"].(map[string]interface{}); ok {
+					if serverGroupStickySessionArg, ok := forwardGroupConfigArg["ServerGroupStickySession"].(map[string]interface{}); ok && len(serverGroupStickySessionArg) > 0 {
 						serverGroupStickySessionMap := map[string]interface{}{}
 						if serverGroupStickySessionArgEnabled, ok := serverGroupStickySessionArg["Enabled"]; ok {
 							serverGroupStickySessionMap["enabled"] = serverGroupStickySessionArgEnabled
