@@ -128,7 +128,6 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 
 		instanceListResp, _ := raw.(*alikafka.GetInstanceListResponse)
 		addDebug(instanceListReq.GetActionName(), raw, instanceListReq.RpcRequest, instanceListReq)
-
 		for _, v := range instanceListResp.InstanceList.InstanceVO {
 			return &v, nil
 		}
@@ -1094,4 +1093,146 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
 	}
 	return object, nil
+}
+
+func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewAlikafkaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetInstanceList"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": []string{id},
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.InstanceList.InstanceVO", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == id && fmt.Sprint(v.(map[string]interface{})["ServiceStatus"]) != "10" {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, timeout int) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewAlikafkaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetInstanceList"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"OrderId":  orderId,
+	}
+
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, orderId, action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+		v, err := jsonpath.Get("$.InstanceList.InstanceVO", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, orderId, "$.InstanceList.InstanceVO", response)
+		}
+		for _, v := range v.([]interface{}) {
+			return v.(map[string]interface{}), nil
+		}
+		if time.Now().After(deadline) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", orderId)), NotFoundMsg, ProviderERROR)
+		}
+	}
+}
+
+func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAliKafkaInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+
+			if fmt.Sprint(object["ServiceStatus"]) == failState {
+				return object, fmt.Sprint(object["ServiceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AclStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["ServiceStatus"]), nil
+	}
+}
+
+func (s *AlikafkaService) WaitForAliKafkaInstanceUpdated(d *schema.ResourceData, paidType string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	for {
+		object, err := s.DescribeAliKafkaInstance(fmt.Sprint(d.Id()))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		// Wait for all variables be equal.
+		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(object["TopicNumLimit"]) == fmt.Sprint(d.Get("topic_quota")) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, fmt.Sprint(d.Id()), GetFunc(1), timeout, fmt.Sprint(object["InstanceId"]), fmt.Sprint(d.Id()), ProviderERROR)
+		}
+		time.Sleep(DefaultIntervalShort * time.Second)
+	}
 }

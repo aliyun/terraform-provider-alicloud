@@ -105,14 +105,13 @@ func testSweepAlikafkaInstance(region string) error {
 }
 
 func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
-
-	var v *alikafka.InstanceVO
+	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
 	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	rand := acctest.RandInt()
@@ -140,11 +139,13 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"io_max":         "20",
 					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
 					"security_group": "${alicloud_security_group.default.id}",
+					"kms_key_id":     "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":           fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
 						"security_group": CHECKSET,
+						"kms_key_id":     CHECKSET,
 					}),
 				),
 			},
@@ -319,13 +320,13 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 }
 
 func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
-	var v *alikafka.InstanceVO
+	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
 	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	rand := acctest.RandInt()
@@ -403,13 +404,13 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 }
 
 func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
-	var v *alikafka.InstanceVO
+	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance.default"
 	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 
 	rand := acctest.RandInt()
@@ -483,18 +484,26 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
- name_regex = "^default-NODELETING"
+	name_regex = "^default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
 }
+
 data "alicloud_security_groups" "default" {
 	name_regex = "^default-NODELETING"
+}
+
+resource "alicloud_kms_key" "key" {
+	description            = var.name
+	pending_window_in_days = "7"
+	status                 = "Enabled"
 }
 `, name)
 }
@@ -513,4 +522,5 @@ var alikafkaInstanceBasicMap = map[string]string{
 	"end_point":       CHECKSET,
 	"service_version": CHECKSET,
 	"config":          CHECKSET,
+	"status":          CHECKSET,
 }
