@@ -69,7 +69,7 @@ The following arguments are supported:
 
 * `dry_run` - (Optional, Computed) Specifies whether to check the validity of the request without actually making the request.
 * `nat_gateway_id` - (Required, ForceNew) The ID of the Virtual Private Cloud (VPC) NAT gateway for which you want to create the NAT IP address.
-* `nat_ip` - (Optional, ForceNew) The NAT IP address that you want to create. If you do not specify an IP address, the system selects a random IP address from the specified CIDR block.
+* `nat_ip` - (Optional, ForceNew, Computed) The NAT IP address that you want to create. If you do not specify an IP address, the system selects a random IP address from the specified CIDR block.
 * `nat_ip_cidr` - (Optional, ForceNew) NAT IP ADDRESS of the address segment.
 * `nat_ip_cidr_id` - (Optional) The ID of the CIDR block to which the NAT IP address belongs.
 * `nat_ip_description` - (Optional) NAT IP ADDRESS description of information. Length is from `2` to `256` characters, must start with a letter or the Chinese at the beginning, but not at the` http://` Or `https://` at the beginning.
@@ -80,6 +80,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Nat Ip. The value formats as `<nat_gateway_id>:<nat_ip_id>`.
+* `nat_ip_id` - Ihe ID of the Nat Ip.
 * `status` - The status of the NAT IP address. Valid values: `Available`, `Deleting`, `Creating` and `Deleted`. 
 
 ### Timeouts
