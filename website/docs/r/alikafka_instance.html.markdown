@@ -75,9 +75,10 @@ The following arguments are supported:
 * `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
-* `security_group` - （Optional, ForceNew, Available in v1.93.0+） The ID of security group for this instance. If the security group is empty, system will create a default one.
-* `service_version` - （Optional, Available in v1.112.0+） The kafka openSource version for this instance. Only 0.10.2 or 2.2.0 is allowed, default is 0.10.2.
-* `config` - （Optional, Available in v1.112.0+） The basic config for this instance. The input should be json type, only the following key allowed: enable.acl, enable.vpc_sasl_ssl, kafka.log.retention.hours, kafka.message.max.bytes.
+* `security_group` - (Optional, ForceNew, Available in v1.93.0+) The ID of security group for this instance. If the security group is empty, system will create a default one.
+* `service_version` - (Optional, Available in v1.112.0+) The kafka openSource version for this instance. Only 0.10.2 or 2.2.0 is allowed, default is 0.10.2.
+* `config` - (Optional, Available in v1.112.0+) The basic config for this instance. The input should be json type, only the following key allowed: enable.acl, enable.vpc_sasl_ssl, kafka.log.retention.hours, kafka.message.max.bytes.
+* `kms_key_id` - (Optional, ForceNew, Available in v1.180.0+) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
@@ -102,6 +103,21 @@ The following attributes are exported:
 * `vpc_id` - The ID of attaching VPC to instance.
 * `zone_id` - The Zone to launch the kafka instance.
 * `end_point` - The EndPoint to access the kafka instance.
+* `status` - The status of the instance. Valid values:
+  - 0: pending
+  - 1: deploying
+  - 5: running
+  - 15: expired  
+  
+#### Timeouts
+
+-> **NOTE:** Available in 1.180.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 120 mins) Used when create the resource.
+* `update` - (Defaults to 30 mins) Used when update the resource.
+* `delete` - (Defaults to 30 mins) Used when delete the resource.
 
 ## Import
 
