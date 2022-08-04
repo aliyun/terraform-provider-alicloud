@@ -176,9 +176,9 @@ jobs:
   - name: All
     plan:
       - <<: *clone-provider
-      - get: trigger
-        trigger: true
-        resource: 00Mon
+#      - get: trigger
+#        trigger: false
+#        resource: 0030Mon
       - aggregate:
           - *get-aliyun-cli
       - <<: *run
@@ -1483,12 +1483,12 @@ resources:
       region_name: {{aliyun_cli_region}}
       endpoint: oss-((aliyun_cli_region)).aliyuncs.com
 
-  - name: 00Mon
-    type: time
-    source:
-      start: 00:00 AM
-      days: [Monday]
-      location: {{time_location}}
+#  - name: 0030Mon
+#    type: time
+#    source:
+#      start: 00:30 AM
+#      days: [Monday]
+#      location: {{time_location}}
 
   - name: 00Thu
     type: time
