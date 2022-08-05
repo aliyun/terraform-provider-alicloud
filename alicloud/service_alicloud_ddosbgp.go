@@ -45,31 +45,49 @@ func (s *DdosbgpService) DescribeDdosbgpInstance(id string) (v ddosbgp.Instance,
 	return
 }
 
-func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string, region string) (v ddosbgp.InstanceSpec, err error) {
-	request := ddosbgp.CreateDescribeInstanceSpecsRequest()
-	request.InstanceIdList = "[\"" + id + "\"]"
-	request.DdosRegionId = region
-	request.RegionId = region
+func (s *DdosbgpService) DescribeDdosbgpInstanceSpec(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDdosbgpClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceSpecs"
+	request := map[string]interface{}{
+		"InstanceIdList": "[\"" + id + "\"]",
+		"RegionId":       s.client.RegionId,
+	}
 
-	raw, err := s.client.WithDdosbgpClient(func(ddosbgpClient *ddosbgp.Client) (interface{}, error) {
-		return ddosbgpClient.DescribeInstanceSpecs(request)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound", "InvalidInstance"}) {
-			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-
-		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*ddosbgp.DescribeInstanceSpecsResponse)
-	if len(resp.InstanceSpecs) == 0 || resp.InstanceSpecs[0].InstanceId != id {
-		return v, WrapErrorf(Error(GetNotFoundMessage("DdosbgpInstanceSpec", id)), NotFoundMsg, ProviderERROR)
+	v, _ := jsonpath.Get("$.InstanceSpecs", response)
+	if v == nil {
+		return object, nil
 	}
-
-	v = resp.InstanceSpecs[0]
-	return v, WrapError(err)
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ddos", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *DdosbgpService) WaitForDdosbgpInstance(id string, status Status, timeout int) error {
