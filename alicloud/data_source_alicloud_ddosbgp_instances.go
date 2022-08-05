@@ -2,8 +2,14 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strconv"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddosbgp"
 
@@ -63,6 +69,10 @@ func dataSourceAlicloudDdosbgpInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"normal_bandwidth": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"bandwidth": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -86,7 +96,7 @@ func dataSourceAlicloudDdosbgpInstancesRead(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ddosbgp.CreateDescribeInstanceListRequest()
-	request.PageSize = requests.Integer(strconv.Itoa(PageSizeSmall))
+	request.PageSize = requests.Integer(strconv.Itoa(PageSizeLarge))
 	request.PageNo = "1"
 	request.RegionId = client.RegionId
 	request.DdosRegionId = client.RegionId
@@ -155,53 +165,77 @@ func dataSourceAlicloudDdosbgpInstancesRead(d *schema.ResourceData, meta interfa
 	}
 
 	if len(instanceIds) < 1 {
-		return WrapError(extractDdosbgpInstance(d, nameMap, ipTypeMap, instanceTypeMap, []ddosbgp.InstanceSpec{}))
+		return WrapError(extractDdosbgpInstance(d, nameMap, ipTypeMap, instanceTypeMap, []interface{}{}))
 	}
 
-	specReq := ddosbgp.CreateDescribeInstanceSpecsRequest()
+	action := "DescribeInstanceSpecs"
 	instanceIdsStr, _ := json.Marshal(instanceIds)
-	specReq.InstanceIdList = string(instanceIdsStr)
-	specReq.RegionId = client.RegionId
-	specReq.DdosRegionId = client.RegionId
 
-	raw, err := client.WithDdosbgpClient(func(ddosbgpClient *ddosbgp.Client) (interface{}, error) {
-		return ddosbgpClient.DescribeInstanceSpecs(specReq)
+	describeInstanceSpecsRequest := map[string]interface{}{
+		"InstanceIdList": string(instanceIdsStr),
+		"RegionId":       client.RegionId,
+	}
+
+	var response map[string]interface{}
+	conn, err := client.NewDdosbgpClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-20"), StringPointer("AK"), nil, describeInstanceSpecsRequest, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddosbgp_instances", specReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ddosbgp_instances", action, AlibabaCloudSdkGoERROR)
 	}
+	resp, err := jsonpath.Get("$.InstanceSpecs", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceSpecs", response)
+	}
+	result, _ := resp.([]interface{})
 
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	resp, _ := raw.(*ddosbgp.DescribeInstanceSpecsResponse)
-
-	return WrapError(extractDdosbgpInstance(d, nameMap, ipTypeMap, instanceTypeMap, resp.InstanceSpecs))
+	return WrapError(extractDdosbgpInstance(d, nameMap, ipTypeMap, instanceTypeMap, result))
 }
 
-func extractDdosbgpInstance(d *schema.ResourceData, nameMap map[string]string, ipTypeMap map[string]string, instanceTypeMap map[string]string, instanceSpecs []ddosbgp.InstanceSpec) error {
+func extractDdosbgpInstance(d *schema.ResourceData, nameMap map[string]string, ipTypeMap map[string]string, instanceTypeMap map[string]string, instanceSpecs []interface{}) error {
 	var instanceIds []string
 	var names []string
 	var s []map[string]interface{}
 
-	for _, item := range instanceSpecs {
+	for _, v := range instanceSpecs {
 
+		item := v.(map[string]interface{})
 		ddosbgpInstanceType := string(Enterprise)
-		if instanceTypeMap[item.InstanceId] == "0" {
+		if instanceTypeMap[item["InstanceId"].(string)] == "0" {
 			ddosbgpInstanceType = string(Professional)
 		}
 
 		mapping := map[string]interface{}{
-			"id":             item.InstanceId,
-			"name":           nameMap[item.InstanceId],
-			"region":         item.Region,
-			"bandwidth":      item.PackConfig.PackAdvThre,
-			"base_bandwidth": item.PackConfig.PackBasicThre,
-			"ip_type":        ipTypeMap[item.InstanceId],
-			"ip_count":       item.PackConfig.IpSpec,
-			"type":           ddosbgpInstanceType,
+			"id":               fmt.Sprint(item["InstanceId"]),
+			"name":             nameMap[item["InstanceId"].(string)],
+			"region":           item["Region"],
+			"bandwidth":        item["PackConfig"].(map[string]interface{})["Bandwidth"],
+			"base_bandwidth":   item["PackConfig"].(map[string]interface{})["PackBasicThre"],
+			"normal_bandwidth": item["PackConfig"].(map[string]interface{})["NormalBandwidth"],
+			"ip_type":          ipTypeMap[item["InstanceId"].(string)],
+			"ip_count":         item["PackConfig"].(map[string]interface{})["IpSpec"],
+			"type":             ddosbgpInstanceType,
 		}
-		instanceIds = append(instanceIds, item.InstanceId)
-		names = append(names, nameMap[item.InstanceId])
+		instanceIds = append(instanceIds, fmt.Sprint(item["InstanceId"]))
+		names = append(names, nameMap[fmt.Sprint(item["InstanceId"])])
 		s = append(s, mapping)
 	}
 

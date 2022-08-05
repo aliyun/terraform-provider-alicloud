@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -69,6 +70,11 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				Default:      12,
 				ForceNew:     true,
 			},
+			"normal_bandwidth": {
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -123,7 +129,7 @@ func resourceAlicloudDdosbgpInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	specInfo, err := ddosbgpService.DescribeDdosbgpInstanceSpec(d.Id(), client.RegionId)
+	specInfo, err := ddosbgpService.DescribeDdosbgpInstanceSpec(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -139,11 +145,11 @@ func resourceAlicloudDdosbgpInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("name", insInfo.Remark)
-	d.Set("region", specInfo.Region)
-	d.Set("bandwidth", specInfo.PackConfig.PackAdvThre)
-	d.Set("base_bandwidth", specInfo.PackConfig.PackBasicThre)
+	d.Set("bandwidth", specInfo["PackConfig"].(map[string]interface{})["Bandwidth"])
+	d.Set("base_bandwidth", specInfo["PackConfig"].(map[string]interface{})["PackBasicThre"])
+	d.Set("normal_bandwidth", specInfo["PackConfig"].(map[string]interface{})["NormalBandwidth"])
 	d.Set("ip_type", insInfo.IpType)
-	d.Set("ip_count", specInfo.PackConfig.IpSpec)
+	d.Set("ip_count", specInfo["PackConfig"].(map[string]interface{})["IpSpec"])
 	d.Set("type", ddosbgpInstanceType)
 
 	return nil
@@ -173,26 +179,8 @@ func resourceAlicloudDdosbgpInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 
 func resourceAlicloudDdosbgpInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	ddosbgpService := DdosbgpService{client}
-
-	request := ddosbgp.CreateReleaseInstanceRequest()
-	request.InstanceId = d.Id()
-	request.RegionId = client.RegionId
-
-	raw, err := client.WithDdosbgpClient(func(ddosbgpClient *ddosbgp.Client) (interface{}, error) {
-		return ddosbgpClient.ReleaseInstance(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
-			return nil
-		}
-
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	return WrapError(ddosbgpService.WaitForDdosbgpInstance(d.Id(), Deleted, DefaultTimeoutMedium))
+	log.Printf("[WARN] Cannot destroy resource AlicloudDdosbgpInstance. Terraform will remove this resource from the state file, however resources may remain.")
+	return nil
 }
 
 func buildDdosbgpCreateRequest(region string, d *schema.ResourceData, meta interface{}) *bssopenapi.CreateInstanceRequest {
@@ -208,6 +196,7 @@ func buildDdosbgpCreateRequest(region string, d *schema.ResourceData, meta inter
 	}
 
 	baseBandWidth := d.Get("base_bandwidth").(int)
+	normalBandwidth := d.Get("normal_bandwidth").(int)
 	bandWidth := d.Get("bandwidth").(int)
 	ipCount := d.Get("ip_count").(int)
 
@@ -232,6 +221,10 @@ func buildDdosbgpCreateRequest(region string, d *schema.ResourceData, meta inter
 		{
 			Code:  "BaseBandwidth",
 			Value: strconv.Itoa(baseBandWidth),
+		},
+		{
+			Code:  "NormalBandwidth",
+			Value: strconv.Itoa(normalBandwidth),
 		},
 		{
 			Code:  "Bandwidth",
