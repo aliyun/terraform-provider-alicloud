@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -40,6 +41,10 @@ func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFun
 
 // ClientInterface for all log's open api
 type ClientInterface interface {
+	// SetUserAgent set userAgent for sls client
+	SetUserAgent(userAgent string)
+	// SetHTTPClient set a custom http client, all request will send to sls by this client
+	SetHTTPClient(client *http.Client)
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)
@@ -88,6 +93,16 @@ type ClientInterface interface {
 	UpdateLogStoreV2(project string, logstore *LogStore) error
 	// CheckLogstoreExist check logstore exist or not
 	CheckLogstoreExist(project string, logstore string) (bool, error)
+
+	// #################### MetricStore Operations #####################
+	// CreateMetricStore creates a new metric store in SLS.
+	CreateMetricStore(project string, metricStore *LogStore) error
+	// UpdateMetricStore updates a metric store.
+	UpdateMetricStore(project string, metricStore *LogStore) error
+	// DeleteMetricStore deletes a metric store.
+	DeleteMetricStore(project, name string) error
+	// GetMetricStore return a metric store.
+	GetMetricStore(project, name string) (*LogStore, error)
 
 	// #################### Logtail Operations #####################
 	// ListMachineGroup returns machine group name list and the total number of machine groups.

@@ -2,6 +2,7 @@ package sls
 
 import (
 	"errors"
+	"net/http"
 	"sync"
 	"time"
 
@@ -134,6 +135,15 @@ func (c *TokenAutoUpdateClient) processError(err error) (retry bool) {
 	}
 	return false
 
+}
+
+func (c *TokenAutoUpdateClient) SetUserAgent(userAgent string) {
+	c.logClient.SetUserAgent(userAgent)
+}
+
+// SetHTTPClient set a custom http client, all request will send to sls by this client
+func (c *TokenAutoUpdateClient) SetHTTPClient(client *http.Client) {
+	c.logClient.SetHTTPClient(client)
 }
 
 func (c *TokenAutoUpdateClient) Close() error {
@@ -1533,6 +1543,42 @@ func (c *TokenAutoUpdateClient) ListExport(project, logstore, name, displayName 
 func (c *TokenAutoUpdateClient) DeleteExport(project string, name string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.DeleteExport(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) CreateMetricStore(project string, metricStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateMetricStore(project, metricStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateMetricStore(project string, metricStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateMetricStore(project, metricStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) DeleteMetricStore(project, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteMetricStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetMetricStore(project, name string) (metricStore *LogStore, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		metricStore, err = c.logClient.GetMetricStore(project, name)
 		if !c.processError(err) {
 			return
 		}

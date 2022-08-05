@@ -72,7 +72,7 @@ func resourceAlicloudVpc() *schema.Resource {
 				Computed: true,
 			},
 			"secondary_cidr_blocks": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,

@@ -160,7 +160,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	if len(project.UserAgent) > 0 {
 		headers["User-Agent"] = project.UserAgent
 	} else {
-		headers["User-Agent"] = defaultLogUserAgent
+		headers["User-Agent"] = DefaultLogUserAgent
 	}
 
 	// Access with token

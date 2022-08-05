@@ -1279,8 +1279,8 @@ func (s *VpcService) ignoreTag(t vpc.TagResource) bool {
 func (s *VpcService) SetInstanceSecondaryCidrBlocks(d *schema.ResourceData) error {
 	if d.HasChange("secondary_cidr_blocks") {
 		oraw, nraw := d.GetChange("secondary_cidr_blocks")
-		removed := oraw.([]interface{})
-		added := nraw.([]interface{})
+		removed := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		added := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
 		conn, err := s.client.NewVpcClient()
 		if err != nil {
 			return WrapError(err)
