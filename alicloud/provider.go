@@ -724,6 +724,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv4_gateways":                           dataSourceAlicloudVpcIpv4Gateways(),
 			"alicloud_api_gateway_backends":                        dataSourceAlicloudApiGatewayBackends(),
 			"alicloud_vpc_prefix_lists":                            dataSourceAlicloudVpcPrefixLists(),
+			"alicloud_cms_event_rules":                             dataSourceAlicloudCmsEventRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1345,6 +1346,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv4_gateway":                                     resourceAlicloudVpcIpv4Gateway(),
 			"alicloud_api_gateway_backend":                                  resourceAlicloudApiGatewayBackend(),
 			"alicloud_vpc_prefix_list":                                      resourceAlicloudVpcPrefixList(),
+			"alicloud_cms_event_rule":                                       resourceAlicloudCmsEventRule(),
 		},
 
 		ConfigureFunc: providerConfigure,
