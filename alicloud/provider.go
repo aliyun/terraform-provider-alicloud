@@ -1330,6 +1330,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_hybrid_monitor_sls_task":                          resourceAlicloudCmsHybridMonitorSlsTask(),
 			"alicloud_hbr_hana_backup_plan":                                 resourceAlicloudHbrHanaBackupPlan(),
 			"alicloud_cms_hybrid_monitor_fc_task":                           resourceAlicloudCmsHybridMonitorFcTask(),
+			"alicloud_hbase_multi_zone_cluster":                             resourceAlicloudHbaseMultiZoneCluster(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1553,6 +1554,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
 		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
 		config.DysmsEndpoint = strings.TrimSpace(endpoints["dysms"].(string))
+		config.HbaseEndpoint = strings.TrimSpace(endpoints["hbase"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1928,6 +1930,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["dysms_endpoint"],
+				},
+
+				"hbase": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["hbase_endpoint"],
 				},
 
 				"edas": {
@@ -2802,6 +2811,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dysms"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["hbase"].(string)))
 	return hashcode.String(buf.String())
 }
 
