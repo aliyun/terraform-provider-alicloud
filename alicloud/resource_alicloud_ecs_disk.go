@@ -123,6 +123,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"size": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"snapshot_id": {
 				Type:          schema.TypeString,
