@@ -114,7 +114,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when create the DBCluster.
-* `delete` - (Defaults to 50 mins) Used when delete the DBCluster.
+* `delete` - (Defaults to 120 mins) Used when delete the DBCluster.
 * `update` - (Defaults to 6  hours) Used when update the DBCluster.
 
 ## Import

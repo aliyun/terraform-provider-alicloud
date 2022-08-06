@@ -26,7 +26,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(50 * time.Minute),
-			Delete: schema.DefaultTimeout(50 * time.Minute),
+			Delete: schema.DefaultTimeout(120 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Hour),
 		},
 		Schema: map[string]*schema.Schema{
@@ -661,7 +661,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("elastic_io_resource")
 	}
 	d.Partial(false)
-	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
