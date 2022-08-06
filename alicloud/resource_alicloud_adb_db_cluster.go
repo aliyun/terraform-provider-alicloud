@@ -27,7 +27,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(50 * time.Minute),
 			Delete: schema.DefaultTimeout(50 * time.Minute),
-			Update: schema.DefaultTimeout(72 * time.Minute),
+			Update: schema.DefaultTimeout(6 * time.Hour),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_renew_period": {
@@ -684,7 +684,7 @@ func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
