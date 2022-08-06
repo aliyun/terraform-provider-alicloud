@@ -46,7 +46,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_adb_db_cluster" "this" {
   db_cluster_category = "Cluster"
-  db_cluster_class    = "C8"
+  db_node_class       = "C8"
   db_node_count       = "4"
   db_node_storage     = "400"
   mode                = "reserver"
@@ -115,7 +115,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 50 mins) Used when create the DBCluster.
 * `delete` - (Defaults to 50 mins) Used when delete the DBCluster.
-* `update` - (Defaults to 72 mins) Used when update the DBCluster.
+* `update` - (Defaults to 6  hours) Used when update the DBCluster.
 
 ## Import
 
