@@ -25,7 +25,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(50 * time.Minute),
+			Create: schema.DefaultTimeout(120 * time.Minute),
 			Delete: schema.DefaultTimeout(120 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Hour),
 		},
@@ -467,12 +467,11 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && (d.HasChange("pay_type") || d.HasChange("payment_type")) {
 		update = true
 	}
-	if pay_type, ok := d.GetOk("pay_type"); ok {
-		request["PayType"] = convertAdbDbClusterDBClusterPayTypeRequest(pay_type.(string))
-	}
 
-	if payment_type, ok := d.GetOk("payment_type"); ok {
-		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(payment_type.(string))
+	if paymentType, ok := d.GetOk("payment_type"); ok {
+		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(paymentType.(string))
+	} else if payType, ok := d.GetOk("pay_type"); ok {
+		request["PayType"] = convertAdbDbClusterDBClusterPayTypeRequest(payType.(string))
 	}
 	if request["PayType"] == "Prepaid" {
 		request["Period"] = d.Get("period")
@@ -649,7 +648,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
