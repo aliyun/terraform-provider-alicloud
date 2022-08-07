@@ -1,33 +1,38 @@
-## 1.180.0 (Unreleased)
+## 1.181.0 (Unreleased)
+## 1.180.0 (Auguest 07, 2022)
 
-- **New Resource:** `alicloud_fc_layer_version` [GH-5245]
-- **New Resource:** `alicloud_ddos_bgp_ip` [GH-5265]
-- **New Data Source:** `alicloud_ddos_bgp_ips` [GH-5365]
+- **New Resource:** `alicloud_fc_layer_version` ([#5245](https://github.com/aliyun/terraform-provider-alicloud/issues/5245))
+- **New Resource:** `alicloud_ddos_bgp_ip` ([#5265](https://github.com/aliyun/terraform-provider-alicloud/issues/5265))
+- **New Data Source:** `alicloud_ddos_bgp_ips` ([#5365](https://github.com/aliyun/terraform-provider-alicloud/issues/5365))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes_node_pool: support customized kubelet params [GH-5257]
-- resource/alicloud_alikafka_instance: Changed sdk to common api; Supported for new parameter kms_key_id [GH-5261]
-- resource_alicloud_cms_alarm: Adds new attribute tags. [GH-5256]
-- resource_alicloud_cms_alarm: Removed the field 'prometheus' forceNew and supports modifying it online. [GH-5252]
-- resource/alicloud_adb_db_cluster: Improves its waiting time after invoking the create api [GH-5263]
-- resource/alicloud_vpc_nat_ip: Optimizing attribute definition [GH-5262]
-- docs/fc_function_async_invoke_config: update description [GH-5242]
-- testcase: Adds new unit test case for resource alicloud_direct_mail_tag alicloud_direct_mail_receivers [GH-5254]
-- doc/route_entry: add VpcPeer to acceptable values for nexthop_type [GH-5170]
+- resource/alicloud_cs_kubernetes_node_pool: support customized kubelet params ([#5257](https://github.com/aliyun/terraform-provider-alicloud/issues/5257))
+- resource/alicloud_alikafka_instance: Changed sdk to common api; Supported for new parameter kms_key_id ([#5261](https://github.com/aliyun/terraform-provider-alicloud/issues/5261))
+- resource_alicloud_cms_alarm: Adds new attribute tags. ([#5256](https://github.com/aliyun/terraform-provider-alicloud/issues/5256))
+- resource_alicloud_cms_alarm: Removed the field 'prometheus' forceNew and supports modifying it online. ([#5252](https://github.com/aliyun/terraform-provider-alicloud/issues/5252))
+- resource/alicloud_adb_db_cluster: Improves its waiting time after invoking the create api ([#5263](https://github.com/aliyun/terraform-provider-alicloud/issues/5263))
+- resource/alicloud_vpc_nat_ip: Optimizing attribute definition ([#5262](https://github.com/aliyun/terraform-provider-alicloud/issues/5262))
+- docs/fc_function_async_invoke_config: update description ([#5242](https://github.com/aliyun/terraform-provider-alicloud/issues/5242))
+- testcase: Adds new unit test case for resource alicloud_direct_mail_tag alicloud_direct_mail_receivers ([#5254](https://github.com/aliyun/terraform-provider-alicloud/issues/5254))
+- doc/route_entry: add VpcPeer to acceptable values for nexthop_type ([#5170](https://github.com/aliyun/terraform-provider-alicloud/issues/5170))
 
 BUG FIXES:
 
-- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for creating the cluster [GH-5276]
-- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for deleting the cluster attributes [GH-5274]
-- resource/alicloud_adb_db_cluster: Fixes the IncorrectDBInstanceState error while deleting the cluster; Enlarges the default waiting timeout for updating the cluster attributes [GH-5273]
-- resource/alicloud_ecs_disk: Fixes the size diff bug when setting snapshot_id [GH-5272]
-- resource/alicloud_vpc: Fixed the bug of adding additional network segments to VPC [GH-5267]
-- resource/alicloud_alb_rule: Fix testcase panic error [GH-5258]
-- data/alicloud_alb_rules: Fix panic error [GH-5253]
-- testcase: Fix ci error for resource/alicloud_alb_rule [GH-5260]
-- testcase: fix hbr test case errors. [GH-5264]
-- testcase: fix ci test error for resource/alicloud_cs_managed_kubernetes [GH-5249]
+- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for creating the cluster ([#5276](https://github.com/aliyun/terraform-provider-alicloud/issues/5276))
+- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for deleting the cluster attributes ([#5274](https://github.com/aliyun/terraform-provider-alicloud/issues/5274))
+- resource/alicloud_adb_db_cluster: Fixes the IncorrectDBInstanceState error while deleting the cluster; Enlarges the default waiting timeout for updating the cluster attributes ([#5273](https://github.com/aliyun/terraform-provider-alicloud/issues/5273))
+- resource/alicloud_ecs_disk: Fixes the size diff bug when setting snapshot_id ([#5272](https://github.com/aliyun/terraform-provider-alicloud/issues/5272))
+- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for creating the cluster ([#5276](https://github.com/aliyun/terraform-provider-alicloud/issues/5276))
+- resource/alicloud_adb_db_cluster: Fixes the waiting error after modifying its attributes; Enlarges the default waiting timeout for deleting the cluster attributes ([#5274](https://github.com/aliyun/terraform-provider-alicloud/issues/5274))
+- resource/alicloud_adb_db_cluster: Fixes the IncorrectDBInstanceState error while deleting the cluster; Enlarges the default waiting timeout for updating the cluster attributes ([#5273](https://github.com/aliyun/terraform-provider-alicloud/issues/5273))
+- resource/alicloud_ecs_disk: Fixes the size diff bug when setting snapshot_id ([#5272](https://github.com/aliyun/terraform-provider-alicloud/issues/5272))
+- resource/alicloud_vpc: Fixed the bug of adding additional network segments to VPC ([#5267](https://github.com/aliyun/terraform-provider-alicloud/issues/5267))
+- resource/alicloud_alb_rule: Fix testcase panic error ([#5258](https://github.com/aliyun/terraform-provider-alicloud/issues/5258))
+- data/alicloud_alb_rules: Fix panic error ([#5253](https://github.com/aliyun/terraform-provider-alicloud/issues/5253))
+- testcase: Fix ci error for resource/alicloud_alb_rule ([#5260](https://github.com/aliyun/terraform-provider-alicloud/issues/5260))
+- testcase: fix hbr test case errors. ([#5264](https://github.com/aliyun/terraform-provider-alicloud/issues/5264))
+- testcase: fix ci test error for resource/alicloud_cs_managed_kubernetes ([#5249](https://github.com/aliyun/terraform-provider-alicloud/issues/5249))
 
 ## 1.179.0 (July 31, 2022)
 
