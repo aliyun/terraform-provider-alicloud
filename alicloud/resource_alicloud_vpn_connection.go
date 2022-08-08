@@ -307,8 +307,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"IkeVersion":  ikeConfigsArg["ike_version"],
 			"Psk":         ikeConfigsArg["psk"],
 		}
-		ikeConfigsMapsStrting, _ := convertMaptoJsonString(ikeConfigsMap)
-		request["IkeConfig"] = ikeConfigsMapsStrting
+		ikeConfigsMapsString, _ := convertMaptoJsonString(ikeConfigsMap)
+		request["IkeConfig"] = ikeConfigsMapsString
 	}
 
 	if v, ok := d.GetOk("ipsec_config"); ok {
@@ -319,8 +319,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"IpsecLifetime": ipsecsArg["ipsec_lifetime"],
 			"IpsecPfs":      ipsecsArg["ipsec_pfs"],
 		}
-		ipsecsMapsStrting, _ := convertMaptoJsonString(ipsecsMap)
-		request["IpsecConfig"] = ipsecsMapsStrting
+		ipsecsMapsString, _ := convertMaptoJsonString(ipsecsMap)
+		request["IpsecConfig"] = ipsecsMapsString
 	}
 
 	if v, ok := d.GetOk("bgp_config"); ok {
@@ -345,8 +345,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"retry":    formatInt(healthChecksArg["retry"]),
 		}
 
-		healthChecksMapsStrting, _ := convertMaptoJsonString(healthChecksMap)
-		request["HealthCheckConfig "] = healthChecksMapsStrting
+		healthChecksMapsString, _ := convertMaptoJsonString(healthChecksMap)
+		request["HealthCheckConfig"] = healthChecksMapsString
 	}
 
 	if v, ok := d.GetOkExists("enable_dpd"); ok {
