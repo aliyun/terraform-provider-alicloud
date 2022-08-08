@@ -83,7 +83,7 @@ The following attributes are exported:
   * `global` - regions in and outside mainland China.
 * `sources` - The information about the address of the origin server. For more information about the Sources parameter, See the following `Block sources`.
 * `weight` - The weight of the origin server.
-* `status` - The status of the domain name for CDN. Value values:
+* `status` - The status of the domain name for CDN. Valid values:
   * `online` - indicates that the domain name is enabled. 
   * `offline` - indicates that the domain name is disabled.
   * `configuring` - indicates that the domain name is being configured.

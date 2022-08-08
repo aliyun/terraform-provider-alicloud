@@ -98,7 +98,7 @@ The following arguments are supported:
 * `auto_release_time` - (Optional,ForceNew ) The automatic release time of the `PostPaid` instance.
 * `data_disks` - (Optional, ForceNew) The list of data disks created with instance. See the following `Block data_disks`.
 * `internet_charge_type` - (Optional, ForceNew, Computed) The Internet charge type of the instance. Valid values are `PayByBandwidth`, `PayByTraffic`.
-* `internet_max_bandwidth_out` - (Optional, ForceNew, Computed) The Maximum outgoing bandwidth to the public network, measured in Mbps (Mega bit per second). Value values: `1` to `100`.
+* `internet_max_bandwidth_out` - (Optional, ForceNew, Computed) The Maximum outgoing bandwidth to the public network, measured in Mbps (Mega bit per second). Valid values: `1` to `100`.
 * `system_disk_category` - (Optional, ForceNew, Computed) The category of the system disk. Valid values are `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`.
 * `system_disk_description` - (Optional, ForceNew) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with `http://` or `https://`.
 * `system_disk_name` - (Optional, ForceNew) The name of the system disk.
