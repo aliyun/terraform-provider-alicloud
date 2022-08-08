@@ -641,11 +641,14 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	}
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, instanceHealthCheckFunc)
 
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id()), nil
+	_, waitStateErr := stateConf.WaitForState()
+	// Check the valid number of instances
+	checkEventErr := checkEcsInstanceSystemFailureDeleteEvent(d, meta, instanceIds)
+	if checkEventErr != nil {
+		return WrapErrorf(checkEventErr, IdMsg, d.Id()), nil
 	}
 
-	return nil, instanceIds
+	return WrapErrorf(waitStateErr, IdMsg, d.Id()), instanceIds
 }
 
 func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}) error {
@@ -948,6 +951,39 @@ func modifyEcsInstanceRequest(d *schema.ResourceData, meta interface{}, instance
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapError(err)
+	}
+
+	return nil
+}
+
+func checkEcsInstanceSystemFailureDeleteEvent(d *schema.ResourceData, meta interface{}, allInstanceIds []string) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+
+	excludeInstanceIds, err := ecsService.DescribeSystemFailureDeleteEventInstanceIds(allInstanceIds)
+	if err != nil {
+		return err
+	}
+
+	instanceIds := make([]string, 0)
+	for _, v := range allInstanceIds {
+		flag := true
+		for _, excludeInstanceId := range excludeInstanceIds {
+			if strings.EqualFold(excludeInstanceId, fmt.Sprint(v)) {
+				flag = false
+				break
+			}
+		}
+
+		if flag {
+			instanceIds = append(instanceIds, fmt.Sprint(v))
+		}
+	}
+
+	if len(instanceIds) != len(allInstanceIds) {
+		// Exclude instances released due to instance creation failure
+		d.SetId(encodeToBase64String(instanceIds))
+		return WrapErrorf(err, FailedGetAttributeMsg, "resource_alicloud_ecs_instance_set", fmt.Sprintf("[DEBUG] Due to instance creation failure,  %d instances have been released.", len(allInstanceIds)-len(instanceIds)))
 	}
 
 	return nil
