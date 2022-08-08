@@ -3246,3 +3246,60 @@ func (s *EcsService) DescribeInstanceMaintenanceAttribute(id string) (object map
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *EcsService) DescribeSystemFailureDeleteEventInstanceIds(instanceIds []string) (ids []string, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstanceHistoryEvents"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"EventType":    "SystemFailure.Delete",
+		"PageSize":     PageSizeXLarge,
+		"PageNumber":   1,
+		"ResourceType": "instance",
+	}
+
+	for i, instanceId := range instanceIds {
+		request[fmt.Sprintf("ResourceId.%d", i)] = instanceId
+	}
+
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return ids, WrapErrorf(err, DataDefaultErrorMsg, action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.InstanceSystemEventSet.InstanceSystemEventType", response)
+		if err != nil {
+			return ids, WrapErrorf(err, FailedGetAttributeMsg, action, "$.ImagePipeline.ImagePipelineSet", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			ids = append(ids, fmt.Sprint(item["InstanceId"]))
+		}
+
+		if len(result) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	return ids, nil
+}
