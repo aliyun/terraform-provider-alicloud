@@ -64,6 +64,7 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -107,8 +108,9 @@ func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta i
 	responseAccount := response["Account"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseAccount["AccountId"]))
 
-	return resourceAlicloudResourceManagerAccountRead(d, meta)
+	return resourceAlicloudResourceManagerAccountUpdate(d, meta)
 }
+
 func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
@@ -136,10 +138,18 @@ func resourceAlicloudResourceManagerAccountRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 	d.Set("payer_account_id", getPayerForAccountObject["PayerAccountId"])
+
+	listTagResourcesObject, err := resourcemanagerService.ListTagResources(d.Id(), "Account")
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tags", tagsToMap(listTagResourcesObject))
 	return nil
 }
+
 func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	resourcemanagerService := ResourcemanagerService{client}
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
 		return WrapError(err)
@@ -147,7 +157,13 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	var response map[string]interface{}
 	d.Partial(true)
 
-	if d.HasChange("folder_id") {
+	if d.HasChange("tags") {
+		if err := resourcemanagerService.SetResourceTags(d, "Account"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+	if d.HasChange("folder_id") && !d.IsNewResource() {
 		request := map[string]interface{}{
 			"AccountId": d.Id(),
 		}
@@ -175,7 +191,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	request := map[string]interface{}{
 		"AccountId": d.Id(),
 	}
-	if d.HasChange("display_name") {
+	if d.HasChange("display_name") && !d.IsNewResource() {
 		update = true
 	}
 	request["NewDisplayName"] = d.Get("display_name")
@@ -202,6 +218,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	d.Partial(false)
 	return resourceAlicloudResourceManagerAccountRead(d, meta)
 }
+
 func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudResourceManagerAccount. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
