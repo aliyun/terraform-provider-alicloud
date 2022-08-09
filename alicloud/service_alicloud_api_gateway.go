@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -484,4 +487,45 @@ func (s *CloudApiService) tagsFromMap(m map[string]interface{}) []cloudapi.TagRe
 	}
 
 	return result
+}
+
+func (s *CloudApiService) DescribeApiGatewayBackend(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewApigatewayClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"BackendId": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeBackendInfo"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NotFoundBackend"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.BackendInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.BackendInfo", response)
+	}
+	return v.(map[string]interface{}), nil
 }
