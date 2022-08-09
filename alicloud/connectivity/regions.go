@@ -55,10 +55,12 @@ const (
 	ShenzhenFinance     = Region("cn-shenzhen-finance")
 
 	CnNorth2Gov1 = Region("cn-north-2-gov-1")
+
+	FuZhou = Region("cn-fuzhou")
 )
 
 var ValidRegions = []Region{
-	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu, GuangZhou, NanJing,
+	Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, HeYuan, WuLanChaBu, GuangZhou, NanJing, FuZhou,
 	USWest1, USEast1,
 	APNorthEast1, APNorthEast2, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APSouthEast6, APSouthEast7,
 	APSouth1,

@@ -89,16 +89,25 @@ func (s *GaService) DescribeGaListener(id string) (object map[string]interface{}
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Listener", "UnknownError"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("GaListener", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:GaListener", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
@@ -119,11 +128,11 @@ func (s *GaService) GaListenerStateRefreshFunc(id string, failStates []string) r
 		}
 
 		for _, failState := range failStates {
-			if object["State"].(string) == failState {
+			if fmt.Sprint(object["State"]) == failState {
 				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
 			}
 		}
-		return object, object["State"].(string), nil
+		return object, fmt.Sprint(object["State"]), nil
 	}
 }
 
