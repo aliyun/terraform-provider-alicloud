@@ -118,6 +118,12 @@ func resourceAlicloudEipAddress() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"security_protection_types": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -185,6 +191,9 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("security_protection_types"); ok {
+		request["SecurityProtectionTypes"] = v
+	}
 	request["ClientToken"] = buildClientToken("AllocateEipAddress")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -212,6 +221,7 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudEipAddressUpdate(d, meta)
 }
+
 func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -235,6 +245,10 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", object["ChargeType"])
 	d.Set("ip_address", object["IpAddress"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	if securityProtectionTypes, ok := object["SecurityProtectionTypes"]; ok {
+		securityProtectionTypeList := securityProtectionTypes.(map[string]interface{})["SecurityProtectionType"].([]interface{})
+		d.Set("security_protection_types", securityProtectionTypeList)
+	}
 	d.Set("status", object["Status"])
 	tagsMap := make(map[string]interface{})
 	tagsRaw, _ := jsonpath.Get("$.Tags.Tag", object)
@@ -253,6 +267,7 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	}
 	return nil
 }
+
 func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -379,6 +394,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	d.Partial(false)
 	return resourceAlicloudEipAddressRead(d, meta)
 }
+
 func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
 		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_eip_address. Terraform will remove this resource from the state file, however resources may remain.")
@@ -421,6 +437,7 @@ func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	return nil
 }
+
 func convertEipAddressPaymentTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
