@@ -1203,8 +1203,9 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
-							"name": "${var.name}-1",
-							"size": "20",
+							"name":   "${var.name}-1",
+							"size":   "20",
+							"device": "/dev/xvdb",
 						},
 						{
 							"name":     "${var.name}-2",
@@ -1254,6 +1255,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 						"data_disks.0.delete_with_instance":    "true",
 						"data_disks.0.description":             "",
 						"data_disks.0.performance_level":       "",
+						"data_disks.0.device":                  "/dev/xvdb",
 						"data_disks.1.name":                    name + "-2",
 						"data_disks.1.size":                    "20",
 						"data_disks.1.category":                "cloud_ssd",
