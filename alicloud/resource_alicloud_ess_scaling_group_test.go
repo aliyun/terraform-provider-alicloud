@@ -752,6 +752,61 @@ func TestAccAlicloudEssScalingGroup_eci(t *testing.T) {
 
 }
 
+func TestAccAlicloudEssScalingGroup_protected_instances(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size": "0",
+		"max_size": "2",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssAttachmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScalingGroupProtectedInstances(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupProtectedInstancesUpdate1(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protected_instances.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupProtectedInstancesUpdate0(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protected_instances.#": "0",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func testAccCheckEssScalingGroupDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	essService := EssService{client}
@@ -1793,4 +1848,150 @@ resource "alicloud_ess_scaling_group" "default" {
   group_type         = "ECI"
 }
 `, common, rand)
+}
+
+func testAccEssScalingGroupProtectedInstances(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAttachmentConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 0
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}
+
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+		active = true
+		enable = true
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		count = 1
+		security_groups = ["${alicloud_security_group.default.id}"]
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = "10"
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_ess_attachment" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		instance_ids = ["${alicloud_instance.default.0.id}"]
+		force = true
+	}
+
+	`, common, rand)
+}
+
+func testAccEssScalingGroupProtectedInstancesUpdate1(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAttachmentConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 0
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		protected_instances = ["${alicloud_instance.default.0.id}"]
+	}
+
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+		active = true
+		enable = true
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		count = 1
+		security_groups = ["${alicloud_security_group.default.id}"]
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = "10"
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_ess_attachment" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		instance_ids = ["${alicloud_instance.default.0.id}"]
+		force = true
+	}
+
+	`, common, rand)
+}
+
+func testAccEssScalingGroupProtectedInstancesUpdate0(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssAttachmentConfig-%d"
+	}
+
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 0
+		max_size = 2
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+		protected_instances = []
+	}
+
+	resource "alicloud_ess_scaling_configuration" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_group_id = "${alicloud_security_group.default.id}"
+		force_delete = true
+		active = true
+		enable = true
+	}
+
+	resource "alicloud_instance" "default" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		count = 1
+		security_groups = ["${alicloud_security_group.default.id}"]
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = "10"
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id = "${alicloud_vswitch.default.id}"
+		instance_name = "${var.name}"
+	}
+
+	resource "alicloud_ess_attachment" "default" {
+		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+		instance_ids = ["${alicloud_instance.default.0.id}"]
+		force = true
+		depends_on = [
+    			alicloud_ess_scaling_configuration.default
+  			]
+	}
+
+	`, common, rand)
 }

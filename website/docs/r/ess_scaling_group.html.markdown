@@ -126,6 +126,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.160.0+) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+* `protected_instances` - (Optional, Available in v1.182.0+) Set or unset instances within group into protected status.
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 
@@ -149,6 +150,7 @@ The following attributes are exported:
 * `vswitch_ids` - The vswitches id in which the ECS instance launched.
 * `launch_template_id` - The instance launch template ID.
 * `launch_template_version` - The version number of the launch template.
+* `protected_instances` - The scaling group instances in protected status.
 
 ## Import
 
