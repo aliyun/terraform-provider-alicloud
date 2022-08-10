@@ -1465,7 +1465,10 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	vpcService := VpcService{client}
 
 	var vswitchID string
-	if list := expandStringList(d.Get("worker_vswitch_ids").([]interface{})); len(list) > 0 {
+	list := make([]string, 0)
+	list = append(list, expandStringList(d.Get("master_vswitch_ids").([]interface{}))...)
+	list = append(list, expandStringList(d.Get("worker_vswitch_ids").([]interface{}))...)
+	if len(list) > 0 {
 		vswitchID = list[0]
 	} else {
 		vswitchID = ""
