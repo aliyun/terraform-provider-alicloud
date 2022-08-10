@@ -1,4 +1,7 @@
 ## 1.182.0 (Unreleased)
+
+- resource/alicloud_ess_scaling_group: Add support for protected_instances
+
 ## 1.181.0 (August 15, 2022)
 
 - **New Resource:** `alicloud_vpn_gateway_vpn_attachment` ([#5284](https://github.com/aliyun/terraform-provider-alicloud/issues/5284))

@@ -21,6 +21,22 @@ type EssService struct {
 	client *connectivity.AliyunClient
 }
 
+func (s *EssService) DescribeInstances(scalingGroupId string, lifecycleState string) (instances []ess.ScalingInstance, err error) {
+	request := ess.CreateDescribeScalingInstancesRequest()
+	request.RegionId = s.client.RegionId
+	request.ScalingGroupId = scalingGroupId
+	request.LifecycleState = lifecycleState
+	v, err := s.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingInstances(request)
+	})
+	if err != nil {
+		return instances, WrapErrorf(err, DefaultErrorMsg, scalingGroupId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	resp, _ := v.(*ess.DescribeScalingInstancesResponse)
+	return resp.ScalingInstances.ScalingInstance, nil
+}
+
 func (s *EssService) DescribeEssAlarm(id string) (alarm ess.Alarm, err error) {
 	request := ess.CreateDescribeAlarmsRequest()
 	request.RegionId = s.client.RegionId
@@ -596,7 +612,7 @@ func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.
 	return
 }
 
-func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error {
+func (srv *EssService) EssRemoveInstances(client *connectivity.AliyunClient, d *schema.ResourceData, id string, instanceIds []string) error {
 
 	if len(instanceIds) < 1 {
 		return nil
@@ -650,6 +666,14 @@ func (srv *EssService) EssRemoveInstances(id string, instanceIds []string) error
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
+
+		response, _ := raw.(*ess.RemoveInstancesResponse)
+		essService := EssService{client}
+		stateConf := BuildStateConf([]string{}, []string{"Successful"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, essService.ActivityStateRefreshFunc(response.ScalingActivityId, []string{"Failed", "Rejected"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return resource.NonRetryableError(WrapError(err))
+		}
+
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		time.Sleep(3 * time.Second)
 		instances, err := srv.DescribeEssAttachment(id, instanceIds)
