@@ -1036,7 +1036,7 @@ func (s *EcsService) QueryPrivateIps(eniId string) ([]string, error) {
 }
 
 func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateIp string) error {
-	deadline := time.Now().Add(DefaultTimeout * time.Second)
+	deadline := time.Now().Add(5 * time.Minute)
 	for {
 		if time.Now().After(deadline) {
 			return WrapError(Error("Wait for VPC attributes changed timeout"))
@@ -1048,11 +1048,11 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 			return WrapError(err)
 		}
 
-		if instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
+		if len(privateIp) > 0 && instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
 			continue
 		}
 
-		if instance.VpcAttributes.VSwitchId != vswitchId {
+		if len(vswitchId) > 0 && instance.VpcAttributes.VSwitchId != vswitchId {
 			continue
 		}
 
