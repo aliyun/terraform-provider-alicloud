@@ -734,6 +734,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_event_rules":                             dataSourceAlicloudCmsEventRules(),
 			"alicloud_cen_transit_router_vpn_attachments":          dataSourceAlicloudCenTransitRouterVpnAttachments(),
 			"alicloud_polardb_parameter_groups":                    dataSourceAlicloudPolarDBParameterGroups(),
+			"alicloud_vpn_gateway_vco_routes":                      dataSourceAlicloudVpnGatewayVcoRoutes(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1359,6 +1360,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddos_basic_threshold":                                 resourceAlicloudDdosBasicThreshold(),
 			"alicloud_cen_transit_router_vpn_attachment":                    resourceAlicloudCenTransitRouterVpnAttachment(),
 			"alicloud_polardb_parameter_group":                              resourceAlicloudPolarDBParameterGroup(),
+			"alicloud_vpn_gateway_vco_route":                                resourceAlicloudVpnGatewayVcoRoute(),
 		},
 
 		ConfigureFunc: providerConfigure,
