@@ -256,6 +256,11 @@ func resourceAliyunInstance() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
 					},
 				},
 			},
@@ -703,6 +708,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 
 			if autoSnapshotPolicyId, ok := item["auto_snapshot_policy_id"].(string); ok && autoSnapshotPolicyId != "" {
 				disksMap["AutoSnapshotPolicyId"] = autoSnapshotPolicyId
+			}
+
+			if device, ok := item["device"].(string); ok && device != "" {
+				disksMap["Device"] = device
 			}
 
 			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" && disksMap["Category"] == string(DiskCloudESSD) {
