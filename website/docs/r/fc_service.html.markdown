@@ -71,10 +71,10 @@ resource "alicloud_fc_service" "foo" {
   description = "tf unit test"
   role        = alicloud_ram_role.role.arn
   log_config {
-    project  = alicloud_log_project.foo.name
-    logstore = alicloud_log_store.foo.name
+    project                 = alicloud_log_project.foo.name
+    logstore                = alicloud_log_store.foo.name
     enable_instance_metrics = true
-    enable_request_metrics = true
+    enable_request_metrics  = true
   }
   depends_on = [alicloud_ram_role_policy_attachment.attach]
 }
