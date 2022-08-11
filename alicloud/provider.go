@@ -719,6 +719,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_hybrid_monitor_fc_tasks":                 dataSourceAlicloudCmsHybridMonitorFcTasks(),
 			"alicloud_ddosbgp_ips":                                 dataSourceAlicloudDdosbgpIps(),
 			"alicloud_vpn_gateway_vpn_attachments":                 dataSourceAlicloudVpnGatewayVpnAttachments(),
+			"alicloud_resource_manager_delegated_administrators":   dataSourceAlicloudResourceManagerDelegatedAdministrators(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1335,6 +1336,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_fc_layer_version":                                     resourceAlicloudFcLayerVersion(),
 			"alicloud_ddosbgp_ip":                                           resourceAlicloudDdosbgpIp(),
 			"alicloud_vpn_gateway_vpn_attachment":                           resourceAlicloudVpnGatewayVpnAttachment(),
+			"alicloud_resource_manager_delegated_administrator":             resourceAlicloudResourceManagerDelegatedAdministrator(),
 		},
 
 		ConfigureFunc: providerConfigure,
