@@ -442,6 +442,33 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging"}, false),
 			},
+			"maintenance_time": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"start_time": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"end_time": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"maintenance_action": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Stop", "AutoRecover", "AutoRedeploy"}, false),
+			},
+			"maintenance_notify": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -908,6 +935,30 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
 		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
 	}
+
+	maintenanceAttribute, err := ecsService.DescribeInstanceMaintenanceAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := maintenanceAttribute["MaintenanceWindows"]; ok {
+		maintenanceWindowsMaps := make([]map[string]interface{}, 0)
+		maintenanceWindowsList := v.(map[string]interface{})["MaintenanceWindow"].([]interface{})
+		maintenanceWindowsMap := make(map[string]interface{})
+		for _, maintenanceWindowsItem := range maintenanceWindowsList {
+			if maintenanceWindowsItemArg, ok := maintenanceWindowsItem.(map[string]interface{}); ok {
+				maintenanceWindowsMap["start_time"] = maintenanceWindowsItemArg["StartTime"]
+				maintenanceWindowsMap["end_time"] = maintenanceWindowsItemArg["EndTime"]
+				maintenanceWindowsMaps = append(maintenanceWindowsMaps, maintenanceWindowsMap)
+			}
+		}
+		d.Set("maintenance_time", maintenanceWindowsMaps)
+	}
+
+	if v, ok := maintenanceAttribute["ActionOnMaintenance"]; ok {
+		d.Set("maintenance_action", v.(map[string]interface{})["Value"])
+	}
+
+	d.Set("maintenance_notify", maintenanceAttribute["NotifyOnMaintenance"])
 
 	return nil
 }
@@ -1399,6 +1450,58 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("system_disk_auto_snapshot_policy_id")
+	}
+	if d.HasChange("maintenance_time") || d.HasChange("maintenance_action") || d.HasChange("maintenance_notify") {
+		var response map[string]interface{}
+		action := "ModifyInstanceMaintenanceAttributes"
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": []string{d.Id()},
+		}
+
+		maintenanceWindowsMaps := make([]map[string]interface{}, 0)
+		for _, maintenanceWindows := range d.Get("maintenance_time").(*schema.Set).List() {
+			maintenanceWindowsMap := make(map[string]interface{})
+			maintenanceWindowsArg := maintenanceWindows.(map[string]interface{})
+
+			if v, ok := maintenanceWindowsArg["start_time"].(string); ok && v != "" {
+				maintenanceWindowsMap["StartTime"] = v
+			}
+			if v, ok := maintenanceWindowsArg["end_time"].(string); ok && v != "" {
+				maintenanceWindowsMap["EndTime"] = v
+			}
+
+			maintenanceWindowsMaps = append(maintenanceWindowsMaps, maintenanceWindowsMap)
+		}
+		request["MaintenanceWindow"] = maintenanceWindowsMaps
+
+		if v, ok := d.GetOk("maintenance_action"); ok {
+			request["ActionOnMaintenance"] = v
+		}
+		if v, ok := d.GetOkExists("maintenance_notify"); ok {
+			request["NotifyOnMaintenance"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("maintenance_time")
+		d.SetPartial("maintenance_action")
+		d.SetPartial("maintenance_notify")
 	}
 
 	d.Partial(false)
