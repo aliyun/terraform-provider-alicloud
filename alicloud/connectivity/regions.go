@@ -18,6 +18,7 @@ const (
 	WuLanChaBu  = Region("cn-wulanchabu")
 	GuangZhou   = Region("cn-guangzhou")
 	NanJing     = Region("cn-nanjing")
+	FuZhou      = Region("cn-fuzhou")
 
 	APSouthEast1 = Region("ap-southeast-1")
 	APNorthEast1 = Region("ap-northeast-1")
@@ -55,8 +56,6 @@ const (
 	ShenzhenFinance     = Region("cn-shenzhen-finance")
 
 	CnNorth2Gov1 = Region("cn-north-2-gov-1")
-
-	FuZhou = Region("cn-fuzhou")
 )
 
 var ValidRegions = []Region{
