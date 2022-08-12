@@ -721,6 +721,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vpn_attachments":                 dataSourceAlicloudVpnGatewayVpnAttachments(),
 			"alicloud_resource_manager_delegated_administrators":   dataSourceAlicloudResourceManagerDelegatedAdministrators(),
 			"alicloud_polardb_global_database_networks":            dataSourceAlicloudPolarDBGlobalDatabaseNetworks(),
+			"alicloud_vpc_ipv4_gateways":                           dataSourceAlicloudVpcIpv4Gateways(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1339,6 +1340,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vpn_attachment":                           resourceAlicloudVpnGatewayVpnAttachment(),
 			"alicloud_resource_manager_delegated_administrator":             resourceAlicloudResourceManagerDelegatedAdministrator(),
 			"alicloud_polardb_global_database_network":                      resourceAlicloudPolarDBGlobalDatabaseNetwork(),
+			"alicloud_vpc_ipv4_gateway":                                     resourceAlicloudVpcIpv4Gateway(),
 		},
 
 		ConfigureFunc: providerConfigure,
