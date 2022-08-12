@@ -670,7 +670,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						// worker args
-						"worker_number":                  "1",
+						"worker_number":                  "2",
 						"worker_vswitch_ids.#":           "1",
 						"worker_instance_types.#":        "1",
 						"worker_disk_category":           "cloud_essd",

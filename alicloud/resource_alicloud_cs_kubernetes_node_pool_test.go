@@ -57,7 +57,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"runtime_version":       "1.4.8",
 					"image_type":            "AliyunLinux",
 					"cis_enabled":           "true",
-					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
 					"cpu_policy":            "none",
 					"spot_strategy":         "NoSpot",
 				}),
@@ -88,7 +87,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"runtime_version":              "1.4.8",
 						"image_type":                   "AliyunLinux",
 						"cis_enabled":                  "true",
-						"rds_instances.#":              "1",
 						"cpu_policy":                   "none",
 						"spot_strategy":                "NoSpot",
 					}),
@@ -98,7 +96,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "cpu_policy", "kubelet_configuration"},
+				ImportStateVerifyIgnore: []string{"password", "cpu_policy", "kubelet_configuration", "rds_instances"},
 			},
 			// check: scale out
 			{
@@ -258,7 +256,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 					"node_count":       "2",
 					"system_disk_size": "80",
 					"data_disks":       []map[string]string{{"size": "40", "category": "cloud"}},
-					"management":       []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "1", "max_unavailable": "1"}},
+					"management":       []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "1", "max_unavailable": "0"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -271,7 +269,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 						"management.0.auto_repair":     "true",
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "1",
-						"management.0.max_unavailable": "1",
+						"management.0.max_unavailable": "0",
 					}),
 				),
 			},
@@ -845,10 +843,6 @@ resource "alicloud_security_group" "group1" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_db_instances" "default" {
-	engine = "MySQL"
-}
-
 resource "alicloud_key_pair" "default" {
 	key_name = var.name
 }
@@ -1019,21 +1013,8 @@ resource "alicloud_security_group" "group1" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_db_instances" "default" {
-	engine = "MySQL"
-}
-
 resource "alicloud_key_pair" "default" {
 	key_name = var.name
-}
-
-resource "alicloud_db_instance" "default" {
-  engine           = data.alicloud_db_instances.default.instances.0.engine
-  engine_version   = data.alicloud_db_instances.default.instances.0.engine_version
-  instance_type    = data.alicloud_db_instances.default.instances.0.instance_type
-  instance_storage = "40"
-  vswitch_id       = local.vswitch_id
-  instance_name    = var.name
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
