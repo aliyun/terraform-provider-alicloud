@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
@@ -30,7 +29,7 @@ func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_REGION"); v == testRegionForCSSeverless {
 		regionId = v
 	} else {
-		log.Printf("[INFO] Test: Using %s as test region", testRegionForCSSeverless)
+		t.Logf("[INFO] Test: Using %s as test region", testRegionForCSSeverless)
 		regionId = testRegionForCSSeverless
 	}
 
