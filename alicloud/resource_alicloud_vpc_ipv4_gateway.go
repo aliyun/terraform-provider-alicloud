@@ -59,6 +59,7 @@ func resourceAlicloudVpcIpv4Gateway() *schema.Resource {
 func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	vpcService := VpcService{client}
 	action := "CreateIpv4Gateway"
 	request := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
@@ -97,6 +98,11 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	}
 
 	d.SetId(fmt.Sprint(response["Ipv4GatewayId"]))
+
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcIpv4GatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAlicloudVpcIpv4GatewayRead(d, meta)
 }
@@ -172,6 +178,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteIpv4Gateway"
+	vpcService := VpcService{client}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
@@ -203,6 +210,10 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcIpv4GatewayStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

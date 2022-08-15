@@ -443,6 +443,9 @@ func TestUnitAccAlicloudVpcIpv4Gateway(t *testing.T) {
 					return failedResponseMock(errorCodes[retryIndex])
 				}
 			}
+			if *action == "GetIpv4GatewayAttribute" {
+				return notFoundResponseMock("{}")
+			}
 			return ReadMockResponse, nil
 		})
 		err := resourceAlicloudVpcIpv4GatewayDelete(dExisted, rawClient)

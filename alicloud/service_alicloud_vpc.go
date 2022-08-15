@@ -3423,7 +3423,7 @@ func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []st
 
 		for _, failState := range failStates {
 			if object["State"].(string) == failState {
-				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
 			}
 		}
 		return object, object["State"].(string), nil
@@ -3506,4 +3506,24 @@ func (s *VpcService) DescribeVpcIpv4Gateway(id string) (object map[string]interf
 	}
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+func (s *VpcService) VpcIpv4GatewayStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcIpv4Gateway(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }
