@@ -3527,3 +3527,97 @@ func (s *VpcService) VpcIpv4GatewayStateRefreshFunc(id string, failStates []stri
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *VpcService) GetVpcPrefixListEntries(id string) (objects []map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetVpcPrefixListEntries"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"PrefixListId": id,
+	}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.PrefixListEntry", response)
+		if err != nil {
+			return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			objects = append(objects, item)
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	return objects, nil
+}
+
+func (s *VpcService) DescribeVpcPrefixList(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListPrefixLists"
+	request := map[string]interface{}{
+		"RegionId":      s.client.RegionId,
+		"PrefixListIds": []string{id},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.PrefixLists", response)
+	if formatInt(response["TotalCount"]) != 0 && err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PrefixLists", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(resp.([]interface{})[0].(map[string]interface{})["PrefixListId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = resp.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
