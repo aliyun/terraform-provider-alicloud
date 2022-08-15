@@ -25,10 +25,8 @@ Basic Usage
 resource "alicloud_fc_layer_version" "example" {
   layer_name         = "your_layer_name"
   compatible_runtime = ["nodejs12"]
-  code {
-    oss_bucket_name = "your_code_oss_bucket_name"
-    oss_object_name = "your_code_oss_object_name"
-  }
+  oss_bucket_name    = "your_code_oss_bucket_name"
+  oss_object_name    = "your_code_oss_object_name"
 }
 ```
 
