@@ -52,7 +52,7 @@ func resourceAlicloudEventBridgeRule() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"DISABLE", "ENABLE"}, false),
 			},
 			"targets": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -95,6 +95,25 @@ func resourceAlicloudEventBridgeRule() *schema.Resource {
 							Required:     true,
 							ValidateFunc: validation.StringInSlice([]string{"acs.fc.function", "acs.mns.topic", "acs.mns.queue", "http", "acs.sms", "acs.mail", "acs.dingtalk", "https", "acs.eventbridge", "acs.rabbitmq", "acs.rocketmq"}, false),
 						},
+						"push_retry_strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"BACKOFF_RETRY", "EXPONENTIAL_DECAY_RETRY"}, false),
+						},
+						"dead_letter_queue": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"arn": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -121,13 +140,23 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 	request["RuleName"] = d.Get("rule_name")
 	if v, ok := d.GetOk("targets"); ok {
 		targetsMaps := make([]map[string]interface{}, 0)
-		for _, targets := range v.(*schema.Set).List() {
+		for _, targets := range v.([]interface{}) {
 			targetsArg := targets.(map[string]interface{})
 			targetsMap := map[string]interface{}{}
 			targetsMap["endpoint"] = targetsArg["endpoint"]
 			targetsMap["id"] = targetsArg["target_id"]
 			targetsMap["type"] = targetsArg["type"]
-			targetsMaps = append(targetsMaps, targetsMap)
+			if pushRetryStrategy, ok := targetsMap["pushRetryStrategy"]; ok && pushRetryStrategy != "" {
+				targetsMap["pushRetryStrategy"] = targetsArg["push_retry_strategy"]
+			}
+			if v, ok := targetsArg["dead_letter_queue"]; ok {
+				deadLetterQueueMap := map[string]interface{}{}
+				for _, deadLetterQueue := range v.(*schema.Set).List() {
+					deadLetterQueueArg := deadLetterQueue.(map[string]interface{})
+					deadLetterQueueMap["arn"] = deadLetterQueueArg["arn"]
+				}
+				targetsMap["deadLetterQueue"] = deadLetterQueueMap
+			}
 			paramListMaps := make([]map[string]interface{}, 0)
 			for _, paramList := range targetsArg["param_list"].(*schema.Set).List() {
 				paramListArg := paramList.(map[string]interface{})
@@ -144,6 +173,7 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 				paramListMaps = append(paramListMaps, paramListMap)
 			}
 			targetsMap["paramList"] = paramListMaps
+			targetsMaps = append(targetsMaps, targetsMap)
 		}
 		if v, err := convertArrayObjectToJsonString(targetsMaps); err == nil {
 			request["Targets"] = v
@@ -178,6 +208,7 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudEventBridgeRuleUpdate(d, meta)
 }
+
 func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eventbridgeService := EventbridgeService{client}
@@ -194,11 +225,13 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("event_bus_name", parts[0])
 	d.Set("rule_name", parts[1])
 	d.Set("description", object["Description"])
 	d.Set("filter_pattern", object["FilterPattern"])
 	d.Set("status", object["Status"])
+
 	if targetsList, ok := object["Targets"]; ok && targetsList != nil {
 		targetsMaps := make([]map[string]interface{}, 0)
 		for _, targetsListItem := range targetsList.([]interface{}) {
@@ -207,6 +240,19 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 				targetsListMap["endpoint"] = targetsListItemMap["Endpoint"]
 				targetsListMap["target_id"] = targetsListItemMap["Id"]
 				targetsListMap["type"] = targetsListItemMap["Type"]
+				targetsListMap["push_retry_strategy"] = targetsListItemMap["PushRetryStrategy"]
+
+				if deadLetterQueue, ok := targetsListItemMap["DeadLetterQueue"]; ok && deadLetterQueue != nil {
+					deadLetterQueueMaps := make([]map[string]interface{}, 0)
+					deadLetterQueueArg := deadLetterQueue.(map[string]interface{})
+					deadLetterQueueMap := map[string]interface{}{}
+					if deadLetterQueueArgArn, ok := deadLetterQueueArg["Arn"]; ok && deadLetterQueueArgArn != nil {
+						deadLetterQueueMap["arn"] = deadLetterQueueArgArn
+						deadLetterQueueMaps = append(deadLetterQueueMaps, deadLetterQueueMap)
+						targetsListMap["dead_letter_queue"] = deadLetterQueueMaps
+					}
+				}
+
 				if paramListMap, ok := targetsListItemMap["ParamList"]; ok && paramListMap != nil {
 					paramListMaps := make([]map[string]interface{}, 0)
 					for _, paramListMapItem := range paramListMap.([]interface{}) {
@@ -225,6 +271,7 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 					}
 					targetsListMap["param_list"] = paramListMaps
 				}
+
 				targetsMaps = append(targetsMaps, targetsListMap)
 			}
 		}
@@ -237,6 +284,7 @@ func resourceAlicloudEventBridgeRuleRead(d *schema.ResourceData, meta interface{
 
 	return nil
 }
+
 func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eventbridgeService := EventbridgeService{client}
@@ -252,15 +300,25 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 		"EventBusName": parts[0],
 		"RuleName":     parts[1],
 	}
-	if d.HasChange("targets") {
+
+	if !d.IsNewResource() && d.HasChange("targets") {
 		update = true
 		targetsMaps := make([]map[string]interface{}, 0)
-		for _, targets := range d.Get("targets").(*schema.Set).List() {
+		for _, targets := range d.Get("targets").([]interface{}) {
 			targetsArg := targets.(map[string]interface{})
 			targetsMap := map[string]interface{}{}
 			targetsMap["endpoint"] = targetsArg["endpoint"]
 			targetsMap["id"] = targetsArg["target_id"]
 			targetsMap["type"] = targetsArg["type"]
+			targetsMap["pushRetryStrategy"] = targetsArg["push_retry_strategy"]
+			if v, ok := targetsArg["dead_letter_queue"]; ok {
+				deadLetterQueueMap := map[string]interface{}{}
+				for _, deadLetterQueue := range v.(*schema.Set).List() {
+					deadLetterQueueArg := deadLetterQueue.(map[string]interface{})
+					deadLetterQueueMap["arn"] = deadLetterQueueArg["arn"]
+				}
+				targetsMap["deadLetterQueue"] = deadLetterQueueMap
+			}
 			targetsMaps = append(targetsMaps, targetsMap)
 			paramListMaps := make([]map[string]interface{}, 0)
 			for _, paramList := range targetsArg["param_list"].(*schema.Set).List() {
@@ -315,6 +373,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("targets")
 	}
+
 	update = false
 	updateRuleReq := map[string]interface{}{
 		"EventBusName": parts[0],
@@ -440,6 +499,7 @@ func resourceAlicloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(false)
 	return resourceAlicloudEventBridgeRuleRead(d, meta)
 }
+
 func resourceAlicloudEventBridgeRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
