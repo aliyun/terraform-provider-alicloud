@@ -488,6 +488,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sae_namespaces":                              dataSourceAlicloudSaeNamespaces(),
 			"alicloud_sae_config_maps":                             dataSourceAlicloudSaeConfigMaps(),
 			"alicloud_alb_security_policies":                       dataSourceAlicloudAlbSecurityPolicies(),
+			"alicloud_alb_system_security_policies":                dataSourceAlicloudAlbSystemSecurityPolicies(),
 			"alicloud_event_bridge_event_sources":                  dataSourceAlicloudEventBridgeEventSources(),
 			"alicloud_ecd_policy_groups":                           dataSourceAlicloudEcdPolicyGroups(),
 			"alicloud_ecp_key_pairs":                               dataSourceAlicloudEcpKeyPairs(),
