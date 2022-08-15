@@ -56,14 +56,14 @@ func resourceAliCloudReservedInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "Year",
-				ValidateFunc: validation.StringInSlice([]string{"Year"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      1,
-				ValidateFunc: validation.IntInSlice([]int{1, 3}),
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 5}),
 			},
 			"offering_type": {
 				Type:         schema.TypeString,
