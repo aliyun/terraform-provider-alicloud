@@ -102,8 +102,77 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
+	var v ecs.ReservedInstance
+
+	resourceId := "alicloud_reserved_instance.default"
+	ra := resourceAttrInit(resourceId, testAccReservedInstanceCheckMap)
+
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeReservedInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEcsReservedInstanceConfigBasic%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceReservedInstanceBasicConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_amount": "1",
+					"period":          "1",
+					"period_unit":     "Month",
+					"offering_type":   "All Upfront",
+					"name":            name,
+					"description":     "ReservedInstance",
+					"zone_id":         "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"scope":           "Zone",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":   CHECKSET,
+						"instance_amount": "1",
+						"period":          "1",
+						"period_unit":     "Month",
+						"offering_type":   "All Upfront",
+						"name":            name,
+						"description":     "ReservedInstance",
+						"zone_id":         CHECKSET,
+						"scope":           "Zone",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+		},
+	})
+}
+
 var testAccReservedInstanceCheckMap = map[string]string{}
 
 func resourceReservedInstanceBasicConfigDependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	
+	data "alicloud_instance_types" "default" {
+		instance_type_family = "ecs.g7"
+	}
+`, name)
 }

@@ -33,13 +33,18 @@ resource "alicloud_reserved_instance" "default" {
 
 The following arguments are supported:
 
-* `offering_type` - (Required, ForceNew) Payment type of the RI. Optional values: `No Upfront`: No upfront payment is required., `Partial Upfront`: A portion of upfront payment is required.`All Upfront`: Full upfront payment is required.
+* `offering_type` - (Optional, ForceNew) Payment type of the RI. Default value: `All Upfront`. Valid values:
+  - `No Upfront`: No upfront payment.
+  - `Partial Upfront`: A portion of upfront payment.
+  - `All Upfront`: Full upfront payment.
 * `zone_id` - (Optional, ForceNew) ID of the zone to which the RI belongs. When Scope is set to Zone, this parameter is required. For information about the zone list, see [DescribeZones](https://www.alibabacloud.com/help/doc-detail/25610.html).
 * `scope` - (Optional, ForceNew) Scope of the RI. Optional values: `Region`: region-level, `Zone`: zone-level. Default is `Region`.
-* `instance_type` - (Optional, ForceNew) Instance type of the RI. For more information, see [Instance type families](https://www.alibabacloud.com/help/doc-detail/25378.html).
+* `instance_type` - (Required, ForceNew) Instance type of the RI. For more information, see [Instance type families](https://www.alibabacloud.com/help/doc-detail/25378.html).
 * `instance_amount` - (Optional, ForceNew) Number of instances allocated to an RI (An RI is a coupon that includes one or more allocated instances.).
-* `Period` - (Optional, ForceNew) Term of the RI. Unit: years. Optional values: 1 and 3.
-* `period_unit` - (Optional, ForceNew) Term unit. Optional value: Year.
+* `period` - (Optional, ForceNew) The validity period of the reserved instance. Default value: `1`. **NOTE:** From version 1.183.0, `period` can be set to `5`, when `period_unit` is `Year`.
+  - When `period_unit` is `Year`, Valid values: `1`, `3`, `5`.
+  - When `period_unit` is `Month`, Valid values: `1`.
+* `period_unit` - (Optional, ForceNew) The unit of the validity period of the reserved instance. Valid value: `Month`, `Year`. Default value: `Year`. **NOTE:** From version 1.183.0, `period_unit` can be set to `Month`.
 * `resource_group_id` - (Optional, ForceNew) Resource group ID.
 * `description` - (Optional) Description of the RI. 2 to 256 English or Chinese characters. It cannot start with http:// or https://.
 * `name` - (Optional) Name of the RI. The name must be a string of 2 to 128 characters in length and can contain letters, numbers, colons (:), underscores (_), and hyphens. It must start with a letter. It cannot start with http:// or https://.
