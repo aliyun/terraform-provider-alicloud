@@ -1,4 +1,31 @@
 ## 1.181.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpn_gateway_vpn_attachment` [GH-5284]
+- **New Resource:** `alicloud_resource_manager_delegated_administrator` [GH-5288]
+- **New Resource:** `alicloud_polardb_global_database_network` [GH-5294]
+- **New Resource:** `alicloud_vpc_ipv4_gateway` [GH-5295]
+- **New Resource:** `alicloud_api_gateway_backend` [GH-5280]
+- **New Data Source:** `alicloud_api_gateway_backends` [GH-5280]	
+- **New Data Source:** `alicloud_vpc_ipv4_gateways` [GH-5295]
+- **New Data Source:** `Datasourcealicloud_polardb_global_database_networks` [GH-5294]
+- **New Data Source:** `alicloud_resource_manager_delegated_administrators` [GH-5288]
+- **New Data Source:** `alicloud_vpn_gateway_vpn_attachments` [GH-5284]
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc_ipv4_gateway: After creation and deletion, the new status waits for judgment. [GH-5302]
+- resource/alicloud_instance: Added the field maintenance_time, maintenance_action and maintenance_notify; Supported for new action ModifyInstanceMaintenanceAttributes [GH-5289]
+- resource/alicloud_resource_manager_account: Added the field tag [GH-5278]
+- resource/alicloud_oos_execution: Remove the status wait after the resource is created. [GH-5286]
+- testcase: Adds new unit test case for resource alicloud_ga_listener alicloud_ga_endpoint_group alicloud_ga_bandwidth_package [GH-5283]
+- doc/fc_layer_version: Update Test Examples [GH-5300]
+- region: add the available region: cn-fuzhou [GH-5291]
+- ci: Imprvoes the auto-trigger ci pipeline [GH-5297]
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixed the issue of updating VSwitch timeout [GH-5287]
+
 ## 1.180.0 (Auguest 07, 2022)
 
 - **New Resource:** `alicloud_fc_layer_version` ([#5245](https://github.com/aliyun/terraform-provider-alicloud/issues/5245))
