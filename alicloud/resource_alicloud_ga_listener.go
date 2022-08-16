@@ -90,6 +90,11 @@ func resourceAlicloudGaListener() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"security_policy_id": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -147,6 +152,10 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOkExists("proxy_protocol"); ok {
 		request["ProxyProtocol"] = v
+	}
+
+	if v, ok := d.GetOk("security_policy_id"); ok {
+		request["SecurityPolicyId"] = v
 	}
 
 	request["RegionId"] = client.RegionId
@@ -231,6 +240,8 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("protocol", object["Protocol"])
 	d.Set("status", object["State"])
+	d.Set("security_policy_id", object["SecurityPolicyId"])
+
 	return nil
 }
 func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -285,6 +296,10 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("protocol") {
 		update = true
 		request["Protocol"] = d.Get("protocol")
+	}
+	if d.HasChange("security_policy_id") {
+		update = true
+		request["SecurityPolicyId"] = d.Get("security_policy_id")
 	}
 	request["RegionId"] = client.RegionId
 	if update {

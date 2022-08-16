@@ -65,12 +65,6 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"accelerator_id", "proxy_protocol"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"client_affinity": "SOURCE_IP",
 				}),
@@ -152,6 +146,49 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port_ranges": []map[string]interface{}{
+						{
+							"from_port": "20",
+							"to_port":   "20",
+						},
+					},
+					"certificates": []map[string]string{
+						{
+							"id": "${local.certificate_id}",
+						},
+					},
+					"proxy_protocol":     "true",
+					"protocol":           "HTTPS",
+					"security_policy_id": "tls_cipher_policy_1_0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"certificates.#":     "1",
+						"port_ranges.#":      "1",
+						"proxy_protocol":     "true",
+						"protocol":           "HTTPS",
+						"security_policy_id": "tls_cipher_policy_1_0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_id": "tls_cipher_policy_1_1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_id": "tls_cipher_policy_1_1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"accelerator_id", "proxy_protocol"},
+			},
 		},
 	})
 }
@@ -167,28 +204,37 @@ func AlicloudGaListenerBasicDependence(name string) string {
 variable "name" {
 	default = "%s"
 }
+
+locals {
+	certificate_id = join("-", [data.alicloud_cas_certificates.default.certificates.0.id, "%s"])
+}
+
 data "alicloud_ga_accelerators" "default" {
-  status = "active"
+	status = "active"
+}
+
+data "alicloud_cas_certificates" "default" {
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
+	bandwidth              = 100
   	type                   = "Basic"
   	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
+  	payment_type           = "PayAsYouGo"
   	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-    auto_pay               = true
-    auto_use_coupon        = true
+  	ratio                  = 30
+  	bandwidth_package_name = var.name
+  	auto_pay               = true
+  	auto_use_coupon        = true
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
-	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
+  	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+	accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
 	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
-`, name)
+
+`, name, defaultRegionToTest)
 }
 
 func TestUnitAlicloudGaListener(t *testing.T) {
