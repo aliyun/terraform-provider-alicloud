@@ -447,7 +447,8 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		taskInfo := csService.DescribeTaskInfoByRpcCall(cluster.TaskId)
+		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
@@ -554,7 +555,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 				})
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ScaleOutCloudWorkers", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ScaleOutCloudWorkers", DenverdinoAliyungo, resp)
 			}
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
@@ -565,7 +566,8 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				taskInfo := csService.DescribeTaskInfoByRpcCall(resp.(*cs.ClusterCommonResponse).TaskId)
+				return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 			}
 			d.SetPartial("worker_data_disks")
 			d.SetPartial("worker_number")
@@ -595,7 +597,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			response = raw
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ModifyClusterName", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "ModifyClusterName", DenverdinoAliyungo, response)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})

@@ -745,7 +745,8 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		taskInfo := csService.DescribeTaskInfoByRpcCall(cluster.TaskId)
+		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }

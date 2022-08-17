@@ -528,7 +528,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 
 	nodePool, ok := raw.(*cs.CreateNodePoolResponse)
 	if ok != true {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ParseKubernetesNodePoolResponse", DenverdinoAliyungo, raw)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ParseKubernetesNodePoolResponse", DenverdinoAliyungo, nodePool)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, nodePool.NodePoolID))
@@ -536,7 +536,8 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, "ResourceID:%s , TaskID:%s ", d.Id(), nodePool.TaskID)
+		taskInfo := csService.DescribeTaskInfoByRpcCall(nodePool.TaskID)
+		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 	}
 
 	// attach existing node
@@ -783,7 +784,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			})
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "UpdateKubernetesNodePool", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "UpdateKubernetesNodePool", DenverdinoAliyungo, resoponse)
 		}
 		if debugOn() {
 			resizeRequestMap := make(map[string]interface{})
@@ -796,7 +797,10 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+
+			// todo: 节点池更新没有task_id返回
+			taskInfo := ""
+			return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 		}
 	}
 

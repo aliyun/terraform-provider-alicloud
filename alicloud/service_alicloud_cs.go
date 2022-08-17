@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"regexp"
 	"strings"
@@ -985,4 +986,50 @@ func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutosca
 	}
 
 	return request, nil
+}
+
+// todo waiting for sdk update
+func (s *CsClient) DescribeTaskInfo(taskId string) string {
+	if taskId == "" {
+		return ""
+	}
+
+	resp, err := s.client.DescribeTaskInfo(tea.String(taskId))
+	if err == nil {
+		// return fmt.Sprintf("[TASK_FAILED!!!] Details: ClusterID:%v, TaskId:%v, TaskType:%v, ErrorCode:%v, ErrorMessage:%v", resp.Body.ClusterId, resp.Body.TaskId, resp.Body.TaskType, resp.Body.TaskResult[0].Status, resp.Body.TaskResult[0].Data)
+		return fmt.Sprintf("Task:%v", resp.Body)
+	}
+	return ""
+}
+
+func (s *CsService) DescribeTaskInfoByRpcCall(taskId string) string {
+	if taskId == "" {
+		return ""
+	}
+
+	taskInfo := ""
+	action := "DescribeTaskInfo"
+	errMessage := ""
+	conn, err := s.client.NewTeaRoaCommonClient(connectivity.OpenAckService)
+	if err != nil {
+		return taskInfo
+	}
+	raw, err := conn.DoRequestWithAction(
+		String(action),
+		StringPointer("2015-12-15"),
+		nil,
+		StringPointer("GET"),
+		StringPointer("AK"),
+		StringPointer(fmt.Sprintf("/tasks/%s", taskId)),
+		nil, nil, nil, &util.RuntimeOptions{})
+	if err == nil {
+		response := raw["body"].(map[string]interface{})
+		if err2, ok := response["error"].(map[string]interface{}); ok {
+			errMessage = tea.ToString(err2)
+		}
+		taskInfo = fmt.Sprintf("[TASK FAILED!!!] Details: \nClusterID: %v; \nTaskID: %v; \nTaskType: %v; \nErrorMessage: %v;\n",
+			response["cluster_id"], response["task_id"], response["task_type"], errMessage)
+	}
+
+	return taskInfo
 }

@@ -818,7 +818,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 
 	cluster, ok := raw.(*cs.ClusterCommonResponse)
 	if ok != true {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "ParseKubernetesClusterResponse", raw)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "ParseKubernetesClusterResponse", cluster)
 	}
 
 	d.SetId(cluster.ClusterID)
@@ -826,7 +826,8 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		taskInfo := csService.DescribeTaskInfoByRpcCall(cluster.TaskId)
+		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 	}
 
 	return resourceAlicloudCSKubernetesRead(d, meta)
@@ -974,28 +975,29 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				args.ImageId = d.Get("image_id").(string)
 			}
 
-			var resoponse interface{}
+			var response interface{}
 			if err := invoker.Run(func() error {
 				var err error
-				resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
 					return resp, err
 				})
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "ResizeKubernetesCluster", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "ResizeKubernetesCluster", DenverdinoAliyungo, response)
 			}
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
 				resizeRequestMap["ClusterId"] = d.Id()
 				resizeRequestMap["Args"] = args
-				addDebug("ResizeKubernetesCluster", resoponse, resizeRequestMap)
+				addDebug("ResizeKubernetesCluster", response, resizeRequestMap)
 			}
 
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				taskInfo := csService.DescribeTaskInfoByRpcCall(response.(*cs.ClusterCommonResponse).TaskId)
+				return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
 			}
 			d.SetPartial("worker_number")
 			d.SetPartial("worker_data_disks")
@@ -1428,12 +1430,12 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
 	}
 
-	_, err = client.DeleteCluster(tea.String(d.Id()), args)
+	resp, err := client.DeleteCluster(tea.String(d.Id()), args)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "DeleteCluster", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "DeleteCluster", DenverdinoAliyungo, resp)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
