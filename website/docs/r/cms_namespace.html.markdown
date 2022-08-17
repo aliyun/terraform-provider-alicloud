@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cms_namespace" "example" {
-  namespace     = "example_value"
+  namespace     = "example-value"
   specification = "cms.s1.large"
 }
 ```
