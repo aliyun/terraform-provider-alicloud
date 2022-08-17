@@ -134,7 +134,10 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
+					"use_local_metadb":          "true",
+					"meta_store_type":           "local",
 					"master_pwd":                "ABCtest1234!",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"tags": map[string]interface{}{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -180,7 +183,115 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssh_enable", "master_pwd", "is_open_public_ip", "host_group"},
+				ImportStateVerifyIgnore: []string{"ssh_enable", "master_pwd", "is_open_public_ip", "host_group", "resource_group_id", "use_local_metadb"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudEmrCluster_hadoop_cluster(t *testing.T) {
+	var v *emr.DescribeClusterV2Response
+	resourceId := "alicloud_emr_cluster.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrClusterConfig%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrHadoopClusterConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		//CheckDestroy:  testAccAlicloudEmrClusterDestroy,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                      name,
+					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
+					"cluster_type":              "HADOOP",
+					"deposit_type":              "HALF_MANAGED",
+					"high_availability_enable":  "false",
+					"zone_id":                   "${data.alicloud_emr_instance_types.default.types.0.zone_id}",
+					"security_group_id":         "${alicloud_security_group.default.id}",
+					"is_open_public_ip":         "true",
+					"charge_type":               "PostPaid",
+					"vswitch_id":                "${alicloud_vswitch.default.id}",
+					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
+					"ssh_enable":                "true",
+					"use_local_metadb":          "false",
+					"meta_store_type":           "user_rds",
+					"meta_store_conf": []map[string]interface{}{
+						{
+							"db_url":       "jdbc:mysql://${alicloud_db_instance.default.connection_string}/hmsdata?createDatabaseIfNotExist=true&characterEncoding=UTF-8",
+							"db_user_name": "taihao",
+							"db_password":  "EMRtest1234!",
+						},
+					},
+					"master_pwd": "ABCtest1234!",
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+
+					"configs": []map[string]interface{}{
+						{
+							"service_name": "HDFS",
+							"file_name":    "hdfs-site",
+							"config_key":   "dfs.replication",
+							"config_value": "3",
+						},
+					},
+
+					"modify_cluster_service_config": []map[string]interface{}{
+						{
+							"service_name":  "HDFS",
+							"config_params": "dfs.replication",
+							"comment":       "tf-test",
+						},
+					},
+
+					"host_group": []map[string]interface{}{
+						{
+							"host_group_type":   "MASTER",
+							"node_count":        "1",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
+							"disk_type":         "${data.alicloud_emr_disk_types.data_disk.types.0.value}",
+							"disk_capacity":     "${data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160}",
+							"disk_count":        "1",
+							"sys_disk_type":     "${data.alicloud_emr_disk_types.system_disk.types.0.value}",
+							"sys_disk_capacity": "${data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160}",
+						},
+						{
+							"host_group_type":   "CORE",
+							"node_count":        "2",
+							"instance_type":     "${data.alicloud_emr_instance_types.default.types.0.id}",
+							"disk_type":         "${data.alicloud_emr_disk_types.data_disk.types.0.value}",
+							"disk_capacity":     "${data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160}",
+							"disk_count":        "4",
+							"sys_disk_type":     "${data.alicloud_emr_disk_types.system_disk.types.0.value}",
+							"sys_disk_capacity": "${data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         name,
+						"emr_ver":      CHECKSET,
+						"cluster_type": CHECKSET,
+						"charge_type":  "PostPaid",
+						"zone_id":      CHECKSET,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
 			},
 		},
 	})
@@ -223,6 +334,8 @@ func TestAccAlicloudEmrCluster_local_storage(t *testing.T) {
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
+					"use_local_metadb":          "true",
+					"meta_store_type":           "local",
 					"master_pwd":                "ABCtest1234!",
 
 					"bootstrap_action": []map[string]interface{}{
@@ -310,6 +423,8 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
+					"use_local_metadb":          "true",
+					"meta_store_type":           "local",
 					"master_pwd":                "ABCtest1234!",
 					"related_cluster_id":        "${alicloud_emr_cluster.default.id}",
 
@@ -377,6 +492,8 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 					"vswitch_id":                "${alicloud_vswitch.default.id}",
 					"user_defined_emr_ecs_role": "${alicloud_ram_role.default.name}",
 					"ssh_enable":                "true",
+					"use_local_metadb":          "true",
+					"meta_store_type":           "local",
 					"master_pwd":                "ABCtest1234!",
 
 					"host_group": []map[string]interface{}{
@@ -426,6 +543,15 @@ func resourceEmrClusterCommonConfigDependence(name string) string {
 		default = "%s"
 	}
 	`, EmrCommonTestCase, name)
+}
+
+func resourceEmrHadoopClusterConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "%s"
+	}
+	`, EmrHadoopClusterTestCase, name)
 }
 
 func resourceEmrClusterGatewayConfigDependence(name string) string {

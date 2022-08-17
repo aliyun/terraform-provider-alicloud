@@ -564,6 +564,11 @@ The following arguments are supported:
 * `period` - (Optional, Available in v1.101.0+) If charge type is PrePaid, this should be specified, unit is month. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36.
 * `is_open_public_ip` (Optional, ForceNew) Whether the MASTER node has a public IP address enabled. Default value is false.
 * `bootstrap_action` (Optional) Boot action parameters.
+* `resource_group_id` - (Optional, Available in 1.182.0+) The Id of resource group which the emr-cluster belongs.
+* `meta_store_type` - (Optional, Available in 1.182.0+) The type of emr-cluster service component metadata storage. ’dlf’ or ’local’ or ’user_rds’ .
+* `meta_store_conf` - (Optional, Available in 1.182.0+) The configuration of emr-cluster service component metadata storage. If meta store type is ’user_rds’, this should be specified.
+* `configs` - (Optional, Available in 1.182.0+) The custom configurations of emr-cluster service.
+* `modify_cluster_service_config` - (Optional, Available in 1.182.0+) The configurations of emr-cluster service modification after cluster created.
 
 #### Block host_group
 
@@ -595,6 +600,37 @@ The bootstrap_action mapping supports the following:
 * `execution_target` - (Optional, Available in 1.173.0+) bootstrap action execution target, you can specify the host group name, e.g. "core_group". If this is not specified, the bootstrap action execution target is whole cluster.
 * `execution_moment` - (Optional, Available in 1.173.0+) bootstrap action execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ . Default value: "BEFORE_INSTALL".
 * `execution_fail_strategy` - (Optional, Available in 1.173.0+) bootstrap action execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ . Default value: "FAILED_BLOCKED
+
+### Block meta_store_conf
+
+The meta_store_conf mapping supports the following:
+
+* `db_url` - (Optional, Available in 1.182.0+) Custom rds database connection url.
+* `db_user_name` - (Optional, Available in 1.182.0+) Custom rds database user name.
+* `db_password` - (Optional, Available in 1.182.0+) Custom rds database password.
+
+### Block configs
+
+The configs mapping supports the following:
+
+* `service_name` - (Optional, Available in 1.182.0+) Custom configuration service name, e.g. ’HDFS’.
+* `file_name` - (Optional, Available in 1.182.0+) Custom configuration service file name, e.g. ’hdfs-site’.
+* `config_key` - (Optional, Available in 1.182.0+) Custom configuration service config key, e.g. ’dfs.replication’.
+* `config_value` - (Optional, Available in 1.182.0+) Custom configuration service config value, e.g. ’3’.
+
+### Block modify_cluster_service_config
+
+The configs mapping supports the following:
+
+* `service_name` - (Optional, Available in 1.182.0+) Cluster service configuration modification name, e.g. ’HDFS’.
+* `config_params` - (Optional, Available in 1.182.0+) Cluster service configuration modification params, e.g. ’{"hdfs-site":{"dfs.replication":"3"}}’.
+* `custom_config_params` - (Optional, Available in 1.182.0+) Cluster service configuration modification custom params, e.g. ’{"tez-site":{"key":{"Value":"value"}}}’.
+* `group_id` - (Optional, Available in 1.182.0+) Cluster service configuration modification node group id, e.g. ’G-XXX’.
+* `host_instance_id` - (Optional, Available in 1.182.0+) Cluster service configuration modification host instance id, e.g. ’i-bp146tnrkq4tcxxxxx’.
+* `config_type` - (Optional, Available in 1.182.0+) Cluster service configuration modification type.
+* `comment` - (Optional, Available in 1.182.0+) Cluster service configuration modification comment, e.g. "Modify tez configuration".
+* `refresh_host_config` - (Optional, Available in 1.182.0+) Cluster service configuration modification refresh host config, ’true’ or ’false’.
+* `gateway_cluster_id_list` - (Optional, Available in 1.182.0+) Cluster service configuration modification related gateway cluster id list.
 
 #### Timeouts
 

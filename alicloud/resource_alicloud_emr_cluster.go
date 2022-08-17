@@ -41,12 +41,45 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"HADOOP", "KAFKA", "DRUID", "GATEWAY", "FLINK", "DATA_SCIENCE", "PRESTO", "SECURITY_CENTER", "DSW", "SHUFFLE_SERVICE", "EMR_STUDIO", "KUDU", "ZOOKEEPER"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"HADOOP", "KAFKA", "DRUID", "GATEWAY", "FLINK", "DATA_SCIENCE", "PRESTO", "SECURITY_CENTER", "DSW", "SHUFFLE_SERVICE", "DATABRICKS_DATAINSIGHT", "EMR_STUDIO", "KUDU", "ZOOKEEPER"}, false),
 			},
 			"emr_ver": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"meta_store_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"local", "user_rds", "dlf"}, false),
+			},
+			"meta_store_conf": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"db_url": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"db_user_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"db_password": {
+							Type:      schema.TypeString,
+							Required:  true,
+							Sensitive: true,
+						},
+					},
+				},
+				MaxItems: 1,
 			},
 			"charge_type": {
 				Type:         schema.TypeString,
@@ -64,7 +97,77 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 					return d.Get("charge_type").(string) == "PostPaid"
 				},
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaComputed(),
+			"configs": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"service_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"file_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"config_key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"config_value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"modify_cluster_service_config": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"service_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"config_params": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"custom_config_params": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"group_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"host_instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"config_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"comment": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"refresh_host_config": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"gateway_cluster_id_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 			"host_group": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -82,6 +185,7 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 						"period": {
 							Type:         schema.TypeInt,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 						},
 						"charge_type": {
@@ -135,10 +239,12 @@ func resourceAlicloudEmrCluster() *schema.Resource {
 						"enable_graceful_decommission": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"decommission_timeout": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -319,6 +425,28 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request["KeyPairName"] = v
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("meta_store_type"); ok {
+		request["MetaStoreType"] = v
+	}
+
+	if v, ok := d.GetOk("meta_store_conf"); ok {
+		metaStoreConf := v.(*schema.Set).List()
+		if len(metaStoreConf) == 1 {
+			metaStoreConfSource := metaStoreConf[0].(map[string]interface{})
+			metaStoreConfMap := map[string]interface{}{
+				"dbUrl":      metaStoreConfSource["db_url"],
+				"dbUserName": metaStoreConfSource["db_user_name"],
+				"dbPassword": metaStoreConfSource["db_password"],
+			}
+			metaStoreConfByt, _ := json.Marshal(metaStoreConfMap)
+			request["MetaStoreConf"] = string(metaStoreConfByt)
+		}
+	}
+
 	if v, ok := d.GetOk("deposit_type"); ok {
 		request["DepositType"] = v
 	}
@@ -368,6 +496,33 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 		request["VpcId"] = vsw.VpcId
 	}
+
+	configs := make([]map[string]interface{}, 0)
+	if sourceConfigs, ok := d.GetOk("configs"); ok {
+		for _, config := range sourceConfigs.(*schema.Set).List() {
+			kv := config.(map[string]interface{})
+			serviceConfig := map[string]interface{}{}
+
+			if v, ok := kv["service_name"]; ok {
+				serviceConfig["ServiceName"] = v
+			}
+
+			if v, ok := kv["file_name"]; ok {
+				serviceConfig["FileName"] = v
+			}
+
+			if v, ok := kv["config_key"]; ok {
+				serviceConfig["ConfigKey"] = v
+			}
+
+			if v, ok := kv["config_value"]; ok {
+				serviceConfig["ConfigValue"] = v
+			}
+
+			configs = append(configs, serviceConfig)
+		}
+	}
+	request["Config"] = configs
 
 	hostGroups := make([]map[string]interface{}, 0)
 	if groups, ok := d.GetOk("host_group"); ok {
@@ -520,7 +675,7 @@ func resourceAlicloudEmrClusterCreate(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Partial(false)
 
-	stateConf := BuildStateConf([]string{"CREATING"}, []string{"IDLE"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, emrService.EmrClusterStateRefreshFunc(d.Id(), []string{"CREATE_FAILED"}))
+	stateConf := BuildStateConf([]string{"CREATING"}, []string{"IDLE"}, d.Timeout(schema.TimeoutCreate), 6*time.Minute, emrService.EmrClusterStateRefreshFunc(d.Id(), []string{"CREATE_FAILED"}))
 	stateConf.PollInterval = 10 * time.Second
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -551,7 +706,6 @@ func resourceAlicloudEmrClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("net_type", object["NetType"])
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("vswitch_id", object["VSwitchId"])
-	d.Set("use_local_metadb", object["LocalMetaDb"])
 	d.Set("deposit_type", object["DepositType"])
 	d.Set("eas_enable", object["EasEnable"])
 	d.Set("user_defined_emr_ecs_role", object["UserDefinedEmrEcsRole"])
@@ -862,6 +1016,57 @@ func resourceAlicloudEmrClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("host_group")
 	}
+
+	if d.HasChange("modify_cluster_service_config") {
+		action := "ModifyClusterServiceConfig"
+		_, v := d.GetChange("modify_cluster_service_config")
+		modifyConfigs := v.(*schema.Set).List()
+		if len(modifyConfigs) == 1 {
+			modifyConfig := modifyConfigs[0].(map[string]interface{})
+			modifyConfigRequest := map[string]interface{}{
+				"ClusterId": d.Id(),
+				"RegionId":  client.RegionId,
+			}
+			modifyConfigRequest["ConfigParams"] = modifyConfig["config_params"]
+			modifyConfigRequest["ServiceName"] = modifyConfig["service_name"]
+			modifyConfigRequest["CustomConfigParams"] = modifyConfig["comment"]
+			modifyConfigRequest["CustomConfigParams"] = modifyConfig["custom_config_params"]
+			modifyConfigRequest["GroupId"] = modifyConfig["group_id"]
+			modifyConfigRequest["HostInstanceId"] = modifyConfig["host_instance_id"]
+			modifyConfigRequest["ConfigType"] = modifyConfig["config_type"]
+			if v, ok := modifyConfig["gateway_cluster_id_list"]; ok {
+				gatewayIdList := v.(*schema.Set).List()
+				if len(gatewayIdList) > 0 {
+					var gatewayStringIdList []string
+					for _, ID := range gatewayIdList {
+						gatewayStringIdList = append(gatewayStringIdList, ID.(string))
+					}
+					modifyConfigRequest["GatewayClusterIdList"] = gatewayStringIdList
+				}
+			}
+			modifyConfigRequest["RefreshHostConfig"] = modifyConfig["refresh_host_config"]
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-08"), StringPointer("AK"), nil, modifyConfigRequest, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, modifyConfigRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("modify_cluster_service_config")
+	}
+
 	d.Partial(false)
 
 	return nil

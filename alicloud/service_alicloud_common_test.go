@@ -924,13 +924,15 @@ resource "alicloud_vswitch" "default" {
 `
 
 const EmrCommonTestCase = `
+data "alicloud_resource_manager_resource_groups" "default" {}
+
 data "alicloud_emr_main_versions" "default" {
 	cluster_type = ["HADOOP"]
 }
 
 data "alicloud_emr_instance_types" "default" {
     destination_resource = "InstanceType"
-    cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+    cluster_type = "HADOOP"
     support_local_storage = false
     instance_charge_type = "PostPaid"
     support_node_type = ["MASTER", "CORE"]
@@ -938,7 +940,7 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
 	destination_resource = "DataDisk"
-	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+	cluster_type = "HADOOP"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -946,7 +948,7 @@ data "alicloud_emr_disk_types" "data_disk" {
 
 data "alicloud_emr_disk_types" "system_disk" {
 	destination_resource = "SystemDisk"
-	cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+	cluster_type = "HADOOP"
 	instance_charge_type = "PostPaid"
 	instance_type = data.alicloud_emr_instance_types.default.types.0.id
 	zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -960,13 +962,13 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
-  name = "${var.name}"
+  zone_id = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
-    name = "${var.name}"
-    vpc_id = "${alicloud_vpc.default.id}"
+  name = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_ram_role" "default" {
@@ -979,7 +981,117 @@ resource "alicloud_ram_role" "default" {
             "Effect": "Allow",
             "Principal": {
             "Service": [
-                "emr.aliyuncs.com", 
+                "emr.aliyuncs.com",
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+    description = "this is a role test."
+    force = true
+}
+`
+
+const EmrHadoopClusterTestCase = `
+data "alicloud_emr_main_versions" "default" {
+	cluster_type = ["HADOOP"]
+	emr_version = "EMR-3.24.0"
+}
+
+data "alicloud_db_zones" "default" {
+	engine = "MySQL"
+	engine_version = "8.0"
+	category = "Basic"
+	instance_charge_type = "PostPaid"
+	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_emr_instance_types" "default" {
+	destination_resource = "InstanceType"
+	cluster_type = "HADOOP"
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+	support_local_storage = false
+	instance_charge_type = "PostPaid"
+	support_node_type = ["MASTER", "CORE"]
+}
+
+data "alicloud_emr_disk_types" "data_disk" {
+	destination_resource = "DataDisk"
+	cluster_type = "HADOOP"
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.default.types.0.id
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
+
+data "alicloud_emr_disk_types" "system_disk" {
+	destination_resource = "SystemDisk"
+	cluster_type = "HADOOP"
+	instance_charge_type = "PostPaid"
+	instance_type = data.alicloud_emr_instance_types.default.types.0.id
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+}
+
+data "alicloud_db_instance_classes" "default" {
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+	engine = "MySQL"
+	engine_version = "8.0"
+	category = "Basic"
+	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+	vpc_id = "${alicloud_vpc.default.id}"
+	cidr_block = "172.16.0.0/21"
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+	vswitch_name = "${var.name}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_db_instance" "default" {
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
+	instance_charge_type = "Postpaid"
+	db_instance_storage_type = "cloud_essd"
+	vswitch_id = "${alicloud_vswitch.default.id}"
+	instance_name = "${var.name}"
+	security_ips = ["${alicloud_vswitch.default.cidr_block}"]
+}
+
+resource "alicloud_rds_account" "default" {
+	db_instance_id = "${alicloud_db_instance.default.id}"
+	account_type = "Normal"
+	account_name = "taihao"
+	account_password = "EMRtest1234!"
+	account_description = "tf-test"
+}
+
+resource "alicloud_ram_role" "default" {
+	name = "${var.name}"
+	document = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com",
                 "ecs.aliyuncs.com"
             ]
             }
@@ -1054,8 +1166,8 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
-  name = "${var.name}"
+  zone_id = "${data.alicloud_emr_instance_types.default.types.0.zone_id}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
@@ -1118,6 +1230,7 @@ resource "alicloud_emr_cluster" "default" {
     }
 
     high_availability_enable = true
+    meta_store_type = "local"
     zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
     security_group_id = alicloud_security_group.default.id
     is_open_public_ip = true
@@ -1173,8 +1286,8 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id = "${alicloud_vpc.default.id}"
   cidr_block = "172.16.0.0/21"
-  availability_zone = "${data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id}"
-  name = "${var.name}"
+  zone_id = "${data.alicloud_emr_instance_types.cloud_disk.types.0.zone_id}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
