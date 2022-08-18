@@ -199,6 +199,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_users":                                   dataSourceAlicloudRamUsers(),
 			"alicloud_ram_roles":                                   dataSourceAlicloudRamRoles(),
 			"alicloud_ram_policies":                                dataSourceAlicloudRamPolicies(),
+			"alicloud_ram_policy_document":                         dataSourceAlicloudRamPolicyDocument(),
 			"alicloud_security_groups":                             dataSourceAlicloudSecurityGroups(),
 			"alicloud_security_group_rules":                        dataSourceAlicloudSecurityGroupRules(),
 			"alicloud_slbs":                                        dataSourceAlicloudSlbLoadBalancers(),

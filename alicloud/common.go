@@ -1378,3 +1378,14 @@ func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bo
 	sort.Strings(y2)
 	return reflect.DeepEqual(y1, y2), nil
 }
+
+func getOneStringOrAllStringSlice(stringSli []interface{}) interface{} {
+	if len(stringSli) == 1 {
+		return stringSli[0].(string)
+	}
+	sli := make([]string, len(stringSli))
+	for i, v := range stringSli {
+		sli[i] = v.(string)
+	}
+	return sli
+}
