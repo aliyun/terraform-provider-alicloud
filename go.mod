@@ -50,4 +50,8 @@ require (
 	k8s.io/client-go v0.21.0-rc.0
 )
 
+replace (
+	github.com/denverdino/aliyungo v0.0.0-20220714084452-7034e8b75db5 => /Users/pjp/go/src/github.com/denverdino/aliyungo
+)
+
 go 1.13

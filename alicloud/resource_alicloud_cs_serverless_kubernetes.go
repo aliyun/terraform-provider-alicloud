@@ -390,8 +390,8 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		taskInfo := csService.DescribeTaskInfoByRpcCall(cluster.TaskId)
-		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
+		taskInfo := csService.DescribeTaskInfo(cluster.TaskId)
+		return WrapErrorf(err, IdMsgWithTaskInfo, d.Id(), taskInfo)
 	}
 
 	return resourceAlicloudCSServerlessKubernetesRead(d, meta)

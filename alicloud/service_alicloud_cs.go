@@ -62,6 +62,8 @@ const (
 	BALANCE_POLICY        = "BALANCE"
 
 	UpgradeClusterTimeout = 30 * time.Minute
+
+	CsClusterTaskErrorMessageFormat = "\n[Task Failed!!!] Details:\ntask_id: %v\ncluster_id: %v\ntask_type: %v\nstate: %v\nerror: %v\ntask_result: %v\n"
 )
 
 var (
@@ -988,20 +990,40 @@ func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutosca
 	return request, nil
 }
 
-// todo waiting for sdk update
-func (s *CsClient) DescribeTaskInfo(taskId string) string {
+func (s *CsService) DescribeTaskInfo(taskId string) string {
 	if taskId == "" {
 		return ""
 	}
 
-	resp, err := s.client.DescribeTaskInfo(tea.String(taskId))
-	if err == nil {
-		// return fmt.Sprintf("[TASK_FAILED!!!] Details: ClusterID:%v, TaskId:%v, TaskType:%v, ErrorCode:%v, ErrorMessage:%v", resp.Body.ClusterId, resp.Body.TaskId, resp.Body.TaskType, resp.Body.TaskResult[0].Status, resp.Body.TaskResult[0].Data)
-		return fmt.Sprintf("Task:%v", resp.Body)
+	resp, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+		return csClient.DescribeTaskInfo(taskId)
+	})
+	log.Printf("[DEBUG] DescribeTaskInfo API ERROR!!! %v", err)
+	if err != nil {
+		return ""
 	}
-	return ""
+	task := resp.(*cs.DescribeTaskInfoResponse)
+	log.Printf("[DEBUG] DescribeTaskInfo response: %v", task)
+
+	var taskError string
+	var taskResults string
+	if task.TaskError != nil {
+		taskError, _ = convertMaptoJsonString(convertStructToMap(*task.TaskError))
+	}
+	if task.TaskResult != nil {
+		results := *task.TaskResult
+		resSlice := make([]string, 0)
+		for _, res := range results {
+			ss, _ := convertMaptoJsonString(convertStructToMap(res))
+			resSlice = append(resSlice, ss)
+		}
+		taskResults = convertArrayToString(resSlice, ";")
+	}
+	return fmt.Sprintf(CsClusterTaskErrorMessageFormat, task.TaskID, task.ClusterID, task.TaskType, task.State, taskError, taskResults)
 }
 
+// need SDK support new task response struct [alibabacloud-go/cs-20151215]
+// Deprecated
 func (s *CsService) DescribeTaskInfoByRpcCall(taskId string) string {
 	if taskId == "" {
 		return ""

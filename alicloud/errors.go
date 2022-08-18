@@ -371,6 +371,7 @@ const DataDefaultErrorMsg = "Datasource %s %s Failed!!! %s"
 const SweepDefaultErrorMsg = "Sweep %s %s Failed!!!"
 const IdMsg = "Resource id：%s "
 const FailedGetAttributeMsg = "Getting resource %s attribute by path %s failed!!! Body: %v."
+const IdMsgWithTaskInfo = IdMsg + " Task Info: %s"
 
 const DefaultDebugMsg = "\n*************** %s Response *************** \n%s\n%s******************************\n\n"
 const FailedToReachTargetStatus = "Failed to reach target status. Current status is %s."

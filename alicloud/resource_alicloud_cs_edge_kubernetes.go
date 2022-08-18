@@ -447,8 +447,8 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		taskInfo := csService.DescribeTaskInfoByRpcCall(cluster.TaskId)
-		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
+		taskInfo := csService.DescribeTaskInfo(cluster.TaskId)
+		return WrapErrorf(err, IdMsgWithTaskInfo, d.Id(), taskInfo)
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
@@ -566,8 +566,8 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				taskInfo := csService.DescribeTaskInfoByRpcCall(resp.(*cs.ClusterCommonResponse).TaskId)
-				return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
+				taskInfo := csService.DescribeTaskInfo(resp.(*cs.ClusterCommonResponse).TaskId)
+				return WrapErrorf(err, IdMsgWithTaskInfo, d.Id(), taskInfo)
 			}
 			d.SetPartial("worker_data_disks")
 			d.SetPartial("worker_number")

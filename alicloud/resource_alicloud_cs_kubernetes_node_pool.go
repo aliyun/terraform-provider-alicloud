@@ -536,8 +536,8 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		taskInfo := csService.DescribeTaskInfoByRpcCall(nodePool.TaskID)
-		return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
+		taskInfo := csService.DescribeTaskInfo(nodePool.TaskID)
+		return WrapErrorf(err, IdMsgWithTaskInfo, d.Id(), taskInfo)
 	}
 
 	// attach existing node
@@ -797,10 +797,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 		if _, err := stateConf.WaitForState(); err != nil {
-
-			// todo: 节点池更新没有task_id返回
-			taskInfo := ""
-			return WrapErrorf(err, IdMsg, d.Id(), taskInfo)
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 

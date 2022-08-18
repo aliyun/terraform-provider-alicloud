@@ -1337,3 +1337,18 @@ func GetDaysBetween2Date(format string, date1Str string, date2Str string) (int, 
 
 	return day, nil
 }
+
+func convertStructToMap(obj interface{}) map[string]interface{} {
+	if obj == nil {
+		return map[string]interface{}{}
+	}
+
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+
+	data := make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		data[t.Field(i).Name] = v.Field(i).Interface()
+	}
+	return data
+}
