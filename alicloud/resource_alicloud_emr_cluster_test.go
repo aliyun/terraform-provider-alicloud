@@ -183,7 +183,7 @@ func TestAccAlicloudEmrCluster_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssh_enable", "master_pwd", "is_open_public_ip", "host_group", "resource_group_id", "use_local_metadb"},
+				ImportStateVerifyIgnore: []string{"ssh_enable", "master_pwd", "is_open_public_ip", "host_group", "resource_group_id", "use_local_metadb", "meta_store_type"},
 			},
 		},
 	})
