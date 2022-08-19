@@ -70,7 +70,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 10 mins) Used when create the PolarDB Global Database Network.
 * `update` - (Defaults to 3 mins) Used when update the PolarDB Global Database Network.
-* `delete` - (Defaults to 3 mins) Used when delete the PolarDB Global Database Network.
+* `delete` - (Defaults to 10 mins) Used when delete the PolarDB Global Database Network.
 
 ## Import
 
