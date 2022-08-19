@@ -117,6 +117,7 @@ func TestUnitAlicloudCREndpointAclPolicy(t *testing.T) {
 				"InstanceId":   "instance_id",
 			},
 		},
+		"IsSuccess": "true",
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){
