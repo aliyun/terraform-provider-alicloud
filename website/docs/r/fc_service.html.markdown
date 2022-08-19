@@ -60,7 +60,7 @@ resource "alicloud_ram_role" "role" {
   force       = true
 }
 
-resource "alicloud_ram_role_policy_attachment" "attac" {
+resource "alicloud_ram_role_policy_attachment" "attach" {
   role_name   = alicloud_ram_role.role.name
   policy_name = "AliyunLogFullAccess"
   policy_type = "System"
@@ -70,7 +70,13 @@ resource "alicloud_fc_service" "foo" {
   name        = var.name
   description = "tf unit test"
   role        = alicloud_ram_role.role.arn
-  depends_on  = [alicloud_ram_role_policy_attachment.attac]
+  log_config {
+    project  = alicloud_log_project.foo.name
+    logstore = alicloud_log_store.foo.name
+    enable_instance_metrics = true
+    enable_request_metrics = true
+  }
+  depends_on = [alicloud_ram_role_policy_attachment.attach]
 }
 ```
 
@@ -87,32 +93,24 @@ The following arguments are supported:
 * `description` - (Optional) The Function Compute Service description.
 * `internet_access` - (Optional) Whether to allow the Service to access Internet. Default to "true".
 * `role` - (Optional) RAM role arn attached to the Function Compute Service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
-* `log_config` - (Optional) Provide this to store your Function Compute Service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm).
-* `vpc_config` - (Optional) Provide this to allow your Function Compute Service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm).
-* `nas_config` - (Optional, available in 1.96.0+) Provide [NAS configuration](https://www.alibabacloud.com/help/doc-detail/87401.htm) to allow Function Compute Service to access your NAS resources.
+* `log_config` - (Optional) Provide this to store your Function Compute Service logs. Fields documented below. See [Create a Service](https://www.alibabacloud.com/help/doc-detail/51924.htm). `log_config` requires the following: (**NOTE:** If both `project` and `logstore` are empty, log_config is considered to be empty or unset.)
+  * `project` - (Required) The project name of the Alicloud Simple Log Service.
+  * `logstore` - (Required) The log store name of Alicloud Simple Log Service.
+  * `enable_request_metrics` - (Optional, available in 1.183.0+) Enable request level metrics.
+  * `enable_instance_metrics` - (Optional, available in 1.183.0+) Enable instance level metrics.
+* `vpc_config` - (Optional) Provide this to allow your Function Compute Service to access your VPC. Fields documented below. See [Function Compute Service in VPC](https://www.alibabacloud.com/help/faq-detail/72959.htm). `vpc_config` requires the following: (**NOTE:** If both `vswitch_ids` and `security_group_id` are empty, vpc_config is considered to be empty or unset.)
+  * `vswitch_ids` - (Required) A list of vswitch IDs associated with the Function Compute Service.
+  * `security_group_id` - (Required) A security group ID associated with the Function Compute Service.
+* `nas_config` - (Optional, available in 1.96.0+) Provide [NAS configuration](https://www.alibabacloud.com/help/doc-detail/87401.htm) to allow Function Compute Service to access your NAS resources. `nas_config` requires the following:
+  * `user_id` - (Required) The user id of your NAS file system.
+  * `group_id` - (Required) The group id of your NAS file system.
+  * `mount_points` - (Required) Config the NAS mount points, including following attributes:
+    * `server_addr` - (Required) The address of the remote NAS directory.
+    * `mount_dir` - (Required) The local address where to mount your remote NAS directory.
+* `tracing_config` - (Optional, available in 1.183.0+) Provide this to allow your Function Compute to report tracing information. Fields documented below. See [Function Compute Tracing Config](https://help.aliyun.com/document_detail/189805.html). `tracing_config` requires the following: (**NOTE:** If both `type` and `params` are empty, tracing_config is considered to be empty or unset.)
+  * `type` - (Required) Tracing protocol type. Currently, only Jaeger is supported.
+  * `params` - (Required) Tracing parameters, which type is map[string]string. When the protocol type is Jaeger, the key is "endpoint" and the value is your tracing intranet endpoint. For example endpoint: http://tracing-analysis-dc-hz.aliyuncs.com/adapt_xxx/api/traces.
 * `publish` - (Optional, available in 1.101.0+) Whether to publish creation/change as new Function Compute Service Version. Defaults to `false`.
-
-**log_config** requires the following:
-
-* `project` - (Required) The project name of the Alicloud Simple Log Service.
-* `logstore` - (Required) The log store name of Alicloud Simple Log Service.
-
--> **NOTE:** If both `project` and `logstore` are empty, log_config is considered to be empty or unset.
-
-**vpc_config** requires the following:
-
-* `vswitch_ids` - (Required) A list of vswitch IDs associated with the Function Compute Service.
-* `security_group_id` - (Required) A security group ID associated with the Function Compute Service.
-
--> **NOTE:** If both `vswitch_ids` and `security_group_id` are empty, vpc_config is considered to be empty or unset.
-
-**nas_config** requires the following:
-
-* `user_id` - (Required) The user id of your NAS file system.
-* `group_id` - (Required) The group id of your NAS file system.
-* `mount_points` - (Required) Config the NAS mount points, including following attributes:
-  * `server_addr` - (Required) The address of the remote NAS directory.
-  * `mount_dir` - (Required) The local address where to mount your remote NAS directory.
 
 ## Attributes Reference
 
