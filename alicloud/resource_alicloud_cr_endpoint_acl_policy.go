@@ -92,6 +92,10 @@ func resourceAlicloudCrEndpointAclPolicyCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_instance_endpoint_acl_policy", action, AlibabaCloudSdkGoERROR)
 	}
 
+	if v, ok := response["IsSuccess"]; !ok || fmt.Sprint(v) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["EndpointType"], ":", request["Entry"]))
 
 	return resourceAlicloudCrEndpointAclPolicyRead(d, meta)
@@ -154,6 +158,9 @@ func resourceAlicloudCrEndpointAclPolicyDelete(d *schema.ResourceData, meta inte
 	addDebug(action, response, request)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	if v, ok := response["IsSuccess"]; !ok || fmt.Sprint(v) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	return nil
 }
