@@ -92,6 +92,12 @@ func resourceAlicloudCommonBandwidthPackage() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"security_protection_types": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -138,6 +144,10 @@ func resourceAlicloudCommonBandwidthPackageCreate(d *schema.ResourceData, meta i
 		request["Zone"] = v
 	}
 
+	if v, ok := d.GetOk("security_protection_types"); ok {
+		request["SecurityProtectionTypes"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -166,6 +176,7 @@ func resourceAlicloudCommonBandwidthPackageCreate(d *schema.ResourceData, meta i
 
 	return resourceAlicloudCommonBandwidthPackageRead(d, meta)
 }
+
 func resourceAlicloudCommonBandwidthPackageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -188,9 +199,14 @@ func resourceAlicloudCommonBandwidthPackageRead(d *schema.ResourceData, meta int
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["Status"])
 	d.Set("deletion_protection", object["DeletionProtection"])
+	if securityProtectionTypes, ok := object["SecurityProtectionTypes"]; ok {
+		securityProtectionTypeList := securityProtectionTypes.(map[string]interface{})["SecurityProtectionType"].([]interface{})
+		d.Set("security_protection_types", securityProtectionTypeList)
+	}
 
 	return nil
 }
+
 func resourceAlicloudCommonBandwidthPackageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -346,6 +362,7 @@ func resourceAlicloudCommonBandwidthPackageUpdate(d *schema.ResourceData, meta i
 	d.Partial(false)
 	return resourceAlicloudCommonBandwidthPackageRead(d, meta)
 }
+
 func resourceAlicloudCommonBandwidthPackageDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -363,6 +380,13 @@ func resourceAlicloudCommonBandwidthPackageDelete(d *schema.ResourceData, meta i
 		request["Force"] = v
 	}
 	request["RegionId"] = client.RegionId
+
+	// Pre paid instance can not be release.
+	if d.Get("internet_charge_type").(string) == string(PayBy95) {
+		log.Printf("[WARN] Cannot destroy CommonBandwidthPackage. Because internet_charge_type = 'PayBy95'. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

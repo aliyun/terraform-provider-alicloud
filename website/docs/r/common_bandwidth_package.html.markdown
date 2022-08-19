@@ -46,7 +46,8 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
   - true: Enable deletion protection.
   - false: Disable deletion protection.
-  
+* `security_protection_types` - (Optional, ForceNew, Available in v1.184.0+) The edition of Anti-DDoS. If you do not set this parameter, Anti-DDoS Origin Basic is used. If you set the value to `AntiDDoS_Enhanced`, Anti-DDoS Pro(Premium) is used. It is valid when `internet_charge_type` is `PayBy95`.
+
 ## Attributes Reference
 
 The following attributes are exported:
