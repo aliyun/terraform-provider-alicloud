@@ -462,10 +462,11 @@ func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 	productCode := "rds"
-	endpoint := ""
+	endpoint := "rds.aliyuncs.com"
 	if v, ok := client.config.Endpoints[productCode]; !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
+			log.Printf("[WARN] %s", err.Error())
+			log.Printf("[WARN] loading rds endpoint failed and using %s instead.", endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints[productCode]; ok && v.(string) != "" {

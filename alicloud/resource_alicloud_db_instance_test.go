@@ -133,16 +133,34 @@ func testSweepDBInstances(region string) error {
 				log.Printf("[ERROR] ReleaseReadWriteSplittingConnection error: %#v", err)
 			}
 		}
-		action := "DeleteDBInstance"
-		request := map[string]interface{}{
+
+		action = "ModifyDBInstanceDeletionProtection"
+		request = map[string]interface{}{
+			"RegionId":           client.RegionId,
+			"DBInstanceId":       id,
+			"SourceIp":           client.SourceIp,
+			"DeletionProtection": false,
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		var response map[string]interface{}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+
+		action = "DeleteDBInstance"
+		request = map[string]interface{}{
 			"DBInstanceId": id,
 			"SourceIp":     client.SourceIp,
 		}
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		runtime := util.RuntimeOptions{}
 		err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil && !NotFoundError(err) {
