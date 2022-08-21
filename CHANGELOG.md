@@ -1,6 +1,27 @@
 ## 1.182.0 (Unreleased)
 
-- resource/alicloud_ess_scaling_group: Add support for protected_instances
+- **New Resource:** `alicloud_vpc_prefix_list` [GH-5306]
+- **New Resource:** `alicloud_cms_event_rule` [GH-5268]
+- **New Data Source:** `alicloud_cms_event_rules` [GH-5268]	
+- **New Data Source:** `alicloud_vpc_prefix_lists` [GH-5306]
+
+ENHANCEMENTS:
+
+- resource/alicloud_lindorm_instance: Field time_serires_engine_specification deprecated and instead by time_series_engine_specification [GH-5327]
+- resource/alicloud_cr_endpoint_acl_policy: Add the second check of the request [GH-5319]
+- resource/lindorm_instace: Removes the useless updateing after creating a new resource [GH-5325]
+- resource/alicloud_polardb_global_database_network: Enlarges the default waiting timeout for deleting the PolarDB Global Database Network [GH-5320]
+- resource/alicloud_ecs_instance_set: exclude instances due to instance creation failure [GH-5277]
+- resource/alicloud_emr_cluster: support modify cluster service config [GH-5292]
+- resource/alicloud_ess_scaling_group: Add support for protected_instances [GH-5301]
+- datasource/alicloud_instances: supported for disk_id, disk_name. [GH-5277]
+
+BUG FIXES:
+
+- resource/alicloud_alb_rule: Fix verification rules for some attributes. [GH-5311]
+- resource/alicloud_ecs_instance_set: Fix state wait logic error after creation, fix test case. [GH-5326]
+- resource/alicloud_emr_cluster: fix test case testAccAlicloudEmrCluste [GH-5315]
+- doc/cms_namespace: fix example error. [GH-5306]
 
 ## 1.181.0 (August 15, 2022)
 
