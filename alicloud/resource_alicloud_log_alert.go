@@ -59,10 +59,9 @@ func resourceAlicloudLogAlert() *schema.Resource {
 				Deprecated: "Deprecated from 1.161.0+, use dashboardId in query_list",
 			},
 			"mute_until": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntAtLeast(0),
-				Default:      time.Now().Unix(),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"throttling": {
 				Type:       schema.TypeString,
