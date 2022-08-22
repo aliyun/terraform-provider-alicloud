@@ -160,10 +160,19 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				ValidateFunc: validation.IntAtLeast(2),
 			},
 			"time_serires_engine_specification": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"time_series_engine_specification"},
+				Deprecated:    "Field 'time_serires_engine_specification' has been deprecated from provider version 1.182.0. New field 'time_series_engine_specification' instead.",
+				ValidateFunc:  validation.StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
+			},
+			"time_series_engine_specification": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"time_serires_engine_specification"},
+				ValidateFunc:  validation.StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
 			},
 			"upgrade_type": {
 				Type:         schema.TypeString,
@@ -266,7 +275,10 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("time_serires_engine_specification"); ok {
 		request["TsdbSpec"] = v
+	} else if v, ok := d.GetOk("time_series_engine_specification"); ok {
+		request["TsdbSpec"] = v
 	}
+
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
@@ -376,6 +388,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("time_series_engine_node_count", formatInt(v))
 	}
 	d.Set("time_serires_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
+	d.Set("time_series_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
 
 	listTagResourcesObject, err := hitsdbService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {
@@ -621,8 +634,17 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("table_engine_node_count")
 	}
 
-	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification")) && !d.IsNewResource() {
-		newTsdbSpec := d.Get("time_serires_engine_specification")
+	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) && !d.IsNewResource() {
+		var newTsdbSpec interface{}
+
+		if d.HasChange("time_serires_engine_specification") {
+			newTsdbSpec = d.Get("time_serires_engine_specification")
+		}
+
+		if d.HasChange("time_series_engine_specification") {
+			newTsdbSpec = d.Get("time_series_engine_specification")
+		}
+
 		newTsdbNum := d.Get("time_series_engine_node_count")
 		enabled := d.Get("enabled_time_serires_engine").(bool)
 		currentInstanceStorage := formatInt(d.Get("instance_storage"))
@@ -638,7 +660,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		if enabled && d.HasChange("time_serires_engine_specification") {
+		if enabled && (d.HasChange("time_serires_engine_specification") || d.HasChange("time_series_engine_specification")) {
 			upgradeLindormInstanceSearchReq := map[string]interface{}{}
 			upgradeLindormInstanceSearchReq["UpgradeType"] = "upgrade-tsdb-engine"
 			upgradeLindormInstanceSearchReq["TsdbSpec"] = newTsdbSpec
@@ -661,6 +683,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		d.SetPartial("time_serires_engine_specification")
+		d.SetPartial("time_series_engine_specification")
 		d.SetPartial("time_series_engine_node_count")
 	}
 
