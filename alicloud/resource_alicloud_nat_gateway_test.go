@@ -137,7 +137,6 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -148,6 +147,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 					"nat_gateway_name": "${var.name}",
 					"nat_type":         "Enhanced",
 					"vswitch_id":       "${alicloud_vswitch.default.id}",
+					"eip_bind_mode":    "NAT",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -155,14 +155,9 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 						"nat_gateway_name": name,
 						"nat_type":         "Enhanced",
 						"vswitch_id":       CHECKSET,
+						"eip_bind_mode":    "NAT",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -251,6 +246,12 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 						"deletion_protection": "false",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 		},
 	})
@@ -492,7 +493,7 @@ func TestAccAlicloudNatGateway_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "force", "period"},
+				ImportStateVerifyIgnore: []string{"dry_run", "force"},
 			},
 		},
 	})
@@ -623,14 +624,14 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-	vpc_name = var.name
+	vpc_name   = var.name
 	cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-	vpc_id = alicloud_vpc.default.id
-	cidr_block = "172.16.0.0/21"
-	zone_id = data.alicloud_zones.default.zones.0.id
+	vpc_id       = alicloud_vpc.default.id
+	cidr_block   = "172.16.0.0/21"
+	zone_id      = data.alicloud_zones.default.zones.0.id
 	vswitch_name = var.name
 }
 
@@ -658,11 +659,11 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default"	{
-  name_regex = "default-NODELETING"
+	name_regex = "default-NODELETING"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+	vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 }
 
 `, name)
