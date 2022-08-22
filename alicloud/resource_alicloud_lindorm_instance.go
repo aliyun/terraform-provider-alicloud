@@ -305,7 +305,7 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 	hitsdbService := HitsdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -535,7 +535,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("file_engine_specification")
 	}
 
-	if d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification") && !d.IsNewResource() {
+	if (d.HasChange("search_engine_node_count") || d.HasChange("search_engine_specification")) && !d.IsNewResource() {
 		newSolrSpec := d.Get("search_engine_specification")
 		newSolrNum := d.Get("search_engine_node_count")
 		enabled := d.Get("enabled_search_engine").(bool)
@@ -578,7 +578,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("search_engine_node_count")
 	}
 
-	if d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification") && !d.IsNewResource() {
+	if (d.HasChange("table_engine_node_count") || d.HasChange("table_engine_specification")) && !d.IsNewResource() {
 		newLindormSpec := d.Get("table_engine_specification")
 		newLindormNum := d.Get("table_engine_node_count")
 		enabled := d.Get("enabled_table_engine").(bool)
@@ -621,7 +621,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("table_engine_node_count")
 	}
 
-	if d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification") && !d.IsNewResource() {
+	if (d.HasChange("time_series_engine_node_count") || d.HasChange("time_serires_engine_specification")) && !d.IsNewResource() {
 		newTsdbSpec := d.Get("time_serires_engine_specification")
 		newTsdbNum := d.Get("time_series_engine_node_count")
 		enabled := d.Get("enabled_time_serires_engine").(bool)
@@ -854,7 +854,7 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 	}
 
 	hitsdbService := HitsdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 2*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
