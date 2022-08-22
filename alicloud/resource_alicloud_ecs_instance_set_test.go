@@ -35,7 +35,7 @@ func TestAccAlicloudECSInstanceSet_basic0(t *testing.T) {
 					"image_id":                   "${data.alicloud_images.default.images[0].id}",
 					"instance_type":              "${data.alicloud_instance_types.default.instance_types[0].id}",
 					"instance_name":              "${var.name}",
-					"security_group_ids":         []string{"${data.alicloud_security_groups.default.groups.0.id}"},
+					"security_group_ids":         []string{"${alicloud_security_group.default.id}"},
 					"internet_charge_type":       "PayByTraffic",
 					"internet_max_bandwidth_out": "10",
 					"zone_id":                    "${data.alicloud_zones.default.zones[0].id}",
@@ -118,8 +118,9 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 
-data "alicloud_security_groups" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "alicloud_security_group" "default" {
+ name   = "${var.name}"
+ vpc_id = data.alicloud_vpcs.default.ids.0
 }
 `, name)
 }

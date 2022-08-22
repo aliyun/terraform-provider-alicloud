@@ -642,13 +642,16 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, instanceHealthCheckFunc)
 
 	_, waitStateErr := stateConf.WaitForState()
+	if waitStateErr != nil {
+		return WrapErrorf(err, IdMsg, d.Id()), nil
+	}
 	// Check the valid number of instances
 	checkEventErr := checkEcsInstanceSystemFailureDeleteEvent(d, meta, instanceIds)
 	if checkEventErr != nil {
 		return WrapErrorf(checkEventErr, IdMsg, d.Id()), nil
 	}
 
-	return WrapErrorf(waitStateErr, IdMsg, d.Id()), instanceIds
+	return nil, instanceIds
 }
 
 func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}) error {
