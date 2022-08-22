@@ -222,6 +222,10 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gdbService := GdbService{client}
+	conn, err := client.NewGdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -237,10 +241,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	}
 	if update {
 		action := "ModifyDBInstanceDescription"
-		conn, err := client.NewGdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -279,10 +279,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				dBInstanceIPArrayArg := dBInstanceIPArray.(map[string]interface{})
 
 				action := "ModifyDBInstanceAccessWhiteList"
-				conn, err := client.NewGdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				if v, ok := dBInstanceIPArrayArg["db_instance_ip_array_name"]; !ok || v.(string) == "default" {
 					continue
 				}
@@ -312,10 +308,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				dBInstanceIPArrayArg := dBInstanceIPArray.(map[string]interface{})
 
 				action := "ModifyDBInstanceAccessWhiteList"
-				conn, err := client.NewGdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayAttribute"] = dBInstanceIPArrayArg["db_instance_ip_array_attribute"]
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = dBInstanceIPArrayArg["security_ips"]
@@ -357,10 +349,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	if update {
 		modifyDBInstanceSpecReq["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 		action := "ModifyDBInstanceSpec"
-		conn, err := client.NewGdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		modifyDBInstanceSpecReq["ClientToken"] = buildClientToken("ModifyDBInstanceSpec")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
