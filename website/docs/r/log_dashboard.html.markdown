@@ -73,7 +73,7 @@ The following arguments are supported:
 * `dashboard_name` - (Required, ForceNew) The name of the Log Dashboard.
 * `char_list` - (Required) Configuration of charts in the dashboard.
 * `display_name` - (Optional) Dashboard alias.
-* `attribute` - (Optional, Available in 1.182.0+) Dashboard attribute.
+* `attribute` - (Optional, Available in 1.183.0+) Dashboard attribute.
 
 ## Attributes Reference
 
