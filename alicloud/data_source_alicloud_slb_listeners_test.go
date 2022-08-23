@@ -218,6 +218,7 @@ func TestAccAlicloudSLBListenersDataSource_tcp(t *testing.T) {
 			"slb_listeners.0.health_check_timeout":      "0",
 			"slb_listeners.0.health_check_interval":     "5",
 			"slb_listeners.0.description":               fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceTcp-%d", rand),
+			"slb_listeners.0.proxy_protocol_v2_enabled": "true",
 		}
 	}
 
@@ -285,6 +286,7 @@ func TestAccAlicloudSLBListenersDataSource_udp(t *testing.T) {
 			"slb_listeners.0.health_check_timeout":         "0",
 			"slb_listeners.0.health_check_interval":        "5",
 			"slb_listeners.0.description":                  fmt.Sprintf("tf-testAccCheckAlicloudSlbListenersDataSourceUdp-%d", rand),
+			"slb_listeners.0.proxy_protocol_v2_enabled":    "true",
 		}
 	}
 
@@ -487,6 +489,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_type = "tcp"
   bandwidth = 10
   description = "${var.name}"
+  proxy_protocol_v2_enabled = "true"
 }
 
 data "alicloud_slb_listeners" "default" {
@@ -537,6 +540,7 @@ resource "alicloud_slb_listener" "default" {
   health_check_interval = 5
   bandwidth = 10
   description = "${var.name}"
+  proxy_protocol_v2_enabled = "true"
 }
 
 data "alicloud_slb_listeners" "default" {

@@ -359,6 +359,11 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"proxy_protocol_v2_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -557,6 +562,11 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if d.HasChange("acl_id") {
 		commonRequest.QueryParams["AclId"] = d.Get("acl_id").(string)
+		update = true
+	}
+
+	if d.HasChange("proxy_protocol_v2_enabled") {
+		commonRequest.QueryParams["ProxyProtocolV2Enabled"] = convertBoolToString(d.Get("proxy_protocol_v2_enabled").(bool))
 		update = true
 	}
 
@@ -857,6 +867,9 @@ func buildListenerCommonArgs(d *schema.ResourceData, meta interface{}) (*request
 		request.QueryParams["Scheduler"] = scheduler.(string)
 	}
 
+	if v, ok := d.GetOkExists("proxy_protocol_v2_enabled"); ok && v.(bool) {
+		request.QueryParams["ProxyProtocolV2Enabled"] = convertBoolToString(v.(bool))
+	}
 	return request, nil
 
 }
@@ -1110,6 +1123,10 @@ func readListener(d *schema.ResourceData, listener map[string]interface{}) {
 	}
 	if val, ok := listener["Description"]; ok {
 		d.Set("description", val.(string))
+	}
+
+	if val, ok := listener["ProxyProtocolV2Enabled"]; ok {
+		d.Set("proxy_protocol_v2_enabled", val)
 	}
 
 	return
