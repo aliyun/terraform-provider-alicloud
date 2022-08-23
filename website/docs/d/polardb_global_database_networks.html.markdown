@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_polardb_global_database_networks"
 sidebar_current: "docs-alicloud-datasource-polardb-global-database-networks"
 description: |-
-  Provides a list of Polar Db Global Database Networks to the user.
+  Provides a list of PolarDB Global Database Networks to the user.
 ---
 
 # alicloud\_polardb\_global\_database\_networks
