@@ -69,7 +69,7 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validation.IntBetween(1, 1000),
+				ValidateFunc: validation.IntBetween(1, 5120),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Get("internet_charge_type").(string) == "PayByTraffic" {
 						return true
