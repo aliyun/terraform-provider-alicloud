@@ -239,6 +239,60 @@ func TestAccAlicloudKMSSecret_Basic(t *testing.T) {
 	})
 }
 
+func SkipTestAccAlicloudKMSSecret_DKMS(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testaccKmsSecret_%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"arn":              CHECKSET,
+		"description":      "",
+		"secret_data_type": "text",
+		"version_stages.#": "1",
+	})
+	serviceFunc := func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKmsSecretConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_data":                   name,
+					"secret_data_type":              "text",
+					"secret_name":                   name,
+					"version_id":                    "00001",
+					"force_delete_without_recovery": "true",
+					"dkms_instance_id":              os.Getenv("DKMS_INSTANCE_ID"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_data":      name,
+						"secret_name":      name,
+						"version_id":       "00001",
+						"dkms_instance_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudKMSSecret_WithKey(t *testing.T) {
 	var v map[string]interface{}
 

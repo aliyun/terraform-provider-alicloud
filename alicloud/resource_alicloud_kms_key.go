@@ -83,8 +83,8 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Aliyun_KMS", "EXTERNAL"}, false),
-				Default:      "Aliyun_KMS",
 			},
 			"pending_window_in_days": {
 				Type:          schema.TypeInt,
@@ -131,6 +131,11 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				ConflictsWith: []string{"status"},
 				Deprecated:    "Field 'key_state' has been deprecated from provider version 1.123.1. New field 'status' instead.",
 			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -170,6 +175,10 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	if v, ok := d.GetOk("rotation_interval"); ok {
 		request["RotationInterval"] = v
+	}
+
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -222,6 +231,7 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("rotation_interval", object["RotationInterval"])
 	d.Set("status", object["KeyState"])
 	d.Set("key_state", object["KeyState"])
+	d.Set("dkms_instance_id", object["DKMSInstanceId"])
 	return nil
 }
 func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {

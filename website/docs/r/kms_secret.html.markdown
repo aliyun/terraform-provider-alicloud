@@ -43,6 +43,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `enable_automatic_rotation` - (Optional, Available in 1.124.0+) Whether to enable automatic key rotation.
 * `rotation_interval` - (Optional, Available in 1.124.0+) The time period of automatic rotation. The format is integer[unit], where integer represents the length of time, and unit represents the unit of time. The legal unit units are: d (day), h (hour), m (minute), s (second). 7d or 604800s both indicate a 7-day cycle.
+* `dkms_instance_id` - (Optional, ForceNew, Available in v1.183.0+) The instance ID of the exclusive KMS instance.
 
 ## Attributes Reference
 

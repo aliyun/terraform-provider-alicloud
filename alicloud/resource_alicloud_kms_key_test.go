@@ -235,6 +235,54 @@ func KmsKeyBasicdependence(name string) string {
 	return ""
 }
 
+func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, KmsKeyMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKmsKey%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KmsKeyBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":            name,
+					"key_spec":               "Aliyun_AES_256",
+					"protection_level":       "HSM",
+					"pending_window_in_days": "7",
+					"dkms_instance_id":       os.Getenv("DKMS_INSTANCE_ID"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":            name,
+						"key_spec":               "Aliyun_AES_256",
+						"protection_level":       "HSM",
+						"pending_window_in_days": "7",
+						"dkms_instance_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days", "is_enabled"},
+			},
+		},
+	})
+}
+
 func TestUnitAlicloudKMSKey(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)

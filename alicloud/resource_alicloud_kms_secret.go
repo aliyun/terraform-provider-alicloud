@@ -93,6 +93,11 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -125,6 +130,10 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 	request["SecretData"] = d.Get("secret_data")
 	if v, ok := d.GetOk("secret_data_type"); ok {
 		request["SecretDataType"] = v
+	}
+
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
 	}
 
 	request["SecretName"] = d.Get("secret_name")
@@ -194,6 +203,7 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("secret_data_type", getSecretValueObject["SecretDataType"])
 	d.Set("version_id", getSecretValueObject["VersionId"])
 	d.Set("version_stages", getSecretValueObject["VersionStages"].(map[string]interface{})["VersionStage"])
+	d.Set("dkms_instance_id", object["DKMSInstanceId"])
 	return nil
 }
 func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
