@@ -38,8 +38,9 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Optional: true,
 			},
 			"core_spec": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"lindorm.i2.xlarge", "lindorm.i2.2xlarge", "lindorm.i2.4xlarge", "lindorm.i2.8xlarge", "lindorm.d1.2xlarge", "lindorm.d1.4xlarge", "lindorm.d1.6xlarge"}, false),
 			},
 			"deletion_proection": {
 				Type:     schema.TypeBool,
@@ -50,7 +51,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"capacity_cloud_storage", "cloud_efficiency", "cloud_essd", "cloud_ssd"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"capacity_cloud_storage", "cloud_efficiency", "cloud_essd", "cloud_ssd", "local_ssd_pro", "local_hdd_pro"}, false),
 			},
 			"duration": {
 				Type:         schema.TypeString,
