@@ -39,7 +39,6 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 					"project_name":   name,
 					"dashboard_name": "dashboard_name",
 					"display_name":   displayname,
-					"attribute":      `{}`,
 					"char_list":      `[{\"title\":\"new_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"now\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -47,7 +46,6 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 						"project_name":   name,
 						"dashboard_name": "dashboard_name",
 						"display_name":   displayname,
-						"attribute":      "{}",
 						"char_list":      "[{\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"now\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"new_title\",\"type\":\"map\"}]",
 					}),
 				),
