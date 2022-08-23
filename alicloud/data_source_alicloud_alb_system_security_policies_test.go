@@ -16,10 +16,10 @@ func TestAccAlicloudALBSystemSecurityPoliciesDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAlbSystemSecurityPolicieDataSourceName(rand, map[string]string{
-			"ids": fmt.Sprintf("[%s]", systemPolicyIds),
+			"ids": fmt.Sprintf(`["%s"]`, systemPolicyIds),
 		}),
 		fakeConfig: testAccCheckAlicloudAlbSystemSecurityPolicieDataSourceName(rand, map[string]string{
-			"ids": fmt.Sprintf("[%s_fake]", systemPolicyIds),
+			"ids": fmt.Sprintf(`["%s_fake"]`, systemPolicyIds),
 		}),
 	}
 
