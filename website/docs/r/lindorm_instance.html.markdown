@@ -58,9 +58,11 @@ The following arguments are supported:
 
 * `cold_storage` - (Optional, Computed) The cold storage capacity of the instance. Unit: GB.
 * `core_num` - (Optional) The core num.
-* `core_spec` - (Optional) The core spec.
+* `core_spec` - (Optional) The core spec. **NOTE:** When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
+   - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
+   - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
 * `deletion_proection` - (Optional, Computed) The deletion protection of instance.
-* `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `capacity_cloud_storage`, `cloud_efficiency`, `cloud_essd`, `cloud_ssd`.
+* `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `capacity_cloud_storage`, `cloud_efficiency`, `cloud_essd`, `cloud_ssd`, `local_ssd_pro`, `local_hdd_pro`.
 * `duration` - (Optional) The duration of paid. Valid when the `payment_type` is `Subscription`.  When `pricing_cycle` set to `Month`, the valid value id `1` to `9`.  When `pricing_cycle` set to `Year`, the valid value id `1` to `3`.
 * `file_engine_node_count` - (Optional, Computed) The count of file engine.
 * `file_engine_specification` - (Optional, Computed) The specification of file engine. Valid values: `lindorm.c.xlarge`.
