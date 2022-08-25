@@ -738,6 +738,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_policies":                           dataSourceAlicloudDcdnWafPolicies(),
 			"alicloud_hbr_service":                                 dataSourceAlicloudHbrService(),
 			"alicloud_api_gateway_log_configs":                     dataSourceAlicloudApiGatewayLogConfigs(),
+			"alicloud_dbs_backup_plans":                            dataSourceAlicloudDbsBackupPlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1366,6 +1367,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vco_route":                                resourceAlicloudVpnGatewayVcoRoute(),
 			"alicloud_dcdn_waf_policy":                                      resourceAlicloudDcdnWafPolicy(),
 			"alicloud_api_gateway_log_config":                               resourceAlicloudApiGatewayLogConfig(),
+			"alicloud_dbs_backup_plan":                                      resourceAlicloudDbsBackupPlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1590,6 +1592,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EhsEndpoint = strings.TrimSpace(endpoints["ehs"].(string))
 		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
 		config.DysmsEndpoint = strings.TrimSpace(endpoints["dysms"].(string))
+		config.CbsEndpoint = strings.TrimSpace(endpoints["cbs"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1917,6 +1920,8 @@ func init() {
 		"cloudfw_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfw endpoints.",
 
 		"dysmsapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dysmsapi endpoints.",
+
+		"cbs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbs endpoints.",
 	}
 }
 
@@ -1961,6 +1966,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"cbs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cbs_endpoint"],
+				},
+
 				"dysms": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2840,6 +2852,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["ehs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dysms"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cbs"].(string)))
 	return hashcode.String(buf.String())
 }
 
