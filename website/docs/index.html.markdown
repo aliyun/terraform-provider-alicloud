@@ -241,6 +241,8 @@ The length should not more than 64. From the version 1.145.0+, it supports to be
 
 * `client_connect_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client connection server. Default to 60000.
 
+* `max_retry_timeout` - (Optional, Available in 1.183.0+) The maximum retry timeout in second of the request. Default to `0`.
+
 The nested `assume_role` block supports the following:
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.
