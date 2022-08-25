@@ -605,6 +605,16 @@ func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
 	return &ossCredentials{client: defBuild.client}
 }
 
+func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
+
+	maxRetryTimeout := client.config.MaxRetryTimeout
+	if maxRetryTimeout != 0 {
+		return time.Duration(maxRetryTimeout) * time.Second
+	}
+
+	return defaultTimeout
+}
+
 func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()

@@ -157,6 +157,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_CREDENTIALS_URI", os.Getenv("ALICLOUD_CREDENTIALS_URI")),
 				Description: descriptions["credentials_uri"],
 			},
+			"max_retry_timeout": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("MAX_RETRY_TIMEOUT", 0),
+				Description: descriptions["max_retry_timeout"],
+			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 
@@ -1403,6 +1409,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientConnectTimeout: d.Get("client_connect_timeout").(int),
 		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
 		SecureTransport:      strings.TrimSpace(d.Get("secure_transport").(string)),
+		MaxRetryTimeout:      d.Get("max_retry_timeout").(int),
 	}
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
@@ -1664,6 +1671,7 @@ func init() {
 		"source_ip":              "The source ip for the assume role invoking.",
 		"secure_transport":       "The security transport for the assume role invoking.",
 		"credentials_uri":        "The URI of sidecar credentials service.",
+		"max_retry_timeout":      "The maximum retry timeout of the request.",
 
 		"ecs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.",
 

@@ -36,6 +36,7 @@ type Config struct {
 	ClientConnectTimeout int
 	SourceIp             string
 	SecureTransport      string
+	MaxRetryTimeout      int
 
 	RamRoleArn               string
 	RamRoleSessionName       string
