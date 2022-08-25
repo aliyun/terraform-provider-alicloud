@@ -89,7 +89,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `create` - (Defaults to 3 mins) Used to wait accelerator and listener to be active after creating the Ga additional certificate.
 * `delete` - (Defaults to 3 mins) Used to wait accelerator and listener to be active after deleting the Ga additional certificate
 
-
 ## Attributes Reference
 
 The following attributes are exported:

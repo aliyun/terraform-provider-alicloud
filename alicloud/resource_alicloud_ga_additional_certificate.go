@@ -69,7 +69,7 @@ func resourceAlicloudGaAdditionalCertificateCreate(d *schema.ResourceData, meta 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Listener"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Listener", "StateError.Accelerator", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -92,7 +92,6 @@ func resourceAlicloudGaAdditionalCertificateCreate(d *schema.ResourceData, meta 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	return resourceAlicloudGaAdditionalCertificateRead(d, meta)
 }
 func resourceAlicloudGaAdditionalCertificateRead(d *schema.ResourceData, meta interface{}) error {
@@ -143,7 +142,7 @@ func resourceAlicloudGaAdditionalCertificateDelete(d *schema.ResourceData, meta 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.Listener", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
