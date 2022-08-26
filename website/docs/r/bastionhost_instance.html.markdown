@@ -105,7 +105,9 @@ The following arguments are supported:
 * `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
 * `ad_auth_server` - (Optional, Available from 1.169.0+) The AD auth server of the Instance. See the following `Block ad_auth_server`.
 * `ldap_auth_server` - (Optional, Available from 1.169.0+) The LDAP auth server of the Instance. See the following `Block ldap_auth_server`.
-  
+* `renew_period` - (Optional, ForceNew, Available from 1.187.0+) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`. 
+* `renewal_status` - (Optional, Computed, ForceNew, Available from 1.187.0+) Automatic renewal status. Valid values: `AutoRenewal`,`ManualRenewal`. 
+
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
 ```
   # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
