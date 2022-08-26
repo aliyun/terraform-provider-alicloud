@@ -3,11 +3,12 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
@@ -1075,49 +1076,45 @@ func (s *PolarDBService) ModifyDBSecurityIps(clusterId, ips string) error {
 	return nil
 }
 
-func (s *PolarDBService) DescribeBackupPolicy(id string) (policy *polardb.DescribeBackupPolicyResponse, err error) {
+func (s *PolarDBService) DescribeBackupPolicy(id string) (object map[string]interface{}, err error) {
 
-	request := polardb.CreateDescribeBackupPolicyRequest()
-	request.DBClusterId = id
-	request.RegionId = s.client.RegionId
-	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.DescribeBackupPolicy(request)
+	var response map[string]interface{}
+	conn, err := s.client.NewPolarDBClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeBackupPolicy"
+	request := map[string]interface{}{
+		"DBClusterId": id,
+		"RegionId":    s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return policy, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	return raw.(*polardb.DescribeBackupPolicyResponse), nil
-}
-
-func (s *PolarDBService) ModifyDBBackupPolicy(clusterId, backupTime, backupPeriod, backupRetentionPolicyOnClusterDeletion string) error {
-
-	request := polardb.CreateModifyBackupPolicyRequest()
-	request.RegionId = s.client.RegionId
-	request.DBClusterId = clusterId
-	request.PreferredBackupPeriod = backupPeriod
-	request.PreferredBackupTime = backupTime
-	request.BackupRetentionPolicyOnClusterDeletion = backupRetentionPolicyOnClusterDeletion
-
-	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.ModifyBackupPolicy(request)
-	})
-
+	v, err := jsonpath.Get("$", response)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, clusterId, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	if err := s.WaitForCluster(clusterId, Running, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
-	}
-	return nil
+	object = v.(map[string]interface{})
+	return object, nil
 }
 
 func (s *PolarDBService) DescribeDBAuditLogCollectorStatus(id string) (collectorStatus string, err error) {
