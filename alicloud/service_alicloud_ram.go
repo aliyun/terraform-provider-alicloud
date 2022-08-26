@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"sort"
 	"strconv"
@@ -25,6 +26,23 @@ const (
 	Deny  Effect = "Deny"
 )
 
+type RolePolicyDocumentStatementPrincipal struct {
+	Entity      string
+	Identifiers interface{}
+}
+
+type RolePolicyDocumentStatement struct {
+	Effect    Effect
+	Action    string
+	Principal RolePolicyDocumentStatementPrincipalSet
+	Condition PolicyDocumentStatementConditionSet `json:",omitempty"`
+}
+
+type RolePolicyDocument struct {
+	Statement []RolePolicyDocumentStatement
+	Version   string
+}
+
 type Principal struct {
 	Service []string
 	RAM     []string
@@ -41,6 +59,12 @@ type RolePolicy struct {
 	Version   string
 }
 
+type PolicyDocumentStatementCondition struct {
+	Operator string
+	Variable string
+	Values   interface{}
+}
+
 type PolicyStatement struct {
 	Effect   Effect
 	Action   interface{}
@@ -55,6 +79,9 @@ type Policy struct {
 type RamService struct {
 	client *connectivity.AliyunClient
 }
+
+type RolePolicyDocumentStatementPrincipalSet []RolePolicyDocumentStatementPrincipal
+type PolicyDocumentStatementConditionSet []PolicyDocumentStatementCondition
 
 func (s *RamService) ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
 	var policy RolePolicy
@@ -893,4 +920,185 @@ func (s *RamService) DescribeRamServiceLinkedRole(id string) (*ram.GetRoleRespon
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
+}
+
+func (s *RamService) AssembleDataSourceRolePolicyDocument(statements []interface{}, version string) (string, error) {
+	var statementsList []RolePolicyDocumentStatement
+
+	for _, v := range statements {
+		statementMap := v.(map[string]interface{})
+
+		statement := RolePolicyDocumentStatement{
+			Effect: Effect(statementMap["effect"].(string)),
+			Action: statementMap["action"].(string),
+		}
+
+		principalSlice := make(RolePolicyDocumentStatementPrincipalSet, 0)
+		if principals := statementMap["principal"].(*schema.Set).List(); len(principals) > 0 {
+			for _, principal := range principals {
+				principalArg := principal.(map[string]interface{})
+				principalObject := RolePolicyDocumentStatementPrincipal{}
+				principalObject.Entity = principalArg["entity"].(string)
+				identifiersSlice := make([]string, 0)
+				for _, v := range principalArg["identifiers"].([]interface{}) {
+					identifiersSlice = append(identifiersSlice, v.(string))
+				}
+				identifiers := identifiersSlice
+				principalObject.Identifiers = identifiers
+				principalSlice = append(principalSlice, principalObject)
+			}
+			statement.Principal = principalSlice
+		}
+
+		conditionSlice := make(PolicyDocumentStatementConditionSet, 0)
+		if conditions := statementMap["condition"].(*schema.Set).List(); len(conditions) > 0 {
+			for _, condition := range conditions {
+				conditionArg := condition.(map[string]interface{})
+				conditionObject := PolicyDocumentStatementCondition{}
+				values := getOneStringOrAllStringSlice(conditionArg["values"].([]interface{}))
+				conditionObject.Operator = conditionArg["operator"].(string)
+				conditionObject.Variable = conditionArg["variable"].(string)
+				conditionObject.Values = values
+				conditionSlice = append(conditionSlice, conditionObject)
+			}
+			statement.Condition = conditionSlice
+		}
+		statementsList = append(statementsList, statement)
+	}
+
+	rolePolicyDocument := RolePolicyDocument{
+		Version:   version,
+		Statement: statementsList,
+	}
+
+	data, err := json.Marshal(rolePolicyDocument)
+
+	if err != nil {
+		return "", WrapError(err)
+	}
+
+	return string(data), nil
+
+}
+
+func (s RolePolicyDocumentStatementPrincipalSet) MarshalJSON() ([]byte, error) {
+	raw := map[string]interface{}{}
+
+	for _, p := range s {
+		switch i := p.Identifiers.(type) {
+		case []string:
+			switch v := raw[p.Entity].(type) {
+			case nil:
+				raw[p.Entity] = make([]string, 0, len(i))
+			case string:
+				raw[p.Entity] = make([]string, 0, len(i)+1)
+				raw[p.Entity] = append(raw[p.Entity].([]string), v)
+			}
+			sort.Sort(sort.Reverse(sort.StringSlice(i)))
+			raw[p.Entity] = append(raw[p.Entity].([]string), i...)
+		case string:
+			switch v := raw[p.Entity].(type) {
+			case nil:
+				raw[p.Entity] = i
+			case string:
+				// Convert to []string to stop drop of principals
+				raw[p.Entity] = make([]string, 0, 2)
+				raw[p.Entity] = append(raw[p.Entity].([]string), v)
+				raw[p.Entity] = append(raw[p.Entity].([]string), i)
+			case []string:
+				raw[p.Entity] = append(raw[p.Entity].([]string), i)
+			}
+		default:
+			return []byte{}, fmt.Errorf("Unsupported data type %T for RolePolicyDocumentStatementPrincipalSet", i)
+		}
+	}
+
+	return json.Marshal(&raw)
+}
+
+func (s *RolePolicyDocumentStatementPrincipalSet) UnmarshalJSON(b []byte) error {
+	var out RolePolicyDocumentStatementPrincipalSet
+
+	var data interface{}
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	switch t := data.(type) {
+	case string:
+		out = append(out, RolePolicyDocumentStatementPrincipal{Entity: "*", Identifiers: []string{"*"}})
+	case map[string]interface{}:
+		for key, value := range data.(map[string]interface{}) {
+			switch vt := value.(type) {
+			case string:
+				out = append(out, RolePolicyDocumentStatementPrincipal{Entity: key, Identifiers: value.(string)})
+			case []interface{}:
+				values := []string{}
+				for _, v := range value.([]interface{}) {
+					values = append(values, v.(string))
+				}
+				out = append(out, RolePolicyDocumentStatementPrincipal{Entity: key, Identifiers: values})
+			default:
+				return fmt.Errorf("Unsupported data type %T for RolePolicyDocumentStatementPrincipalSet.Identifiers", vt)
+			}
+		}
+	default:
+		return fmt.Errorf("Unsupported data type %T for RolePolicyDocumentStatementPrincipalSet", t)
+	}
+
+	*s = out
+
+	return nil
+}
+
+func (s PolicyDocumentStatementConditionSet) MarshalJSON() ([]byte, error) {
+	raw := map[string]map[string]interface{}{}
+
+	for _, c := range s {
+		if _, ok := raw[c.Operator]; !ok {
+			raw[c.Operator] = map[string]interface{}{}
+		}
+		switch i := c.Values.(type) {
+		case []string:
+			if _, ok := raw[c.Operator][c.Variable]; !ok {
+				raw[c.Operator][c.Variable] = make([]string, 0, len(i))
+			}
+			// order matters with values so not sorting here
+			raw[c.Operator][c.Variable] = append(raw[c.Operator][c.Variable].([]string), i...)
+		case string:
+			raw[c.Operator][c.Variable] = i
+		default:
+			return nil, fmt.Errorf("Unsupported data type for PolicyStatementConditionSet: %s", i)
+		}
+	}
+
+	return json.Marshal(&raw)
+}
+
+func (s *PolicyDocumentStatementConditionSet) UnmarshalJSON(b []byte) error {
+	var out PolicyDocumentStatementConditionSet
+
+	var data map[string]map[string]interface{}
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	for operator_key, operator_value := range data {
+		for var_key, var_values := range operator_value {
+			switch var_values := var_values.(type) {
+			case string:
+				out = append(out, PolicyDocumentStatementCondition{Operator: operator_key, Variable: var_key, Values: []string{var_values}})
+			case []interface{}:
+				values := []string{}
+				for _, v := range var_values {
+					values = append(values, v.(string))
+				}
+				out = append(out, PolicyDocumentStatementCondition{Operator: operator_key, Variable: var_key, Values: values})
+			}
+		}
+	}
+
+	*s = out
+
+	return nil
 }
