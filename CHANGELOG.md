@@ -1,4 +1,39 @@
 ## 1.183.0 (Unreleased)
+
+- **New Resource:** `alicloud_ddos_basic_threshold` [GH-5332]
+- **New Resource:** `alicloud_cen_transit_router_vpn_attachment` [GH-5309]
+- **New Resource:** `alicloud_polardb_parameter_group` [GH-5334]
+- **New Resource:** `alicloud_vpn_gateway_vco_route` [GH-5321]
+- **New Data Source:** `alicloud_vpn_gateway_vco_routes` [GH-5321]
+- **New Data Source:** `alicloud_polardb_parameter_groups` [GH-5334]	
+- **New Data Source:** `alicloud_alb_system_security_policies` [GH-5305]	
+- **New Data Source:** `alicloud_cen_transit_router_vpn_attachments` [GH-5309]
+
+ENHANCEMENTS:
+
+- resource/alicloud_mse_cluster: Supports new attribute connection_type and request_pars [GH-5348]
+- resource/alicloud_cs_managed_kubernetes: field worker_number and worker_nodes enhancement for outdated version cluster [GH-5220]
+- resource/alicloud_kms_key: support for dkms_instance_id resource/alicloud_kms_secret: support for dkms_instance_id [GH-5329]
+- resource/alicloud_lindorm_instance: Set the user-defined retry time [GH-5337]
+- resource/alicloud_fc_service: support for instance metrics and tracing config [GH-5340]
+- resource/alicloud_ddosbgp_instance: Adds new attribute normal_bandwidth, Remove Api of Destroyed Resources [GH-5270]
+- resource/alicloud_ga_additional_certificate: Added retry stragety for error code NotActive.Listener [GH-5338]
+- resource/alicloud_ga_listener: Added the field security_policy_id [GH-5307]
+- resource/alicloud_instance: Added the field data_disks.device [GH-5290]
+- resource/alicloud_slb_load_balancer: Enlarges the attribute bandwidth maximum value to 5120 [GH-5333]
+- resource/alicloud_log_dashboard: Add field attribute [GH-5313]
+- resource/alicloud_lindorm_instance: Add new enumeration values local_ssd_pro , local_hdd_pro to field disk_category. [GH-5331]
+- resource/alicloud_ga_additional_certificate: Added retry stragety forerror code StateError.Listener, StateError.Accelerator [GH-5310]
+- testcase: Adds new unit test case for resource alicloud_ros_stack_group alicloud_graph_database_db_instance alicloud_rds_account [GH-5328]
+
+BUG FIXES:
+
+- resource/alicloud_cs_kubernetes: Fix check vpc logic by worker_vswitch_ids [GH-5285]
+- resource/alicloud_eip_association: Fixed problem with tag throttling.user [GH-5345]
+- resource/alicloud_reserved_instance: Supported period_unit set to Month, and period set to 5; Fixed the field offering_type from Required to Optional, and instance_type from Optional to Required [GH-5303]
+- testcase: fix issue for acc test of alb system security policies [GH-5330]
+- testcase: fix resource/alicloud_cs_serverless_kubernetes ci test error [GH-5296]
+
 ## 1.182.0 (August 23, 2022)
 
 - **New Resource:** `alicloud_vpc_prefix_list` ([#5306](https://github.com/aliyun/terraform-provider-alicloud/issues/5306))
