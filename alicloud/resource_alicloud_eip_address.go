@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+
 	"github.com/denverdino/aliyungo/common"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -24,7 +26,6 @@ func resourceAlicloudEipAddress() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(9 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -128,7 +129,6 @@ func resourceAlicloudEipAddress() *schema.Resource {
 
 func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	var response map[string]interface{}
 	action := "AllocateEipAddress"
 	request := make(map[string]interface{})
@@ -210,10 +210,6 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(fmt.Sprint(response["AllocationId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.EipAddressStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
 	return resourceAlicloudEipAddressUpdate(d, meta)
 }
 func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) error {
@@ -240,12 +236,21 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("ip_address", object["IpAddress"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["Status"])
-
-	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "EIP")
-	if err != nil {
-		return WrapError(err)
+	tagsMap := make(map[string]interface{})
+	tagsRaw, _ := jsonpath.Get("$.Tags.Tag", object)
+	if tagsRaw != nil {
+		for _, value0 := range tagsRaw.([]interface{}) {
+			tags := value0.(map[string]interface{})
+			key := tags["Key"].(string)
+			value := tags["Value"]
+			if !ignoredTags(key, value) {
+				tagsMap[key] = value
+			}
+		}
 	}
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	if len(tagsMap) > 0 {
+		d.Set("tags", tagsMap)
+	}
 	return nil
 }
 func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
