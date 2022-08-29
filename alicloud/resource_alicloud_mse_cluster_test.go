@@ -97,7 +97,7 @@ func testSweepMSECluster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMSECluster_basic(t *testing.T) {
+func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -119,25 +119,29 @@ func TestAccAlicloudMSECluster_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_1_2_200_c",
+					"cluster_specification": "MSE_SC_1_2_60_c",
 					"cluster_type":          "Nacos-Ans",
-					"cluster_version":       "NACOS_ANS_1_2_1",
+					"cluster_version":       "NACOS_2_0_0",
 					"instance_count":        "1",
 					"net_type":              "privatenet",
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
+					"connection_type":       "slb",
+					"mse_version":           "mse_dev",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_1_2_200_c",
+						"cluster_specification": "MSE_SC_1_2_60_c",
 						"cluster_type":          "Nacos-Ans",
-						"cluster_version":       "NACOS_ANS_1_2_1",
+						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
 						"vswitch_id":            CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
+						"connection_type":       "slb",
+						"mse_version":           "mse_dev",
 					}),
 				),
 			},
@@ -205,25 +209,29 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_1_2_200_c",
+					"cluster_specification": "MSE_SC_1_2_60_c",
 					"cluster_type":          "ZooKeeper",
-					"cluster_version":       "ZooKeeper_3_4_14",
+					"cluster_version":       "ZooKeeper_3_8_0",
 					"instance_count":        "1",
 					"net_type":              "privatenet",
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
+					"connection_type":       "slb",
+					"mse_version":           "mse_dev",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_1_2_200_c",
+						"cluster_specification": "MSE_SC_1_2_60_c",
 						"cluster_type":          "ZooKeeper",
-						"cluster_version":       "ZooKeeper_3_4_14",
+						"cluster_version":       "ZooKeeper_3_8_0",
 						"instance_count":        "1",
 						"net_type":              "privatenet",
 						"vswitch_id":            CHECKSET,
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
+						"connection_type":       "slb",
+						"mse_version":           "mse_dev",
 					}),
 				),
 			},
@@ -290,7 +298,7 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_2_4_200_c",
+					"cluster_specification": "MSE_SC_2_4_60_c",
 					"cluster_type":          "Nacos-Ans",
 					"cluster_version":       "NACOS_2_0_0",
 					"instance_count":        "3",
@@ -299,10 +307,11 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
 					"mse_version":           "mse_pro",
+					"connection_type":       "slb",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_2_4_200_c",
+						"cluster_specification": "MSE_SC_2_4_60_c",
 						"cluster_type":          "Nacos-Ans",
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "3",
@@ -310,6 +319,7 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 						"pub_network_flow":      "1",
 						"cluster_alias_name":    name,
 						"mse_version":           "mse_pro",
+						"connection_type":       "slb",
 					}),
 				),
 			},

@@ -26,6 +26,7 @@ resource "alicloud_mse_cluster" "example" {
   pub_network_flow      = "1"
   acl_entry_list        = ["127.0.0.1/32"]
   cluster_alias_name    = "tf-testAccMseCluster"
+  mse_version           = "mse_dev"
 }
 ```
 
@@ -36,13 +37,13 @@ The following arguments are supported:
 * `acl_entry_list` - (Optional) The whitelist. **NOTE:** This attribute is invalid when the value of `pub_network_flow` is `0` and the value of `net_type` is `privatenet`.
 * `cluster_alias_name` - (Optional) The alias of MSE Cluster.
 * `cluster_specification` - (Required, ForceNew) The engine specification of MSE Cluster. Valid values:
-  `MSE_SC_1_2_200_c`：1C2G
-  `MSE_SC_2_4_200_c`：2C4G
-  `MSE_SC_4_8_200_c`：4C8G
-  `MSE_SC_8_16_200_c`：8C16G
+  `MSE_SC_1_2_60_c`：1C2G
+  `MSE_SC_2_4_60_c`：2C4G
+  `MSE_SC_4_8_60_c`：4C8G
+  `MSE_SC_8_16_60_c`：8C16G
   
 * `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
-* `cluster_version` - (Required, ForceNew) The version of MSE Cluster.
+* `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/microservices-engine/latest/api-doc-mse-2019-05-31-api-doc-createcluster)
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Required, ForceNew) The count of instance.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
@@ -50,8 +51,10 @@ The following arguments are supported:
 * `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
 * `vswitch_id` - (Optional, ForceNew) The id of VSwitch.
-* `mse_version` - (Optional, ForceNew, Computed, Available in v1.177.0+) The version of MSE. Valid values: `mse_basic` or `mse_pro`.
-                    
+* `mse_version` - (Optional, ForceNew, Computed, Available in v1.177.0+) The version of MSE. Valid values: `mse_dev` or `mse_pro`.
+* `connection_type` - (Optional, ForceNew, Available in v1.183.0+) The connection type. Valid values: `slb`.
+* `request_pars` - (Optional, Available in v1.183.0+) The extended request parameters in the JSON format.
+
 ## Attributes Reference
 
 The following attributes are exported:

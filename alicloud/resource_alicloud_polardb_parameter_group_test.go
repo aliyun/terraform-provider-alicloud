@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/PaesslerAG/jsonpath"
 
