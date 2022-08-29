@@ -97,22 +97,20 @@ func (s *GpdbService) DescribeDBInstanceAttribute(id string) (instanceAttribute 
 	return response.Items.DBInstanceAttribute[0], nil
 }
 
-func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interface{}, error) {
+func (s *GpdbService) DescribeDBInstanceAttributes(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
 	conn, err := s.client.NewGpdbClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeDBInstanceOnECSAttribute"
+	action := "DescribeDBInstanceAttribute"
 	request := map[string]interface{}{
-		"RegionId":     s.client.RegionId,
 		"DBInstanceId": id,
-		"SourceIp":     s.client.SourceIp,
 	}
-	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -121,24 +119,74 @@ func (s *GpdbService) DescribeGpdbElasticInstance(id string) (map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound", ServiceUnavailable}) {
-			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:ElasticInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-
 	v, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
 	if err != nil {
-		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Gpdb elastic instance", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+		}
 	}
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *GpdbService) DescribeGpdbElasticInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceOnECSAttribute"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:ElasticInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["DBInstanceId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
 }
 
 func (s *GpdbService) DescribeGpdbSecurityIps(id string) (ips []string, err error) {
@@ -256,7 +304,7 @@ func (s *GpdbService) GpdbInstanceStateRefreshFunc(id string, failStates []strin
 
 func (s *GpdbService) GpdbElasticInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		instance, err := s.DescribeGpdbElasticInstance(id)
+		object, err := s.DescribeGpdbElasticInstance(id)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
@@ -266,11 +314,11 @@ func (s *GpdbService) GpdbElasticInstanceStateRefreshFunc(id string, failStates 
 		}
 
 		for _, failState := range failStates {
-			if instance["DBInstanceStatus"] == failState {
-				return instance, instance["DBInstanceStatus"].(string), WrapError(Error(FailedToReachTargetStatus, instance["DBInstanceStatus"]))
+			if fmt.Sprint(object["DBInstanceStatus"]) == failState {
+				return object, fmt.Sprint(object["DBInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DBInstanceStatus"])))
 			}
 		}
-		return instance, instance["DBInstanceStatus"].(string), nil
+		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
 }
 
@@ -502,7 +550,7 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 			}
 		}
 		if len(removedTagKeys) > 0 {
-			action := "UnTagResources"
+			action := "UntagResources"
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
@@ -564,4 +612,119 @@ func (s *GpdbService) SetResourceTags(d *schema.ResourceData, resourceType strin
 		d.SetPartial("tags")
 	}
 	return nil
+}
+
+func (s *GpdbService) DescribeBackupPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeBackupPolicy"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:ElasticInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+func (s *GpdbService) DescribeDBInstanceSSL(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceSSL"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GPDB:ElasticInstance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+func (s *GpdbService) DescribeSQLCollectorPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeSQLCollectorPolicy"
+	request := map[string]interface{}{
+		"DBInstanceId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, nil
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
 }

@@ -77,8 +77,39 @@ The following arguments are supported:
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `tags` - (Optional, Available in v1.158.0+) A mapping of tags to assign to the resource.
 * `encryption_key` - (Optional, ForceNew, Available in v1.158.0+) The ID of the encryption key. **Note:** If the `encryption_type` parameter is set to `CloudDisk`, you must specify this parameter to the encryption key that is in the same region as the disk that is specified by the EncryptionType parameter. Otherwise, leave this parameter empty.
-* `encryption_type` - (Optional, ForceNew, Available in v1.158.0+)  The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
+* `encryption_type` - (Optional, ForceNew, Available in v1.158.0+) The type of the encryption. Valid values: `CloudDisk`. **Note:** Disk encryption cannot be disabled after it is enabled.
+* `force_restart_instance` - (Optional, Available in v1.182.0+) Whether to force restart the instance. Valid values: `true`,`false`. Default to `false`.
+* `maintain_end_time` - (Optional, Available in v1.182.0+) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `maintain_start_time` - (Optional, Available in v1.182.0+) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `master_node_num` - (Optional, Available in v1.182.0+) The Number of master nodes. Valid values: `1`,`2`.
+* `preferred_backup_period` - (Optional, Available in v1.182.0+) Data backup cycle. Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+* `preferred_backup_time` - (Optional, Available in v1.182.0+) Backup time, in the format of `HH:mmZ-HH:mmZ`.
+* `private_ip_address` - (Optional, Available in v1.182.0+) The private IP address of the instance.
+* `recovery_point_period` - (Optional, Available in v1.182.0+) Recovery point frequency. Valid values: `1`,`2`,`4`,`8`.
+* `sql_collector_status` - (Optional, Available in v1.182.0+) SQL collection status. Valid values: `Enable`,`Disabled`.
+* `src_db_instance_name` - (Optional, Available in v1.182.0+) Clone source instance ID
+* `ssl_enabled` - (Optional, Available in v1.182.0+) SSL Status. Valid values: `0`,`1`,`2`.
+* `backup_id` - (Optional, Available in v1.182.0+) Backup set ID
+* `backup_retention_period` - (Optional, Available in v1.182.0+) The number of days to keep data backups. The default is 7 days, the maximum value is set to 7 days. Valid values: `1`,`2`,`3`,`4`,`5`,`6`,`7`.
+* `enable_recovery_point` - (Optional, Available in v1.182.0+) Whether to enable automatic recovery point. Valid values: `true`,`false`.
+* `period` - (Optional, Available in v1.182.0+) Pre-paid instance of the pay-as-you-go cycle. Valid values: `Month`, `Year`.
+* `ip_whitelist` - (Optional, Available in v1.182.0+) Modify the properties of the IP list that is allowed to access the instance.
+* `parameters` - (Optional, Available in v1.182.0+) Modify the configuration parameters of an instance.
 
+#### Block ip_whitelist
+
+The ip_whitelist supports the following:
+
+* `ip_group_attribute` - (Optional, Available in v1.182.0+) Default is empty. Used to distinguish different attribute values, the console does not display groups with hidden attributes.
+* `ip_group_name` - (Optional, Available in v1.182.0+) The name of the IP whitelist group, if not passed the default operation Default group.
+* `security_ip_list` - (Optional, Available in v1.182.0+) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+
+#### Block parameters
+
+The parameters supports the following:
+
+* `parameter_name` - (Optional, Available in v1.182.0+) Modify the configuration parameter name of the instance
+* `current_value` - (Optional, Available in v1.182.0+) Modify the configuration parameter value of the instance
 
 ### Timeouts
 

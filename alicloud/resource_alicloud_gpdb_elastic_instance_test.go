@@ -330,3 +330,250 @@ resource "alicloud_kms_key" "default" {
 }
 `, name)
 }
+
+func TestAccAlicloudGPDBElasticInstance_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_elastic_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudGpdbElasticInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbElasticInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccgpab%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGpdbElasticInstanceBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                  "gpdb",
+					"engine_version":          "6.0",
+					"seg_storage_type":        "cloud_essd",
+					"seg_node_num":            "4",
+					"storage_size":            "50",
+					"instance_spec":           "2C16G",
+					"db_instance_description": name,
+					"vswitch_id":              "${local.vswitch_id}",
+					"db_instance_category":    "HighAvailability",
+					"encryption_key":          "${alicloud_kms_key.default.id}",
+					"encryption_type":         "CloudDisk",
+					"instance_network_type":   "VPC",
+					"master_node_num":         "1",
+					"security_ip_list":        []string{"1.1.1.1"},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                  "gpdb",
+						"engine_version":          "6.0",
+						"seg_storage_type":        "cloud_essd",
+						"seg_node_num":            "4",
+						"storage_size":            "50",
+						"instance_spec":           "2C16G",
+						"db_instance_description": name,
+						"instance_network_type":   "VPC",
+						"payment_type":            "PayAsYouGo",
+						"db_instance_category":    "HighAvailability",
+						"vswitch_id":              CHECKSET,
+						"master_node_num":         "1",
+						"security_ip_list.#":      "1",
+						"tags.%":                  "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "acceptance test1",
+						"Updated": "TF",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "ture",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_description": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sql_collector_status": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sql_collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_end_time":   "03:00Z",
+					"maintain_start_time": "02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_end_time":   "03:00Z",
+						"maintain_start_time": "02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []map[string]interface{}{
+						{
+							"current_value":  "statement_timeout",
+							"parameter_name": "11800010",
+						},
+					},
+					"force_restart_instance": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#":           "1",
+						"force_restart_instance": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"ip_group_attribute": "hidden",
+							"ip_group_name":      "Default",
+							"security_ip_list":   "127.0.0.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_spec":   "4C16G",
+					"master_node_num": "2",
+					"seg_node_num":    "8",
+					"storage_size":    "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_spec":   "4C16G",
+						"master_node_num": "2",
+						"seg_node_num":    "8",
+						"storage_size":    "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_spec":   "4C16G",
+					"master_node_num": "2",
+					"seg_node_num":    "8",
+					"storage_size":    "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_spec":   "4C16G",
+						"master_node_num": "2",
+						"seg_node_num":    "8",
+						"storage_size":    "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"preferred_backup_period": "Tuesday",
+					"preferred_backup_time":   "15:00Z-16:00Z",
+					"backup_retention_period": "7",
+					"enable_recovery_point":   "true",
+					"recovery_point_period":   "8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"preferred_backup_period": "Tuesday",
+						"preferred_backup_time":   "15:00Z-16:00Z",
+						"backup_retention_period": "7",
+						"enable_recovery_point":   "true",
+						"recovery_point_period":   "8",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"private_ip_address", "backup_id", "src_db_instance_name", "instance_spec"},
+			},
+		},
+	})
+}
+
+var AlicloudGpdbElasticInstanceMap = map[string]string{}
+
+func AlicloudGpdbElasticInstanceBasicDependence(name string) string {
+	return fmt.Sprintf(` 
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_gpdb_zones" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = "cn-shanghai-l"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = "cn-shanghai-l"
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
+
+resource "alicloud_kms_key" "default" {
+  description             = var.name
+  pending_window_in_days  = 7
+  status                  = "Enabled"
+}
+`, name)
+}
