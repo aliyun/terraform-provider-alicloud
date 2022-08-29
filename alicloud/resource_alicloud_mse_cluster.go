@@ -47,7 +47,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
 			},
 			"cluster_type": {
 				Type:         schema.TypeString,
@@ -59,6 +59,13 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb"}, false),
 			},
 			"disk_type": {
 				Type:     schema.TypeString,
@@ -91,6 +98,10 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"request_pars": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -109,7 +120,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mse_basic", "mse_pro"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro"}, false),
 			},
 		},
 	}
@@ -128,6 +139,9 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	request["ClusterSpecification"] = d.Get("cluster_specification")
 	request["ClusterType"] = d.Get("cluster_type")
 	request["ClusterVersion"] = d.Get("cluster_version")
+	if v, ok := d.GetOk("connection_type"); ok {
+		request["ConnectionType"] = v
+	}
 	if v, ok := d.GetOk("disk_type"); ok {
 		request["DiskType"] = v
 	}
@@ -146,6 +160,9 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("mse_version"); ok {
 		request["MseVersion"] = v
 	}
+	if v, ok := d.GetOk("request_pars"); ok {
+		request["RequestPars"] = v
+	}
 
 	request["Region"] = client.RegionId
 	vswitchId := Trim(d.Get("vswitch_id").(string))
@@ -159,7 +176,7 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request["VSwitchId"] = vswitchId
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -207,6 +224,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("cluster_version", object["OrderClusterVersion"])
 	d.Set("cluster_alias_name", object["ClusterAliasName"])
+	d.Set("connection_type", object["ConnectionType"])
 	return nil
 }
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -225,7 +243,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		request["AclEntryList"] = convertListToCommaSeparate(d.Get("acl_entry_list").(*schema.Set).List())
 		action := "UpdateAcl"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -256,7 +274,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "UpdateCluster"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -293,7 +311,7 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
