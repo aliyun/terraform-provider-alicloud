@@ -1470,8 +1470,12 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 
 	var vswitchID string
 	list := make([]string, 0)
-	list = append(list, expandStringList(d.Get("master_vswitch_ids").([]interface{}))...)
-	list = append(list, expandStringList(d.Get("worker_vswitch_ids").([]interface{}))...)
+	if v, ok := d.GetOk("master_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
+	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
 	if len(list) > 0 {
 		vswitchID = list[0]
 	} else {
