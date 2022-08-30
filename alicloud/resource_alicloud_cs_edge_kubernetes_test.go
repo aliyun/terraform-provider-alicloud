@@ -367,6 +367,108 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEdgeKubernetes_pro(t *testing.T) {
+	var cluster *cs.KubernetesClusterDetail
+	resourceId := "alicloud_cs_edge_kubernetes.default"
+	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	resourceCheck := resourceCheckInitWithDescribeMethod(resourceId, &cluster, serviceFunc, "DescribeCsManagedKubernetes")
+	resourceAttrCheck := resourceAttrCheckInit(resourceCheck, resourceAttr)
+
+	testAccCheck := resourceAttrCheck.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testaccedgekubernetes-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, edgeKubernetesConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ManagedKubernetesSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  resourceAttrCheck.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                        name,
+					"cluster_spec":                "ack.pro.small",
+					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
+					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"version":                     "1.20.11-aliyunedge.1",
+					"worker_number":               "1",
+					"password":                    "Test12345",
+					"pod_cidr":                    "10.99.0.0/16",
+					"service_cidr":                "172.16.0.0/16",
+					"worker_instance_charge_type": "PostPaid",
+					"new_nat_gateway":             "true",
+					"node_cidr_mask":              "24",
+					"install_cloud_monitor":       "true",
+					"slb_internet_enabled":        "true",
+					"worker_data_disks": []map[string]string{
+						{
+							"category":  "cloud_ssd",
+							"size":      "200",
+							"encrypted": "false",
+						},
+					},
+					"runtime":                      map[string]interface{}{"name": "docker", "version": "19.03.5"},
+					"load_balancer_spec":           "slb.s2.small",
+					"is_enterprise_security_group": "true",
+					"deletion_protection":          "false",
+					"resource_group_id":            "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"rds_instances":                []string{"${alicloud_db_instance.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                          name,
+						"cluster_spec":                  "ack.pro.small",
+						"version":                       "1.20.11-aliyunedge.1",
+						"worker_number":                 "1",
+						"password":                      "Test12345",
+						"pod_cidr":                      "10.99.0.0/16",
+						"service_cidr":                  "172.16.0.0/16",
+						"slb_internet_enabled":          "true",
+						"is_enterprise_security_group":  "true",
+						"deletion_protection":           "false",
+						"resource_group_id":             CHECKSET,
+						"rds_instances.#":               "1",
+						"worker_data_disks.#":           "1",
+						"worker_data_disks.0.category":  "cloud_ssd",
+						"worker_data_disks.0.size":      "200",
+						"worker_data_disks.0.encrypted": "false",
+						"runtime.name":                  "docker",
+						"runtime.version":               "19.03.5",
+						"load_balancer_spec":            "slb.s2.small",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"name_prefix", "new_nat_gateway", "pod_cidr", "service_cidr", "password",
+					"install_cloud_monitor", "force_update", "node_cidr_mask", "slb_internet_enabled", "worker_disk_category",
+					"worker_disk_size", "worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
+					"worker_vswitch_ids", "proxy_mode", "is_enterprise_security_group", "rds_instances", "worker_data_disks"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"worker_number": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"worker_number": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func edgeKubernetesConfigDependence(name string) string {
 	return fmt.Sprintf(EdgeKubernetesConfigTpl, name)
 }
