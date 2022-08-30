@@ -143,8 +143,8 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"serialize_image_pulls": "false",
 						"cpu_manager_policy":    "none",
 					}},
-					"rollout_policy": []map[string]interface{}{{
-						"max_unavailable": "0",
+					"rolling_policy": []map[string]interface{}{{
+						"max_parallelism": "1",
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -156,8 +156,8 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"kubelet_configuration.0.event_burst":           "0",
 						"kubelet_configuration.0.serialize_image_pulls": "false",
 						"kubelet_configuration.0.cpu_manager_policy":    "none",
-						"rollout_policy.#":                              "1",
-						"rollout_policy.0.max_unavailable":              "0",
+						"rolling_policy.#":                              "1",
+						"rolling_policy.0.max_parallelism":              "1",
 					}),
 				),
 			},
