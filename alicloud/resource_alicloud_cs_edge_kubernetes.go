@@ -54,6 +54,12 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 			},
+			"cluster_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
+			},
 			// worker configurations
 			"worker_vswitch_ids": {
 				Type:     schema.TypeList,
@@ -117,7 +123,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			"worker_instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"worker_data_disks": {
@@ -165,6 +171,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			// global configurations
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -174,7 +184,22 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"node_cidr_mask": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -237,7 +262,12 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
-
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+			},
 			"kube_config": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -388,6 +418,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
 			"tags": {
 				Type:     schema.TypeMap,

@@ -103,7 +103,7 @@ The following arguments are supported:
 * `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
 * `enable_ssh` - (Deprecated from version 1.177.0)(Optional) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
@@ -156,8 +156,8 @@ The following example is the definition of runtime block:
 
 ```
   runtime = {
-    name = "docker"
-    version = "19.03.5"
+    name = "containerd"
+    version = "1.5.10"
   }
 ```
 
