@@ -566,6 +566,20 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'rollout_policy' has been deprecated from provider version 1.184.0. Please use new field 'rolling_policy' instead it to ensure the config takes effect",
+			},
+			"rolling_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_parallelism": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -849,22 +863,6 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
 	}
 
-	// kubelet
-	if d.HasChange("kubelet_configuration") {
-		update = true
-		kubeletConfig, err := setKubeletConfigParams(d.Get("kubelet_configuration").([]interface{}))
-		if err != nil {
-			return WrapError(err)
-		}
-		rollout, err := setRolloutPolicy(d.Get("rollout_policy").([]interface{}))
-		if err != nil {
-			return WrapError(err)
-		}
-		args.NodeConfig = &cs.NodeConfig{}
-		args.NodeConfig.KubeletConfiguration = kubeletConfig
-		args.NodeConfig.RolloutPolicy = rollout
-	}
-
 	if update {
 		var response interface{}
 		if err := invoker.Run(func() error {
@@ -889,6 +887,44 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	if d.HasChange("kubelet_configuration") {
+		roaClient, err := client.NewRoaCsClient()
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "InitClient", AlibabaCloudSdkGoERROR)
+		}
+		csClient := CsClient{roaClient}
+		kubeletConfig := &roacs.ModifyNodePoolNodeConfigRequestKubeletConfig{}
+		rolling := &roacs.ModifyNodePoolNodeConfigRequestRollingPolicy{}
+
+		if v, ok := d.GetOk("kubelet_configuration"); ok {
+			if err = setKubeletConfigParamsForUpdate(kubeletConfig, v.([]interface{})); err != nil {
+				return WrapError(err)
+			}
+		}
+
+		if v, ok := d.GetOk("rolling_policy"); ok {
+			if err = setRollingPolicy(rolling, v.([]interface{})); err != nil {
+				return WrapError(err)
+			}
+		}
+
+		modifyNodePoolKubeletRequest := &roacs.ModifyNodePoolNodeConfigRequest{
+			KubeletConfig: kubeletConfig,
+			RollingPolicy: rolling,
+		}
+
+		resp, err := csClient.ModifyNodePoolNodeConfig(parts[0], parts[1], modifyNodePoolKubeletRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ModifyNodePoolKubeletConfig", AlibabaCloudSdkGoERROR, resp)
+		}
+		modifyNodePoolKubeletResp, _ := resp.(*roacs.ModifyNodePoolNodeConfigResponse)
+
+		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(tea.StringValue(modifyNodePoolKubeletResp.Body.TaskId)))
 		}
 	}
 
@@ -1284,7 +1320,7 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	// kubelet
 	if v, ok := d.GetOk("kubelet_configuration"); ok {
-		config, err := setKubeletConfigParams(v.([]interface{}))
+		config, err := setKubeletConfigParamsForCreate(v.([]interface{}))
 		if err != nil {
 			return creationArgs, WrapError(err)
 		}
@@ -1709,7 +1745,83 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func setKubeletConfigParams(l []interface{}) (*cs.KubeletConfiguration, error) {
+func setKubeletConfigParamsForUpdate(config *roacs.ModifyNodePoolNodeConfigRequestKubeletConfig, l []interface{}) error {
+	if len(l) <= 0 || l[0] == nil {
+		return nil
+	}
+	m := l[0].(map[string]interface{})
+
+	var (
+		intVal  int64
+		boolVal bool
+		err     error
+	)
+
+	if v, ok := m["registry_pull_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'registry_pull_qps' due to %v", err))
+		}
+		config.RegistryPullQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["registry_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'registry_burst' due to %v", err))
+		}
+		config.RegistryBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["event_record_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'event_record_qps' due to %v", err))
+		}
+		config.EventRecordQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["event_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'event_burst' due to %v", err))
+		}
+		config.EventBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["kube_api_qps"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'kube_api_qps' due to %v", err))
+		}
+		config.KubeAPIQPS = tea.Int64(intVal)
+	}
+	if v, ok := m["kube_api_burst"]; ok && reflect.ValueOf(v).String() != "" {
+		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'kube_api_burst' due to %v", err))
+		}
+		config.KubeAPIBurst = tea.Int64(intVal)
+	}
+	if v, ok := m["serialize_image_pulls"]; ok && reflect.ValueOf(v).String() != "" {
+		if boolVal, err = strconv.ParseBool(v.(string)); err != nil {
+			return WrapError(fmt.Errorf("failed to parse 'serialize_image_pulls' due to %v", err))
+		}
+		config.SerializeImagePulls = tea.Bool(boolVal)
+	}
+	if v, ok := m["cpu_manager_policy"]; ok && reflect.ValueOf(v).String() != "" {
+		config.CpuManagerPolicy = tea.String(v.(string))
+	}
+	if v, ok := m["eviction_hard"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionHard = v.(map[string]interface{})
+	}
+	if v, ok := m["eviction_soft"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionSoft = v.(map[string]interface{})
+	}
+	if v, ok := m["eviction_soft_grace_period"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.EvictionSoftGracePeriod = v.(map[string]interface{})
+	}
+	if v, ok := m["system_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.SystemReserved = v.(map[string]interface{})
+	}
+	if v, ok := m["kube_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
+		config.KubeReserved = v.(map[string]interface{})
+	}
+
+	return nil
+}
+
+func setKubeletConfigParamsForCreate(l []interface{}) (*cs.KubeletConfiguration, error) {
 	config := &cs.KubeletConfiguration{}
 	if len(l) <= 0 || l[0] == nil {
 		return nil, nil
@@ -1786,14 +1898,13 @@ func setKubeletConfigParams(l []interface{}) (*cs.KubeletConfiguration, error) {
 	return config, nil
 }
 
-func setRolloutPolicy(l []interface{}) (*cs.RolloutPolicy, error) {
-	config := &cs.RolloutPolicy{}
+func setRollingPolicy(policy *roacs.ModifyNodePoolNodeConfigRequestRollingPolicy, l []interface{}) error {
 	if len(l) <= 0 || l[0] == nil {
-		return nil, nil
+		return nil
 	}
 	m := l[0].(map[string]interface{})
-	if v, ok := m["max_unavailable"]; ok {
-		config.MaxUnavailable = tea.Int64(int64(v.(int)))
+	if v, ok := m["max_parallelism"]; ok {
+		policy.MaxParallelism = tea.Int64(int64(v.(int)))
 	}
-	return config, nil
+	return nil
 }

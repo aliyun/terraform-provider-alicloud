@@ -21,7 +21,7 @@ github.com/agiledragon/gomonkey/v2
 github.com/agiledragon/gomonkey/v2/creflect
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
-# github.com/alibabacloud-go/cs-20151215/v3 v3.0.14
+# github.com/alibabacloud-go/cs-20151215/v3 v3.0.16
 github.com/alibabacloud-go/cs-20151215/v3/client
 # github.com/alibabacloud-go/darabonba-openapi v0.1.19-0.20220507083948-2c7e1f6567c1
 github.com/alibabacloud-go/darabonba-openapi/client

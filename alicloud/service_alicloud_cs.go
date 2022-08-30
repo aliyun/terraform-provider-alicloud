@@ -61,6 +61,8 @@ const (
 	BALANCE_POLICY        = "BALANCE"
 
 	UpgradeClusterTimeout = 30 * time.Minute
+
+	IdMsgWithTask = IdMsg + "TaskInfo: %s" // wait for async task info
 )
 
 var (
@@ -985,4 +987,33 @@ func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutosca
 	}
 
 	return request, nil
+}
+
+func (s *CsClient) DescribeTaskInfo(taskId string) string {
+	if taskId == "" {
+		return ""
+	}
+	resp, err := s.client.DescribeTaskInfo(tea.String(taskId))
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("[TASK FAILED!!!]\nDetails: %++v", resp.Body.GoString())
+}
+
+func (s *CsClient) ModifyNodePoolNodeConfig(clusterId, nodepoolId string, request *client.ModifyNodePoolNodeConfigRequest) (interface{}, error) {
+	log.Printf("[DEBUG] modifyNodePoolKubeletRequest %++v", *request)
+
+	resp, err := s.client.ModifyNodePoolNodeConfig(tea.String(clusterId), tea.String(nodepoolId), request)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		requestMap["NodePoolId"] = nodepoolId
+		requestMap["Args"] = request
+		addDebug("ModifyNodePoolKubeletConfig", resp, requestMap)
+	}
+	return resp, err
 }
