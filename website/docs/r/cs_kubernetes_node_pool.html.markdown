@@ -39,6 +39,8 @@ This resource will help you to manage node pool in Kubernetes Cluster.
 
 -> **NOTE:** From version 1.180.0+, Support worker nodes customized kubelet parameters by field `kubelet_configuration` and `rollout_policy`.
 
+-> **NOTE:** From version 1.185.0+, Field `rollout_policy` will be deprecated and please use field `rolling_policy` instead.
+
 
 ## Example Usage
 
@@ -334,10 +336,10 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 
   # kubelet configuration parameters
   kubelet_configuration {
-    registry_pull_qps = 0
-    registry_burst    = 0
-    event_record_qps  = 0
-    event_burst       = 0
+    registry_pull_qps = 10
+    registry_burst    = 5
+    event_record_qps  = 10
+    event_burst       = 5
     eviction_hard = {
       "memory.available"            = "1024Mi"
       "nodefs.available"            = "10%"
@@ -350,7 +352,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     system_reserved = {
       "cpu"               = "1"
       "memory"            = "1Gi"
-      "ephemeral_storage" = "10Gi"
+      "ephemeral-storage" = "10Gi"
     }
     kube_reserved = {
       "cpu"    = "500m"
@@ -358,9 +360,9 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     }
   }
 
-  # rollout policy
-  rollout_policy {
-    max_unavailable = 1
+  # rolling policy
+  rolling_policy {
+    max_parallelism = 1
   }
 }
 ```
@@ -433,8 +435,10 @@ The following arguments are supported:
 * `system_disk_snapshot_policy_id` - (Optional, Available in 1.177.0+) The system disk snapshot policy id.
 * `cpu_policy` - (Optional, Available in 1.177.0+) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none` and modification is not supported.
 * `kubelet_configuration` - (Optional, Available in 1.180.0+) Kubelet configuration parameters for worker nodes. Detailed below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
-* `rollout_policy` - (Optional, Available in 1.180+) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when nodepool updating.
-  * `max_unavailable` - (Optional, Available in 1.180+) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
+* `rollout_policy` - (Optional, Deprecated, Available in 1.180+) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when nodepool updating. Please use `rolling_policy` to instead it from provider version 1.185.0.
+  * `max_unavailable` - (Optional, Deprecated, Available in 1.180+) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
+* `rolling_policy` - (Optional, Available in 1.185.0+) Rolling policy is used to specify the strategy when the node pool is rolling update. This field works when nodepool updating.
+  * `max_parallelism` - (Optional, Available in 1.185.0+) Maximum parallel number nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
 
 #### tags
 
