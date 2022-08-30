@@ -402,15 +402,17 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		BucketName           string
 		StorageClassOption   oss.Option
 		RedundancyTypeOption oss.Option
+		AclTypeOption        oss.Option
 	}
 
 	req := Request{
 		d.Get("bucket").(string),
 		oss.StorageClass(oss.StorageClassType(d.Get("storage_class").(string))),
 		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
+		oss.ACL(oss.ACLType(d.Get("acl").(string))),
 	}
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption)
+		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption, req.AclTypeOption)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
@@ -761,7 +763,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 
 	d.Partial(true)
 
-	if d.HasChange("acl") {
+	if d.HasChange("acl") && !d.IsNewResource() {
 		request := map[string]string{"bucketName": d.Id(), "bucketACL": d.Get("acl").(string)}
 		var requestInfo *oss.Client
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
