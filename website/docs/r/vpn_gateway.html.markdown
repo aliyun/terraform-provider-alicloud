@@ -70,9 +70,11 @@ The following arguments are supported:
 * `vswitch_id` - (Optional, ForceNew, Available in v1.56.0+) The VPN belongs the vswitch_id, the field can't be changed.
 * `tags` - (Optional, Available in v1.160.0+) The tags of VPN gateway.
 * `auto_pay` - (Optional, Available in v1.160.0+)  Whether to pay automatically. Default value: `true`. Valid values:
-  `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
-  `true`: Enable automatic payment, automatic payment order.
-
+    - `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
+    - `true`: Enable automatic payment, automatic payment order.
+* `auto_propagate` - (Optional, Available in v1.184.0+) Specifies whether to automatically advertise BGP routes to the virtual private cloud (VPC). Valid values:
+    - `true`: Enable.
+    - `false`: Disable.
 
 ## Attributes Reference
 
