@@ -105,6 +105,11 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Optional: true,
 			},
 
+			"auto_propagate": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+
 			"tags": tagsSchema(),
 
 			"internet_ip": {
@@ -140,10 +145,6 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
-	}
-
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
 	}
 
 	if v, ok := d.GetOk("vswitch_id"); ok {
@@ -236,7 +237,7 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("enable_ssl", "enable" == object["SslVpn"])
 	d.Set("ssl_connections", object["SslMaxConnections"])
 	d.Set("business_status", object["BusinessStatus"])
-
+	d.Set("auto_propagate", object["AutoPropagate"])
 	spec := strings.Split(object["Spec"].(string), "M")[0]
 	d.Set("bandwidth", formatInt(spec))
 
@@ -278,7 +279,7 @@ func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		d.SetPartial("tags")
 	}
 
-	if d.HasChange("name") {
+	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
 		if v, ok := d.GetOk("name"); ok {
 			request["Name"] = v
@@ -289,6 +290,13 @@ func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 		if v, ok := d.GetOk("description"); ok {
 			request["Description"] = v
+		}
+	}
+
+	if d.HasChange("auto_propagate") {
+		update = true
+		if v, ok := d.GetOkExists("auto_propagate"); ok {
+			request["AutoPropagate"] = v
 		}
 	}
 
@@ -310,6 +318,7 @@ func resourceAliyunVpnGatewayUpdate(d *schema.ResourceData, meta interface{}) er
 
 		d.SetPartial("name")
 		d.SetPartial("description")
+		d.SetPartial("auto_propagate")
 	}
 
 	if d.IsNewResource() {
