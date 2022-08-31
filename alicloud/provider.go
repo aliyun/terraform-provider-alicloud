@@ -756,6 +756,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_message_service_queues":                       dataSourceAlicloudMessageServiceQueues(),
 			"alicloud_message_service_topics":                       dataSourceAlicloudMessageServiceTopics(),
 			"alicloud_message_service_subscriptions":                dataSourceAlicloudMessageServiceSubscriptions(),
+			"alicloud_cen_transit_router_prefix_list_associations":  dataSourceAlicloudCenTransitRouterPrefixListAssociations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1405,6 +1406,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_message_service_queue":                                resourceAlicloudMessageServiceQueue(),
 			"alicloud_message_service_topic":                                resourceAlicloudMessageServiceTopic(),
 			"alicloud_message_service_subscription":                         resourceAlicloudMessageServiceSubscription(),
+			"alicloud_cen_transit_router_prefix_list_association":           resourceAlicloudCenTransitRouterPrefixListAssociation(),
 		},
 
 		ConfigureFunc: providerConfigure,
