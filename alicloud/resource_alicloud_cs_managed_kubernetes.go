@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+const resourceCsManagedKubernetes = "alicloud_cs_managed_kubernetes"
+
 func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSManagedKubernetesCreate,
@@ -704,18 +706,50 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
 
 func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "InitClient", ProviderERROR)
+	}
 	invoker := NewInvoker()
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "PrepareKubernetesClusterArgs", ProviderERROR)
 	}
+
 	var requestInfo *cs.Client
 	var response interface{}
 	if err := invoker.Run(func() error {
@@ -731,7 +765,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_managed_kubernetes", "CreateKubernetesCluster", response)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "CreateKubernetesCluster", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -745,7 +779,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
@@ -762,7 +796,7 @@ func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) 
 		err := csService.UpgradeCluster(d.Id(), args)
 
 		if err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "UpgradeCluster", DenverdinoAliyungo)
 		}
 
 		d.SetPartial("version")
@@ -781,7 +815,7 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 	}
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "InitClient", ProviderERROR)
 	}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -799,7 +833,7 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 
 	stateConf := BuildStateConf([]string{"migrating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return err
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	d.SetPartial("cluster_spec")
@@ -819,7 +853,7 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	d.SetPartial("tags")
 	conn, err := meta.(*connectivity.AliyunClient).NewTeaRoaCommonClient(connectivity.OpenAckService)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, "InitClient", ProviderERROR)
 	}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequestWithAction(StringPointer(action), StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), String(fmt.Sprintf("/clusters/%s/tags", d.Id())), nil, nil, modifyClusterTagsRequest, &util.RuntimeOptions{})
@@ -836,11 +870,11 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 
 	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return err
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -853,14 +887,14 @@ func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invok
 	}
 	// it's not allowed to disable rrsa
 	if !enableRRSA {
-		return fmt.Errorf("It's not supported to disable RRSA! " +
-			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+		return WrapError(fmt.Errorf("It's not supported to disable RRSA! " +
+			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file."))
 	}
 
 	// version check
 	clusterVersion := d.Get("version").(string)
 	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
-		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+		return WrapError(fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion))
 	}
 
 	action := "ModifyClusterRRSA"
@@ -876,7 +910,7 @@ func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invok
 		})
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsManagedKubernetes, action, DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -922,7 +956,7 @@ func versionCompare(neededVersion, curVersion string) (int, error) {
 		v2, err2 := strconv.Atoi(newVal)
 
 		if err1 != nil || err2 != nil {
-			return -2, fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion)
+			return -2, WrapError(fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion))
 		}
 
 		if v1 > v2 {

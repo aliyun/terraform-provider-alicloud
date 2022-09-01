@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+const datasourceCsKubernetesAddons = "alicloud_cs_kubernetes_addons"
+
 func dataSourceAlicloudCSKubernetesAddons() *schema.Resource {
 	return &schema.Resource{
 		Read: dataAlicloudCSKubernetesAddonsRead,
@@ -85,7 +87,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsKubernetesAddons, "Regexp.Compile", ProviderERROR)
 			}
 			if !r.MatchString(addon.ComponentName) {
 				continue
@@ -110,7 +112,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 	}
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "describeAddonsMeta", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsKubernetesAddons, "DescribeAddonsMeta", AlibabaCloudSdkGoERROR)
 	}
 	result := fetchAddonsMetadata(filterAddons)
 
@@ -128,13 +130,13 @@ func describeAvailableAddons(d *schema.ResourceData, meta interface{}) (map[stri
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return nil, err
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, datasourceCsKubernetesAddons, "InitClient", ProviderERROR)
 	}
 	csClient := CsClient{client}
 
 	availableAddons, err := csClient.DescribeCsKubernetesAllAvailableAddons(clusterId)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAllAvailableAddons", err)
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, datasourceCsKubernetesAddons, "DescribeCsKubernetesAllAvailableAddons", AlibabaCloudSdkGoERROR)
 	}
 
 	return availableAddons, nil

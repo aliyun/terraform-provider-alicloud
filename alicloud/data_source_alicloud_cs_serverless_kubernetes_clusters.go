@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+const datasourceCsServerlessKubernetesClusters = "alicloud_cs_serverless_kubernetes_clusters"
+
 func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudCSServerlessKubernetesClustersRead,
@@ -135,7 +137,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "DescribeServerlessKubernetesClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -151,7 +153,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "Regexp.Compile", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -185,7 +187,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -236,7 +238,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "GetClusterEndpoints", DenverdinoAliyungo)
 		}
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
@@ -270,14 +272,14 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		// kube_config
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterId)
-		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterId, false); err != nil {
-			return WrapError(err)
+		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterId); err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterId)
 		}
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "write kubeconfig file", "")
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsServerlessKubernetesClusters, "WriteKubeConfigFile", ProviderERROR)
 		}
 
 		ids = append(ids, ct.ClusterId)

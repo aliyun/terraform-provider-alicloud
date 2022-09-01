@@ -42,14 +42,14 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_id": "${alicloud_cs_managed_kubernetes.default.0.id}",
-					"name":       "arms-prometheus",
-					"version":    "1.1.6",
+					"name":       "ack-node-problem-detector",
+					"version":    "1.2.9",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_id":   CHECKSET,
-						"name":         "arms-prometheus",
-						"version":      "1.1.6",
+						"name":         "ack-node-problem-detector",
+						"version":      "1.2.9",
 						"next_version": CHECKSET,
 						"can_upgrade":  CHECKSET,
 						"required":     CHECKSET,
@@ -64,11 +64,11 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.1.7",
+					"version": "1.2.11",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.1.7",
+						"version": "1.2.11",
 					}),
 				),
 			},

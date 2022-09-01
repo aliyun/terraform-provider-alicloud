@@ -20,7 +20,7 @@ require (
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/deckarep/golang-set v1.8.0
-	github.com/denverdino/aliyungo v0.0.0-20220805063645-076d420db039
+	github.com/denverdino/aliyungo v0.0.0-20220905031958-589a058e1592
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect

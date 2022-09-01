@@ -333,6 +333,66 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_60_c",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_2_0_0",
+					"instance_count":        "1",
+					"net_type":              "privatenet",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+					"connection_type":       "slb",
+					"mse_version":           "mse_dev",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_60_c",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_2_0_0",
+						"instance_count":        "1",
+						"net_type":              "privatenet",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+						"connection_type":       "slb",
+						"mse_version":           "mse_dev",
+						"vpc_id":                CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cluster_specification"},
+			},
+		},
+	})
+}
+
 var MseClusterMap = map[string]string{}
 
 func MseClusterBasicdependence(name string) string {

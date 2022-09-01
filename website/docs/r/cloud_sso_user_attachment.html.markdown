@@ -54,7 +54,8 @@ resource "alicloud_cloud_sso_user_attachment" "default" {
 
 ## Argument Reference
 
-The resource does not support any argument.
+The following arguments are supported:
+
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
 * `group_id` - (Required, ForceNew) The Group ID.
 * `user_id` - (Required, ForceNew) The User ID.

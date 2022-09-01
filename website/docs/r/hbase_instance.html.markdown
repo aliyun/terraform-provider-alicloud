@@ -61,7 +61,7 @@ The following arguments are supported:
   - Cluster [400, 64000], step:40-GB increments.
   - Single [20-500GB], step:1-GB increments.
 * `pay_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, System default to `PostPaid`. You can also convert PostPaid to PrePaid. And support convert PrePaid to PostPaid from 1.115.0+.
-* `duration` - (Optional, ForceNew) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, valid when pay_type = PrePaid,  unit: month. 12, 24, 36 mean 1, 2, 3 years.
+* `duration` - (Optional) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, valid when pay_type = PrePaid,  unit: month. 12, 24, 36 mean 1, 2, 3 years.
 * `auto_renew` - (Optional, ForceNew) Valid values are `true`, `false`, system default to `false`, valid when pay_type = PrePaid.
 * `vswitch_id` - (Optional, ForceNew) If vswitch_id is not empty, that mean net_type = vpc and has a same region. If vswitch_id is empty, net_type=classic. Intl site not support classic network.
 * `cold_storage_size` - (Optional) 0 or [800, 1000000], step:10-GB increments. 0 means is_cold_storage = false. [800, 1000000] means is_cold_storage = true.
@@ -74,6 +74,7 @@ The following arguments are supported:
 * `password` - (Optional, Available in 1.105.0+) The password of the cluster web ui account. Size [0-128].
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
 
 
 -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.

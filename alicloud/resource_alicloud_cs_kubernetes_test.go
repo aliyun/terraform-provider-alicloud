@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -268,7 +269,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category":        "cloud_ssd",
 					"worker_disk_size":            "50",
 					"password":                    "Yourpassword1234",
-					"pod_cidr":                    "10.90.0.0/16",
+					"pod_cidr":                    "10.72.0.0/16",
 					"service_cidr":                "172.18.0.0/16",
 					"enable_ssh":                  "true",
 					"load_balancer_spec":          "slb.s2.small",
@@ -436,7 +437,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"master_disk_category":        "cloud_ssd",
 					"worker_disk_size":            "50",
 					"password":                    "Yourpassword1234",
-					"pod_cidr":                    "10.91.0.0/16",
+					"pod_cidr":                    "10.74.0.0/16",
 					"service_cidr":                "172.19.0.0/16",
 					"enable_ssh":                  "true",
 					"install_cloud_monitor":       "true",
@@ -557,7 +558,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// global args
 					"name":                name,
-					"version":             "1.20.11-aliyun.1",
+					"version":             "1.22.10-aliyun.1",
 					"password":            "Yourpassword1234",
 					"pod_cidr":            "10.92.0.0/16",
 					"service_cidr":        "172.20.0.0/16",
@@ -590,7 +591,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// global args
 						"name":                name,
-						"version":             "1.20.11-aliyun.1",
+						"version":             "1.22.10-aliyun.1",
 						"password":            "Yourpassword1234",
 						"pod_cidr":            "10.92.0.0/16",
 						"service_cidr":        "172.20.0.0/16",
@@ -798,17 +799,6 @@ resource "alicloud_vswitch" "vswitch" {
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
-	
-resource "alicloud_db_instance" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_type        = "rds.mysql.s2.large"
-  instance_storage     = "30"
-  instance_charge_type = "Postpaid"
-  instance_name        = "tf-testacckubernetes"
-  vswitch_id           = local.vswitch_id
-  monitoring_period    = "60"
-}
 
 resource "alicloud_snapshot_policy" "default" {
   name            = "${var.name}"
@@ -964,5 +954,88 @@ func testAccCheckUserCA(n string, d *cs.KubernetesClusterDetail) resource.TestCh
 		} else {
 			return fmt.Errorf("connections.api_server_internet not found in cluster %s", cluster.Primary.Attributes)
 		}
+	}
+}
+
+func Test_parseRRSAMetadata(t *testing.T) {
+	type args struct {
+		meta string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "empty error",
+			args: args{
+				meta: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid error",
+			args: args{
+				meta: `
+{
+	"RRSAConfig": 1234
+}`,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "valid enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": true,
+		"issuer": "https://example.com,https://kubernetes.default.svc,kubernetes.default.svc",
+		"oidc_name": "ack-rrsa-c12345",
+		"oidc_arn": "acs:ram::12345:oidc-provider/ack-rrsa-c12345"
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                true,
+				"rrsa_oidc_issuer_url":   "https://example.com",
+				"ram_oidc_provider_name": "ack-rrsa-c12345",
+				"ram_oidc_provider_arn":  "acs:ram::12345:oidc-provider/ack-rrsa-c12345",
+			}},
+			wantErr: false,
+		},
+		{
+			name: "valid not enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": false,
+		"issuer": "",
+		"oidc_name": "",
+		"oidc_arn": ""
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                false,
+				"rrsa_oidc_issuer_url":   "",
+				"ram_oidc_provider_name": "",
+				"ram_oidc_provider_arn":  "",
+			}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenRRSAMetadata(tt.args.meta)
+			if tt.wantErr && err == nil {
+				t.Errorf("flattenRRSAMetadata(%v) want error got nil", tt.args.meta)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
 	}
 }

@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -31,16 +32,13 @@ import (
 )
 
 const (
-	KubernetesClusterNetworkTypeFlannel = "flannel"
-	KubernetesClusterNetworkTypeTerway  = "terway"
-
-	KubernetesClusterLoggingTypeSLS = "SLS"
-
-	KubernetesClusterRRSASupportedVersion = "1.22.3-aliyun.1"
-)
-
-var (
+	KubernetesClusterNetworkTypeFlannel     = "flannel"
+	KubernetesClusterNetworkTypeTerway      = "terway"
+	KubernetesClusterLoggingTypeSLS         = "SLS"
+	KubernetesClusterRRSASupportedVersion   = "1.22.3-aliyun.1"
 	KubernetesClusterNodeCIDRMasksByDefault = 24
+
+	resourceCsKubernetes = "alicloud_cs_kubernetes"
 )
 
 func resourceAlicloudCSKubernetes() *schema.Resource {
@@ -786,7 +784,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 
 func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "InitClient", ProviderERROR)
+	}
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	invoker := NewInvoker()
 
 	var requestInfo *cs.Client
@@ -795,7 +798,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	// prepare args and set default value
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "PrepareKubernetesClusterArgs", err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "PrepareKubernetesClusterArgs", ProviderERROR)
 	}
 
 	if err = invoker.Run(func() error {
@@ -806,7 +809,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 		})
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "CreateKubernetesCluster", raw)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "CreateKubernetesCluster", DenverdinoAliyungo)
 	}
 
 	if debugOn() {
@@ -818,7 +821,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 
 	cluster, ok := raw.(*cs.ClusterCommonResponse)
 	if ok != true {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes", "ParseKubernetesClusterResponse", raw)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ParseKubernetesClusterResponse", raw)
 	}
 
 	d.SetId(cluster.ClusterID)
@@ -826,7 +829,7 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 
 	return resourceAlicloudCSKubernetesRead(d, meta)
@@ -834,7 +837,13 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "InitClient", ProviderERROR)
+	}
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
+
 	d.Partial(true)
 	invoker := NewInvoker()
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
@@ -845,7 +854,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ModifyClusterResourceGroup", DenverdinoAliyungo)
 		}
 		addDebug("ModifyCluster", response, requestInfo)
 		d.SetPartial("resource_group_id")
@@ -974,28 +983,31 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 				args.ImageId = d.Get("image_id").(string)
 			}
 
-			var resoponse interface{}
+			var response interface{}
 			if err := invoker.Run(func() error {
 				var err error
-				resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
 					return resp, err
 				})
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ResizeKubernetesCluster", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ResizeKubernetesCluster", DenverdinoAliyungo)
 			}
+
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
 				resizeRequestMap["ClusterId"] = d.Id()
 				resizeRequestMap["Args"] = args
-				addDebug("ResizeKubernetesCluster", resoponse, resizeRequestMap)
+				addDebug("ResizeKubernetesCluster", response, resizeRequestMap)
 			}
+
+			cluster, _ := response.(*cs.ClusterCommonResponse)
 
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 			}
 			d.SetPartial("worker_number")
 			d.SetPartial("worker_data_disks")
@@ -1009,7 +1021,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		if newValue < oldValue {
 			nodes, err := removeKubernetesNodes(d, meta)
 			if err != nil {
-				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "RemoveNodes", DenverdinoAliyungo, nodes)
 			}
 		}
 	}
@@ -1032,7 +1044,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			response = raw
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ModifyClusterName", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -1058,7 +1070,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			})
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ModifyClusterDeletionProtection", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -1082,14 +1094,14 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 	}
 
 	// modify cluster rrsa policy
 	if d.HasChange("enable_rrsa") {
 		if err := updateKubernetesClusterRRSA(d, meta, &invoker); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterRRSA", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "ModifyClusterRRSA", DenverdinoAliyungo)
 		}
 	}
 
@@ -1108,7 +1120,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		if o == "ack.standard" && strings.Contains(n, "pro") {
 			err := migrateAlicloudManagedKubernetesCluster(d, meta)
 			if err != nil {
-				return WrapErrorf(err, ResponseCodeMsg, d.Id(), "MigrateCluster", AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "MigrateCluster", AlibabaCloudSdkGoERROR)
 			}
 		}
 	}
@@ -1164,22 +1176,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("load_balancer_spec", "slb.s1.small")
 	}
 
-	// TODO: A better way to deal with default value?
-	//if _, ok := d.GetOk("name_prefix"); !ok {
-	//	d.Set("name_prefix", "Terraform-Creation")
-	//}
-	//if _, ok := d.GetOk("node_cidr_mask"); !ok {
-	//	d.Set("node_cidr_mask", KubernetesClusterNodeCIDRMasksByDefault)
-	//}
-	//if _, ok := d.GetOk("worker_disk_category"); !ok {
-	//	d.Set("worker_disk_category", DiskCloudEfficiency)
-	//}
-	//if _, ok := d.GetOk("worker_disk_size"); !ok {
-	//	d.Set("worker_disk_size", 40)
-	//}
-	//if _, ok := d.GetOk("cpu_policy"); !ok {
-	//	d.Set("cpu_policy", "none")
-	//}
 	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
 
 	//request.Parameters
@@ -1231,14 +1227,23 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		})
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterNodePools", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "DescribeClusterNodePools", DenverdinoAliyungo)
 	}
 
 	unsupportedNodePoolCluster = len(nodePoolDetails.([]cs.NodePoolDetail)) == 0
 
 	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
-		if tea.BoolValue(v.IsDefault) {
-			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+		// Special handling for edge clusters since there are two default node pools: 'ess' and 'edge'
+		if object.Profile == EdgeProfile {
+			if tea.BoolValue(v.IsDefault) && v.NodePoolInfo.NodePoolType == defaultNodePoolType {
+				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+				break
+			}
+		} else {
+			if tea.BoolValue(v.IsDefault) {
+				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+				break
+			}
 		}
 	}
 
@@ -1261,7 +1266,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -1306,7 +1311,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 				return resource.RetryableError(Error("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
 			})
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
 
 		}
@@ -1314,7 +1319,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		if d.Get("exclude_autoscaler_nodes") != nil && d.Get("exclude_autoscaler_nodes").(bool) {
 			result, err = knockOffAutoScalerNodes(result, meta)
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
 			}
 		}
 
@@ -1368,7 +1373,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return vpcClient.DescribeNatGateways(natRequest)
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(natRequest.GetActionName(), raw, natRequest.RpcRequest, natRequest)
 	nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
@@ -1391,7 +1396,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterCerts", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetClusterCerts", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -1418,8 +1423,8 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	var kubeConfig *cs.ClusterConfig
-	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
-		return WrapError(err)
+	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id()); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "DescribeClusterKubeConfig", DenverdinoAliyungo)
 	}
 
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
@@ -1432,6 +1437,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 		return fmt.Errorf("error setting certificate_authority: %s", err)
 	}
+	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+		return WrapError(err)
+	} else {
+		if err := d.Set("rrsa_metadata", data); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	return nil
 }
@@ -1440,7 +1452,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 	csService := CsService{meta.(*connectivity.AliyunClient)}
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "InitClient", ProviderERROR)
 	}
 
 	args := &roacs.DeleteClusterRequest{}
@@ -1453,7 +1465,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "DeleteCluster", DenverdinoAliyungo)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -1470,8 +1482,12 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 
 	var vswitchID string
 	list := make([]string, 0)
-	list = append(list, expandStringList(d.Get("master_vswitch_ids").([]interface{}))...)
-	list = append(list, expandStringList(d.Get("worker_vswitch_ids").([]interface{}))...)
+	if v, ok := d.GetOk("master_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
+	if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+		list = append(list, expandStringList(v.([]interface{}))...)
+	}
 	if len(list) > 0 {
 		vswitchID = list[0]
 	} else {
@@ -1482,7 +1498,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	if vswitchID != "" {
 		vsw, err := vpcService.DescribeVSwitch(vswitchID)
 		if err != nil {
-			return nil, err
+			return nil, WrapError(err)
 		}
 		vpcId = vsw.VpcId
 	}
@@ -1616,7 +1632,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	if userCa, ok := d.GetOk("user_ca"); ok {
 		userCaContent, err := loadFileContent(userCa.(string))
 		if err != nil {
-			return nil, fmt.Errorf("reading user_ca file failed %s", err)
+			return nil, WrapError(fmt.Errorf("reading user_ca file failed %s", err))
 		}
 		creationArgs.UserCa = string(userCaContent)
 	}
@@ -1790,7 +1806,7 @@ func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([
 	})
 
 	if err != nil {
-		return result, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return result, WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
@@ -1869,7 +1885,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 		})
 		return err
 	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+		return nil, WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 	}
 
 	for _, v := range response.([]cs.NodePoolDetail) {
@@ -1887,7 +1903,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 		})
 		return err
 	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
+		return nil, WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 	}
 
 	ret := response.([]cs.KubernetesNodeType)
@@ -1896,7 +1912,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	var err error
 	result, err = knockOffAutoScalerNodes(ret, meta)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
+		return nil, WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 	}
 
 	// filter out Master nodes
@@ -1924,7 +1940,7 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 		})
 		return err
 	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveClusterNodes", DenverdinoAliyungo)
+		return nil, WrapErrorf(err, DefaultErrorMsg, resourceCsKubernetes, "RemoveClusterNodes", DenverdinoAliyungo)
 	}
 
 	stateConf := BuildStateConf([]string{"removing"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
@@ -2024,11 +2040,11 @@ func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.Mai
 func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error) {
 	rosClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 	clusterResources, err := rosClient.DescribeClusterResources(tea.String(d.Id()))
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 
 	for _, clusterResource := range clusterResources.Body {
@@ -2037,7 +2053,7 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 		}
 	}
 
-	return "", fmt.Errorf("cannot found api server SLB information for cluster: %s", d.Id())
+	return "", WrapError(fmt.Errorf("cannot found api server SLB information for cluster: %s", d.Id()))
 }
 
 func fetchClusterCapabilities(meta string) map[string]interface{} {
@@ -2058,4 +2074,48 @@ func fetchClusterCapabilities(meta string) map[string]interface{} {
 		}
 	}
 	return capabilities
+}
+
+type RRSAMetadata struct {
+	Enabled      bool   `json:"enabled"`
+	IssuerURL    string `json:"issuer"`
+	ProviderName string `json:"oidc_name"`
+	ProviderArn  string `json:"oidc_arn"`
+}
+
+func flattenRRSAMetadata(meta string) ([]map[string]interface{}, error) {
+	meta = strings.TrimSpace(meta)
+	if meta == "" {
+		return nil, errors.New("invalid metadata")
+	}
+	metadata := struct {
+		RRSAMetadata RRSAMetadata `json:"RRSAConfig"`
+	}{}
+
+	err := json.Unmarshal([]byte(meta), &metadata)
+	if err != nil {
+		log.Printf("[DEBUG] Failed to unmarshal metadata due to %++v", err)
+		return nil, err
+	}
+
+	data := metadata.RRSAMetadata
+	attributes := map[string]interface{}{
+		"enabled":                data.Enabled,
+		"rrsa_oidc_issuer_url":   "",
+		"ram_oidc_provider_name": "",
+		"ram_oidc_provider_arn":  "",
+	}
+	if !data.Enabled {
+		return []map[string]interface{}{attributes}, nil
+	}
+
+	issuer := data.IssuerURL
+	if strings.Contains(issuer, ",") {
+		issuer = strings.Split(issuer, ",")[0]
+	}
+	attributes["rrsa_oidc_issuer_url"] = issuer
+	attributes["ram_oidc_provider_name"] = data.ProviderName
+	attributes["ram_oidc_provider_arn"] = data.ProviderArn
+
+	return []map[string]interface{}{attributes}, nil
 }

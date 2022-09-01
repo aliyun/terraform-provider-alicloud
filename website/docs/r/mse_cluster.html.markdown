@@ -54,6 +54,7 @@ The following arguments are supported:
 * `mse_version` - (Optional, ForceNew, Computed, Available in v1.177.0+) The version of MSE. Valid values: `mse_dev` or `mse_pro`.
 * `connection_type` - (Optional, ForceNew, Available in v1.183.0+) The connection type. Valid values: `slb`.
 * `request_pars` - (Optional, Available in v1.183.0+) The extended request parameters in the JSON format.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
 
 ## Attributes Reference
 

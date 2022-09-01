@@ -122,6 +122,12 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro"}, false),
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -164,16 +170,25 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 		request["RequestPars"] = v
 	}
 
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+
 	request["Region"] = client.RegionId
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+
+	if request["VpcId"] == nil && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVswitch(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["VpcId"] = vsw["VpcId"]
-		request["VSwitchId"] = vswitchId
+		if v, ok := request["VPCId"].(string); !ok || v == "" {
+			request["VPCId"] = vsw["VpcId"]
+		}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
@@ -225,6 +240,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("cluster_version", object["OrderClusterVersion"])
 	d.Set("cluster_alias_name", object["ClusterAliasName"])
 	d.Set("connection_type", object["ConnectionType"])
+	d.Set("vpc_id", object["VpcId"])
 	return nil
 }
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {

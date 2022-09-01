@@ -88,6 +88,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, Computed, ForceNew) The zone ID of the instance.
 * `resource_group_id` - (Optional, Computed, ForceNew, Available in v1.177.0+) The ID of the resource group.
 * `tags` - (Optional, Available in v1.177.0+) A mapping of tags to assign to the resource.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
 
 ## Attributes Reference
 

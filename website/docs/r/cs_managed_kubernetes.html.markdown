@@ -68,7 +68,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   count              = var.k8s_number
   name               = var.name
   # version can not be defined in variables.tf.
-  version            = "1.20.11-aliyun.1"
+  version            = "1.22.10-aliyun.1"
   worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   new_nat_gateway    = true
   node_cidr_mask     = var.node_cidr_mask
@@ -103,7 +103,7 @@ The following arguments are supported:
 * `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. Default to `docker`. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
 * `enable_ssh` - (Deprecated from version 1.177.0)(Optional) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
@@ -113,7 +113,7 @@ The following arguments are supported:
 * `custom_san` - (Optional, ForceNew, Available in 1.103.2+) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 * `user_ca` - (Optional) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa for version 1.22.3+. Default to `false`. Once the rrsa function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. Default to `true`.
 * `exclude_autoscaler_nodes` - (Deprecated from version 1.177.0)(Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
@@ -156,8 +156,8 @@ The following example is the definition of runtime block:
 
 ```
   runtime = {
-    name = "docker"
-    version = "19.03.5"
+    name = "containerd"
+    version = "1.5.10"
   }
 ```
 
@@ -492,6 +492,11 @@ The following attributes are exported:
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+* `rrsa_metadata` - (Available in v1.185.0+) Nested attribute containing RRSA related data for your cluster.
+  * `enabled` - Whether the RRSA feature has been enabled.
+  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
 
 ## Timeouts
 

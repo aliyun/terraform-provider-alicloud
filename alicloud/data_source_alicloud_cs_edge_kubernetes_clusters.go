@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+const datasourceCsEdgeKubernetesClusters = "alicloud_cs_edge_kubernetes_clusters"
+
 func dataSourceAlicloudCSEdgeKubernetesClusters() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudCSEdgeKubernetesClustersRead,
@@ -139,7 +141,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "DescribeClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "DescribeClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		addDebug("DescribeClusters", response, requestInfo)
@@ -157,7 +159,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 		if nameRegex, ok := d.GetOk("name_regex"); ok {
 			r, err := regexp.Compile(nameRegex.(string))
 			if err != nil {
-				return WrapError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "Regexp.Compile", ProviderERROR)
 			}
 			if !r.MatchString(v.Name) {
 				continue
@@ -191,7 +193,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "DescribeKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "DescribeKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -250,7 +252,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 				response = raw
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
 			if debugOn() {
 				requestMap := make(map[string]interface{})
@@ -294,7 +296,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 					return resource.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
 				})
 				if err != nil {
-					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+					return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 				}
 
 			}
@@ -324,7 +326,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCsEdgeKubernetesClusters, "GetClusterEndpoints", DenverdinoAliyungo)
 		}
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {

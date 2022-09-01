@@ -104,6 +104,8 @@ The following arguments are supported:
 * `name` - (Optional,  Deprecated from v1.121.0+) Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.
 * `nat_gateway_name` - (Optional, Available in 1.121.0+) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.
 * `description` - (Optional) Description of the nat gateway, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Defaults to null.
+* `dry_run` - (Optional) Specifies whether to only precheck this request. Default value: `false`.
+* `force` - (Optional) Specifies whether to forcefully delete the NAT gateway.
 * `bandwidth_packages` - (Optional, Remove from v1.121.0) A list of bandwidth packages for the nat gatway. Only support nat gateway created before 00:00 on November 4, 2017. Available in v1.13.0+ and v1.7.1-.
 * `instance_charge_type` - (Optional, ForceNew,  Deprecated from v1.121.0+) Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.
 * `payment_type` - (Optional, ForceNew, Available in 1.121.0+) The billing method of the NAT gateway. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
@@ -117,6 +119,9 @@ The following arguments are supported:
   - true: Enable deletion protection.
   - false: Disable deletion protection.
 * `network_type` - (Optional, Computed, Available in 1.136.0+) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway.
+* `eip_bind_mode` - (Optional, ForceNew, Available in v1.184.0+) The EIP binding mode of the NAT gateway. Default value: `MULTI_BINDED`. Valid values:
+  - `MULTI_BINDED`: Multi EIP network card visible mode.
+  - `NAT`: EIP normal mode, compatible with IPv4 gateway.
 
 -> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
 

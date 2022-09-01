@@ -21,6 +21,8 @@ import (
 const (
 	EdgeKubernetesDefaultTimeoutInMinutes = 60
 	EdgeProfile                           = "Edge"
+
+	resourceCsEdgeKubernetes = "alicloud_cs_edge_kubernetes"
 )
 
 func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
@@ -53,6 +55,12 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Default:       "Terraform-Creation",
 				ValidateFunc:  validation.StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
+			},
+			"cluster_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ack.standard", "ack.pro.small"}, false),
 			},
 			// worker configurations
 			"worker_vswitch_ids": {
@@ -117,7 +125,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 			"worker_instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"worker_data_disks": {
@@ -165,6 +173,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 					},
 				},
 			},
+			"worker_ram_role_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			// global configurations
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -174,7 +186,22 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"runtime": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"node_cidr_mask": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -237,7 +264,12 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  true,
 			},
-
+			"load_balancer_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+			},
 			"kube_config": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -388,6 +420,7 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 						},
 					},
 				},
+				Deprecated: "Field 'log_config' has been removed from provider version 1.103.0. New field 'addons' replaces it.",
 			},
 			"tags": {
 				Type:     schema.TypeMap,
@@ -406,11 +439,16 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 
 func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "InitClient", ProviderERROR)
+	}
 	invoker := NewInvoker()
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "PrepareKubernetesClusterArgs", ProviderERROR)
 	}
 	var requestInfo *cs.Client
 	var response interface{}
@@ -428,7 +466,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "CreateKubernetesCluster", response)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "CreateKubernetesCluster", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -442,14 +480,19 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
 
 func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "InitClient", ProviderERROR)
+	}
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	d.Partial(true)
 	invoker := NewInvoker()
 	//scale up cloud worker nodes
@@ -549,8 +592,9 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 				})
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleOutCloudWorkers", DenverdinoAliyungo)
+				return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "ScaleOutCloudWorkers", DenverdinoAliyungo)
 			}
+			response, _ := resp.(*cs.ClusterCommonResponse)
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
 				resizeRequestMap["ClusterId"] = d.Id()
@@ -560,7 +604,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(response.TaskId))
 			}
 			d.SetPartial("worker_data_disks")
 			d.SetPartial("worker_number")
@@ -590,7 +634,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			response = raw
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "ModifyClusterName", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -616,13 +660,13 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			})
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "ModifyClusterDeletionProtection", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
 			requestMap["ClusterId"] = d.Id()
 			requestMap["deletion_protection"] = requestInfo.DeletionProtection
-			addDebug("ModifyCluster", response, requestInfo, requestMap)
+			addDebug("ModifyClusterDeletionProtection", response, requestInfo, requestMap)
 		}
 		d.SetPartial("deletion_protection")
 	}
@@ -631,15 +675,15 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.SetPartial("tags")
 
 	// upgrade cluster version
-	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	err = UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCsEdgeKubernetes, "UpgradeClusterVersion", DenverdinoAliyungo)
 	}
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
