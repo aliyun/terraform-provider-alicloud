@@ -105,6 +105,11 @@ func resourceAlicloudSddpInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Upgrade", "Downgrade"}, false),
 				Optional:     true,
 			},
+			"oss_size": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"authed": {
 				Type:     schema.TypeBool,
 				Computed: true,
@@ -119,10 +124,6 @@ func resourceAlicloudSddpInstance() *schema.Resource {
 			},
 			"oss_bucket_set": {
 				Type:     schema.TypeBool,
-				Computed: true,
-			},
-			"oss_size": {
-				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"rds_set": {
@@ -272,6 +273,10 @@ func resourceAlicloudSddpInstanceRead(d *schema.ResourceData, meta interface{}) 
 }
 func resourceAlicloudSddpInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -365,10 +370,6 @@ func resourceAlicloudSddpInstanceUpdate(d *schema.ResourceData, meta interface{}
 			request["ModifyType"] = v
 		}
 		action := "ModifyInstance"
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
