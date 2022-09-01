@@ -91,7 +91,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"deletion_window_in_days"},
-				ValidateFunc:  validation.IntBetween(7, 30),
+				ValidateFunc:  validation.IntBetween(7, 366),
 			},
 			"deletion_window_in_days": {
 				Type:          schema.TypeInt,
@@ -99,7 +99,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Computed:      true,
 				Deprecated:    "Field 'deletion_window_in_days' has been deprecated from provider version 1.85.0. New field 'pending_window_in_days' instead.",
 				ConflictsWith: []string{"pending_window_in_days"},
-				ValidateFunc:  validation.IntBetween(7, 30),
+				ValidateFunc:  validation.IntBetween(7, 366),
 			},
 			"primary_key_version": {
 				Type:     schema.TypeString,
@@ -202,6 +202,7 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	return resourceAlicloudKmsKeyUpdate(d, meta)
 }
+
 func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
@@ -234,6 +235,7 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("dkms_instance_id", object["DKMSInstanceId"])
 	return nil
 }
+
 func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
@@ -373,6 +375,7 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	d.Partial(false)
 	return resourceAlicloudKmsKeyRead(d, meta)
 }
+
 func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "ScheduleKeyDeletion"
@@ -410,6 +413,7 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	return nil
 }
+
 func convertKmsKeyAutomaticRotationRequest(source interface{}) interface{} {
 	switch source {
 	case "Disabled":
