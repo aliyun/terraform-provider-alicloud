@@ -68,10 +68,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 						"transit_router_attachment_name":        name,
 						"transit_router_attachment_description": "tf-test",
 						"vpc_id":                                CHECKSET,
-						"zone_mappings.0.vswitch_id":            CHECKSET,
-						"zone_mappings.0.zone_id":               CHECKSET,
-						"zone_mappings.1.vswitch_id":            CHECKSET,
-						"zone_mappings.1.zone_id":               CHECKSET,
+						"zone_mappings.#":                       "2",
 					}),
 				),
 			},
@@ -80,6 +77,36 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
+							"zone_id":    "${data.alicloud_vswitches.default_master.vswitches.0.zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default.vswitches.0.id}",
+							"zone_id":    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "1",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -178,10 +205,7 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 						"transit_router_attachment_name":        name,
 						"transit_router_attachment_description": "tf-test",
 						"vpc_id":                                CHECKSET,
-						"zone_mappings.0.vswitch_id":            CHECKSET,
-						"zone_mappings.0.zone_id":               CHECKSET,
-						"zone_mappings.1.vswitch_id":            CHECKSET,
-						"zone_mappings.1.zone_id":               CHECKSET,
+						"zone_mappings.#":                       "2",
 						"dry_run":                               "false",
 						"resource_type":                         "VPC",
 						"route_table_association_enabled":       "false",

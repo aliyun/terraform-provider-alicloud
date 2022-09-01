@@ -90,23 +90,20 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Computed:     true,
 			},
 			"zone_mappings": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"vswitch_id": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 						"zone_id": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ForceNew: true,
 						},
 					},
 				},
-				ForceNew: true,
 			},
 		},
 	}
@@ -163,7 +160,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	}
 
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
-	for _, zoneMappings := range d.Get("zone_mappings").([]interface{}) {
+	for _, zoneMappings := range d.Get("zone_mappings").(*schema.Set).List() {
 		zoneMappingsMap := make(map[string]interface{})
 		zoneMappingsArg := zoneMappings.(map[string]interface{})
 		zoneMappingsMap["VSwitchId"] = zoneMappingsArg["vswitch_id"]
@@ -252,6 +249,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		return WrapError(err)
 	}
 	var response map[string]interface{}
+	d.Partial(true)
 	update := false
 	parts, err1 := ParseResourceId(d.Id(), 2)
 	if err1 != nil {
@@ -297,7 +295,66 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("resource_type")
+		d.SetPartial("transit_router_attachment_description")
+		d.SetPartial("transit_router_attachment_name")
 	}
+
+	if d.HasChange("zone_mappings") {
+		oraw, nraw := d.GetChange("zone_mappings")
+		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
+		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		updateZonesRequest := map[string]interface{}{
+			"TransitRouterAttachmentId": parts[1],
+		}
+		if len(remove) > 0 {
+			zoneMappingsMaps := make([]map[string]interface{}, 0)
+			for _, zoneMappings := range remove {
+				zoneMappingsMap := make(map[string]interface{})
+				zoneMappingsArg := zoneMappings.(map[string]interface{})
+				zoneMappingsMap["VSwitchId"] = zoneMappingsArg["vswitch_id"]
+				zoneMappingsMap["ZoneId"] = zoneMappingsArg["zone_id"]
+				zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
+			}
+			updateZonesRequest["RemoveZoneMappings"] = zoneMappingsMaps
+		}
+
+		if len(create) > 0 {
+			zoneMappingsMaps := make([]map[string]interface{}, 0)
+			for _, zoneMappings := range create {
+				zoneMappingsMap := make(map[string]interface{})
+				zoneMappingsArg := zoneMappings.(map[string]interface{})
+				zoneMappingsMap["VSwitchId"] = zoneMappingsArg["vswitch_id"]
+				zoneMappingsMap["ZoneId"] = zoneMappingsArg["zone_id"]
+				zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
+			}
+			updateZonesRequest["AddZoneMappings"] = zoneMappingsMaps
+		}
+
+		action := "UpdateTransitRouterVpcAttachmentZones"
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, updateZonesRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updateZonesRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cbnService.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("zone_mappings")
+	}
+	d.Partial(false)
 	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
 func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
