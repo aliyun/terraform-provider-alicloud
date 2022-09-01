@@ -51,9 +51,8 @@ The following arguments are supported:
 * `ud_cbool` - (Required) Whether to use OSS. Valid values: `yes`,`no`.
 * `sd_cbool` - (Required) Whether to use the database. Valid values:`yes`,`no`.
 * `udc` - (Required) OSS Size.
-* `instance_num` - (Optional) The number of instances.
-* `modify_type` - (Optional) The modify type. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute a update operation. 
-
+* `modify_type` - (Optional) The modify type. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute a update operation.
+* `oss_size` - (Optional) The OSS storage capacity.
 
 
 ## Attributes Reference
@@ -66,6 +65,8 @@ The following attributes are exported:
 * `oss_bucket_set` - Whether the authorized oss assets.
 * `rds_set` - Whether the authorized rds assets.
 * `status` - The status of the resource.
+* `instance_num` - The number of instances.
+* `remain_days` -  The remaining days of the protection period of the assets in the current login account.
 
 ## Import
 

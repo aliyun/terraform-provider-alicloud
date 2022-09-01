@@ -157,15 +157,15 @@ func resourceAlicloudScdnDomainConfigRead(d *schema.ResourceData, meta interface
 
 func resourceAlicloudScdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewScdnClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	scdnService := ScdnService{client}
 	var response map[string]interface{}
 	if d.HasChange("function_args") {
 		action := "BatchSetScdnDomainConfigs"
 		request := make(map[string]interface{})
-		conn, err := client.NewScdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		parts, err := ParseResourceId(d.Id(), 3)
 		if err != nil {
 			return WrapError(err)
