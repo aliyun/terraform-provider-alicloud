@@ -1266,9 +1266,6 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	if v, ok := d.GetOkExists("soc_enabled"); ok {
 		socEnabled = v.(bool)
 	}
-	if (cisEnabled || socEnabled) && tea.StringValue(creationArgs.Platform) != "AliyunLinux" && tea.StringValue(creationArgs.ImageType) != "AliyunLinux" {
-		return creationArgs, fmt.Errorf("SOC/CIS security reinforcement is not supported for current platform/image_type")
-	}
 	if cisEnabled && socEnabled {
 		return creationArgs, fmt.Errorf("setting SOC and CIS together is not supported")
 	} else if cisEnabled {
