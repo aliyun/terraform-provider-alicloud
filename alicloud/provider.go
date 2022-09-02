@@ -165,7 +165,6 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-
 			"alicloud_account":                dataSourceAlicloudAccount(),
 			"alicloud_caller_identity":        dataSourceAlicloudCallerIdentity(),
 			"alicloud_images":                 dataSourceAlicloudImages(),
@@ -737,6 +736,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_parameter_groups":                    dataSourceAlicloudPolarDBParameterGroups(),
 			"alicloud_vpn_gateway_vco_routes":                      dataSourceAlicloudVpnGatewayVcoRoutes(),
 			"alicloud_dcdn_waf_policies":                           dataSourceAlicloudDcdnWafPolicies(),
+			"alicloud_hbr_service":                                 dataSourceAlicloudHbrService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
