@@ -1,29 +1,30 @@
-## 1.184.0 (Unreleased)
+## 1.185.0 (Unreleased)
+## 1.184.0 (September 05, 2022)
 
-- **New Resource:** `alicloud_dcdn_waf_policy` [GH-5349]
-- **New Data Source:** `alicloud_dcdn_waf_policies` [GH-5349]
-- **New Data Source:** `alicloud_ram_policy_document` [GH-5317]
-- **New Data Source:** `alicloud_hbr_service` [GH-5368]
+- **New Resource:** `alicloud_dcdn_waf_policy` ([#5349](https://github.com/aliyun/terraform-provider-alicloud/issues/5349))
+- **New Data Source:** `alicloud_dcdn_waf_policies` ([#5349](https://github.com/aliyun/terraform-provider-alicloud/issues/5349))
+- **New Data Source:** `alicloud_ram_policy_document` ([#5317](https://github.com/aliyun/terraform-provider-alicloud/issues/5317))
+- **New Data Source:** `alicloud_hbr_service` ([#5368](https://github.com/aliyun/terraform-provider-alicloud/issues/5368))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cen_transit_router_vpc_attachment: Removes the field zone_mappings forceNew and supports modifying it online. [GH-5362]
-- resource/alicloud_nat_gateway: Added the field eip_bind_mode [GH-5324]
-- resource/alicloud_kms_key: Supported pending_window_in_days set to 366 [GH-5365]
-- resource/alicloud_vpn_gateway: Added the field auto_propagate [GH-5359]
-- resource/alicloud_eip_address: Removes state refresh after resource creation [GH-5350]
-- resource/alicloud_instance: The Attribute system_disk_category add enumeration value cloud_auto [GH-5357]
-- resource/alicloud_oss_bucket: Adjust to configure Acl during creation. [GH-5354]
-- resource/alicloud_cs_kubernetes_node_pool: soc/cis support AliyunLinux3 platform [GH-5360]
-- resource/alicloud_event_bridge_rule: Added the field push_retry_strategy and dead_letter_queue [GH-5336]
-- resource/alicloud_common_bandwidth_package: Added the field security_protection_types [GH-5318]
-- resource/alicloud_eip_address: Added the field security_protection_types [GH-5282]
+- resource/alicloud_cen_transit_router_vpc_attachment: Removes the field zone_mappings forceNew and supports modifying it online. ([#5362](https://github.com/aliyun/terraform-provider-alicloud/issues/5362))
+- resource/alicloud_nat_gateway: Added the field eip_bind_mode ([#5324](https://github.com/aliyun/terraform-provider-alicloud/issues/5324))
+- resource/alicloud_kms_key: Supported pending_window_in_days set to 366 ([#5365](https://github.com/aliyun/terraform-provider-alicloud/issues/5365))
+- resource/alicloud_vpn_gateway: Added the field auto_propagate ([#5359](https://github.com/aliyun/terraform-provider-alicloud/issues/5359))
+- resource/alicloud_eip_address: Removes state refresh after resource creation ([#5350](https://github.com/aliyun/terraform-provider-alicloud/issues/5350))
+- resource/alicloud_instance: The Attribute system_disk_category add enumeration value cloud_auto ([#5357](https://github.com/aliyun/terraform-provider-alicloud/issues/5357))
+- resource/alicloud_oss_bucket: Adjust to configure Acl during creation. ([#5354](https://github.com/aliyun/terraform-provider-alicloud/issues/5354))
+- resource/alicloud_cs_kubernetes_node_pool: soc/cis support AliyunLinux3 platform ([#5360](https://github.com/aliyun/terraform-provider-alicloud/issues/5360))
+- resource/alicloud_event_bridge_rule: Added the field push_retry_strategy and dead_letter_queue ([#5336](https://github.com/aliyun/terraform-provider-alicloud/issues/5336))
+- resource/alicloud_common_bandwidth_package: Added the field security_protection_types ([#5318](https://github.com/aliyun/terraform-provider-alicloud/issues/5318))
+- resource/alicloud_eip_address: Added the field security_protection_types ([#5282](https://github.com/aliyun/terraform-provider-alicloud/issues/5282))
 
 BUG FIXES:
 
-- resource/alicloud_route_entry: Fixed user flow control [GH-5367]
-- resource/alicloud_eip_association: Fix the problem of waiting when associating ECS [GH-5350]
-- resource/alicloud_kubernetes: Fix panic by master_vswitch_ids [GH-5352]
+- resource/alicloud_route_entry: Fixed user flow control ([#5367](https://github.com/aliyun/terraform-provider-alicloud/issues/5367))
+- resource/alicloud_eip_association: Fix the problem of waiting when associating ECS ([#5350](https://github.com/aliyun/terraform-provider-alicloud/issues/5350))
+- resource/alicloud_kubernetes: Fix panic by master_vswitch_ids ([#5352](https://github.com/aliyun/terraform-provider-alicloud/issues/5352))
 
 ## 1.183.0 (August 29, 2022)
 
