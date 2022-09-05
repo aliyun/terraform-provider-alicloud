@@ -186,6 +186,12 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -283,18 +289,28 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+
+	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["VPCId"] = vsw["VpcId"]
-		request["VSwitchId"] = vswitchId
+		if v, ok := request["VPCId"].(string); !ok || v == "" {
+			request["VPCId"] = vsw["VpcId"]
+		}
 		if v, ok := request["ZoneId"].(string); !ok || v == "" {
 			request["ZoneId"] = vsw["ZoneId"]
 		}
@@ -349,6 +365,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("vpc_id", object["VpcId"])
 
 	engineType := formatInt(object["EngineType"])
 	d.Set("enabled_file_engine", engineType&0x08 == 8)
