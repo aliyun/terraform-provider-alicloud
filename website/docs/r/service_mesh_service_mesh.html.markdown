@@ -85,11 +85,11 @@ The extra_configuration supports the following:
 The mesh_config supports the following: 
 
 * `access_log` - (Optional) The configuration of the access logging.
-* `control_plane_log` - (Optional, ForceNew, Available in 1.174.0+) The configuration of the control plane logging. 
-* `audit` - (Optional) The configuration of the audit. See the following `Block audit`.
+* `control_plane_log` - (Optional, ForceNew, Computed, Available in 1.174.0+) The configuration of the control plane logging. 
+* `audit` - (Optional, Computed) The configuration of the audit. See the following `Block audit`.
 * `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
-* `kiali` - (Optional) The configuration of the Kiali. See the following `Block kiali`.
+* `kiali` - (Optional, Computed) The configuration of the Kiali. See the following `Block kiali`.
 * `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See the following `Block opa`.
 * `outbound_traffic_policy` - (Optional) The policy of the Out to the traffic. Valid values: `ALLOW_ANY` and `REGISTRY_ONLY`.
 * `pilot` - (Optional, ForceNew) The configuration of the Link trace sampling. See the following `Block pilot`.
@@ -118,10 +118,10 @@ The sidecar_injector supports the following:
 
 * `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
 * `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
-* `limit_cpu` - (Optional) The limit cpu of the Sidecar injector Pods.
-* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
-* `request_cpu` - (Optional) The requested cpu the Sidecar injector Pods.
-* `request_memory` - (Optional) The requested memory the Sidecar injector Pods.
+* `limit_cpu` - (Optional, Computed) The limit cpu of the Sidecar injector Pods.
+* `limit_memory` - (Optional, Computed) Sidecar injector Pods on the throttle.
+* `request_cpu` - (Optional, Computed) The requested cpu the Sidecar injector Pods.
+* `request_memory` - (Optional, Computed) The requested memory the Sidecar injector Pods.
 
 #### Block proxy
 
@@ -143,7 +143,7 @@ The pilot supports the following:
 
 The kiali supports the following: 
 
-* `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
+* `enabled` - (Optional, Computed) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
 
 #### Block opa
 

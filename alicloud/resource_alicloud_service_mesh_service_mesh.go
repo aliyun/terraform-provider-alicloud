@@ -33,7 +33,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				Optional: true,
 			},
 			"load_balancer": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
 				Computed: true,
@@ -62,15 +62,16 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				ForceNew: true,
 			},
 			"mesh_config": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"access_log": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -87,9 +88,9 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							},
 						},
 						"control_plane_log": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
-							ForceNew: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -106,7 +107,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							},
 						},
 						"audit": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -128,9 +129,10 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 						"customized_zipkin": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"kiali": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -139,12 +141,13 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 									},
 								},
 							},
 						},
 						"opa": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -190,7 +193,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							ValidateFunc: validation.StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
 						},
 						"pilot": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -209,7 +212,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							},
 						},
 						"proxy": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -239,7 +242,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 							},
 						},
 						"sidecar_injector": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
@@ -258,18 +261,22 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 									"limit_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"limit_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"request_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"request_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 								},
 							},
@@ -293,7 +300,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				},
 			},
 			"network": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
 				ForceNew: true,
@@ -340,12 +347,13 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"standard", "enterprise", "ultimate"}, false),
 			},
 			"cluster_ids": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"extra_configuration": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				MaxItems: 1,
 				Computed: true,
@@ -384,7 +392,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOk("network"); ok {
-		for _, networkMap := range v.(*schema.Set).List() {
+		for _, networkMap := range v.([]interface{}) {
 			if networkArg, ok := networkMap.(map[string]interface{}); ok {
 				if v, ok := networkArg["vpc_id"]; ok {
 					request["VpcId"] = v
@@ -397,7 +405,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOk("load_balancer"); ok {
-		for _, loadBalancerMap := range v.(*schema.Set).List() {
+		for _, loadBalancerMap := range v.([]interface{}) {
 			if loadBalancerArg, ok := loadBalancerMap.(map[string]interface{}); ok {
 				if v, ok := loadBalancerArg["api_server_public_eip"]; ok {
 					request["ApiServerPublicEip"] = v
@@ -409,7 +417,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		for _, meshConfigMap := range v.(*schema.Set).List() {
+		for _, meshConfigMap := range v.([]interface{}) {
 			if meshConfigArg, ok := meshConfigMap.(map[string]interface{}); ok {
 
 				if v, ok := meshConfigArg["customized_zipkin"]; ok {
@@ -425,7 +433,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					request["EnableLocalityLB"] = v
 				}
 				if pilot, ok := meshConfigArg["pilot"]; ok {
-					for _, pilotMap := range pilot.(*schema.Set).List() {
+					for _, pilotMap := range pilot.([]interface{}) {
 						if pilotArg, ok := pilotMap.(map[string]interface{}); ok {
 							if v, ok := pilotArg["trace_sampling"]; ok {
 								request["TraceSampling"] = v
@@ -434,7 +442,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if AccessLog, ok := meshConfigArg["access_log"]; ok {
-					for _, AccessLogMap := range AccessLog.(*schema.Set).List() {
+					for _, AccessLogMap := range AccessLog.([]interface{}) {
 						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
 							if v, ok := AccessLogArg["enabled"]; ok {
 								request["AccessLogEnabled"] = v
@@ -446,7 +454,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if ControlPlaneLog, ok := meshConfigArg["control_plane_log"]; ok {
-					for _, ControlPlaneLogMap := range ControlPlaneLog.(*schema.Set).List() {
+					for _, ControlPlaneLogMap := range ControlPlaneLog.([]interface{}) {
 						if ControlPlaneLogArg, ok := ControlPlaneLogMap.(map[string]interface{}); ok {
 							if v, ok := ControlPlaneLogArg["enabled"]; ok {
 								request["ControlPlaneLogEnabled"] = v
@@ -458,7 +466,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if proxy, ok := meshConfigArg["proxy"]; ok {
-					for _, proxyMap := range proxy.(*schema.Set).List() {
+					for _, proxyMap := range proxy.([]interface{}) {
 						if proxyArg, ok := proxyMap.(map[string]interface{}); ok {
 							if v, ok := proxyArg["request_memory"]; ok {
 								request["ProxyRequestMemory"] = v
@@ -476,7 +484,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if opa, ok := meshConfigArg["opa"]; ok {
-					for _, opaMap := range opa.(*schema.Set).List() {
+					for _, opaMap := range opa.([]interface{}) {
 						if opaArg, ok := opaMap.(map[string]interface{}); ok {
 							if v, ok := opaArg["enabled"]; ok {
 								request["OpaEnabled"] = v
@@ -501,7 +509,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if audit, ok := meshConfigArg["audit"]; ok {
-					for _, auditMap := range audit.(*schema.Set).List() {
+					for _, auditMap := range audit.([]interface{}) {
 						if auditArg, ok := auditMap.(map[string]interface{}); ok {
 							if v, ok := auditArg["enabled"]; ok {
 								request["EnableAudit"] = v
@@ -516,7 +524,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 					}
 				}
 				if kiali, ok := meshConfigArg["kiali"]; ok {
-					for _, kialiMap := range kiali.(*schema.Set).List() {
+					for _, kialiMap := range kiali.([]interface{}) {
 						if kialiArg, ok := kialiMap.(map[string]interface{}); ok {
 							if v, ok := kialiArg["enabled"]; ok {
 								request["KialiEnabled"] = v
@@ -749,7 +757,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOk("mesh_config"); ok {
-		for _, meshConfigMap := range v.(*schema.Set).List() {
+		for _, meshConfigMap := range v.([]interface{}) {
 			if meshConfigArg, ok := meshConfigMap.(map[string]interface{}); ok {
 
 				if v, ok := meshConfigArg["customized_zipkin"]; ok {
@@ -759,7 +767,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					updateMeshFeatureReq["OutboundTrafficPolicy"] = v
 				}
 				if proxy, ok := meshConfigArg["proxy"]; ok {
-					for _, proxyMap := range proxy.(*schema.Set).List() {
+					for _, proxyMap := range proxy.([]interface{}) {
 						if proxyArg, ok := proxyMap.(map[string]interface{}); ok {
 							if v, ok := proxyArg["request_memory"]; ok {
 								updateMeshFeatureReq["ProxyRequestMemory"] = v
@@ -777,7 +785,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 				}
 				if AccessLog, ok := meshConfigArg["access_log"]; ok {
-					for _, AccessLogMap := range AccessLog.(*schema.Set).List() {
+					for _, AccessLogMap := range AccessLog.([]interface{}) {
 						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
 							if v, ok := AccessLogArg["enabled"]; ok {
 								updateMeshFeatureReq["AccessLogEnabled"] = v
@@ -789,7 +797,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 				}
 				if sidecarInjector, ok := meshConfigArg["sidecar_injector"]; ok && !d.IsNewResource() {
-					for _, sidecarInjectorMap := range sidecarInjector.(*schema.Set).List() {
+					for _, sidecarInjectorMap := range sidecarInjector.([]interface{}) {
 						if sidecarInjectorArg, ok := sidecarInjectorMap.(map[string]interface{}); ok {
 							if v, ok := sidecarInjectorArg["auto_injection_policy_enabled"]; ok {
 								updateMeshFeatureReq["AutoInjectionPolicyEnabled"] = v
@@ -814,7 +822,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				}
 
 				if AccessLog, ok := meshConfigArg["mesh_config"]; ok {
-					for _, AccessLogMap := range AccessLog.(*schema.Set).List() {
+					for _, AccessLogMap := range AccessLog.([]interface{}) {
 						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
 							if v, ok := AccessLogArg["enabled"]; ok {
 								updateMeshFeatureReq["AccessLogEnabled"] = v
@@ -829,7 +837,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					updateMeshFeatureReq["Telemetry"] = v
 				}
 				if pilot, ok := meshConfigArg["pilot"]; ok {
-					for _, pilotMap := range pilot.(*schema.Set).List() {
+					for _, pilotMap := range pilot.([]interface{}) {
 						if pilotArg, ok := pilotMap.(map[string]interface{}); ok {
 							if v, ok := pilotArg["trace_sampling"]; ok {
 								updateMeshFeatureReq["TraceSampling"] = v
@@ -841,7 +849,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 				}
 				if opa, ok := meshConfigArg["opa"]; ok {
-					for _, opaMap := range opa.(*schema.Set).List() {
+					for _, opaMap := range opa.([]interface{}) {
 						if opaArg, ok := opaMap.(map[string]interface{}); ok {
 							if v, ok := opaArg["enabled"]; ok {
 								updateMeshFeatureReq["OpaEnabled"] = v
@@ -865,7 +873,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 				}
 				if audit, ok := meshConfigArg["audit"]; ok {
-					for _, auditMap := range audit.(*schema.Set).List() {
+					for _, auditMap := range audit.([]interface{}) {
 						if auditArg, ok := auditMap.(map[string]interface{}); ok {
 							if v, ok := auditArg["enabled"]; ok {
 								updateMeshFeatureReq["EnableAudit"] = v
@@ -877,7 +885,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					}
 				}
 				if kiali, ok := meshConfigArg["kiali"]; ok {
-					for _, kialiMap := range kiali.(*schema.Set).List() {
+					for _, kialiMap := range kiali.([]interface{}) {
 						if kialiArg, ok := kialiMap.(map[string]interface{}); ok {
 							if v, ok := kialiArg["enabled"]; ok {
 								updateMeshFeatureReq["KialiEnabled"] = v
@@ -926,7 +934,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("extra_configuration") {
 		update = true
 		if extraConfig, ok := d.GetOk("extra_configuration"); ok {
-			for _, extraConfigMap := range extraConfig.(*schema.Set).List() {
+			for _, extraConfigMap := range extraConfig.([]interface{}) {
 				if extraConfigArg, ok := extraConfigMap.(map[string]interface{}); ok {
 					if v, ok := extraConfigArg["cr_aggregation_enabled"]; ok {
 						UpdateMeshCRAggregationReq["Enabled"] = v
