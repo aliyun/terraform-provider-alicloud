@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -1432,6 +1433,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 		return fmt.Errorf("error setting certificate_authority: %s", err)
 	}
+	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+		return WrapError(err)
+	} else {
+		if err := d.Set("rrsa_metadata", data); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	return nil
 }
@@ -2062,4 +2070,48 @@ func fetchClusterCapabilities(meta string) map[string]interface{} {
 		}
 	}
 	return capabilities
+}
+
+type RRSAMetadata struct {
+	Enabled      bool   `json:"enabled"`
+	IssuerURL    string `json:"issuer"`
+	ProviderName string `json:"oidc_name"`
+	ProviderArn  string `json:"oidc_arn"`
+}
+
+func flattenRRSAMetadata(meta string) ([]map[string]interface{}, error) {
+	meta = strings.TrimSpace(meta)
+	if meta == "" {
+		return nil, errors.New("invalid metadata")
+	}
+	metadata := struct {
+		RRSAMetadata RRSAMetadata `json:"RRSAConfig"`
+	}{}
+
+	err := json.Unmarshal([]byte(meta), &metadata)
+	if err != nil {
+		log.Printf("[DEBUG] Failed to unmarshal metadata due to %++v", err)
+		return nil, err
+	}
+
+	data := metadata.RRSAMetadata
+	attributes := map[string]interface{}{
+		"enabled":                data.Enabled,
+		"rrsa_oidc_issuer_url":   "",
+		"ram_oidc_provider_name": "",
+		"ram_oidc_provider_arn":  "",
+	}
+	if !data.Enabled {
+		return []map[string]interface{}{attributes}, nil
+	}
+
+	issuer := data.IssuerURL
+	if strings.Contains(issuer, ",") {
+		issuer = strings.Split(issuer, ",")[0]
+	}
+	attributes["rrsa_oidc_issuer_url"] = issuer
+	attributes["ram_oidc_provider_name"] = data.ProviderName
+	attributes["ram_oidc_provider_arn"] = data.ProviderArn
+
+	return []map[string]interface{}{attributes}, nil
 }

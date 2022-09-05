@@ -113,7 +113,7 @@ The following arguments are supported:
 * `custom_san` - (Optional, ForceNew, Available in 1.103.2+) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 * `user_ca` - (Optional) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
 * `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa for version 1.22.3+. Default to `false`. Once the rrsa function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. Default to `true`.
 * `exclude_autoscaler_nodes` - (Deprecated from version 1.177.0)(Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
@@ -492,6 +492,11 @@ The following attributes are exported:
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+* `rrsa_metadata` - (Available in v1.185.0+) Nested attribute containing RRSA related data for your cluster.
+  * `enabled` - Whether the RRSA feature has been enabled.
+  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
 
 ## Timeouts
 

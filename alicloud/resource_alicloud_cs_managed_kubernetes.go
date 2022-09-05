@@ -704,6 +704,32 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }

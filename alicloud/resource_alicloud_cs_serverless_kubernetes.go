@@ -230,6 +230,32 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -483,6 +509,13 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 			return WrapError(err)
 		}
 		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
+			return WrapError(err)
+		}
+	}
+	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+		return WrapError(err)
+	} else {
+		if err := d.Set("rrsa_metadata", data); err != nil {
 			return WrapError(err)
 		}
 	}
