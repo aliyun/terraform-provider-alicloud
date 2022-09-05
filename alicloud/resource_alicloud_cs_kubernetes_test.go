@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -964,5 +965,88 @@ func testAccCheckUserCA(n string, d *cs.KubernetesClusterDetail) resource.TestCh
 		} else {
 			return fmt.Errorf("connections.api_server_internet not found in cluster %s", cluster.Primary.Attributes)
 		}
+	}
+}
+
+func Test_parseRRSAMetadata(t *testing.T) {
+	type args struct {
+		meta string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "empty error",
+			args: args{
+				meta: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid error",
+			args: args{
+				meta: `
+{
+	"RRSAConfig": 1234
+}`,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "valid enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": true,
+		"issuer": "https://example.com,https://kubernetes.default.svc,kubernetes.default.svc",
+		"oidc_name": "ack-rrsa-c12345",
+		"oidc_arn": "acs:ram::12345:oidc-provider/ack-rrsa-c12345"
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                true,
+				"rrsa_oidc_issuer_url":   "https://example.com",
+				"ram_oidc_provider_name": "ack-rrsa-c12345",
+				"ram_oidc_provider_arn":  "acs:ram::12345:oidc-provider/ack-rrsa-c12345",
+			}},
+			wantErr: false,
+		},
+		{
+			name: "valid not enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": false,
+		"issuer": "",
+		"oidc_name": "",
+		"oidc_arn": ""
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                false,
+				"rrsa_oidc_issuer_url":   "",
+				"ram_oidc_provider_name": "",
+				"ram_oidc_provider_arn":  "",
+			}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenRRSAMetadata(tt.args.meta)
+			if tt.wantErr && err == nil {
+				t.Errorf("flattenRRSAMetadata(%v) want error got nil", tt.args.meta)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
 	}
 }

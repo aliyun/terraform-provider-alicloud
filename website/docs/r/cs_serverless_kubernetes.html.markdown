@@ -107,7 +107,7 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support rrsa for version 1.22.3+. Default to `false`. Once the rrsa function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
@@ -183,6 +183,11 @@ The following attributes are exported:
 * `vswitch_id` - The ID of VSwicth where the current cluster is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `deletion_protection` - Whether enable the deletion protection or not.
+* `rrsa_metadata` - (Available in v1.185.0+) Nested attribute containing RRSA related data for your cluster.
+  * `enabled` - Whether the RRSA feature has been enabled.
+  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
+  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
+  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
 
 ## Import
 
