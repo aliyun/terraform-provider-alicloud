@@ -1106,7 +1106,17 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return WrapErrorf(fmt.Errorf("cluster_pec new value can not be parsed"), "parseError %d", newValue)
 		}
 
-		if o == "ack.standard" && strings.Contains(n, "pro") {
+		// The field `cluster_spec` of some ack.standard managed cluster is "" since some historical reasons.
+		// The logic here is to confirm whether the cluster is the above.
+		// The interface error should not block the main process and errors will be output to the log.
+		clusterInfo, err := csService.DescribeCsManagedKubernetes(d.Id())
+		if err != nil || clusterInfo == nil {
+			log.Printf("[DEBUG] Failed to DescribeCsManagedKubernetes cluster %s when migrate", d.Id())
+		} else {
+			o = clusterInfo.ClusterSpec
+		}
+
+		if (o == "ack.standard" || o == "") && strings.Contains(n, "pro") {
 			err := migrateAlicloudManagedKubernetesCluster(d, meta)
 			if err != nil {
 				return WrapErrorf(err, ResponseCodeMsg, d.Id(), "MigrateCluster", AlibabaCloudSdkGoERROR)
