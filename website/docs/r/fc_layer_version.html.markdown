@@ -32,7 +32,8 @@ resource "alicloud_fc_layer_version" "example" {
 
 ## Argument Reference
 
-The resource does not support any argument.
+The following arguments are supported:
+
 * `layer_name` - (Required, ForceNew) The name of the layer.
 * `description` - (Optional, ForceNew) The description of the layer version.
 * `skip_destroy` - (Optional) Whether to retain the old version of a previously deployed Lambda Layer. Default is `false`. When this is not set to `true`, changing any of `compatible_runtimes`, `description`, `layer_name`, `oss_bucket_name`,  `oss_object_name`, or `zip_file` forces deletion of the existing layer version and creation of a new layer version.
@@ -42,7 +43,6 @@ The resource does not support any argument.
 * `zip_file` - (Optional, ForceNew) The ZIP package of the function code that is encoded in the Base64 format.
 
 -> **NOTE:** `zip_file` and `oss_bucket_name`, `oss_object_name` cannot be used together.
-
 
 ## Attributes Reference
 

@@ -737,6 +737,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vco_routes":                      dataSourceAlicloudVpnGatewayVcoRoutes(),
 			"alicloud_dcdn_waf_policies":                           dataSourceAlicloudDcdnWafPolicies(),
 			"alicloud_hbr_service":                                 dataSourceAlicloudHbrService(),
+			"alicloud_api_gateway_log_configs":                     dataSourceAlicloudApiGatewayLogConfigs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1364,6 +1365,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_polardb_parameter_group":                              resourceAlicloudPolarDBParameterGroup(),
 			"alicloud_vpn_gateway_vco_route":                                resourceAlicloudVpnGatewayVcoRoute(),
 			"alicloud_dcdn_waf_policy":                                      resourceAlicloudDcdnWafPolicy(),
+			"alicloud_api_gateway_log_config":                               resourceAlicloudApiGatewayLogConfig(),
 		},
 
 		ConfigureFunc: providerConfigure,
