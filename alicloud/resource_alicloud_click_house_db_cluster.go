@@ -138,6 +138,18 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Computed: true,
 				Optional: true,
 			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -177,15 +189,28 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("used_time"); ok {
 		request["UsedTime"] = v
 	}
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+
+	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["VPCId"] = vsw["VpcId"]
-		request["VSwitchId"] = vswitchId
+		if v, ok := request["VPCId"].(string); !ok || v == "" {
+			request["VPCId"] = vsw["VpcId"]
+		}
 		if v, ok := request["ZoneId"].(string); !ok || v == "" {
 			request["ZoneId"] = vsw["ZoneId"]
 		}
@@ -241,6 +266,7 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("storage_type", convertClickHouseDbClusterStorageTypeResponse(object["StorageType"].(string)))
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VpcId"])
 	describeDBClusterAccessWhiteListObject, err := clickhouseService.DescribeDBClusterAccessWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)

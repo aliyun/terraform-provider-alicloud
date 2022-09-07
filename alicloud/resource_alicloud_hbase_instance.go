@@ -220,6 +220,11 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 					},
 				},
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -260,11 +265,17 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 		request.AutoRenewPeriod = requests.NewInteger(1)
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
-		request.VSwitchId = vswitchId
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request.VpcId = v.(string)
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request.VSwitchId = v.(string)
+	}
+
+	if (request.ZoneId == "" || request.VpcId == "") && request.VSwitchId != "" {
 		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
+		vsw, err := vpcService.DescribeVSwitch(request.VSwitchId)
 		if err != nil {
 			return nil, WrapError(err)
 		}
@@ -280,7 +291,9 @@ func buildHBaseCreateRequest(d *schema.ResourceData, meta interface{}) (*hbase.C
 			return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
 		}
 
-		request.VpcId = vsw.VpcId
+		if request.VpcId == "" {
+			request.VpcId = vsw.VpcId
+		}
 	}
 
 	if d.Get("cold_storage_size").(int) < 0 {

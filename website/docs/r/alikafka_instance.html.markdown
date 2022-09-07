@@ -80,6 +80,8 @@ The following arguments are supported:
 * `config` - (Optional, Available in v1.112.0+) The basic config for this instance. The input should be json type, only the following key allowed: enable.acl, enable.vpc_sasl_ssl, kafka.log.retention.hours, kafka.message.max.bytes.
 * `kms_key_id` - (Optional, ForceNew, Available in v1.180.0+) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance.
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
+* `zone_id` - (Optional, ForceNew, Available in v1.185.0+) The zone ID of the instance.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
 
