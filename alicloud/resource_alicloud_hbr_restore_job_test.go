@@ -244,11 +244,72 @@ func TestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
+	checkoutAccount(t, true)
+	defer checkoutAccount(t, false)
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_restore_job.default"
+	ra := resourceAttrInit(resourceId, AlicloudHBRRestoreJobMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrRestoreJob")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrrestorejob%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHBRRestoreJobBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.HbrSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vault_id":             "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.vault_id}",
+					"snapshot_hash":        "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.snapshot_hash}",
+					"snapshot_id":          "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.snapshot_id}",
+					"source_type":          "OTS_TABLE",
+					"restore_type":         "OTS_TABLE",
+					"include":              "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.table_name}",
+					"target_time":          "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.start_time}",
+					"target_instance_name": "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.instance_name}",
+					"target_table_name":    "${data.alicloud_hbr_ots_snapshots.default.snapshots.0.table_name}",
+					"ots_detail": []map[string]interface{}{
+						{
+							"overwrite_existing": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vault_id":             CHECKSET,
+						"snapshot_hash":        CHECKSET,
+						"snapshot_id":          CHECKSET,
+						"source_type":          "OTS_TABLE",
+						"restore_type":         "OTS_TABLE",
+						"target_time":          CHECKSET,
+						"target_instance_name": CHECKSET,
+						"target_table_name":    CHECKSET,
+						"ots_detail.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"include", "exclude", "udm_region_id"},
+			},
+		},
+	})
+}
+
 var AlicloudHBRRestoreJobMap0 = map[string]string{
-	"include":       NOSET,
 	"status":        CHECKSET,
 	"exclude":       NOSET,
-	"udm_detail":    NOSET,
 	"udm_region_id": NOSET,
 }
 
@@ -261,9 +322,11 @@ variable "name" {
 data "alicloud_hbr_ecs_backup_plans" "default" {
     name_regex = "plan-tf-used-dont-delete"
 }
+
 data "alicloud_hbr_oss_backup_plans" "default" {
 	name_regex = "plan-tf-used-dont-delete"
 }
+
 data "alicloud_hbr_nas_backup_plans" "default" {
 	name_regex = "plan-tf-used-dont-delete"
 }
@@ -287,6 +350,17 @@ data "alicloud_hbr_snapshots" "nas_snapshots" {
     create_time     =  data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
 }
 
+`, name)
+}
+
+func AlicloudHBRRestoreJobBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_hbr_ots_snapshots" "default" {
+	}
 `, name)
 }
 
