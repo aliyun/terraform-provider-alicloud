@@ -739,6 +739,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_service":                                 dataSourceAlicloudHbrService(),
 			"alicloud_api_gateway_log_configs":                     dataSourceAlicloudApiGatewayLogConfigs(),
 			"alicloud_dbs_backup_plans":                            dataSourceAlicloudDbsBackupPlans(),
+			"alicloud_dcdn_waf_domains":                            dataSourceAlicloudDcdnWafDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1368,6 +1369,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_policy":                                      resourceAlicloudDcdnWafPolicy(),
 			"alicloud_api_gateway_log_config":                               resourceAlicloudApiGatewayLogConfig(),
 			"alicloud_dbs_backup_plan":                                      resourceAlicloudDbsBackupPlan(),
+			"alicloud_dcdn_waf_domain":                                      resourceAlicloudDcdnWafDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
