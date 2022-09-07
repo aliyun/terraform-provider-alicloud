@@ -402,6 +402,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `babelfish_config` - (Optional, Available in 1.176.0+) The configuration of an ApsaraDB RDS for PostgreSQL instance for which Babelfish is enabled. (documented below).
 
 -> **NOTE:** This parameter takes effect only when you create an ApsaraDB RDS for PostgreSQL instance. For more information, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
 
 #### Block pg_hba_conf
 

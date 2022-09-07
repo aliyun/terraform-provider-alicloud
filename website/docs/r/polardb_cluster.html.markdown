@@ -114,6 +114,7 @@ The following arguments are supported:
 -> **NOTE:** This parameter is required if CreationOption is set to CreateGdnStandby.
 * `clone_data_point` - (Optional, Available in 1.179.0+) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `CloneDataPoint`.
 -> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
 
 ### Block db_cluster_ip_array
 

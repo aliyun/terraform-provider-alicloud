@@ -62,6 +62,12 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"drds.sn1.4c8g", "drds.sn1.8c16g", "drds.sn1.16c32g", "drds.sn1.32c64g", "drds.sn2.4c16g", "drds.sn2.8c32g", "drds.sn2.16c64g"}, false),
 				ForceNew:     true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -81,15 +87,18 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	request.InstanceSeries = d.Get("instance_series").(string)
 	request.Quantity = "1"
 
-	if request.VswitchId != "" {
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request.VpcId = v.(string)
+	}
 
+	if (request.ZoneId == "" || request.VpcId == "") && request.VswitchId != "" {
 		vpcService := VpcService{client}
 		vsw, err := vpcService.DescribeVSwitch(request.VswitchId)
 		if err != nil {
 			return WrapError(err)
 		}
-
 		request.VpcId = vsw.VpcId
+		request.ZoneId = vsw.ZoneId
 	}
 	request.ClientToken = buildClientToken(request.GetActionName())
 
@@ -187,7 +196,7 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	//other attribute not set,because these attribute from `data` can't  get
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
-
+	d.Set("vpc_id", data.Vips.Vip[0].VpcId)
 	return nil
 }
 

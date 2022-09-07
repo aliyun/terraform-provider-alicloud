@@ -477,6 +477,81 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_instance.default"
+	ra := resourceAttrInit(resourceId, alikafkaInstanceBasicMap)
+	serviceFunc := func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandInt()
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		//CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":            "${var.name}",
+					"topic_quota":     "50",
+					"disk_type":       "1",
+					"disk_size":       "500",
+					"deploy_type":     "4",
+					"eip_max":         "3",
+					"io_max":          "20",
+					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
+					"paid_type":       "PrePaid",
+					"spec_type":       "normal",
+					"service_version": "0.10.2",
+					//"config":          `{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}`,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"security_group": "${data.alicloud_security_groups.default.ids.0}",
+					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":            name,
+						"topic_quota":     CHECKSET,
+						"disk_type":       "1",
+						"disk_size":       "500",
+						"deploy_type":     "4",
+						"eip_max":         "3",
+						"io_max":          "20",
+						"paid_type":       "PrePaid",
+						"spec_type":       "normal",
+						"service_version": "0.10.2",
+						//"config":          "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
+						"tags.%":         "2",
+						"tags.Created":   "TF",
+						"tags.For":       "acceptance test",
+						"security_group": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func resourceAlikafkaInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

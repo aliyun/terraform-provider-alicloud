@@ -131,7 +131,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				ForceNew: true,
 			},
 			"maintain_time": {
 				Type:     schema.TypeString,
@@ -239,6 +239,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Optional:     true,
 			},
 			"tags": tagsSchema(),
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -704,6 +709,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
 	d.Set("deletion_lock", clusterAttribute.DeletionLock)
 	d.Set("creation_category", clusterAttribute.Category)
+	d.Set("vpc_id", clusterAttribute.VPCId)
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -872,25 +878,33 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 		request.ZoneId = Trim(zone.(string))
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request.VPCId = v.(string)
+	}
 
-	if vswitchId != "" {
-		request.VSwitchId = vswitchId
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request.VSwitchId = v.(string)
+	}
+
+	if request.VSwitchId != "" {
 		request.ClusterNetworkType = strings.ToUpper(string(Vpc))
+		if request.ZoneId == "" || request.VPCId == "" {
+			// check vswitchId in zone
+			vsw, err := vpcService.DescribeVSwitch(request.VSwitchId)
+			if err != nil {
+				return nil, WrapError(err)
+			}
 
-		// check vswitchId in zone
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
-		if err != nil {
-			return nil, WrapError(err)
+			if request.ZoneId == "" {
+				request.ZoneId = vsw.ZoneId
+			} else if request.ZoneId != vsw.ZoneId {
+				return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+			}
+
+			if request.VPCId == "" {
+				request.VPCId = vsw.VpcId
+			}
 		}
-
-		if request.ZoneId == "" {
-			request.ZoneId = vsw.ZoneId
-		} else if request.ZoneId != vsw.ZoneId {
-			return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
-		}
-
-		request.VPCId = vsw.VpcId
 	}
 
 	payType := Trim(d.Get("pay_type").(string))

@@ -497,6 +497,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -1390,6 +1396,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	d.Set("deletion_protection", instance["DeletionProtection"])
+	d.Set("vpc_id", instance["VpcId"])
 	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 	if len(slaveZones) == 2 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
@@ -1589,38 +1596,41 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ZoneId"] = Trim(zone.(string))
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
 
 	request["InstanceNetworkType"] = Classic
-
-	if vswitchId != "" {
-		request["VSwitchId"] = vswitchId
+	if request["VSwitchId"] != nil {
 		request["InstanceNetworkType"] = strings.ToUpper(string(Vpc))
-
 		// check vswitchId in zone
-		v := strings.Split(vswitchId, COMMA_SEPARATED)[0]
+		v := strings.Split(request["VSwitchId"].(string), COMMA_SEPARATED)[0]
+		if request["ZoneId"] == nil || request["VPCId"] == nil {
 
-		vsw, err := vpcService.DescribeVSwitch(v)
-		if err != nil {
-			return nil, WrapError(err)
+			vsw, err := vpcService.DescribeVSwitch(v)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+
+			if v, ok := request["VPCId"].(string); !ok || v == "" {
+				request["VPCId"] = vsw.VpcId
+			}
+			if v, ok := request["ZoneId"].(string); !ok || v == "" {
+				request["ZoneId"] = vsw.ZoneId
+			}
+			//else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
+			//	zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
+			//	if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
+			//		return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+			//	}
+			//} else if request.ZoneId != vsw.ZoneId {
+			//	return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+			//}
 		}
-
-		if request["ZoneId"] == nil {
-			request["ZoneId"] = vsw.ZoneId
-		}
-
-		if request["VPCId"] == nil {
-			request["VPCId"] = vsw.VpcId
-		}
-
-		//else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
-		//	zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
-		//	if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-		//		return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
-		//	}
-		//} else if request.ZoneId != vsw.ZoneId {
-		//	return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
-		//}
 	}
 
 	request["PayType"] = Trim(d.Get("instance_charge_type").(string))

@@ -108,11 +108,15 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"end_point": {
 				Type:     schema.TypeString,
@@ -191,18 +195,33 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	startInstanceAction := "StartInstance"
 	startInstanceResponse := make(map[string]interface{})
 	startInstanceReq := make(map[string]interface{})
-	vswitchId := d.Get("vswitch_id").(string)
-	// Get vswitch info by vswitchId
-	vsw, err := vpcService.DescribeVswitch(vswitchId)
-	if err != nil {
-		return WrapError(err)
+	if v, ok := d.GetOk("vpc_id"); ok {
+		startInstanceReq["VpcId"] = v
+	}
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		startInstanceReq["ZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		startInstanceReq["VSwitchId"] = v
+	}
+
+	if (startInstanceReq["ZoneId"] == nil || startInstanceReq["VpcId"] == nil) && startInstanceReq["VSwitchId"] != nil {
+		vsw, err := vpcService.DescribeVswitch(startInstanceReq["VSwitchId"].(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		if v, ok := startInstanceReq["VpcId"].(string); !ok || v == "" {
+			startInstanceReq["VpcId"] = vsw["VpcId"]
+		}
+		if v, ok := startInstanceReq["ZoneId"].(string); !ok || v == "" {
+			startInstanceReq["ZoneId"] = vsw["ZoneId"]
+		}
 	}
 
 	startInstanceReq["RegionId"] = client.RegionId
 	startInstanceReq["InstanceId"] = alikafkaInstanceVO["InstanceId"]
-	startInstanceReq["VpcId"] = vsw["VpcId"]
-	startInstanceReq["VSwitchId"] = vswitchId
-	startInstanceReq["ZoneId"] = vsw["ZoneId"]
 	if _, ok := d.GetOkExists("eip_max"); ok {
 		startInstanceReq["DeployModule"] = "eip"
 		startInstanceReq["IsEipInner"] = true
