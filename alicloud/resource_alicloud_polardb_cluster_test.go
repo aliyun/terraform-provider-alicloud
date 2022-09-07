@@ -151,6 +151,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"connection_string": "",
 						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
 					}),
 				),
 			},
@@ -449,6 +450,7 @@ func TestAccAlicloudPolarDBClusterCreate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
 					}),
 				),
 			},

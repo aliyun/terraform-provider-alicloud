@@ -698,7 +698,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_type", clusterAttribute.DBType)
 	d.Set("db_version", clusterAttribute.DBVersion)
 	d.Set("maintain_time", clusterAttribute.MaintainTime)
-	d.Set("zone_ids", clusterAttribute.ZoneIds)
+	d.Set("zone_id", clusterAttribute.ZoneIds)
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
