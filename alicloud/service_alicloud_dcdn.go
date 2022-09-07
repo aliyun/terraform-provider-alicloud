@@ -241,6 +241,7 @@ func (s *DcdnService) DcdnIpaDomainStateRefreshFunc(id string, failStates []stri
 		return object, object["DomainStatus"].(string), nil
 	}
 }
+
 func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewDcdnClient()
@@ -280,5 +281,92 @@ func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interf
 		return object, WrapErrorf(Error(GetNotFoundMessage("DcdnWafPolicy", id)), NotFoundMsg, ProviderERROR)
 	}
 	object = result[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDcdnWafDomains"
+	request := map[string]interface{}{
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+		v, err := jsonpath.Get("$.Domains", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Domains", response)
+		}
+		if len(v.([]interface{})) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DcdnWafDomains", id)), NotFoundWithResponse, response)
+		}
+		for _, v := range v.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DomainName"]) == id {
+				return v.(map[string]interface{}), nil
+			}
+		}
+		if len(v.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return object, nil
+}
+
+func (s *DcdnService) DescribeDcdnWafDomainDefenseScenes(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDcdnWafDomainDetail"
+	request := map[string]interface{}{
+		"DomainName": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Domain", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Domain", response)
+	}
+	object = v.(map[string]interface{})
 	return object, nil
 }
