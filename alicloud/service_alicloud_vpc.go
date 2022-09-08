@@ -3019,6 +3019,7 @@ func (s *VpcService) VpcBgpPeerStateRefreshFunc(id string, failStates []string) 
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
 func (s *VpcService) DescribeVpcBgpNetwork(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -3259,7 +3260,7 @@ func (s *VpcService) VpnRouteEntryStateRefreshFunc(id string, failStates []strin
 
 		for _, failState := range failStates {
 			if object["State"].(string) == failState {
-				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
 			}
 		}
 		return object, object["State"].(string), nil
@@ -3442,6 +3443,7 @@ func (s *VpcService) VpnPbrRouteEntryStateRefreshFunc(id string, failStates []st
 		return object, object["State"].(string), nil
 	}
 }
+
 func (s *VpcService) DescribeVpnGatewayVpnAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -3481,6 +3483,7 @@ func (s *VpcService) DescribeVpnGatewayVpnAttachment(id string) (object map[stri
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
 func (s *VpcService) DescribeVpcIpv4Gateway(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -3700,6 +3703,7 @@ func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]in
 	}
 	return object, nil
 }
+
 func (s *VpcService) DescribeVpcIpv4CidrBlock(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -3765,4 +3769,70 @@ func (s *VpcService) DescribeVpcIpv4CidrBlock(id string) (object map[string]inte
 		return object, WrapErrorf(Error(GetNotFoundMessage("VpcIpv4CidrBlock", id)), NotFoundWithResponse, response)
 	}
 	return
+}
+
+func (s *VpcService) DescribeVpcPublicIpAddressPool(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListPublicIpAddressPools"
+	request := map[string]interface{}{
+		"RegionId":               s.client.RegionId,
+		"PublicIpAddressPoolIds": []string{id},
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.PublicIpAddressPoolList", response)
+	if formatInt(response["TotalCount"]) != 0 && err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PublicIpAddressPoolList", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(resp.([]interface{})[0].(map[string]interface{})["PublicIpAddressPoolId"]) != id {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = resp.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *VpcService) VpcPublicIpAddressPoolStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcPublicIpAddressPool(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }
