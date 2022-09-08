@@ -1370,6 +1370,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_log_config":                               resourceAlicloudApiGatewayLogConfig(),
 			"alicloud_dbs_backup_plan":                                      resourceAlicloudDbsBackupPlan(),
 			"alicloud_dcdn_waf_domain":                                      resourceAlicloudDcdnWafDomain(),
+			"alicloud_vpc_ipv4_cidr_block":                                  resourceAlicloudVpcIpv4CidrBlock(),
 		},
 
 		ConfigureFunc: providerConfigure,
