@@ -69,8 +69,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when create the Db Instance.
-* `delete` - (Defaults to 1 mins) Used when delete the Db Instance.
+* `create` - (Defaults to 60 mins) Used when create the Db Instance.
+* `delete` - (Defaults to 10 mins) Used when delete the Db Instance.
 * `update` - (Defaults to 60 mins) Used when update the Db Instance.
 
 ## Import
