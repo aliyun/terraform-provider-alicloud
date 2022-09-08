@@ -67,7 +67,11 @@ The following arguments are supported:
   * 1000Base-LX: Gigabit Singlemode Optical Ports (10Km)
   * 10GBase-T: Gigabit Electrical Port 
   * 10GBase-LR: Gigabit Singlemode Optical Ports (10Km). 
+  * 40GBase-LR: 40 Gigabit Singlemode Optical Ports.
+  * 100GBase-LR: One hundred thousand Gigabit Singlemode Optical Ports.
   
+ **NOTE:** From in v1.185.0+, The `40GBase-LR` and `100GBase-LR` is valid. and Set these values based on the water levels of background ports. For details about the water levels, contact the business manager.
+
 * `redundant_physical_connection_id` - (Optional) Redundant Physical Connection to Which the ID.
 * `status` - (Optional, Computed) Resources on Behalf of a State of the Resource Attribute Field. Valid values: `Canceled`, `Enabled`, `Terminated`.
 * `type` - (Optional, Computed, ForceNew) Physical Private Line of Type. Default Value: VPC.
