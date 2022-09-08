@@ -1054,7 +1054,7 @@ jobs:
       - <<: *run
         params:
           <<: *run-params
-          TEST_CASE_CODE: "Ecs"
+          TEST_CASE_CODE: "ECS"
 
   - name: DCDN
     plan:

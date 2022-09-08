@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsActivationsDataSource(t *testing.T) {
+func TestAccAlicloudECSActivationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.EcsActivationsSupportRegions)
 	idsConf := dataSourceTestAccConfig{
