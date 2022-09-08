@@ -175,6 +175,12 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/bgentry/go-netrc/netrc
 # github.com/bgentry/speakeasy v0.1.0
 github.com/bgentry/speakeasy
+# github.com/blues/jsonata-go v1.5.4
+github.com/blues/jsonata-go
+github.com/blues/jsonata-go/jlib
+github.com/blues/jsonata-go/jlib/jxpath
+github.com/blues/jsonata-go/jparse
+github.com/blues/jsonata-go/jtypes
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
 # github.com/clbanning/mxj/v2 v2.5.6

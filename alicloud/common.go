@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blues/jsonata-go"
+
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -1098,6 +1100,23 @@ func SplitSlice(xs []interface{}, chunkSize int) [][]interface{} {
 	}
 	divided[i] = xs[prev:]
 	return divided
+}
+
+func getValWithJsonataExpression(responseJsonString, expression string) (interface{}, error) {
+
+	var data interface{}
+	err := json.Unmarshal([]byte(responseJsonString), &data)
+	if err != nil {
+		return nil, err
+	}
+
+	e := jsonata.MustCompile(expression)
+	res, err := e.Eval(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func isPagingRequest(d *schema.ResourceData) bool {
