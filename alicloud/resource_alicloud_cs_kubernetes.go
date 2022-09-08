@@ -780,6 +780,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"temporary_duration_minutes": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -1122,6 +1126,12 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	csClient := CsClient{roaClient}
 	csService := CsService{client}
 	invoker := NewInvoker()
 	object, err := csService.DescribeCsKubernetes(d.Id())
@@ -1417,13 +1427,17 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	var kubeConfig *cs.ClusterConfig
-	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+	var kubeConfig *roacs.DescribeClusterUserKubeconfigResponseBody
+	var expiration int64 = 0
+	if v, ok := d.GetOk("temporary_duration_minutes"); ok {
+		expiration = int64(v.(int))
+	}
+	if kubeConfig, err = csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), expiration); err != nil {
 		return WrapError(err)
 	}
 
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
+		if err := writeToFile(file.(string), tea.StringValue(kubeConfig.Config)); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -1941,13 +1955,13 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	return allHostName[len(allHostName)-count:], nil
 }
 
-func flattenAlicloudCSCertificate(certificate *cs.ClusterConfig) map[string]string {
+func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconfigResponseBody) map[string]string {
 	if certificate == nil {
 		return map[string]string{}
 	}
 
 	kubeConfig := make(map[string]interface{})
-	_ = yaml.Unmarshal([]byte(certificate.Config), &kubeConfig)
+	_ = yaml.Unmarshal([]byte(tea.StringValue(certificate.Config)), &kubeConfig)
 
 	m := make(map[string]string)
 	m["cluster_cert"] = kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string)

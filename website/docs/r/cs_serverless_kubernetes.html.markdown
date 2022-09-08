@@ -29,6 +29,8 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.162.0, support for creating professional serverless cluster.
 
+-> **NOTE:** From version 1.185.0+, Support customized kube config expiration by field `temporary_duration_minutes`.
+
 ## Example Usage
 
 Basic Usage
@@ -127,6 +129,7 @@ The following arguments are supported:
 * `cluster_spec` - (Optional, ForceNew, Available in 1.162.0+) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
     - ack.standard: Standard serverless clusters.
     - ack.pro.small: Professional serverless clusters.
+* `temporary_duration_minutes` - (Optional, Available in 1.185.0+) You could specify the automatic expiration time by this field. It's valid value is `[15-4320]` and the unit is minutes. The system will automatically determine a longer validity period when this field is not set.
 
 #### addons 
 It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on. 

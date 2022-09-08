@@ -38,6 +38,8 @@ Please refer to the `Authorization management` and `Cluster management` sections
 -> **NOTE:** From version 1.177.0+, `runtime`,`enable_ssh`,`rds_instances`,`exclude_autoscaler_nodes`,`worker_number`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`image_id`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id`,`install_cloud_monitor` are deprecated.
 We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
 
+-> **NOTE:** From version 1.185.0+, Support customized kube config expiration by field `temporary_duration_minutes`.
+
 ## Example Usage
 
 ```
@@ -130,6 +132,7 @@ The following arguments are supported:
 * `control_plane_log_project` - (Optional, ForceNew, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster.
+* `temporary_duration_minutes` - (Optional, Available in 1.185.0+) You could specify the automatic expiration time by this field. It's valid value is `[15-4320]` and the unit is minutes. The system will automatically determine a longer validity period when this field is not set.
 
 ##### maintenance_window
 

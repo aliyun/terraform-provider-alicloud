@@ -124,6 +124,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 			},
+			"temporary_duration_minutes": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"client_cert": {
 				Type:     schema.TypeString,
 				ForceNew: true,
@@ -398,6 +402,12 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 
 func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	csClient := CsClient{roaClient}
 	csService := CsService{client}
 	invoker := NewInvoker()
 	rosClient, err := client.NewRoaCsClient()
@@ -477,12 +487,17 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var kubeConfig *cs.ClusterConfig
+	var kubeConfig *roacs.DescribeClusterUserKubeconfigResponseBody
+	var expiration int64 = 0
+	if v, ok := d.GetOk("temporary_duration_minutes"); ok {
+		expiration = int64(v.(int))
+	}
+	if kubeConfig, err = csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), expiration); err != nil {
+		return WrapError(err)
+	}
+
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
-			return WrapError(err)
-		}
-		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
+		if err := writeToFile(file.(string), tea.StringValue(kubeConfig.Config)); err != nil {
 			return WrapError(err)
 		}
 	}

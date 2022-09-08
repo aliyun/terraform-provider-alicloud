@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"regexp"
 	"strings"
 	"time"
@@ -44,6 +45,10 @@ func dataSourceAlicloudCSManagerKubernetesClusters() *schema.Resource {
 			},
 			"kube_config_file_prefix": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"temporary_duration_minutes": {
+				Type:     schema.TypeInt,
 				Optional: true,
 			},
 			// Computed values
@@ -340,7 +345,12 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 
 func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTypes []cs.KubernetesCluster, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	csClient := CsClient{roaClient}
 	invoker := NewInvoker()
 
 	var ids, names []string
@@ -494,10 +504,21 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
 		}
 
+		ids = append(ids, ct.ClusterID)
+		names = append(names, ct.Name)
+		s = append(s, mapping)
+
 		// kube_config
-		var kubeConfig *cs.ClusterConfig
+		if ct.State == "failed" {
+			continue
+		}
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterID)
-		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterID, false); err != nil {
+		var kubeConfig *roacs.DescribeClusterUserKubeconfigResponseBody
+		var expiration int64 = 0
+		if v, ok := d.GetOk("temporary_duration_minutes"); ok {
+			expiration = int64(v.(int))
+		}
+		if kubeConfig, err = csClient.DescribeClusterKubeConfigWithExpiration(ct.ClusterID, expiration); err != nil {
 			return WrapError(err)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
@@ -506,10 +527,6 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "write kubeconfig file", "")
 		}
-
-		ids = append(ids, ct.ClusterID)
-		names = append(names, ct.Name)
-		s = append(s, mapping)
 	}
 
 	d.Set("ids", ids)

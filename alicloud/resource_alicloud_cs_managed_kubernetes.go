@@ -459,6 +459,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				ForceNew:    true,
 				Description: "disk encryption key, only in ack-pro",
 			},
+			"temporary_duration_minutes": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			// computed parameters
 			"kube_config": {
 				Type:     schema.TypeString,

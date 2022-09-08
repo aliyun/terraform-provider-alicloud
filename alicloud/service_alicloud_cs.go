@@ -202,6 +202,7 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 
 // DescribeClusterKubeConfig return cluster kube_config credential.
 // It's used for kubernetes/managed_kubernetes/serverless_kubernetes.
+// Deprecated
 func (s *CsService) DescribeClusterKubeConfig(clusterId string, isResource bool) (*cs.ClusterConfig, error) {
 	invoker := NewInvoker()
 	var response interface{}
@@ -227,6 +228,33 @@ func (s *CsService) DescribeClusterKubeConfig(clusterId string, isResource bool)
 	}
 	config, _ = response.(*cs.ClusterConfig)
 	return config, nil
+}
+
+// DescribeClusterKubeConfigWithExpiration return cluster kube_config credential with expiration time.
+// It's used for kubernetes/managed_kubernetes/serverless_kubernetes.
+func (s *CsClient) DescribeClusterKubeConfigWithExpiration(clusterId string, temporaryDurationMinutes int64) (*client.DescribeClusterUserKubeconfigResponseBody, error) {
+	if clusterId == "" {
+		return nil, WrapError(fmt.Errorf("clusterid is empty"))
+	}
+
+	request := &client.DescribeClusterUserKubeconfigRequest{
+		PrivateIpAddress: tea.Bool(false),
+	}
+	if temporaryDurationMinutes > 0 {
+		request.TemporaryDurationMinutes = tea.Int64(temporaryDurationMinutes)
+	}
+	kubeConfig, err := s.client.DescribeClusterUserKubeconfig(tea.String(clusterId), request)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		addDebug("DescribeClusterUserConfig", kubeConfig, request, requestMap)
+	}
+
+	return kubeConfig.Body, nil
 }
 
 // This function returns the latest addon status information

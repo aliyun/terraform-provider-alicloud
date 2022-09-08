@@ -38,6 +38,8 @@ Please refer to the `Authorization management` and `Cluster management` sections
 -> **NOTE:** From version 1.177.0+, `exclude_autoscaler_nodes`,`worker_number`,`worker_vswitch_ids`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id` are deprecated.
 We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
 
+-> **NOTE:** From version 1.185.0+, Support customized kube config expiration by field `temporary_duration_minutes`.
+
 ## Example Usage
 
 ```terraform
@@ -116,6 +118,7 @@ The following arguments are supported:
 * `platform` - (Optional, ForceNew, Available in 1.103.2+) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
 * `node_name_mode` - (Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
 * `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster.
+* `temporary_duration_minutes` - (Optional, Available in 1.185.0+) You could specify the automatic expiration time by this field. It's valid value is `[15-4320]` and the unit is minutes. The system will automatically determine a longer validity period when this field is not set.
 
 ##### runtime
 
