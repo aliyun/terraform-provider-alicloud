@@ -1366,6 +1366,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vco_route":                                resourceAlicloudVpnGatewayVcoRoute(),
 			"alicloud_dcdn_waf_policy":                                      resourceAlicloudDcdnWafPolicy(),
 			"alicloud_api_gateway_log_config":                               resourceAlicloudApiGatewayLogConfig(),
+			"alicloud_vpc_ipv6_cidr_block":                                  resourceAlicloudVpcIpv6CidrBlock(),
 		},
 
 		ConfigureFunc: providerConfigure,

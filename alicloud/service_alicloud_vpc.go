@@ -3700,3 +3700,66 @@ func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]in
 	}
 	return object, nil
 }
+
+func (s *VpcService) DescribeVpcIpv6CidrBlock(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeVpcs"
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"VpcId":      parts[0],
+		"PageNumber": 1,
+		"PageSize":   PageSizeLarge,
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Vpcs.Vpc", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Vpcs.Vpc", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	}
+
+	vpcObject := v.([]interface{})[0].(map[string]interface{})
+
+	v, err = jsonpath.Get("$.Ipv6CidrBlocks.Ipv6CidrBlock", vpcObject)
+
+	for _, v := range v.([]interface{}) {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["Ipv6CidrBlock"]) == parts[1] {
+			idExist = true
+			return item, nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+	}
+	return
+}
