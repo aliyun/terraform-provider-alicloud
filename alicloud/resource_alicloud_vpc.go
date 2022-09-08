@@ -72,8 +72,10 @@ func resourceAlicloudVpc() *schema.Resource {
 				Computed: true,
 			},
 			"secondary_cidr_blocks": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Deprecated: "Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.",
+				Computed:   true,
+				Type:       schema.TypeSet,
+				Optional:   true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
