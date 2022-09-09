@@ -641,10 +641,10 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 	}
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, instanceHealthCheckFunc)
 
-	_, waitStateErr := stateConf.WaitForState()
-	if waitStateErr != nil {
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id()), nil
 	}
+
 	// Check the valid number of instances
 	checkEventErr := checkEcsInstanceSystemFailureDeleteEvent(d, meta, instanceIds)
 	if checkEventErr != nil {
