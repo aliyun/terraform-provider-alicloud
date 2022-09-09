@@ -1,4 +1,37 @@
 ## 1.185.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_ipv4_cidr_block` [GH-5391]
+- **New Resource:** `alicloud_api_gateway_log_config` [GH-5379]
+- **New Resource:** `alicloud_dbs_backup_plan` [GH-5341]
+- **New Resource:** `alicloud_dcdn_waf_domain` [GH-5386]
+- **New Data Source:** `alicloud_dcdn_waf_domains` [GH-5386]
+- **New Data Source:** `alicloud_dbs_backup_plans` [GH-5341]
+- **New Data Source:** `alicloud_api_gateway_log_configs` [GH-5379]
+
+ENHANCEMENTS:
+
+- resource/alicloud_slb_server_group_server_attachment: Add retry error code [GH-5409]
+- resource/alicloud_pvtz_endpoint: Add retry error code [GH-5408]
+- resource/alicloud_edge_kubernetes: add new fields cluster_spec,runtime and load_balancer_spec [GH-5355]
+- resource/alicloud_cs_kubernetes_node_pool: change api for nodepool kubelet config [GH-5356]
+- resource/alicloud_express_connect_physical_connection: supported for 100GBase-LR and 40GBase-LR [GH-5394]
+- resource/alicloud_lindorm_instance: Adds new attribute vpc_id expose the vpc_id parameter [GH-5373]
+- resource/alicloud_route_table: Add retry code IncorrectStatus.cbnStatus [GH-5385]
+- resource/alicloud_network_acl: Added retry stragety for error code NetworkAclExistBinding [GH-5374]
+- resource/alicloud_service_mesh_service_mesh: Change TypeSet to TypeList to avoid resource recreated. [GH-5378]
+- resource/alicloud_polardb_cluster alicloud_hbase_instance alicloud_alikafka_instance alicloud_click_house_db_cluster alicloud_db_instance alicloud_drds_instance alicloud_mse_cluster: Adds new attribute vpc_id expose the vpc_id parameter [GH-5384]
+- resource/alicloud_graph_database_db_instance: Enlarges the creating and deleting default timeout [GH-5389]
+- resource/{alicloud_cs_managed_kubernetes,alicloud_cs_serverless_kubernetes}: Export a new attribute rrsa_metadata [GH-5375]
+- doc/alicloud_cs_edge_kubernetes: add new usage example [GH-5403]
+
+BUG FIXES:
+
+- resource/alicloud_cs_managed_kubernetes: Fix attributes bug caused by rrsa_metadata [GH-5406]
+- resource/alicloud_cs_managed_kubernetes: Fix migrate bug [GH-5371]
+- resource/alicloud_dcdn_waf_domain: fix test case TestAccAlicloudDCDNWafDomain_basic1 [GH-5398]
+- resource/alicloud_polardb_cluster: Fixes the setting attribute zone_id failed error [GH-5387]
+- testcases: Fix ci test error for ack [GH-5399]
+
 ## 1.184.0 (September 05, 2022)
 
 - **New Resource:** `alicloud_dcdn_waf_policy` ([#5349](https://github.com/aliyun/terraform-provider-alicloud/issues/5349))
