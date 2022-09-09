@@ -68,7 +68,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   count              = var.k8s_number
   name               = var.name
   # version can not be defined in variables.tf.
-  version            = "1.20.11-aliyun.1"
+  version            = "1.22.10-aliyun.1"
   worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   new_nat_gateway    = true
   node_cidr_mask     = var.node_cidr_mask
