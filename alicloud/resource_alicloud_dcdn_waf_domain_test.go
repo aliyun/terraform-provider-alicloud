@@ -92,7 +92,7 @@ func TestAccAlicloudDCDNWafDomain_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sdcdnwafdomain%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.xiaozhu.com", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
