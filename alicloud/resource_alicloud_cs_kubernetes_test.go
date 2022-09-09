@@ -269,7 +269,7 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_category":        "cloud_ssd",
 					"worker_disk_size":            "50",
 					"password":                    "Yourpassword1234",
-					"pod_cidr":                    "10.90.0.0/16",
+					"pod_cidr":                    "10.72.0.0/16",
 					"service_cidr":                "172.18.0.0/16",
 					"enable_ssh":                  "true",
 					"load_balancer_spec":          "slb.s2.small",
@@ -437,7 +437,7 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 					"master_disk_category":        "cloud_ssd",
 					"worker_disk_size":            "50",
 					"password":                    "Yourpassword1234",
-					"pod_cidr":                    "10.91.0.0/16",
+					"pod_cidr":                    "10.74.0.0/16",
 					"service_cidr":                "172.19.0.0/16",
 					"enable_ssh":                  "true",
 					"install_cloud_monitor":       "true",
@@ -558,7 +558,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// global args
 					"name":                name,
-					"version":             "1.20.11-aliyun.1",
+					"version":             "1.22.10-aliyun.1",
 					"password":            "Yourpassword1234",
 					"pod_cidr":            "10.92.0.0/16",
 					"service_cidr":        "172.20.0.0/16",
@@ -591,7 +591,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// global args
 						"name":                name,
-						"version":             "1.20.11-aliyun.1",
+						"version":             "1.22.10-aliyun.1",
 						"password":            "Yourpassword1234",
 						"pod_cidr":            "10.92.0.0/16",
 						"service_cidr":        "172.20.0.0/16",
@@ -798,17 +798,6 @@ resource "alicloud_vswitch" "vswitch" {
 
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-	
-resource "alicloud_db_instance" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_type        = "rds.mysql.s2.large"
-  instance_storage     = "30"
-  instance_charge_type = "Postpaid"
-  instance_name        = "tf-testacckubernetes"
-  vswitch_id           = local.vswitch_id
-  monitoring_period    = "60"
 }
 
 resource "alicloud_snapshot_policy" "default" {

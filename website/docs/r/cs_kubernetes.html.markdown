@@ -67,7 +67,7 @@ resource "alicloud_cs_kubernetes" "k8s" {
   pod_cidr              = var.pod_cidr
   service_cidr          = var.service_cidr
   # version can not be defined in variables.tf.
-  version = "1.20.11-aliyun.1"
+  version = "1.22.10-aliyun.1"
   dynamic "addons" {
     for_each = var.cluster_addons
     content {

@@ -210,7 +210,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					// cluster args
 					"name":                name,
 					"password":            "Test12345",
-					"version":             "1.20.11-aliyun.1",
+					"version":             "1.22.10-aliyun.1",
 					"pod_cidr":            "10.94.0.0/16",
 					"service_cidr":        "172.22.0.0/16",
 					"deletion_protection": "false",
@@ -245,7 +245,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// cluster args
 						"name":                name,
-						"version":             "1.20.11-aliyun.1",
+						"version":             "1.22.10-aliyun.1",
 						"password":            "Test12345",
 						"pod_cidr":            "10.94.0.0/16",
 						"service_cidr":        "172.22.0.0/16",
@@ -482,7 +482,7 @@ data "alicloud_instance_types" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_kms_keys" "default" {
-	status = "Enable"
+	status = "Enabled"
 }
 
 data "alicloud_vpcs" "default" {
@@ -620,7 +620,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
-					"version":                     "1.20.11-aliyun.1",
+					"version":                     "1.22.10-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -636,7 +636,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
-						"version":                   "1.20.11-aliyun.1",
+						"version":                   "1.22.10-aliyun.1",
 					}),
 				),
 			},

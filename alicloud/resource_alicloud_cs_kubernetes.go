@@ -1165,22 +1165,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("load_balancer_spec", "slb.s1.small")
 	}
 
-	// TODO: A better way to deal with default value?
-	//if _, ok := d.GetOk("name_prefix"); !ok {
-	//	d.Set("name_prefix", "Terraform-Creation")
-	//}
-	//if _, ok := d.GetOk("node_cidr_mask"); !ok {
-	//	d.Set("node_cidr_mask", KubernetesClusterNodeCIDRMasksByDefault)
-	//}
-	//if _, ok := d.GetOk("worker_disk_category"); !ok {
-	//	d.Set("worker_disk_category", DiskCloudEfficiency)
-	//}
-	//if _, ok := d.GetOk("worker_disk_size"); !ok {
-	//	d.Set("worker_disk_size", 40)
-	//}
-	//if _, ok := d.GetOk("cpu_policy"); !ok {
-	//	d.Set("cpu_policy", "none")
-	//}
 	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
 
 	//request.Parameters
@@ -1238,8 +1222,17 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	unsupportedNodePoolCluster = len(nodePoolDetails.([]cs.NodePoolDetail)) == 0
 
 	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
-		if tea.BoolValue(v.IsDefault) {
-			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+		// Special handling for edge clusters since there are two default node pools: 'ess' and 'edge'
+		if object.Profile == EdgeProfile {
+			if tea.BoolValue(v.IsDefault) && v.NodePoolInfo.NodePoolType == defaultNodePoolType {
+				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+				break
+			}
+		} else {
+			if tea.BoolValue(v.IsDefault) {
+				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
+				break
+			}
 		}
 	}
 
