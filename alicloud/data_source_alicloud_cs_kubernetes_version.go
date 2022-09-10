@@ -64,11 +64,10 @@ func dataSourceAlicloudCSKubernetesVersion() *schema.Resource {
 }
 
 func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta interface{}) error {
-	client, err := meta.(*connectivity.AliyunClient)
-
-	resp, _err := describeKubernetesVersionMetadata(d, client)
-	if _err != nil {
-		return WrapErrorf(_err, DefaultErrorMsg, "DescribeKubernetesVersionMetadata", err)
+	client := meta.(*connectivity.AliyunClient)
+	resp, err := describeKubernetesVersionMetadata(d, client)
+	if err != nil {
+		return WrapErrorf(err, datasourceCSKubernetesVersion, "DescribeKubernetesVersionMetadata", DenverdinoAliyungo)
 	}
 
 	var results []map[string]interface{}
@@ -96,7 +95,7 @@ func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta inte
 func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectivity.AliyunClient) ([]*cs.DescribeKubernetesVersionMetadataResponseBody, error) {
 	csClient, err := client.NewRoaCsClient()
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, "InitializeClient", err)
+		return nil, WrapError(err)
 	}
 	request := &cs.DescribeKubernetesVersionMetadataRequest{}
 	request.Region = tea.String(client.RegionId)
@@ -105,7 +104,7 @@ func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectiv
 	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
 	resp, err := csClient.DescribeKubernetesVersionMetadata(request)
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	return resp.Body, nil
 }

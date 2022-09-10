@@ -587,7 +587,13 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 
 func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	invoker := NewInvoker()
 
 	var requestInfo *cs.Client
@@ -597,7 +603,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 	// prepare args and set default value
 	args, err := buildNodePoolArgs(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "PrepareKubernetesNodePoolArgs", err)
+		return WrapError(err)
 	}
 
 	if err = invoker.Run(func() error {
@@ -606,7 +612,7 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 		})
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "CreateKubernetesNodePool", raw)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSKubernetesNodePool, "CreateKubernetesNodePool", DenverdinoAliyungo)
 	}
 
 	if debugOn() {
@@ -616,17 +622,14 @@ func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta int
 		addDebug("CreateKubernetesNodePool", raw, requestInfo, requestMap)
 	}
 
-	nodePool, ok := raw.(*cs.CreateNodePoolResponse)
-	if ok != true {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ParseKubernetesNodePoolResponse", raw)
-	}
+	nodePool, _ := raw.(*cs.CreateNodePoolResponse)
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, nodePool.NodePoolID))
 
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, "ResourceID:%s , TaskID:%s ", d.Id(), nodePool.TaskID)
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(nodePool.TaskID))
 	}
 
 	// attach existing node
@@ -641,6 +644,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 	vpcService := VpcService{client}
+
 	d.Partial(true)
 	update := false
 	invoker := NewInvoker()
@@ -893,7 +897,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("kubelet_configuration") {
 		roaClient, err := client.NewRoaCsClient()
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "InitClient", AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
 		csClient := CsClient{roaClient}
 		kubeletConfig := &roacs.ModifyNodePoolNodeConfigRequestKubeletConfig{}
@@ -918,7 +922,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 		resp, err := csClient.ModifyNodePoolNodeConfig(parts[0], parts[1], modifyNodePoolKubeletRequest)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ModifyNodePoolKubeletConfig", AlibabaCloudSdkGoERROR, resp)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyNodePoolKubeletConfig", AlibabaCloudSdkGoERROR)
 		}
 		modifyNodePoolKubeletResp, _ := resp.(*roacs.ModifyNodePoolNodeConfigResponse)
 
@@ -977,7 +981,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeCsKubernetesNodePool", DenverdinoAliyungo)
 	}
 
 	d.Set("node_count", object.TotalNodes)
@@ -1137,7 +1141,7 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 	if vswitchID != "" {
 		vsw, err := vpcService.DescribeVSwitch(vswitchID)
 		if err != nil {
-			return nil, err
+			return nil, WrapErrorf(err, DefaultErrorMsg, vswitchID, "DescribeVSwitch", AlibabaCloudSdkGoERROR)
 		}
 		vpcId = vsw.VpcId
 	}
@@ -1692,9 +1696,10 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 	csService := CsService{meta.(*connectivity.AliyunClient)}
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapError(err)
 	}
 
+	csClient := CsClient{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -1732,14 +1737,14 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 		args.Instances = tea.StringSlice(expandStringList(v.([]interface{})))
 	}
 
-	_, err = client.AttachInstances(tea.String(clusterId), args)
+	resp, err := client.AttachInstances(tea.String(clusterId), args)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "AttachInstances", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "AttachInstances", AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(tea.StringValue(resp.Body.TaskId)))
 	}
 
 	return nil

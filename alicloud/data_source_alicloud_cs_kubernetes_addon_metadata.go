@@ -13,7 +13,6 @@ import (
 )
 
 const MASKED_CONFIG_KEY_PREFIX = "x-ui"
-const DatasourceAlicloudCSKubernetesAddonMetadata = "alicloud_cs_kubernetes_addon_metadata"
 
 func dataSourceAlicloudCSKubernetesAddonMetadata() *schema.Resource {
 	return &schema.Resource{
@@ -48,12 +47,12 @@ func dataAlicloudCSKubernetesAddonMetadataRead(d *schema.ResourceData, meta inte
 	component, err := DescribeClusterAddonMetadata(d, meta)
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, DatasourceAlicloudCSKubernetesAddonMetadata, "DescribeClusterAddonMetadata", err)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSKubernetesAddonMetadata, "DescribeClusterAddonMetadata", AlibabaCloudSdkGoERROR)
 	}
 
 	config, err := fetchJsonSchema(component.ConfigSchema)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, DatasourceAlicloudCSKubernetesAddonMetadata, "DescribeClusterAddonMetadata", err)
+		return WrapError(err)
 	}
 
 	d.Set("cluster_id", clusterId)
@@ -72,7 +71,7 @@ func DescribeClusterAddonMetadata(d *schema.ResourceData, meta interface{}) (*Co
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 	csClient := CsClient{client}
 
@@ -85,16 +84,16 @@ func fetchJsonSchema(schema string) (string, error) {
 	}
 	var i interface{}
 	if err := json.Unmarshal([]byte(schema), &i); err != nil {
-		return "", WrapErrorf(err, DefaultErrorMsg, DatasourceAlicloudCSKubernetesAddonMetadata, "fetchJsonSchema", err)
+		return "", WrapError(err)
 	}
 	if v, ok := i.(map[string]interface{}); ok {
 		result, err := json.MarshalIndent(parseNode(v), "", "\t")
 		if err != nil {
-			return "", WrapErrorf(Error("addon config schema marshal error"), DefaultErrorMsg, DatasourceAlicloudCSKubernetesAddonMetadata, "fetchJsonSchema")
+			return "", WrapError(Error("addon config schema marshal error %++v", err))
 		}
 		return string(result), nil
 	}
-	return "", WrapErrorf(Error("addon config schema parse error"), DefaultErrorMsg, DatasourceAlicloudCSKubernetesAddonMetadata, "fetchJsonSchema")
+	return "", WrapError(Error("addon config schema parse error"))
 }
 
 func parseNode(p map[string]interface{}) map[string]interface{} {

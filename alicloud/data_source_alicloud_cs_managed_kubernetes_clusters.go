@@ -265,7 +265,7 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "DescribeClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "DescribeClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -319,11 +319,11 @@ func dataSourceAlicloudCSManagerKubernetesClustersRead(d *schema.ResourceData, m
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "DescribeKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "DescribeKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
-			requestMap["Id"] = v.ClusterID
+			requestMap["ClusterId"] = v.ClusterID
 			addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap)
 		}
 		kubernetesCluster = response.(cs.KubernetesCluster)
@@ -380,11 +380,11 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 				response = raw
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
 			if debugOn() {
 				requestMap := make(map[string]interface{})
-				requestMap["Id"] = ct.ClusterID
+				requestMap["ClusterId"] = ct.ClusterID
 				requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
 				addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
 			}
@@ -424,7 +424,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 					return resource.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
 				})
 				if err != nil {
-					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+					return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 				}
 
 			}
@@ -465,7 +465,7 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "GetClusterEndpoints", DenverdinoAliyungo)
 		}
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
@@ -485,10 +485,15 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeNatGateways(request)
 		})
+
+		if debugOn() {
+			addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+		}
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, ct.VPCID, "DescribeNatGateways", AlibabaCloudSdkGoERROR)
 		}
-		addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+
 		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
@@ -498,13 +503,13 @@ func csManagedKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clu
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterID)
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterID, false); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSManagedKubernetesClusters, "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterID)
 		}
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "write kubeconfig file", "")
+			return WrapError(err)
 		}
 
 		ids = append(ids, ct.ClusterID)

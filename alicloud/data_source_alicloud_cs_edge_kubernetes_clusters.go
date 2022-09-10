@@ -139,7 +139,7 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "DescribeClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSEdgeKubernetesClusters, "DescribeClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		addDebug("DescribeClusters", response, requestInfo)
@@ -191,11 +191,11 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "DescribeKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSEdgeKubernetesClusters, "DescribeKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
-			requestMap["Id"] = v.ClusterID
+			requestMap["ClusterId"] = v.ClusterID
 			addDebug("DescribeKubernetesCluster", response, requestInfo, requestMap)
 		}
 		kubernetesCluster = response.(cs.KubernetesCluster)
@@ -250,7 +250,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 				response = raw
 				return err
 			}); err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+				return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSEdgeKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 			}
 			if debugOn() {
 				requestMap := make(map[string]interface{})
@@ -276,7 +276,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 					}
 					if debugOn() {
 						requestMap := make(map[string]interface{})
-						requestMap["Id"] = ct.ClusterID
+						requestMap["ClusterId"] = ct.ClusterID
 						requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
 						addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
 					}
@@ -294,7 +294,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 					return resource.RetryableError(Error("there is no any nodes in kubernetes cluster %s", d.Id()))
 				})
 				if err != nil {
-					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_managed_kubernetes_clusters", "GetKubernetesClusterNodes", DenverdinoAliyungo)
+					return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSEdgeKubernetesClusters, "GetKubernetesClusterNodes", DenverdinoAliyungo)
 				}
 
 			}
@@ -324,7 +324,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_edge_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSEdgeKubernetesClusters, "GetClusterEndpoints", DenverdinoAliyungo)
 		}
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
@@ -341,10 +341,13 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeNatGateways(request)
 		})
+		if debugOn() {
+			addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+		}
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, ct.VPCID, "DescribeNatGateways", AlibabaCloudSdkGoERROR)
 		}
-		addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+
 		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId

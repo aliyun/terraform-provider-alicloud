@@ -8,8 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-const ResourceAlicloudCSKubernetesAddon = "resourceAlicloudCSKubernetesAddon"
-
 func resourceAlicloudCSKubernetesAddon() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSKubernetesAddonCreate,
@@ -64,7 +62,7 @@ func resourceAlicloudCSKubernetesAddon() *schema.Resource {
 func resourceAlicloudCSKubernetesAddonRead(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapError(err)
 	}
 	csClient := CsClient{client}
 
@@ -75,7 +73,7 @@ func resourceAlicloudCSKubernetesAddonRead(d *schema.ResourceData, meta interfac
 
 	addon, err := csClient.DescribeCsKubernetesAddon(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddon", err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSKubernetesAddon, "DescribeCsKubernetesAddon", AlibabaCloudSdkGoERROR)
 	}
 
 	d.Set("cluster_id", parts[0])
@@ -96,13 +94,13 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapError(err)
 	}
 	csClient := CsClient{client}
 
 	status, err := csClient.DescribeCsKubernetesAddonStatus(clusterId, name)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonStatus", err)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSKubernetesAddon, "DescribeCsKubernetesAddonStatus", AlibabaCloudSdkGoERROR)
 	}
 
 	changed := false
@@ -112,14 +110,14 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 		changed = true
 		err := csClient.installAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "installAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCSKubernetesAddon, "InstallAddon", AlibabaCloudSdkGoERROR)
 		}
 	} else if status.Version != "" && status.Version != version {
 		// Addon has been installed
 		changed = true
 		err := csClient.upgradeAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, resourceCSKubernetesAddon, "UpgradeAddon", AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -128,7 +126,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if changed {
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", d.Id())
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudCSKubernetesAddonRead(d, meta)
@@ -137,7 +135,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interface{}) error {
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapError(err)
 	}
 	csClient := CsClient{client}
 
@@ -147,17 +145,17 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("version") {
 		err := csClient.upgradeAddon(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeAddon", AlibabaCloudSdkGoERROR)
 		}
 	} else if d.HasChange("config") {
 		err := csClient.updateAddonConfig(d)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeAddonConfig", AlibabaCloudSdkGoERROR)
 		}
 	}
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "WaitForSuccessAfterUpdate", d.Id())
 	}
 
 	return resourceAlicloudCSKubernetesAddonRead(d, meta)
@@ -169,18 +167,18 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
+		return WrapError(err)
 	}
 	csClient := CsClient{client}
 
 	err = csClient.uninstallAddon(d)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UninstallAddon", AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterDelete", d.Id())
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil

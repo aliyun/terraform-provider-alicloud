@@ -135,7 +135,7 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesClusters", DenverdinoAliyungo)
+		return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSServerlessKubernetesClusters, "DescribeServerlessKubernetesClusters", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -185,11 +185,11 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSServerlessKubernetesClusters, "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
-			requestMap["Id"] = v.ClusterId
+			requestMap["ClusterId"] = v.ClusterId
 			addDebug("DescribeServerlessKubernetesCluster", response, requestInfo, requestMap)
 		}
 		serverlessCluster = response.(*cs.ServerlessClusterResponse)
@@ -236,7 +236,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			response = raw
 			return err
 		}); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "GetClusterEndpoints", DenverdinoAliyungo)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSServerlessKubernetesClusters, "GetClusterEndpoints", DenverdinoAliyungo)
 		}
 		connection := make(map[string]string)
 		if endpoints, ok := response.(cs.ClusterEndpoints); ok && endpoints.ApiServerEndpoint != "" {
@@ -258,10 +258,13 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.DescribeNatGateways(request)
 		})
+		if debugOn() {
+			addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+		}
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, ct.VpcId, "DescribeNatGateways", AlibabaCloudSdkGoERROR)
 		}
-		addDebug("DescribeNatGateways", raw, request.RpcRequest, request)
+
 		nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
 		if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
@@ -271,13 +274,13 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		var kubeConfig *cs.ClusterConfig
 		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterId)
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterId, false); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DataDefaultErrorMsg, datasourceCSServerlessKubernetesClusters, "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
 			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterId)
 		}
 		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "write kubeconfig file", "")
+			return WrapError(err)
 		}
 
 		ids = append(ids, ct.ClusterId)

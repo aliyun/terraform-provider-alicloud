@@ -437,8 +437,15 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 
 func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	invoker := NewInvoker()
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
+
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -459,7 +466,7 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_edge_kubernetes", "CreateKubernetesCluster", response)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSEdgeKubernetes, "CreateKubernetesCluster", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -473,16 +480,24 @@ func resourceAlicloudCSEdgeKubernetesCreate(d *schema.ResourceData, meta interfa
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
 
 func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	d.Partial(true)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	invoker := NewInvoker()
+	csService := CsService{client}
+	csClient := CsClient{roaClient}
+
+	d.Partial(true)
+
 	//scale up cloud worker nodes
 	var resp interface{}
 	if d.HasChanges("worker_number") {
@@ -575,13 +590,14 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			if err := invoker.Run(func() error {
 				var err error
 				resp, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
-					return resp, err
+					raw, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
+					return raw, err
 				})
 				return err
 			}); err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ScaleOutCloudWorkers", DenverdinoAliyungo)
 			}
+			scaleoutResp, _ := resp.(*cs.ClusterCommonResponse)
 			if debugOn() {
 				resizeRequestMap := make(map[string]interface{})
 				resizeRequestMap["ClusterId"] = d.Id()
@@ -591,7 +607,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(scaleoutResp.TaskId))
 			}
 			d.SetPartial("worker_data_disks")
 			d.SetPartial("worker_number")
@@ -647,7 +663,7 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 			})
 			return err
 		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterDeletionProtection", DenverdinoAliyungo)
 		}
 		if debugOn() {
 			requestMap := make(map[string]interface{})
@@ -662,13 +678,13 @@ func resourceAlicloudCSEdgeKubernetesUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 	}
 	d.SetPartial("tags")
 
 	// upgrade cluster version
-	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	err = UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
 	}
