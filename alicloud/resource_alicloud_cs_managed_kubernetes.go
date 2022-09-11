@@ -461,8 +461,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			// computed parameters
 			"kube_config": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,

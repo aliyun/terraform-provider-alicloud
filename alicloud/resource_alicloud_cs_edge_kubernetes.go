@@ -269,8 +269,9 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
 			},
 			"kube_config": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
