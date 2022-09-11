@@ -26,6 +26,8 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** Available in v1.103.0+.
 
+-> **NOTE:** From version 1.185.0+, support new fields `cluster_spec`, `runtime` and `load_balancer_spec`.
+
 ## Example Usage
 
 ```
@@ -68,7 +70,43 @@ resource "alicloud_cs_edge_kubernetes" "k8s" {
   slb_internet_enabled         = var.slb_enabled
   is_enterprise_security_group = var.enterprise_sg
 }
+```
 
+You could create a professional kubernetes edge cluster now.
+```
+resource "alicloud_cs_edge_kubernetes" "k8s_pro" {
+  name                  = var.cluster_name
+  cluster_spec          = "ack.pro.small"
+  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  worker_instance_types = var.worker_instance_types
+  worker_number         = var.worker_number
+  node_cidr_mask        = var.node_cidr_mask
+  install_cloud_monitor = var.install_cloud_monitor
+  proxy_mode            = var.proxy_mode
+  password              = var.password
+  service_cidr          = var.service_cidr
+  pod_cidr              = var.pod_cidr
+  # version can not be defined in variables.tf.
+  version               = "1.20.11-aliyunedge.1"
+
+  dynamic "addons" {
+      for_each = var.cluster_addons
+      content {
+        name   = lookup(addons.value, "name", var.cluster_addons)
+        config = lookup(addons.value, "config", var.cluster_addons)
+      }
+  }
+  slb_internet_enabled         = var.slb_enabled
+  is_enterprise_security_group = var.enterprise_sg
+  
+  # specify the runtime as containerd
+  runtime = {
+    name    = "containerd"
+    version = "1.5.10"
+  }
+  # specify the load balancer as slb.s2.small
+  load_balancer_spec = "slb.s2.small"
+}
 ```
 
 ## Argument Reference
@@ -261,7 +299,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`
+Kubernetes edge cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`.
 
 ```
   $ terraform import alicloud_cs_edge_kubernetes.main cluster-id
