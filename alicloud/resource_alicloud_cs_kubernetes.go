@@ -1436,12 +1436,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
 		return fmt.Errorf("error setting certificate_authority: %s", err)
 	}
+
+	// rrsa metadata only for managed, ignore attributes error
 	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
 		return WrapError(err)
 	} else {
-		if err := d.Set("rrsa_metadata", data); err != nil {
-			return WrapError(err)
-		}
+		d.Set("rrsa_metadata", data)
 	}
 
 	return nil
