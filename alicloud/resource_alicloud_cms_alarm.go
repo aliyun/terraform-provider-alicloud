@@ -400,9 +400,8 @@ func resourceAlicloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 			mapping["annotations"] = annotationsMap
 
 			prometheusList = append(prometheusList, mapping)
-			err = d.Set("prometheus", prometheusList)
-			if err != nil {
-				panic(err)
+			if err := d.Set("prometheus", prometheusList); err != nil {
+				return WrapError(err)
 			}
 		}
 	}
