@@ -2,8 +2,12 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -189,14 +193,15 @@ func removeSpaceAndEnter(s string) string {
 	return strings.Replace(strings.Replace(strings.Replace(s, " ", "", -1), "\n", "", -1), "\t", "", -1)
 }
 
-func delEmptyPayloadIfExist(s string) (string, error) {
-	if s == "" {
-		return s, nil
+func delEmptyPayloadIfExist(v string, k string) (string, error) {
+	if v == "" {
+		return v, nil
 	}
-	in := []byte(s)
+	in := []byte(v)
 	var raw map[string]interface{}
 	if err := json.Unmarshal(in, &raw); err != nil {
-		return s, err
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+		return v, err
 	}
 
 	if v, ok := raw["payload"]; ok {
@@ -206,31 +211,61 @@ func delEmptyPayloadIfExist(s string) (string, error) {
 	}
 
 	out, err := json.Marshal(raw)
+	if err != nil {
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+	}
 	return string(out), err
 }
 
-func resolveFcTriggerConfig(s string) (string, error) {
-	if s == "" {
-		return s, nil
+func ValidateFcTriggerConfig(v interface{}, k string) (ws []string, errors []error) {
+	if v == nil {
+		return
 	}
-	in := []byte(s)
+	_, errors = validation.ValidateJsonString(v, k)
+	if errors != nil && len(errors) > 0 {
+		return
+	}
+	in := []byte(removeSpaceAndEnter(fmt.Sprint(v)))
 	var raw map[string]interface{}
 	if err := json.Unmarshal(in, &raw); err != nil {
-		return s, err
+		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
+		return
+	}
+
+	if _, err := json.Marshal(raw); err != nil {
+		errors = append(errors, fmt.Errorf("%q contains an invalid JSON: %s", k, err))
+	}
+
+	return
+}
+
+func resolveFcTriggerConfig(v string, k string) (string, error) {
+	if v == "" {
+		return v, nil
+	}
+	in := []byte(v)
+	var raw map[string]interface{}
+	if err := json.Unmarshal(in, &raw); err != nil {
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+		return v, err
 	}
 
 	out, err := json.Marshal(raw)
+	if err != nil {
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+	}
 	return string(out), err
 }
 
-func delNilEventSourceParams(s string) (string, error) {
-	if s == "" {
-		return s, nil
+func delNilEventSourceParams(v string, k string) (string, error) {
+	if v == "" {
+		return v, nil
 	}
-	in := []byte(s)
+	in := []byte(v)
 	var raw map[string]interface{}
 	if err := json.Unmarshal(in, &raw); err != nil {
-		return s, err
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+		return v, err
 	}
 	if v, ok := raw["eventSourceConfig"]; ok {
 		if eventSourceConfig, ok := v.(map[string]interface{}); ok {
@@ -269,6 +304,9 @@ func delNilEventSourceParams(s string) (string, error) {
 		}
 	}
 	out, err := json.Marshal(raw)
+	if err != nil {
+		log.Printf("[ERROR] %q contains an invalid JSON: %s", k, err)
+	}
 	return string(out), err
 }
 
