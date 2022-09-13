@@ -640,14 +640,13 @@ func buildEcsInstanceSetRunInstanceRequest(d *schema.ResourceData, meta interfac
 		instanceHealthCheckFunc = ecsService.EcsInstanceVmSetStateRefreshFuncWithoutOsCheck(encodeToBase64String(instanceIds), []string{"Stopping"})
 	}
 	stateConf := BuildStateConf([]string{"Pending", "Starting", "Stopped"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, instanceHealthCheckFunc)
-
 	_, waitStateErr := stateConf.WaitForState()
-	if waitStateErr != nil {
-		return WrapErrorf(err, IdMsg, d.Id()), nil
-	}
+
 	// Check the valid number of instances
-	checkEventErr := checkEcsInstanceSystemFailureDeleteEvent(d, meta, instanceIds)
-	if checkEventErr != nil {
+	validInstanceIds, checkEventErr := checkEcsInstanceSystemFailureDeleteEvent(d, meta, instanceIds)
+	if waitStateErr != nil || checkEventErr != nil {
+		d.Set("instance_ids", validInstanceIds)
+		d.SetId(encodeToBase64String(validInstanceIds))
 		return WrapErrorf(checkEventErr, IdMsg, d.Id()), nil
 	}
 
@@ -959,13 +958,13 @@ func modifyEcsInstanceRequest(d *schema.ResourceData, meta interface{}, instance
 	return nil
 }
 
-func checkEcsInstanceSystemFailureDeleteEvent(d *schema.ResourceData, meta interface{}, allInstanceIds []string) error {
+func checkEcsInstanceSystemFailureDeleteEvent(d *schema.ResourceData, meta interface{}, allInstanceIds []string) ([]string, error) {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
 	excludeInstanceIds, err := ecsService.DescribeSystemFailureDeleteEventInstanceIds(allInstanceIds)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	instanceIds := make([]string, 0)
@@ -986,8 +985,8 @@ func checkEcsInstanceSystemFailureDeleteEvent(d *schema.ResourceData, meta inter
 	if len(instanceIds) != len(allInstanceIds) {
 		// Exclude instances released due to instance creation failure
 		d.SetId(encodeToBase64String(instanceIds))
-		return WrapErrorf(err, FailedGetAttributeMsg, "resource_alicloud_ecs_instance_set", fmt.Sprintf("[DEBUG] Due to instance creation failure,  %d instances have been released.", len(allInstanceIds)-len(instanceIds)))
+		return instanceIds, WrapErrorf(err, FailedGetAttributeMsg, "resource_alicloud_ecs_instance_set", fmt.Sprintf("[DEBUG] Due to instance creation failure,  %d instances have been released.", len(allInstanceIds)-len(instanceIds)))
 	}
 
-	return nil
+	return instanceIds, nil
 }
