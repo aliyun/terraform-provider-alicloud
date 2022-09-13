@@ -1374,6 +1374,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_domain":                                      resourceAlicloudDcdnWafDomain(),
 			"alicloud_vpc_ipv4_cidr_block":                                  resourceAlicloudVpcIpv4CidrBlock(),
 			"alicloud_vpc_public_ip_address_pool":                           resourceAlicloudVpcPublicIpAddressPool(),
+			"alicloud_dcdn_waf_policy_domain_attachment":                    resourceAlicloudDcdnWafPolicyDomainAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
