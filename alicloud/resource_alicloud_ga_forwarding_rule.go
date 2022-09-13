@@ -205,7 +205,7 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -233,6 +233,7 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 	}
 	return resourceAlicloudGaForwardingRuleRead(d, meta)
 }
+
 func resourceAlicloudGaForwardingRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -277,28 +278,51 @@ func resourceAlicloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 		ruleConditionsMap = append(ruleConditionsMap, ruleConditionMap)
 	}
 	d.Set("rule_conditions", ruleConditionsMap)
-	ruleActionsMap := make([]map[string]interface{}, 0)
-	for _, ruleAction := range object["RuleActions"].([]interface{}) {
-		ruleAction := ruleAction.(map[string]interface{})
-		ruleActionMap := map[string]interface{}{}
-		ruleActionMap["order"] = ruleAction["Order"]
-		ruleActionMap["rule_action_type"] = ruleAction["RuleActionType"]
-		serverGroupTuplesMap := make([]map[string]interface{}, 0)
-		for _, serverGroupTuple := range ruleAction["ForwardGroupConfig"].(map[string]interface{})["ServerGroupTuples"].([]interface{}) {
-			serverGroupTuplesMap = append(serverGroupTuplesMap, map[string]interface{}{
-				"endpoint_group_id": serverGroupTuple.(map[string]interface{})["EndpointGroupId"],
-			})
+
+	if ruleActionsList, ok := object["RuleActions"]; ok {
+		ruleActionsMap := make([]map[string]interface{}, 0)
+		for _, ruleActions := range ruleActionsList.([]interface{}) {
+			ruleActionArg := ruleActions.(map[string]interface{})
+			ruleActionMap := map[string]interface{}{}
+
+			if ruleActionOrder, ok := ruleActionArg["Order"]; ok {
+				ruleActionMap["order"] = ruleActionOrder
+			}
+
+			if ruleActionType, ok := ruleActionArg["RuleActionType"]; ok {
+				ruleActionMap["rule_action_type"] = ruleActionType
+			}
+
+			if forwardGroupConfig, ok := ruleActionArg["ForwardGroupConfig"]; ok {
+				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
+				if len(forwardGroupConfigArg) > 0 {
+					serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+					if forwardGroupConfigArgs, ok := forwardGroupConfigArg["ServerGroupTuples"].([]interface{}); ok {
+						for _, serverGroupTuples := range forwardGroupConfigArgs {
+							serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+							serverGroupTuplesMap := map[string]interface{}{}
+							serverGroupTuplesMap["endpoint_group_id"] = serverGroupTuplesArg["EndpointGroupId"]
+							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+						}
+					}
+					if len(serverGroupTuplesMaps) > 0 {
+						forwardGroupConfigMaps := make([]map[string]interface{}, 0)
+						forwardGroupConfigMap := map[string]interface{}{}
+						forwardGroupConfigMap["server_group_tuples"] = serverGroupTuplesMaps
+						forwardGroupConfigMaps = append(forwardGroupConfigMaps, forwardGroupConfigMap)
+						ruleActionMap["forward_group_config"] = forwardGroupConfigMaps
+						ruleActionsMap = append(ruleActionsMap, ruleActionMap)
+					}
+				}
+			}
 		}
-		ruleActionMap["forward_group_config"] = []map[string]interface{}{
-			{
-				"server_group_tuples": serverGroupTuplesMap,
-			},
-		}
-		ruleActionsMap = append(ruleActionsMap, ruleActionMap)
+
+		d.Set("rule_actions", ruleActionsMap)
 	}
-	d.Set("rule_actions", ruleActionsMap)
+
 	return nil
 }
+
 func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -366,7 +390,7 @@ func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -388,6 +412,7 @@ func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	return resourceAlicloudGaForwardingRuleRead(d, meta)
 }
+
 func resourceAlicloudGaForwardingRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteForwardingRules"
@@ -409,7 +434,7 @@ func resourceAlicloudGaForwardingRuleDelete(d *schema.ResourceData, meta interfa
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
