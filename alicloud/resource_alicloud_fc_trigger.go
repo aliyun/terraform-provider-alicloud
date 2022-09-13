@@ -81,41 +81,21 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 						return true
 					}
 					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_TIMER) {
-						resolvedNew, err := delEmptyPayloadIfExist(removeSpaceAndEnter(new))
-						if err != nil {
-							panic(err)
-						}
-						resolvedOld, err := delEmptyPayloadIfExist(removeSpaceAndEnter(old))
-						if err != nil {
-							panic(err)
-						}
-
+						resolvedNew, _ := delEmptyPayloadIfExist(removeSpaceAndEnter(new), k)
+						resolvedOld, _ := delEmptyPayloadIfExist(removeSpaceAndEnter(old), k)
 						return resolvedOld == resolvedNew
 					}
 
 					if d.Get("type").(string) == string(fc.TRIGGER_TYPE_EVENTBRIDGE) {
-						resolvedNew, err := delNilEventSourceParams(removeSpaceAndEnter(new))
-						if err != nil {
-							panic(err)
-						}
-						resolvedOld, err := delNilEventSourceParams(removeSpaceAndEnter(old))
-						if err != nil {
-							panic(err)
-						}
-
+						resolvedNew, _ := delNilEventSourceParams(removeSpaceAndEnter(new), k)
+						resolvedOld, _ := delNilEventSourceParams(removeSpaceAndEnter(old), k)
 						return resolvedOld == resolvedNew
 					}
-					resolvedNew, err := resolveFcTriggerConfig(removeSpaceAndEnter(new))
-					if err != nil {
-						panic(err)
-					}
-					resolvedOld, err := resolveFcTriggerConfig(removeSpaceAndEnter(old))
-					if err != nil {
-						panic(err)
-					}
+					resolvedNew, _ := resolveFcTriggerConfig(removeSpaceAndEnter(new), k)
+					resolvedOld, _ := resolveFcTriggerConfig(removeSpaceAndEnter(old), k)
 					return resolvedNew == resolvedOld
 				},
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: ValidateFcTriggerConfig,
 			},
 			//Modifying config is not supported when type is mns_topic
 			"config_mns": {
