@@ -335,8 +335,8 @@ func resourceAlicloudPrivatelinkVpcEndpointDelete(d *schema.ResourceData, meta i
 	return nil
 }
 func convertSecurityGroupIdToStringList(src interface{}) (result []interface{}) {
-	if err, ok := src.([]interface{}); !ok {
-		panic(err)
+	if src == nil {
+		return
 	}
 	for _, v := range src.([]interface{}) {
 		vv := v.(map[string]interface{})
