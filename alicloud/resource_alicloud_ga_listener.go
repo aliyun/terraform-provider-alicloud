@@ -23,8 +23,8 @@ func resourceAlicloudGaListener() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -93,6 +93,7 @@ func resourceAlicloudGaListener() *schema.Resource {
 			"security_policy_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
 			},
 			"status": {
@@ -162,7 +163,7 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -187,6 +188,7 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudGaListenerRead(d, meta)
 }
+
 func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -244,6 +246,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 
 	return nil
 }
+
 func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -310,7 +313,7 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateListener")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
@@ -333,6 +336,7 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	return resourceAlicloudGaListenerRead(d, meta)
 }
+
 func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -350,7 +354,7 @@ func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -370,5 +374,6 @@ func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
