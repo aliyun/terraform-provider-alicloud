@@ -170,6 +170,7 @@ type Config struct {
 	EhsEndpoint                 string
 	DysmsEndpoint               string
 	CbsEndpoint                 string
+	NlbEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {

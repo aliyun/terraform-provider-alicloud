@@ -741,6 +741,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbs_backup_plans":                            dataSourceAlicloudDbsBackupPlans(),
 			"alicloud_dcdn_waf_domains":                            dataSourceAlicloudDcdnWafDomains(),
 			"alicloud_vpc_public_ip_address_pools":                 dataSourceAlicloudVpcPublicIpAddressPools(),
+			"alicloud_nlb_server_groups":                           dataSourceAlicloudNlbServerGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1375,6 +1376,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv4_cidr_block":                                  resourceAlicloudVpcIpv4CidrBlock(),
 			"alicloud_vpc_public_ip_address_pool":                           resourceAlicloudVpcPublicIpAddressPool(),
 			"alicloud_dcdn_waf_policy_domain_attachment":                    resourceAlicloudDcdnWafPolicyDomainAttachment(),
+			"alicloud_nlb_server_group":                                     resourceAlicloudNlbServerGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1600,6 +1602,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CloudfwEndpoint = strings.TrimSpace(endpoints["cloudfw"].(string))
 		config.DysmsEndpoint = strings.TrimSpace(endpoints["dysms"].(string))
 		config.CbsEndpoint = strings.TrimSpace(endpoints["cbs"].(string))
+		config.NlbEndpoint = strings.TrimSpace(endpoints["nlb"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1929,6 +1932,8 @@ func init() {
 		"dysmsapi_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dysmsapi endpoints.",
 
 		"cbs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbs endpoints.",
+
+		"nlb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom nlb endpoints.",
 	}
 }
 
@@ -1973,6 +1978,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"nlb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["nlb_endpoint"],
+				},
+
 				"cbs": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2860,6 +2872,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfw"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dysms"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbs"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["nlb"].(string)))
 	return hashcode.String(buf.String())
 }
 
