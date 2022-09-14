@@ -896,7 +896,7 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_elasticsearch_zones.default.ids.0
+  zone_id = data.alicloud_elasticsearch_zones.default.ids[length(data.alicloud_elasticsearch_zones.default.ids)-1]
 }
 
 locals {
