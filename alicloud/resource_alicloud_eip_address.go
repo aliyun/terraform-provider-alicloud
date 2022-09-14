@@ -124,6 +124,11 @@ func resourceAlicloudEipAddress() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"public_ip_address_pool_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -194,11 +199,14 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("security_protection_types"); ok {
 		request["SecurityProtectionTypes"] = v
 	}
+	if v, ok := d.GetOk("public_ip_address_pool_id"); ok {
+		request["PublicIpAddressPoolId"] = v
+	}
 	request["ClientToken"] = buildClientToken("AllocateEipAddress")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -249,6 +257,7 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 		securityProtectionTypeList := securityProtectionTypes.(map[string]interface{})["SecurityProtectionType"].([]interface{})
 		d.Set("security_protection_types", securityProtectionTypeList)
 	}
+	d.Set("public_ip_address_pool_id", object["PublicIpAddressPoolId"])
 	d.Set("status", object["Status"])
 	tagsMap := make(map[string]interface{})
 	tagsRaw, _ := jsonpath.Get("$.Tags.Tag", object)
@@ -300,7 +309,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -330,7 +339,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "MoveResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, moveResourceGroupReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -371,7 +380,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "ModifyEipAddressAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, modifyEipAddressAttributeReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -414,7 +423,7 @@ func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {
