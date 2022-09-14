@@ -55,6 +55,7 @@ The following arguments are supported:
 * `security_protection_types` - (Optional, ForceNew, Available in v1.184.0+) The edition of Anti-DDoS. If you do not set this parameter, Anti-DDoS Origin Basic is used. If you set the value to `AntiDDoS_Enhanced`, Anti-DDoS Pro(Premium) is used.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated in v1.126.0+) Field `instance_charge_type` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `payment_type` instead.
 * `name` - (Optional, Computed, Deprecated in v1.126.0+) Field `name` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `address_name` instead.
+* `public_ip_address_pool_id` - (Optional, ForceNew, Available in v1.189.0+) The ID of the IP address pool. The EIP is allocated from the IP address pool. **NOTE:** The feature is available only to users whose accounts are included in the whitelist. If you want to use the feature,[submit a ticket](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/429100).
 
 ## Attributes Reference
 
