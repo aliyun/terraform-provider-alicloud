@@ -33,12 +33,12 @@ resource "alicloud_reserved_instance" "default" {
 
 The following arguments are supported:
 
-* `offering_type` - (Optional, ForceNew) Payment type of the RI. Default value: `All Upfront`. Valid values:
+* `offering_type` - (Optional, Computed, ForceNew) Payment type of the RI. Default value: `All Upfront`. Valid values:
   - `No Upfront`: No upfront payment.
   - `Partial Upfront`: A portion of upfront payment.
   - `All Upfront`: Full upfront payment.
 * `zone_id` - (Optional, ForceNew) ID of the zone to which the RI belongs. When Scope is set to Zone, this parameter is required. For information about the zone list, see [DescribeZones](https://www.alibabacloud.com/help/doc-detail/25610.html).
-* `scope` - (Optional, ForceNew) Scope of the RI. Optional values: `Region`: region-level, `Zone`: zone-level. Default is `Region`.
+* `scope` - (Optional, Computed, ForceNew) Scope of the RI. Optional values: `Region`: region-level, `Zone`: zone-level. Default is `Region`.
 * `instance_type` - (Required, ForceNew) Instance type of the RI. For more information, see [Instance type families](https://www.alibabacloud.com/help/doc-detail/25378.html).
 * `instance_amount` - (Optional, ForceNew) Number of instances allocated to an RI (An RI is a coupon that includes one or more allocated instances.).
 * `period` - (Optional, ForceNew) The validity period of the reserved instance. Default value: `1`. **NOTE:** From version 1.183.0, `period` can be set to `5`, when `period_unit` is `Year`.
