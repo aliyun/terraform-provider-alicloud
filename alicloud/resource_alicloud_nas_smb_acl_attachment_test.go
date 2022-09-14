@@ -11,13 +11,12 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAlicloudNASSmbAclAttachment_basic0(t *testing.T) {
@@ -125,13 +124,22 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_nas_zones" "default" {
+  file_system_type = "standard"
+}
+
+locals {
+  count_size = length(data.alicloud_nas_zones.default.zones)
+  zone_id    = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+}
+
 resource "alicloud_nas_file_system" "default" {
   protocol_type = "SMB"
-  storage_type  = "Performance"
+  storage_type  = "Capacity"
   description   =  var.name
-  zone_id       = "cn-hangzhou-g"
-  encrypt_type       = "0"
-  file_system_type   = "standard"
+  zone_id          = local.zone_id
+  encrypt_type     = "0"
+  file_system_type = "standard"
 }
 `, name)
 }

@@ -72,7 +72,3 @@ The following attributes are exported:
                   false: disables the ACL feature.
 * `auth_method` - The method that is used to authenticate network identities.
 
-## Import
-
-Nas Smb Acl not can be imported using the id.
-
