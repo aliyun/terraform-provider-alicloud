@@ -62,11 +62,11 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id            = alicloud_cen_instance.default.id
   transit_router_id = alicloud_cen_transit_router.default.id
   vpc_id            = alicloud_vpc.default.id
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
     vswitch_id = alicloud_vswitch.default_master.id
   }
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.slave_zones.0
     vswitch_id = alicloud_vswitch.default_slave.id
   }
@@ -93,9 +93,9 @@ The following arguments are supported:
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 
-#### ZoneMapping Block
+#### ZoneMappings Block
 
-The `zone_mapping` supports the following:
+The `zone_mappings` supports the following:
 
 * `vswitch_id` - (Optional, ForceNew) The VSwitch id of attachment.
 * `zone_id` - (Optional, ForceNew) The zone Id of VSwitch.
