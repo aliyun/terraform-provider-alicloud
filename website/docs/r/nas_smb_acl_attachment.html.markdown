@@ -71,4 +71,3 @@ The following attributes are exported:
                   true: enables the ACL feature.
                   false: disables the ACL feature.
 * `auth_method` - The method that is used to authenticate network identities.
-
