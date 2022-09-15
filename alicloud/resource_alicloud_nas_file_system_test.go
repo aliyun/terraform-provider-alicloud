@@ -147,27 +147,14 @@ func TestAccAlicloudNASFileSystem_basic(t *testing.T) {
 					"protocol_type": "${data.alicloud_nas_protocols.example.protocols.0}",
 					"storage_type":  "Capacity",
 					"zone_id":       "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"description":   name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocol_type": CHECKSET,
 						"storage_type":  "Capacity",
 						"zone_id":       CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
+						"description":   name,
 					}),
 				),
 			},
@@ -180,6 +167,43 @@ func TestAccAlicloudNASFileSystem_basic(t *testing.T) {
 						"description": name + "Update",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "Test1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"tags": map[string]string{
+						"Created": "TF2",
+						"For":     "Test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  name,
+						"tags.%":       "2",
+						"tags.Created": "TF2",
+						"tags.For":     "Test2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -211,6 +235,7 @@ func TestAccAlicloudNASFileSystemEncrypt(t *testing.T) {
 					"storage_type":  "Capacity",
 					"encrypt_type":  "1",
 					"zone_id":       "${data.alicloud_nas_zones.default.zones.0.zone_id}",
+					"description":   name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -218,21 +243,7 @@ func TestAccAlicloudNASFileSystemEncrypt(t *testing.T) {
 						"storage_type":  "Capacity",
 						"encrypt_type":  "1",
 						"zone_id":       CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name,
+						"description":   name,
 					}),
 				),
 			},
@@ -245,6 +256,43 @@ func TestAccAlicloudNASFileSystemEncrypt(t *testing.T) {
 						"description": name + "Update",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "Test1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"tags": map[string]string{
+						"Created": "TF2",
+						"For":     "Test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  name,
+						"tags.%":       "2",
+						"tags.Created": "TF2",
+						"tags.For":     "Test2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -277,6 +325,7 @@ func TestAccAlicloudNASFileSystemExtreme_basic(t *testing.T) {
 					"storage_type":     "standard",
 					"file_system_type": "extreme",
 					"capacity":         "100",
+					"description":      name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -285,6 +334,61 @@ func TestAccAlicloudNASFileSystemExtreme_basic(t *testing.T) {
 						"storage_type":     "standard",
 						"file_system_type": "extreme",
 						"capacity":         "100",
+						"description":      name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "Update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "Update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"capacity": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "Test1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"capacity":    "300",
+					"tags": map[string]string{
+						"Created": "TF2",
+						"For":     "Test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  name,
+						"capacity":     "300",
+						"tags.%":       "2",
+						"tags.Created": "TF2",
+						"tags.For":     "Test2",
 					}),
 				),
 			},
@@ -326,6 +430,7 @@ func TestAccAlicloudNASFileSystemExtremeEncrypt(t *testing.T) {
 					"capacity":         "100",
 					"encrypt_type":     "2",
 					"kms_key_id":       "${alicloud_kms_key.key.id}",
+					"description":      name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -335,6 +440,61 @@ func TestAccAlicloudNASFileSystemExtremeEncrypt(t *testing.T) {
 						"file_system_type": "extreme",
 						"capacity":         "100",
 						"encrypt_type":     "2",
+						"description":      name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "Update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "Update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"capacity": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF1",
+						"For":     "Test1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.For":     "Test1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"capacity":    "300",
+					"tags": map[string]string{
+						"Created": "TF2",
+						"For":     "Test2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  name,
+						"capacity":     "300",
+						"tags.%":       "2",
+						"tags.Created": "TF2",
+						"tags.For":     "Test2",
 					}),
 				),
 			},
@@ -377,6 +537,7 @@ func TestAccAlicloudNASFileSystemCpfs_basic(t *testing.T) {
 					"capacity":         "3600",
 					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":       "${data.alicloud_vswitches.default.ids.0}",
+					"description":      name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -384,60 +545,30 @@ func TestAccAlicloudNASFileSystemCpfs_basic(t *testing.T) {
 						"zone_id":          CHECKSET,
 						"storage_type":     "advance_200",
 						"file_system_type": "cpfs",
-						"capacity":         "3600",
+						"capacity":         "100",
 						"vpc_id":           CHECKSET,
 						"vswitch_id":       CHECKSET,
+						"description":      name,
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"vpc_id", "vswitch_id"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudNASFileSystemTags_basic(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_nas_file_system.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasFileSystem0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNasFileSystem")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudNasFileSystem%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasFileSystemBasicDependence5)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.NasNoSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocol_type": "NFS",
-					"storage_type":  "Capacity",
-					"zone_id":       "${local.zone_id}",
-					"description":   name,
-					"tags": map[string]string{
-						"Created": "TF2",
-					},
+					"description": name + "Update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"protocol_type": CHECKSET,
-						"storage_type":  "Capacity",
-						"zone_id":       CHECKSET,
-						"description":   name,
-						"tags.%":        "1",
-						"tags.Created":  "TF2",
+						"description": name + "Update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"capacity": "3700",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity": "3700",
 					}),
 				),
 			},
@@ -458,6 +589,8 @@ func TestAccAlicloudNASFileSystemTags_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+					"capacity":    "3800",
 					"tags": map[string]string{
 						"Created": "TF2",
 						"For":     "Test2",
@@ -465,6 +598,8 @@ func TestAccAlicloudNASFileSystemTags_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"description":  name,
+						"capacity":     "3800",
 						"tags.%":       "2",
 						"tags.Created": "TF2",
 						"tags.For":     "Test2",
