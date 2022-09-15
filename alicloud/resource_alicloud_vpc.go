@@ -42,7 +42,6 @@ func resourceAlicloudVpc() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				ForceNew: true,
 			},
 			"enable_ipv6": {
 				Type:          schema.TypeBool,
