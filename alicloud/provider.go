@@ -1380,6 +1380,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_policy_domain_attachment":                    resourceAlicloudDcdnWafPolicyDomainAttachment(),
 			"alicloud_nlb_server_group":                                     resourceAlicloudNlbServerGroup(),
 			"alicloud_vpc_peer_connection":                                  resourceAlicloudVpcPeerConnection(),
+			"alicloud_ga_access_log":                                        resourceAlicloudGaAccessLog(),
 		},
 
 		ConfigureFunc: providerConfigure,
