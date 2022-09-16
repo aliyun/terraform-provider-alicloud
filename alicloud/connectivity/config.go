@@ -171,6 +171,7 @@ type Config struct {
 	DysmsEndpoint               string
 	CbsEndpoint                 string
 	NlbEndpoint                 string
+	VpcpeerEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {

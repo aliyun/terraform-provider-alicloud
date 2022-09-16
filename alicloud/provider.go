@@ -742,6 +742,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_domains":                            dataSourceAlicloudDcdnWafDomains(),
 			"alicloud_vpc_public_ip_address_pools":                 dataSourceAlicloudVpcPublicIpAddressPools(),
 			"alicloud_nlb_server_groups":                           dataSourceAlicloudNlbServerGroups(),
+			"alicloud_vpc_peer_connections":                        dataSourceAlicloudVpcPeerConnections(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1377,6 +1378,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pool":                           resourceAlicloudVpcPublicIpAddressPool(),
 			"alicloud_dcdn_waf_policy_domain_attachment":                    resourceAlicloudDcdnWafPolicyDomainAttachment(),
 			"alicloud_nlb_server_group":                                     resourceAlicloudNlbServerGroup(),
+			"alicloud_vpc_peer_connection":                                  resourceAlicloudVpcPeerConnection(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1603,6 +1605,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DysmsEndpoint = strings.TrimSpace(endpoints["dysms"].(string))
 		config.CbsEndpoint = strings.TrimSpace(endpoints["cbs"].(string))
 		config.NlbEndpoint = strings.TrimSpace(endpoints["nlb"].(string))
+		config.VpcpeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1934,6 +1937,8 @@ func init() {
 		"cbs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cbs endpoints.",
 
 		"nlb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom nlb endpoints.",
+
+		"vpcpeer_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vpcpeer endpoints.",
 	}
 }
 
@@ -1990,6 +1995,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["cbs_endpoint"],
+				},
+
+				"vpcpeer": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["vpcpeer_endpoint"],
 				},
 
 				"dysms": {
@@ -2873,6 +2885,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dysms"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["nlb"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
 	return hashcode.String(buf.String())
 }
 
