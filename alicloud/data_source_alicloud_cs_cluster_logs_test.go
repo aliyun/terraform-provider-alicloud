@@ -21,40 +21,40 @@ func TestAccAlicloudCSClusterLogsDataSource(t *testing.T) {
 		existConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
 			"type":       "log",
-			"entries":    "2",
+			"number":     "2",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
 			"type":       "log",
-			"entries":    "0",
+			"number":     "0",
 		}),
 	}
 
-	eventConfig := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
-			"type":       "event",
-			"entries":    "2",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}-fake",
-			"type":       "event",
-			"entries":    "2",
-		}),
-	}
-
-	taskConfig := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
-			"type":       "task",
-			"entries":    "2",
-		}),
-		fakeConfig: testAccConfig(map[string]interface{}{
-			"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
-			"type":       "task",
-			"entries":    "0",
-		}),
-	}
+	//eventConfig := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+	//		"type":       "event",
+	//		"entries":    "2",
+	//	}),
+	//	fakeConfig: testAccConfig(map[string]interface{}{
+	//		"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}-fake",
+	//		"type":       "event",
+	//		"entries":    "2",
+	//	}),
+	//}
+	//
+	//taskConfig := dataSourceTestAccConfig{
+	//	existConfig: testAccConfig(map[string]interface{}{
+	//		"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+	//		"type":       "task",
+	//		"entries":    "2",
+	//	}),
+	//	fakeConfig: testAccConfig(map[string]interface{}{
+	//		"cluster_id": "${alicloud_cs_managed_kubernetes.default.id}",
+	//		"type":       "task",
+	//		"entries":    "0",
+	//	}),
+	//}
 
 	var existCSClusterLogsMapFunc = func(rand int) map[string]string {
 		return map[string]string{
@@ -77,7 +77,7 @@ func TestAccAlicloudCSClusterLogsDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.KubernetesSupportedRegions)
 	}
-	csClusterLogsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, logConfig, eventConfig, taskConfig)
+	csClusterLogsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, logConfig)
 }
 
 func dataSourceCSClusterLogsConfigDependence(name string) string {

@@ -23,9 +23,9 @@ func dataSourceAlicloudCSClusterLogs() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "log",
-				ValidateFunc: validation.StringInSlice([]string{"log", "event", "task"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"log"}, false),
 			},
-			"entries": {
+			"number": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
@@ -50,7 +50,7 @@ func dataSourceAlicloudCSClusterLogsRead(d *schema.ResourceData, meta interface{
 	logType := d.Get("type").(string)
 
 	entries := 100
-	if v, ok := d.GetOk("entries"); ok {
+	if v, ok := d.GetOk("number"); ok {
 		entries = v.(int)
 	}
 
@@ -64,6 +64,7 @@ func dataSourceAlicloudCSClusterLogsRead(d *schema.ResourceData, meta interface{
 	}
 }
 
+// for feature
 func csClusterEventsDescriptionAttributes(d *schema.ResourceData, clusterId string, entries int, csClient CsClient) error {
 	attrLogs := make([]map[string]interface{}, 0, entries)
 
@@ -92,7 +93,7 @@ func csClusterEventsDescriptionAttributes(d *schema.ResourceData, clusterId stri
 		pageNumber += 1
 	}
 
-	d.Set("entries", cnt)
+	d.Set("number", cnt)
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	// create a json file in current directory and write data source to it.
@@ -103,6 +104,7 @@ func csClusterEventsDescriptionAttributes(d *schema.ResourceData, clusterId stri
 	return nil
 }
 
+// for feature
 func csClusterTaskDescriptionAttributes(d *schema.ResourceData, clusterId string, entries int, csClient CsClient) error {
 	attrLogs := make([]map[string]interface{}, 0, entries)
 	cnt := 0
@@ -121,7 +123,7 @@ func csClusterTaskDescriptionAttributes(d *schema.ResourceData, clusterId string
 		cnt += 1
 	}
 
-	d.Set("entries", cnt)
+	d.Set("number", cnt)
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	// create a json file in current directory and write data source to it.
@@ -150,7 +152,7 @@ func csClusterLogsDescriptionAttributes(d *schema.ResourceData, clusterId string
 		cnt += 1
 	}
 
-	d.Set("entries", cnt)
+	d.Set("number", cnt)
 	d.SetId(dataResourceIdHash([]string{clusterId}))
 
 	// create a json file in current directory and write data source to it.
