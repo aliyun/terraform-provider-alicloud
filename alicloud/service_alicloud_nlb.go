@@ -215,3 +215,75 @@ func (s *NlbService) NlbServerGroupStateRefreshFunc(id string, failStates []stri
 		return object, fmt.Sprint(object["ServerGroupStatus"]), nil
 	}
 }
+
+func (s *NlbService) DescribeNlbSecurityPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNlbClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListSecurityPolicy"
+	request := map[string]interface{}{
+		"RegionId":            s.client.RegionId,
+		"SecurityPolicyIds.1": id,
+	}
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$.SecurityPolicies", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityPolicies", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range v.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["SecurityPolicyId"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+	}
+	return object, nil
+}
+
+func (s *NlbService) NlbSecurityPolicyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNlbSecurityPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["SecurityPolicyStatus"]) == failState {
+				return object, fmt.Sprint(object["SecurityPolicyStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["SecurityPolicyStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["SecurityPolicyStatus"]), nil
+	}
+}

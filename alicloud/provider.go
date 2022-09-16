@@ -746,6 +746,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_peer_connections":                        dataSourceAlicloudVpcPeerConnections(),
 			"alicloud_ebs_regions":                                 dataSourceAlicloudEbsRegions(),
 			"alicloud_ebs_disk_replica_groups":                     dataSourceAlicloudEbsDiskReplicaGroups(),
+			"alicloud_nlb_security_policies":                       dataSourceAlicloudNlbSecurityPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1384,6 +1385,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_peer_connection":                                  resourceAlicloudVpcPeerConnection(),
 			"alicloud_ga_access_log":                                        resourceAlicloudGaAccessLog(),
 			"alicloud_ebs_disk_replica_group":                               resourceAlicloudEbsDiskReplicaGroup(),
+			"alicloud_nlb_security_policy":                                  resourceAlicloudNlbSecurityPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
