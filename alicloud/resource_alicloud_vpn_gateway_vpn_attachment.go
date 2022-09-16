@@ -226,6 +226,10 @@ func resourceAlicloudVpnGatewayVpnAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -418,6 +422,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 	d.Set("remote_subnet", object["RemoteSubnet"])
 	d.Set("status", object["State"])
 	d.Set("vpn_attachment_name", object["Name"])
+	d.Set("internet_ip", object["InternetIp"])
 	return nil
 }
 func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
