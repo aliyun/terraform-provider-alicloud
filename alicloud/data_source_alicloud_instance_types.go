@@ -316,7 +316,7 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			if gpuAmount > 0 && types.GPUAmount != gpuAmount {
 				continue
 			}
-			if gpuSpec != "" && types.GPUSpec != gpuSpec {
+			if gpuSpec != "" && !strings.Contains(types.GPUSpec, gpuSpec) {
 				continue
 			}
 			// Kubernetes node does not support instance types which family is "ecs.t5" and spec less that c2g4
