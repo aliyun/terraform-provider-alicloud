@@ -136,6 +136,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Vpn Attachment.
 * `status` - The status of the resource.
+* `internet_ip` - The VPN gateway IP.
 
 ### Timeouts
 
