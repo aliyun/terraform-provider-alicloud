@@ -189,7 +189,8 @@ func (c *Config) validateRegion() error {
 		}
 	}
 
-	return fmt.Errorf("Invalid Alibaba Cloud region: %s", c.RegionId)
+	return fmt.Errorf("Invalid Alibaba Cloud region: %s. "+
+		"You can skip checking this region by setting provider parameter 'skip_region_validation'.", c.RegionId)
 }
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
