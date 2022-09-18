@@ -898,6 +898,78 @@ func (s *LogService) WaitForLogIngestion(id string, status Status, timeout int) 
 		}
 	}
 }
+func (s *LogService) DescribeLogOssExport(id string) (*sls.Export, error) {
+	return s.DescribeLogExport(id)
+}
+
+func (s *LogService) DescribeLogExport(id string) (*sls.Export, error) {
+	var export *sls.Export
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return export, WrapError(err)
+	}
+	projectName, logstoreName, exportName := parts[0], parts[1], parts[2]
+	var requestInfo *sls.Client
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+			requestInfo = slsClient
+			return slsClient.GetExport(projectName, exportName)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		if debugOn() {
+			addDebug("GetExport", raw, requestInfo, map[string]string{
+				"project":     projectName,
+				"logstore":    logstoreName,
+				"export_name": exportName,
+			})
+		}
+		export, _ = raw.(*sls.Export)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ProjectNotExist", "JobNotExist"}) {
+			return export, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
+		}
+		return export, WrapErrorf(err, DefaultErrorMsg, id, "GetExport", AliyunLogGoSdkERROR)
+	}
+	return export, nil
+}
+
+func (s *LogService) WaitForLogOssExport(id string, status Status, timeout int) error {
+	return s.WaitForLogExport(id, status, timeout)
+}
+
+func (s *LogService) WaitForLogExport(id string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		object, err := s.DescribeLogOssExport(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Name == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Name, id, ProviderERROR)
+		}
+	}
+}
 
 func (s *LogService) DescribeLogResource(id string) (*sls.Resource, error) {
 	res := &sls.Resource{}
