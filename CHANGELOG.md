@@ -1,4 +1,33 @@
 ## 1.186.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_public_ip_address_pool` [GH-5396]
+- **New Resource:** `alicloud_nas_smb_acl_attachment` [GH-5353]
+- **New Resource:** `alicloud_dcdn_waf_policy_domain_attachment` [GH-5414]
+- **New Resource:** `alicloud_nlb_server_group` [GH-5425]
+- **New Data Source:** `alicloud_nlb_server_groups` [GH-5425]
+- **New Data Source:** `alicloud_vpc_public_ip_address_pools` [GH-5396]
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpn_gateway_vpn_attachment: Add new attribute internet_ip. [GH-5430]
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcOrVswitch [GH-5421]
+- resource/alicloud_alidns_record: Added retry stragety for error code LastOperationNotFinished [GH-5400]
+- resource/alicloud_reserved_instance: Remove default value [GH-5420]
+- resource/alicloud_hbr_restore_job: Added the field ots_detail [GH-538]
+- resource/alicloud_elasticsearch_instance: Add DescribeInstance action retry;Reduce StateChangeConf delay time to 60*time.Second [GH-5419]
+- resource/alicloud_nas_file_system: Supporting to update attribute capacity [GH-5423]
+- resource/alicloud_vpc: Removes the forceNew for dry_run [GH-5424]
+- resource/alicloud_dns_record: Add retryable error content to dns record creation, modification, and deletion. [GH-5412]
+- testcase: Adds new unit test case for resource alicloud_slb_acl alicloud_sddp_instance alicloud_scdn_domain_config [GH-5364]
+- provider: Improves the skip_region_validation error message [GH-5427]
+
+BUG FIXES:
+
+- resource/alicloud_ga_forwarding_rule: fix panic error [GH-5410]
+- resource/alicloud_ga_listener: fixed the security_policy_id to Computed [GH-5411]
+- datasource/alicloud_cs_managed_kubernetes_clusters: Fix attributes bug caused by enable_details [GH-5405]
+- doc/cen_transit_router_vpc_attachment: fix doc example. doc/vpn_gateway_vco_route: Adjust doc subcategory. [GH-5426]
+
 ## 1.185.0 (September 13, 2022)
 
 - **New Resource:** `alicloud_vpc_ipv4_cidr_block` ([#5391](https://github.com/aliyun/terraform-provider-alicloud/issues/5391))
