@@ -576,6 +576,16 @@ func (c *TokenAutoUpdateClient) SplitShard(project, logstore string, shardID int
 	return
 }
 
+func (c *TokenAutoUpdateClient) SplitNumShard(project, logstore string, shardID, shardNum int) (shards []*Shard, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		shards, err = c.logClient.SplitNumShard(project, logstore, shardID, shardNum)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) MergeShards(project, logstore string, shardID int) (shards []*Shard, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		shards, err = c.logClient.MergeShards(project, logstore, shardID)
@@ -1543,6 +1553,15 @@ func (c *TokenAutoUpdateClient) ListExport(project, logstore, name, displayName 
 func (c *TokenAutoUpdateClient) DeleteExport(project string, name string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.DeleteExport(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) RestartExport(project string, export *Export) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.RestartExport(project, export)
 		if !c.processError(err) {
 			return
 		}

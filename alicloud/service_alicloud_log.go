@@ -899,10 +899,10 @@ func (s *LogService) WaitForLogIngestion(id string, status Status, timeout int) 
 	}
 }
 func (s *LogService) DescribeLogOssExport(id string) (*sls.Export, error) {
-	return s.DescribeLogExport(id)
+	return s.describeLogExport(id)
 }
 
-func (s *LogService) DescribeLogExport(id string) (*sls.Export, error) {
+func (s *LogService) describeLogExport(id string) (*sls.Export, error) {
 	var export *sls.Export
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -942,10 +942,10 @@ func (s *LogService) DescribeLogExport(id string) (*sls.Export, error) {
 }
 
 func (s *LogService) WaitForLogOssExport(id string, status Status, timeout int) error {
-	return s.WaitForLogExport(id, status, timeout)
+	return s.waitForLogExport(id, status, timeout)
 }
 
-func (s *LogService) WaitForLogExport(id string, status Status, timeout int) error {
+func (s *LogService) waitForLogExport(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {

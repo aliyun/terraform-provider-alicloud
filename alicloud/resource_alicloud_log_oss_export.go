@@ -11,7 +11,6 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -49,13 +48,9 @@ func resourceAlicloudLogOssExport() *schema.Resource {
 			},
 			"display_name": {
 				Type:     schema.TypeString,
-				Required: true,
-			},
-			"from_time": {
-				Type:     schema.TypeInt,
 				Optional: true,
 			},
-			"to_time": {
+			"from_time": {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
@@ -87,13 +82,9 @@ func resourceAlicloudLogOssExport() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"none", "zstd", "gzip", "snappy"}, false),
-				Default:      "none",
+				Computed:     true,
 			},
 			"path_format": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"path_format_type": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -213,7 +204,6 @@ func resourceAlicloudLogOssExportRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("export_name", parts[2])
 	d.Set("display_name", ossExport.DisplayName)
 	d.Set("from_time", ossExport.ExportConfiguration.FromTime)
-	d.Set("to_time", ossExport.ExportConfiguration.ToTime)
 	d.Set("bucket", ossDataSink.Bucket)
 	d.Set("prefix", ossDataSink.Prefix)
 	d.Set("suffix", ossDataSink.Suffix)
@@ -223,26 +213,28 @@ func resourceAlicloudLogOssExportRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("role_arn", ossDataSink.RoleArn)
 	d.Set("compress_type", ossDataSink.CompressionType)
 	d.Set("path_format", ossDataSink.PathFormat)
-	d.Set("path_format_type", ossDataSink.PathFormatType)
 	d.Set("content_type", ossDataSink.ContentType)
 
 	if ossDataSink.ContentType == "json" {
 		detail := new(sls.JsonContentDetail)
-		json.Unmarshal([]byte(ossDataSink.ContentDetail), detail)
+		contentDetailBytes, _ := json.Marshal(ossDataSink.ContentDetail)
+		json.Unmarshal(contentDetailBytes, detail)
 		d.Set("json_enable_tag", detail.EnableTag)
 	} else if ossDataSink.ContentType == "csv" {
 		detail := new(sls.CsvContentDetail)
-		json.Unmarshal([]byte(ossDataSink.ContentDetail), detail)
+		contentDetailBytes, _ := json.Marshal(ossDataSink.ContentDetail)
+		json.Unmarshal(contentDetailBytes, detail)
 		d.Set("csv_config_delimiter", detail.Delimiter)
 		d.Set("csv_config_header", detail.Header)
 		d.Set("csv_config_linefeed", detail.LineFeed)
 		d.Set("csv_config_columns", detail.ColumnNames)
-		d.Set("csv_config_nullidentifier", detail.Null)
+		d.Set("csv_config_null", detail.Null)
 		d.Set("csv_config_quote", detail.Quote)
 	} else if ossDataSink.ContentType == "parquet" || ossDataSink.ContentType == "orc" {
 		var config []map[string]interface{}
+		contentDetailBytes, _ := json.Marshal(ossDataSink.ContentDetail)
 		detail := new(sls.ParquetContentDetail)
-		json.Unmarshal([]byte(ossDataSink.ContentDetail), detail)
+		json.Unmarshal(contentDetailBytes, detail)
 		for _, column := range detail.Columns {
 			tempMap := map[string]interface{}{
 				"name": column.Name,
@@ -264,7 +256,7 @@ func resourceAlicloudLogOssExportUpdate(d *schema.ResourceData, meta interface{}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			return nil, slsClient.UpdateExport(parts[0], buildOSSExport(d))
+			return nil, slsClient.RestartExport(parts[0], buildOSSExport(d))
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
@@ -322,53 +314,83 @@ func resourceAlicloudLogOssExportDelete(d *schema.ResourceData, meta interface{}
 
 func buildOSSExport(d *schema.ResourceData) *sls.Export {
 	contentType := d.Get("content_type").(string)
-	contentDetail := ""
-	if contentType == "json" {
-		enableTag := d.Get("json_enable_tag").(bool)
-		contentDetail = *util.ToJSONString(sls.JsonContentDetail{EnableTag: enableTag})
-	} else if contentType == "parquet" || contentType == "orc" {
-		detail := sls.ParquetContentDetail{}
-		for _, f := range d.Get("config_columns").(*schema.Set).List() {
-			v := f.(map[string]interface{})
-			config := sls.Column{
-				Name: v["name"].(string),
-				Type: v["type"].(string),
-			}
-			detail.Columns = append(detail.Columns, config)
-		}
-		contentDetail = *util.ToJSONString(detail)
-	} else if contentType == "csv" {
-		detail := sls.CsvContentDetail{
-			Delimiter: d.Get("csv_config_delimiter").(string),
-			Header:    d.Get("csv_config_header").(bool),
-			LineFeed:  d.Get("csv_config_linefeed").(string),
-			Null:      d.Get("csv_config_null").(string),
-			Quote:     d.Get("csv_config_quote").(string),
-			Escape:    d.Get("csv_config_escape").(string),
-		}
-		columns := []string{}
-		for _, v := range d.Get("csv_config_columns").([]interface{}) {
-			columns = append(columns, v.(string))
-		}
-		detail.ColumnNames = columns
-		contentDetail = *util.ToJSONString(detail)
+	ossExportConfig := &sls.AliyunOSSSink{
+		Type:           sls.DataSinkOSS,
+		Bucket:         d.Get("bucket").(string),
+		PathFormat:     d.Get("path_format").(string),
+		PathFormatType: "time",
+		BufferSize:     int64(d.Get("buffer_size").(int)),
+		BufferInterval: int64(d.Get("buffer_interval").(int)),
+		TimeZone:       d.Get("time_zone").(string),
+		ContentType:    sls.OSSContentType(contentType),
+	}
+	roleArn := ""
+	if v, ok := d.GetOk("role_arn"); ok {
+		roleArn := v.(string)
+		ossExportConfig.RoleArn = roleArn
+	}
+	if v, ok := d.GetOk("prefix"); ok {
+		ossExportConfig.Prefix = v.(string)
+	}
+	if v, ok := d.GetOk("suffix"); ok {
+		ossExportConfig.Suffix = v.(string)
+	}
+	if v, ok := d.GetOk("compress_type"); ok {
+		ossExportConfig.CompressionType = sls.OSSCompressionType(v.(string))
 	}
 
-	roleArn := d.Get("role_arn").(string)
-	ossExportConfig := &sls.AliyunOSSSink{
-		Type:            sls.DataSinkOSS,
-		RoleArn:         roleArn,
-		Bucket:          d.Get("bucket").(string),
-		Prefix:          d.Get("prefix").(string),
-		Suffix:          d.Get("suffix").(string),
-		PathFormat:      d.Get("path_format").(string),
-		PathFormatType:  d.Get("path_format_type").(string),
-		BufferSize:      int64(d.Get("buffer_size").(int)),
-		BufferInterval:  int64(d.Get("buffer_interval").(int)),
-		TimeZone:        d.Get("time_zone").(string),
-		CompressionType: sls.OSSCompressionType(d.Get("compress_type").(string)),
-		ContentType:     sls.OSSContentType(contentType),
-		ContentDetail:   contentDetail,
+	if contentType == "json" {
+		enableTag := false
+		if v, ok := d.GetOk("json_enable_tag"); ok {
+			enableTag = v.(bool)
+		}
+		ossExportConfig.ContentDetail = sls.JsonContentDetail{EnableTag: enableTag}
+	} else if contentType == "parquet" || contentType == "orc" {
+		detail := sls.ParquetContentDetail{}
+		if configColumns, ok := d.GetOk("config_columns"); ok {
+			for _, f := range configColumns.(*schema.Set).List() {
+				v := f.(map[string]interface{})
+				config := sls.Column{
+					Name: v["name"].(string),
+					Type: v["type"].(string),
+				}
+				detail.Columns = append(detail.Columns, config)
+			}
+		}
+		ossExportConfig.ContentDetail = detail
+	} else if contentType == "csv" {
+		detail := sls.CsvContentDetail{}
+		if v, ok := d.GetOk("csv_config_delimiter"); ok {
+			detail.Delimiter = v.(string)
+		}
+		if v, ok := d.GetOk("csv_config_header"); ok {
+			detail.Header = v.(bool)
+		}
+		if v, ok := d.GetOk("csv_config_linefeed"); ok {
+			detail.LineFeed = v.(string)
+		}
+		if v, ok := d.GetOk("csv_config_null"); ok {
+			detail.Null = v.(string)
+		}
+		if v, ok := d.GetOk("csv_config_quote"); ok {
+			detail.Quote = v.(string)
+		}
+		if v, ok := d.GetOk("csv_config_escape"); ok {
+			detail.Escape = v.(string)
+		}
+		columns := []string{}
+		if v, ok := d.GetOk("csv_config_columns"); ok {
+			for _, v := range v.([]interface{}) {
+				columns = append(columns, v.(string))
+			}
+		}
+
+		detail.ColumnNames = columns
+		ossExportConfig.ContentDetail = detail
+	}
+	fromTime := int64(0)
+	if v, ok := d.GetOk("from_time"); ok {
+		fromTime = int64(v.(int))
 	}
 
 	return &sls.Export{
@@ -383,7 +405,9 @@ func buildOSSExport(d *schema.ResourceData) *sls.Export {
 				Type: "Resident",
 			},
 		},
+
 		ExportConfiguration: &sls.ExportConfiguration{
+			FromTime:   fromTime,
 			LogStore:   d.Get("logstore_name").(string),
 			Parameters: map[string]string{},
 			RoleArn:    roleArn,
