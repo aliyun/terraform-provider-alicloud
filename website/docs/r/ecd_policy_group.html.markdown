@@ -70,6 +70,7 @@ The following arguments are supported:
 * `recording_end_time` - (Optional, Available in 1.171.0+) The end time of recording, value: `HH:MM:SS`. This return value is meaningful only when the value of `recording` is `period`.
 * `recording_fps` - (Optional, Computed, Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
 * `camera_redirect` - (Optional, Computed, Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.
+* `recording_expires` - (Optional, Available in 1.186.0+) The screen recording video retention. Valid values between 30 and 180. This return value is meaningful only when the value of `recording` is `period` or `alltime`.
 
 #### Block authorize_security_policy_rules
 

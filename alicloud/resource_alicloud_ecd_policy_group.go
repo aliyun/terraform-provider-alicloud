@@ -178,6 +178,12 @@ func resourceAlicloudEcdPolicyGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
 			},
+			"recording_expires": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(15, 180),
+			},
 		},
 	}
 }
@@ -259,6 +265,9 @@ func resourceAlicloudEcdPolicyGroupCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("camera_redirect"); ok {
 		request["CameraRedirect"] = v
 	}
+	if v, ok := d.GetOk("recording_expires"); ok {
+		request["RecordingExpires"] = v
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -339,6 +348,7 @@ func resourceAlicloudEcdPolicyGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("recording", object["Recording"])
 	d.Set("recording_fps", formatInt(object["RecordingFps"]))
 	d.Set("camera_redirect", object["CameraRedirect"])
+	d.Set("recording_expires", formatInt(object["RecordingExpires"]))
 	return nil
 }
 func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -507,6 +517,12 @@ func resourceAlicloudEcdPolicyGroupUpdate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("camera_redirect"); ok {
 		request["CameraRedirect"] = v
+	}
+	if d.HasChange("recording_expires") {
+		update = true
+	}
+	if v, ok := d.GetOk("recording_expires"); ok {
+		request["RecordingExpires"] = v
 	}
 	if update {
 		action := "ModifyPolicyGroup"
