@@ -455,6 +455,89 @@ func TestAccAlicloudECDPolicyGroup_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudECDPolicyGroup_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_policy_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudECDPolicyGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdPolicyGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdpolicygroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDPolicyGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.EcdSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_group_name":    "tf-testaccPolicyGroupName",
+					"recording":            "period",
+					"recording_start_time": "08:00:00",
+					"recording_end_time":   "08:59:00",
+					"recording_fps":        "2",
+					"camera_redirect":      "on",
+					"recording_expires":    "15",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_group_name":    "tf-testaccPolicyGroupName",
+						"recording":            "period",
+						"recording_start_time": "08:00:00",
+						"recording_end_time":   "08:59:00",
+						"recording_fps":        "2",
+						"camera_redirect":      "on",
+						"recording_expires":    "15",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"recording_expires": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recording_expires": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"recording":            "period",
+					"recording_start_time": "10:00:00",
+					"recording_end_time":   "12:59:00",
+					"recording_fps":        "5",
+					"camera_redirect":      "on",
+					"recording_expires":    "180",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"recording":            "period",
+						"recording_start_time": "10:00:00",
+						"recording_end_time":   "12:59:00",
+						"recording_fps":        "5",
+						"camera_redirect":      "on",
+						"recording_expires":    "180",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"recording_start_time", "recording_end_time"},
+			},
+		},
+	})
+}
+
 var AlicloudECDPolicyGroupMap0 = map[string]string{
 	"policy_group_name": "tf-testaccPolicyGroupName",
 }
