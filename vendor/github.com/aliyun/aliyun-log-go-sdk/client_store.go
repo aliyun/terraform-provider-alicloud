@@ -32,13 +32,27 @@ func (c *Client) ListShards(project, logstore string) (shardIDs []*Shard, err er
 
 // SplitShard https://help.aliyun.com/document_detail/29021.html
 func (c *Client) SplitShard(project, logstore string, shardID int, splitKey string) (shards []*Shard, err error) {
+	return c.splitShard(project, logstore, shardID, 0, splitKey)
+}
+
+// SplitNumShard https://help.aliyun.com/document_detail/29021.html
+func (c *Client) SplitNumShard(project, logstore string, shardID, shardsNum int) (shards []*Shard, err error) {
+	return c.splitShard(project, logstore, shardID, shardsNum, "")
+}
+
+func (c *Client) splitShard(project, logstore string, shardID, shardsNum int, splitKey string) (shards []*Shard, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 
 	urlVal := url.Values{}
 	urlVal.Add("action", "split")
-	urlVal.Add("key", splitKey)
+	if splitKey != "" {
+		urlVal.Add("key", splitKey)
+	}
+	if shardsNum > 0 {
+		urlVal.Add("shardCount", strconv.Itoa(shardsNum))
+	}
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?%v", logstore, shardID, urlVal.Encode())
 	r, err := c.request(project, "POST", uri, h, nil)
 	if err != nil {

@@ -161,8 +161,10 @@ type ClientInterface interface {
 	// #################### Shard Operations #####################
 	// ListShards returns shard id list of this logstore.
 	ListShards(project, logstore string) (shards []*Shard, err error)
-	// SplitShard https://help.aliyun.com/document_detail/29021.html
+	// SplitShard https://help.aliyun.com/document_detail/29021.html,
 	SplitShard(project, logstore string, shardID int, splitKey string) (shards []*Shard, err error)
+	// SplitNumShard https://help.aliyun.com/document_detail/29021.html,
+	SplitNumShard(project, logstore string, shardID, shardsNum int) (shards []*Shard, err error)
 	// MergeShards https://help.aliyun.com/document_detail/29022.html
 	MergeShards(project, logstore string, shardID int) (shards []*Shard, err error)
 
@@ -318,4 +320,5 @@ type ClientInterface interface {
 	GetExport(project, name string) (*Export, error)
 	ListExport(project, logstore, name, displayName string, offset, size int) (exports []*Export, total, count int, error error)
 	DeleteExport(project string, name string) error
+	RestartExport(project string, export *Export) error
 }

@@ -228,6 +228,8 @@ type AlertConfiguration struct {
 
 	PolicyConfiguration PolicyConfiguration `json:"policyConfiguration"`
 	AutoAnnotation      bool                `json:"autoAnnotation"`
+
+	Tags []string `json:"tags"`
 }
 
 func (c *Client) CreateSavedSearch(project string, savedSearch *SavedSearch) error {
