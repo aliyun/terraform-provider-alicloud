@@ -29,10 +29,10 @@ provider "alicloud" {
 }
 
 resource "alicloud_yundun_dbaudit_instance" "default" {
-  description       = "Terraform-test"
-  plan_code         = "alpha.professional"
-  period            = "1"
-  vswitch_id        = "v-testVswitch"
+  description = "Terraform-test"
+  plan_code   = "alpha.professional"
+  period      = "1"
+  vswitch_id  = "v-testVswitch"
 }
 ```
 

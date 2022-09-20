@@ -36,7 +36,7 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "vpc1" {
   provider   = alicloud.fra
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
 

@@ -23,12 +23,12 @@ Creates a custom image. You can then use a custom image to create ECS instances 
 
 ```terraform
 resource "alicloud_image" "default" {
-  instance_id        = "i-bp1g6zv0ce8oghu7k***"
-  image_name         = "test-image"
-  description        = "test-image"
-  architecture       = "x86_64"
-  platform           = "CentOS"
-  resource_group_id  = "rg-bp67acfmxazb4ph***"
+  instance_id       = "i-bp1g6zv0ce8oghu7k***"
+  image_name        = "test-image"
+  description       = "test-image"
+  architecture      = "x86_64"
+  platform          = "CentOS"
+  resource_group_id = "rg-bp67acfmxazb4ph***"
   tags = {
     FinanceDept = "FinanceDeptJoshua"
   }

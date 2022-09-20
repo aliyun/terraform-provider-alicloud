@@ -19,8 +19,8 @@ Provides bind the domain name to the DNS instance resource.
 
 ```terraform
 resource "alicloud_dns_domain_attachment" "dns" {
-  instance_id     = "dns-cn-mp91lyq9xxxx"
-  domain_names    = ["test111.abc", "test222.abc"]
+  instance_id  = "dns-cn-mp91lyq9xxxx"
+  domain_names = ["test111.abc", "test222.abc"]
 }
 ```
 ## Argument Reference

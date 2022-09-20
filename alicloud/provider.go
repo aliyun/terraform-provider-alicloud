@@ -761,6 +761,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pool_cidr_blocks":       dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),
 			"alicloud_gpdb_db_instance_plans":                       dataSourceAlicloudGpdbDbInstancePlans(),
 			"alicloud_adb_db_cluster_lake_versions":                 dataSourceAlicloudAdbDbClusterLakeVersions(),
+			"alicloud_nlb_load_balancers":                           dataSourceAlicloudNlbLoadBalancers(),
+			"alicloud_nlb_zones":                                    dataSourceAlicloudNlbZones(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1417,6 +1419,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_db_instance_plan":                                resourceAlicloudGpdbDbInstancePlan(),
 			"alicloud_adb_db_cluster_lake_version":                          resourceAlicloudAdbDbClusterLakeVersion(),
 			"alicloud_ga_acl_entry_attachment":                              resourceAlicloudGaAclEntryAttachment(),
+			"alicloud_nlb_load_balancer":                                    resourceAlicloudNlbLoadBalancer(),
 		},
 
 		ConfigureFunc: providerConfigure,

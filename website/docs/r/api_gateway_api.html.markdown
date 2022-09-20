@@ -26,10 +26,10 @@ resource "alicloud_api_gateway_group" "apiGroup" {
 }
 
 resource "alicloud_api_gateway_api" "apiGatewayApi" {
-  name        = alicloud_api_gateway_group.apiGroup.name
-  group_id    = alicloud_api_gateway_group.apiGroup.id
-  description = "your description"
-  auth_type   = "APP"
+  name              = alicloud_api_gateway_group.apiGroup.name
+  group_id          = alicloud_api_gateway_group.apiGroup.id
+  description       = "your description"
+  auth_type         = "APP"
   force_nonce_check = false
 
   request_config {

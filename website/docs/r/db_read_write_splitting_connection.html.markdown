@@ -27,15 +27,15 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "default" {
@@ -63,7 +63,7 @@ resource "alicloud_db_read_write_splitting_connection" "default" {
   instance_id       = alicloud_db_instance.default.id
   connection_prefix = "t-con-123"
   distribution_type = "Standard"
-  depends_on = [alicloud_db_readonly_instance.default]
+  depends_on        = [alicloud_db_readonly_instance.default]
 }
 ```
 

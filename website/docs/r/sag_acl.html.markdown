@@ -23,7 +23,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_sag_acl" "default" {
-  name        = "tf-testAccSagAclName"
+  name = "tf-testAccSagAclName"
 }
 ```
 ## Argument Reference

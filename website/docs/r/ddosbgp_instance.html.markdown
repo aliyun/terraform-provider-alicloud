@@ -27,13 +27,13 @@ provider "alicloud" {
 }
 
 resource "alicloud_ddosbgp_instance" "instance" {
-  name              = "yourDdosbgpInstanceName"
-  base_bandwidth    = 20
-  bandwidth         = -1
-  ip_count          = 100
-  ip_type           = "IPv4"
-  normal_bandwidth  = 100
-  type              = "Enterprise"
+  name             = "yourDdosbgpInstanceName"
+  base_bandwidth   = 20
+  bandwidth        = -1
+  ip_count         = 100
+  ip_type          = "IPv4"
+  normal_bandwidth = 100
+  type             = "Enterprise"
 }
 ```
 ## Argument Reference

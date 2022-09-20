@@ -21,12 +21,12 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cr_ee_instance" "my-instance" {
-  payment_type        = "Subscription"
-  period              = 1
-  renew_period        = 1
-  renewal_status      = "AutoRenewal"
-  instance_type       = "Advanced"
-  instance_name       = "test"
+  payment_type   = "Subscription"
+  period         = 1
+  renew_period   = 1
+  renewal_status = "AutoRenewal"
+  instance_type  = "Advanced"
+  instance_name  = "test"
 }
 ```
 

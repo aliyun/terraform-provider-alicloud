@@ -76,6 +76,7 @@ resource "alicloud_log_alert" "example" {
 ```
 
 Basic Usage for new alert
+
 ```terraform
 resource "alicloud_log_project" "example" {
   name        = "test-tf"
@@ -113,41 +114,41 @@ resource "alicloud_log_alert" "example-2" {
     run_immediately = false
   }
   query_list {
-    store       = "tf-test-logstore"
-    store_type  = "log"
-    project     = alicloud_log_project.example.name
-    region      = "cn-heyuan"
-    chart_title = "chart_title"
-    start       = "-60s"
-    end         = "20s"
-    query       = "* AND aliyun | select count(1) as cnt"
+    store          = "tf-test-logstore"
+    store_type     = "log"
+    project        = alicloud_log_project.example.name
+    region         = "cn-heyuan"
+    chart_title    = "chart_title"
+    start          = "-60s"
+    end            = "20s"
+    query          = "* AND aliyun | select count(1) as cnt"
     power_sql_mode = "auto"
   }
   query_list {
-    store       = "tf-test-logstore"
-    store_type  = "log"
-    project     = alicloud_log_project.example.name
-    region      = "cn-heyuan"
-    chart_title = "chart_title"
-    start       = "-60s"
-    end         = "20s"
-    query       = "error | select count(1) as error_cnt"
+    store          = "tf-test-logstore"
+    store_type     = "log"
+    project        = alicloud_log_project.example.name
+    region         = "cn-heyuan"
+    chart_title    = "chart_title"
+    start          = "-60s"
+    end            = "20s"
+    query          = "error | select count(1) as error_cnt"
     power_sql_mode = "enable"
   }
   labels {
-    key = "env"
+    key   = "env"
     value = "test"
   }
   annotations {
-    key = "title"
+    key   = "title"
     value = "alert title"
   }
   annotations {
-    key = "desc"
+    key   = "desc"
     value = "alert desc"
   }
   annotations {
-    key = "test_key"
+    key   = "test_key"
     value = "test value"
   }
   group_configuration {
@@ -162,27 +163,27 @@ resource "alicloud_log_alert" "example-2" {
   severity_configurations {
     severity = 8
     eval_condition = {
-      condition = "cnt > 3"
+      condition       = "cnt > 3"
       count_condition = "__count__ > 3"
     }
   }
   severity_configurations {
     severity = 6
     eval_condition = {
-      condition = ""
+      condition       = ""
       count_condition = "__count__ > 0"
     }
   }
   severity_configurations {
     severity = 2
     eval_condition = {
-      condition = ""
+      condition       = ""
       count_condition = ""
     }
   }
   join_configurations {
-      type = "cross_join"
-      condition = ""
+    type      = "cross_join"
+    condition = ""
   }
 }
 ```

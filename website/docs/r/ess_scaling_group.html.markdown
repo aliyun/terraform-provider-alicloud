@@ -40,15 +40,15 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
@@ -68,10 +68,10 @@ resource "alicloud_security_group_rule" "default" {
 }
 
 resource "alicloud_vswitch" "default2" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.1.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = "${var.name}-bar"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.1.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = "${var.name}-bar"
 }
 
 resource "alicloud_ess_scaling_group" "default" {

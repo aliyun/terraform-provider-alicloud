@@ -39,10 +39,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
+  name       = var.name
 }
 
 
@@ -60,35 +60,35 @@ resource "alicloud_ess_scaling_group" "default" {
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  scaling_group_id = alicloud_ess_scaling_group.default.id
-  image_id = data.alicloud_images.default.images[0].id
-  instance_type = data.alicloud_instance_types.default.instance_types[0].id
+  scaling_group_id  = alicloud_ess_scaling_group.default.id
+  image_id          = data.alicloud_images.default.images[0].id
+  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
   security_group_id = alicloud_security_group.default.id
-  force_delete = true
-  active = true
-  enable = true
+  force_delete      = true
+  active            = true
+  enable            = true
 }
 
 resource "alicloud_alb_server_group" "default" {
   server_group_name = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id            = "${alicloud_vpc.default.id}"
   health_check_config {
-  health_check_enabled = "false"
+    health_check_enabled = "false"
   }
   sticky_session_config {
-  sticky_session_enabled = true
-  cookie                 = "tf-testAcc"
-  sticky_session_type    = "Server"
+    sticky_session_enabled = true
+    cookie                 = "tf-testAcc"
+    sticky_session_type    = "Server"
   }
 }
 
 resource "alicloud_ess_alb_server_group_attachment" "default" {
-  scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+  scaling_group_id    = "${alicloud_ess_scaling_group.default.id}"
   alb_server_group_id = "${alicloud_alb_server_group.default.id}"
-  port             = 9000
-  weight           = 50
-  force_attach = true
-  depends_on = ["alicloud_ess_scaling_configuration.default"]
+  port                = 9000
+  weight              = 50
+  force_attach        = true
+  depends_on          = ["alicloud_ess_scaling_configuration.default"]
 }
 
 ```

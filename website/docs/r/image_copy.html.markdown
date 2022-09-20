@@ -23,13 +23,13 @@ Copies a custom image from one region to another. You can use copied images to p
 
 ```terraform
 resource "alicloud_image_copy" "default" {
-  source_image_id    = "m-bp1gxyhdswlsn18tu***"
-  source_region_id   = "cn-hangzhou"
-  image_name         = "test-image"
-  description        = "test-image"
-  tags               = {
-         FinanceDept = "FinanceDeptJoshua"
-     }
+  source_image_id  = "m-bp1gxyhdswlsn18tu***"
+  source_region_id = "cn-hangzhou"
+  image_name       = "test-image"
+  description      = "test-image"
+  tags = {
+    FinanceDept = "FinanceDeptJoshua"
+  }
 }
 ```
 

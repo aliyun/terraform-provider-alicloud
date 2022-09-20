@@ -21,10 +21,10 @@ Basic Usage
 
 ```terraform
 resource "alicloud_log_resource_record" "example" {
-  resource_name         = "user.tf.test_resource"
-  record_id             = "user_tf_test_resource_1"
-  tag                   = "test resource tag"
-  value                 = "{\"col1\": \"this is col1 value\", \"col2\": \"col2 value\"}"
+  resource_name = "user.tf.test_resource"
+  record_id     = "user_tf_test_resource_1"
+  tag           = "test resource tag"
+  value         = "{\"col1\": \"this is col1 value\", \"col2\": \"col2 value\"}"
 }
 ```
 ## Argument Reference

@@ -34,10 +34,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  name              = "tf_test"
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
+  name       = "tf_test"
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = "10.1.0.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_vpn_gateway" "default" {

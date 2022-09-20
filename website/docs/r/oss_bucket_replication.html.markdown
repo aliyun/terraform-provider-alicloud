@@ -21,74 +21,74 @@ Set bucket replication configuration
 
 ```terraform
 resource "alicloud_oss_bucket_replication" "cross-region-replication" {
-    bucket = "bucket-in-hangzhou"
+  bucket = "bucket-in-hangzhou"
 
-    destination {
-        bucket = "bucket-in-beijing"
-        location = "oss-cn-beijing"
-    }
-    action = "ALL"
+  destination {
+    bucket   = "bucket-in-beijing"
+    location = "oss-cn-beijing"
+  }
+  action = "ALL"
 }
 
 resource "alicloud_oss_bucket_replication" "same-region-replication" {
-    bucket = "bucket-in-hangzhou"
+  bucket = "bucket-in-hangzhou"
 
-    destination {
-        bucket = "bucket-in-hangzhou-1"
-        location = "oss-cn-hangzhou"
-    }
-    action = "ALL"
+  destination {
+    bucket   = "bucket-in-hangzhou-1"
+    location = "oss-cn-hangzhou"
+  }
+  action = "ALL"
 }
 
 resource "alicloud_oss_bucket_replication" "replication-with-prefix" {
-    bucket = "bucket-1"
+  bucket = "bucket-1"
 
-    prefix_set {
-        prefixes = ["prefix1/", "prefix2/"]
-    }
+  prefix_set {
+    prefixes = ["prefix1/", "prefix2/"]
+  }
 
-    destination {
-        bucket = "bucket-2"
-        location = "oss-cn-hangzhou"
-    }
-    action = "ALL"
-    historical_object_replication = "disabled"
+  destination {
+    bucket   = "bucket-2"
+    location = "oss-cn-hangzhou"
+  }
+  action                        = "ALL"
+  historical_object_replication = "disabled"
 }
 
 resource "alicloud_oss_bucket_replication" "replication-with-specific-action" {
-    bucket = "bucket-1"
+  bucket = "bucket-1"
 
-    destination {
-        bucket = "bucket-2"
-        location = "oss-cn-hangzhou"
-    }
-    action = "PUT"
-    historical_object_replication = "disabled"
+  destination {
+    bucket   = "bucket-2"
+    location = "oss-cn-hangzhou"
+  }
+  action                        = "PUT"
+  historical_object_replication = "disabled"
 }
 
 resource "alicloud_oss_bucket_replication" "replication-with-kms-encryption" {
-    bucket = "bucket-1"
+  bucket = "bucket-1"
 
-    destination {
-        bucket = "bucket-2"
-        location = "oss-cn-hangzhou"
-    }
+  destination {
+    bucket   = "bucket-2"
+    location = "oss-cn-hangzhou"
+  }
 
-    action = "ALL"
-    
-    historical_object_replication = "disabled"
-    
-    sync_role = "<your ram role>"
-    
-    source_selection_criteria {
-        sse_kms_encrypted_objects {
-            status = "Enabled"
-        }
+  action = "ALL"
+
+  historical_object_replication = "disabled"
+
+  sync_role = "<your ram role>"
+
+  source_selection_criteria {
+    sse_kms_encrypted_objects {
+      status = "Enabled"
     }
-    
-    encryption_configuration {
-        replica_kms_key_id = "<your kms key id>"
-    }
+  }
+
+  encryption_configuration {
+    replica_kms_key_id = "<your kms key id>"
+  }
 }
 
 ```

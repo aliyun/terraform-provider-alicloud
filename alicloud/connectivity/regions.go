@@ -230,3 +230,4 @@ var DMSEnterpriseSupportRegions = []Region{APSouthEast5, Shenzhen, Beijing, APSo
 var GPDBDBInstancePlanSupportRegions = []Region{Hangzhou}
 var ADBDBClusterLakeVersionSupportRegions = []Region{Hangzhou}
 var LindormInstanceRegions = []Region{Shanghai}
+var NLBSupportRegions = []Region{Hangzhou}

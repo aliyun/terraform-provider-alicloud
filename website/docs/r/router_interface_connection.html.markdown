@@ -36,13 +36,13 @@ variable "name" {
 }
 
 resource "alicloud_vpc" "foo" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vpc" "bar" {
   provider   = alicloud
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
 
