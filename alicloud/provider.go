@@ -1387,6 +1387,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_access_log":                                        resourceAlicloudGaAccessLog(),
 			"alicloud_ebs_disk_replica_group":                               resourceAlicloudEbsDiskReplicaGroup(),
 			"alicloud_nlb_security_policy":                                  resourceAlicloudNlbSecurityPolicy(),
+			"alicloud_vod_editing_project":                                  resourceAlicloudVodEditingProject(),
 		},
 
 		ConfigureFunc: providerConfigure,
