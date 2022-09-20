@@ -46,7 +46,7 @@ resource "alicloud_ots_table" "basic" {
     name = "pk3"
     type = "Binary"
   }
-  
+
   defined_column {
     name = "col1"
     type = "Integer"

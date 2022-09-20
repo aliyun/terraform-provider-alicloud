@@ -50,16 +50,16 @@ data "alicloud_images" "default" {
 
 resource "alicloud_vpc" "vpc" {
   provider   = alicloud.hz
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  provider          = alicloud.hz
-  vpc_id            = alicloud_vpc.vpc.id
-  cidr_block        = "172.16.0.0/21"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  provider     = alicloud.hz
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {

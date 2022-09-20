@@ -23,13 +23,13 @@ variable "name" {
 }
 
 variable "pks" {
-    default = ["pk1", "pk2", "pk3"]
-    type    = list(string)
+  default = ["pk1", "pk2", "pk3"]
+  type    = list(string)
 }
 
 variable "defined_cols" {
-    default = ["col1", "col2", "col3"]
-    type    = list(string)
+  default = ["col1", "col2", "col3"]
+  type    = list(string)
 }
 
 resource "alicloud_ots_instance" "instance1" {
@@ -72,7 +72,7 @@ resource "alicloud_ots_table" "table1" {
     name = "col3"
     type = "Binary"
   }
-  
+
 
   time_to_live                  = -1
   max_version                   = 1
@@ -81,13 +81,13 @@ resource "alicloud_ots_table" "table1" {
 
 resource "alicloud_ots_secondary_index" "index1" {
   instance_name = alicloud_ots_instance.instance1.name
-  table_name = alicloud_ots_table.table1.table_name
+  table_name    = alicloud_ots_table.table1.table_name
 
-  index_name = var.name
-  index_type = "Global"
+  index_name        = var.name
+  index_type        = "Global"
   include_base_data = true
-  primary_keys = var.pks
-  defined_columns = var.defined_cols
+  primary_keys      = var.pks
+  defined_columns   = var.defined_cols
 }
 ```
 

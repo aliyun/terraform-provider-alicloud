@@ -23,8 +23,8 @@ Manage image sharing permissions. You can share your custom image to other Aliba
 
 ```terraform
 resource "alicloud_image_share_permission" "default" {
-  image_id           = "m-bp1gxyh***"
-  account_id         = "1234567890"
+  image_id   = "m-bp1gxyh***"
+  account_id = "1234567890"
 }
 ```
 

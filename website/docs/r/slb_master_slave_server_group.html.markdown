@@ -58,10 +58,10 @@ resource "alicloud_vpc" "main" {
 }
 
 resource "alicloud_vswitch" "main" {
-  vpc_id            = alicloud_vpc.main.id
-  cidr_block        = "172.16.0.0/16"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.main.id
+  cidr_block   = "172.16.0.0/16"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "group" {
@@ -84,8 +84,8 @@ resource "alicloud_instance" "instance" {
 }
 
 resource "alicloud_slb_load_balancer" "instance" {
-  load_balancer_name  = var.name
-  vswitch_id    = alicloud_vswitch.main.id
+  load_balancer_name = var.name
+  vswitch_id         = alicloud_vswitch.main.id
   load_balancer_spec = "slb.s2.small"
 }
 

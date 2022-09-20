@@ -28,10 +28,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
@@ -45,19 +45,19 @@ resource "alicloud_ess_scaling_group" "default" {
   scaling_group_name = var.name
   removal_policies   = ["OldestInstance", "NewestInstance"]
   vswitch_ids        = [alicloud_vswitch.default.id]
-  group_type          = "ECI"
+  group_type         = "ECI"
 }
 
 resource "alicloud_ess_eci_scaling_configuration" "default" {
-  scaling_group_id  = alicloud_ess_scaling_group.default.id
-  cpu               = 2
-  memory            = 4
-  security_group_id = alicloud_security_group.default.id
-  force_delete      = true
-  active            = true
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  cpu                  = 2
+  memory               = 4
+  security_group_id    = alicloud_security_group.default.id
+  force_delete         = true
+  active               = true
   container_group_name = "container-group-1649839595174"
   containers {
-    name = "container-1"
+    name  = "container-1"
     image = "registry-vpc.cn-hangzhou.aliyuncs.com/eci_open/alpine:3.5"
   }
 }

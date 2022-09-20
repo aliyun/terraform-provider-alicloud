@@ -23,8 +23,8 @@ resource "alicloud_log_project" "example" {
 }
 
 resource "alicloud_log_store" "example" {
-  project = alicloud_log_project.example.name
-  name    = "tf-log-store"
+  project     = alicloud_log_project.example.name
+  name        = "tf-log-store"
   description = "created by terraform"
 }
 

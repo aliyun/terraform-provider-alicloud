@@ -21,14 +21,12 @@ Basic Usage
 
 ```terraform
 resource "alicloud_log_resource" "example" {
-  type                  = "userdefine"
-  name                  = "user.tf.test_resource"
-  description           = "user tf test resource desc"
-  schema                = "{\"schema\":[{\"column\":\"col1\",\"desc\":\"col1 desc\",\"ext_info\":{},\"required\":true,\"type\":\"string\"},{\"column\":\"col2\",\"desc\":\"col2 desc\",\"ext_info\":\"optional\",\"required\":true,\"type\":\"string\"}]}"
-  ext_info              = "{}"
+  type        = "userdefine"
+  name        = "user.tf.test_resource"
+  description = "user tf test resource desc"
+  schema      = "{\"schema\":[{\"column\":\"col1\",\"desc\":\"col1 desc\",\"ext_info\":{},\"required\":true,\"type\":\"string\"},{\"column\":\"col2\",\"desc\":\"col2 desc\",\"ext_info\":\"optional\",\"required\":true,\"type\":\"string\"}]}"
+  ext_info    = "{}"
 }
-
-
 ```
 ## Argument Reference
 

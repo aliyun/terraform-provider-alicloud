@@ -175,7 +175,7 @@ func (s *NlbService) ListTagResources(id string, resourceType string) (object in
 			}
 			addDebug(action, response, request)
 			v, err := jsonpath.Get("$.TagResources", response)
-			if err != nil {
+			if formatInt(response["TotalCount"]) != 0 && err != nil {
 				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
 			}
 			if v != nil {
@@ -285,5 +285,65 @@ func (s *NlbService) NlbSecurityPolicyStateRefreshFunc(id string, failStates []s
 			}
 		}
 		return object, fmt.Sprint(object["SecurityPolicyStatus"]), nil
+	}
+}
+
+func (s *NlbService) DescribeNlbLoadBalancer(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewNlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"LoadBalancerId": id,
+		"RegionId":       s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "GetLoadBalancerAttribute"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *NlbService) NlbLoadBalancerStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNlbLoadBalancer(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["LoadBalancerStatus"]) == failState {
+				return object, fmt.Sprint(object["LoadBalancerStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["LoadBalancerStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["LoadBalancerStatus"]), nil
 	}
 }

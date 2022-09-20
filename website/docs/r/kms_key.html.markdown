@@ -19,9 +19,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_kms_key" "key" {
-  description             = "Hello KMS"
-  pending_window_in_days  = "7"
-  status                  = "Enabled"
+  description            = "Hello KMS"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
 }
 ```
 ## Argument Reference

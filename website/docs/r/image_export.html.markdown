@@ -23,9 +23,9 @@ Export a custom image to the OSS bucket in the same region as the custom image.
 
 ```terraform
 resource "alicloud_image_export" "default" {
-  image_id           = "m-bp1gxy***"
-  oss_bucket         = "ecsimageexportconfig"
-  oss_prefix         = "ecsExport"
+  image_id   = "m-bp1gxy***"
+  oss_bucket = "ecsimageexportconfig"
+  oss_prefix = "ecsExport"
 }
 ```
 

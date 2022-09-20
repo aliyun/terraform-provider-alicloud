@@ -44,10 +44,10 @@ resource "alicloud_vpc" "foo" {
 }
 
 resource "alicloud_vswitch" "foo" {
-  vpc_id            = alicloud_vpc.foo.id
-  cidr_block        = "172.16.0.0/21"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  name              = var.name
+  vpc_id     = alicloud_vpc.foo.id
+  cidr_block = "172.16.0.0/21"
+  zone_id    = data.alicloud_zones.default.zones[0].id
+  name       = var.name
 }
 
 resource "alicloud_havip" "foo" {

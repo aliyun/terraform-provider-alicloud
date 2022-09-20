@@ -31,23 +31,23 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  vswitch_name      = "vpc-123456"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = "vpc-123456"
 }
 
 resource "alicloud_gpdb_elastic_instance" "adb_pg_instance" {
-  engine                   = "gpdb"
-  engine_version           = "6.0"
-  seg_storage_type         = "cloud_essd"
-  seg_node_num             = 4
-  storage_size             = 50
-  instance_spec            = "2C16G"
-  db_instance_description  = "Created by terraform"
-  instance_network_type    = "VPC"
-  payment_type             = "PayAsYouGo"
-  vswitch_id               = alicloud_vswitch.default.id
+  engine                  = "gpdb"
+  engine_version          = "6.0"
+  seg_storage_type        = "cloud_essd"
+  seg_node_num            = 4
+  storage_size            = 50
+  instance_spec           = "2C16G"
+  db_instance_description = "Created by terraform"
+  instance_network_type   = "VPC"
+  payment_type            = "PayAsYouGo"
+  vswitch_id              = alicloud_vswitch.default.id
 }
 
 ```

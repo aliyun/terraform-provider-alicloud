@@ -23,8 +23,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_sag_acl" "default" {
-  name        = "tf-testAccSagAclName"
-  sag_count   = "0"
+  name      = "tf-testAccSagAclName"
+  sag_count = "0"
 }
 resource "alicloud_sag_acl_rule" "default" {
   acl_id            = alicloud_sag_acl.default.id

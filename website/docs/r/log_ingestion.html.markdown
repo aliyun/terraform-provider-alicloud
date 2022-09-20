@@ -33,15 +33,15 @@ resource "alicloud_log_store" "example" {
   append_meta           = true
 }
 resource "alicloud_log_ingestion" "example" {
-  project         =  alicloud_log_project.example.name
-  logstore        =  alicloud_log_store.example.name
-  ingestion_name  =  "ingestion_name"
-  display_name    =  "display_name"
-  description     =  "oss2sls"
-  interval        =  "30m"
-  run_immediately =  true
-  time_zone       =  "+0800"
-  source          =  <<DEFINITION
+  project         = alicloud_log_project.example.name
+  logstore        = alicloud_log_store.example.name
+  ingestion_name  = "ingestion_name"
+  display_name    = "display_name"
+  description     = "oss2sls"
+  interval        = "30m"
+  run_immediately = true
+  time_zone       = "+0800"
+  source          = <<DEFINITION
         {
           "bucket": "bucket_name",
           "compressionCodec": "none",

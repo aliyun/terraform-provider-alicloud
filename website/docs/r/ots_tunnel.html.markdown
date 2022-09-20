@@ -55,9 +55,9 @@ resource "alicloud_ots_table" "foo" {
 
 resource "alicloud_ots_tunnel" "foo" {
   instance_name = alicloud_ots_instance.foo.name
-  table_name = alicloud_ots_table.foo.table_name
-  tunnel_name = var.name
-  tunnel_type = "BaseAndStream"
+  table_name    = alicloud_ots_table.foo.table_name
+  tunnel_name   = var.name
+  tunnel_type   = "BaseAndStream"
 }
 ```
 

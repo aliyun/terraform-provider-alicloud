@@ -28,7 +28,7 @@ resource "alicloud_cen_instance" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = "test_name"
+  vpc_name   = "test_name"
   cidr_block = "172.16.0.0/12"
 }
 
