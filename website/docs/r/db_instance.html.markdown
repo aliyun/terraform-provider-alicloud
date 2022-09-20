@@ -220,7 +220,10 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 The following arguments are supported:
 
 * `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
-* `engine_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
+
+-> **NOTE:**
+- Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
+* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
     - [5, 2000] for MySQL/PostgreSQL/PPAS HA dual node edition;
@@ -414,6 +417,12 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 -> **NOTE:** This parameter takes effect only when you create an ApsaraDB RDS for PostgreSQL instance. For more information, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
+
+
+-> **NOTE:** This parameter applies only to ApsaraDB RDS for MySQL instances. For more information about Upgrade the major engine version of an ApsaraDB RDS for MySQL instance, see [Upgrade the major engine version of an RDS instance in the ApsaraDB RDS console](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/upgrade-the-major-engine-version-of-an-apsaradb-rds-for-mysql-instance-1).
+* `effective_time` - (Optional, Available in 1.191.0+) The method to update the engine version.  Default value: Immediate. Valid values:
+  - Immediate: The change immediately takes effect.
+  - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
 #### Block pg_hba_conf
 

@@ -535,7 +535,7 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
-					"engine_version":           "8.0",
+					"engine_version":           "5.7",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"instance_charge_type":     "Postpaid",
@@ -551,9 +551,19 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                   "MySQL",
-						"engine_version":           "8.0",
 						"db_instance_storage_type": "local_ssd",
 						"category":                 "HighAvailability",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "8.0",
+					"effective_time": "Immediate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "8.0",
 					}),
 				),
 			},
@@ -561,7 +571,7 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "effective_time"},
 			},
 		},
 	})
@@ -574,7 +584,7 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "MySQL"
-	engine_version = "8.0"
+	engine_version = "5.7"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "local_ssd"
@@ -583,7 +593,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
-	engine_version = "8.0"
+	engine_version = "5.7"
  	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
@@ -2104,7 +2114,7 @@ var instanceBasicMap = map[string]string{
 
 var instanceBasicMap2 = map[string]string{
 	"engine":               "MySQL",
-	"engine_version":       "8.0",
+	"engine_version":       "5.7",
 	"instance_type":        CHECKSET,
 	"instance_storage":     "5",
 	"instance_name":        "tf-testAccDBInstanceConfig_slave_zone",
