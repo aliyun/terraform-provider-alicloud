@@ -49,7 +49,6 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type: schema.TypeString,
 				// Remove this limitation and refer to https://www.alibabacloud.com/help/doc-detail/26228.htm each time
 				//ValidateFunc: validateAllowedStringValue([]string{"5.5", "5.6", "5.7", "2008r2", "2012", "9.4", "9.3", "10.0"}),
-				ForceNew: true,
 				Required: true,
 			},
 			"instance_type": {
@@ -509,6 +508,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
 			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Immediate", "MaintainTime"}, false),
+			},
 		},
 	}
 }
@@ -762,6 +766,41 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("auto_upgrade_minor_version")
+	}
+
+	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(MySQL) {
+		action := "UpgradeDBInstanceEngineVersion"
+		request := map[string]interface{}{
+			"RegionId":      client.SourceIp,
+			"DBInstanceId":  d.Id(),
+			"EngineVersion": d.Get("engine_version"),
+			"EffectiveTime": d.Get("effective_time"),
+			"ClientToken":   buildClientToken(action),
+			"SourceIp":      client.SourceIp,
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		d.SetPartial("engine_version")
+		d.SetPartial("effective_time")
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	if d.HasChange("security_ip_mode") && d.Get("security_ip_mode").(string) == SafetyMode {
