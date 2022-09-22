@@ -130,6 +130,7 @@ The following arguments are supported:
 * `instance_concurrency` - (Optional, available in 1.96.0+) The maximum number of requests can be executed concurrently within the single function instance.
 * `ca_port` - (Optional, available in 1.96.0+) The port that the function listen to, only valid for [custom runtime](https://www.alibabacloud.com/help/doc-detail/132044.htm) and [custom container runtime](https://www.alibabacloud.com/help/doc-detail/179368.htm).
 * `custom_container_config` - (Optional, available in 1.96.0+) The configuration for custom container runtime.
+* `layers` - (Optional, available in 1.187.0+) The configuration for layers.
 
 #### Block custom_container_config
 

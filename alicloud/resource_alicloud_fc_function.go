@@ -151,6 +151,11 @@ func resourceAlicloudFCFunction() *schema.Resource {
 					},
 				},
 			},
+			"layers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -216,6 +221,10 @@ func resourceAlicloudFCFunctionCreate(d *schema.ResourceData, meta interface{}) 
 	if !strings.EqualFold(*object.Runtime, "python2.7") && !strings.EqualFold(*object.Runtime, "python3") {
 		object.InstanceConcurrency = Int32Pointer(int32(d.Get("instance_concurrency").(int)))
 	}
+	if layers, ok := d.GetOk("layers"); ok {
+		object.Layers = expandStringList(layers.([]interface{}))
+	}
+
 	request.FunctionCreateObject = object
 
 	var function *fc.CreateFunctionOutput
@@ -281,6 +290,7 @@ func resourceAlicloudFCFunctionRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_concurrency", object.InstanceConcurrency)
 	d.Set("instance_type", object.InstanceType)
 	d.Set("ca_port", object.CAPort)
+	d.Set("layers", object.Layers)
 	var customContainerConfig []map[string]interface{}
 	if object.CustomContainerConfig != nil {
 		customContainerConfig = append(customContainerConfig, map[string]interface{}{
@@ -364,6 +374,14 @@ func resourceAlicloudFCFunctionUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		request.CustomContainerConfig = config
+	}
+	if d.HasChange("layers") {
+		update = true
+		if layers, ok := d.GetOk("layers"); ok {
+			request.Layers = expandStringList(layers.([]interface{}))
+		} else {
+			request.Layers = make([]string, 0, 0)
+		}
 	}
 
 	if update {
