@@ -231,6 +231,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 		request["Period"] = v
 	}
 	request["ProductCode"] = "bastionhost"
+	request["ProductType"] = "bastionhost"
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "RegionId",
 		"Value": client.RegionId,

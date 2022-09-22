@@ -143,6 +143,7 @@ func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]s
 	request.InstanceId = d.Id()
 
 	request.ProductCode = "bastionhost"
+	request.ProductType = "bastionhost"
 	request.SubscriptionType = "Subscription"
 	// only support upgrade
 	request.ModifyType = "Upgrade"
