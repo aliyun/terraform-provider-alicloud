@@ -767,6 +767,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_listeners":                                dataSourceAlicloudNlbListeners(),
 			"alicloud_nlb_server_group_server_attachments":          dataSourceAlicloudNlbServerGroupServerAttachments(),
 			"alicloud_bp_studio_applications":                       dataSourceAlicloudBpStudioApplications(),
+			"alicloud_event_bridge_event_streamings":                dataSourceAlicloudEventBridgeEventStreamings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1428,6 +1429,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_listener":                                         resourceAlicloudNlbListener(),
 			"alicloud_nlb_server_group_server_attachment":                   resourceAlicloudNlbServerGroupServerAttachment(),
 			"alicloud_bp_studio_application":                                resourceAlicloudBpStudioApplication(),
+			"alicloud_event_bridge_event_streaming":                         resourceAlicloudEventBridgeEventStreaming(),
 		},
 
 		ConfigureFunc: providerConfigure,

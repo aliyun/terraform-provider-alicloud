@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -243,4 +245,66 @@ func (s *EventbridgeService) DescribeEventBridgeEventSource(id string) (object m
 		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge", id)), NotFoundWithResponse, response)
 	}
 	return
+}
+
+func (s *EventbridgeService) DescribeEventBridgeEventStreaming(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewEventbridgeClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"EventStreamingName": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetEventStreaming"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventStreamingNotExisted"}) {
+		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:EventStreaming", id)), NotFoundMsg, ProviderERROR)
+	}
+	if v, ok := response["Success"]; !ok || fmt.Sprint(v) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *EventbridgeService) EventBridgeEventStreamingStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEventBridgeEventStreaming(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }
