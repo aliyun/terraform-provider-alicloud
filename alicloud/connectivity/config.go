@@ -173,6 +173,7 @@ type Config struct {
 	CbsEndpoint                 string
 	NlbEndpoint                 string
 	VpcpeerEndpoint             string
+	EbsEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
