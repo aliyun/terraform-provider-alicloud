@@ -744,6 +744,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pools":                 dataSourceAlicloudVpcPublicIpAddressPools(),
 			"alicloud_nlb_server_groups":                           dataSourceAlicloudNlbServerGroups(),
 			"alicloud_vpc_peer_connections":                        dataSourceAlicloudVpcPeerConnections(),
+			"alicloud_ebs_regions":                                 dataSourceAlicloudEbsRegions(),
+			"alicloud_ebs_disk_replica_groups":                     dataSourceAlicloudEbsDiskReplicaGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1381,6 +1383,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_server_group":                                     resourceAlicloudNlbServerGroup(),
 			"alicloud_vpc_peer_connection":                                  resourceAlicloudVpcPeerConnection(),
 			"alicloud_ga_access_log":                                        resourceAlicloudGaAccessLog(),
+			"alicloud_ebs_disk_replica_group":                               resourceAlicloudEbsDiskReplicaGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1610,6 +1613,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CbsEndpoint = strings.TrimSpace(endpoints["cbs"].(string))
 		config.NlbEndpoint = strings.TrimSpace(endpoints["nlb"].(string))
 		config.VpcpeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
+		config.EbsEndpoint = strings.TrimSpace(endpoints["ebs"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -1943,6 +1947,8 @@ func init() {
 		"nlb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom nlb endpoints.",
 
 		"vpcpeer_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom vpcpeer endpoints.",
+
+		"ebs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ebs endpoints.",
 	}
 }
 
@@ -1987,6 +1993,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"ebs": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["ebs_endpoint"],
+				},
+
 				"nlb": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2890,6 +2903,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cbs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["nlb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ebs"].(string)))
 	return hashcode.String(buf.String())
 }
 
