@@ -20,6 +20,11 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"account_name_prefix": {
 				Type:     schema.TypeString,
@@ -35,6 +40,18 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"payer_account_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"abandon_able_check_id": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"tags": tagsSchema(),
 			"join_method": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -46,11 +63,6 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 			"modify_time": {
 				Type:     schema.TypeString,
 				Computed: true,
-			},
-			"payer_account_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 			"resource_directory_id": {
 				Type:     schema.TypeString,
@@ -64,7 +76,6 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"tags": tagsSchema(),
 		},
 	}
 }
@@ -90,7 +101,7 @@ func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta i
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -170,7 +181,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 		request["DestinationFolderId"] = d.Get("folder_id")
 		action := "MoveAccount"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -198,7 +209,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 	if update {
 		action := "UpdateAccount"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -220,6 +231,39 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 }
 
 func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudResourceManagerAccount. Terraform will remove this resource from the state file, however resources may remain.")
+	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteAccount"
+	var response map[string]interface{}
+	conn, err := client.NewResourcemanagerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"AccountId": d.Id(),
+	}
+
+	if v, ok := d.GetOk("abandon_able_check_id"); ok {
+		request["AbandonableCheckId"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
 	return nil
 }
