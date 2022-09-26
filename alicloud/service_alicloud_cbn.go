@@ -1317,3 +1317,57 @@ func (s *CbnService) CenTransitRouterVpnAttachmentStateRefreshFunc(id string, fa
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *CbnService) DescribeCenTransitRouterGrantAttachment(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ResourceId":  parts[1],
+		"ProductType": parts[0],
+		"RegionId":    s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeGrantRulesToResource"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.GrantRules", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GrantRules", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterGrantAttachment", id)), NotFoundWithResponse, response)
+	} else {
+		for _, vv := range v.([]interface{}) {
+			item := vv.(map[string]interface{})
+			if fmt.Sprint(item["CenId"]) == parts[3] && fmt.Sprint(item["CenOwnerId"]) == parts[2] {
+				return item, nil
+			}
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterGrantAttachment", id)), NotFoundWithResponse, response)
+}
