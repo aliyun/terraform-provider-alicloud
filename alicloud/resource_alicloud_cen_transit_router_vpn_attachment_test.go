@@ -155,6 +155,7 @@ data "alicloud_cen_transit_router_available_resources" "default" {
 }
 `, name)
 }
+
 func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vpn_attachment.default"
