@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudVpcPublicIpAddressPools() *schema.Resource {
+func dataSourceAlicloudVpcPeerConnections() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudVpcPublicIpAddressPoolsRead,
+		Read: dataSourceAlicloudVpcPeerConnectionsRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -30,80 +30,49 @@ func dataSourceAlicloudVpcPublicIpAddressPools() *schema.Resource {
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
-			"public_ip_address_pool_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"public_ip_address_pool_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"isp": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud"}, false),
-			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Created", "Deleting", "Modifying"}, false),
-			},
-			"output_file": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"names": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
 			},
-			"pools": {
+			"peer_connection_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Accepting", "Activated", "Creating", "Deleted", "Deleting", "Expired", "Rejected", "Updating"}, false),
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"connections": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"public_ip_address_pool_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"public_ip_address_pool_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"isp": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"description": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"region_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"user_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"total_ip_num": {
+						"accepting_ali_uid": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
-						"used_ip_num": {
+						"accepting_region_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"accepting_vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"bandwidth": {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
@@ -111,8 +80,28 @@ func dataSourceAlicloudVpcPublicIpAddressPools() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"ip_address_remaining": {
-							Type:     schema.TypeBool,
+						"description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"peer_connection_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"peer_connection_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 					},
@@ -122,33 +111,27 @@ func dataSourceAlicloudVpcPublicIpAddressPools() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudVpcPeerConnectionsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "ListPublicIpAddressPools"
+	action := "ListVpcPeerConnections"
 	request := make(map[string]interface{})
-	request["RegionId"] = client.RegionId
-	request["MaxResults"] = PageSizeLarge
-	if v, ok := d.GetOk("public_ip_address_pool_ids"); ok {
-		request["PublicIpAddressPoolIds"] = v
-	}
-	if v, ok := d.GetOk("public_ip_address_pool_name"); ok {
+	if v, ok := d.GetOk("peer_connection_name"); ok {
 		request["Name"] = v
 	}
-	if v, ok := d.GetOk("isp"); ok {
-		request["Isp"] = v
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
 	}
-	if v, ok := d.GetOk("status"); ok {
-		request["Status"] = v
-	}
+	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
-	var publicIpAddressPoolNameRegex *regexp.Regexp
+	var peerConnectionNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
 		r, err := regexp.Compile(v.(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		publicIpAddressPoolNameRegex = r
+		peerConnectionNameRegex = r
 	}
 
 	idsMap := make(map[string]string)
@@ -160,8 +143,9 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+	status, statusOk := d.GetOk("status")
 	var response map[string]interface{}
-	conn, err := client.NewVpcClient()
+	conn, err := client.NewVpcpeerClient()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -170,7 +154,7 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -182,22 +166,25 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_public_ip_address_pools", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_peer_connections", action, AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.PublicIpAddressPoolList", response)
-		if formatInt(response["TotalCount"]) != 0 && err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PublicIpAddressPoolList", response)
+		resp, err := jsonpath.Get("$.VpcPeerConnects", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VpcPeerConnects", response)
 		}
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if publicIpAddressPoolNameRegex != nil && !publicIpAddressPoolNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+			if peerConnectionNameRegex != nil && !peerConnectionNameRegex.MatchString(fmt.Sprint(item["Name"])) {
 				continue
 			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["PublicIpAddressPoolId"])]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["InstanceId"])]; !ok {
 					continue
 				}
+			}
+			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+				continue
 			}
 			objects = append(objects, item)
 		}
@@ -212,18 +199,17 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                          fmt.Sprint(object["PublicIpAddressPoolId"]),
-			"public_ip_address_pool_id":   fmt.Sprint(object["PublicIpAddressPoolId"]),
-			"public_ip_address_pool_name": object["Name"],
-			"isp":                         object["Isp"],
-			"description":                 object["Description"],
-			"status":                      object["Status"],
-			"region_id":                   object["RegionId"],
-			"user_type":                   object["UserType"],
-			"total_ip_num":                formatInt(object["TotalIpNum"]),
-			"used_ip_num":                 formatInt(object["UsedIpNum"]),
-			"create_time":                 object["CreationTime"],
-			"ip_address_remaining":        object["IpAddressRemaining"],
+			"accepting_ali_uid":    formatInt(object["AcceptingOwnerUid"]),
+			"accepting_region_id":  object["AcceptingRegionId"],
+			"accepting_vpc_id":     object["AcceptingVpc"].(map[string]interface{})["VpcId"],
+			"bandwidth":            formatInt(object["Bandwidth"]),
+			"create_time":          object["GmtCreate"],
+			"description":          object["Description"],
+			"id":                   fmt.Sprint(object["InstanceId"]),
+			"peer_connection_id":   fmt.Sprint(object["InstanceId"]),
+			"peer_connection_name": object["Name"],
+			"status":               object["Status"],
+			"vpc_id":               object["Vpc"].(map[string]interface{})["VpcId"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
@@ -239,10 +225,9 @@ func dataSourceAlicloudVpcPublicIpAddressPoolsRead(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 
-	if err := d.Set("pools", s); err != nil {
+	if err := d.Set("connections", s); err != nil {
 		return WrapError(err)
 	}
-
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

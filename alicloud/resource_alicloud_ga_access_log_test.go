@@ -7,31 +7,33 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/agiledragon/gomonkey/v2"
-	"github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDCDNWafPolicyDomainAttachment_basic0(t *testing.T) {
+func TestAccAlicloudGaAccessLog_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_dcdn_waf_policy_domain_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.DCDNSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudDCDNWafPolicyDomainAttachmentMap0)
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_access_log.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudGaAccessLogMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &DcdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDcdnWafPolicyDomainAttachment")
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAccessLog")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf_testaccdcdnwafpolicydomainattachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNWafPolicyDomainAttachmentBasicDependence0)
+	rand := acctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf-testacc%s-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAccessLogBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,13 +44,21 @@ func TestAccAlicloudDCDNWafPolicyDomainAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": "${alicloud_dcdn_waf_domain.default.domain_name}",
-					"policy_id":   "${alicloud_dcdn_waf_policy.default.id}",
+					"accelerator_id":     "${data.alicloud_ga_accelerators.default.accelerators.0.id}",
+					"listener_id":        "${alicloud_ga_listener.default.id}",
+					"endpoint_group_id":  "${alicloud_ga_endpoint_group.default.id}",
+					"sls_project_name":   "${alicloud_log_project.default.name}",
+					"sls_log_store_name": "${alicloud_log_store.default.name}",
+					"sls_region_id":      defaultRegionToTest,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name": CHECKSET,
-						"policy_id":   CHECKSET,
+						"accelerator_id":     CHECKSET,
+						"listener_id":        CHECKSET,
+						"endpoint_group_id":  CHECKSET,
+						"sls_project_name":   name,
+						"sls_log_store_name": name,
+						"sls_region_id":      defaultRegionToTest,
 					}),
 				),
 			},
@@ -61,50 +71,86 @@ func TestAccAlicloudDCDNWafPolicyDomainAttachment_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudDCDNWafPolicyDomainAttachmentMap0 = map[string]string{
-	"policy_id": CHECKSET,
+var resourceAlicloudGaAccessLogMap = map[string]string{
+	"status":             CHECKSET,
+	"accelerator_id":     CHECKSET,
+	"listener_id":        CHECKSET,
+	"endpoint_group_id":  CHECKSET,
+	"sls_project_name":   CHECKSET,
+	"sls_log_store_name": CHECKSET,
+	"sls_region_id":      CHECKSET,
 }
 
-func AlicloudDCDNWafPolicyDomainAttachmentBasicDependence0(name string) string {
-	rand := acctest.RandIntRange(10000, 99999)
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+func AlicloudGaAccessLogBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_ga_accelerators" "default" {
+  		status = "active"
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name = var.name
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project = alicloud_log_project.default.name
+  		name    = var.name
+	}
+
+	resource "alicloud_ga_bandwidth_package" "default" {
+		bandwidth      = 100
+  		type           = "Basic"
+  		bandwidth_type = "Basic"
+  		payment_type   = "PayAsYouGo"
+  		billing_type   = "PayBy95"
+  		ratio          = 30
+	}
+
+	resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  		accelerator_id       = data.alicloud_ga_accelerators.default.accelerators.0.id
+  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	}
+
+	resource "alicloud_ga_listener" "default" {
+  		accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  		port_ranges {
+    		from_port = 80
+    		to_port   = 80
+  		}
+	}
+
+	resource "alicloud_eip_address" "default" {
+  		payment_type = "PayAsYouGo"
+	}
+
+	resource "alicloud_ga_endpoint_group" "default" {
+  		accelerator_id = alicloud_ga_listener.default.accelerator_id
+		endpoint_configurations {
+			endpoint = alicloud_eip_address.default.ip_address
+			type     = "PublicIp"
+			weight   = 20
+		}
+  		endpoint_group_region = "%s"
+  		listener_id           = alicloud_ga_listener.default.id
+}
+`, name, defaultRegionToTest)
 }
 
-variable "domain_name" {	
-	default = "tf-testacc%d.xiaozhu.com"
-}
-resource "alicloud_dcdn_domain" "default" {
-  domain_name = var.domain_name
-  sources {
-    content = "1.1.1.1"
-    port = "80"
-    priority = "20"
-    type = "ipaddr"
-  }
-}
-resource "alicloud_dcdn_waf_domain" "default" {
-	domain_name = alicloud_dcdn_domain.default.domain_name
-	client_ip_tag = "X-Forwarded-For"
-}
-resource "alicloud_dcdn_waf_policy" "default" {
-	policy_type  =   "custom"
-	policy_name  =    var.name
-	defense_scene = "waf_group"
-	status =    "on"
-}
-`, name, rand)
-}
-
-func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
+func TestUnitAlicloudGaAccessLog(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(nil, nil)
+	dInit, _ := schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"domain_name": "CreateDcdnWafPolicyDomainAttachmentValue",
-		"policy_id":   "CreateDcdnWafPolicyDomainAttachmentValue",
+		"accelerator_id":     "CreateGaAccessLog",
+		"listener_id":        "CreateGaAccessLog",
+		"endpoint_group_id":  "CreateGaAccessLog",
+		"sls_project_name":   "CreateGaAccessLog",
+		"sls_log_store_name": "CreateGaAccessLog",
+		"sls_region_id":      "CreateGaAccessLog",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -124,11 +170,14 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
-		"Domains": []interface{}{
-			map[string]interface{}{
-				"DomainName": "CreateDcdnWafPolicyDomainAttachmentValue",
-			},
-		},
+		// DescribeLogStoreOfEndpointGroup
+		"AcceleratorId":   "CreateGaAccessLog",
+		"ListenerId":      "CreateGaAccessLog",
+		"EndpointGroupId": "CreateGaAccessLog",
+		"SlsProjectName":  "CreateGaAccessLog",
+		"SlsLogStoreName": "CreateGaAccessLog",
+		"SlsRegionId":     "CreateGaAccessLog",
+		"Status":          "on",
 	}
 	CreateMockResponse := map[string]interface{}{}
 	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
@@ -140,7 +189,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_dcdn_waf_policy_domain_attachment", errorCode))
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_ga_access_log", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -149,7 +198,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 		return ReadMockResponse, nil
 	}
 	// Create
-	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDcdnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGaplusClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -157,7 +206,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDcdnWafPolicyDomainAttachmentCreate(dInit, rawClient)
+	err = resourceAlicloudGaAccessLogCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -165,7 +214,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "ModifyDcdnWafPolicyDomains" {
+			if *action == "AttachLogStoreToEndpointGroup" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -180,14 +229,14 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDcdnWafPolicyDomainAttachmentCreate(dInit, rawClient)
+		err := resourceAlicloudGaAccessLogCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -200,16 +249,16 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 
 	// Read
 	attributesDiff := map[string]interface{}{}
-	diff, err := newInstanceDiff("alicloud_dcdn_waf_policy_domain_attachment", attributes, attributesDiff, dInit.State())
+	diff, err := newInstanceDiff("alicloud_ga_access_log", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DescribeDcdnWafPolicyDomains" {
+			if *action == "DescribeLogStoreOfEndpointGroup" {
 				switch errorCode {
 				case "{}":
 					return notFoundResponseMock(errorCode)
@@ -225,7 +274,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDcdnWafPolicyDomainAttachmentRead(dExisted, rawClient)
+		err := resourceAlicloudGaAccessLogRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -236,7 +285,7 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 	}
 
 	// Delete
-	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewDcdnClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGaplusClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
 		return nil, &tea.SDKError{
 			Code:       String("loadEndpoint error"),
 			Data:       String("loadEndpoint error"),
@@ -244,20 +293,15 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDcdnWafPolicyDomainAttachmentDelete(dExisted, rawClient)
+	dExisted, _ = schema.InternalMap(p["alicloud_ga_access_log"].Schema).Data(dInit.State(), diff)
+	err = resourceAlicloudGaAccessLogDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
-	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_dcdn_waf_policy_domain_attachment", attributes, attributesDiff, dInit.State())
-	if err != nil {
-		t.Error(err)
-	}
-	dExisted, _ = schema.InternalMap(p["alicloud_dcdn_waf_policy_domain_attachment"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "ModifyDcdnWafPolicyDomains" {
+			if *action == "DetachLogStoreFromEndpointGroup" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -270,9 +314,12 @@ func TestUnitAccAlicloudDcdnWafPolicyDomainAttachment(t *testing.T) {
 					return failedResponseMock(errorCodes[retryIndex])
 				}
 			}
+			if *action == "DescribeLogStoreOfEndpointGroup" {
+				return notFoundResponseMock("{}")
+			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDcdnWafPolicyDomainAttachmentDelete(dExisted, rawClient)
+		err := resourceAlicloudGaAccessLogDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
