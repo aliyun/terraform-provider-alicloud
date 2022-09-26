@@ -204,7 +204,7 @@ type Schedule struct {
 
 type AlertConfiguration struct {
 	Condition        string          `json:"condition"`
-	MuteUntil        int64           `json:"muteUntil"`
+	MuteUntil        int64           `json:"muteUntil,omitempty"`
 	NotificationList []*Notification `json:"notificationList"`
 	NotifyThreshold  int32           `json:"notifyThreshold"`
 	Throttling       string          `json:"throttling"`
@@ -229,7 +229,7 @@ type AlertConfiguration struct {
 	PolicyConfiguration PolicyConfiguration `json:"policyConfiguration"`
 	AutoAnnotation      bool                `json:"autoAnnotation"`
 
-	Tags []string `json:"tags"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 func (c *Client) CreateSavedSearch(project string, savedSearch *SavedSearch) error {
