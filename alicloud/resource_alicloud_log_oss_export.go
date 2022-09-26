@@ -326,7 +326,7 @@ func buildOSSExport(d *schema.ResourceData) *sls.Export {
 	}
 	roleArn := ""
 	if v, ok := d.GetOk("role_arn"); ok {
-		roleArn := v.(string)
+		roleArn = v.(string)
 		ossExportConfig.RoleArn = roleArn
 	}
 	if v, ok := d.GetOk("prefix"); ok {

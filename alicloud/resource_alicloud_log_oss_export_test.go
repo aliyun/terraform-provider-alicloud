@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudLogOssExport_basic(t *testing.T) {
-	var v *sls.Shipper
+	var v *sls.Export
 	resourceId := "alicloud_log_oss_export.default"
 	ra := resourceAttrInit(resourceId, logOssExportMap)
 	serviceFunc := func() interface{} {
@@ -98,7 +98,7 @@ func TestAccAlicloudLogOssExport_basic(t *testing.T) {
 }
 
 func TestAccAlicloudLogOssExport_parquest(t *testing.T) {
-	var v *sls.Shipper
+	var v *sls.Export
 	resourceId := "alicloud_log_oss_export.default"
 	ra := resourceAttrInit(resourceId, logOssExportMap)
 	serviceFunc := func() interface{} {
@@ -188,7 +188,7 @@ func TestAccAlicloudLogOssExport_parquest(t *testing.T) {
 }
 
 func TestAccAlicloudLogOssExport_csv(t *testing.T) {
-	var v *sls.Shipper
+	var v *sls.Export
 	resourceId := "alicloud_log_oss_export.default"
 	ra := resourceAttrInit(resourceId, logOssExportMap)
 	serviceFunc := func() interface{} {
