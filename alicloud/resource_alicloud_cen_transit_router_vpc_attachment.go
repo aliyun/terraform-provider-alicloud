@@ -176,7 +176,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.VpcOrVswitch"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "InstanceStatus.NotSupport", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -279,7 +279,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.VpcOrVswitch"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.Vpc", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -336,7 +336,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, updateZonesRequest, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.VpcOrVswitch"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.Vpc", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -384,7 +384,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.VpcOrVswitch"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "InstanceStatus.NotSupport", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
