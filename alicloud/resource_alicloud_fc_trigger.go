@@ -115,7 +115,11 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{fc.TRIGGER_TYPE_HTTP, fc.TRIGGER_TYPE_LOG, fc.TRIGGER_TYPE_OSS, fc.TRIGGER_TYPE_TIMER, fc.TRIGGER_TYPE_MNS_TOPIC, fc.TRIGGER_TYPE_CDN_EVENTS, fc.TRIGGER_TYPE_EVENTBRIDGE}, false),
 			},
-
+			"qualifier": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "LATEST",
+			},
 			"last_modified": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -172,6 +176,11 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	if d.Get("type").(string) == fc.TRIGGER_TYPE_EVENTBRIDGE {
 		request.WithHeader(HeaderEnableEBTrigger, "enable")
 	}
+	if d.Get("type").(string) == fc.TRIGGER_TYPE_HTTP {
+		if v, ok := d.GetOk("qualifier"); ok && v.(string) != "" {
+			object.Qualifier = StringPointer(v.(string))
+		}
+	}
 	var response *fc.CreateTriggerOutput
 	var requestInfo *fc.Client
 	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
@@ -221,6 +230,7 @@ func resourceAlicloudFCTriggerRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("trigger_id", trigger.TriggerID)
 	d.Set("role", trigger.InvocationRole)
 	d.Set("source_arn", trigger.SourceARN)
+	d.Set("qualifier", trigger.Qualifier)
 
 	data, err := trigger.RawTriggerConfig.MarshalJSON()
 	if err != nil {
@@ -261,6 +271,9 @@ func resourceAlicloudFCTriggerUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		updateInput.TriggerConfig = config
+	}
+	if d.HasChange("qualifier") {
+		updateInput.Qualifier = StringPointer(d.Get("qualifier").(string))
 	}
 
 	if updateInput != nil {
