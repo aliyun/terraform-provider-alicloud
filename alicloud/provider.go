@@ -1395,6 +1395,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_security_policy":                                  resourceAlicloudNlbSecurityPolicy(),
 			"alicloud_vod_editing_project":                                  resourceAlicloudVodEditingProject(),
 			"alicloud_api_gateway_model":                                    resourceAlicloudApiGatewayModel(),
+			"alicloud_cen_transit_router_grant_attachment":                  resourceAlicloudCenTransitRouterGrantAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
