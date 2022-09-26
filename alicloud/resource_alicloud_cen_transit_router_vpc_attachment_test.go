@@ -275,6 +275,7 @@ resource "alicloud_cen_transit_router" "default" {
 data "alicloud_account" "default" {}
 `, name)
 }
+
 func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_vpc_attachment"].Schema).Data(nil, nil)
