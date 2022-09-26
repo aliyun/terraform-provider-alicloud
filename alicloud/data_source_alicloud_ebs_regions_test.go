@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
 
@@ -10,7 +11,7 @@ import (
 
 func TestAccAlicloudEbsRegionsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-
+	checkoutSupportedRegions(t, true, connectivity.EBSSupportRegions)
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEbsRegionsSourceConfig(rand, map[string]string{}),
 		fakeConfig:  "",
