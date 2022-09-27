@@ -242,6 +242,7 @@ const DefaultIntervalMedium = 10
 const DefaultIntervalLong = 20
 
 const (
+	PageNumSmall   = 1
 	PageSizeSmall  = 10
 	PageSizeMedium = 20
 	PageSizeLarge  = 50
