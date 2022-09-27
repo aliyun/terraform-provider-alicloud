@@ -4427,7 +4427,7 @@ func (client *AliyunClient) NewVpcpeerClient() (*rpc.Client, error) {
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "vpcpeer-openapi-share.aliyuncs.com"
+			endpoint = "vpcpeer.aliyuncs.com"
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
