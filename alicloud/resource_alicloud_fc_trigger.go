@@ -171,15 +171,13 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
 		object.SourceARN = StringPointer(v.(string))
 	}
+	if v, ok := d.GetOk("qualifier"); ok && v.(string) != "" {
+		object.Qualifier = StringPointer(v.(string))
+	}
 	request := fc.NewCreateTriggerInput(serviceName, fcName)
 	request.TriggerCreateObject = object
 	if d.Get("type").(string) == fc.TRIGGER_TYPE_EVENTBRIDGE {
 		request.WithHeader(HeaderEnableEBTrigger, "enable")
-	}
-	if d.Get("type").(string) == fc.TRIGGER_TYPE_HTTP {
-		if v, ok := d.GetOk("qualifier"); ok && v.(string) != "" {
-			object.Qualifier = StringPointer(v.(string))
-		}
 	}
 	var response *fc.CreateTriggerOutput
 	var requestInfo *fc.Client
