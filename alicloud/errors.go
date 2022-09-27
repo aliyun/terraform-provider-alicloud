@@ -54,6 +54,8 @@ var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupporte
 var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy", "OTSPartitionUnavailable", "OTSInternalServerError",
 	"OTSTimeout", "OTSServerUnavailable", "OTSRowOperationConflict", "OTSTableNotReady", "OTSNotEnoughCapacityUnit", "Too frequent table operations."}
 
+var OtsTunnelIsTemporarilyUnavailable = []string{"no such host", "OTSTunnelServerUnavailable"}
+
 // An Error represents a custom error for Terraform failure response
 type ProviderError struct {
 	errorCode string

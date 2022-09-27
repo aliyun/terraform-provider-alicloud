@@ -91,10 +91,9 @@ func resourceAlicloudActiontrailTrail() *schema.Resource {
 				ConflictsWith: []string{"trail_name"},
 			},
 			"trail_region": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"All", "cn-beijing", "cn-hangzhou"}, false),
-				Default:      "All",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}

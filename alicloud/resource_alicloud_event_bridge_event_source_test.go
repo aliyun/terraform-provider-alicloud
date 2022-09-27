@@ -151,7 +151,7 @@ resource "alicloud_mns_queue" "queue2" {
 `, name)
 }
 
-func TestAccAlicloudEventBridgeEventSource_unit(t *testing.T) {
+func TestUnitAlicloudEventBridgeEventSource(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_event_source"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_event_source"].Schema).Data(nil, nil)

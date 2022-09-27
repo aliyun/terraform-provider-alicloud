@@ -129,6 +129,9 @@ func resourceAlicloudNasFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -167,10 +170,6 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	var response map[string]interface{}
-	request := map[string]interface{}{
-		"RegionId":     client.RegionId,
-		"FileSystemId": d.Id(),
-	}
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -180,11 +179,19 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("tags")
 	}
 
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudNasFileSystemRead(d, meta)
+	}
 	if d.HasChange("description") {
-		request["Description"] = d.Get("description")
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"FileSystemId": d.Id(),
+			"Description":  d.Get("description"),
+		}
 		action := "ModifyFileSystem"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
@@ -200,6 +207,35 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("description")
+	}
+	if d.HasChange("capacity") {
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"FileSystemId": d.Id(),
+			"Capacity":     d.Get("capacity"),
+		}
+		action := "UpgradeFileSystem"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Second, nasService.DescribeNasFileSystemStateRefreshFunc(d.Id(), "Pending", []string{"Stopped", "Stopping", "Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("capacity")
 	}
 	d.Partial(false)
 	return resourceAlicloudNasFileSystemRead(d, meta)

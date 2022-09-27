@@ -9,6 +9,9 @@ description: |-
 
 # alicloud\_config\_delivery\_channels
 
+-> **DEPRECATED:**  This resource is based on Config's old version OpenAPI, and it has been deprecated from version `1.173.0`.
+Please use new datasource [alicloud_config_deliveries](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/config_deliveries) instead.
+
 This data source provides the Config Delivery Channels of the current Alibaba Cloud user.
 
 -> **NOTE:**  Available in 1.99.0+.

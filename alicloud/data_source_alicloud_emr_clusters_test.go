@@ -137,12 +137,12 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
-			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vpc_id":         `"${alicloud_vpc.default.id}"`,
 			"enable_details": "true",
 		}),
 		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
-			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"vpc_id":         `"${alicloud_vpc.default.id}_fake"`,
 			"enable_details": "true",
 		}),
 	}
@@ -172,7 +172,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 			"status_list":       `["CREATING","IDLE"]`,
 			"default_status":    `"true"`,
 			"is_desc":           `"false"`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"enable_details":    "true",
 			"page_number":       `1`,
 		}),
@@ -184,7 +184,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 			"machine_type":      `"DOCKER"`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 			"status_list":       `["ABNORMAL","RELEASING"]`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}_fake"`,
 			"enable_details":    "true",
 			"page_number":       `2`,
 		}),
@@ -214,7 +214,7 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 			"clusters.0.expired_time":                                   CHECKSET,
 			"clusters.0.extra_info":                                     CHECKSET,
 			"clusters.0.high_availability_enable":                       CHECKSET,
-			"clusters.0.host_group_list.#":                              "3",
+			"clusters.0.host_group_list.#":                              "2",
 			"clusters.0.host_group_list.0.band_width":                   "",
 			"clusters.0.host_group_list.0.charge_type":                  CHECKSET,
 			"clusters.0.host_group_list.0.cpu_core":                     CHECKSET,
@@ -239,7 +239,6 @@ func TestAccAlicloudEmrClustersDataSource(t *testing.T) {
 			"clusters.0.host_group_list.0.nodes.0.expired_time":         CHECKSET,
 			"clusters.0.host_group_list.0.nodes.0.inner_ip":             CHECKSET,
 			"clusters.0.host_group_list.0.nodes.0.instance_id":          CHECKSET,
-			"clusters.0.host_group_list.0.nodes.0.pub_ip":               CHECKSET,
 			"clusters.0.host_group_list.0.nodes.0.status":               CHECKSET,
 			"clusters.0.host_group_list.0.nodes.0.support_ipv6":         CHECKSET,
 			"clusters.0.host_group_list.0.nodes.0.zone_id":              CHECKSET,
@@ -421,12 +420,12 @@ func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
-			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vpc_id":         `"${alicloud_vpc.default.id}"`,
 			"enable_details": "false",
 		}),
 		fakeConfig: testAccCheckAlicloudEmrClustersDataSourceName(rand, map[string]string{
 			"ids":            `["${alicloud_emr_cluster.default.id}"]`,
-			"vpc_id":         `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"vpc_id":         `"${alicloud_vpc.default.id}_fake"`,
 			"enable_details": "false",
 		}),
 	}
@@ -456,7 +455,7 @@ func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
 			"status_list":       `["CREATING","IDLE"]`,
 			"default_status":    `"true"`,
 			"is_desc":           `"false"`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
 			"enable_details":    "false",
 			"page_number":       `1`,
 		}),
@@ -468,7 +467,7 @@ func TestAccAlicloudEmrClustersDataSource1(t *testing.T) {
 			"machine_type":      `"DOCKER"`,
 			"resource_group_id": `"${data.alicloud_resource_manager_resource_groups.default.ids.0}_fake"`,
 			"status_list":       `["ABNORMAL","RELEASING"]`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}_fake"`,
 			"enable_details":    "false",
 			"page_number":       `2`,
 		}),
@@ -531,11 +530,9 @@ data "alicloud_resource_manager_resource_groups" "default" {
       status = "OK"
 }
 
-data "alicloud_emr_main_versions" "default" {}
-
 data "alicloud_emr_instance_types" "default" {
   destination_resource  = "InstanceType"
-  cluster_type          = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+  cluster_type          = "HADOOP"
   support_local_storage = false
   instance_charge_type  = "PostPaid"
   support_node_type     = ["MASTER", "CORE", "TASK"]
@@ -543,7 +540,7 @@ data "alicloud_emr_instance_types" "default" {
 
 data "alicloud_emr_disk_types" "data_disk" {
   destination_resource = "DataDisk"
-  cluster_type         = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+  cluster_type         = "HADOOP"
   instance_charge_type = "PostPaid"
   instance_type        = data.alicloud_emr_instance_types.default.types.0.id
   zone_id              = data.alicloud_emr_instance_types.default.types.0.zone_id
@@ -551,25 +548,27 @@ data "alicloud_emr_disk_types" "data_disk" {
 
 data "alicloud_emr_disk_types" "system_disk" {
   destination_resource = "SystemDisk"
-  cluster_type         = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+  cluster_type         = "HADOOP"
   instance_charge_type = "PostPaid"
   instance_type        = data.alicloud_emr_instance_types.default.types.0.id
   zone_id              = data.alicloud_emr_instance_types.default.types.0.zone_id
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+  vswitch_name = "${var.name}"
+}
+
 resource "alicloud_security_group" "default" {
     name = "${var.name}"
-    vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-
-data "alicloud_vpcs" "default" {
- name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_emr_instance_types.default.types.0.zone_id
+    vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_ram_role" "default" {
@@ -598,9 +597,9 @@ resource "alicloud_ram_role" "default" {
 resource "alicloud_emr_cluster" "default" {
   name = var.name
 
-  emr_ver = data.alicloud_emr_main_versions.default.main_versions.0.emr_version
+  emr_ver = "EMR-3.24.0"
 
-  cluster_type = data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0
+  cluster_type = "HADOOP"
 
   host_group {
     host_group_name   = "master_group"
@@ -626,24 +625,13 @@ resource "alicloud_emr_cluster" "default" {
     sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
   }
 
-  host_group {
-    host_group_name   = "task_group"
-    host_group_type   = "TASK"
-    node_count        = "2"
-    instance_type     = data.alicloud_emr_instance_types.default.types.0.id
-    disk_type         = data.alicloud_emr_disk_types.data_disk.types.0.value
-    disk_capacity     = data.alicloud_emr_disk_types.data_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.data_disk.types.0.min : 160
-    disk_count        = "4"
-    sys_disk_type     = data.alicloud_emr_disk_types.system_disk.types.0.value
-    sys_disk_capacity = data.alicloud_emr_disk_types.system_disk.types.0.min > 160 ? data.alicloud_emr_disk_types.system_disk.types.0.min : 160
-  }
-
+  meta_store_type           = "local"
   high_availability_enable  = true
   zone_id                   = data.alicloud_emr_instance_types.default.types.0.zone_id
   security_group_id         = alicloud_security_group.default.id
   is_open_public_ip         = true
   charge_type               = "PostPaid"
-  vswitch_id                = data.alicloud_vswitches.default.ids.0
+  vswitch_id                = "${alicloud_vswitch.default.id}"
   user_defined_emr_ecs_role = alicloud_ram_role.default.name
   ssh_enable                = true
   master_pwd                = "ABCtest1234!"

@@ -49,7 +49,7 @@ The following arguments are supported:
 
 * `resource_id` - (Required, ForceNew) The resource ID need shared.
 * `resource_share_id` - (Required, ForceNew) The resource share ID of resource manager.
-* `resource_type` - (Required, ForceNew) The resource type of should shared, valid value `VSwitch`.
+* `resource_type` - (Required, ForceNew) The resource type of should shared, valid value `VSwitch`. The following types are added after v1.173.0: `ROSTemplate` and `ServiceCatalogPortfolio`.
 
 ## Attributes Reference
 

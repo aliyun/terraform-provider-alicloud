@@ -73,6 +73,22 @@ The following arguments are supported:
 * `proxy_protocol` - (Optional) The proxy protocol of the listener. Default value is `false`. Valid value:
     `true`: Turn on the keep client source IP function. After it is turned on, the back-end service is supported to view the original IP address of the client. 
     `false`: keep client source IP function is not turned on.
+* `security_policy_id` - (Optional, Computed, Available in v1.183.0+) The ID of the security policy. **NOTE:** Only HTTPS listeners support this parameter. Valid values:
+    - `tls_cipher_policy_1_0`:
+      - Supported TLS versions: TLS 1.0, TLS 1.1, and TLS 1.2.
+      - Supported cipher suites: ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, AES128-GCM-SHA256, AES256-GCM-SHA384, AES128-SHA256, AES256-SHA256, ECDHE-RSA-AES128-SHA, ECDHE-RSA-AES256-SHA, AES128-SHA, AES256-SHA, and DES-CBC3-SHA.
+    - `tls_cipher_policy_1_1`:
+      - Supported TLS versions: TLS 1.1 and TLS 1.2.
+      - Supported cipher suites: ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, AES128-GCM-SHA256, AES256-GCM-SHA384, AES128-SHA256, AES256-SHA256, ECDHE-RSA-AES128-SHA, ECDHE-RSA-AES256-SHA, AES128-SHA, AES256-SHA, and DES-CBC3-SHA.
+    - `tls_cipher_policy_1_2`:
+      - Supported TLS version: TLS 1.2.
+      - Supported cipher suites: ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, AES128-GCM-SHA256, AES256-GCM-SHA384, AES128-SHA256, AES256-SHA256, ECDHE-RSA-AES128-SHA, ECDHE-RSA-AES256-SHA, AES128-SHA, AES256-SHA, and DES-CBC3-SHA.
+    - `tls_cipher_policy_1_2_strict`:
+      - Supported TLS version: TLS 1.2.
+      - Supported cipher suites: ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, ECDHE-RSA-AES128-SHA, and ECDHE-RSA-AES256-SHA.
+    - `tls_cipher_policy_1_2_strict_with_1_3`:
+      - Supported TLS versions: TLS 1.2 and TLS 1.3.
+      - Supported cipher suites: TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_AES_128_CCM_SHA256, TLS_AES_128_CCM_8_SHA256, ECDHE-ECDSA-AES128-GCM-SHA256, ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-ECDSA-AES128-SHA256, ECDHE-ECDSA-AES256-SHA384, ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, ECDHE-ECDSA-AES128-SHA, ECDHE-ECDSA-AES256-SHA, ECDHE-RSA-AES128-SHA, and ECDHE-RSA-AES256-SHA.
 
 #### Block port_ranges
 
@@ -99,8 +115,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Listener.
-* `delete` - (Defaults to 6 mins) Used when update the Listener.
-* `update` - (Defaults to 3 mins) Used when terminating the Listener.
+* `update` - (Defaults to 3 mins) Used when update the Listener.
+* `delete` - (Defaults to 6 mins) Used when delete the Listener.
 
 ## Import
 

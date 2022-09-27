@@ -242,6 +242,10 @@ resource "alicloud_alb_rule" "default" {
         server_group_id = alicloud_alb_server_group.default.1.id
         weight          = 2
       }
+      server_group_sticky_session {
+        enabled         = "true"
+        timeout         = "1000"
+      }
     }
     order = 2
     type  = "ForwardGroup"

@@ -1036,8 +1036,12 @@ func marshalMapToXmlIndent(doIndent bool, b *bytes.Buffer, key string, value int
 
 	// start the XML tag with required indentaton and padding
 	if doIndent {
-		if _, err = b.WriteString(p.padding); err != nil {
-			return err
+		switch value.(type) {
+		case []interface{}, []string:
+		default:
+			if _, err = b.WriteString(p.padding); err != nil {
+				return err
+			}
 		}
 	}
 	switch value.(type) {

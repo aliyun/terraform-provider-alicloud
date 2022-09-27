@@ -513,3 +513,164 @@ locals {
 
 `, name)
 }
+
+func TestAccAlicloudServiceMeshServiceMesh_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Default",
+					"version":           "${data.alicloud_service_mesh_versions.default.versions.0.version}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"control_plane_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_service_mesh_versions" "default" {
+	edition = "Default"
+}
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id     	= data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_log_project" "default_1" {
+  name        = "${var.name}-01"
+  description = "created by terraform"
+}
+resource "alicloud_log_project" "default_2" {
+  name        = "${var.name}-02"
+  description = "created by terraform"
+}
+locals {
+  vswitch_id = data.alicloud_vswitches.default.ids.0
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  log_project_1 = alicloud_log_project.default_1.name
+  log_project_2 = alicloud_log_project.default_2.name
+}
+
+`, name)
+}

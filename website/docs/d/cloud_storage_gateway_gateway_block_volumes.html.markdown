@@ -62,7 +62,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `names` - A list of Gateway Block Volume names.
 * `volumes` - A list of Cloud Storage Gateway Gateway Block Volumes. Each element contains the following attributes:
 	* `address` - The IP ADDRESS.
-	* `cache_mode` - The Block volume set mode to cache mode. Value values: `Cache`, `WriteThrough`.
+	* `cache_mode` - The Block volume set mode to cache mode. Valid values: `Cache`, `WriteThrough`.
 	* `chap_enabled` - Whether to enable iSCSI access of CHAP authentication, which currently supports both CHAP inbound authentication.  Default value: `false`.
 	* `chap_in_user` - The Inbound CHAP user.**NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid.
 	* `chunk_size` - The Block volume storage allocation unit.  Valid values: `8192`, `16384`, `32768`, `65536`, `131072`. Default value: `32768`. Unit: `Byte`.

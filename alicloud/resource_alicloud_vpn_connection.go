@@ -307,8 +307,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"IkeVersion":  ikeConfigsArg["ike_version"],
 			"Psk":         ikeConfigsArg["psk"],
 		}
-		ikeConfigsMapsStrting, _ := convertMaptoJsonString(ikeConfigsMap)
-		request["IkeConfig"] = ikeConfigsMapsStrting
+		ikeConfigsMapsString, _ := convertMaptoJsonString(ikeConfigsMap)
+		request["IkeConfig"] = ikeConfigsMapsString
 	}
 
 	if v, ok := d.GetOk("ipsec_config"); ok {
@@ -319,8 +319,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"IpsecLifetime": ipsecsArg["ipsec_lifetime"],
 			"IpsecPfs":      ipsecsArg["ipsec_pfs"],
 		}
-		ipsecsMapsStrting, _ := convertMaptoJsonString(ipsecsMap)
-		request["IpsecConfig"] = ipsecsMapsStrting
+		ipsecsMapsString, _ := convertMaptoJsonString(ipsecsMap)
+		request["IpsecConfig"] = ipsecsMapsString
 	}
 
 	if v, ok := d.GetOk("bgp_config"); ok {
@@ -345,8 +345,8 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 			"retry":    formatInt(healthChecksArg["retry"]),
 		}
 
-		healthChecksMapsStrting, _ := convertMaptoJsonString(healthChecksMap)
-		request["HealthCheckConfig "] = healthChecksMapsStrting
+		healthChecksMapsString, _ := convertMaptoJsonString(healthChecksMap)
+		request["HealthCheckConfig"] = healthChecksMapsString
 	}
 
 	if v, ok := d.GetOkExists("enable_dpd"); ok {
@@ -493,17 +493,16 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("local_subnet") {
 		update = true
-		if v, ok := d.GetOk("local_subnet"); ok {
-			request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
-		}
+	}
+	if v, ok := d.GetOk("local_subnet"); ok {
+		request["LocalSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
 	if d.HasChange("remote_subnet") {
 		update = true
-		if v, ok := d.GetOk("remote_subnet"); ok {
-			request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
-		}
-
+	}
+	if v, ok := d.GetOk("remote_subnet"); ok {
+		request["RemoteSubnet"] = convertListToCommaSeparate(v.(*schema.Set).List())
 	}
 
 	if d.HasChange("effect_immediately") {

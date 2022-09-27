@@ -84,6 +84,8 @@ The following attributes are exported in addition to the arguments listed above:
     * `size` - Size of the created disk.
     * `category` - Cloud disk category.
     * `type` - Cloud disk type: system disk or data disk.
+    * `disk_id` - The ID of the Disk.
+    * `disk_name` - The name of the Disk.
   * `tags` - A map of tags assigned to the ECS instance.
   * `resource_group_id` - The Id of resource group.
   * `ram_role_name` - The Ram role name.

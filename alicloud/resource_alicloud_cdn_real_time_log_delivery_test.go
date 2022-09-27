@@ -98,7 +98,7 @@ resource "alicloud_log_store" "default" {
 `, name, fmt.Sprintf("%s.example.com", name))
 }
 
-func TestAccAlicloudCDNRealTimeLogDelivery_unit(t *testing.T) {
+func TestUnitAlicloudCDNRealTimeLogDelivery(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cdn_real_time_log_delivery"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cdn_real_time_log_delivery"].Schema).Data(nil, nil)

@@ -153,16 +153,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"biz_name": "scdn",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"biz_name": "scdn",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"cert_infos": []map[string]interface{}{
 						{
 							"cert_name":    name,
@@ -225,8 +215,7 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"status":   "online",
-					"biz_name": "video",
+					"status": "online",
 					"cert_infos": []map[string]interface{}{
 						{
 							"cert_name":    name + "update",
@@ -250,7 +239,6 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status":       "online",
-						"biz_name":     "video",
 						"cert_infos.#": "1",
 						"check_url":    "www.yourdomainupdate.com/test.html",
 						//"sources.#":        "1",
@@ -261,7 +249,7 @@ func TestAccAlicloudScdnDomain_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_set", "check_url", "force_set", "biz_name", "cert_infos"},
+				ImportStateVerifyIgnore: []string{"force_set", "check_url", "force_set", "cert_infos"},
 			},
 		},
 	})

@@ -215,7 +215,7 @@ resource "alicloud_cen_transit_router_vbr_attachment" "default" {
 `, name, acctest.RandIntRange(1, 2999))
 }
 
-func TestAccAlicloudCenTransitRouterRouteEntry_unit(t *testing.T) {
+func TestUnitAlicloudCenTransitRouterRouteEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_route_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router_route_entry"].Schema).Data(nil, nil)

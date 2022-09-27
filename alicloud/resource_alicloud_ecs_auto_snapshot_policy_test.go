@@ -368,7 +368,7 @@ func TestAccAlicloudECSAutoSnapshotPolicyBasic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSAutoSnapshotPolicy_unit(t *testing.T) {
+func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, nil)

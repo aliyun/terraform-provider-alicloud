@@ -333,7 +333,7 @@ resource "alicloud_disk_attachment" "default" {
 `, name)
 }
 
-func TestAccAlicloudECSSnapshotGroup_unit(t *testing.T) {
+func TestUnitAlicloudECSSnapshotGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_snapshot_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_snapshot_group"].Schema).Data(nil, nil)

@@ -186,6 +186,9 @@ The following arguments are supported:
 * `target_major_version` - (Required, ForceNew) The major engine version of the new instance. The value of this parameter must be the major engine version on which an upgrade check is performed.
 
 -> **NOTE** You can call the [UpgradeDBInstanceMajorVersionPrecheck](https://www.alibabacloud.com/help/doc-detail/330050.htm) operation to perform an upgrade check on a major engine version.
+* `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
+  - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
+  - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
 
 #### Block pg_hba_conf

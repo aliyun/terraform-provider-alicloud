@@ -265,7 +265,7 @@ func AlicloudRosStackBasicDependence(name string) string {
 	return ""
 }
 
-func TestUnitAlicloudROSStack_unit(t *testing.T) {
+func TestUnitAlicloudROSStack(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ros_stack"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ros_stack"].Schema).Data(nil, nil)

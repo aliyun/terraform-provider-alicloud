@@ -303,7 +303,7 @@ data "alicloud_resource_manager_accounts" "default" {
 `, name)
 }
 
-func TestAccAlicloudConfigAggregator_unit(t *testing.T) {
+func TestUnitAlicloudConfigAggregator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregator"].Schema).Data(nil, nil)

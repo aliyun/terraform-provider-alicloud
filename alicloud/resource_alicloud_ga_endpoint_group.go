@@ -307,6 +307,10 @@ func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 }
 func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewGaplusClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	gaService := GaService{client}
 	var response map[string]interface{}
 	update := false
@@ -378,10 +382,6 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 			request["EndpointRequestProtocol"] = d.Get("endpoint_request_protocol")
 		}
 		action := "UpdateEndpointGroup"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)

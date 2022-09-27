@@ -37,7 +37,7 @@ The following arguments are supported:
 * `dry_run` - (Optional, ForceNew) The dry run.
 * `ip_address` - (Optional, ForceNew) The eip address.
 * `address_name` - (Optional, ForceNew) The eip name.
-* `enable_details` - (Optional) Default to `tue`. Set it to `false` can hidden the `tags` to output.
+* `enable_details` - (Optional) Default to `true`. Set it to `false` can hide the `tags` to output.
 * `ids` - (Optional, ForceNew, Computed)  A list of Address IDs.
 * `include_reservation_data` - (Optional, ForceNew) The include reservation data. Valid values: `BGP` and `BGP_PRO`. 
 * `isp` - (Optional, ForceNew) The Internet service provider (ISP). Valid values `BGP` and `BGP_PRO`.

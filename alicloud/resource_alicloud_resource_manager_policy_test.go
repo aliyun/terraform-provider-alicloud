@@ -227,7 +227,7 @@ func ResourceManagerPolicyBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudResourceManagerPolicy_unit(t *testing.T) {
+func TestUnitAlicloudResourceManagerPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_policy"].Schema).Data(nil, nil)

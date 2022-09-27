@@ -10,17 +10,19 @@ import (
 )
 
 const (
-	xOtsDate                = "x-ots-date"
-	xOtsApiversion          = "x-ots-apiversion"
-	xOtsAccesskeyid         = "x-ots-accesskeyid"
-	xOtsContentmd5          = "x-ots-contentmd5"
-	xOtsHeaderStsToken      = "x-ots-ststoken"
-	xOtsHeaderChargeAdmin   = "x-ots-charge-for-admin"
-	xOtsSignature           = "x-ots-signature"
-	xOtsRequestCompressType = "x-ots-request-compress-type"
-	xOtsRequestCompressSize = "x-ots-request-compress-size"
-	xOtsResponseCompressTye = "x-ots-response-compress-type"
-	xOtsPrefix              = "x-ots"
+	xOtsDate                  = "x-ots-date"
+	xOtsApiversion            = "x-ots-apiversion"
+	xOtsAccesskeyid           = "x-ots-accesskeyid"
+	xOtsContentmd5            = "x-ots-contentmd5"
+	xOtsHeaderStsToken        = "x-ots-ststoken"
+	xOtsHeaderChargeAdmin     = "x-ots-charge-for-admin"
+	xOtsSignature             = "x-ots-signature"
+	xOtsRequestCompressType   = "x-ots-request-compress-type"
+	xOtsRequestCompressSize   = "x-ots-request-compress-size"
+	xOtsResponseCompressTye   = "x-ots-response-compress-type"
+	xOtsHeaderTunnelType      = "x-ots-tunnel-type"
+	xOtsHeaderPlayerAccountId = "x-ots-playeraccountid"
+	xOtsPrefix                = "x-ots"
 )
 
 type otsHeader struct {
@@ -49,6 +51,8 @@ func createOtsHeaders(accessKey string) *otsHeaders {
 		&otsHeader{name: xOtsRequestCompressType, must: false},
 		&otsHeader{name: xOtsHeaderStsToken, must: false},
 		&otsHeader{name: xOtsHeaderChargeAdmin, must: false},
+		&otsHeader{name: xOtsHeaderTunnelType, must: false},
+		&otsHeader{name: xOtsHeaderPlayerAccountId, must: false},
 	}
 
 	sort.Sort(h)
@@ -119,9 +123,7 @@ func (h *otsHeaders) signature(uri, method, accessKey string) (string, error) {
 	h.hmacSha1.Reset()
 	h.hmacSha1.Write([]byte(stringToSign))
 
-	// fmt.Println("stringToSign:" + stringToSign)
 	sign := base64.StdEncoding.EncodeToString(h.hmacSha1.Sum(nil))
 	h.set(xOtsSignature, sign)
-	// fmt.Println("sign:" + sign)
 	return sign, nil
 }

@@ -47,7 +47,7 @@ func resourceAliyunSlbBackendServer() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      string(ECS),
-							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs", "eci"}, false),
 						},
 						"server_ip": {
 							Type:     schema.TypeString,

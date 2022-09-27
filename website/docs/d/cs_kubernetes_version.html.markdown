@@ -17,47 +17,51 @@ This data source provides the details of the Kubernetes version supported by ACK
 ## Example Usage
 
 ```terraform
-
 # Query the managed kubernetes cluster metadata of version 1.22.3-aliyun.1 in the region specified by the client.
 data "alicloud_cs_kubernetes_version" "default" {
-  cluster_type = "ManagedKubernetes"
-  version      = "1.22.3-aliyun.1"
-  profile      = "Default"
+  cluster_type       = "ManagedKubernetes"
+  kubernetes_version = "1.22.3-aliyun.1"
+  profile            = "Default"
 }
 output "metadata" {
   value = data.alicloud_cs_kubernetes_version.default.metadata
 }
+```
 
+```terraform
 # Query the kubernetes cluster metadata of version 1.22.3-aliyun.1 in the region specified by the client.
 data "alicloud_cs_kubernetes_version" "default" {
-  cluster_type = "Kubernetes"
-  version      = "1.22.3-aliyun.1"
-  profile      = "Default"
+  cluster_type       = "Kubernetes"
+  kubernetes_version = "1.22.3-aliyun.1"
+  profile            = "Default"
 }
 output "metadata" {
   value = data.alicloud_cs_kubernetes_version.default.metadata
 }
+```
 
+```terraform
 # Query the serverless kubernetes cluster metadata of version 1.22.3-aliyun.1 in the region specified by the client.
 data "alicloud_cs_kubernetes_version" "default" {
-  cluster_type = "ManagedKubernetes"
-  version      = "1.22.3-aliyun.1"
-  profile      = "Serverless"
+  cluster_type       = "ManagedKubernetes"
+  kubernetes_version = "1.22.3-aliyun.1"
+  profile            = "Serverless"
 }
 output "metadata" {
   value = data.alicloud_cs_kubernetes_version.default.metadata
 }
+```
 
+```terraform
 # Query the edge kubernetes cluster metadata of version 1.20.11-aliyunedge.1 in the region specified by the client.
 data "alicloud_cs_kubernetes_version" "default" {
-  cluster_type = "ManagedKubernetes"
-  version      = "1.20.11-aliyunedge.1"
-  profile      = "Edge"
+  cluster_type       = "ManagedKubernetes"
+  kubernetes_version = "1.20.11-aliyunedge.1"
+  profile            = "Edge"
 }
 output "metadata" {
   value = data.alicloud_cs_kubernetes_version.default.metadata
 }
-
 ```
 
 ## Argument Reference
@@ -65,7 +69,7 @@ output "metadata" {
 The following arguments are supported.
 
 * `cluster_type` - (Required) The type of cluster. Its valid value are `Kubernetes` and `ManagedKubernetes`.
-* `version` - (Optional) The ACK released kubernetes version. 
+* `kubernetes_version` - (Optional) The ACK released kubernetes version. 
 * `profile` - (Optional) The profile of cluster. Its valid value are `Default`, `Serverless` and `Edge`.
 
 ## Attributes Reference

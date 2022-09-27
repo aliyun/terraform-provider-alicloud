@@ -148,8 +148,7 @@ data "alicloud_hbr_snapshots" "default" {
 
 var existHbrSnapshotMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"snapshots.#":    CHECKSET,
-		"snapshots.0.id": CHECKSET,
+		"snapshots.#": CHECKSET,
 	}
 }
 

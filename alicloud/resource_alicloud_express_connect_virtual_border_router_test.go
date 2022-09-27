@@ -401,7 +401,7 @@ data "alicloud_express_connect_physical_connections" "default" {
 `, name)
 }
 
-func TestAccAlicloudExpressConnectVirtualBorderRouter_unit(t *testing.T) {
+func TestUnitAlicloudExpressConnectVirtualBorderRouter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_express_connect_virtual_border_router"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_express_connect_virtual_border_router"].Schema).Data(nil, nil)

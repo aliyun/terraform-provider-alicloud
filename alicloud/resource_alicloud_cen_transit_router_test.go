@@ -166,7 +166,7 @@ func AlicloudCenTransitRouterBasicDependence(name string) string {
 	`, name)
 }
 
-func TestAccAlicloudCenTransitRouter_unit(t *testing.T) {
+func TestUnitAlicloudCenTransitRouter(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router"].Schema).Data(nil, nil)

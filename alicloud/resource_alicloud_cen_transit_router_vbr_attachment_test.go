@@ -264,7 +264,7 @@ data "alicloud_account" "default" {}
 `, name, acctest.RandIntRange(1, 2999))
 }
 
-func TestAccAlicloudCenTransitRouterVbrAttachment_unit(t *testing.T) {
+func TestUnitAlicloudCenTransitRouterVbrAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_vbr_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router_vbr_attachment"].Schema).Data(nil, nil)

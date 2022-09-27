@@ -252,7 +252,7 @@ data "alicloud_account" "default" {}
 `, name)
 }
 
-func TestAccAlicloudEcsImagePipeline_unit(t *testing.T) {
+func TestUnitAlicloudEcsImagePipeline(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ecs_image_pipeline"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ecs_image_pipeline"].Schema).Data(nil, nil)

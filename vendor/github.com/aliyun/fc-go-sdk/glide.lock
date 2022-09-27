@@ -1,8 +1,8 @@
-hash: 69dc2da9595b84c70fcf798eb425ea1fed06a8a992450ac38cce0c8a7bf96edc
-updated: 2020-12-21T08:36:01.8963052Z
+hash: fdd43ad59a285ff07439be4314c17f424b5487b74d6449feb873aba25132dab2
+updated: 2021-11-23T14:40:28.95717+08:00
 imports:
-- name: github.com/aliyun/fc-go-sdk
-  version: 2817cfaf5072ce42fa9b66288dc77723cec66b96
+- name: github.com/gorilla/websocket
+  version: c3dd95aea9779669bb3daafbd84ee0530c8ce1c1
 - name: github.com/stretchr/testify
   version: f6abca593680b2315d2075e0f5e2a9751e3f431a
   subpackages:
@@ -11,7 +11,7 @@ imports:
   - require
   - suite
 - name: golang.org/x/net
-  version: 986b41b23924a168277bf3df55a4fd462154f916
+  version: c44066c5c816ec500d459a2a324a753f78531ae0
   subpackages:
   - publicsuffix
 - name: gopkg.in/resty.v1

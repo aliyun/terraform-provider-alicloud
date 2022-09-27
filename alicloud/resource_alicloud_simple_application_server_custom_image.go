@@ -109,6 +109,10 @@ func resourceAlicloudSimpleApplicationServerCustomImageRead(d *schema.ResourceDa
 }
 func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewSwasClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -122,10 +126,6 @@ func resourceAlicloudSimpleApplicationServerCustomImageUpdate(d *schema.Resource
 	}
 	if update {
 		action := "ModifyImageShareStatus"
-		conn, err := client.NewSwasClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("ModifyImageShareStatus")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

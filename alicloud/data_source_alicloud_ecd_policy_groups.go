@@ -166,6 +166,26 @@ func dataSourceAlicloudEcdPolicyGroups() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"recording": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"recording_start_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"recording_end_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"recording_fps": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"camera_redirect": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -271,6 +291,11 @@ func dataSourceAlicloudEcdPolicyGroupsRead(d *schema.ResourceData, meta interfac
 			"watermark":              object["Watermark"],
 			"watermark_transparency": object["WatermarkTransparency"],
 			"watermark_type":         object["WatermarkType"],
+			"recording":              object["Recording"],
+			"recording_start_time":   object["RecordingStartTime"],
+			"recording_end_time":     object["RecordingEndTime"],
+			"recording_fps":          object["RecordingFps"],
+			"camera_redirect":        object["CameraRedirect"],
 		}
 
 		authorizeAccessPolicyRules := make([]map[string]interface{}, 0)

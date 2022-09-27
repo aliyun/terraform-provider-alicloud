@@ -88,7 +88,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudDTSSynchronizationInstance_unit(t *testing.T) {
+func TestUnitAlicloudDTSSynchronizationInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dts_synchronization_instance"].Schema).Data(nil, nil)

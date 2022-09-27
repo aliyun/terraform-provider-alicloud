@@ -396,7 +396,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudCloudFirewallControlPolicy_unit(t *testing.T) {
+func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy"].Schema).Data(nil, nil)

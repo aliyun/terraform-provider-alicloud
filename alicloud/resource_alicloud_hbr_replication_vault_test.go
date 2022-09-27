@@ -321,7 +321,7 @@ func testAccCheckHBRReplicationVaultDestroyWithProvider(s *terraform.State, prov
 	return nil
 }
 
-func TestAccAlicloudHBRReplicationVault_unit(t *testing.T) {
+func TestUnitAlicloudHBRReplicationVault(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_replication_vault"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_replication_vault"].Schema).Data(nil, nil)

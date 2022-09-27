@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -151,7 +153,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"cpu": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  2,
+				Computed: true,
 			},
 			"dns_config": {
 				Type:     schema.TypeSet,
@@ -369,7 +371,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"memory": {
 				Type:     schema.TypeFloat,
 				Optional: true,
-				Default:  4,
+				Computed: true,
 			},
 			"ram_role_name": {
 				Type:     schema.TypeString,
@@ -383,9 +385,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				ForceNew: true,
 			},
 			"restart_policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "Always",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -507,6 +510,26 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Optional: true,
 			},
 			"insecure_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"intranet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"auto_create_eip": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"eip_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"eip_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -762,6 +785,15 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("auto_match_image_cache"); ok {
 		request["AutoMatchImageCache"] = v
 	}
+	if v, ok := d.GetOkExists("auto_create_eip"); ok {
+		request["AutoCreateEip"] = v
+	}
+	if v, ok := d.GetOkExists("eip_bandwidth"); ok {
+		request["EipBandwidth"] = v
+	}
+	if v, ok := d.GetOk("eip_instance_id"); ok {
+		request["EipInstanceId"] = v
+	}
 
 	if v, ok := d.GetOk("plain_http_registry"); ok {
 		request["PlainHttpRegistry"] = v
@@ -801,6 +833,8 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	d.Set("container_group_name", object["ContainerGroupName"])
+	d.Set("internet_ip", object["InternetIp"])
+	d.Set("intranet_ip", object["IntranetIp"])
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := object["Containers"].([]interface{}); ok {

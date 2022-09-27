@@ -239,7 +239,7 @@ func AlicloudEcsKeyPairBasicDependence(name string) string {
 `)
 }
 
-func TestAccAlicloudECSKeyPair_unit(t *testing.T) {
+func TestUnitAlicloudECSKeyPair(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_key_pair"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_key_pair"].Schema).Data(nil, nil)

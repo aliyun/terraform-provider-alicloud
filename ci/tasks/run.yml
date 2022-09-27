@@ -18,6 +18,7 @@ params:
   ALICLOUD_ACCOUNT_ID:   ""
   ALICLOUD_ACCOUNT_SITE: "Domestic"
   TEST_CASE_CODE:        ""
+  TEST_CASE_PREFIX:      "TestAccAlicloud"
   SWEEPER:               ""
   CHECKOUT_REGION:       "false"
   ACCESS_URL:            ""

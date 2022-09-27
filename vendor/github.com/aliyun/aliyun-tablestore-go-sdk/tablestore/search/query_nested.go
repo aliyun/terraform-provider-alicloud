@@ -1,6 +1,7 @@
 package search
 
 import (
+	"encoding/json"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
 	"github.com/golang/protobuf/proto"
 )
@@ -17,8 +18,37 @@ const (
 
 type NestedQuery struct {
 	Path      string
-	Query     Query
+	Query     Query `json:"-"`
 	ScoreMode ScoreModeType
+
+	// for json marshal and unmarshal
+	QueryAlias queryAlias `json:"Query"`
+}
+
+func (q *NestedQuery) MarshalJSON() ([]byte, error) {
+	type NestedQueryAlias NestedQuery
+	bqAlias := NestedQueryAlias(*q)
+	if bqAlias.Query != nil {
+		bqAlias.QueryAlias = queryAlias{
+			Name:  q.Query.Type().String(),
+			Query: q.Query,
+		}
+	}
+
+	data, err := json.Marshal(bqAlias)
+	return data, err
+}
+
+func (q *NestedQuery) UnmarshalJSON(data []byte) (err error) {
+	type NestedQueryAlias NestedQuery
+	bqAlias := &NestedQueryAlias{}
+	err = json.Unmarshal(data, bqAlias)
+	if err != nil {
+		return
+	}
+
+	q.Query = bqAlias.QueryAlias.Query
+	return
 }
 
 func (q *NestedQuery) Type() QueryType {

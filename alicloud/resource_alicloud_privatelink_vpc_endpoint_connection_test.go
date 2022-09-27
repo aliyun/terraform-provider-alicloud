@@ -100,7 +100,7 @@ func AlicloudPrivatelinkVpcEndpointConnectionBasicDependence(name string) string
 `)
 }
 
-func TestAccAlicloudPrivatelinkVpcEndpointConnection_unit(t *testing.T) {
+func TestUnitAlicloudPrivatelinkVpcEndpointConnection(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_connection"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_privatelink_vpc_endpoint_connection"].Schema).Data(nil, nil)

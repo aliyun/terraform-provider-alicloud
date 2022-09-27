@@ -151,11 +151,13 @@ func TestAccAlicloudEIPAddress_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"address_name": "${var.name}",
+					"address_name":              "${var.name}",
+					"security_protection_types": []string{"AntiDDoS_Enhanced"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"address_name": name,
+						"address_name":                name,
+						"security_protection_types.#": "1",
 					}),
 				),
 			},
@@ -773,7 +775,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEIPAddress_unit(t *testing.T) {
+func TestUnitAlicloudEIPAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eip_address"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_eip_address"].Schema).Data(nil, nil)

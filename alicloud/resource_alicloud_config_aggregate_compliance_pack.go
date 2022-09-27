@@ -249,6 +249,10 @@ func resourceAlicloudConfigAggregateCompliancePackRead(d *schema.ResourceData, m
 func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
+	conn, err := client.NewConfigClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -307,10 +311,6 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 	request["CompliancePackName"] = d.Get("aggregate_compliance_pack_name")
 	if update {
 		action := "UpdateAggregateCompliancePack"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateAggregateCompliancePack")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -364,10 +364,6 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 			removeRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
 
 			action := "DetachAggregateConfigRuleToCompliancePack"
-			conn, err := client.NewConfigClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			removeRulesReq["ClientToken"] = buildClientToken("DetachAggregateConfigRuleToCompliancePack")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -406,10 +402,6 @@ func resourceAlicloudConfigAggregateCompliancePackUpdate(d *schema.ResourceData,
 			addRulesReq["ConfigRuleIds"] = convertListToCommaSeparate(ruleMaps)
 
 			action := "AttachAggregateConfigRuleToCompliancePack"
-			conn, err := client.NewConfigClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			addRulesReq["ClientToken"] = buildClientToken("AttachAggregateConfigRuleToCompliancePack")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)

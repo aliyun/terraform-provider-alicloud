@@ -130,7 +130,7 @@ resource "alicloud_waf_domain" "default" {
 `, name, os.Getenv("ALICLOUD_WAF_ICP_DOMAIN_NAME"))
 }
 
-func TestAccAlicloudWAFProtectionModule_unit(t *testing.T) {
+func TestUnitAlicloudWAFProtectionModule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_waf_protection_module"].Schema).Data(nil, nil)

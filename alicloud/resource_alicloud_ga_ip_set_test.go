@@ -108,7 +108,7 @@ resource "alicloud_ga_bandwidth_package_attachment" "default" {
 `, name)
 }
 
-func TestAccAlicloudGaIpSet_unit(t *testing.T) {
+func TestUnitAlicloudGaIpSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_ip_set"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_ip_set"].Schema).Data(nil, nil)

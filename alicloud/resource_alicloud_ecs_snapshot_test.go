@@ -398,7 +398,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
-func TestAccAlicloudECSSnapshot_unit(t *testing.T) {
+func TestUnitAlicloudECSSnapshot(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_snapshot"].Schema).Data(nil, nil)

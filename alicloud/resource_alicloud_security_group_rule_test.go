@@ -197,19 +197,93 @@ func TestAccAlicloudECSSecurityGroupRulePrefixList(t *testing.T) {
 
 }
 
+func TestAccAlicloudECSSecurityGroupEgressRuleIpv6(t *testing.T) {
+	var v ecs.Permission
+	resourceId := "alicloud_security_group_rule.default"
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"type":         "egress",
+		"policy":       "accept",
+		"description":  "SHDRP-7513",
+		"port_range":   "443/443",
+		"priority":     "1",
+		"ipv6_cidr_ip": "2408:4004:cc:400::/56",
+	})
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSecurityGroupEgressRuleIpv6,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "SHDRP-7513",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAlicloudECSSecurityGroupIngressRuleIpv6(t *testing.T) {
+	var v ecs.Permission
+	resourceId := "alicloud_security_group_rule.default"
+	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupIngressRuleIpv6Map)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSecurityGroupRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSecurityGroupIngressRuleIpv6,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_cidr_ip": "2408:4004:cc:400::/56",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 const testAccSecurityGroupRuleBasic = `
 variable "name" {
   default = "tf-testAccSecurityGroupRuleBasic"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
   count  = 2
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 
@@ -270,14 +344,13 @@ variable "name" {
   default = "tf-testAccSecurityGroupRuleBasic"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 
@@ -300,14 +373,12 @@ variable "name" {
   default = "tf-testAccSecurityGroupRule_description"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 
@@ -330,14 +401,13 @@ variable "name" {
   default = "tf-testAccSecurityGroupRule_description"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
   count = 2
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 
@@ -364,15 +434,14 @@ variable "cidr_ip_list" {
   default = ["50.255.255.255/32", "75.250.250.250/32", "45.20.250.240/32"]
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
   description = "Security group for rules"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -388,6 +457,32 @@ resource "alicloud_security_group_rule" "default" {
 }
 `
 
+const testAccSecurityGroupIngressRuleIpv6 = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleBasic"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+resource "alicloud_security_group" "default" {
+  name = "${var.name}"
+  description = "Security group for rules"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group_rule" "default" {
+  security_group_id = "${alicloud_security_group.default.id}"
+  type = "ingress"
+  policy = "drop"
+  port_range = "22/22"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  priority = 100
+  ipv6_cidr_ip = "2408:4004:cc:400::/56"
+}
+`
+
 var testAccCheckSecurityGroupRuleBasicMap = map[string]string{
 	"type":                     "ingress",
 	"ip_protocol":              "tcp",
@@ -398,6 +493,17 @@ var testAccCheckSecurityGroupRuleBasicMap = map[string]string{
 	"security_group_id":        CHECKSET,
 	"source_security_group_id": CHECKSET,
 	"cidr_ip":                  "",
+}
+
+var testAccCheckSecurityGroupIngressRuleIpv6Map = map[string]string{
+	"type":              "ingress",
+	"ip_protocol":       "tcp",
+	"nic_type":          "intranet",
+	"policy":            "drop",
+	"port_range":        "22/22",
+	"priority":          "100",
+	"security_group_id": CHECKSET,
+	"cidr_ip":           "",
 }
 
 var testAccCheckSecurityGroupRulePrefixList = map[string]string{
@@ -434,13 +540,12 @@ variable "name" {
   default = "tf-testAccSecurityGroupRuleBasic"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 
@@ -457,18 +562,44 @@ resource "alicloud_security_group_rule" "default" {
 }
 `
 
+const testAccSecurityGroupEgressRuleIpv6 = `
+variable "name" {
+  default = "tf-testAccSecurityGroupRuleBasic"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group_rule" "default" {
+  type = "egress"
+  ip_protocol = "tcp"
+  nic_type = "intranet"
+  policy = "accept"
+  port_range = "443/443"
+  priority = "1"
+  security_group_id = "${alicloud_security_group.default.id}"
+  ipv6_cidr_ip = "2408:4004:cc:400::/56"
+  description = "SHDRP-7513"
+}
+`
+
 const testAccSecurityGroupEgressRule_description = `
 variable "name" {
   default = "tf-testAccSecurityGroupRuleBasic"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
   name = "${var.name}"
 }
 

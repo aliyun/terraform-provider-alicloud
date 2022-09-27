@@ -131,7 +131,7 @@ resource "alicloud_vpn_connection" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPNPbrRouteEntry_unit(t *testing.T) {
+func TestUnitAlicloudVPNPbrRouteEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, nil)

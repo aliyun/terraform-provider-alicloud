@@ -684,7 +684,7 @@ func testAccCheckCenInstanceDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudCenInstance_unit(t *testing.T) {
+func TestUnitAlicloudCenInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cen_instance"].Schema).Data(nil, nil)

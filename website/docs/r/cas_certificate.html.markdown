@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_cas\_certificate
 
--> **DEPRECATED:**  This datasource has been deprecated from version `1.129.0`. Please use new datasource [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate.html.markdown).
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.129.0`. Please use new datasource [alicloud_ssl_certificates_service_certificate](https://www.terraform.io/docs/providers/alicloud/r/ssl_certificates_service_certificate).
 
 Provides a CAS Certificate resource.
 

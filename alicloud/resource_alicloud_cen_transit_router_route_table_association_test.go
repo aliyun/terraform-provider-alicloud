@@ -160,7 +160,7 @@ resource "alicloud_cen_transit_router_route_table" "default" {
 `, name, acctest.RandIntRange(1, 2999))
 }
 
-func TestAccAlicloudCenTransitRouterRouteTableAssociation_unit(t *testing.T) {
+func TestUnitAlicloudCenTransitRouterRouteTableAssociation(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_route_table_association"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router_route_table_association"].Schema).Data(nil, nil)

@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_dns
 
--> DEPRECATED: This resource has been renamed to [alicloud_alidns_domain](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain.html) from version 1.95.0.
+-> DEPRECATED: This resource has been renamed to [alicloud_alidns_domain](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain) from version 1.95.0.
 
 Provides a DNS resource.
 

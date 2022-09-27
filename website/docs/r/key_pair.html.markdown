@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_key\_pair
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair](https://www.terraform.io/docs/providers/alicloud/r/ecs_key_pair.html) from version 1.121.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_key_pair](https://www.terraform.io/docs/providers/alicloud/r/ecs_key_pair) from version 1.121.0.
 
 Provides a key pair resource.
 

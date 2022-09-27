@@ -37,7 +37,7 @@ resource "alicloud_scdn_domain" "example" {
 
 The following arguments are supported:
 
-* `biz_name` - (Optional) from the Business Type Drop-down List. Valid values: `download`, `image`, `scdn`, `video`.
+* `biz_name` - (Optional, Deprecated) Attribute perm has been deprecated and suggest removing it from your template.
 * `cert_infos` - (Optional) Certificate Information. See the following `Block cert_infos`.
 * `check_url` - (Optional) The health check url.
 * `domain_name` - (Required, ForceNew) The name of domain.

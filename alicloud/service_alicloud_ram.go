@@ -41,6 +41,30 @@ type RolePolicy struct {
 	Version   string
 }
 
+type PolicyDocumentStatementCondition struct {
+	Operator string
+	Variable string
+	Values   interface{}
+}
+
+type PolicyDocumentStatementPrincipal struct {
+	Entity      string
+	Identifiers interface{}
+}
+
+type PolicyDocumentStatement struct {
+	Effect    Effect
+	Action    interface{}
+	Resource  interface{}                         `json:",omitempty"`
+	Principal PolicyDocumentStatementPrincipalSet `json:",omitempty"`
+	Condition PolicyDocumentStatementConditionSet `json:",omitempty"`
+}
+
+type PolicyDocument struct {
+	Statement []PolicyDocumentStatement
+	Version   string
+}
+
 type PolicyStatement struct {
 	Effect   Effect
 	Action   interface{}
@@ -55,6 +79,9 @@ type Policy struct {
 type RamService struct {
 	client *connectivity.AliyunClient
 }
+
+type PolicyDocumentStatementPrincipalSet []PolicyDocumentStatementPrincipal
+type PolicyDocumentStatementConditionSet []PolicyDocumentStatementCondition
 
 func (s *RamService) ParseRolePolicyDocument(policyDocument string) (RolePolicy, error) {
 	var policy RolePolicy

@@ -90,7 +90,7 @@ data "alicloud_vpc_ipv6_addresses" "default" {
 `, name)
 }
 
-func TestAccVPCIpv6EgressRule_unit(t *testing.T) {
+func TestUnitVPCIpv6EgressRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_ipv6_egress_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_ipv6_egress_rule"].Schema).Data(nil, nil)

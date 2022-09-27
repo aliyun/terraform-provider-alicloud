@@ -309,7 +309,7 @@ resource "alicloud_cms_monitor_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudCmsGroupMetricRule_unit(t *testing.T) {
+func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_group_metric_rule"].Schema).Data(nil, nil)

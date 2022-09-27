@@ -37,7 +37,7 @@ func resourceAlicloudDdosBasicDefenseThreshold() *schema.Resource {
 			"ddos_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"defense", "blackhole"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"defense"}, false),
 				ForceNew:     true,
 			},
 			"bps": {

@@ -211,6 +211,14 @@ func dataSourceAlicloudInstances() *schema.Resource {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
+									"disk_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"disk_name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 								},
 							},
 						},
@@ -427,7 +435,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 		if len(inst.PublicIpAddress.IpAddress) > 0 {
 			mapping["public_ip"] = inst.PublicIpAddress.IpAddress[0]
 		} else {
-			mapping["public_ip"] = inst.VpcAttributes.NatIpAddress
+			mapping["public_ip"] = inst.EipAddress.IpAddress
 		}
 
 		ids = append(ids, inst.InstanceId)
@@ -490,10 +498,12 @@ func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (
 			continue
 		}
 		mapping := map[string]interface{}{
-			"device":   disk.Device,
-			"size":     disk.Size,
-			"category": disk.Category,
-			"type":     disk.Type,
+			"device":    disk.Device,
+			"size":      disk.Size,
+			"category":  disk.Category,
+			"type":      disk.Type,
+			"disk_id":   disk.DiskId,
+			"disk_name": disk.DiskName,
 		}
 		instanceDisks[disk.InstanceId] = append(instanceDisks[disk.InstanceId], mapping)
 	}

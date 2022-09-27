@@ -45,7 +45,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - FC trigger ID.
   * `name` - FC trigger name.
   * `source_arn` - Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
-  * `type` - Type of the trigger. Valid values: `oss`, `log`, `timer`, `http` and `mns_topic`.
+  * `type` - Type of the trigger. Valid values: `oss`, `log`, `timer`, `http`, `mns_topic`, `cdn_events` and `eventbridge`.
   * `invocation_role` - RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
   * `config` - JSON-encoded trigger configuration. See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
   * `creation_time` - FC trigger creation time.

@@ -220,7 +220,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudDFSFileSystem_unit(t *testing.T) {
+func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dfs_file_system"].Schema).Data(nil, nil)

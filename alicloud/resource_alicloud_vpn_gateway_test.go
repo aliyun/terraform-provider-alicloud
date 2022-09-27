@@ -276,6 +276,7 @@ resource "alicloud_vpn_gateway" "default" {
 }
 `, rand)
 }
+
 func testAccVpnConfig_description(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -395,6 +396,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 					"description":          name,
 					"bandwidth":            "10",
 					"enable_ssl":           "true",
+					"auto_propagate":       "true",
 					"period":               "1",
 					"instance_charge_type": "PrePaid",
 					"tags": map[string]string{
@@ -410,6 +412,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"description":          name,
 						"bandwidth":            "10",
 						"enable_ssl":           "true",
+						"auto_propagate":       "true",
 						"period":               "1",
 						"instance_charge_type": "PrePaid",
 						"tags.%":               "2",
@@ -427,6 +430,16 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_propagate": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_propagate": "false",
 					}),
 				),
 			},

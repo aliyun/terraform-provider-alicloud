@@ -237,7 +237,7 @@ resource "alicloud_vpc" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCIpv6Gateway_unit(t *testing.T) {
+func TestUnitAlicloudVPCIpv6Gateway(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_ipv6_gateway"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_ipv6_gateway"].Schema).Data(nil, nil)
