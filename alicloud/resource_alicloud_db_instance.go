@@ -459,6 +459,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+			},
 		},
 	}
 }
@@ -1338,6 +1344,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	d.Set("deletion_protection", instance["DeletionProtection"])
+	d.Set("category", instance["Category"])
 	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 	if len(slaveZones) == 2 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
@@ -1593,6 +1600,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("db_is_ignore_case"); ok {
 		request["DBIsIgnoreCase"] = v
+	}
+
+	if v, ok := d.GetOk("category"); ok {
+		request["Category"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()

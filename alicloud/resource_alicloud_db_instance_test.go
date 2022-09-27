@@ -526,12 +526,14 @@ func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"security_group_ids":       "${alicloud_security_group.default.*.id}",
+					"category":                 "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                   "MySQL",
 						"engine_version":           "8.0",
 						"db_instance_storage_type": "local_ssd",
+						"category":                 "HighAvailability",
 					}),
 				),
 			},
@@ -562,7 +564,6 @@ data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
-    category = "HighAvailability"
  	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
 }
@@ -626,7 +627,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "SQLServer",
-					"engine_version":           "2012",
+					"engine_version":           "2012_std_ha",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"db_instance_storage_type": "cloud_essd",
@@ -634,14 +635,16 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
+					"category":                 "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                   "SQLServer",
-						"engine_version":           "2012",
+						"engine_version":           "2012_std_ha",
 						"instance_type":            CHECKSET,
 						"instance_storage":         "20",
 						"db_instance_storage_type": "cloud_essd",
+						"category":                 "HighAvailability",
 					}),
 				),
 			},
@@ -697,7 +700,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "SQLServer",
-					"engine_version":           "2012",
+					"engine_version":           "2012_std_ha",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"db_instance_storage_type": "cloud_essd",
@@ -706,11 +709,12 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"security_group_ids":       []string{"${alicloud_security_group.default.0.id}"},
 					"monitoring_period":        "60",
+					"category":                 "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                   "SQLServer",
-						"engine_version":           "2012",
+						"engine_version":           "2012_std_ha",
 						"instance_type":            CHECKSET,
 						"instance_storage":         "25",
 						"db_instance_storage_type": "cloud_essd",
@@ -722,6 +726,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 						"port":                     CHECKSET,
 						"security_group_id":        CHECKSET,
 						"security_group_ids.#":     "1",
+						"category":                 "HighAvailability",
 					}),
 				),
 			},
@@ -745,8 +750,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "SQLServer"
-	engine_version = "2012"
-    category = "Basic"
+	engine_version = "2012_std_ha"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
 }
@@ -816,6 +820,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
+					"category":                 "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -824,6 +829,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"instance_storage":         CHECKSET,
 						"instance_type":            CHECKSET,
 						"db_instance_storage_type": "cloud_ssd",
+						"category":                 "HighAvailability",
 					}),
 				),
 			},
@@ -907,6 +913,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"security_group_ids":   []string{},
 					"monitoring_period":    "60",
 					"encryption_key":       "${alicloud_kms_key.default.id}",
+					"category":             "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -922,6 +929,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"port":                 CHECKSET,
 						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "0",
+						"category":             "HighAvailability",
 					}),
 				),
 			},
@@ -946,7 +954,6 @@ data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
   	engine               = "PostgreSQL"
   	engine_version       = "12.0"
-    category = "Basic"
  	db_instance_storage_type = "cloud_ssd"
 	instance_charge_type = "PostPaid"
 }
