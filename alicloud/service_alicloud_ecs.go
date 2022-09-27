@@ -2017,7 +2017,11 @@ func (s *EcsService) EcsSnapshotStateRefreshFunc(id string, failStates []string)
 				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
-		return object, object["Status"].(string), nil
+		status := object["Status"].(string)
+		if object["InstantAccess"].(bool) {
+			status = "accomplished"
+		}
+		return object, status, nil
 	}
 }
 
