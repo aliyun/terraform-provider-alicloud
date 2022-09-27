@@ -43,6 +43,12 @@ type Component struct {
 	ConfigSchema  string `json:"config_schema"`
 }
 
+type PageInfo struct {
+	PageSize   int64 `json:"page_size"`
+	PageNumber int64 `json:"page_number"`
+	TotalCount int64 `json:"total_count"`
+}
+
 const (
 	COMPONENT_AUTO_SCALER      = "cluster-autoscaler"
 	COMPONENT_DEFAULT_VRESION  = "v1.0.0"
@@ -1016,4 +1022,77 @@ func (s *CsClient) ModifyNodePoolNodeConfig(clusterId, nodepoolId string, reques
 		addDebug("ModifyNodePoolKubeletConfig", resp, requestMap)
 	}
 	return resp, err
+}
+
+func (s *CsClient) DescribeClusterEvents(clusterId string, pageSize, pageNumber int64) (*client.DescribeClusterEventsResponseBody, error) {
+	if clusterId == "" {
+		return nil, WrapError(fmt.Errorf("empty clusterId"))
+	}
+
+	request := &client.DescribeClusterEventsRequest{
+		PageSize:   tea.Int64(pageSize),
+		PageNumber: tea.Int64(pageNumber),
+	}
+	resp, err := s.client.DescribeClusterEvents(tea.String(clusterId), request)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		requestMap["request"] = request
+		addDebug("DescribeClusterEvents", resp, requestMap)
+	}
+	return resp.Body, err
+}
+
+func (s *CsClient) DescribeClusterTasks(clusterId string) (*client.DescribeClusterTasksResponseBody, error) {
+	if clusterId == "" {
+		return nil, WrapError(fmt.Errorf("empty clusterId"))
+	}
+
+	resp, err := s.client.DescribeClusterTasks(tea.String(clusterId))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		addDebug("DescribeClusterTasks", resp, requestMap)
+	}
+	return resp.Body, nil
+}
+
+func (s *CsClient) DescribeClusterTaskDetails(taskId string) (*client.DescribeTaskInfoResponseBody, error) {
+	if taskId == "" {
+		return nil, WrapError(fmt.Errorf("empty taskId"))
+	}
+
+	resp, err := s.client.DescribeTaskInfo(tea.String(taskId))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["TaskId"] = taskId
+		addDebug("DescribeTaskInfo", resp, requestMap)
+	}
+	return resp.Body, nil
+}
+
+func (s *CsClient) DescribeClusterLogs(clusterId string) ([]*client.DescribeClusterLogsResponseBody, error) {
+	if clusterId == "" {
+		return nil, WrapError(fmt.Errorf("empty clusterId"))
+	}
+
+	resp, err := s.client.DescribeClusterLogs(tea.String(clusterId))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		addDebug("DescribeClusterLogs", resp, requestMap)
+	}
+	return resp.Body, nil
 }

@@ -22,6 +22,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/denverdino/aliyungo v0.0.0-20220905031958-589a058e1592
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
+	github.com/fatih/structs v1.1.0
 	github.com/gogap/errors v0.0.0-20160523102334-149c546090d0 // indirect
 	github.com/gogap/stack v0.0.0-20150131034635-fef68dddd4f8 // indirect
 	github.com/google/uuid v1.1.2
