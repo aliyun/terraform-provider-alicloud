@@ -231,3 +231,4 @@ var GPDBDBInstancePlanSupportRegions = []Region{Hangzhou}
 var ADBDBClusterLakeVersionSupportRegions = []Region{Hangzhou}
 var LindormInstanceRegions = []Region{Shanghai}
 var NLBSupportRegions = []Region{Hangzhou}
+var BpStudioApplicationSupportRegions = []Region{Hangzhou}
