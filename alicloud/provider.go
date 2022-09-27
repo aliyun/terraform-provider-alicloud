@@ -752,6 +752,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_models":                           dataSourceAlicloudApiGatewayModels(),
 			"alicloud_resource_manager_account_deletion_check_task": dataSourceAlicloudResourceManagerAccountDeletionCheckTask(),
 			"alicloud_cs_cluster_credential":                        dataSourceAlicloudCSClusterCredential(),
+			"alicloud_api_gateway_plugins":                          dataSourceAlicloudApiGatewayPlugins(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1397,6 +1398,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vod_editing_project":                                  resourceAlicloudVodEditingProject(),
 			"alicloud_api_gateway_model":                                    resourceAlicloudApiGatewayModel(),
 			"alicloud_cen_transit_router_grant_attachment":                  resourceAlicloudCenTransitRouterGrantAttachment(),
+			"alicloud_api_gateway_plugin":                                   resourceAlicloudApiGatewayPlugin(),
 		},
 
 		ConfigureFunc: providerConfigure,
