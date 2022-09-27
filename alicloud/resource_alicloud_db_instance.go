@@ -503,6 +503,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+			},
 		},
 	}
 }
@@ -1397,6 +1403,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	d.Set("deletion_protection", instance["DeletionProtection"])
 	d.Set("vpc_id", instance["VpcId"])
+	d.Set("category", instance["Category"])
 	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 	if len(slaveZones) == 2 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
@@ -1689,6 +1696,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 			}
 			request["BabelfishConfig"] = string(babelfishConfig)
 		}
+	}
+
+	if v, ok := d.GetOk("category"); ok {
+		request["Category"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()
