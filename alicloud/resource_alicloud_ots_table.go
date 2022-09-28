@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -391,7 +390,7 @@ func updateDefinedColumns(client *connectivity.AliyunClient, instance string, re
 				}
 				return tableStoreClient.DeleteDefinedColumn(&request)
 			default:
-				return nil, WrapError(errors.New(fmt.Sprintf("unexpected defined column request type %T: %v", req, req)))
+				return nil, WrapError(fmt.Errorf("unexpected defined column request type %T: %v", req, req))
 			}
 		})
 		if err != nil {

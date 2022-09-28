@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
@@ -51,7 +50,7 @@ func ParseDefinedColumnType(colType string) (tablestore.DefinedColumnType, error
 	case DefinedColumnBoolean:
 		return tablestore.DefinedColumn_BOOLEAN, nil
 	}
-	return 0, WrapError(errors.New(fmt.Sprintf("unsupported defined column type: %s", colType)))
+	return 0, WrapError(fmt.Errorf("unsupported defined column type: %s", colType))
 }
 
 func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
@@ -181,7 +180,7 @@ func ConvertDefinedColumnType(t tablestore.DefinedColumnType) (DefinedColumnType
 	case tablestore.DefinedColumn_BOOLEAN:
 		return DefinedColumnBoolean, nil
 	}
-	return "", WrapError(errors.New(fmt.Sprintf("unsupported defined column type: %v", t)))
+	return "", WrapError(fmt.Errorf("unsupported defined column type: %v", t))
 }
 
 func FindDefinedColumn(columns []*tablestore.DefinedColumnSchema, target *tablestore.DefinedColumnSchema) ColumnFindResult {
@@ -559,7 +558,7 @@ func ConvertSecIndexType(indexType tablestore.IndexType) (SecondaryIndexTypeStri
 	case tablestore.IT_LOCAL_INDEX:
 		return Local, nil
 	default:
-		return "", WrapError(errors.New(fmt.Sprintf("unexpected secondary index type: %v", indexType)))
+		return "", WrapError(fmt.Errorf("unexpected secondary index type: %v", indexType))
 	}
 }
 func ConvertSecIndexTypeString(typeStr SecondaryIndexTypeString) (tablestore.IndexType, error) {
@@ -569,7 +568,7 @@ func ConvertSecIndexTypeString(typeStr SecondaryIndexTypeString) (tablestore.Ind
 	case Local:
 		return tablestore.IT_LOCAL_INDEX, nil
 	default:
-		return 0, WrapError(errors.New(fmt.Sprintf("unexpected secondary index type: %v", typeStr)))
+		return 0, WrapError(fmt.Errorf("unexpected secondary index type: %v", typeStr))
 	}
 }
 
@@ -653,9 +652,9 @@ func (s *OtsService) WaitForSecondaryIndex(instance string, table string, index 
 		// table exists and index does not exist
 		indexFind := IsSubCollection([]string{index}, simplifySecIndex(tableResp.IndexMetas))
 		switch {
-		case status == Deleted, indexFind == false:
+		case status == Deleted, !indexFind:
 			return nil
-		case status != Deleted, indexFind == true:
+		case status != Deleted, indexFind:
 			// Non-deleted states cannot be distinguished precisely. If the index exists,
 			// it is considered that the index successfully matches the non-deleted state, and end waiting
 			return nil
@@ -785,7 +784,7 @@ func ConvertSearchIndexSyncPhase(syncPhase tablestore.SyncPhase) (OtsSearchIndex
 	case tablestore.SyncPhase_INCR:
 		return Incr, nil
 	default:
-		return "", WrapError(errors.New(fmt.Sprintf("unexpected search index sync phase: %v", syncPhase)))
+		return "", WrapError(fmt.Errorf("unexpected search index sync phase: %v", syncPhase))
 	}
 }
 
@@ -808,7 +807,7 @@ func ConvertSearchIndexFieldTypeString(typeStr SearchIndexFieldTypeString) (tabl
 	case "Nested":
 		return tablestore.FieldType_NESTED, nil
 	default:
-		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index field type string: %s", typeStr)))
+		return 0, WrapError(fmt.Errorf("unexpected search index field type string: %s", typeStr))
 	}
 }
 
@@ -825,7 +824,7 @@ func ConvertSearchIndexAnalyzerTypeString(typeStr SearchIndexAnalyzerTypeString)
 	case "Fuzzy":
 		return tablestore.Analyzer_Fuzzy, nil
 	default:
-		return "", WrapError(errors.New(fmt.Sprintf("unexpected search index analyzer type string: %s", typeStr)))
+		return "", WrapError(fmt.Errorf("unexpected search index analyzer type string: %s", typeStr))
 	}
 }
 
@@ -836,7 +835,7 @@ func ConvertSearchIndexSortFieldTypeString(typeStr SearchIndexSortFieldTypeStrin
 	case "FieldSort":
 		return &search.FieldSort{}, nil
 	default:
-		return nil, WrapError(errors.New(fmt.Sprintf("unexpected search index sort field type string [PrimaryKeySort|FieldSort]: %s", typeStr)))
+		return nil, WrapError(fmt.Errorf("unexpected search index sort field type string [PrimaryKeySort|FieldSort]: %s", typeStr))
 	}
 }
 
@@ -847,7 +846,7 @@ func ConvertSearchIndexOrderTypeString(typeStr SearchIndexOrderTypeString) (sear
 	case "Desc":
 		return search.SortOrder_DESC, nil
 	default:
-		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index sort order string [Asc|Desc]: %s", typeStr)))
+		return 0, WrapError(fmt.Errorf("unexpected search index sort order string [Asc|Desc]: %s", typeStr))
 	}
 }
 
@@ -860,7 +859,7 @@ func ConvertSearchIndexSortModeString(typeStr SearchIndexSortModeString) (search
 	case "Avg":
 		return search.SortMode_Avg, nil
 	default:
-		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index sort mode string [Min|Max|Avg]: %s", typeStr)))
+		return 0, WrapError(fmt.Errorf("unexpected search index sort mode string [Min|Max|Avg]: %s", typeStr))
 	}
 }
 
