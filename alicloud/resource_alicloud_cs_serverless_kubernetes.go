@@ -262,9 +262,14 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 
 func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	invoker := NewInvoker()
 
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 
 	var clusterName string
 	if v, ok := d.GetOk("name"); ok {
@@ -402,7 +407,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_serverless_kubernetes", "CreateServerlessKubernetesCluster", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSServerlessKubernetes, "CreateServerlessKubernetesCluster", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -416,7 +421,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 
 	return resourceAlicloudCSServerlessKubernetesRead(d, meta)
@@ -428,7 +433,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	invoker := NewInvoker()
 	rosClient, err := client.NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapError(err)
 	}
 
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
@@ -437,7 +442,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 			d.SetId("")
 			return nil
 		}
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeCsServerlessKubernetes", DenverdinoAliyungo)
 	}
 
 	vswitchIds := []string{}
@@ -506,7 +511,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	var kubeConfig *cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
-			return WrapError(err)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterKubeConfig", DenverdinoAliyungo)
 		}
 		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
 			return WrapError(err)
@@ -528,7 +533,7 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("tags") {
 		err := updateKubernetesClusterTag(d, meta)
 		if err != nil {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("tags")
 	}
@@ -551,7 +556,7 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 	csService := CsService{meta.(*connectivity.AliyunClient)}
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapError(err)
 	}
 
 	args := &roacs.DeleteClusterRequest{}
@@ -564,7 +569,7 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", AlibabaCloudSdkGoERROR)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsServerlessKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -595,13 +600,13 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 		}
 		// it's not allowed to disable rrsa
 		if !enableRRSA {
-			return fmt.Errorf("It's not supported to disable RRSA! " +
-				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file")
+			return WrapError(fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file"))
 		}
 		// version check
 		version := d.Get("version").(string)
 		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, version); res < 0 || err != nil {
-			return fmt.Errorf("RRSA is not supported in current version: %s", version)
+			return WrapError(fmt.Errorf("RRSA is not supported in current version: %s", version))
 		}
 		update = true
 		modifyClusterRequest.EnableRRSA = enableRRSA

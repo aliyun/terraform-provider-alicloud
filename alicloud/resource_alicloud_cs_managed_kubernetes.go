@@ -736,8 +736,15 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 
 func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	invoker := NewInvoker()
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
+
 	args, err := buildKubernetesArgs(d, meta)
 	if err != nil {
 		return WrapError(err)
@@ -757,7 +764,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		response = raw
 		return err
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_managed_kubernetes", "CreateKubernetesCluster", response)
+		return WrapErrorf(err, DefaultErrorMsg, resourceCSManagedKubernetes, "CreateKubernetesCluster", DenverdinoAliyungo)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -771,7 +778,7 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+		return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(cluster.TaskId))
 	}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
@@ -825,7 +832,7 @@ func migrateAlicloudManagedKubernetesCluster(d *schema.ResourceData, meta interf
 
 	stateConf := BuildStateConf([]string{"migrating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return err
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	d.SetPartial("cluster_spec")
@@ -862,11 +869,11 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 
 	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return err
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	if err != nil {
-		return err
+		return WrapError(err)
 	}
 
 	return nil
@@ -879,14 +886,14 @@ func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invok
 	}
 	// it's not allowed to disable rrsa
 	if !enableRRSA {
-		return fmt.Errorf("It's not supported to disable RRSA! " +
-			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+		return WrapError(fmt.Errorf("It's not supported to disable RRSA! " +
+			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file."))
 	}
 
 	// version check
 	clusterVersion := d.Get("version").(string)
 	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
-		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+		return WrapError(fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion))
 	}
 
 	action := "ModifyClusterRRSA"
@@ -948,7 +955,7 @@ func versionCompare(neededVersion, curVersion string) (int, error) {
 		v2, err2 := strconv.Atoi(newVal)
 
 		if err1 != nil || err2 != nil {
-			return -2, fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion)
+			return -2, WrapError(fmt.Errorf("NotSupport, current cluster version is not support: %s", curVersion))
 		}
 
 		if v1 > v2 {

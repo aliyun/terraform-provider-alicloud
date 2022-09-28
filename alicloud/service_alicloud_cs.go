@@ -65,6 +65,26 @@ const (
 	IdMsgWithTask = IdMsg + "TaskInfo: %s" // wait for async task info
 )
 
+const (
+	datasourceCSEdgeKubernetesClusters       = "alicloud_cs_edge_kubernetes_clusters"
+	datasourceCSManagedKubernetesClusters    = "alicloud_cs_managed_kubernetes_clusters"
+	datasourceCSKubernetesClusters           = "alicloud_cs_kubernetes_clusters"
+	datasourceCSServerlessKubernetesClusters = "alicloud_cs_serverless_kubernetes_clusters"
+	datasourceCSKubernetesAddonMetadata      = "alicloud_cs_kubernetes_addon_metadata"
+	datasourceCSKubernetesAddons             = "alicloud_cs_kubernetes_addons"
+	datasourceCSKubernetesPermissions        = "alicloud_cs_kubernetes_permissions"
+	datasourceCSKubernetesVersion            = "alicloud_cs_kubernetes_version"
+	resourceCSManagedKubernetes              = "alicloud_cs_managed_kubernetes"
+	resourceCSKubernetes                     = "alicloud_cs_kubernetes"
+	resourceCSEdgeKubernetes                 = "alicloud_cs_edge_kubernetes"
+	resourceCSServerlessKubernetes           = "alicloud_cs_serverless_kubernetes"
+	resourceCSAutoscalingConfig              = "alicloud_cs_autoscaling_config"
+	resourceCSKubernetesAddon                = "alicloud_cs_kubernetes_addon"
+	resourceCSKubernetesNodePool             = "alicloud_cs_kubernetes_node_pool"
+	resourceCSKubernetesPermissions          = "alicloud_cs_kubernetes_permissions"
+	resourceCSKubernetesAutoScaler           = "alicloud_cs_kubernetes_autoscaler"
+)
+
 var (
 	ATTACH_SCRIPT_WITH_VERSION = `#!/bin/sh
 curl http://aliacs-k8s-%s.oss-%s.aliyuncs.com/public/pkg/run/attach/%s/attach_node.sh | bash -s -- --openapi-token %s --ess true `
@@ -87,7 +107,7 @@ func (s *CsService) GetContainerClusterByName(name string) (cluster cs.ClusterTy
 	})
 
 	if err != nil {
-		return cluster, fmt.Errorf("Describe cluster failed by name %s: %#v.", name, err)
+		return cluster, WrapError(fmt.Errorf("Describe cluster failed by name %s: %#v.", name, err))
 	}
 
 	if len(clusters) < 1 {
@@ -105,7 +125,7 @@ func (s *CsService) GetContainerClusterByName(name string) (cluster cs.ClusterTy
 func (s *CsService) GetContainerClusterAndCertsByName(name string) (*cs.ClusterType, *cs.ClusterCerts, error) {
 	cluster, err := s.GetContainerClusterByName(name)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, WrapError(err)
 	}
 	var certs cs.ClusterCerts
 	invoker := NewInvoker()
@@ -121,7 +141,7 @@ func (s *CsService) GetContainerClusterAndCertsByName(name string) (*cs.ClusterT
 	})
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, WrapError(err)
 	}
 
 	return &cluster, &certs, nil
@@ -131,7 +151,7 @@ func (s *CsService) DescribeContainerApplication(clusterName, appName string) (a
 	appName = Trim(appName)
 	cluster, certs, err := s.GetContainerClusterAndCertsByName(clusterName)
 	if err != nil {
-		return app, err
+		return app, WrapError(err)
 	}
 	raw, err := s.client.WithCsProjectClient(cluster.ClusterID, cluster.MasterURL, *certs, func(csProjectClient *cs.ProjectClient) (interface{}, error) {
 		return csProjectClient.GetProject(appName)
@@ -141,7 +161,7 @@ func (s *CsService) DescribeContainerApplication(clusterName, appName string) (a
 		if IsExpectedErrors(err, []string{"Not Found"}) {
 			return app, GetNotFoundErrorFromString(GetNotFoundMessage("Container Application", appName))
 		}
-		return app, fmt.Errorf("Getting Application failed by name %s: %#v.", appName, err)
+		return app, WrapError(fmt.Errorf("Getting Application failed by name %s: %#v.", appName, err))
 	}
 	if app.Name != appName {
 		return app, GetNotFoundErrorFromString(GetNotFoundMessage("Container Application", appName))
@@ -157,7 +177,7 @@ func (s *CsService) WaitForContainerApplication(clusterName, appName string, sta
 	for {
 		app, err := s.DescribeContainerApplication(clusterName, appName)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 
 		if strings.ToLower(app.CurrentState) == strings.ToLower(string(status)) {
@@ -188,7 +208,7 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
-		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeKubernetesCluster", DenverdinoAliyungo)
+		return cluster, WrapError(err)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -217,10 +237,7 @@ func (s *CsService) DescribeClusterKubeConfig(clusterId string, isResource bool)
 		response = raw
 		return err
 	}); err != nil {
-		if isResource {
-			return nil, WrapErrorf(err, DefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
-		}
-		return nil, WrapErrorf(err, DataDefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
+		return nil, WrapError(err)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -239,12 +256,12 @@ func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName s
 		ComponentIds: []*string{tea.String(addonName)},
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
+		return nil, WrapError(err)
 	}
 
 	addon, ok := resp.Body[addonName]
 	if !ok {
-		return nil, WrapErrorf(Error(ResourceNotfound), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus")
+		return nil, WrapError(Error(ResourceNotfound))
 	}
 
 	addonInfo := addon.(map[string]interface{})["addon_info"]
@@ -266,7 +283,7 @@ func (s *CsClient) DescribeCsKubernetesAllAddonsStatus(clusterId string, addons 
 		ComponentIds: addons,
 	})
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
+		return nil, WrapError(err)
 	}
 
 	for name, status := range resp.Body {
@@ -292,7 +309,7 @@ func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*
 
 	resp, err := s.client.DescribeClusterAddonsVersion(&clusterId)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsVersion", err)
+		return nil, WrapError(err)
 	}
 
 	for name, addon := range resp.Body {
@@ -325,12 +342,12 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 	addonName := parts[1]
 	addonsMetadata, err := s.DescribeClusterAddonsMetadata(clusterId)
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
 	addonStatus, err := s.DescribeCsKubernetesAddonStatus(clusterId, addonName)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonStatus", err)
+		return nil, WrapError(err)
 	}
 
 	// Update some fields
@@ -342,7 +359,7 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 		return addon, nil
 	}
 
-	return nil, WrapErrorf(Error(ResourceNotfound), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddon")
+	return nil, WrapError(Error(ResourceNotfound))
 }
 
 func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
@@ -384,7 +401,7 @@ func (s *CsClient) installAddon(d *schema.ResourceData) error {
 
 	_, err := s.client.InstallClusterAddons(&clusterId, creationArgs)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "installAddon", err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -411,7 +428,7 @@ func (s *CsClient) upgradeAddon(d *schema.ResourceData) error {
 
 	_, err := s.client.UpgradeClusterAddons(&clusterId, upgradeArgs)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -436,7 +453,7 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 
 	_, err = s.client.UnInstallClusterAddons(&clusterId, uninstallArgs)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -452,7 +469,7 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 
 	_, err := s.client.ModifyClusterAddon(&clusterId, &ComponentName, upgradeArgs)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
+		return WrapError(err)
 	}
 
 	return nil
@@ -462,7 +479,7 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
 	availableAddons, err := s.DescribeClusterAddonsMetadata(clusterId)
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
 	queryList := make([]*string, 0)
@@ -472,7 +489,7 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 
 	status, err := s.DescribeCsKubernetesAllAddonsStatus(clusterId, queryList)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
+		return nil, WrapError(err)
 	}
 
 	for name, addon := range availableAddons {
@@ -492,7 +509,7 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 func (s *CsClient) DescribeCsKubernetesAddonMetadata(clusterId string, name string, version string) (*Component, error) {
 	resp, err := s.client.DescribeClusterAddonMetadata(&clusterId, &name, &version)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
+		return nil, WrapError(err)
 	}
 	result := &Component{
 		ComponentName: *resp.Body.Name,
@@ -530,7 +547,7 @@ func (s *CsService) DescribeCsKubernetesNodePool(id string) (nodePool *cs.NodePo
 				}
 			}
 		}
-		return nil, WrapErrorf(err, DefaultErrorMsg, nodePoolId, "DescribeNodePool", DenverdinoAliyungo)
+		return nil, WrapError(err)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -586,7 +603,7 @@ func (s *CsService) DescribeCsManagedKubernetes(id string) (cluster *cs.Kubernet
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeKubernetesCluster", DenverdinoAliyungo)
+		return cluster, WrapError(err)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -723,7 +740,7 @@ func (s *CsService) DescribeCsServerlessKubernetes(id string) (*cs.ServerlessClu
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return cluster, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
-		return cluster, WrapErrorf(err, DefaultErrorMsg, id, "DescribeServerlessKubernetesCluster", DenverdinoAliyungo)
+		return cluster, WrapError(err)
 	}
 	if debugOn() {
 		requestMap := make(map[string]interface{})
@@ -837,7 +854,7 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	token, err := s.GetPermanentToken(clusterId)
 
 	if err != nil {
-		return "", err
+		return "", WrapError(err)
 	}
 
 	if labels == "" {
@@ -956,7 +973,7 @@ func GetKubernetesNetworkName(cluster *cs.KubernetesClusterDetail) (network stri
 
 	metadata := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(cluster.MetaData), &metadata); err != nil {
-		return "", fmt.Errorf("unmarshal metaData failed. error: %s", err)
+		return "", WrapError(fmt.Errorf("unmarshal metaData failed. error: %s", err))
 	}
 
 	for _, name := range NETWORK_ADDON_NAMES {
@@ -964,16 +981,16 @@ func GetKubernetesNetworkName(cluster *cs.KubernetesClusterDetail) (network stri
 			return name, nil
 		}
 	}
-	return "", fmt.Errorf("no network addon found")
+	return "", WrapError(fmt.Errorf("no network addon found"))
 }
 
 func (s *CsClient) DescribeUserPermission(uid string) ([]*client.DescribeUserPermissionResponseBody, error) {
 	body, err := s.client.DescribeUserPermission(tea.String(uid))
 	if err != nil {
-		return nil, err
+		return nil, WrapError(err)
 	}
 
-	return body.Body, err
+	return body.Body, nil
 }
 
 func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutoscalingConfigRequest, error) {
@@ -1015,5 +1032,5 @@ func (s *CsClient) ModifyNodePoolNodeConfig(clusterId, nodepoolId string, reques
 		requestMap["Args"] = request
 		addDebug("ModifyNodePoolKubeletConfig", resp, requestMap)
 	}
-	return resp, err
+	return resp, nil
 }
