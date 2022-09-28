@@ -64,8 +64,6 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 h1:iC9YFYKDGEy3n/FtqJnOkZsene9olVspKmkX5A2YBEo=
 github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4/go.mod h1:sCavSAvdzOjul4cEqeVtvlSaSScfNsTQ+46HwlTL1hc=
-github.com/alibabacloud-go/cs-20151215/v3 v3.0.14 h1:1XNiXRnXKC0+DFz/aSTDH0jNwhQu2WWauE3n5AwDSeU=
-github.com/alibabacloud-go/cs-20151215/v3 v3.0.14/go.mod h1:oXn6EEeVolg3AGdyDYvPd1ZzmbcoV3SKCNJjjsUi7MM=
 github.com/alibabacloud-go/cs-20151215/v3 v3.0.16 h1:xldHXLTByciqe0PCt3Pxigt8fstTmhcRCgdjHizFE2w=
 github.com/alibabacloud-go/cs-20151215/v3 v3.0.16/go.mod h1:oXn6EEeVolg3AGdyDYvPd1ZzmbcoV3SKCNJjjsUi7MM=
 github.com/alibabacloud-go/darabonba-openapi v0.1.18/go.mod h1:PB4HffMhJVmAgNKNq3wYbTUlFvPgxJpTzd1F5pTuUsc=
@@ -105,12 +103,6 @@ github.com/aliyun/alibaba-cloud-sdk-go v1.61.1538 h1:4BQIks41vtqfFsbWNoE5xYuP2qk
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.1538/go.mod h1:RcDobYh8k5VP6TNybz9m++gL3ijVI5wueVr0EM10VsU=
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5 h1:c2TFcJ5PjkqkHr2use7Av2wHB8jVgoKxX1gmLDsysR4=
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
-github.com/aliyun/aliyun-log-go-sdk v0.1.37 h1:GvswbgLqVOHNeMWssQ9zA+R7YVDP6arLUP92bKyGZNw=
-github.com/aliyun/aliyun-log-go-sdk v0.1.37/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
-github.com/aliyun/aliyun-log-go-sdk v0.1.38-0.20220905111948-1136bfbfb6f4 h1:cTgLL0tfc6vHHA3NMSs9Htfkb/DQJHyXbeTCq1WPJ/g=
-github.com/aliyun/aliyun-log-go-sdk v0.1.38-0.20220905111948-1136bfbfb6f4/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
-github.com/aliyun/aliyun-log-go-sdk v0.1.38 h1:u20nIZWQnmxOgGdHfMfdmD3h9CaQYANd18Q12pNo1KY=
-github.com/aliyun/aliyun-log-go-sdk v0.1.38/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
 github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20220926050328-48be6df7023a h1:VSvjczwWoUx1jGVRkrxZIf72o7ORt5IbWPwOlXWzUK0=
 github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20220926050328-48be6df7023a/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58 h1:hX1oYyN7d0y7GHwli6trhovosNAKo9f60uC3FPHMjoQ=
@@ -186,10 +178,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deckarep/golang-set v1.8.0 h1:sk9/l/KqpunDwP7pSjUg0keiOOLEnOBHzykLrsPppp4=
 github.com/deckarep/golang-set v1.8.0/go.mod h1:5nI87KwE7wgsBU1F4GKAw2Qod7p5kyS383rP6+o6qqo=
-github.com/denverdino/aliyungo v0.0.0-20220805063645-076d420db039 h1:3YJc8YBgZ8DOpQDXwATCKx7yNQYkNJj9IyFNVhFybK8=
-github.com/denverdino/aliyungo v0.0.0-20220805063645-076d420db039/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
-github.com/denverdino/aliyungo v0.0.0-20220905031958-589a058e1592 h1:XKzf9RPRjjbsYhgP4ycOF0b9PoC4lgyQwuB1iBHFwrs=
-github.com/denverdino/aliyungo v0.0.0-20220905031958-589a058e1592/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
+github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947 h1:XSQNYTT3xgLDGbbDLUZMj98VhQBQcTxtyaMc3J1jiPo=
+github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947/go.mod h1:TK05uvk4XXfK2kdvRwfcZ1NaxjDxmm7H3aQLko0mJxA=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=

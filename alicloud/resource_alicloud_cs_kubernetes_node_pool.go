@@ -493,6 +493,13 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"polardb_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"kubelet_configuration": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -862,6 +869,10 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
 	}
+	if d.HasChange("polardb_ids") {
+		update = true
+		args.PolarDBIds = expandStringList(d.Get("polardb_ids").([]interface{}))
+	}
 
 	if update {
 		var response interface{}
@@ -1028,6 +1039,7 @@ func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("system_disk_snapshot_policy_id", object.WorkerSnapshotPolicyId)
 
 	d.Set("rds_instances", object.RdsInstances)
+	d.Set("polardb_ids", object.PolarDBIds)
 
 	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
 		d.Set("password", passwd)
@@ -1312,6 +1324,9 @@ func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNode
 
 	if v, ok := d.GetOk("rds_instances"); ok {
 		creationArgs.RdsInstances = expandStringList(v.([]interface{}))
+	}
+	if v, ok := d.GetOk("polardb_ids"); ok {
+		creationArgs.PolarDBIds = expandStringList(v.([]interface{}))
 	}
 
 	if v, ok := d.GetOk("cpu_policy"); ok {

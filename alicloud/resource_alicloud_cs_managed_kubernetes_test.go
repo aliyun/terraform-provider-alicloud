@@ -43,7 +43,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                        name,
-					"version":                     "1.22.10-aliyun.1",
+					"version":                     "1.24.6-aliyun.1",
 					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
 					"worker_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"worker_number":               "0",
@@ -70,7 +70,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 					"cluster_domain":              "cluster.local",
 					"custom_san":                  "www.terraform.io",
 					"encryption_provider_key":     "${data.alicloud_kms_keys.default.keys.0.id}",
-					"runtime":                     map[string]interface{}{"name": "docker", "version": "19.03.5"},
+					"runtime":                     map[string]interface{}{"name": "containerd", "version": "1.5.13"},
 					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
 					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
 					"maintenance_window":          []map[string]string{{"enable": "true", "maintenance_time": "03:00:00Z", "duration": "3h", "weekly_period": "Thursday"}},
@@ -78,7 +78,7 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                                  name,
-						"version":                               "1.22.10-aliyun.1",
+						"version":                               "1.24.6-aliyun.1",
 						"worker_number":                         "0",
 						"password":                              "Test12345",
 						"pod_cidr":                              "10.93.0.0/16",
@@ -105,8 +105,8 @@ func TestAccAlicloudCSManagedKubernetes_basic(t *testing.T) {
 						"taints.0.key":                          "tf-key1",
 						"taints.0.value":                        "tf-value1",
 						"taints.0.effect":                       "NoSchedule",
-						"runtime.name":                          "docker",
-						"runtime.version":                       "19.03.5",
+						"runtime.name":                          "containerd",
+						"runtime.version":                       "1.5.13",
 						"maintenance_window.#":                  "1",
 						"maintenance_window.0.enable":           "true",
 						"maintenance_window.0.maintenance_time": "03:00:00Z",
@@ -210,7 +210,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					// cluster args
 					"name":                name,
 					"password":            "Test12345",
-					"version":             "1.22.10-aliyun.1",
+					"version":             "1.24.6-aliyun.1",
 					"pod_cidr":            "10.94.0.0/16",
 					"service_cidr":        "172.22.0.0/16",
 					"deletion_protection": "false",
@@ -245,7 +245,7 @@ func TestAccAlicloudCSManagedKubernetes_essd(t *testing.T) {
 					testAccCheck(map[string]string{
 						// cluster args
 						"name":                name,
-						"version":             "1.22.10-aliyun.1",
+						"version":             "1.24.6-aliyun.1",
 						"password":            "Test12345",
 						"pod_cidr":            "10.94.0.0/16",
 						"service_cidr":        "172.22.0.0/16",
@@ -620,7 +620,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 					"worker_data_disk_category":   "cloud_ssd",
 					"worker_instance_charge_type": "PostPaid",
 					"slb_internet_enabled":        "true",
-					"version":                     "1.22.10-aliyun.1",
+					"version":                     "1.24.6-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -636,7 +636,7 @@ func TestAccAlicloudCSManagedKubernetes_upgrade(t *testing.T) {
 						"worker_data_disk_size":     "20",
 						"worker_data_disk_category": "cloud_ssd",
 						"slb_internet_enabled":      "true",
-						"version":                   "1.22.10-aliyun.1",
+						"version":                   "1.24.6-aliyun.1",
 					}),
 				),
 			},
