@@ -113,7 +113,7 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 	ra := resourceAttrInit(resourceId, testAccCheckKeyValueInMapsForDMS)
 
 	serviceFunc := func() interface{} {
-		return &Dms_enterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &DmsEnterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 
