@@ -80,6 +80,23 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 							},
 							MaxItems: 4,
 						},
+						"defined_column": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+							MaxItems: 32,
+						},
 						"time_to_live": {
 							Type:     schema.TypeInt,
 							Computed: true,
@@ -96,11 +113,12 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 }
 
 type OtsTableInfo struct {
-	instanceName string
-	tableName    string
-	primaryKey   []*tablestore.PrimaryKeySchema
-	timeToLive   int
-	maxVersion   int
+	instanceName  string
+	tableName     string
+	primaryKey    []*tablestore.PrimaryKeySchema
+	definedColumn []*tablestore.DefinedColumnSchema
+	timeToLive    int
+	maxVersion    int
 }
 
 func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) error {
@@ -152,11 +170,12 @@ func dataSourceAlicloudOtsTablesRead(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		allTableInfos = append(allTableInfos, OtsTableInfo{
-			instanceName: instanceName,
-			tableName:    object.TableMeta.TableName,
-			primaryKey:   object.TableMeta.SchemaEntry,
-			timeToLive:   object.TableOption.TimeToAlive,
-			maxVersion:   object.TableOption.MaxVersion,
+			instanceName:  instanceName,
+			tableName:     object.TableMeta.TableName,
+			primaryKey:    object.TableMeta.SchemaEntry,
+			definedColumn: object.TableMeta.DefinedColumns,
+			timeToLive:    object.TableOption.TimeToAlive,
+			maxVersion:    object.TableOption.MaxVersion,
 		})
 	}
 
@@ -187,6 +206,20 @@ func otsTablesDescriptionAttributes(d *schema.ResourceData, tableInfos []OtsTabl
 			primaryKey = append(primaryKey, pkColumn)
 		}
 		mapping["primary_key"] = primaryKey
+
+		var definedColumn []map[string]interface{}
+		for _, col := range table.definedColumn {
+			columnType, err := ConvertDefinedColumnType(col.ColumnType)
+			if err != nil {
+				return WrapError(err)
+			}
+			viewCol := map[string]interface{}{
+				"name": col.Name,
+				"type": columnType,
+			}
+			definedColumn = append(definedColumn, viewCol)
+		}
+		mapping["defined_column"] = definedColumn
 
 		names = append(names, table.tableName)
 		ids = append(ids, id)

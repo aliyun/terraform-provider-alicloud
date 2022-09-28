@@ -63,6 +63,31 @@ func TestAccAlicloudOtsTable_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"defined_column": []map[string]interface{}{
+						{
+							"name": "col1",
+							"type": "Integer",
+						},
+						{
+							"name": "col2",
+							"type": "String",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"defined_column.#":      "2",
+						"defined_column.0.name": "col1",
+						"defined_column.0.type": "Integer",
+						"defined_column.1.name": "col2",
+						"defined_column.1.type": "String",
+					}),
+				),
+			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"deviation_cell_version_in_sec": "86401",
@@ -145,6 +170,12 @@ func TestAccAlicloudOtsTable_highPerformance(t *testing.T) {
 					"primary_key": []map[string]interface{}{
 						{
 							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"defined_column": []map[string]interface{}{
+						{
+							"name": "col1",
 							"type": "Integer",
 						},
 					},
@@ -248,6 +279,12 @@ func TestAccAlicloudOtsTable_multi(t *testing.T) {
 							"type": "Integer",
 						},
 					},
+					"defined_column": []map[string]interface{}{
+						{
+							"name": "col1",
+							"type": "Integer",
+						},
+					},
 					"time_to_live": "-1",
 					"max_version":  "1",
 					"count":        "5",
@@ -294,6 +331,12 @@ func TestAccAlicloudOtsTable_withTableEncryption(t *testing.T) {
 					"primary_key": []map[string]interface{}{
 						{
 							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"defined_column": []map[string]interface{}{
+						{
+							"name": "col1",
 							"type": "Integer",
 						},
 					},

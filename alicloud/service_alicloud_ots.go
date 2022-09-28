@@ -1,7 +1,11 @@
 package alicloud
 
 import (
+	"errors"
+	"regexp"
 	"strings"
+
+	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 
@@ -32,6 +36,22 @@ func (s *OtsService) getPrimaryKeyType(primaryKeyType string) tablestore.Primary
 		keyType = tablestore.PrimaryKeyType_BINARY
 	}
 	return keyType
+}
+
+func ParseDefinedColumnType(colType string) (tablestore.DefinedColumnType, error) {
+	switch DefinedColumnTypeString(colType) {
+	case DefinedColumnInteger:
+		return tablestore.DefinedColumn_INTEGER, nil
+	case DefinedColumnString:
+		return tablestore.DefinedColumn_STRING, nil
+	case DefinedColumnBinary:
+		return tablestore.DefinedColumn_BINARY, nil
+	case DefinedColumnDouble:
+		return tablestore.DefinedColumn_DOUBLE, nil
+	case DefinedColumnBoolean:
+		return tablestore.DefinedColumn_BOOLEAN, nil
+	}
+	return 0, WrapError(errors.New(fmt.Sprintf("unsupported defined column type: %s", colType)))
 }
 
 func (s *OtsService) ListOtsTable(instanceName string) (table *tablestore.ListTableResponse, err error) {
@@ -147,6 +167,42 @@ func (s *OtsService) convertPrimaryKeyType(t tablestore.PrimaryKeyType) PrimaryK
 	}
 	return typeString
 }
+
+func ConvertDefinedColumnType(t tablestore.DefinedColumnType) (DefinedColumnTypeString, error) {
+	switch t {
+	case tablestore.DefinedColumn_INTEGER:
+		return DefinedColumnInteger, nil
+	case tablestore.DefinedColumn_STRING:
+		return DefinedColumnString, nil
+	case tablestore.DefinedColumn_BINARY:
+		return DefinedColumnBinary, nil
+	case tablestore.DefinedColumn_DOUBLE:
+		return DefinedColumnDouble, nil
+	case tablestore.DefinedColumn_BOOLEAN:
+		return DefinedColumnBoolean, nil
+	}
+	return "", WrapError(errors.New(fmt.Sprintf("unsupported defined column type: %v", t)))
+}
+
+func FindDefinedColumn(columns []*tablestore.DefinedColumnSchema, target *tablestore.DefinedColumnSchema) ColumnFindResult {
+	for _, column := range columns {
+		if column.Name == target.Name {
+			if column.ColumnType == target.ColumnType {
+				return ExistEqual
+			}
+			return ExistNotEqual
+		}
+	}
+	return NotExist
+}
+
+type ColumnFindResult int32
+
+const (
+	ExistEqual    ColumnFindResult = 1
+	ExistNotEqual ColumnFindResult = 2
+	NotExist      ColumnFindResult = 3
+)
 
 func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error) {
 	req := ots.CreateListInstanceRequest()
@@ -381,7 +437,7 @@ func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunne
 
 func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp *otsTunnel.ListTunnelResponse, err error) {
 	// check table exists
-	id := fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName)
+	id := ID(instanceName, tableName)
 	if _, err := s.DescribeOtsTable(id); err != nil {
 		return nil, WrapError(err)
 	}
@@ -442,4 +498,420 @@ func (s *OtsService) WaitForOtsTunnel(id string, status Status, timeout int) err
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Tunnel.TunnelName, parts[2], ProviderERROR)
 		}
 	}
+}
+
+func ID(segName ...string) string {
+	return strings.Join(segName, COLON_SEPARATED)
+}
+
+func (s *OtsService) ListOtsSecondaryIndex(instanceName string, tableName string) ([]*tablestore.IndexMeta, error) {
+	tableResp, err := s.DescribeOtsTable(ID(instanceName, tableName))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if tableResp == nil {
+		return nil, nil
+	}
+
+	return tableResp.IndexMetas, nil
+}
+
+// DescribeOtsSecondaryIndex The describe method is depended on by AccTest,
+// and the second return value of the describe method needs `error` type
+func (s *OtsService) DescribeOtsSecondaryIndex(id string) (index *TableIndex, err error) {
+	instanceName, tableName, indexName, _, err := ParseIndexId(id)
+	if err != nil {
+		return
+	}
+	tableResp, err := s.DescribeOtsTable(ID(instanceName, tableName))
+	if err != nil {
+		return
+	}
+	if tableResp == nil {
+		err = WrapError(fmt.Errorf("table not exist: %s", tableName))
+		return
+	}
+
+	for _, idx := range tableResp.IndexMetas {
+		if idx.IndexName == indexName {
+			index = &TableIndex{
+				InstanceName: instanceName,
+				TableName:    tableName,
+				Index:        idx,
+			}
+			return
+		}
+	}
+	err = WrapError(fmt.Errorf("index not exist: %s.%s", tableName, indexName))
+	return
+}
+
+type TableIndex struct {
+	InstanceName string
+	TableName    string
+	Index        *tablestore.IndexMeta
+}
+
+func ConvertSecIndexType(indexType tablestore.IndexType) (SecondaryIndexTypeString, error) {
+	switch indexType {
+	case tablestore.IT_GLOBAL_INDEX:
+		return Global, nil
+	case tablestore.IT_LOCAL_INDEX:
+		return Local, nil
+	default:
+		return "", WrapError(errors.New(fmt.Sprintf("unexpected secondary index type: %v", indexType)))
+	}
+}
+func ConvertSecIndexTypeString(typeStr SecondaryIndexTypeString) (tablestore.IndexType, error) {
+	switch typeStr {
+	case Global:
+		return tablestore.IT_GLOBAL_INDEX, nil
+	case Local:
+		return tablestore.IT_LOCAL_INDEX, nil
+	default:
+		return 0, WrapError(errors.New(fmt.Sprintf("unexpected secondary index type: %v", typeStr)))
+	}
+}
+
+type RegxFilter struct {
+	regx           *regexp.Regexp
+	getSourceValue func(sourceObj interface{}) interface{}
+}
+
+func (f *RegxFilter) filter(sourceObj interface{}) bool {
+	return f.regx.MatchString(f.getSourceValue(sourceObj).(string))
+}
+
+type ValuesFilter struct {
+	allowedValues  []interface{}
+	getSourceValue func(sourceObj interface{}) interface{}
+}
+
+func (f *ValuesFilter) filter(sourceObj interface{}) bool {
+	for _, allowed := range f.allowedValues {
+		if allowed != nil && allowed == f.getSourceValue(sourceObj) {
+			return true
+		}
+	}
+	// source value not in the enumerated values
+	return false
+}
+
+type DataFilter interface {
+	filter(sourceObj interface{}) bool
+}
+type InputDataSource struct {
+	inputs  []interface{}
+	filters []DataFilter
+}
+
+func (ds *InputDataSource) doFilters() []interface{} {
+	var outputs []interface{}
+	for _, input := range ds.inputs {
+		pass := true
+		for _, filter := range ds.filters {
+			if !filter.filter(input) {
+				pass = false
+				break
+			}
+		}
+		if pass {
+			outputs = append(outputs, input)
+		}
+	}
+	return outputs
+}
+
+func (s *OtsService) LoopWaitTable(instanceName string, tableName string) (table *tablestore.DescribeTableResponse, err error) {
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		t, e := s.DescribeOtsTable(ID(instanceName, tableName))
+		if e != nil {
+			if NotFoundError(e) {
+				return resource.RetryableError(e)
+			}
+			return resource.NonRetryableError(e)
+		}
+
+		table = t
+		return nil
+	})
+	return
+}
+
+func (s *OtsService) WaitForSecondaryIndex(instance string, table string, index string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	id := ID(instance, table)
+	for {
+		tableResp, err := s.DescribeOtsTable(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			}
+		}
+		// table exists and index does not exist
+		indexFind := IsSubCollection([]string{index}, simplifySecIndex(tableResp.IndexMetas))
+		switch {
+		case status == Deleted, indexFind == false:
+			return nil
+		case status != Deleted, indexFind == true:
+			// Non-deleted states cannot be distinguished precisely. If the index exists,
+			// it is considered that the index successfully matches the non-deleted state, and end waiting
+			return nil
+		default:
+			break
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, tableResp.TableMeta.TableName, index, ProviderERROR)
+		}
+	}
+}
+
+// ParseIndexId both secondary index IDs and search index IDs will use this method, they consist of the same fields
+func ParseIndexId(indexId string) (instanceName, tableName, indexName, indexTypeStr string, err error) {
+	splits := strings.Split(indexId, COLON_SEPARATED)
+	if len(splits) >= 4 {
+		instanceName = splits[0]
+		tableName = splits[1]
+		indexName = splits[2]
+		indexTypeStr = splits[3]
+	} else {
+		err = WrapError(fmt.Errorf("invalid index id(instanceName:tableName:indexName:indexType): %s", indexId))
+	}
+	return
+}
+
+func (s *OtsService) ListOtsSearchIndex(instanceName string, tableName string) (indexes []*tablestore.IndexInfo, err error) {
+	// check table exists
+	id := ID(instanceName, tableName)
+	if _, err := s.DescribeOtsTable(id); err != nil {
+		return nil, WrapError(err)
+	}
+
+	req := &tablestore.ListSearchIndexRequest{
+		TableName: tableName,
+	}
+	var raw interface{}
+	var reqClient *tablestore.TableStoreClient
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			reqClient = tableStoreClient
+			return tableStoreClient.ListSearchIndex(req)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug("ListSearchIndex", raw, reqClient, req)
+		return nil
+	})
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
+			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "ListOtsSearchIndex", AliyunTablestoreGoSdk)
+	}
+	resp, _ := raw.(*tablestore.ListSearchIndexResponse)
+	if resp == nil {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("SearchIndex", id)), NotFoundMsg, ProviderERROR)
+	}
+	// IndexInfo slice can be nil when table not has search index
+	return resp.IndexInfo, nil
+}
+
+func (s *OtsService) DescribeOtsSearchIndex(id string) (indexResp *tablestore.DescribeSearchIndexResponse, err error) {
+	instanceName, tableName, indexName, _, err := ParseIndexId(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if _, err = s.DescribeOtsInstance(instanceName); err != nil {
+		return nil, WrapError(err)
+	}
+
+	if _, err := s.DescribeOtsTable(ID(instanceName, tableName)); err != nil {
+		if NotFoundError(err) {
+			return nil, WrapError(err)
+		}
+	}
+
+	req := &tablestore.DescribeSearchIndexRequest{
+		TableName: tableName,
+		IndexName: indexName,
+	}
+
+	var raw interface{}
+	var reqClient *tablestore.TableStoreClient
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			reqClient = tableStoreClient
+			return tableStoreClient.DescribeSearchIndex(req)
+		})
+		defer func() {
+			addDebug("DescribeSearchIndex", raw, reqClient, req)
+		}()
+
+		if err != nil {
+			if IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "OTSObjectNotExist") {
+			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeSearchIndex", AliyunTablestoreGoSdk)
+	}
+
+	indexResp, _ = raw.(*tablestore.DescribeSearchIndexResponse)
+	if indexResp == nil || indexResp.SyncStat == nil || indexResp.Schema == nil {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsSearchIndex", id)), NotFoundMsg, ProviderERROR)
+	}
+	return indexResp, nil
+}
+
+func ConvertSearchIndexSyncPhase(syncPhase tablestore.SyncPhase) (OtsSearchIndexSyncPhaseString, error) {
+	switch syncPhase {
+	case tablestore.SyncPhase_FULL:
+		return Full, nil
+	case tablestore.SyncPhase_INCR:
+		return Incr, nil
+	default:
+		return "", WrapError(errors.New(fmt.Sprintf("unexpected search index sync phase: %v", syncPhase)))
+	}
+}
+
+func ConvertSearchIndexFieldTypeString(typeStr SearchIndexFieldTypeString) (tablestore.FieldType, error) {
+	switch typeStr {
+	case "Long":
+		return tablestore.FieldType_LONG, nil
+	case "Double":
+		return tablestore.FieldType_DOUBLE, nil
+	case "Boolean":
+		return tablestore.FieldType_BOOLEAN, nil
+	case "Keyword":
+		return tablestore.FieldType_KEYWORD, nil
+	case "Text":
+		return tablestore.FieldType_TEXT, nil
+	case "Date":
+		return tablestore.FieldType_DATE, nil
+	case "GeoPoint":
+		return tablestore.FieldType_GEO_POINT, nil
+	case "Nested":
+		return tablestore.FieldType_NESTED, nil
+	default:
+		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index field type string: %s", typeStr)))
+	}
+}
+
+func ConvertSearchIndexAnalyzerTypeString(typeStr SearchIndexAnalyzerTypeString) (tablestore.Analyzer, error) {
+	switch typeStr {
+	case "SingleWord":
+		return tablestore.Analyzer_SingleWord, nil
+	case "Split":
+		return tablestore.Analyzer_Split, nil
+	case "MinWord":
+		return tablestore.Analyzer_MinWord, nil
+	case "MaxWord":
+		return tablestore.Analyzer_MaxWord, nil
+	case "Fuzzy":
+		return tablestore.Analyzer_Fuzzy, nil
+	default:
+		return "", WrapError(errors.New(fmt.Sprintf("unexpected search index analyzer type string: %s", typeStr)))
+	}
+}
+
+func ConvertSearchIndexSortFieldTypeString(typeStr SearchIndexSortFieldTypeString) (search.Sorter, error) {
+	switch typeStr {
+	case "PrimaryKeySort":
+		return &search.PrimaryKeySort{}, nil
+	case "FieldSort":
+		return &search.FieldSort{}, nil
+	default:
+		return nil, WrapError(errors.New(fmt.Sprintf("unexpected search index sort field type string [PrimaryKeySort|FieldSort]: %s", typeStr)))
+	}
+}
+
+func ConvertSearchIndexOrderTypeString(typeStr SearchIndexOrderTypeString) (search.SortOrder, error) {
+	switch typeStr {
+	case "Asc":
+		return search.SortOrder_ASC, nil
+	case "Desc":
+		return search.SortOrder_DESC, nil
+	default:
+		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index sort order string [Asc|Desc]: %s", typeStr)))
+	}
+}
+
+func ConvertSearchIndexSortModeString(typeStr SearchIndexSortModeString) (search.SortMode, error) {
+	switch typeStr {
+	case "Min":
+		return search.SortMode_Min, nil
+	case "Max":
+		return search.SortMode_Max, nil
+	case "Avg":
+		return search.SortMode_Avg, nil
+	default:
+		return 0, WrapError(errors.New(fmt.Sprintf("unexpected search index sort mode string [Min|Max|Avg]: %s", typeStr)))
+	}
+}
+
+func (s *OtsService) WaitForSearchIndex(instance string, table string, indexName string, status Status, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	id := ID(instance, table, indexName, SearchIndexTypeHolder)
+	for {
+		index, err := s.DescribeOtsSearchIndex(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+
+		if index.SyncStat != nil && status != Deleted {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, table, indexName, ProviderERROR)
+		}
+	}
+}
+
+func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, indexName string) error {
+	request := &tablestore.DeleteSearchIndexRequest{
+		TableName: tableName,
+		IndexName: indexName,
+	}
+	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		var requestCli *tablestore.TableStoreClient
+		raw, err := s.client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
+			requestCli = tableStoreClient
+
+			return tableStoreClient.DeleteSearchIndex(request)
+		})
+		defer func() {
+			addDebug("DeleteSearchIndex", raw, requestCli, request)
+		}()
+
+		if err != nil {
+			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	return err
 }
