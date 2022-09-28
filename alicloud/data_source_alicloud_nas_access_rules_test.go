@@ -62,11 +62,32 @@ func TestAccAlicloudNASAccessRuleDataSource(t *testing.T) {
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
-			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
+			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
 		}),
 	}
 	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, allConf)
+}
+
+func TestAccAlicloudNASAccessRuleDataSourceIpv6SourceCidrIp(t *testing.T) {
+	rand := acctest.RandIntRange(100000, 999999)
+	Ipv6SourceCidrIpConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudAccessRuleIpv6SourceCidrIpDataSourceConfig(rand, map[string]string{
+			"access_group_name":   `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"user_access":         `"${alicloud_nas_access_rule.default.user_access_type}"`,
+			"rw_access":           `"${alicloud_nas_access_rule.default.rw_access_type}"`,
+			"ids":                 `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
+			"ipv6_source_cidr_ip": `"${alicloud_nas_access_rule.default.ipv6_source_cidr_ip}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudAccessRuleIpv6SourceCidrIpDataSourceConfig(rand, map[string]string{
+			"access_group_name":   `"${alicloud_nas_access_group.default.access_group_name}"`,
+			"user_access":         `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
+			"rw_access":           `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
+			"ids":                 `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
+			"ipv6_source_cidr_ip": `"${alicloud_nas_access_rule.default.ipv6_source_cidr_ip}_fake"`,
+		}),
+	}
+	accessRuleCheckIpv6SourceCidrIpInfo.dataSourceTestCheck(t, rand, Ipv6SourceCidrIpConf)
 }
 
 func testAccCheckAlicloudAccessRuleDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -96,16 +117,58 @@ data "alicloud_nas_access_rules" "default" {
 	return config
 }
 
+func testAccCheckAlicloudAccessRuleIpv6SourceCidrIpDataSourceConfig(rand int, attrMap map[string]string) string {
+	var pairs []string
+	for k, v := range attrMap {
+		pairs = append(pairs, k+" = "+v)
+	}
+	config := fmt.Sprintf(`
+variable "name" {
+        	default = "tf-testAccAccessGroupsdatasource-%d"
+}
+resource "alicloud_nas_access_group" "default" {
+        	access_group_name = "${var.name}"
+	        access_group_type = "Vpc"
+	        description = "tf-testAccAccessGroupsdatasource"
+}
+resource "alicloud_nas_access_rule" "default" {
+        	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
+	        ipv6_source_cidr_ip = "::1/128"
+        	rw_access_type = "RDWR"
+	        user_access_type = "no_squash"
+	        priority = 2
+}
+data "alicloud_nas_access_rules" "default" {
+		%s
+}`, rand, strings.Join(pairs, "\n  "))
+	return config
+}
+
 var existAccessRuleMapCheck = func(rand int) map[string]string {
 	return map[string]string{
-		"rules.#":                "1",
-		"rules.0.source_cidr_ip": "168.1.1.0/16",
-		"rules.0.priority":       "2",
-		"rules.0.access_rule_id": CHECKSET,
-		"rules.0.user_access":    "no_squash",
-		"rules.0.rw_access":      "RDWR",
-		"ids.#":                  "1",
-		"ids.0":                  "1",
+		"rules.#":                     "1",
+		"rules.0.source_cidr_ip":      "168.1.1.0/16",
+		"rules.0.priority":            "2",
+		"rules.0.access_rule_id":      CHECKSET,
+		"rules.0.user_access":         "no_squash",
+		"rules.0.rw_access":           "RDWR",
+		"rules.0.ipv6_source_cidr_ip": "",
+		"ids.#":                       "1",
+		"ids.0":                       CHECKSET,
+	}
+}
+
+var existAccessRuleIpv6SourceCidrIpMapCheck = func(rand int) map[string]string {
+	return map[string]string{
+		"rules.#":                     "1",
+		"rules.0.source_cidr_ip":      "",
+		"rules.0.priority":            "2",
+		"rules.0.access_rule_id":      CHECKSET,
+		"rules.0.user_access":         "no_squash",
+		"rules.0.rw_access":           "RDWR",
+		"rules.0.ipv6_source_cidr_ip": "::1/128",
+		"ids.#":                       "1",
+		"ids.0":                       CHECKSET,
 	}
 }
 
@@ -119,5 +182,11 @@ var fakeAccessRuleMapCheck = func(rand int) map[string]string {
 var accessRuleCheckInfo = dataSourceAttr{
 	resourceId:   "data.alicloud_nas_access_rules.default",
 	existMapFunc: existAccessRuleMapCheck,
+	fakeMapFunc:  fakeAccessRuleMapCheck,
+}
+
+var accessRuleCheckIpv6SourceCidrIpInfo = dataSourceAttr{
+	resourceId:   "data.alicloud_nas_access_rules.default",
+	existMapFunc: existAccessRuleIpv6SourceCidrIpMapCheck,
 	fakeMapFunc:  fakeAccessRuleMapCheck,
 }

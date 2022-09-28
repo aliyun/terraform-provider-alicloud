@@ -7,11 +7,12 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudAccessRules() *schema.Resource {
+func dataSourceAlicloudAllAccessRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAccessRulesRead,
+		Read: dataSourceAlicloudAllAccessRulesRead,
 
 		Schema: map[string]*schema.Schema{
 			"source_cidr_ip": {
@@ -30,6 +31,12 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 			"rw_access": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"file_system_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 			},
 			"ipv6_source_cidr_ip": {
 				Type:          schema.TypeString,
@@ -52,6 +59,10 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"source_cidr_ip": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -82,12 +93,13 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 		},
 	}
 }
-func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAlicloudAllAccessRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeAccessRules"
 	request := make(map[string]interface{})
 	request["AccessGroupName"] = d.Get("access_group_name")
+	request["FileSystemType"] = d.Get("file_system_type")
 	request["RegionId"] = client.Region
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
@@ -111,7 +123,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_access_rules", action, AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_nas_all_access_rules", action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
 
@@ -150,6 +162,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
+			"id":                  fmt.Sprint(object["AccessGroupName"], ":", object["AccessRuleId"], ":", request["FileSystemType"]),
 			"source_cidr_ip":      object["SourceCidrIp"],
 			"priority":            formatInt(object["Priority"]),
 			"access_rule_id":      object["AccessRuleId"],
@@ -157,7 +170,7 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 			"rw_access":           object["RWAccess"],
 			"ipv6_source_cidr_ip": object["Ipv6SourceCidrIp"],
 		}
-		ids = append(ids, fmt.Sprint(object["AccessRuleId"]))
+		ids = append(ids, fmt.Sprint(object["AccessGroupName"], ":", object["AccessRuleId"], ":", request["FileSystemType"]))
 		s = append(s, mapping)
 	}
 

@@ -140,6 +140,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		return nil, WrapError(err)
 	}
 	action := "DescribeAccessRules"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
@@ -150,6 +151,50 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidAccessGroup.NotFound", "Forbidden.NasNotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("AccessRule", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.AccessRules.AccessRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessRules.AccessRule", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NAS", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *NasService) DescribeNasAllAccessRule(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewNasClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeAccessRules"
+
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		err = WrapError(err)
+		return
+	}
+	request := map[string]interface{}{
+		"RegionId":        s.client.RegionId,
+		"AccessGroupName": parts[0],
+		"AccessRuleId":    parts[1],
+		"FileSystemType":  parts[2],
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &runtime)

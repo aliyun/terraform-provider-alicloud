@@ -11,21 +11,20 @@ description: |-
 
 This data source provides AccessRule available to the user.
 
--> **NOTE**: 
-- Available in 1.35.0+
-- Deprecated in v1.189.0+, alicloud_all_nas_access_rule is recommended in v1.189.0+.
+-> **NOTE**: Available in v1.191.0+.
 
 ## Example Usage
 
 ```terraform
-data "alicloud_nas_access_rules" "foo" {
+data "alicloud_all_nas_access_rules" "foo" {
   access_group_name = "tf-testAccAccessGroupsdatasource"
   source_cidr_ip    = "168.1.1.0/16"
   rw_access         = "RDWR"
   user_access       = "no_squash"
+  file_system_type  = "extreme"
 }
 
-output "alicloud_nas_access_rules_id" {
+output "alicloud_all_nas_access_rules_id" {
   value = "${data.alicloud_nas_access_rules.foo.rules.0.id}"
 }
 ```
@@ -34,24 +33,25 @@ output "alicloud_nas_access_rules_id" {
 
 The following arguments are supported:
 
-* `access_group_name` - (Required ForceNew) Filter results by a specific AccessGroupName.
-* `ids` - (Optional, Available in 1.53.0+) A list of rule IDs.
+* `access_group_name` - (Required, ForceNew) Filter results by a specific AccessGroupName.
+* `ids` - (Optional) A list of rule IDs.
 * `source_cidr_ip` - (Optional) Filter results by a specific SourceCidrIp. 
 * `user_access` - (Optional) Filter results by a specific UserAccess. 
 * `rw_access` - (Optional) Filter results by a specific RWAccess. 
-* `ipv6_source_cidr_ip` - (Optional,Available in v1.189.0+) The IPv6 address or CIDR block of the authorized object.
-                                                            You must set one of "ipv6_source_cidr_ip" and "source_cidr_ip".
+* `file_system_type` - (Required, ForceNew) The type of the file system: `standard `, `extreme`.
+* `ipv6_source_cidr_ip` - (Optional) The IPv6 address or CIDR block of the authorized object.
+                                     You must set one of "ipv6_source_cidr_ip" and "source_cidr_ip".
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access_rule_id>` before 1.53.0).
+* `ids` - A list of rule IDs, Each element set to `access_rule_id` (Each element formats as `<access_group_name>:<access_rule_id>:<file_system_type>`).
 * `rules` - A list of AccessRules. Each element contains the following attributes:
- * `source_cidr_ip` - SourceCidrIp of the AccessRule.
- * `priority` - Priority of the AccessRule.
- * `access_rule_id` - AccessRuleId of the AccessRule.
- * `user_access` - UserAccess of the AccessRule
- * `rw_access` - RWAccess of the AccessRule.
- * `ipv6_source_cidr_ip` - The IPv6 address or IPv6 CIDR block of the authorized object.
+  * `source_cidr_ip` - SourceCidrIp of the AccessRule.
+  * `priority` - Priority of the AccessRule.
+  * `access_rule_id` - AccessRuleId of the AccessRule.
+  * `user_access` - UserAccess of the AccessRule
+  * `rw_access` - RWAccess of the AccessRule.
+  * `ipv6_source_cidr_ip` - The IPv6 address or IPv6 CIDR block of the authorized object.

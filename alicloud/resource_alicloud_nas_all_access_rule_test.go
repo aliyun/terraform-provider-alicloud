@@ -19,18 +19,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudNASAccessRule_basic(t *testing.T) {
+func TestAccAlicloudNASAllAccessRule_basic(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_nas_access_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudNasAccessRule0)
+	resourceId := "alicloud_nas_all_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAllAccessRule0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeNasAccessRule")
+	}, "DescribeNasAllAccessRule")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAlicloudNasAccessRule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAllAccessRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -45,12 +45,14 @@ func TestAccAlicloudNASAccessRule_basic(t *testing.T) {
 					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
 					"source_cidr_ip":    "168.1.1.0/16",
 					"priority":          "1",
+					"file_system_type":  "standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"access_group_name": name,
 						"source_cidr_ip":    "168.1.1.0/16",
 						"priority":          "1",
+						"file_system_type":  "standard",
 					}),
 				),
 			},
@@ -115,11 +117,11 @@ func TestAccAlicloudNASAccessRule_basic(t *testing.T) {
 	})
 }
 
-var AlicloudNasAccessRule0 = map[string]string{
+var AlicloudNasAllAccessRule0 = map[string]string{
 	"access_rule_id": CHECKSET,
 }
 
-func AlicloudNasAccessRuleBasicDependence0(name string) string {
+func AlicloudNasAllAccessRuleBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
@@ -128,14 +130,15 @@ variable "name" {
 resource "alicloud_nas_access_group" "example" {
 	access_group_name = "${var.name}"
 	access_group_type = "Vpc"
+	file_system_type  = "standard"
 	}
 `, name)
 }
 
-func TestUnitAlicloudNASAccessRule(t *testing.T) {
+func TestUnitAlicloudNASAllAccessRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	d, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, nil)
-	dCreate, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, nil)
+	d, _ := schema.InternalMap(p["alicloud_nas_all_access_rule"].Schema).Data(nil, nil)
+	dCreate, _ := schema.InternalMap(p["alicloud_nas_all_access_rule"].Schema).Data(nil, nil)
 	dCreate.MarkNewResource()
 	for key, value := range map[string]interface{}{
 		"access_group_name": "access_group_name",
@@ -143,6 +146,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 		"priority":          1,
 		"rw_access_type":    "RDWR",
 		"user_access_type":  "no_squash",
+		"file_system_type":  "standard",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -160,12 +164,13 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 		"AccessRules": map[string]interface{}{
 			"AccessRule": []interface{}{
 				map[string]interface{}{
-					"AccessRuleId":    "access_rule_id",
-					"SourceCidrIp":    "source_cidr_ip",
-					"AccessGroupName": "access_group_name",
-					"Priority":        1,
-					"RWAccess":        "RDWR",
-					"UserAccess":      "no_squash",
+					"AccessRuleId":     "access_rule_id",
+					"SourceCidrIp":     "source_cidr_ip",
+					"AccessGroupName":  "access_group_name",
+					"Priority":         1,
+					"RWAccess":         "RDWR",
+					"UserAccess":       "no_squash",
+					"file_system_type": "standard",
 				},
 			},
 		},
@@ -182,7 +187,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 		},
 		"NotFoundError": func(errorCode string) (map[string]interface{}, error) {
-			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_nas_access_rule", "MockAccessRuleId"))
+			return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_nas_all_access_rule", "MockAccessRuleId"))
 		},
 		"NoRetryError": func(errorCode string) (map[string]interface{}, error) {
 			return nil, &tea.SDKError{
@@ -219,7 +224,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAccessRuleCreate(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -236,7 +241,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleCreate(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -253,13 +258,13 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleCreate(dCreate, rawClient)
+		err := resourceAlicloudNasAllAccessRuleCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
 
 	// Set ID for Update and Delete Method
-	d.SetId(fmt.Sprint("MockAccessGroupName", ":", "file_system_type"))
+	d.SetId(fmt.Sprint("MockAccessGroupName", ":", "access_rule_id", ":", "file_system_type"))
 	// Update
 	t.Run("UpdateClientAbnormal", func(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewNasClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
@@ -271,15 +276,15 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudNasAccessRuleUpdate(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateModifyAccessRuleAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"source_cidr_ip", "rw_access_type", "user_access_type", "priority"} {
-			switch p["alicloud_nas_access_rule"].Schema[key].Type {
+		for _, key := range []string{"source_cidr_ip", "rw_access_type", "user_access_type", "priority", "file_system_type"} {
+			switch p["alicloud_nas_all_access_rule"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
@@ -292,7 +297,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(p["alicloud_nas_all_access_rule"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
 		noRetryFlag := true
@@ -306,15 +311,15 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleUpdate(resourceData1, rawClient)
+		err := resourceAlicloudNasAllAccessRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateModifyAccessRuleNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		for _, key := range []string{"source_cidr_ip", "rw_access_type", "user_access_type", "priority"} {
-			switch p["alicloud_nas_access_rule"].Schema[key].Type {
+		for _, key := range []string{"source_cidr_ip", "rw_access_type", "user_access_type", "priority", "file_system_type"} {
+			switch p["alicloud_nas_all_access_rule"].Schema[key].Type {
 			case schema.TypeString:
 				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
@@ -327,7 +332,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
-		resourceData1, _ := schema.InternalMap(p["alicloud_nas_access_rule"].Schema).Data(nil, diff)
+		resourceData1, _ := schema.InternalMap(p["alicloud_nas_all_access_rule"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := false
 		noRetryFlag := false
@@ -341,7 +346,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleUpdate(resourceData1, rawClient)
+		err := resourceAlicloudNasAllAccessRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -355,7 +360,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -372,7 +377,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -389,7 +394,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -406,13 +411,13 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
 
 	//Read
-	t.Run("ReadDescribeNasAccessRuleNotFound", func(t *testing.T) {
+	t.Run("ReadDescribeNasAllAccessRuleNotFound", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			NotFoundFlag := true
 			noRetryFlag := false
@@ -423,12 +428,12 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleRead(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
 
-	t.Run("ReadDescribeNasAccessRuleAbnormal", func(t *testing.T) {
+	t.Run("ReadDescribeNasAllAccessRuleAbnormal", func(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			retryFlag := false
 			noRetryFlag := true
@@ -439,7 +444,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleRead(d, rawClient)
+		err := resourceAlicloudNasAllAccessRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

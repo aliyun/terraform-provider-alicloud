@@ -293,6 +293,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_service":                                  dataSourceAlicloudNasService(),
 			"alicloud_nas_access_groups":                            dataSourceAlicloudNasAccessGroups(),
 			"alicloud_nas_access_rules":                             dataSourceAlicloudAccessRules(),
+			"alicloud_nas_all_access_rules":                         dataSourceAlicloudAllAccessRules(),
 			"alicloud_nas_mount_targets":                            dataSourceAlicloudNasMountTargets(),
 			"alicloud_nas_file_systems":                             dataSourceAlicloudFileSystems(),
 			"alicloud_nas_protocols":                                dataSourceAlicloudNasProtocols(),
@@ -816,6 +817,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_mount_target":                   resourceAlicloudNasMountTarget(),
 			"alicloud_nas_access_group":                   resourceAlicloudNasAccessGroup(),
 			"alicloud_nas_access_rule":                    resourceAlicloudNasAccessRule(),
+			"alicloud_nas_all_access_rule":                resourceAlicloudNasAllAccessRule(),
 			"alicloud_nas_smb_acl_attachment":             resourceAlicloudNasSmbAclAttachment(),
 			// "alicloud_subnet" aims to match aws usage habit.
 			"alicloud_subnet":                        resourceAlicloudVswitch(),
