@@ -435,6 +435,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 	update := false
 	request := map[string]interface{}{
 		"VpnConnectionId": d.Id(),
+		"RegionId":        client.RegionId,
 	}
 	if d.HasChange("effect_immediately") {
 		update = true
