@@ -8,6 +8,16 @@ const (
 	BinaryType  = PrimaryKeyTypeString("Binary")
 )
 
+type DefinedColumnTypeString string
+
+const (
+	DefinedColumnInteger = DefinedColumnTypeString("Integer")
+	DefinedColumnString  = DefinedColumnTypeString("String")
+	DefinedColumnBinary  = DefinedColumnTypeString("Binary")
+	DefinedColumnDouble  = DefinedColumnTypeString("Double")
+	DefinedColumnBoolean = DefinedColumnTypeString("Boolean")
+)
+
 type InstanceAccessedByType string
 
 const (
@@ -102,4 +112,66 @@ type SseKeyTypeString string
 
 const (
 	SseKMSService = SseKeyTypeString("SSE_KMS_SERVICE")
+)
+
+type SecondaryIndexTypeString string
+
+const (
+	Local  = SecondaryIndexTypeString("Local")
+	Global = SecondaryIndexTypeString("Global")
+)
+const (
+	SearchIndexTypeHolder = "Search"
+)
+
+type OtsSearchIndexSyncPhaseString string
+
+const (
+	Full = OtsSearchIndexSyncPhaseString("Full")
+	Incr = OtsSearchIndexSyncPhaseString("Incr")
+)
+
+type SearchIndexFieldTypeString string
+
+const (
+	OtsSearchTypeLong     = SearchIndexFieldTypeString("Long")
+	OtsSearchTypeDouble   = SearchIndexFieldTypeString("Double")
+	OtsSearchTypeBoolean  = SearchIndexFieldTypeString("Boolean")
+	OtsSearchTypeKeyword  = SearchIndexFieldTypeString("Keyword")
+	OtsSearchTypeText     = SearchIndexFieldTypeString("Text")
+	OtsSearchTypeDate     = SearchIndexFieldTypeString("Date")
+	OtsSearchTypeGeoPoint = SearchIndexFieldTypeString("GeoPoint")
+	OtsSearchTypeNested   = SearchIndexFieldTypeString("Nested")
+)
+
+type SearchIndexAnalyzerTypeString string
+
+const (
+	OtsSearchSingleWord = SearchIndexAnalyzerTypeString("SingleWord")
+	OtsSearchSplit      = SearchIndexAnalyzerTypeString("Split")
+	OtsSearchMinWord    = SearchIndexAnalyzerTypeString("MinWord")
+	OtsSearchMaxWord    = SearchIndexAnalyzerTypeString("MaxWord")
+	OtsSearchFuzzy      = SearchIndexAnalyzerTypeString("Fuzzy")
+)
+
+type SearchIndexOrderTypeString string
+
+const (
+	OtsSearchSortOrderAsc  = SearchIndexOrderTypeString("Asc")
+	OtsSearchSortOrderDesc = SearchIndexOrderTypeString("Desc")
+)
+
+type SearchIndexSortModeString string
+
+const (
+	OtsSearchModeMin = SearchIndexSortModeString("Min")
+	OtsSearchModeMax = SearchIndexSortModeString("Max")
+	OtsSearchModeAvg = SearchIndexSortModeString("Avg")
+)
+
+type SearchIndexSortFieldTypeString string
+
+const (
+	OtsSearchPrimaryKeySort = SearchIndexSortFieldTypeString("PrimaryKeySort")
+	OtsSearchFieldSort      = SearchIndexSortFieldTypeString("FieldSort")
 )

@@ -1263,6 +1263,23 @@ func Interface2String(val interface{}) string {
 	return fmt.Sprint(val)
 }
 
+func Interface2StrSlice(ii []interface{}) []string {
+	ss := make([]string, 0, len(ii))
+	for _, i := range ii {
+		s := Interface2String(i)
+		ss = append(ss, s)
+	}
+	return ss
+}
+
+func Str2InterfaceSlice(ss []string) []interface{} {
+	ii := make([]interface{}, 0, len(ss))
+	for _, s := range ss {
+		ii = append(ii, s)
+	}
+	return ii
+}
+
 func Interface2Bool(i interface{}) bool {
 	if i == nil {
 		return false
@@ -1388,4 +1405,35 @@ func getOneStringOrAllStringSlice(stringSli []interface{}) interface{} {
 		sli[i] = v.(string)
 	}
 	return sli
+}
+
+func Unique(strings []string) []string {
+	dict := make(map[string]bool)
+	var ss []string
+	for _, s := range strings {
+		if s == "" {
+			continue
+		}
+		if _, ok := dict[s]; !ok {
+			dict[s] = true
+			ss = append(ss, s)
+		}
+	}
+	return ss
+}
+
+func IsSubCollection(sub []string, full []string) bool {
+	for _, s := range sub {
+		var find bool
+		for _, f := range full {
+			if s == f {
+				find = true
+				break
+			}
+		}
+		if !find {
+			return false
+		}
+	}
+	return true
 }

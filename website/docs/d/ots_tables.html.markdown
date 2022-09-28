@@ -15,7 +15,7 @@ This data source provides the ots tables of the current Alibaba Cloud user.
 
 ## Example Usage
 
-```
+``` terraform
 data "alicloud_ots_tables" "tables_ds" {
   instance_name = "sample-instance"
   name_regex    = "sample-table"

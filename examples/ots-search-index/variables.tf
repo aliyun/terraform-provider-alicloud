@@ -55,19 +55,19 @@ variable "defined_column_3_name" {
   default = "col3"
 }
 
-variable "defined_column_4_name" {
-  default = "col4"
-}
-
-variable "defined_column_5_name" {
-  default = "col5"
-}
-
 variable "time_to_live" {
   default = -1
 }
 
 variable "max_version" {
   default = 1
+}
+
+variable "search_index_name" {
+  default = "search_index_1"
+}
+
+variable "search_index_ttl" {
+  default = -1
 }
 

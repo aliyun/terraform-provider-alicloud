@@ -55,14 +55,6 @@ variable "defined_column_3_name" {
   default = "col3"
 }
 
-variable "defined_column_4_name" {
-  default = "col4"
-}
-
-variable "defined_column_5_name" {
-  default = "col5"
-}
-
 variable "time_to_live" {
   default = -1
 }
@@ -70,4 +62,24 @@ variable "time_to_live" {
 variable "max_version" {
   default = 1
 }
+
+variable "secondary_index_name" {
+  default = "sec_index_1"
+}
+
+variable "secondary_index_type" {
+  default = "Global"
+}
+
+variable "secondary_index_include_base_data" {
+  default = true
+}
+variable "secondary_index_pks" {
+  default = ["pk3", "pk2"]
+}
+
+variable "index_defined_cols" {
+  default = ["col2", "col3"]
+}
+
 

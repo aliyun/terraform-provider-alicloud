@@ -61,17 +61,22 @@ resource "alicloud_ots_table" "table" {
     type = var.binary_type
   }
 
-  defined_column {
-    name = var.defined_column_4_name
-    type = var.boolean_type
-  }
-
-  defined_column {
-    name = var.defined_column_5_name
-    type = var.double_type
-  }
-
   time_to_live = var.time_to_live
   max_version  = var.max_version
 }
 
+resource "alicloud_ots_secondary_index" "index1" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name = alicloud_ots_table.table.table_name
+
+  # required
+  index_name = var.secondary_index_name
+  # required [Global|Local]
+  index_type = var.secondary_index_type
+  # required
+  include_base_data = var.secondary_index_include_base_data
+  # required
+  primary_keys = var.secondary_index_pks
+  # optional
+  defined_columns = var.index_defined_cols
+}

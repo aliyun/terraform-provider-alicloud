@@ -338,3 +338,15 @@ func validateOTSTunnelName(v interface{}, k string) (ws []string, errors []error
 	}
 	return
 }
+
+// The index name must consist of a~z, A~Z, 0~9 and an underscore (_), the first character must be a letter or underscore (_),
+// the legal length range is 1~255 bytes.
+func validateOTSIndexName(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	reg := regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]{0,254}$")
+	if !reg.MatchString(value) {
+		errors = append(errors, fmt.Errorf("the index name must consist of a~z, A~Z, 0~9 and an underscore (_), "+
+			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
+	}
+	return
+}
