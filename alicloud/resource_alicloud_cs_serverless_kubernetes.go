@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -506,10 +507,11 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	var kubeConfig *cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
 		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
-			return WrapError(err)
-		}
-		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
-			return WrapError(err)
+			log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
+		} else {
+			if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
+				return WrapError(err)
+			}
 		}
 	}
 	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
