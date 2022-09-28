@@ -106,7 +106,7 @@ func testSweepAdbDbInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudADBDbCluster_basic(t *testing.T) {
+func TestAccAlicloudADBDbCluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap0)
@@ -244,7 +244,7 @@ func TestAccAlicloudADBDbCluster_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_class":   "C8",
 					"db_node_count":   "1",
-					"db_node_storage": "200",
+					"db_node_storage": "100",
 					"description":     name,
 					"maintain_time":   "01:00Z-02:00Z",
 					"security_ips":    []string{"10.168.1.13"},
@@ -257,7 +257,7 @@ func TestAccAlicloudADBDbCluster_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"db_node_class":   "C8",
 						"db_node_count":   "1",
-						"db_node_storage": "200",
+						"db_node_storage": "100",
 						"description":     name,
 						"maintain_time":   "01:00Z-02:00Z",
 						"security_ips.#":  "1",
