@@ -1423,10 +1423,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	var kubeConfig *cs.ClusterConfig
 	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
-		return WrapError(err)
+		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
 	}
 
-	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
+	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" && kubeConfig != nil {
 		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
 			return WrapError(err)
 		}
