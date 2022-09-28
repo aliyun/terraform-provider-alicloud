@@ -27,15 +27,17 @@ func resourceAlicloudOtsTable() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateOTSInstanceName,
 			},
 
 			"table_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validateOTSTableName,
 			},
 			"primary_key": {
 				Type:     schema.TypeList,
@@ -74,6 +76,16 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validateStringConvertInt64(),
 				Default:      "86400",
+			},
+			"enable_sse": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"sse_key_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(SseKMSService)}, false),
 			},
 		},
 	}
@@ -115,6 +127,24 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	request.TableMeta = tableMeta
 	request.TableOption = tableOption
 	request.ReservedThroughput = reservedThroughput
+
+	if enableSSE, ok := d.GetOkExists("enable_sse"); ok {
+		sseSpec := new(tablestore.SSESpecification)
+		sseSpec.Enable = enableSSE.(bool)
+
+		if sseKeyType, ok2 := d.GetOk("sse_key_type"); ok2 {
+			var typ tablestore.SSEKeyType
+			switch sseKeyType.(string) {
+			case string(SseKMSService):
+				typ = tablestore.SSE_KMS_SERVICE
+			default:
+				return WrapError(Error("unknown sse key type: " + sseKeyType.(string)))
+			}
+			sseSpec.KeyType = &typ
+		}
+		request.SSESpecification = sseSpec
+	}
+
 	var requestinfo *tablestore.TableStoreClient
 	if err := resource.Retry(6*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithTableStoreClient(instanceName, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
@@ -170,6 +200,11 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("time_to_live", object.TableOption.TimeToAlive)
 	d.Set("max_version", object.TableOption.MaxVersion)
 	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(object.TableOption.DeviationCellVersionInSec, 10))
+
+	if object.SSEDetails != nil && object.SSEDetails.Enable {
+		d.Set("enable_sse", object.SSEDetails.Enable)
+		d.Set("sse_key_type", object.SSEDetails.KeyType.String())
+	}
 
 	return nil
 }

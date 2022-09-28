@@ -90,7 +90,7 @@ resource "alicloud_cloud_storage_gateway_gateway_block_volume" "default" {
 
 The following arguments are supported:
 
-* `cache_mode` - (Optional, Computed, ForceNew) The Block volume set mode to cache mode. Value values: `Cache`, `WriteThrough`.
+* `cache_mode` - (Optional, Computed, ForceNew) The Block volume set mode to cache mode. Valid values: `Cache`, `WriteThrough`.
 * `chap_enabled` - (Optional, Computed) Whether to enable iSCSI access of CHAP authentication, which currently supports both CHAP inbound authentication.  Default value: `false`.
 * `chap_in_password` - (Optional) The password for inbound authentication when the block volume enables iSCSI access to CHAP authentication. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid.
 * `chap_in_user` - (Optional) The Inbound CHAP user. The `chap_in_user` must be 1 to 32 characters in length, and can contain letters and digits. **NOTE:** When the `chap_enabled` is  `true` is,The `chap_in_password` is valid. 

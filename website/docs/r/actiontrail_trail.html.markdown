@@ -42,7 +42,7 @@ The following arguments are supported:
 * `oss_key_prefix` - (Optional) The prefix of the specified OSS bucket name. This parameter can be left empty.
 * `sls_project_arn` - (Optional) The unique ARN of the Log Service project. Ensure that `sls_project_arn` is valid .
 * `sls_write_role_arn` - (Optional) The unique ARN of the Log Service role.
-* `trail_region` - (Optional) The regions to which the trail is applied. Valid values: `cn-beijing`, `cn-hangzhou`, and `All`. Default to `All`.
+* `trail_region` - (Optional, Computed) The regions to which the trail is applied. Default to `All`.
 * `mns_topic_arn` - (Optional) Field `mns_topic_arn` has been deprecated from version 1.118.0.
 * `status` - (Optional) The status of ActionTrail Trail. After creation, tracking is turned on by default, and you can set the status value to `Disable` to turn off tracking. Valid values: `Enable`, `Disable`. Default to `Enable`.
 * `oss_write_role_arn` - (Optional) The unique ARN of the Oss role.

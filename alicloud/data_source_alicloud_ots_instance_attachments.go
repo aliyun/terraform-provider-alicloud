@@ -15,8 +15,9 @@ func dataSourceAlicloudOtsInstanceAttachments() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"instance_name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validateOTSInstanceName,
 			},
 			"name_regex": {
 				Type:         schema.TypeString,

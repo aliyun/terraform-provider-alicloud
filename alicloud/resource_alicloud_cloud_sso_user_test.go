@@ -175,7 +175,7 @@ locals{
 `, name)
 }
 
-func TestAccAlicloudCloudSSOUser_unit(t *testing.T) {
+func TestUnitAlicloudCloudSSOUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_sso_user"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_sso_user"].Schema).Data(nil, nil)

@@ -83,15 +83,15 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Aliyun_KMS", "EXTERNAL"}, false),
-				Default:      "Aliyun_KMS",
 			},
 			"pending_window_in_days": {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"deletion_window_in_days"},
-				ValidateFunc:  validation.IntBetween(7, 30),
+				ValidateFunc:  validation.IntBetween(7, 366),
 			},
 			"deletion_window_in_days": {
 				Type:          schema.TypeInt,
@@ -99,7 +99,7 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				Computed:      true,
 				Deprecated:    "Field 'deletion_window_in_days' has been deprecated from provider version 1.85.0. New field 'pending_window_in_days' instead.",
 				ConflictsWith: []string{"pending_window_in_days"},
-				ValidateFunc:  validation.IntBetween(7, 30),
+				ValidateFunc:  validation.IntBetween(7, 366),
 			},
 			"primary_key_version": {
 				Type:     schema.TypeString,
@@ -130,6 +130,11 @@ func resourceAlicloudKmsKey() *schema.Resource {
 				ValidateFunc:  validation.StringInSlice([]string{"Disabled", "Enabled", "PendingDeletion"}, false),
 				ConflictsWith: []string{"status"},
 				Deprecated:    "Field 'key_state' has been deprecated from provider version 1.123.1. New field 'status' instead.",
+			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -172,6 +177,10 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 		request["RotationInterval"] = v
 	}
 
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -193,6 +202,7 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	return resourceAlicloudKmsKeyUpdate(d, meta)
 }
+
 func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
@@ -222,8 +232,10 @@ func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("rotation_interval", object["RotationInterval"])
 	d.Set("status", object["KeyState"])
 	d.Set("key_state", object["KeyState"])
+	d.Set("dkms_instance_id", object["DKMSInstanceId"])
 	return nil
 }
+
 func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
@@ -363,6 +375,7 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 	d.Partial(false)
 	return resourceAlicloudKmsKeyRead(d, meta)
 }
+
 func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "ScheduleKeyDeletion"
@@ -400,6 +413,7 @@ func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 	return nil
 }
+
 func convertKmsKeyAutomaticRotationRequest(source interface{}) interface{} {
 	switch source {
 	case "Disabled":

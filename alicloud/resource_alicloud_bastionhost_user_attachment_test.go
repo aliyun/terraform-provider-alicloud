@@ -90,7 +90,7 @@ resource "alicloud_bastionhost_user_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudBastionhostUserAttachment_unit(t *testing.T) {
+func TestUnitAlicloudBastionhostUserAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)

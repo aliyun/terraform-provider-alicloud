@@ -131,7 +131,7 @@ variable "domain_name" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
-func TestAccAlicloudAlidnsCustomLine_unit(t *testing.T) {
+func TestUnitAlicloudAlidnsCustomLine(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alidns_custom_line"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alidns_custom_line"].Schema).Data(nil, nil)

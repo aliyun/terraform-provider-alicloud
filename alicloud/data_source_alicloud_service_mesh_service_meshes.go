@@ -129,6 +129,26 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 													Type:     schema.TypeBool,
 													Computed: true,
 												},
+												"project": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"control_plane_log": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enabled": {
+													Type:     schema.TypeBool,
+													Computed: true,
+												},
+												"project": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
 											},
 										},
 									},
@@ -376,6 +396,14 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"istio_operator_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"sidecar_version": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -509,10 +537,21 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 							if accessLogArg, ok := accessLog.(map[string]interface{}); ok && len(accessLogArg) > 0 {
 								accessLogMap := make(map[string]interface{})
 								accessLogMap["enabled"] = accessLogArg["Enabled"]
+								accessLogMap["project"] = accessLogArg["Project"]
 								accessLogSli = append(accessLogSli, accessLogMap)
 							}
 						}
 						meshConfigMap["access_log"] = accessLogSli
+						controlPlaneLogSli := make([]map[string]interface{}, 0)
+						if controlPlaneLog, ok := meshConfigArg["ControlPlaneLogInfo"]; ok {
+							if controlPlaneLogArg, ok := controlPlaneLog.(map[string]interface{}); ok && len(controlPlaneLogArg) > 0 {
+								controlPlaneLogMap := make(map[string]interface{})
+								controlPlaneLogMap["enabled"] = controlPlaneLogArg["Enabled"]
+								controlPlaneLogMap["project"] = controlPlaneLogArg["Project"]
+								controlPlaneLogSli = append(controlPlaneLogSli, controlPlaneLogMap)
+							}
+						}
+						meshConfigMap["control_plane_log"] = controlPlaneLogSli
 						auditSli := make([]map[string]interface{}, 0)
 						if audit, ok := meshConfigArg["Audit"]; ok {
 							auditMap := make(map[string]interface{})
@@ -653,6 +692,51 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 				}
 				mapping["network"] = networkSli
 			}
+		}
+		request = make(map[string]interface{})
+		request["ServiceMeshId"] = id
+		action = "DescribeUpgradeVersion"
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err = jsonpath.Get("$.Version", response)
+		if v, ok := resp.(map[string]interface{}); ok {
+			mapping["istio_operator_version"] = v["IstioOperatorVersion"]
+		}
+
+		request = make(map[string]interface{})
+		request["ServiceMeshId"] = id
+		action = "DescribeASMSidecarExpectedVersion"
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), request, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_versions", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err = jsonpath.Get("$", response)
+		if v, ok := resp.(map[string]interface{}); ok {
+			mapping["sidecar_version"] = v["Version"]
 		}
 
 		s = append(s, mapping)

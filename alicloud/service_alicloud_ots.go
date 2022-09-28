@@ -3,6 +3,8 @@ package alicloud
 import (
 	"strings"
 
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
+
 	"time"
 
 	"fmt"
@@ -320,4 +322,124 @@ func (s *OtsService) DescribeOtsInstanceTypes() (types []string, err error) {
 		return resp.ClusterTypeInfos.ClusterType, nil
 	}
 	return
+}
+
+func isOtsTunnelNotFound(err error) bool {
+	if e, ok := err.(*otsTunnel.TunnelError); ok {
+		if e.Code == otsTunnel.ErrCodeParamInvalid && strings.Contains(e.Message, "tunnel not exist") {
+			return true
+		}
+		if e.Code == otsTunnel.ErrCodePermissionDenied && strings.Contains(e.Message, "Instance not found") {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *OtsService) DescribeOtsTunnel(id string) (resp *otsTunnel.DescribeTunnelResponse, err error) {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	instanceName, tableName, tunnelName := parts[0], parts[1], parts[2]
+	request := new(otsTunnel.DescribeTunnelRequest)
+	request.TableName = tableName
+	request.TunnelName = tunnelName
+	var raw interface{}
+	var requestInfo otsTunnel.TunnelClient
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
+			requestInfo = tunnelClient
+			return tunnelClient.DescribeTunnel(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		resp, _ := raw.(*otsTunnel.DescribeTunnelResponse)
+		if resp != nil && resp.Tunnel != nil && resp.Tunnel.Stage == "InitBaseDataAndStreamShard" {
+			return resource.RetryableError(WrapError(Error("ots tunnel is initial")))
+		}
+		addDebug("DescribeTunnel", raw, requestInfo, request)
+		return nil
+	})
+	if err != nil {
+		if isOtsTunnelNotFound(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTunnel", AliyunTablestoreGoSdk)
+	}
+	resp, _ = raw.(*otsTunnel.DescribeTunnelResponse)
+	if resp == nil || resp.Tunnel == nil || resp.Tunnel.TableName != tableName || resp.Tunnel.TunnelName != tunnelName {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsTunnel", id)), NotFoundMsg, ProviderERROR)
+	}
+	return resp, nil
+}
+
+func (s *OtsService) ListOtsTunnels(instanceName string, tableName string) (resp *otsTunnel.ListTunnelResponse, err error) {
+	// check table exists
+	id := fmt.Sprintf("%s%s%s", instanceName, COLON_SEPARATED, tableName)
+	if _, err := s.DescribeOtsTable(id); err != nil {
+		return nil, WrapError(err)
+	}
+
+	var raw interface{}
+	var requestInfo otsTunnel.TunnelClient
+	request := new(otsTunnel.ListTunnelRequest)
+	request.TableName = tableName
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = s.client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
+			requestInfo = tunnelClient
+			return tunnelClient.ListTunnel(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug("ListTunnel", raw, requestInfo, request)
+		return nil
+	})
+	if err != nil {
+		if isOtsTunnelNotFound(err) {
+			return nil, WrapErrorf(err, NotFoundMsg, AliyunTablestoreGoSdk)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, "DescribeTunnel", AliyunTablestoreGoSdk)
+	}
+	resp, _ = raw.(*otsTunnel.ListTunnelResponse)
+	if resp == nil {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("OtsTunnel", id)), NotFoundMsg, ProviderERROR)
+	}
+	return resp, nil
+}
+
+func (s *OtsService) WaitForOtsTunnel(id string, status Status, timeout int) error {
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	for {
+		object, err := s.DescribeOtsTunnel(id)
+		if err != nil {
+			if NotFoundError(err) {
+				if status == Deleted {
+					return nil
+				}
+			} else {
+				return WrapError(err)
+			}
+		}
+		if object.Tunnel.TunnelName == parts[2] && status != Deleted {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Tunnel.TunnelName, parts[2], ProviderERROR)
+		}
+	}
 }

@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_click_house_regions"
 sidebar_current: "docs-alicloud-datasource-click-house-regions"
 description: |-
-Provides a list of Click House Accounts to the user.
+  Provides a list of Click House Accounts to the user.
 ---
 
 # alicloud\_click\_house\_regions

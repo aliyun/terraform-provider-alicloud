@@ -99,6 +99,16 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"attribute": `{\"type\":\"grid\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"attribute": "{\"type\":\"grid\"}",
+					}),
+				),
+			},
 		},
 	})
 }

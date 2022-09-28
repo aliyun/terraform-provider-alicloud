@@ -34,7 +34,7 @@ func resourceAlicloudAmqpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"professional", "vip"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"professional", "enterprise", "vip"}, false),
 			},
 			"logistics": {
 				Type:     schema.TypeString,
@@ -487,6 +487,8 @@ func convertAmqpInstanceInstanceTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PROFESSIONAL":
 		return "professional"
+	case "ENTERPRISE":
+		return "enterprise"
 	case "VIP":
 		return "vip"
 	}

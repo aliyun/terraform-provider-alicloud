@@ -308,6 +308,139 @@ EOF
 }
 ```
 
+EventBridge trigger:
+
+```terraform
+variable "name" {
+  default = "fctriggereventbridgeconfig"
+}
+
+data "alicloud_account" "current" {
+}
+
+# Please make eventbridge available and then assume a specific service-linked role, which refers to https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/event_bridge_service_linked_role
+resource "alicloud_event_bridge_service_linked_role" "service_linked_role" {
+  product_name = "AliyunServiceRoleForEventBridgeSendToFC"
+}
+
+resource "alicloud_fc_service" "foo" {
+  name            = "${var.name}"
+  internet_access = false
+}
+resource "alicloud_oss_bucket" "foo" {
+  bucket = "${var.name}"
+}
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
+resource "alicloud_oss_bucket_object" "foo" {
+  bucket = "${alicloud_oss_bucket.foo.id}"
+  key    = "fc/hello.zip"
+  source = "./hello.zip"
+}
+resource "alicloud_fc_function" "foo" {
+  service     = "${alicloud_fc_service.foo.name}"
+  name        = "${var.name}"
+  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
+  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
+  memory_size = 512
+  runtime     = "python2.7"
+  handler     = "hello.handler"
+}
+
+resource "alicloud_fc_trigger" "default" {
+  service  = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  name     = "${var.name}"
+  type     = "eventbridge"
+  config   = <<EOF
+    {
+        "triggerEnable": false,
+        "asyncInvocationType": false,
+        "eventRuleFilterPattern": "{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
+        "eventSourceConfig": {
+            "eventSourceType": "Default"
+        }
+    }
+EOF
+}
+
+resource "alicloud_fc_trigger" "mns" {
+  service  = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  name     = "${var.name}"
+  type     = "eventbridge"
+  config   = <<EOF
+    {
+        "triggerEnable": false,
+        "asyncInvocationType": false,
+        "eventRuleFilterPattern": "{}",
+        "eventSourceConfig": {
+            "eventSourceType": "MNS",
+            "eventSourceParameters": {
+                "sourceMNSParameters": {
+                    "RegionId": "cn-hangzhou",
+                    "QueueName": "mns-queue",
+                    "IsBase64Decode": true
+                }
+            }
+        }
+    }
+EOF
+}
+
+resource "alicloud_fc_trigger" "rocketmq" {
+  service  = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  name     = "${var.name}"
+  type     = "eventbridge"
+  config   = <<EOF
+    {
+        "triggerEnable": false,
+        "asyncInvocationType": false,
+        "eventRuleFilterPattern": "{}",
+        "eventSourceConfig": {
+            "eventSourceType": "RocketMQ",
+            "eventSourceParameters": {
+                "sourceRocketMQParameters": {
+                    "RegionId": "cn-hangzhou",
+                    "InstanceId": "MQ_INST_164901546557****_BAAN****",
+                    "GroupID": "GID_group1",
+                    "Topic": "mytopic",
+                    "Timestamp": 1636597951984,
+                    "Tag": "test-tag",
+                    "Offset": "CONSUME_FROM_LAST_OFFSET"
+                }
+            }
+        }
+    }
+EOF
+}
+
+resource "alicloud_fc_trigger" "rabbitmq" {
+  service  = "${alicloud_fc_service.foo.name}"
+  function = "${alicloud_fc_function.foo.name}"
+  name     = "${var.name}"
+  type     = "eventbridge"
+  config   = <<EOF
+    {
+        "triggerEnable": false,
+        "asyncInvocationType": false,
+        "eventRuleFilterPattern": "{}",
+        "eventSourceConfig": {
+            "eventSourceType": "RabbitMQ",
+            "eventSourceParameters": {
+                "sourceRabbitMQParameters": {
+                    "RegionId": "cn-hangzhou",
+                    "InstanceId": "amqp-cn-****** ",
+                    "VirtualHostName": "test-virtual",
+                    "QueueName": "test-queue"
+                }
+            }
+        }
+    }
+EOF
+}
+```
+
 ## Module Support
 
 You can use to the existing [fc module](https://registry.terraform.io/modules/terraform-alicloud-modules/fc/alicloud) 
@@ -325,10 +458,11 @@ The following arguments are supported:
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `config` - (Optional) The config of Function Compute trigger.It is valid when `type` is not "mns_topic".See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
 * `config_mns` - (Optional, ForceNew, Available in 1.41.0) The config of Function Compute trigger when the type is "mns_topic".It is conflict with `config`.
-* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic", "cdn_events"].
+* `type` - (Required, ForceNew) The Type of the trigger. Valid values: ["oss", "log", "timer", "http", "mns_topic", "cdn_events", "eventbridge"].
 
 -> **NOTE:** Config does not support modification when type is mns_topic.
 -> **NOTE:** type = cdn_events, available in 1.47.0+.
+-> **NOTE:** type = eventbridge, available in 1.173.0+.
 
 ## Attributes Reference
 

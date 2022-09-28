@@ -390,30 +390,29 @@ func resourceAlicloudCenRouteMapUpdate(d *schema.ResourceData, meta interface{})
 	request.Priority = requests.NewInteger(d.Get("priority").(int))
 	if d.HasChange("as_path_match_mode") {
 		update = true
-		request.AsPathMatchMode = d.Get("as_path_match_mode").(string)
 	}
+	request.AsPathMatchMode = d.Get("as_path_match_mode").(string)
 	if d.HasChange("cidr_match_mode") {
 		update = true
-		request.CidrMatchMode = d.Get("cidr_match_mode").(string)
 	}
+	request.CidrMatchMode = d.Get("cidr_match_mode").(string)
 	if d.HasChange("community_match_mode") {
 		update = true
-		request.CommunityMatchMode = d.Get("community_match_mode").(string)
 	}
+	request.CommunityMatchMode = d.Get("community_match_mode").(string)
 	if d.HasChange("community_operate_mode") {
 		update = true
-		request.CommunityOperateMode = d.Get("community_operate_mode").(string)
 	}
+	request.CommunityOperateMode = d.Get("community_operate_mode").(string)
 	if d.HasChange("description") {
 		update = true
-		request.Description = d.Get("description").(string)
 	}
+	request.Description = d.Get("description").(string)
 	if d.HasChange("destination_child_instance_types") {
 		update = true
-		destinationChildInstanceTypes := expandStringList(d.Get("destination_child_instance_types").(*schema.Set).List())
-		request.DestinationChildInstanceTypes = &destinationChildInstanceTypes
-
 	}
+	destinationChildInstanceTypes := expandStringList(d.Get("destination_child_instance_types").(*schema.Set).List())
+	request.DestinationChildInstanceTypes = &destinationChildInstanceTypes
 	if d.HasChange("destination_cidr_blocks") {
 		update = true
 	}
@@ -421,85 +420,79 @@ func resourceAlicloudCenRouteMapUpdate(d *schema.ResourceData, meta interface{})
 	request.DestinationCidrBlocks = &destinationCidrBlocks
 	if d.HasChange("destination_instance_ids") {
 		update = true
-		destinationInstanceIds := expandStringList(d.Get("destination_instance_ids").(*schema.Set).List())
-		request.DestinationInstanceIds = &destinationInstanceIds
 	}
+	destinationInstanceIds := expandStringList(d.Get("destination_instance_ids").(*schema.Set).List())
+	request.DestinationInstanceIds = &destinationInstanceIds
 	if d.HasChange("destination_instance_ids_reverse_match") {
 		update = true
-		request.DestinationInstanceIdsReverseMatch = requests.NewBoolean(d.Get("destination_instance_ids_reverse_match").(bool))
 	}
+	request.DestinationInstanceIdsReverseMatch = requests.NewBoolean(d.Get("destination_instance_ids_reverse_match").(bool))
 	if d.HasChange("destination_route_table_ids") {
 		update = true
-		destinationRouteTableIds := expandStringList(d.Get("destination_route_table_ids").(*schema.Set).List())
-		request.DestinationRouteTableIds = &destinationRouteTableIds
-
 	}
+	destinationRouteTableIds := expandStringList(d.Get("destination_route_table_ids").(*schema.Set).List())
+	request.DestinationRouteTableIds = &destinationRouteTableIds
 	if d.HasChange("match_asns") {
 		update = true
-		matchAsns := expandStringList(d.Get("match_asns").(*schema.Set).List())
-		request.MatchAsns = &matchAsns
-
 	}
+	matchAsns := expandStringList(d.Get("match_asns").(*schema.Set).List())
+	request.MatchAsns = &matchAsns
 	if d.HasChange("match_community_set") {
 		update = true
-		matchCommunitySet := expandStringList(d.Get("match_community_set").(*schema.Set).List())
-		request.MatchCommunitySet = &matchCommunitySet
-
 	}
+	matchCommunitySet := expandStringList(d.Get("match_community_set").(*schema.Set).List())
+	request.MatchCommunitySet = &matchCommunitySet
 	if d.HasChange("next_priority") {
 		update = true
-		request.NextPriority = requests.NewInteger(d.Get("next_priority").(int))
+	}
+	if v, ok := d.GetOk("next_priority"); ok {
+		request.NextPriority = requests.NewInteger(v.(int))
 	}
 	if d.HasChange("operate_community_set") {
 		update = true
-		operateCommunitySet := expandStringList(d.Get("operate_community_set").(*schema.Set).List())
-		request.OperateCommunitySet = &operateCommunitySet
-
 	}
+	operateCommunitySet := expandStringList(d.Get("operate_community_set").(*schema.Set).List())
+	request.OperateCommunitySet = &operateCommunitySet
 	if d.HasChange("preference") {
 		update = true
-		request.Preference = requests.NewInteger(d.Get("preference").(int))
+	}
+	if v, ok := d.GetOk("preference"); ok {
+		request.Preference = requests.NewInteger(v.(int))
 	}
 	if d.HasChange("prepend_as_path") {
 		update = true
-		prependAsPath := expandStringList(d.Get("prepend_as_path").(*schema.Set).List())
-		request.PrependAsPath = &prependAsPath
-
 	}
+	prependAsPath := expandStringList(d.Get("prepend_as_path").(*schema.Set).List())
+	request.PrependAsPath = &prependAsPath
 	if d.HasChange("route_types") {
 		update = true
-		routeTypes := expandStringList(d.Get("route_types").(*schema.Set).List())
-		request.RouteTypes = &routeTypes
-
 	}
+	routeTypes := expandStringList(d.Get("route_types").(*schema.Set).List())
+	request.RouteTypes = &routeTypes
 	if d.HasChange("source_child_instance_types") {
 		update = true
-		sourceChildInstanceTypes := expandStringList(d.Get("source_child_instance_types").(*schema.Set).List())
-		request.SourceChildInstanceTypes = &sourceChildInstanceTypes
-
 	}
+	sourceChildInstanceTypes := expandStringList(d.Get("source_child_instance_types").(*schema.Set).List())
+	request.SourceChildInstanceTypes = &sourceChildInstanceTypes
 	if d.HasChange("source_instance_ids") {
 		update = true
-		sourceInstanceIds := expandStringList(d.Get("source_instance_ids").(*schema.Set).List())
-		request.SourceInstanceIds = &sourceInstanceIds
-
 	}
+	sourceInstanceIds := expandStringList(d.Get("source_instance_ids").(*schema.Set).List())
+	request.SourceInstanceIds = &sourceInstanceIds
 	if d.HasChange("source_instance_ids_reverse_match") {
 		update = true
-		request.SourceInstanceIdsReverseMatch = requests.NewBoolean(d.Get("source_instance_ids_reverse_match").(bool))
 	}
+	request.SourceInstanceIdsReverseMatch = requests.NewBoolean(d.Get("source_instance_ids_reverse_match").(bool))
 	if d.HasChange("source_region_ids") {
 		update = true
-		sourceRegionIds := expandStringList(d.Get("source_region_ids").(*schema.Set).List())
-		request.SourceRegionIds = &sourceRegionIds
-
 	}
+	sourceRegionIds := expandStringList(d.Get("source_region_ids").(*schema.Set).List())
+	request.SourceRegionIds = &sourceRegionIds
 	if d.HasChange("source_route_table_ids") {
 		update = true
-		sourceRouteTableIds := expandStringList(d.Get("source_route_table_ids").(*schema.Set).List())
-		request.SourceRouteTableIds = &sourceRouteTableIds
-
 	}
+	sourceRouteTableIds := expandStringList(d.Get("source_route_table_ids").(*schema.Set).List())
+	request.SourceRouteTableIds = &sourceRouteTableIds
 	if update {
 		raw, err := client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.ModifyCenRouteMap(request)

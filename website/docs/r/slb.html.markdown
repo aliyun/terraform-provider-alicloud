@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_slb
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer.html) from version 1.123.1.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_slb_load_balancer](https://www.terraform.io/docs/providers/alicloud/r/slb_load_balancer) from version 1.123.1.
 
 Provides an Application Load Balancer resource.
 

@@ -244,7 +244,9 @@ type (
 		TimeZone        string             `json:"timeZone"`
 		ContentType     OSSContentType     `json:"contentType"`
 		CompressionType OSSCompressionType `json:"compressionType"`
-		ContentDetail   string             `json:"contentDetail"` // according to ContentType, its value is the corresponding CsvContentDetail, JsonContentDetail, ParquetContentDetail, OrcContentDetail serialized string
+		//CsvContentDetail, JsonContentDetail, ParquetContentDetail, OrcContentDetail
+		// the old version ContentDetail is st  ring（struct serialized string）, and now we highly recommend you use the struct ContentDetail directly
+		ContentDetail interface{} `json:"contentDetail"`
 	}
 
 	CsvContentDetail struct {
@@ -536,6 +538,24 @@ func (c *Client) DeleteExport(project string, name string) error {
 	}
 	uri := "/jobs/" + name
 	r, err := c.request(project, "DELETE", uri, h, nil)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) RestartExport(project string, export *Export) error {
+	body, err := json.Marshal(export)
+	if err != nil {
+		return NewClientError(err)
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s?action=RESTART", export.Name)
+	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
 	}

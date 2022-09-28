@@ -95,6 +95,27 @@ func resourceAlicloudAlbRule() *schema.Resource {
 											},
 										},
 									},
+									"server_group_sticky_session": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enabled": {
+													Type:     schema.TypeBool,
+													Optional: true,
+													Computed: true,
+												},
+												"timeout": {
+													Type:         schema.TypeInt,
+													Optional:     true,
+													Computed:     true,
+													ValidateFunc: intBetween(1, 86400),
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -112,7 +133,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"value": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"ClientSrcPort", "ClientSrcIp", "Protocol", "SLBId", "SLBPort", "UserDefined"}, false),
+										ValidateFunc: validation.StringLenBetween(1, 128),
 									},
 									"value_type": {
 										Type:         schema.TypeString,
@@ -136,7 +157,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"host": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."),
+										ValidateFunc: validation.Any(validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."), validation.StringInSlice([]string{"${host}"}, false)),
 									},
 									"http_code": {
 										Type:         schema.TypeString,
@@ -144,19 +165,17 @@ func resourceAlicloudAlbRule() *schema.Resource {
 										ValidateFunc: validation.StringInSlice([]string{"301", "302", "303", "307", "308"}, false),
 									},
 									"path": {
-										Type:         schema.TypeString,
-										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\/[A-Za-z0-9\$\-_\.\+\/\&\~\@\:]{1,127}$`), "The value must be 1 to 128 characters in length and must start with a forward slash (/). The value can contain letters, digits, and the following special characters: $ - _ .+ / & ~ @ :. It cannot contain the following special characters: \" % # ; ! ( ) [ ]^ , \". The value is case-sensitive and can contain asterisks (*) and question marks (?)."),
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 									"port": {
-										Type:         schema.TypeInt,
-										Optional:     true,
-										ValidateFunc: intBetween(1, 63335),
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 									"protocol": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+										ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS", "${protocol}"}, false),
 									},
 									"query": {
 										Type:         schema.TypeString,
@@ -175,12 +194,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"host": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."),
+										ValidateFunc: validation.Any(validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."), validation.StringInSlice([]string{"${host}"}, false)),
 									},
 									"path": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^\/[A-Za-z0-9\$\-_\.\+\/\&\~\@\:]{1,127}$`), "The value must be 1 to 128 characters in length and must start with a forward slash (/). The value can contain letters, digits, and the following special characters: $ - _ .+ / & ~ @ :. It cannot contain the following special characters: \" % # ; ! ( ) [ ]^ , \". The value is case-sensitive and can contain asterisks (*) and question marks (?)."),
+										ValidateFunc: validation.StringLenBetween(1, 128),
 									},
 									"query": {
 										Type:         schema.TypeString,
@@ -447,6 +466,15 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 			}
 			forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+
+			serverGroupStickySessionMap := map[string]interface{}{}
+			for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
+				serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
+				serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
+				serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
+			}
+			forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
+
 			ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 		}
 
@@ -657,14 +685,29 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 						}
 					}
+
+					serverGroupStickySessionMaps := make([]map[string]interface{}, 0)
+					if serverGroupStickySessionArg, ok := forwardGroupConfigArg["ServerGroupStickySession"].(map[string]interface{}); ok && len(serverGroupStickySessionArg) > 0 {
+						serverGroupStickySessionMap := map[string]interface{}{}
+						if serverGroupStickySessionArgEnabled, ok := serverGroupStickySessionArg["Enabled"]; ok {
+							serverGroupStickySessionMap["enabled"] = serverGroupStickySessionArgEnabled
+						}
+						if serverGroupStickySessionArgTimeout, ok := serverGroupStickySessionArg["Timeout"]; ok {
+							serverGroupStickySessionMap["timeout"] = serverGroupStickySessionArgTimeout
+						}
+						serverGroupStickySessionMaps = append(serverGroupStickySessionMaps, serverGroupStickySessionMap)
+					}
+
 					if len(serverGroupTuplesMaps) > 0 {
 						forwardGroupConfigMaps := make([]map[string]interface{}, 0)
 						forwardGroupConfigMap := map[string]interface{}{}
 						forwardGroupConfigMap["server_group_tuples"] = serverGroupTuplesMaps
+						forwardGroupConfigMap["server_group_sticky_session"] = serverGroupStickySessionMaps
 						forwardGroupConfigMaps = append(forwardGroupConfigMaps, forwardGroupConfigMap)
 						ruleActionsMap["forward_group_config"] = forwardGroupConfigMaps
 						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 					}
+
 				}
 			}
 
@@ -704,7 +747,7 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					redirectConfigMap["host"] = redirectConfigArg["Host"]
 					redirectConfigMap["http_code"] = redirectConfigArg["HttpCode"]
 					redirectConfigMap["path"] = redirectConfigArg["Path"]
-					redirectConfigMap["port"] = formatInt(redirectConfigArg["Port"])
+					redirectConfigMap["port"] = redirectConfigArg["Port"]
 					redirectConfigMap["protocol"] = redirectConfigArg["Protocol"]
 					redirectConfigMap["query"] = redirectConfigArg["Query"]
 					redirectConfigMaps = append(redirectConfigMaps, redirectConfigMap)
@@ -940,6 +983,15 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 				}
 				forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+
+				serverGroupStickySessionMap := map[string]interface{}{}
+				for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
+					serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
+					serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
+					serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
+				}
+				forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
+
 				ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 			}
 

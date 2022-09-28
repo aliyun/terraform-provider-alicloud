@@ -18,13 +18,11 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-
 			"description": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -37,6 +35,12 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -48,7 +52,9 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.GroupName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
-
+	if v, ok := d.GetOk("instance_id"); ok {
+		request.InstanceId = v.(string)
+	}
 	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.CreateApiGroup(request)
@@ -86,6 +92,7 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("description", apiGroup.Description)
 	d.Set("sub_domain", apiGroup.SubDomain)
 	d.Set("vpc_domain", apiGroup.VpcDomain)
+	d.Set("instance_id", apiGroup.InstanceId)
 
 	return nil
 }

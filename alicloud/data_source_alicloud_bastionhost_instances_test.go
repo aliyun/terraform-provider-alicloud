@@ -112,7 +112,6 @@ data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
 data "alicloud_vswitches" "default" {
-  zone_id = local.zone_id
   vpc_id  = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_vswitch" "this" {

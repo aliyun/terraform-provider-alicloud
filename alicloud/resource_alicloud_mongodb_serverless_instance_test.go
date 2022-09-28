@@ -285,7 +285,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudMongoDBServerlessInstance_unit(t *testing.T) {
+func TestUnitAlicloudMongoDBServerlessInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mongodb_serverless_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mongodb_serverless_instance"].Schema).Data(nil, nil)

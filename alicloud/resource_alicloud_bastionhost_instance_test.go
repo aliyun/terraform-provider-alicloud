@@ -313,6 +313,48 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudBastionhostInstance_basic1(t *testing.T) {
+	var v yundun_bastionhost.Instance
+	resourceId := "alicloud_bastionhost_instance.default"
+	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
+	serviceFunc := func() interface{} {
+		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":        "${var.name}",
+					"license_code":       "bhah_ent_50_asset",
+					"period":             "1",
+					"vswitch_id":         "${local.vswitch_id}",
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"renewal_status":     "ManualRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":          name,
+						"period":               "1",
+						"security_group_ids.#": "2",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"

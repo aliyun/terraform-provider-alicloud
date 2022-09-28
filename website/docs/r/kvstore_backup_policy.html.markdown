@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_kvstore\_backup\_policy
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.104.0`. Please use resource [alicloud_kvstore_instance](https://www.terraform.io/docs/providers/alicloud/r/kvstore_instance.html).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.104.0`. Please use resource [alicloud_kvstore_instance](https://www.terraform.io/docs/providers/alicloud/r/kvstore_instance).
 
 Provides a backup policy for ApsaraDB Redis / Memcache instance resource. 
 

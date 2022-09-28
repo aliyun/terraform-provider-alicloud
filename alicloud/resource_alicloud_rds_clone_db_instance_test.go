@@ -133,6 +133,16 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tcp_connection_type": "SHORT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tcp_connection_type": "SHORT",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(

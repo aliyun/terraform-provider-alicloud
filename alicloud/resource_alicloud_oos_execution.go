@@ -132,7 +132,6 @@ func resourceAlicloudOosExecution() *schema.Resource {
 
 func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	oosService := OosService{client}
 	var response map[string]interface{}
 	action := "StartExecution"
 	request := make(map[string]interface{})
@@ -192,10 +191,6 @@ func resourceAlicloudOosExecutionCreate(d *schema.ResourceData, meta interface{}
 	}
 	responseExecution := response["Execution"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseExecution["ExecutionId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, oosService.OosExecutionStateRefreshFunc(d.Id(), []string{"Failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
 
 	return resourceAlicloudOosExecutionRead(d, meta)
 }

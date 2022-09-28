@@ -49,7 +49,7 @@ The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to check the validity of the request without actually making the request.request Default value: false. Valid values:
     * `true`: The validity of the request is checked but the request is not made. Check items include the required parameters, request format, service limits, and available ECS resources. If the check fails, the corresponding error message is returned. If the check succeeds, the DryRunOperation error code is returned.
     * `false`: The validity of the request is checked. If the check succeeds, a 2xx HTTP status code is returned and the request is made.
-* `enable_auto_snapshot` - (Optional) Indicates whether to enable creating snapshot automatically. Default value: `false`.
+* `enable_auto_snapshot` - (Optional) Indicates whether to enable creating snapshot automatically.
 * `encrypted` - (Optional, ForceNew) If true, the disk will be encrypted, conflict with `snapshot_id`.
 * `instance_id` - (Optional, ForceNew) The ID of the instance to which the created subscription disk is automatically attached.
     * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
@@ -61,8 +61,7 @@ The following arguments are supported:
     * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
     * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
     * `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
-* `tags` - (Optional) A mapping of tags to assign to the resource.  
-* `advanced_features` -   
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional) The Id of resource group which the disk belongs.
 * `size` - (Optional) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
 * `snapshot_id` - (Optional, ForceNew) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.

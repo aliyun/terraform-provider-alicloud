@@ -285,7 +285,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEhpcJobTemplate_unit(t *testing.T) {
+func TestUnitAlicloudEhpcJobTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ehpc_job_template"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ehpc_job_template"].Schema).Data(nil, nil)

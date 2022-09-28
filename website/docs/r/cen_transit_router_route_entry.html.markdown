@@ -67,17 +67,18 @@ The following arguments are supported:
 * `transit_router_route_entry_next_hop_type` - (Required, ForceNew) The Type of the transit router route entry next hop,Valid values `Attachment` and `BlackHole`.
 * `transit_router_route_entry_name` - (Optional) The name of the transit router route entry.
 * `transit_router_route_entry_description` - (Optional) The description of the transit router route entry.
-* `transit_router_route_entry_next_hop_id` - (Required, ForceNew) The ID of the transit router route entry next hop.
+* `transit_router_route_entry_next_hop_id` - (Optional, ForceNew) The ID of the transit router route entry next hop.
 * `dry_run` - (Optional) The dry run.
 
--> **NOTE:** If TransitRouterRouteEntryNextHopType is `Attachment`, TransitRouterRouteEntryNextHopId is required.
-             If TransitRouterRouteEntryNextHopType is `BlackHole`, TransitRouterRouteEntryNextHopId cannot be filled.
+-> **NOTE:** If transit_router_route_entry_next_hop_type is `Attachment`, transit_router_route_entry_next_hop_id is required.
+             If transit_router_route_entry_next_hop_type is `BlackHole`, transit_router_route_entry_next_hop_id cannot be filled.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<transit_router_route_table_id>:<transit_router_route_entry_id>`.
+* `transit_router_route_entry_id` - The ID of the route entry.
 * `status` - The associating status of the Transit Router.
 
 ### Timeouts

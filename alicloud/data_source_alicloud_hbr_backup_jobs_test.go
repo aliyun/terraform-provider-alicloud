@@ -320,11 +320,9 @@ variable "name" {
 data "alicloud_hbr_ecs_backup_plans" "default" {
     name_regex = "plan-tf-used-dont-delete"
 }
-
 data "alicloud_hbr_oss_backup_plans" "default" {
 	name_regex = "plan-tf-used-dont-delete"
 }
-
 data "alicloud_hbr_nas_backup_plans" "default" {
 	name_regex = "plan-tf-used-dont-delete"
 }`, name)
@@ -332,8 +330,7 @@ data "alicloud_hbr_nas_backup_plans" "default" {
 
 var existHbrBackupJobMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"jobs.#":    CHECKSET,
-		"jobs.0.id": CHECKSET,
+		"jobs.#": CHECKSET,
 	}
 }
 

@@ -29,7 +29,7 @@ const (
 
 var InvalidCompressError = errors.New("Invalid Compress Type")
 
-const defaultLogUserAgent = "golang-sdk-v0.1.0"
+const DefaultLogUserAgent = "golang-sdk-v0.1.0"
 
 // Error defines sls error
 type Error struct {
@@ -88,6 +88,7 @@ type Client struct {
 	UserAgent       string // default defaultLogUserAgent
 	RequestTimeOut  time.Duration
 	RetryTimeOut    time.Duration
+	HTTPClient      *http.Client
 
 	accessKeyLock sync.RWMutex
 }
@@ -95,9 +96,16 @@ type Client struct {
 func convert(c *Client, projName string) *LogProject {
 	c.accessKeyLock.RLock()
 	defer c.accessKeyLock.RUnlock()
+	return convertLocked(c, projName)
+}
+
+func convertLocked(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
+	if c.HTTPClient != nil {
+		p.httpClient = c.HTTPClient
+	}
 	if c.RequestTimeOut != time.Duration(0) {
 		p.WithRequestTimeout(c.RequestTimeOut)
 	}
@@ -106,6 +114,16 @@ func convert(c *Client, projName string) *LogProject {
 	}
 
 	return p
+}
+
+// SetUserAgent set a custom userAgent
+func (c *Client) SetUserAgent(userAgent string) {
+	c.UserAgent = userAgent
+}
+
+// SetHTTPClient set a custom http client, all request will send to sls by this client
+func (c *Client) SetHTTPClient(client *http.Client) {
+	c.HTTPClient = client
 }
 
 // ResetAccessKeyToken reset client's access key token

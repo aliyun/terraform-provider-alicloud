@@ -200,6 +200,25 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 					},
 				},
 			},
+			"renew_period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.Any(validation.IntBetween(1, 9), validation.IntInSlice([]int{12, 24, 36})),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+						return false
+					}
+					return true
+				},
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
+			},
 		},
 	}
 }
@@ -230,7 +249,17 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
+	if v, ok := d.GetOk("renewal_status"); ok {
+		request["RenewalStatus"] = v
+	}
+
+	if v, ok := d.GetOk("renew_period"); ok {
+		request["RenewPeriod"] = v
+	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renew_period", "renewal_status", d.Get("renewal_status")))
+	}
 	request["ProductCode"] = "bastionhost"
+	request["ProductType"] = "bastionhost"
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "RegionId",
 		"Value": client.RegionId,
@@ -353,6 +382,15 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
 
+	bssOpenApiService := BssOpenApiService{client}
+	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "bastionhost", "bastionhost", "bastionhost")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("renewal_status", getQueryInstanceObject["RenewStatus"])
+	d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"]))
+
 	return nil
 }
 
@@ -365,6 +403,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 	bastionhostService := YundunBastionhostService{client}
 
 	d.Partial(true)
+
 	if d.HasChange("tags") {
 		if err := bastionhostService.setInstanceTags(d, TagResourceInstance); err != nil {
 			return WrapError(err)

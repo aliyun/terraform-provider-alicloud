@@ -119,7 +119,7 @@ resource "alicloud_fnf_flow" "default" {
 `, name)
 }
 
-func TestAccAlicloudFnFExecution_unit(t *testing.T) {
+func TestUnitAlicloudFnFExecution(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.FnFSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_fnf_execution"].Schema).Data(nil, nil)

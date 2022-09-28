@@ -50,6 +50,8 @@ resource "alicloud_ots_table" "basic" {
   time_to_live                  = -1
   max_version                   = 1
   deviation_cell_version_in_sec = 1
+  enable_sse                    = true
+  sse_key_type                  = "SSE_KMS_SERVICE"
 }
 ```
 
@@ -65,6 +67,8 @@ The following arguments are supported:
 * `time_to_live` - (Required) The retention time of data stored in this table (unit: second). The value maximum is 2147483647 and -1 means never expired.
 * `max_version` - (Required) The maximum number of versions stored in this table. The valid value is 1-2147483647.
 * `deviation_cell_version_in_sec` - (Optional, Available in 1.42.0+) The max version offset of the table. The valid value is 1-9223372036854775807. Defaults to 86400.
+* `enable_sse` - (Optional, Available in 1.172.0+) Whether enable OTS server side encryption. Default value is false.
+* `sse_key_type` - (Optional, Available in 1.172.0+) The key type of OTS server side encryption. Only `SSE_KMS_SERVICE` is allowed.
 
 ## Attributes Reference
 
@@ -77,6 +81,8 @@ The following attributes are exported:
 * `time_to_live` - The retention time of data stored in this table.
 * `max_version` - The maximum number of versions stored in this table.
 * `deviation_cell_version_in_sec` - The max version offset of the table.
+* `enable_sse` - Whether enable OTS server side encryption.
+* `sse_key_type` - The key type of OTS server side encryption.
 
 ## Import
 

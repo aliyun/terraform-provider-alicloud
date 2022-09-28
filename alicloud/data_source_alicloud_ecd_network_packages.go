@@ -74,6 +74,11 @@ func dataSourceAlicloudEcdNetworkPackages() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"eip_addresses": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -160,6 +165,7 @@ func dataSourceAlicloudEcdNetworkPackagesRead(d *schema.ResourceData, meta inter
 			"office_site_id":       object["OfficeSiteId"],
 			"office_site_name":     object["OfficeSiteName"],
 			"status":               object["NetworkPackageStatus"],
+			"eip_addresses":        object["EipAddresses"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

@@ -345,7 +345,7 @@ func AlicloudGaAcceleratorBasicDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudGaAccelerator_unit(t *testing.T) {
+func TestUnitAlicloudGaAccelerator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ga_accelerator"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ga_accelerator"].Schema).Data(nil, nil)

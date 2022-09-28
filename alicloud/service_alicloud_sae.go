@@ -195,7 +195,7 @@ func (s *SaeService) DescribeSaeApplication(id string) (object map[string]interf
 	if respBody, isExist := response["body"]; isExist {
 		response = respBody.(map[string]interface{})
 	} else {
-		return object, WrapError(fmt.Errorf("%s failed, response: %v", "Put "+action, response))
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", "GET "+action, response))
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))

@@ -63,6 +63,9 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
 * `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 40 characters. Default to <instance_id> + 'tf'.
 * `port` - (Optional) Internet connection port. Valid value: [1000-5999]. Default to 3306.
+* `babelfish_port` - (Optional, Computed, Available in 1.176.0+) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
+
+-> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 
 ## Attributes Reference
 

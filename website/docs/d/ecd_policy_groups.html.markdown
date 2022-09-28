@@ -97,3 +97,8 @@ The following attributes are exported in addition to the arguments listed above:
 	* `watermark_custom_text` - The custort text of water mark.
 	* `watermark_transparency` - The watermark transparency.
 	* `watermark_type` - The type of watemark.
+	* `recording` - (Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `alltime`, `period`.
+	* `recording_start_time` - (Available in 1.171.0+) The start time of recording.
+	* `recording_end_time` - (Available in 1.171.0+) The end time of recording.
+	* `recording_fps` - (Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
+	* `camera_redirect` - (Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.

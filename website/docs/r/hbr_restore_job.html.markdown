@@ -103,19 +103,24 @@ The following arguments are supported:
 * `options` - (Optional, ForceNew) Recovery options. **NOTE:** Required while source_type equals `OSS` or `NAS`, invalid while source_type equals `ECS_FILE`. It's a json string with format:`"{"includes":[],"excludes":[]}",`. Recovery options. When restores OTS_TABLE and real target time is the rangEnd time of the snapshot, it should be a string with format: `{"UI_TargetTime":1650032529018}`.
 * `exclude` - (Optional) The exclude path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/excludePath]`, up to 255 characters. **WARNING:** If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `include` - (Optional) The include path. **NOTE:** Invalid while source_type equals `OSS` or `NAS`. It's a json string with format:`["/includePath"]`, Up to 255 characters. **WARNING:** The field is required while source_type equals `OTS_TABLE` which means source table name. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan. 
-* `target_bucket` - (Optional,ForceNew) The target name of OSS bucket. **NOTE:** Required while source_type equals `OSS`,
-* `target_prefix` - (Optional,ForceNew) The target prefix of the OSS object. **WARNING:** Required while source_type equals `OSS`. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `target_bucket` - (Optional, ForceNew) The target name of OSS bucket. **NOTE:** Required while source_type equals `OSS`,
+* `target_prefix` - (Optional, ForceNew) The target prefix of the OSS object. **WARNING:** Required while source_type equals `OSS`. If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
 * `target_file_system_id` - (Optional, ForceNew) The ID of destination File System. **NOTE:** Required while source_type equals `NAS`
 * `target_create_time` - (Optional, ForceNew) The creation time of destination File System. **NOTE:** While source_type equals `NAS`, this parameter must be set. **Note:** The time format of the API adopts the ISO 8601 format, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
-* `target_path` - (Optional,ForceNew) The target file path of (ECS) instance. **WARNING:** Required while source_type equals `NAS` or `ECS_FILE`, If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
-* `target_instance_id` - (Optional,ForceNew)  The target ID of ECS instance. **NOTE:** Required while source_type equals `ECS_FILE`
-* `target_client_id` - (Optional,ForceNew) The target client ID.
-* `target_data_source_id` - (Optional,ForceNew) The target data source ID.
-* `target_time` - (Optional,Available in v1.164.0) The time when data is restored to the Table store instance. This value is a UNIX timestamp. Unit: seconds. **WARNING:** Required while source_type equals `OTS_TABLE`. **Note:** The time when data is restored to the Tablestore instance. It should be 0 if restores data at the End time of the snapshot.
-* `udm_detail` - (Optional,Available in v1.164.0) The full machine backup details.
-* `target_instance_name` - (Optional,Available in v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
-* `target_table_name` - (Optional,Available in v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
+* `target_path` - (Optional, ForceNew) The target file path of (ECS) instance. **WARNING:** Required while source_type equals `NAS` or `ECS_FILE`, If this value filled in incorrectly, the task may not start correctly, so please check the parameters before executing the plan.
+* `target_instance_id` - (Optional, ForceNew)  The target ID of ECS instance. **NOTE:** Required while source_type equals `ECS_FILE`
+* `target_client_id` - (Optional, ForceNew) The target client ID.
+* `target_data_source_id` - (Optional, ForceNew) The target data source ID.
+* `target_time` - (Optional, Available in v1.164.0) The time when data is restored to the Table store instance. This value is a UNIX timestamp. Unit: seconds. **WARNING:** Required while source_type equals `OTS_TABLE`. **Note:** The time when data is restored to the Tablestore instance. It should be 0 if restores data at the End time of the snapshot.
+* `udm_detail` - (Optional, Available in v1.164.0) The full machine backup details.
+* `target_instance_name` - (Optional, Available in v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
+* `target_table_name` - (Optional, Available in v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
+* `ots_detail` - (Optional, Computed, Available in v1.186.0) The details about the Tablestore instance. See the following `Block ots_detail`.
 
+#### Block ots_detail
+
+The ots_detail supports the following:
+* `overwrite_existing` - (Optional, ForceNew, Computed) Whether to overwrite the existing table storage recovery task. Valid values: `true`, `false`.
 
 ## Attributes Reference
 
@@ -128,7 +133,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Restore Job.
+* `create` - (Defaults to 3 mins) Used when create the Restore Job.
 
 ## Import
 

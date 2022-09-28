@@ -110,7 +110,7 @@ resource "alicloud_cen_instance_attachment" "default" {
 `, name, acctest.RandIntRange(1, 2999), defaultRegionToTest)
 }
 
-func TestAccAlicloudVPCVbrHa_unit(t *testing.T) {
+func TestUnitAlicloudVPCVbrHa(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_vbr_ha"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_vbr_ha"].Schema).Data(nil, nil)

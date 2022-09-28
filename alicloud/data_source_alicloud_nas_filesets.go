@@ -158,7 +158,7 @@ func dataSourceAlicloudNasFilesetsRead(d *schema.ResourceData, meta interface{})
 			"id":               fmt.Sprint(request["FileSystemId"], ":", object["FsetId"]),
 			"fileset_id":       fmt.Sprint(object["FsetId"]),
 			"status":           object["Status"],
-			"update_time":      object["UpdateTiem"],
+			"update_time":      object["UpdateTime"],
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)

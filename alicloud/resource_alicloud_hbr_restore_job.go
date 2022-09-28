@@ -135,6 +135,22 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"ots_detail": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"overwrite_existing": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -148,6 +164,7 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := d.GetOk("exclude"); ok {
 		request["Exclude"] = v
 	}
@@ -208,11 +225,24 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 		request["UdmDetail"] = v
 	}
 
+	if v, ok := d.GetOk("ots_detail"); ok {
+		otsDetail := make(map[string]interface{})
+		for _, otsDetailArgs := range v.([]interface{}) {
+			otsDetailArg := otsDetailArgs.(map[string]interface{})
+			otsDetail["OverwriteExisting"] = otsDetailArg["overwrite_existing"]
+		}
+		respJson, err := convertMaptoJsonString(otsDetail)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["OtsDetail"] = respJson
+	}
+
 	request["ClientToken"] = buildClientToken("CreateRestoreJob")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -240,6 +270,7 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 
 	return resourceAlicloudHbrRestoreJobRead(d, meta)
 }
+
 func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	hbrService := HbrService{client}
@@ -256,6 +287,7 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("restore_job_id", parts[0])
 	d.Set("restore_type", parts[1])
 	d.Set("options", object["Options"])
@@ -265,10 +297,6 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	d.Set("status", object["Status"])
 	d.Set("target_bucket", object["TargetBucket"])
 	d.Set("target_client_id", object["TargetClientId"])
-	if object["TargetCreateTime"] != nil {
-		t := int64(formatInt(object["TargetCreateTime"]))
-		d.Set("target_create_time", ConvertNasFileSystemUnixToString(d.Get("target_create_time").(string), t))
-	}
 	d.Set("target_data_source_id", object["TargetDataSourceId"])
 	d.Set("target_file_system_id", object["TargetFileSystemId"])
 	d.Set("target_instance_id", object["TargetInstanceId"])
@@ -279,12 +307,31 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 	d.Set("target_table_name", object["TargetTableName"])
 	d.Set("target_time", object["TargetTime"])
 	d.Set("udm_detail", object["UdmDetail"])
+
+	if object["TargetCreateTime"] != nil {
+		t := int64(formatInt(object["TargetCreateTime"]))
+		d.Set("target_create_time", ConvertNasFileSystemUnixToString(d.Get("target_create_time").(string), t))
+	}
+
+	if otsDetail, ok := object["OtsDetail"]; ok && otsDetail != nil {
+		otsDetailMaps := make([]map[string]interface{}, 0)
+		otsDetailArg := otsDetail.(map[string]interface{})
+		otsDetailMap := map[string]interface{}{}
+		if v, ok := otsDetailArg["OverwriteExisting"]; ok && v != nil {
+			otsDetailMap["overwrite_existing"] = v
+			otsDetailMaps = append(otsDetailMaps, otsDetailMap)
+		}
+		d.Set("ots_detail", otsDetailMaps)
+	}
+
 	return nil
 }
+
 func resourceAlicloudHbrRestoreJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
 	return resourceAlicloudHbrRestoreJobRead(d, meta)
 }
+
 func resourceAlicloudHbrRestoreJobDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudHbrRestoreJob. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil

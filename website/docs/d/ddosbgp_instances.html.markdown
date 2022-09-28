@@ -11,7 +11,7 @@ description: |-
 
 This data source provides a list of Anti-DDoS Advanced instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.57.0+ .
+-> **NOTE:** Available in 1.183.0+ .
 
 ## Example Usage
 
@@ -48,3 +48,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `bandwidth` - The instance's elastic defend bandwidth.
   * `ip_type` - The instance's IP version.
   * `ip_count` - The instance's count of ip config.
+  * `normal_bandwidth` - Normal defend bandwidth of the instance. The unit is Gbps.

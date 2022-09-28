@@ -235,7 +235,7 @@ func TestUnitAlicloudGaAcceleratorSpareIpAttachment(t *testing.T) {
 
 	// Update
 	err = resourceAlicloudGaAcceleratorSpareIpAttachmentUpdate(dExisted, rawClient)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
 	// Delete
 	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewGaplusClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {

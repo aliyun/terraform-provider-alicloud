@@ -45,6 +45,8 @@ func TestAccAlicloudECDNetworkPackagesDataSource(t *testing.T) {
 			"packages.0.expired_time":         CHECKSET,
 			"packages.0.create_time":          CHECKSET,
 			"packages.0.network_package_id":   CHECKSET,
+			"packages.0.eip_addresses.#":      "1",
+			"packages.0.eip_addresses.0":      CHECKSET,
 		}
 	}
 	var fakeAlicloudEventBridgeEventBusesDataSourceNameMapFunc = func(rand int) map[string]string {

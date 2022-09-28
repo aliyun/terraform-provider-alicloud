@@ -187,6 +187,9 @@ The following arguments are supported:
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
+* `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
+  - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
+  - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
 
 #### Block pg_hba_conf

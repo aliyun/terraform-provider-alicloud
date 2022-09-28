@@ -109,6 +109,12 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Computed:         true,
 				DiffSuppressFunc: ecsSecurityGroupRulePreFixListIdDiffSuppressFunc,
 			},
+			"ipv6_cidr_ip": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"cidr_ip"},
+			},
 		},
 	}
 }
@@ -128,10 +134,11 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	priority := d.Get("priority").(int)
 
 	_, cidrExist := d.GetOk("cidr_ip")
+	_, ipv6CidrExist := d.GetOk("ipv6_cidr_ip")
 	_, sourceSecurityGroupIdExist := d.GetOk("source_security_group_id")
 	_, prefixListIdExist := d.GetOk("prefix_list_id")
-	if !cidrExist && !sourceSecurityGroupIdExist && !prefixListIdExist {
-		return WrapError(fmt.Errorf("you must specify one of the following field: cidr_ip, source_security_group_id, prefix_list_id"))
+	if !cidrExist && !sourceSecurityGroupIdExist && !prefixListIdExist && !ipv6CidrExist {
+		return WrapError(fmt.Errorf("you must specify one of the following field: cidr_ip, source_security_group_id, prefix_list_id, ipv6_cidr_ip"))
 	}
 
 	request, err := buildAliyunSGRuleRequest(d, meta)
@@ -154,13 +161,15 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_security_group_rule", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	var cidr_ip string
+	var cidrIp string
 	if ip, ok := d.GetOk("cidr_ip"); ok {
-		cidr_ip = ip.(string)
+		cidrIp = ip.(string)
+	} else if v, ok := d.GetOk("ipv6_cidr_ip"); ok {
+		cidrIp = strings.Replace(v.(string), ":", "_", -1)
 	} else {
-		cidr_ip = d.Get("source_security_group_id").(string)
+		cidrIp = d.Get("source_security_group_id").(string)
 	}
-	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidr_ip + ":" + policy + ":" + strconv.Itoa(priority))
+	d.SetId(sgId + ":" + direction + ":" + ptl + ":" + port + ":" + nicType + ":" + cidrIp + ":" + policy + ":" + strconv.Itoa(priority))
 
 	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }
@@ -223,11 +232,13 @@ func resourceAliyunSecurityGroupRuleRead(d *schema.ResourceData, meta interface{
 	//support source and desc by type
 	if direction == string(DirectionIngress) {
 		d.Set("cidr_ip", object.SourceCidrIp)
+		d.Set("ipv6_cidr_ip", object.Ipv6SourceCidrIp)
 		d.Set("source_security_group_id", object.SourceGroupId)
 		d.Set("source_group_owner_account", object.SourceGroupOwnerAccount)
 		d.Set("prefix_list_id", object.SourcePrefixListId)
 	} else {
 		d.Set("cidr_ip", object.DestCidrIp)
+		d.Set("ipv6_cidr_ip", object.Ipv6DestCidrIp)
 		d.Set("source_security_group_id", object.DestGroupId)
 		d.Set("source_group_owner_account", object.DestGroupOwnerAccount)
 		d.Set("prefix_list_id", object.DestPrefixListId)
@@ -381,6 +392,13 @@ func buildAliyunSGRuleRequest(d *schema.ResourceData, meta interface{}) (*reques
 			request.QueryParams["SourceCidrIp"] = v.(string)
 		} else {
 			request.QueryParams["DestCidrIp"] = v.(string)
+		}
+	}
+	if v, ok := d.GetOk("ipv6_cidr_ip"); ok {
+		if direction == string(DirectionIngress) {
+			request.QueryParams["Ipv6SourceCidrIp"] = v.(string)
+		} else {
+			request.QueryParams["Ipv6DestCidrIp"] = v.(string)
 		}
 	}
 	if v, ok := d.GetOk("prefix_list_id"); ok {

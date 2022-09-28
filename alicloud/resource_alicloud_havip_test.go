@@ -268,7 +268,7 @@ resource "alicloud_vswitch" "default" {
 `, name)
 }
 
-func TestAccAlicloudHavip_unit(t *testing.T) {
+func TestUnitAlicloudHavip(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_havip"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_havip"].Schema).Data(nil, nil)

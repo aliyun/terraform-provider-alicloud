@@ -49,7 +49,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	if len(c.UserAgent) > 0 {
 		headers["User-Agent"] = c.UserAgent
 	} else {
-		headers["User-Agent"] = defaultLogUserAgent
+		headers["User-Agent"] = DefaultLogUserAgent
 	}
 
 	c.accessKeyLock.RLock()
@@ -106,7 +106,11 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	// Get ready to do request
-	resp, err := defaultHttpClient.Do(req)
+	httpClient := c.HTTPClient
+	if httpClient == nil {
+		httpClient = defaultHttpClient
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

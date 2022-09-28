@@ -43,6 +43,20 @@ func TestAccAlicloudECDImagesDataSource(t *testing.T) {
 			"image_type": `"SYSTEM"`,
 		}),
 	}
+	osTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEcdImagesDataSourceName(rand, map[string]string{
+			"ids":     `["${alicloud_ecd_image.default.id}"]`,
+			"os_type": `"${data.alicloud_ecd_bundles.default.bundles.1.os_type}"`,
+		}),
+		fakeConfig: "",
+	}
+	desktopInstanceTypeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudEcdImagesDataSourceName(rand, map[string]string{
+			"ids":                   `["${alicloud_ecd_image.default.id}"]`,
+			"desktop_instance_type": `"${data.alicloud_ecd_bundles.default.bundles.1.desktop_type}"`,
+		}),
+		fakeConfig: "",
+	}
 
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdImagesDataSourceName(rand, map[string]string{
@@ -57,10 +71,12 @@ func TestAccAlicloudECDImagesDataSource(t *testing.T) {
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcdImagesDataSourceName(rand, map[string]string{
-			"ids":        `["${alicloud_ecd_image.default.id}"]`,
-			"name_regex": `"${alicloud_ecd_image.default.image_name}"`,
-			"image_type": `"CUSTOM"`,
-			"status":     `"Available"`,
+			"ids":                   `["${alicloud_ecd_image.default.id}"]`,
+			"name_regex":            `"${alicloud_ecd_image.default.image_name}"`,
+			"image_type":            `"CUSTOM"`,
+			"status":                `"Available"`,
+			"os_type":               `"${data.alicloud_ecd_bundles.default.bundles.1.os_type}"`,
+			"desktop_instance_type": `"${data.alicloud_ecd_bundles.default.bundles.1.desktop_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudEcdImagesDataSourceName(rand, map[string]string{
 			"ids":        `["${alicloud_ecd_image.default.id}_fake"]`,
@@ -101,7 +117,7 @@ func TestAccAlicloudECDImagesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeAlicloudEcdImagesDataSourceNameMapFunc,
 	}
 
-	alicloudEcdImagesBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, imageTypeConf, statusConf, allConf)
+	alicloudEcdImagesBusesCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameRegexConf, imageTypeConf, statusConf, osTypeConf, desktopInstanceTypeConf, allConf)
 }
 func testAccCheckAlicloudEcdImagesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -118,7 +134,7 @@ variable "name" {
 resource "alicloud_ecd_simple_office_site" "default" {
   cidr_block          = "172.16.0.0/12"
   desktop_access_type = "Internet"
-  office_site_name    = "your_simple_office_site_name"
+  office_site_name    = var.name
 }
 
 data "alicloud_ecd_bundles" "default" {
@@ -126,7 +142,7 @@ data "alicloud_ecd_bundles" "default" {
 }
 
 resource "alicloud_ecd_policy_group" "default" {
-  policy_group_name = "your_policy_group_name"
+  policy_group_name = var.name
   clipboard         = "readwrite"
   local_drive       = "read"
   authorize_access_policy_rules {

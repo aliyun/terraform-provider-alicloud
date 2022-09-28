@@ -321,7 +321,7 @@ resource "alicloud_eip_association" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCForwardEntry_unit(t *testing.T) {
+func TestUnitAlicloudVPCForwardEntry(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_forward_entry"].Schema).Data(nil, nil)

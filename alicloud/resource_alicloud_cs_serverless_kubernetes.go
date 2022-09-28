@@ -87,6 +87,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"private_zone": {
 				Type:          schema.TypeBool,
 				Optional:      true,
@@ -226,6 +230,32 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -353,6 +383,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		args.ClusterSpec = spec.(string)
 	}
 
+	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
+		args.EnableRRSA = enableRRSA.(bool)
+	}
+
 	//set tags
 	if len(tags) > 0 {
 		args.Tags = tags
@@ -469,28 +503,19 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var config *cs.ClusterConfig
+	var kubeConfig *cs.ClusterConfig
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		var requestInfo *cs.Client
-
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), !d.Get("endpoint_public_access_enabled").(bool))
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
+		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+			return WrapError(err)
 		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
+		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
+			return WrapError(err)
 		}
-		config, _ = response.(*cs.ClusterConfig)
-
-		if err := writeToFile(file.(string), config.Config); err != nil {
+	}
+	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+		return WrapError(err)
+	} else {
+		if err := d.Set("rrsa_metadata", data); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -551,15 +576,35 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 }
 
 func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
-	var update bool
+	update := false
 	action := "ModifyCluster"
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 
 	var modifyClusterRequest cs.ModifyClusterArgs
+
 	if d.HasChange("deletion_protection") {
 		update = true
 		modifyClusterRequest.DeletionProtection = d.Get("deletion_protection").(bool)
+	}
+
+	if d.HasChange("enable_rrsa") {
+		enableRRSA := false
+		if v, ok := d.GetOk("enable_rrsa"); ok {
+			enableRRSA = v.(bool)
+		}
+		// it's not allowed to disable rrsa
+		if !enableRRSA {
+			return fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file")
+		}
+		// version check
+		version := d.Get("version").(string)
+		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, version); res < 0 || err != nil {
+			return fmt.Errorf("RRSA is not supported in current version: %s", version)
+		}
+		update = true
+		modifyClusterRequest.EnableRRSA = enableRRSA
 	}
 
 	if update {
@@ -590,6 +635,7 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	d.SetPartial("deletion_protection")
+	d.SetPartial("enable_rrsa")
 
 	return nil
 }

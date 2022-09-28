@@ -251,7 +251,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudOOSPatchBaseline_unit(t *testing.T) {
+func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_patch_baseline"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_patch_baseline"].Schema).Data(nil, nil)

@@ -110,7 +110,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudDTSMigrationInstance_unit(t *testing.T) {
+func TestUnitAlicloudDTSMigrationInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dts_migration_instance"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_dts_migration_instance"].Schema).Data(nil, nil)

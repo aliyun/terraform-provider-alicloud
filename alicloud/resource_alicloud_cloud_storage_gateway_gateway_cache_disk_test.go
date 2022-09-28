@@ -129,7 +129,7 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
 `, name)
 }
 
-func TestAccAlicloudCloudStorageGatewayGatewayCacheDisk_unit(t *testing.T) {
+func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_cache_disk"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_cache_disk"].Schema).Data(nil, nil)

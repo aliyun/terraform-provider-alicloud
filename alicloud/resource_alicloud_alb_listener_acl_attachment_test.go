@@ -156,7 +156,7 @@ resource "alicloud_alb_listener" "default" {
 `, name)
 }
 
-func TestAccAlicloudAlbListenerAclAttachment_unit(t *testing.T) {
+func TestUnitAlicloudAlbListenerAclAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alb_listener_acl_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alb_listener_acl_attachment"].Schema).Data(nil, nil)

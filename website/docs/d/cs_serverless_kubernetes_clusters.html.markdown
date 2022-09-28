@@ -13,13 +13,16 @@ This data source provides a list Container Service Serverless Kubernetes Cluster
 
 -> **NOTE:** Available in 1.58.0+
 
+-> **NOTE:** From version 1.177.0+, We supported batch export of clusters' kube config information by `kube_config_file_prefix`.
+
 ## Example Usage
 
 ```
 # Declare the data source
 data "alicloud_cs_serverless_kubernetes_clusters" "k8s_clusters" {
-  name_regex  = "my-first-k8s"
-  output_file = "my-first-k8s-json"
+  name_regex              = "my-first-k8s"
+  output_file             = "my-first-k8s-json"
+  kube_config_file_prefix = "~/.kube/serverless"
 }
 
 output "output" {
@@ -35,6 +38,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by cluster name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `enabled_details` - (Optional) Boolean, false by default, only `id` and `name` are exported. Set to true if more details are needed, e.g.,  `deletion_protection`, `connections`. See full list in attributes.
+* `kube_config_file_prefix` - (Optional, Available in 1.177.0+) The path prefix of kube config. You could store kube config in a specified directory by specifying this field, like `~/.kube/serverless`, then it will be named with `~/.kube/serverless-clusterID-kubeconfig`. If you don't specify this field, it will be stored in the current directory and named with `clusterID-kubeconfig`.
 
 ## Attributes Reference
 

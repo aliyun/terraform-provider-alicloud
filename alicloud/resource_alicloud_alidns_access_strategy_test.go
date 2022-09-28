@@ -585,7 +585,7 @@ resource "alicloud_alidns_address_pool" "ipv6" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
-func TestAccAlicloudAlidnsAccessStrategy_unit(t *testing.T) {
+func TestUnitAlicloudAlidnsAccessStrategy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alidns_access_strategy"].Schema).Data(nil, nil)

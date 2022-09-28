@@ -188,7 +188,7 @@ data "alicloud_ddoscoo_instances" "default" {}
 `, name)
 }
 
-func TestAccAlicloudDdoscooPort_unit(t *testing.T) {
+func TestUnitAlicloudDdoscooPort(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.DdoscooSupportedRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_ddoscoo_port"].Schema).Data(nil, nil)

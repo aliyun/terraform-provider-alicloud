@@ -223,7 +223,7 @@ resource "alicloud_nas_fileset" "default" {
 `, name)
 }
 
-func TestAccAlicloudNASDataFlow_unit(t *testing.T) {
+func TestUnitAlicloudNASDataFlow(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_data_flow"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_nas_data_flow"].Schema).Data(nil, nil)

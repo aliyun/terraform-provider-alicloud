@@ -154,6 +154,10 @@ func resourceAlicloudSlbAclRead(d *schema.ResourceData, meta interface{}) error 
 
 func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewSlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	slbService := SlbService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -174,10 +178,6 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 		request["RegionId"] = client.RegionId
 		action := "SetAccessControlListAttribute"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -217,10 +217,6 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				removedRequest["AclEntrys"] = aclEntries
 				action := "RemoveAccessControlListEntry"
-				conn, err := client.NewSlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, removedRequest, &util.RuntimeOptions{})
@@ -253,10 +249,6 @@ func resourceAlicloudSlbAclUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				addedRequest["AclEntrys"] = aclEntries
 				action := "AddAccessControlListEntry"
-				conn, err := client.NewSlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, addedRequest, &util.RuntimeOptions{})

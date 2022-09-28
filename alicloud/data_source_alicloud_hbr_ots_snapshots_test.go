@@ -56,7 +56,7 @@ var fakeHbrOtsSnapshotsMapFunc = func(rand int) map[string]string {
 }
 
 var HbrOtsSnapshotsCheckInfo = dataSourceAttr{
-	resourceId:   "data.alicloud_hbr_ots_backup_snapshots.default",
+	resourceId:   "data.alicloud_hbr_ots_snapshots.default",
 	existMapFunc: existHbrOtsSnapshotsMapFunc,
 	fakeMapFunc:  fakeHbrOtsSnapshotsMapFunc,
 }

@@ -58,7 +58,7 @@ func resourceAlicloudExpressConnectPhysicalConnection() *schema.Resource {
 			"port_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1000Base-LX", "1000Base-T", "100Base-T", "10GBase-LR", "10GBase-T"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"1000Base-LX", "1000Base-T", "100Base-T", "10GBase-LR", "10GBase-T", "40GBase-LR", "100GBase-LR"}, false),
 			},
 			"redundant_physical_connection_id": {
 				Type:     schema.TypeString,

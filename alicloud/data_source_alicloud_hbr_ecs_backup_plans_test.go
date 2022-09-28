@@ -83,14 +83,44 @@ resource "alicloud_hbr_vault" "default" {
   vault_name = "${var.name}"
 }
 
-data "alicloud_instances" "default" {
-  name_regex = "no-deleteing-hbr-ecs-backup-plan"
-  status     = "Running"
+data "alicloud_zones" default {
+  available_resource_creation = "Instance"
+}
+data "alicloud_instance_types" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	cpu_core_count    = 1
+	memory_size       = 2
+}
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_zones.default.zones.0.id
+}
+resource "alicloud_security_group" "default" {
+  name = "${var.name}"
+  description = "New security group"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+data "alicloud_images" "default" {
+  owners      = "system"
+  name_regex  = "^centos_8"
+  most_recent = true
+}
+resource "alicloud_instance" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  instance_name   = "${var.name}"
+  host_name       = "tf-testAcc"
+  image_id        = data.alicloud_images.default.images.0.id
+  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups = [alicloud_security_group.default.id]
+  vswitch_id      = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_hbr_ecs_backup_plan" "default" {
   ecs_backup_plan_name = var.name
-  instance_id =          "${data.alicloud_instances.default.instances.0.id}"
+  instance_id =          "${alicloud_instance.default.id}"
   vault_id =             "${alicloud_hbr_vault.default.id}"
   schedule =             "I|1602673264|PT2H"
   backup_type =          "COMPLETE"

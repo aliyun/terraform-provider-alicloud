@@ -208,7 +208,7 @@ resource "alicloud_log_store" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCFlowLog_unit(t *testing.T) {
+func TestUnitAlicloudVPCFlowLog(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_flow_log"].Schema).Data(nil, nil)
@@ -546,8 +546,12 @@ func TestAccAlicloudVPCFlowLog_unit(t *testing.T) {
 			}
 			return responseMock["UpdateStatusNormal"]("")
 		})
+		patcheDescribeVpcFlowLog := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeVpcFlowLog", func(*VpcService, string) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
 		err := resourceAlicloudVpcFlowLogUpdate(resourceData1, rawClient)
 		patches.Reset()
+		patcheDescribeVpcFlowLog.Reset()
 		assert.NotNil(t, err)
 	})
 
@@ -616,8 +620,12 @@ func TestAccAlicloudVPCFlowLog_unit(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
+		patcheDescribeVpcFlowLog := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeVpcFlowLog", func(*VpcService, string) (map[string]interface{}, error) {
+			return responseMock["NoRetryError"]("NoRetryError")
+		})
 		err := resourceAlicloudVpcFlowLogUpdate(resourceData1, rawClient)
 		patches.Reset()
+		patcheDescribeVpcFlowLog.Reset()
 		assert.NotNil(t, err)
 	})
 

@@ -34,7 +34,7 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"vpc"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"vpc", "internet"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -45,7 +45,7 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"9092/9092"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"9092/9092", "9093/9093"}, false),
 			},
 		},
 	}

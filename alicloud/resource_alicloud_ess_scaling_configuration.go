@@ -311,6 +311,31 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"instance_pattern_info": {
+				Optional: true,
+				Type:     schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_family_level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"EntryLevel", "EnterpriseLevel", "CreditEntryLevel"}, false),
+						},
+						"cores": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"memory": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+						"max_price": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -569,6 +594,25 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("spot_price_limit")
 	}
 
+	if d.HasChange("instance_pattern_info") {
+		v, ok := d.GetOk("instance_pattern_info")
+		if ok {
+			instancePatternInfos := make([]ess.ModifyScalingConfigurationInstancePatternInfo, 0)
+			for _, e := range v.(*schema.Set).List() {
+				pack := e.(map[string]interface{})
+				l := ess.ModifyScalingConfigurationInstancePatternInfo{
+					InstanceFamilyLevel: pack["instance_family_level"].(string),
+					Memory:              strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
+					MaxPrice:            strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
+					Cores:               strconv.Itoa(pack["cores"].(int)),
+				}
+				instancePatternInfos = append(instancePatternInfos, l)
+			}
+			request.InstancePatternInfo = &instancePatternInfos
+		}
+		d.SetPartial("instance_pattern_info")
+	}
+
 	if d.HasChange("tags") {
 		if v, ok := d.GetOk("tags"); ok {
 			tags := "{"
@@ -733,7 +777,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("host_name", object.HostName)
 	d.Set("spot_strategy", object.SpotStrategy)
 	d.Set("spot_price_limit", essService.flattenSpotPriceLimitMappings(object.SpotPriceLimit.SpotPriceModel))
-
+	d.Set("instance_pattern_info", essService.flattenInstancePatternInfoMappings(object.InstancePatternInfos.InstancePatternInfo))
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
 		d.Set("security_group_id", object.SecurityGroupId)
 	}
@@ -1020,6 +1064,22 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 			spotPriceLimits = append(spotPriceLimits, l)
 		}
 		request.SpotPriceLimit = &spotPriceLimits
+	}
+
+	getOk, b := d.GetOk("instance_pattern_info")
+	if b {
+		instancePatternInfos := make([]ess.CreateScalingConfigurationInstancePatternInfo, 0)
+		for _, e := range getOk.(*schema.Set).List() {
+			pack := e.(map[string]interface{})
+			l := ess.CreateScalingConfigurationInstancePatternInfo{
+				InstanceFamilyLevel: pack["instance_family_level"].(string),
+				Memory:              strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
+				MaxPrice:            strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
+				Cores:               strconv.Itoa(pack["cores"].(int)),
+			}
+			instancePatternInfos = append(instancePatternInfos, l)
+		}
+		request.InstancePatternInfo = &instancePatternInfos
 	}
 
 	return request, nil
