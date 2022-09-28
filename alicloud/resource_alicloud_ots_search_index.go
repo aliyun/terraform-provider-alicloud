@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -398,7 +397,7 @@ func parseIndexFieldSort(sorterArg map[string]interface{}) (search.Sorter, error
 
 		return sort, nil
 	default:
-		return nil, WrapError(errors.New(fmt.Sprintf("not find search index sort field type [PrimaryKeySort|FieldSort]: %v", sortFieldType)))
+		return nil, WrapError(fmt.Errorf("not find search index sort field type [PrimaryKeySort|FieldSort]: %v", sortFieldType))
 	}
 }
 
