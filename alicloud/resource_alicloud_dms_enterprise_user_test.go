@@ -111,7 +111,7 @@ func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
 	resourceId := "alicloud_dms_enterprise_user.default"
 	ra := resourceAttrInit(resourceId, DmsEnterpriseUserMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Dms_enterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &DmsEnterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDmsEnterpriseUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

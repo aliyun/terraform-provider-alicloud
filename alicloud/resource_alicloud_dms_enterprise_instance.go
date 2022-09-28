@@ -251,11 +251,11 @@ func resourceAlicloudDmsEnterpriseInstanceCreate(d *schema.ResourceData, meta in
 }
 func resourceAlicloudDmsEnterpriseInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dms_enterpriseService := Dms_enterpriseService{client}
-	object, err := dms_enterpriseService.DescribeDmsEnterpriseInstance(d.Id())
+	dmsEnterpriseService := DmsEnterpriseService{client}
+	object, err := dmsEnterpriseService.DescribeDmsEnterpriseInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dms_enterprise_instance dms_enterpriseService.DescribeDmsEnterpriseInstance Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_dms_enterprise_instance dmsEnterpriseService.DescribeDmsEnterpriseInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
