@@ -432,6 +432,7 @@ The following arguments are supported:
 * `soc_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).  
   -> **NOTE:** It is forbidden to set both `cis_enabled` and `soc_enabled` to `true`at the same time.
 * `rds_instances` - (Optional, Available in 1.177.0+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `polardb_ids` - (Optional, Available in 1.188.0+) PolarDB id list, You can choose which PolarDB whitelist to add instances to.
 * `system_disk_snapshot_policy_id` - (Optional, Available in 1.177.0+) The system disk snapshot policy id.
 * `cpu_policy` - (Optional, Available in 1.177.0+) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none` and modification is not supported.
 * `kubelet_configuration` - (Optional, Available in 1.180.0+) Kubelet configuration parameters for worker nodes. Detailed below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
