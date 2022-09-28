@@ -26,7 +26,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(120 * time.Minute),
-			Delete: schema.DefaultTimeout(120 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Hour),
 			Update: schema.DefaultTimeout(6 * time.Hour),
 		},
 		Schema: map[string]*schema.Schema{
@@ -386,7 +386,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -414,7 +414,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -442,7 +442,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -491,7 +491,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -538,7 +538,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -574,7 +574,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			modifyDBClusterAccessWhiteListReq["SecurityIps"] = LOCAL_HOST_IP
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterAccessWhiteListReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -611,10 +611,6 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		update = true
 		modifyDBClusterReq["DBNodeGroupCount"] = d.Get("db_node_count")
 	}
-	if !d.IsNewResource() && d.HasChange("db_node_storage") {
-		update = true
-		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
-	}
 	if !d.IsNewResource() && d.HasChange("elastic_io_resource") {
 		update = true
 		modifyDBClusterReq["ElasticIOResource"] = d.Get("elastic_io_resource")
@@ -633,7 +629,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -658,6 +654,51 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("db_node_count")
 		d.SetPartial("db_node_storage")
 		d.SetPartial("elastic_io_resource")
+	}
+	update = false
+	modifyDBClusterReq = map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("db_node_storage") {
+		update = true
+		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
+	}
+	modifyDBClusterReq["RegionId"] = client.RegionId
+	if update {
+		if _, ok := d.GetOk("mode"); ok {
+			modifyDBClusterReq["Mode"] = d.Get("mode")
+		}
+		if _, ok := d.GetOk("modify_type"); ok {
+			modifyDBClusterReq["ModifyType"] = d.Get("modify_type")
+		}
+		action := "ModifyDBCluster"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
+			if err != nil {
+				// There is service bug and needs checking IncorrectDBInstanceState.
+				// If the bug is fixed, the IncorrectDBInstanceState checking can be removed.
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, modifyDBClusterReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("db_node_storage")
 	}
 	d.Partial(false)
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
