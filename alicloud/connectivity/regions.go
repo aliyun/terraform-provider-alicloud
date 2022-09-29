@@ -223,3 +223,4 @@ var DdosBgpSupportRegions = []Region{Shenzhen, GuangZhou, Hongkong, APSouthEast1
 var VpnGatewayVpnAttachmentSupportRegions = []Region{APSouthEast2, EUCentral1}
 var EBSSupportRegions = []Region{USEast1, USWest1, ChengDu, Beijing, Shanghai, Hongkong, APSouthEast1, Shenzhen, HeYuan, APSouthEast5, Hangzhou}
 var VODSupportRegions = []Region{Beijing, APNorthEast1, CnNorth2Gov1, Shanghai, EUCentral1, Zhangjiakou, Shenzhen, Hongkong, APSouthEast1, Hangzhou, EUWest1, APSouthEast5, APSouth1, USWest1}
+var GPDBSupportRegions = []Region{Beijing, APSouth1, ChengDu, Shanghai, APSouthEast3, EUCentral1, Huhehaote, USWest1, ShanghaiFinance, Hongkong, APSouthEast2, USEast1, Zhangjiakou, Hangzhou, Shenzhen, EUWest1, APNorthEast1, APSouthEast1, APSouthEast5}
