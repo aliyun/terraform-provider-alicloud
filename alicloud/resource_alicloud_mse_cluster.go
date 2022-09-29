@@ -186,8 +186,8 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapError(err)
 		}
-		if v, ok := request["VPCId"].(string); !ok || v == "" {
-			request["VPCId"] = vsw["VpcId"]
+		if v, ok := request["VpcId"].(string); !ok || v == "" {
+			request["VpcId"] = vsw["VpcId"]
 		}
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
