@@ -67,26 +67,24 @@ func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, met
 		Weight:           strconv.Itoa(formatInt(d.Get("weight"))),
 	})
 	request.AlbServerGroup = &attachScalingGroupAlbServerGroups
-	//raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-	//	//	return essClient.AttachAlbServerGroups(request)
-	//	//})
+	wait := incrementalWait(1*time.Second, 2*time.Second)
+
 	var raw interface{}
-	_, err := client.NewCbnClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	var err error
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.AttachAlbServerGroups(request)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
