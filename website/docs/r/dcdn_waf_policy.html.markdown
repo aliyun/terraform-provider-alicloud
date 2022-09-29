@@ -32,7 +32,7 @@ resource "alicloud_dcdn_waf_policy" "example" {
 
 The following arguments are supported:
 
-* `defense_scene` - (Required, ForceNew) The type of protection policy. Valid values: `waf_group`, `custom_acl`, `whitelist`.
+* `defense_scene` - (Required, ForceNew) The type of protection policy. Valid values: `waf_group`, `custom_acl`, `whitelist`, `ip_blacklist`, `region_block`.
 * `policy_name` - (Required) The name of the protection policy. The name must be 1 to 64 characters in length, and can contain letters, digits,and underscores (_).
 * `policy_type` - (Required, ForceNew) The type of the protection policy. Valid values: `default`, `custom`.
 * `status` - (Required) The status of the resource. Valid values: `on`, `off`.
