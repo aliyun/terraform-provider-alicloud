@@ -840,6 +840,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_wafv3_instances":                                  dataSourceAlicloudWafv3Instances(),
 			"alicloud_wafv3_domains":                                    dataSourceAlicloudWafv3Domains(),
 			"alicloud_eflo_vpds":                                        dataSourceAlicloudEfloVpds(),
+			"alicloud_dcdn_waf_rules":                                   dataSourceAlicloudDcdnWafRules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1569,6 +1570,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_load_balancer_common_bandwidth_package_attachment": resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment(),
 			"alicloud_wafv3_domain":                                          resourceAlicloudWafv3Domain(),
 			"alicloud_eflo_vpd":                                              resourceAlicloudEfloVpd(),
+			"alicloud_dcdn_waf_rule":                                         resourceAlicloudDcdnWafRule(),
 		},
 
 		ConfigureFunc: providerConfigure,

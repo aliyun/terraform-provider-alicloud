@@ -563,3 +563,46 @@ func (s *DcdnService) DescribeDcdnKvAccountStatus() (object map[string]interface
 	return object, nil
 
 }
+
+func (s *DcdnService) DescribeDcdnWafRule(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RuleId": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeDcdnWafRule"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if _, ok := response["Rule"]; !ok {
+		return object, WrapErrorf(Error(GetNotFoundMessage("WafRule", id)), NotFoundWithResponse, response)
+	}
+
+	v, err := jsonpath.Get("$.Rule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rule", response)
+	}
+	return v.(map[string]interface{}), nil
+}

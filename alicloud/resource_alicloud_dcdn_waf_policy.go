@@ -33,7 +33,7 @@ func resourceAlicloudDcdnWafPolicy() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"waf_group", "custom_acl", "whitelist"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"waf_group", "custom_acl", "whitelist", "ip_blacklist", "region_block"}, false),
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
