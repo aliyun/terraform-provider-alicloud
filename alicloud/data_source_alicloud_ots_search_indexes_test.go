@@ -146,7 +146,7 @@ func dataSourceOtsSearchIndexesConfigDependence(name string) string {
 
 	resource "alicloud_ots_search_index" "default" {
 	  instance_name = "${alicloud_ots_instance.default.name}"
-	  table_name = "${var.name}"
+	  table_name = "${alicloud_ots_table.default.table_name}"
 	  index_name = "index1"
 	  time_to_live = -1
 
