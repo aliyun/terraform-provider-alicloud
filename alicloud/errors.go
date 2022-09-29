@@ -97,7 +97,7 @@ func NotFoundError(err error) bool {
 	}
 
 	if e, ok := err.(*tea.SDKError); ok {
-		return *e.StatusCode == 404
+		return tea.IntValue(e.StatusCode) == 404 || regexp.MustCompile(NotFound).MatchString(tea.StringValue(e.Message))
 	}
 
 	if e, ok := err.(*errors.ServerError); ok {

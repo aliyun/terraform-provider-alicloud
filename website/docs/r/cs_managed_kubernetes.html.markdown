@@ -442,9 +442,9 @@ variable "cluster_addons" {
 
 ### Computed params
 
-You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority.
+You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
 
-* `kube_config` - (Optional) The path of kube config, like `~/.kube/config`.
+* `kube_config` - (Optional, Deprecated in 1.187.0+) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`

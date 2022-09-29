@@ -751,6 +751,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_security_policies":                        dataSourceAlicloudNlbSecurityPolicies(),
 			"alicloud_api_gateway_models":                           dataSourceAlicloudApiGatewayModels(),
 			"alicloud_resource_manager_account_deletion_check_task": dataSourceAlicloudResourceManagerAccountDeletionCheckTask(),
+			"alicloud_cs_cluster_credential":                        dataSourceAlicloudCSClusterCredential(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/alibabacloud-go/tea/tea"
 	"regexp"
 	"strings"
 
@@ -201,7 +202,13 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 
 func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusters []*cs.ServerlessClusterResponse, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	invoker := NewInvoker()
 
 	detailEnabled := false
@@ -272,22 +279,23 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			mapping["nat_gateway_id"] = nat.NatGateways.NatGateway[0].NatGatewayId
 		}
 
-		// kube_config
-		var kubeConfig *cs.ClusterConfig
-		filePath := fmt.Sprintf("%s-kubeconfig", ct.ClusterId)
-		if kubeConfig, err = csService.DescribeClusterKubeConfig(ct.ClusterId, false); err != nil {
-			return WrapError(err)
-		}
-		if filePrefix, ok := d.GetOk("kube_config_file_prefix"); ok && filePrefix.(string) != "" {
-			filePath = fmt.Sprintf("%s-%s-kubeconfig", filePrefix.(string), ct.ClusterId)
-		}
-		if err = writeToFile(filePath, kubeConfig.Config); err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "write kubeconfig file", "")
-		}
-
 		ids = append(ids, ct.ClusterId)
 		names = append(names, ct.Name)
 		s = append(s, mapping)
+
+		// kube_config
+		if ct.State == "failed" {
+			continue
+		}
+		if v, ok := d.GetOk("kube_config_file_prefix"); ok && v.(string) != "" {
+			filePath := fmt.Sprintf("%s-%s-kubeconfig", v.(string), ct.ClusterId)
+			kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(ct.ClusterId, 0)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeClusterKubeConfigWithExpiration", AlibabaCloudSdkGoERROR)
+			}
+			writeToFile(filePath, tea.StringValue(kubeConfig.Config))
+		}
+
 	}
 
 	_ = d.Set("ids", ids)

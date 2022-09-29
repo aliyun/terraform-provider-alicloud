@@ -121,9 +121,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Default:  false,
 			},
 			"kube_config": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
+				Type:       schema.TypeString,
+				ForceNew:   true,
+				Optional:   true,
+				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -431,6 +432,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
+	csClient := CsClient{rosClient}
 
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
 	if err != nil {
@@ -469,6 +471,12 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		d.Set("logging_type", "SLS")
 	}
 
+	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if object.State == "failed" {
+		return nil
+	}
+
 	var requestInfo *cs.Client
 	var response interface{}
 
@@ -504,23 +512,22 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var kubeConfig *cs.ClusterConfig
+	// kube_config
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+		kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+		if err != nil {
 			log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
 		} else {
-			if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
-				return WrapError(err)
-			}
+			writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
 		}
 	}
+
 	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
 		return WrapError(err)
 	} else {
-		if err := d.Set("rrsa_metadata", data); err != nil {
-			return WrapError(err)
-		}
+		d.Set("rrsa_metadata", data)
 	}
+
 	return nil
 }
 
