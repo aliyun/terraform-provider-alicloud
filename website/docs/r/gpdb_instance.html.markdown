@@ -9,87 +9,135 @@ description: |-
 
 # alicloud\_gpdb\_instance
 
-Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services. 
+Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/35387.htm)
 
 -> **NOTE:**  Available in 1.47.0+
 
--> **NOTE:**  The following regions don't support create Classic network Gpdb instance.
-[`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`,`us-east-1`,`eu-central-1`,`cn-shanghai-finance-1`,`cn-shenzhen-finance-1`,`cn-hangzhou-finance`]
-
--> **NOTE:**  Create instance or change instance would cost 10~15 minutes. Please make full preparation.
-
--> **NOTE:**  This resource is used to manage a Reserved Storage Mode instance, and creating a new reserved storage mode instance is no longer supported since v1.127.0. 
-You can still use this resource to manage the instance which has been already created, but can not create a new one. 
-
 ## Example Usage
 
-### Create a Gpdb instance
+Basic Usage
 
-```
-data "alicloud_zones" "default" {
-  available_resource_creation = "Gpdb"
+```terraform
+data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_gpdb_zones" "default" {}
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-
-resource "alicloud_vpc" "default" {
-  name       = "vpc-123456"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
-
-resource "alicloud_vswitch" "default" {
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  vswitch_name      = "vpc-123456"
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_gpdb_zones.default.ids.0
+  vswitch_name = var.name
 }
-
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+}
 resource "alicloud_gpdb_instance" "example" {
-  description          = "tf-gpdb-test"
-  engine               = "gpdb"
-  engine_version       = "4.3"
-  instance_class       = "gpdb.group.segsdx2"
-  instance_group_count = "2"
-  vswitch_id           = alicloud_vswitch.default.id
-  security_ip_list     = ["10.168.1.12", "100.69.7.112"]
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
+  db_instance_mode      = "StorageElastic"
+  description           = "example_value"
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  master_node_num       = 1
+  payment_type          = "PayAsYouGo"
+  private_ip_address    = "1.1.1.1"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = local.vswitch_id
+  ip_whitelist {
+    security_ip_list = "127.0.0.1"
+  }
 }
+
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `engine` (Required, ForceNew) Database engine: gpdb. System Default value: gpdb.
-* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/86908.htm) `EngineVersion`.
-* `instance_class` - (Required) Instance specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/86942.htm).
-* `instance_group_count` - (Required) The number of groups. Valid values: [2,4,8,16,32]
-* `description` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional, ForceNew) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`.
-* `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
-If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
-The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
-* `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
-* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
+* `db_instance_category` - (Optional, ForceNew) The db instance category. Valid values: `HighAvailability`, `Basic`.
+-> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
 
-### Timeouts
+* `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/86942.htm).
+-> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
 
--> **NOTE:** Available in 1.53.0+.
+* `db_instance_mode` - (Required, ForceNew) The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`.
+* `description` - (Optional) The description of the instance.
+* `engine` - (Required, ForceNew) The database engine used by the instance. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/86908.htm) `EngineVersion`.
+* `engine_version` - (Required, ForceNew) The version of the database engine used by the instance.
+* `instance_network_type` - (Optional, ForceNew) The network type of the instance.
+* `instance_spec` - (Optional) The specification of segment nodes.
+  * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
+  * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
+  * When `db_instance_category` is `Serverless`, Valid values: `4C16G`, `8C32G`.
+-> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `ip_whitelist` - (Optional) The ip whitelist.
+* `security_ip_list` - (Optional) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
+* `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
+* `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
+* `master_node_num` - (Optional) The number of Master nodes. Valid values: 1 to 2. if it is not filled in, the default value is 1 Master node.
+* `instance_group_count` - (Optional, ForceNew) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
+* `payment_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
+* `instance_charge_type` - (Optional, ForceNew, Deprecated) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
+* `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`. Valid values: `Year`, `Month`.
+* `private_ip_address` - (Optional) The private ip address.
+* `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
+* `seg_node_num` - (Optional, Computed) Calculate the number of nodes. The value range of the high-availability version of the storage elastic mode is 4 to 512, and the value must be a multiple of 4. The value range of the basic version of the storage elastic mode is 2 to 512, and the value must be a multiple of 2. The-Serverless version has a value range of 2 to 512. The value must be a multiple of 2.
+-> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
 
-* `create` - (Defaults to 60 mins) Used when creating the DB instance (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 10 mins) Used when terminating the ADB PG instance.
+* `seg_storage_type` - (Optional) The seg storage type. Valid values: `cloud_essd`, `cloud_efficiency`.
+-> **NOTE:** This parameter must be passed in to create a storage elastic mode instance. Storage Elastic Mode Basic Edition instances only support ESSD cloud disks.
+
+* `storage_size` - (Optional, Computed) The storage capacity. Unit: GB. Value: `50` to `4000`.
+-> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
+
+* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is 1 to 3. When the parameter `period` is `Month`, the `used_time` value is 1 to 9.
+* `vswitch_id` - (Required, ForceNew) The vswitch id.
+* `create_sample_data` - (Optional, Computed) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
+* `vpc_id` - (Optional, Computed, ForceNew) The vpc ID of the resource.
+* `zone_id` - (Optional, ForceNew) The zone ID of the instance.
+* `availability_zone` - (Optional, ForceNew, Deprecated) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
+
+#### Block ip_whitelist
+
+The ip_whitelist supports the following:
+
+* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. The console does not display the whitelist group whose value of this parameter is hidden.
+* `ip_group_name` - (Optional) IP whitelist group name
+* `security_ip_list` - (Required) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the Instance.
+* `id` - The resource ID in terraform of AnalyticDB for PostgreSQL.
+* `status` - The status of the instance.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 60 mins) Used when create the DB Instance.
+* `update` - (Defaults to 30 mins) Used when update the DB Instance.
 
 ## Import
 
 AnalyticDB for PostgreSQL can be imported using the id, e.g.
 
 ```
-$ terraform import alicloud_gpdb_instance.example gp-bp1291daeda44194
+$ terraform import alicloud_gpdb_instance.example <id>
 ```
