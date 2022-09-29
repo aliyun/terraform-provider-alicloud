@@ -524,8 +524,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			},
 			// computed parameters
 			"kube_config": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -1133,8 +1134,14 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
 	invoker := NewInvoker()
+
 	object, err := csService.DescribeCsKubernetes(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -1421,14 +1428,12 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	var kubeConfig *cs.ClusterConfig
-	if kubeConfig, err = csService.DescribeClusterKubeConfig(d.Id(), true); err != nil {
+	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+	if err != nil {
 		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
-	}
-
-	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" && kubeConfig != nil {
-		if err := writeToFile(file.(string), kubeConfig.Config); err != nil {
-			return WrapError(err)
+	} else {
+		if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
+			writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
 		}
 	}
 
@@ -1952,13 +1957,13 @@ func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, 
 	return allHostName[len(allHostName)-count:], nil
 }
 
-func flattenAlicloudCSCertificate(certificate *cs.ClusterConfig) map[string]string {
+func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconfigResponseBody) map[string]string {
 	if certificate == nil {
 		return map[string]string{}
 	}
 
 	kubeConfig := make(map[string]interface{})
-	_ = yaml.Unmarshal([]byte(certificate.Config), &kubeConfig)
+	_ = yaml.Unmarshal([]byte(tea.StringValue(certificate.Config)), &kubeConfig)
 
 	m := make(map[string]string)
 	m["cluster_cert"] = kubeConfig["clusters"].([]interface{})[0].(map[interface{}]interface{})["cluster"].(map[interface{}]interface{})["certificate-authority-data"].(string)
