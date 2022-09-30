@@ -158,6 +158,7 @@ func resourceAlicloudVpnGatewayVpnAttachment() *schema.Resource {
 						"local_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 						"psk": {
@@ -168,6 +169,7 @@ func resourceAlicloudVpnGatewayVpnAttachment() *schema.Resource {
 						"remote_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 					},
