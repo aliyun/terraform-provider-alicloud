@@ -140,7 +140,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Week"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"private_ip_address": {
 				Type:     schema.TypeString,
@@ -289,7 +289,7 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["VSwitchId"] = v
 	}
 
-	if v, ok := d.GetOk("create_sample_data"); ok {
+	if v, ok := d.GetOkExists("create_sample_data"); ok {
 		request["CreateSampleData"] = v
 	}
 
