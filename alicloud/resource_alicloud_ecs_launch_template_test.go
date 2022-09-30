@@ -784,6 +784,17 @@ func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
 							"performance_level":    "PL0",
 							"size":                 "20",
 						},
+						{
+							"name":              "disk2",
+							"description":       "test2",
+							"category":          "cloud",
+							"performance_level": "PL0",
+						},
+						{
+							"delete_with_instance": "true",
+							"encrypted":            "false",
+							"size":                 "20",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -801,6 +812,47 @@ func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
 						"period":               "1",
 						"private_ip_address":   CHECKSET,
 						"version_description":  name,
+						"data_disks.#":         "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disks": []map[string]string{
+						{
+							"name":                 "disk1_update",
+							"description":          "test1",
+							"delete_with_instance": "true",
+							"category":             "cloud",
+							"encrypted":            "false",
+							"performance_level":    "PL0",
+							"size":                 "20",
+						},
+						{
+							"name":                 "disk2",
+							"description":          "test2_update",
+							"delete_with_instance": "true",
+							"category":             "cloud",
+							"encrypted":            "false",
+							"performance_level":    "PL0",
+							"size":                 "20",
+						},
+						{
+							"name":              "disk2",
+							"description":       "test2",
+							"category":          "cloud",
+							"performance_level": "PL1",
+						},
+						{
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"size":                 "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disks.#": "4",
 					}),
 				),
 			},
