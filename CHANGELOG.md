@@ -1,52 +1,54 @@
-## 1.187.0 (Unreleased)
+## 1.188.0 (Unreleased)
+## 1.187.0 (September 30, 2022)
 
-- **New Resource:** `alicloud_cen_transit_router_grant_attachment` [GH-5466]
-- **New Resource:** `alicloud_vod_editing_project` [GH-5443]
-- **New Resource:** `alicloud_ga_access_log` [GH-5434]
-- **New Resource:** `alicloud_log_oss_export` [GH-5440]
-- **New Resource:** `alicloud_ebs_disk_replica_group` [GH-5450]
-- **New Resource:** `alicloud_nlb_security_policy` [GH-5441]
-- **New Resource:** `alicloud_api_gateway_model` [GH-5447]
-- **New Resource:** `alicloud_api_gateway_plugin` [GH-5471]
-- **New Data Source:** `alicloud_api_gateway_plugins` [GH-5471]
-- **New Data Source:** `alicloud_api_gateway_models` [GH-5447]
-- **New Data Source:** `alicloud_nlb_security_policies` [GH-5441]
-- **New Data Source:** `alicloud_ebs_regions` [GH-5450]
-- **New Data Source:** `alicloud_ebs_disk_replica_groups` [GH-5450]
-- **New Data Source:** `alicloud_resource_manager_account_deletion_check_task` [GH-5418]
-- **New Data Source:** `alicloud_cs_cluster_credential` [GH-5486]
+- **New Resource:** `alicloud_cen_transit_router_grant_attachment` ([#5466](https://github.com/aliyun/terraform-provider-alicloud/issues/5466))
+- **New Resource:** `alicloud_vod_editing_project` ([#5443](https://github.com/aliyun/terraform-provider-alicloud/issues/5443))
+- **New Resource:** `alicloud_ga_access_log` ([#5434](https://github.com/aliyun/terraform-provider-alicloud/issues/5434))
+- **New Resource:** `alicloud_log_oss_export` ([#5440](https://github.com/aliyun/terraform-provider-alicloud/issues/5440))
+- **New Resource:** `alicloud_ebs_disk_replica_group` ([#5450](https://github.com/aliyun/terraform-provider-alicloud/issues/5450))
+- **New Resource:** `alicloud_nlb_security_policy` ([#5441](https://github.com/aliyun/terraform-provider-alicloud/issues/5441))
+- **New Resource:** `alicloud_api_gateway_model` ([#5447](https://github.com/aliyun/terraform-provider-alicloud/issues/5447))
+- **New Resource:** `alicloud_api_gateway_plugin` ([#5471](https://github.com/aliyun/terraform-provider-alicloud/issues/5471))
+- **New Data Source:** `alicloud_api_gateway_plugins` ([#5471](https://github.com/aliyun/terraform-provider-alicloud/issues/5471))
+- **New Data Source:** `alicloud_api_gateway_models` ([#5447](https://github.com/aliyun/terraform-provider-alicloud/issues/5447))
+- **New Data Source:** `alicloud_nlb_security_policies` ([#5441](https://github.com/aliyun/terraform-provider-alicloud/issues/5441))
+- **New Data Source:** `alicloud_ebs_regions` ([#5450](https://github.com/aliyun/terraform-provider-alicloud/issues/5450))
+- **New Data Source:** `alicloud_ebs_disk_replica_groups` ([#5450](https://github.com/aliyun/terraform-provider-alicloud/issues/5450))
+- **New Data Source:** `alicloud_resource_manager_account_deletion_check_task` ([#5418](https://github.com/aliyun/terraform-provider-alicloud/issues/5418))
+- **New Data Source:** `alicloud_cs_cluster_credential` ([#5486](https://github.com/aliyun/terraform-provider-alicloud/issues/5486))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_kubernetes: Failed to get cluster kubeconfig, do not block cluster operation [GH-5482]
-- resource/alicloud_gpdb_instance: Refactoring resources. [GH-5474]
-- resource/alicloud_adb_db_cluster: Supporting to modify db_node_class and db_node_storage at the same time [GH-5481]
-- resource/alicloud_db_instance: Support new attribute Category [GH-5480]
-- resource/alicloud_slb_listener: Adds new attribute proxy_protocol_v2_enabled [GH-5469]
-- resource/alicloud_bastionhost_instance: support for renewal_status renew_period. [GH-5342]
-- resource/alicloud_cen_transit_router_vpn_attachment: Added retry strategy for error code IncorrectStatus.Status [GH-5461]
-- resource/alicloud_cen_transit_router_route_entry: Added retry strategy for error code IncorrectStatus.Status [GH-5459]
-- resource/alicloud_cen_transit_router_route_table_association: Added retry strategy for error code IncorrectStatus.Status [GH-5464]
-- resource/alicloud_cen_transit_router_route_table_propagation: Added retry strategy for error code IncorrectStatus.Status [GH-5463]
-- resource/alicloud_cen_transit_router_vbr_attachment: Added retry strategy for error code IncorrectStatus.Status [GH-5462]
-- resource/alicloud_cen_transit_router_route_table: Added retry strategy for error code IncorrectStatus.Status [GH-5460]
-- resource/alicloud_cen_transit_router_peer_attachment: Added retry strategy for error code IncorrectStatus.Status [GH-5458]
-- resource/alicloud_cen_transit_router: Added retry strategy for error code IncorrectStatus.Status [GH-5456]
-- resource/alicloud_fc_function: add layer attribute [GH-5449]
-- data/alicloud_instance_types: substring match for gpu_spec [GH-5433]
-- client: Replace raw map with sync Map [GH-5436]
-- Support OTS/Tablestore defined column, secondary index and search index. [GH-5476]
-- ci: Improves the ci configure [GH-5483]
+- resource/alicloud_cs_kubernetes: Failed to get cluster kubeconfig, do not block cluster operation ([#5482](https://github.com/aliyun/terraform-provider-alicloud/issues/5482))
+- resource/alicloud_gpdb_instance: Refactoring resources. ([#5474](https://github.com/aliyun/terraform-provider-alicloud/issues/5474))
+- resource/alicloud_adb_db_cluster: Supporting to modify db_node_class and db_node_storage at the same time ([#5481](https://github.com/aliyun/terraform-provider-alicloud/issues/5481))
+- resource/alicloud_db_instance: Support new attribute Category ([#5480](https://github.com/aliyun/terraform-provider-alicloud/issues/5480))
+- resource/alicloud_slb_listener: Adds new attribute proxy_protocol_v2_enabled ([#5469](https://github.com/aliyun/terraform-provider-alicloud/issues/5469))
+- resource/alicloud_bastionhost_instance: support for renewal_status renew_period. ([#5342](https://github.com/aliyun/terraform-provider-alicloud/issues/5342))
+- resource/alicloud_cen_transit_router_vpn_attachment: Added retry strategy for error code IncorrectStatus.Status ([#5461](https://github.com/aliyun/terraform-provider-alicloud/issues/5461))
+- resource/alicloud_cen_transit_router_route_entry: Added retry strategy for error code IncorrectStatus.Status ([#5459](https://github.com/aliyun/terraform-provider-alicloud/issues/5459))
+- resource/alicloud_cen_transit_router_route_table_association: Added retry strategy for error code IncorrectStatus.Status ([#5464](https://github.com/aliyun/terraform-provider-alicloud/issues/5464))
+- resource/alicloud_cen_transit_router_route_table_propagation: Added retry strategy for error code IncorrectStatus.Status ([#5463](https://github.com/aliyun/terraform-provider-alicloud/issues/5463))
+- resource/alicloud_cen_transit_router_vbr_attachment: Added retry strategy for error code IncorrectStatus.Status ([#5462](https://github.com/aliyun/terraform-provider-alicloud/issues/5462))
+- resource/alicloud_cen_transit_router_route_table: Added retry strategy for error code IncorrectStatus.Status ([#5460](https://github.com/aliyun/terraform-provider-alicloud/issues/5460))
+- resource/alicloud_cen_transit_router_peer_attachment: Added retry strategy for error code IncorrectStatus.Status ([#5458](https://github.com/aliyun/terraform-provider-alicloud/issues/5458))
+- resource/alicloud_cen_transit_router: Added retry strategy for error code IncorrectStatus.Status ([#5456](https://github.com/aliyun/terraform-provider-alicloud/issues/5456))
+- resource/alicloud_fc_function: add layer attribute ([#5449](https://github.com/aliyun/terraform-provider-alicloud/issues/5449))
+- data/alicloud_instance_types: substring match for gpu_spec ([#5433](https://github.com/aliyun/terraform-provider-alicloud/issues/5433))
+- client: Replace raw map with sync Map ([#5436](https://github.com/aliyun/terraform-provider-alicloud/issues/5436))
+- Support OTS/Tablestore defined column, secondary index and search index. ([#5476](https://github.com/aliyun/terraform-provider-alicloud/issues/5476))
+- ci: Improves the ci configure ([#5483](https://github.com/aliyun/terraform-provider-alicloud/issues/5483))
 
 BUG FIXES:
 
-- resource/alicloud_vpn_gateway_vpn_attachment: Fix error ModifyVpnAttachmentAttribute Api missing RegionId parameters. [GH-5477]
-- resource/alicloud_vpc_peer_connection: fix Vpcpeer endpoint. [GH-5472]
-- resource/alicloud_mse_cluster: Fix unit test panic [GH-5487]
-- testcases: Fix ci test error for ebs [GH-5455]
-- testcases: Fix resource/alicloud_log_alert_test error [GH-5457]
-- testcases: Fix resource/alicloud_log_oss_export_test error [GH-5465]
-- testcase: Fixes the ots_search_indexes testcase error [GH-5489]
+- alicloud_ess_alb_server_group_attachment: support fail retry ([#5485](https://github.com/aliyun/terraform-provider-alicloud/issues/5485))
+- resource/alicloud_vpn_gateway_vpn_attachment: Fix error ModifyVpnAttachmentAttribute Api missing RegionId parameters. ([#5477](https://github.com/aliyun/terraform-provider-alicloud/issues/5477))
+- resource/alicloud_vpc_peer_connection: fix Vpcpeer endpoint. ([#5472](https://github.com/aliyun/terraform-provider-alicloud/issues/5472))
+- resource/alicloud_mse_cluster: Fix unit test panic ([#5487](https://github.com/aliyun/terraform-provider-alicloud/issues/5487))
+- testcases: Fix ci test error for ebs ([#5455](https://github.com/aliyun/terraform-provider-alicloud/issues/5455))
+- testcases: Fix resource/alicloud_log_alert_test error ([#5457](https://github.com/aliyun/terraform-provider-alicloud/issues/5457))
+- testcases: Fix resource/alicloud_log_oss_export_test error ([#5465](https://github.com/aliyun/terraform-provider-alicloud/issues/5465))
+- testcase: Fixes the ots_search_indexes testcase error ([#5489](https://github.com/aliyun/terraform-provider-alicloud/issues/5489))
 
 ## 1.186.0 (September 19, 2022)
 
