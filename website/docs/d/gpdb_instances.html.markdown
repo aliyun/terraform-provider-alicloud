@@ -81,7 +81,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `vswitch_id` - The vswitch id.
 	* `zone_id` - The zone ID of the instance.
   * `region_id` - Region ID the instance belongs to.
-  * `availability_zone` - Instance availability zone.
-  * `creation_time` - The time when the instance was created. The time is in the YYYY-MM-DDThh:mm:ssZ format, such as 2011-05-30T12:11:4Z.
-  * `charge_type` - The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
 
