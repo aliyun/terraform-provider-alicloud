@@ -44,8 +44,10 @@ resource "alicloud_log_oss_export" "example" {
   buffer_size     = 250
   compress_type   = "none"
   path_format     = "%Y/%m/%d/%H/%M"
-  content_type     = "json"
+  content_type    = "json"
   json_enable_tag = true
+  role_arn        = "role_arn_for_oss_write"
+  log_read_role_arn = "role_arn_for_sls_read"
 }
 ```
 
@@ -63,7 +65,8 @@ The following arguments are supported:
 * `bucket` - (Required) The name of the oss bucket.
 * `buffer_interval` - (Required) How often is it delivered every interval.
 * `buffer_size` - (Required) Automatically control the creation interval of delivery tasks and set the upper limit of an OSS object size (calculated in uncompressed), unit: `MB`.
-* `role_arn` - (Optional) Used for access control, the OSS Bucket owner creates the role mark, such as `acs:ram::13234:role/logrole`
+* `role_arn` - (Optional) Used to write to oss bucket, the OSS Bucket owner creates the role mark which has the oss bucket write policy, such as `acs:ram::13234:role/logrole`.
+* `log_read_role_arn` - (Optional, Available in 1.188.0+) Used for logstore reading, the role should have log read policy, such as `acs:ram::13234:role/logrole`, if `log_read_role_arn` is not set, `role_arn` is used to read logstore.
 * `compress_type` - (Optional) OSS data storage compression method, support: `none`, `snappy`, `zstd`, `gzip`. Among them, none means that the original data is not compressed, and snappy means that the data is compressed using the snappy algorithm, which can reduce the storage space usage of the `OSS Bucket`.
 * `path_format` - (Required) The OSS Bucket directory is dynamically generated according to the creation time of the export task, it cannot start with a forward slash `/`, the default value is `%Y/%m/%d/%H/%M`.
 * `time_zone` - (Required) This time zone that is used to format the time, `+0800` e.g.
