@@ -78,6 +78,10 @@ func resourceAlicloudLogOssExport() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"log_read_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"compress_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -204,6 +208,7 @@ func resourceAlicloudLogOssExportRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("export_name", parts[2])
 	d.Set("display_name", ossExport.DisplayName)
 	d.Set("from_time", ossExport.ExportConfiguration.FromTime)
+	d.Set("log_read_role_arn", ossExport.ExportConfiguration.RoleArn)
 	d.Set("bucket", ossDataSink.Bucket)
 	d.Set("prefix", ossDataSink.Prefix)
 	d.Set("suffix", ossDataSink.Suffix)
@@ -324,11 +329,12 @@ func buildOSSExport(d *schema.ResourceData) *sls.Export {
 		TimeZone:       d.Get("time_zone").(string),
 		ContentType:    sls.OSSContentType(contentType),
 	}
+
 	roleArn := ""
 	if v, ok := d.GetOk("role_arn"); ok {
 		roleArn = v.(string)
-		ossExportConfig.RoleArn = roleArn
 	}
+	ossExportConfig.RoleArn = roleArn
 	if v, ok := d.GetOk("prefix"); ok {
 		ossExportConfig.Prefix = v.(string)
 	}
@@ -392,6 +398,10 @@ func buildOSSExport(d *schema.ResourceData) *sls.Export {
 	if v, ok := d.GetOk("from_time"); ok {
 		fromTime = int64(v.(int))
 	}
+	logReadRoleArn := roleArn
+	if v, ok := d.GetOk("log_read_role_arn"); ok {
+		logReadRoleArn = v.(string)
+	}
 
 	return &sls.Export{
 		ScheduledJob: sls.ScheduledJob{
@@ -410,7 +420,7 @@ func buildOSSExport(d *schema.ResourceData) *sls.Export {
 			FromTime:   fromTime,
 			LogStore:   d.Get("logstore_name").(string),
 			Parameters: map[string]string{},
-			RoleArn:    roleArn,
+			RoleArn:    logReadRoleArn,
 			Version:    sls.ExportVersion2,
 			DataSink:   ossExportConfig,
 		},
