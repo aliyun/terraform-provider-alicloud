@@ -755,6 +755,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_plugins":                          dataSourceAlicloudApiGatewayPlugins(),
 			"alicloud_message_service_queues":                       dataSourceAlicloudMessageServiceQueues(),
 			"alicloud_message_service_topics":                       dataSourceAlicloudMessageServiceTopics(),
+			"alicloud_message_service_subscriptions":                dataSourceAlicloudMessageServiceSubscriptions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1403,6 +1404,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_api_gateway_plugin":                                   resourceAlicloudApiGatewayPlugin(),
 			"alicloud_message_service_queue":                                resourceAlicloudMessageServiceQueue(),
 			"alicloud_message_service_topic":                                resourceAlicloudMessageServiceTopic(),
+			"alicloud_message_service_subscription":                         resourceAlicloudMessageServiceSubscription(),
 		},
 
 		ConfigureFunc: providerConfigure,
