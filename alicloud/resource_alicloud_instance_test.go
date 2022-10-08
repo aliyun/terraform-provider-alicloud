@@ -1441,6 +1441,7 @@ func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
 					"instance_name":              "${var.name}",
 					"spot_strategy":              "SpotWithPriceLimit",
 					"spot_price_limit":           "1.002",
+					"spot_duration":              "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1450,6 +1451,7 @@ func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
 						"public_ip":                     CHECKSET,
 						"user_data":                     REMOVEKEY,
 						"security_enhancement_strategy": REMOVEKEY,
+						"spot_duration":                 "1",
 					}),
 				),
 			},
