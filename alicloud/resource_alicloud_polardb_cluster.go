@@ -141,6 +141,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringLenBetween(2, 256),
 			},
 			"resource_group_id": {
@@ -203,9 +204,9 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"imci_switch": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
 				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 			},
 			"sub_category": {
 				Type:         schema.TypeString,
@@ -215,9 +216,9 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"creation_category": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal"}, false),
 				Optional:     true,
 				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster"}, false),
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
@@ -242,6 +243,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 		},
@@ -272,7 +274,7 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
-		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
 		if _, err := categoryConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
