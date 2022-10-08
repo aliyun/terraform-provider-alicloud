@@ -230,6 +230,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `maintenance_notify` - (Optional, Available in 1.181.0+ ) Specifies whether to send an event notification before instance shutdown. Valid values: `true`, `false`. Default value: `false`.
     * `true` : sends an event notification.
     * `false` : does not send an event notification.
+* `spot_duration` - (Optional, Available in 1.188.0+) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 

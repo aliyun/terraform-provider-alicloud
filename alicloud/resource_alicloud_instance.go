@@ -474,6 +474,12 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"spot_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(0, 6),
+			},
 		},
 	}
 }
@@ -740,6 +746,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["IoOptimized"] = "none"
 	}
 
+	if v, ok := d.GetOk("spot_duration"); ok {
+		request["SpotDuration"] = v
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -835,6 +845,8 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
 	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
+
+	d.Set("spot_duration", instance.SpotDuration)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
