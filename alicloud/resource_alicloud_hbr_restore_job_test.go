@@ -45,26 +45,32 @@ func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snapshot_hash":         "${data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_hash}",
-					"vault_id":              "${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}",
-					"source_type":           "NAS",
-					"restore_type":          "NAS",
-					"snapshot_id":           "${data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_id}",
-					"target_file_system_id": "${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}",
-					"target_create_time":    "${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}",
-					"target_path":           "/",
-					"options":               "{\\\"includes\\\":[],\\\"excludes\\\":[]}",
-					"include":               "[\\\"/proc\\\"]",
-					"exclude":               "[\\\"/home\\\", \\\"/var/\\\"]",
+					"snapshot_hash":           "${data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_hash}",
+					"vault_id":                "${data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id}",
+					"source_type":             "NAS",
+					"restore_type":            "NAS",
+					"snapshot_id":             "${data.alicloud_hbr_snapshots.nas_snapshots.snapshots.0.snapshot_id}",
+					"target_file_system_id":   "${data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id}",
+					"target_create_time":      "${data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time}",
+					"target_path":             "/",
+					"options":                 "{\\\"includes\\\":[],\\\"excludes\\\":[]}",
+					"include":                 "[\\\"/proc\\\"]",
+					"exclude":                 "[\\\"/home\\\", \\\"/var/\\\"]",
+					"cross_account_type":      "SELF_ACCOUNT",
+					"cross_account_user_id":   "${data.alicloud_account.default.id}",
+					"cross_account_role_name": "${alicloud_ram_role.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source_type":  "NAS",
-						"restore_type": "NAS",
-						"target_path":  "/",
-						"options":      "{\"includes\":[],\"excludes\":[]}",
-						"include":      "[\"/proc\"]",
-						"exclude":      "[\"/home\", \"/var/\"]",
+						"source_type":             "NAS",
+						"restore_type":            "NAS",
+						"target_path":             "/",
+						"options":                 "{\"includes\":[],\"excludes\":[]}",
+						"include":                 "[\"/proc\"]",
+						"exclude":                 "[\"/home\", \"/var/\"]",
+						"cross_account_type":      "SELF_ACCOUNT",
+						"cross_account_user_id":   CHECKSET,
+						"cross_account_role_name": CHECKSET,
 					}),
 				),
 			},
@@ -315,41 +321,64 @@ var AlicloudHBRRestoreJobMap0 = map[string]string{
 
 func AlicloudHBRRestoreJobBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-tf-used-dont-delete"
-}
+	data "alicloud_account" "default" {
+	}
 
-data "alicloud_hbr_oss_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
+	data "alicloud_hbr_ecs_backup_plans" "default" {
+    	name_regex = "plan-tf-used-dont-delete"
+	}
 
-data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
+	data "alicloud_hbr_oss_backup_plans" "default" {
+		name_regex = "plan-tf-used-dont-delete"
+	}
 
-data "alicloud_hbr_snapshots" "ecs_snapshots" {
-    source_type  = "ECS_FILE"
-	vault_id     =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
-	instance_id  =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
-}
+	data "alicloud_hbr_nas_backup_plans" "default" {
+		name_regex = "plan-tf-used-dont-delete"
+	}
 
-data "alicloud_hbr_snapshots" "oss_snapshots" {
-    source_type  = "OSS"
-	vault_id     =  data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
-	bucket       =  data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
-}
+	data "alicloud_hbr_snapshots" "ecs_snapshots" {
+    	source_type  = "ECS_FILE"
+		vault_id     =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.vault_id
+		instance_id  =  data.alicloud_hbr_ecs_backup_plans.default.plans.0.instance_id
+	}
 
-data "alicloud_hbr_snapshots" "nas_snapshots" {
-    source_type     = "NAS"
-	vault_id        =  data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
-	file_system_id  =  data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
-    create_time     =  data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time
-}
+	data "alicloud_hbr_snapshots" "oss_snapshots" {
+    	source_type  = "OSS"
+		vault_id     =  data.alicloud_hbr_oss_backup_plans.default.plans.0.vault_id
+		bucket       =  data.alicloud_hbr_oss_backup_plans.default.plans.0.bucket
+	}
 
+	data "alicloud_hbr_snapshots" "nas_snapshots" {
+    	source_type     = "NAS"
+		vault_id        =  data.alicloud_hbr_nas_backup_plans.default.plans.0.vault_id
+		file_system_id  =  data.alicloud_hbr_nas_backup_plans.default.plans.0.file_system_id
+    	create_time     =  data.alicloud_hbr_nas_backup_plans.default.plans.0.create_time	
+	}
+
+	resource "alicloud_ram_role" "default" {
+  		name     = var.name
+  		document = <<EOF
+		{
+			"Statement": [
+			{
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": [
+						"crossbackup.hbr.aliyuncs.com"
+					]
+				}
+			}
+			],
+  			"Version": "1"
+		}
+  		EOF
+  		force    = true
+	}
 `, name)
 }
 

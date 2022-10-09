@@ -135,6 +135,23 @@ func resourceAlicloudHbrRestoreJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"cross_account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SELF_ACCOUNT", "CROSS_ACCOUNT"}, false),
+			},
+			"cross_account_user_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cross_account_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ots_detail": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -223,6 +240,15 @@ func resourceAlicloudHbrRestoreJobCreate(d *schema.ResourceData, meta interface{
 	}
 	if v, ok := d.GetOk("udm_detail"); ok {
 		request["UdmDetail"] = v
+	}
+	if v, ok := d.GetOk("cross_account_type"); ok {
+		request["CrossAccountType"] = v
+	}
+	if v, ok := d.GetOk("cross_account_user_id"); ok {
+		request["CrossAccountUserId"] = v
+	}
+	if v, ok := d.GetOk("cross_account_role_name"); ok {
+		request["CrossAccountRoleName"] = v
 	}
 
 	if v, ok := d.GetOk("ots_detail"); ok {
@@ -323,6 +349,10 @@ func resourceAlicloudHbrRestoreJobRead(d *schema.ResourceData, meta interface{})
 		}
 		d.Set("ots_detail", otsDetailMaps)
 	}
+
+	d.Set("cross_account_type", object["CrossAccountType"])
+	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	return nil
 }
