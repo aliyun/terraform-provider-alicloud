@@ -36,7 +36,7 @@ The following arguments are supported:
 * `db_instance_modes` - (Optional) The db instance modes.
 * `description` - (Optional) The description of the instance.
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `ids` - (Optional)  A list of D B Instance IDs.
+* `ids` - (Optional)  A list of DB Instance IDs.
 * `instance_network_type` - (Optional) The network type of the instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
