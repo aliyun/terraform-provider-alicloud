@@ -67,8 +67,11 @@ The following arguments are supported:
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `file_system_id` - (Required, ForceNew) The File System ID of Nas.
 * `create_time` - (Optional, Deprecated) This field has been deprecated from provider version 1.153.0+. The creation time of NAS file system. **Note** The time format of the API adopts the ISO 8601, such as `2021-07-09T15:45:30CST` or `2021-07-09T07:45:30Z`.
+* `options` - (Optional) This parameter specifies whether to use Windows VSS to define a backup path.
 * `path` - (Required) List of backup path. Up to 65536 characters. e.g.`["/home", "/var"]`. **Note** You should at least specify a backup path, empty array not allowed here.
-
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 -> **Note** `alicloud_hbr_nas_backup_plan` depends on the `alicloud_nas_file_system` and creates a mount point on the file system. If this dependency has not declared, the file system may not be deleted correctly.
 
