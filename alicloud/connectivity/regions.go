@@ -227,3 +227,4 @@ var VODSupportRegions = []Region{Beijing, APNorthEast1, CnNorth2Gov1, Shanghai, 
 var GPDBSupportRegions = []Region{Beijing, APSouth1, ChengDu, Shanghai, APSouthEast3, EUCentral1, Huhehaote, USWest1, ShanghaiFinance, Hongkong, APSouthEast2, USEast1, Zhangjiakou, Hangzhou, Shenzhen, EUWest1, APNorthEast1, APSouthEast1, APSouthEast5}
 var ApiGatewaySupportRegions = []Region{APSouthEast3, Huhehaote, APSouth1, Shanghai, Hongkong, Zhangjiakou, ChengDu, APSouthEast2, ShanghaiFinance, EUCentral1, EUWest1, MEEast1, Hangzhou, Beijing, HeYuan, Shenzhen, APSouthEast1, USEast1, APSouthEast5, CnNorth2Gov1, Qingdao, USWest1, APNorthEast1}
 var DMSEnterpriseSupportRegions = []Region{APSouthEast5, Shenzhen, Beijing, APSouth1, EUWest1, APSouthEast3, APNorthEast1, Hangzhou, Qingdao, Shanghai}
+var GPDBDBInstancePlanSupportRegions = []Region{Hangzhou}

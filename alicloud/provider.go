@@ -759,6 +759,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_prefix_list_associations":  dataSourceAlicloudCenTransitRouterPrefixListAssociations(),
 			"alicloud_dms_enterprise_proxies":                       dataSourceAlicloudDmsEnterpriseProxies(),
 			"alicloud_vpc_public_ip_address_pool_cidr_blocks":       dataSourceAlicloudVpcPublicIpAddressPoolCidrBlocks(),
+			"alicloud_gpdb_db_instance_plans":                       dataSourceAlicloudGpdbDbInstancePlans(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1411,6 +1412,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_prefix_list_association":           resourceAlicloudCenTransitRouterPrefixListAssociation(),
 			"alicloud_dms_enterprise_proxy":                                 resourceAlicloudDmsEnterpriseProxy(),
 			"alicloud_vpc_public_ip_address_pool_cidr_block":                resourceAlicloudVpcPublicIpAddressPoolCidrBlock(),
+			"alicloud_gpdb_db_instance_plan":                                resourceAlicloudGpdbDbInstancePlan(),
 		},
 
 		ConfigureFunc: providerConfigure,
