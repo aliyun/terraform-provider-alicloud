@@ -87,7 +87,6 @@ resource "alicloud_hbr_restore_job" "ecsJob" {
 }
 ```
 
-
 -> **NOTE:** This resource can only be created, cannot be modified or deleted. Therefore, any modification of the resource attribute will not affect exist resource.
 
 ## Argument Reference
@@ -116,6 +115,9 @@ The following arguments are supported:
 * `target_instance_name` - (Optional, Available in v1.164.0) The name of the Table store instance to which you want to restore data.**WARNING:** Required while source_type equals `OTS_TABLE`.
 * `target_table_name` - (Optional, Available in v1.164.0) The name of the table that stores the restored data. **WARNING:** Required while source_type equals `OTS_TABLE`.
 * `ots_detail` - (Optional, Computed, Available in v1.186.0) The details about the Tablestore instance. See the following `Block ots_detail`.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 #### Block ots_detail
 
@@ -137,8 +139,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Hybrid Backup Recovery (HBR) Restore Job can be imported using the id, e.g.
+Hybrid Backup Recovery (HBR) Restore Job can be imported using the id. Format to `<restore_job_id>:<restore_type>`, e.g.
 
 ```
-$ terraform import alicloud_hbr_restore_job.example <restore_job_id>:<restore_type>
+$ terraform import alicloud_hbr_restore_job.example your_restore_job_id:your_restore_type
 ```
