@@ -34,7 +34,7 @@ func dataSourceAlicloudHbrBackupJobs() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "OTS", "UDM_ECS", "UDM_ECS", "UDM_ECS_DISK"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS_FILE", "NAS", "OSS", "OTS", "UDM_ECS", "UDM_ECS_DISK"}, false),
 			},
 			"filter": {
 				Type:     schema.TypeList,
@@ -192,6 +192,18 @@ func dataSourceAlicloudHbrBackupJobs() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"cross_account_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cross_account_user_id": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"cross_account_role_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"ots_detail": {
 							Type:     schema.TypeList,
 							Computed: true,
@@ -340,6 +352,13 @@ func dataSourceAlicloudHbrBackupJobsRead(d *schema.ResourceData, meta interface{
 		if object["Path"] != nil {
 			mapping["path"] = object["Paths"].(map[string]interface{})["Path"]
 		}
+
+		if object["SourceType"].(string) == "ECS_FILE" || object["SourceType"].(string) == "NAS" || object["SourceType"].(string) == "OSS" || object["SourceType"].(string) == "OTS" {
+			mapping["cross_account_type"] = object["CrossAccountType"]
+			mapping["cross_account_user_id"] = formatInt(object["CrossAccountUserId"])
+			mapping["cross_account_role_name"] = object["CrossAccountRoleName"]
+		}
+
 		otsDetails := make([]map[string]interface{}, 0)
 		if v, ok := object["OtsDetail"].(map[string]interface{}); ok {
 			if tableNames, ok := v["TableNames"]; ok {
