@@ -47,7 +47,7 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 				{
 					"key":      "JobId",
 					"operator": "IN",
-					"values":   []string{"job-000fdy7y0b7g99dp7isg"},
+					"values":   []string{"job-000e18wmkcpdqq0n5hna"},
 				},
 			},
 		}),
@@ -55,9 +55,9 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 			"source_type": "ECS_FILE",
 			"filter": []map[string]interface{}{
 				{
-					"key":      "PlanId",
+					"key":      "JobId",
 					"operator": "IN",
-					"values":   []string{"job-000fdy7y0b7g99dp7isg_fake"},
+					"values":   []string{"job-000e18wmkcpdqq0n5hna_fake"},
 				},
 			},
 		}),
@@ -178,7 +178,7 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 				},
 				{
 					"key":      "CompleteTime",
-					"operator": "GREATER_THAN_OR_EQUAL",
+					"operator": "GREATER_THAN",
 					"values":   []string{"2021-08-23T14:17:15CST"},
 				},
 			},
@@ -222,7 +222,7 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 				{
 					"key":      "CompleteTime",
 					"operator": "BETWEEN",
-					"values":   []string{"2021-08-23T14:17:15CST", "2022-08-23T14:17:15CST"},
+					"values":   []string{"2021-08-23T14:17:15CST", "2022-10-20T14:17:15CST"},
 				},
 			},
 		}),
@@ -251,7 +251,7 @@ func TestAccAlicloudHBRBackupJobsDataSource(t *testing.T) {
 	statusBackupConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"source_type": "ECS_FILE",
-			"status":      "COMPLETE",
+			"status":      "FAILED",
 			"filter": []map[string]interface{}{
 				{
 					"key":      "VaultId",
@@ -314,23 +314,27 @@ func TestAccAlicloudHBRBackupJobsDataSource_ots(t *testing.T) {
 
 func dataSourceHbrBackupJobSourceConfig(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_hbr_ecs_backup_plans" "default" {
-    name_regex = "plan-tf-used-dont-delete"
-}
-data "alicloud_hbr_oss_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}
-data "alicloud_hbr_nas_backup_plans" "default" {
-	name_regex = "plan-tf-used-dont-delete"
-}`, name)
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_hbr_ecs_backup_plans" "default" {
+	}
+
+	data "alicloud_hbr_oss_backup_plans" "default" {
+	}
+
+	data "alicloud_hbr_nas_backup_plans" "default" {
+
+	}
+`, name)
 }
 
 var existHbrBackupJobMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"jobs.#": CHECKSET,
+		"jobs.#":                       CHECKSET,
+		"jobs.0.cross_account_type":    "SELF_ACCOUNT",
+		"jobs.0.cross_account_user_id": "0",
 	}
 }
 

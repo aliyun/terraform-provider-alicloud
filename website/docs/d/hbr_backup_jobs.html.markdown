@@ -75,7 +75,7 @@ output "alicloud_hbr_backup_jobs_example_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed)  A list of Backup Job IDs.
-* `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`, `UDM_ECS`, `UDM_ECS_DISK`.
+* `source_type` - (Required, ForceNew) The type of data source. Valid values: `ECS_FILE`, `NAS`, `OSS`, `OTS`, `UDM_ECS`, `UDM_ECS_DISK`.
 * `status` - (Optional, ForceNew) The status of backup job. Valid values: `COMPLETE`, `PARTIAL_COMPLETE`, `FAILED`, `UNAVAILABLE`.
 * `sort_direction` - (Optional, ForceNew) The sort direction, sort results by ascending or descending order based on the value jobs id. Valid values: `ASCEND`, `DESCEND`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -124,4 +124,6 @@ The following attributes are exported in addition to the arguments listed above:
 	* `status` - The status of restore job. Valid values: `COMPLETE` , `PARTIAL_COMPLETE`, `FAILED`.
 	* `progress` - Backup progress. The value is 100%*100.
 	* `error_message` - Error message.
-	
+	* `cross_account_type` - (Available in v1.190.0+) The type of the cross account backup. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+	* `cross_account_user_id` - (Available in v1.190.0+) The original account ID of the cross account backup managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
+	* `cross_account_role_name` - (Available in v1.190.0+) The role name created in the original account RAM backup by the cross account managed by the current account. It is valid only when `source_type` is `ECS_FILE`, `NAS`, `OSS` or `OTS`.
