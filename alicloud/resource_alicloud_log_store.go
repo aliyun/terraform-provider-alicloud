@@ -108,7 +108,6 @@ func resourceAlicloudLogStore() *schema.Resource {
 			},
 			"encrypt_conf": {
 				Type:     schema.TypeSet,
-				ForceNew: true,
 				Optional: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -312,6 +311,10 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 		d.SetPartial("auto_split")
 	}
+	if d.HasChange("encrypt_conf") {
+		update = true
+		d.SetPartial("encrypt_conf")
+	}
 
 	if update {
 		store, err := logService.DescribeLogStore(d.Id())
@@ -323,6 +326,9 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		store.WebTracking = d.Get("enable_web_tracking").(bool)
 		store.AppendMeta = d.Get("append_meta").(bool)
 		store.AutoSplit = d.Get("auto_split").(bool)
+		if encrypt := buildEncrypt(d); encrypt != nil {
+			store.EncryptConf = encrypt
+		}
 		var requestInfo *sls.Client
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
