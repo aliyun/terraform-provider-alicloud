@@ -1075,6 +1075,71 @@ func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 	})
 }
 
+// Skip testing because code source settings cannot be configured.
+func SkipAccAlicloudSAEApplication_basic3(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
+	resourceId := "alicloud_sae_application.default"
+	ra := resourceAttrInit(resourceId, AlicloudSAEApplicationMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SaeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSaeApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tftestacc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEApplicationBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SaeSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_name":            name,
+					"namespace_id":        "${alicloud_sae_namespace.default.namespace_id}",
+					"package_type":        "Image",
+					"app_description":     name + "desc",
+					"vswitch_id":          "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"image_url":           "${local.image_url}",
+					"replicas":            "5",
+					"cpu":                 "500",
+					"memory":              "2048",
+					"acr_instance_id":     "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"acr_assume_role_arn": "${data.alicloud_ram_roles.default.roles.0.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_name":            name,
+						"namespace_id":        CHECKSET,
+						"package_type":        "Image",
+						"app_description":     name + "desc",
+						"vswitch_id":          CHECKSET,
+						"vpc_id":              CHECKSET,
+						"image_url":           CHECKSET,
+						"replicas":            "5",
+						"cpu":                 "500",
+						"memory":              "2048",
+						"acr_instance_id":     CHECKSET,
+						"acr_assume_role_arn": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_enable_application_scaling_rule", "batch_wait_time", "config_map_mount_desc"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudSAEApplication_basicTags(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
@@ -1187,6 +1252,54 @@ resource "alicloud_sae_namespace" "default" {
   #access_group_name = "DEFAULT_VPC_GROUP_NAME"
   #vswitch_id        = data.alicloud_vswitches.default.ids.0
 #}
+
+variable "name" {
+  default = "%s"
+}
+`, defaultRegionToTest, name, name)
+}
+
+func AlicloudSAEApplicationBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_vpcs" "default"	{
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
+locals {
+  image_url = format("%%s-registry-vpc.cn-hangzhou.cr.aliyuncs.com/%%s/%%s",data.alicloud_cr_ee_instances.default.instances.0.name,alicloud_sae_namespace.default.namespace_name,alicloud_cr_ee_repo.default.name)
+}
+
+resource "alicloud_sae_namespace" "default" {
+  namespace_description = var.name
+  namespace_id = "%s:%s"
+  namespace_name = var.name
+}
+
+data alicloud_cr_ee_instances "default" {}
+
+resource "alicloud_cr_ee_namespace" "default" {
+		instance_id = data.alicloud_cr_ee_instances.default.ids.0
+		name = var.name
+		auto_create	= true
+		default_visibility = "PRIVATE"
+	}
+
+resource "alicloud_cr_ee_repo" "default" {
+		instance_id = data.alicloud_cr_ee_instances.default.ids.0
+		namespace = alicloud_cr_ee_namespace.default.name
+		name = "${var.name}"
+		summary = "test summary"
+		repo_type = "PRIVATE"
+		detail = "test detail"
+	}
+
+data "alicloud_ram_roles" "default" {
+  name_regex = "^AliyunServiceRoleForSAE$"
+}
 
 variable "name" {
   default = "%s"

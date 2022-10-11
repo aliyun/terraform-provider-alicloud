@@ -104,7 +104,7 @@ The following arguments are supported:
 * `pre_stop` - (Optional) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `readiness` - (Optional) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
 * `replicas` - (Required) Initial number of instances.
-* `security_group_id` - (Optional) Security group ID.
+* `security_group_id` - (Optional, Computed) Security group ID.
 * `sls_configs` - (Optional) SLS  configuration.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `RUNNING`, `STOPPED`.
 * `termination_grace_period_seconds` - (Optional, Computed) Graceful offline timeout, the default is 30, the unit is seconds. The value range is 1~60. Valid values: [1,60].
@@ -120,6 +120,8 @@ The following arguments are supported:
   * `-1`: Initialization value, indicating that percentages are not used.
   * `0~100`: The unit is percentage, rounded up. For example, if it is set to 50%, if there are currently 5 instances, the minimum number of surviving instances is 3.
 * `tags` - (Optional, Available in v1.167.0+) A mapping of tags to assign to the resource.
+* `acr_assume_role_arn` - (Optional, Available in v1.189.0+) The ARN of the RAM role required when pulling images across accounts. Only necessary if the image_url is pointing to an ACR EE instance.
+* `acr_instance_id` - (Optional, Available in v1.189.0+) The ID of the ACR EE instance. Only necessary if the image_url is pointing to an ACR EE instance.
 
 ## Attributes Reference
 
