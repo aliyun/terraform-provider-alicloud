@@ -22,8 +22,9 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(11 * time.Minute),
-			Delete: schema.DefaultTimeout(11 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
+			Update: schema.DefaultTimeout(15 * time.Minute),
+			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"acl_entry_list": {
@@ -46,7 +47,6 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"cluster_specification": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
 			},
 			"cluster_type": {
@@ -75,7 +75,6 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"instance_count": {
 				Type:     schema.TypeInt,
 				Required: true,
-				ForceNew: true,
 			},
 			"net_type": {
 				Type:         schema.TypeString,
@@ -217,6 +216,7 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudMseClusterUpdate(d, meta)
 }
+
 func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	mseService := MseService{client}
@@ -230,6 +230,7 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("cluster_type", object["ClusterType"])
+	d.Set("cluster_specification", object["ClusterSpecification"])
 	d.Set("instance_count", formatInt(object["InstanceCount"]))
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
 	d.Set("status", object["InitStatus"])
@@ -243,8 +244,10 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vpc_id", object["VpcId"])
 	return nil
 }
+
 func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	mseService := MseService{client}
 	var response map[string]interface{}
 	conn, err := client.NewMseClient()
 	if err != nil {
@@ -310,9 +313,63 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("cluster_alias_name")
 	}
+
+	update = false
+	object, err := mseService.DescribeMseCluster(d.Id())
+	updateClusterSpecReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"ClusterId":  object["ClusterId"],
+	}
+
+	if !d.IsNewResource() && d.HasChange("cluster_specification") {
+		update = true
+	}
+	if v, ok := d.GetOk("cluster_specification"); ok {
+		updateClusterSpecReq["ClusterSpecification"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("instance_count") {
+		update = true
+	}
+	if v, ok := d.GetOk("instance_count"); ok {
+		updateClusterSpecReq["InstanceCount"] = v
+	}
+
+	if update {
+		action := "UpdateClusterSpec"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, updateClusterSpecReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, updateClusterSpecReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("cluster_specification")
+		d.SetPartial("instance_count")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudMseClusterRead(d, meta)
 }
+
 func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	mseService := MseService{client}
