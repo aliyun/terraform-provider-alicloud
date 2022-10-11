@@ -111,6 +111,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, ForceNew) The zone ID of the instance.
 * `availability_zone` - (Optional, ForceNew, Deprecated) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `ssl_enabled` - (Optional, Computed, Available in v1.188.0+) Enable or disable SSL. Valid values: `0` and `1`.
 
 #### Block ip_whitelist
 
@@ -132,7 +133,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 60 mins) Used when create the DB Instance.
-* `update` - (Defaults to 30 mins) Used when update the DB Instance.
+* `update` - (Defaults to 60 mins) Used when update the DB Instance.
 
 ## Import
 

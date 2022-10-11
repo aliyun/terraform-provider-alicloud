@@ -288,6 +288,16 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"description":         name + "Update",
 					"instance_spec":       "2C16G",
 					"master_node_num":     "1",
@@ -304,6 +314,7 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 						"Created": "TF2",
 						"For":     "acceptance test2",
 					},
+					"ssl_enabled": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -318,6 +329,7 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 						"tags.%":              "2",
 						"tags.Created":        "TF2",
 						"tags.For":            "acceptance test2",
+						"ssl_enabled":         "0",
 					}),
 				),
 			},
@@ -325,7 +337,7 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "seg_storage_type", "private_ip_address", "instance_spec", "db_instance_class", "resource_group_id", "create_sample_data"},
+				ImportStateVerifyIgnore: []string{"period", "used_time", "seg_storage_type", "private_ip_address", "instance_spec", "db_instance_class", "resource_group_id", "create_sample_data", "ssl_enabled"},
 			},
 		},
 	})

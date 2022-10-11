@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,7 +25,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(60 * time.Minute),
-			Update: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -205,6 +206,12 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"ssl_enabled": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				Optional:     true,
+				Computed:     true,
 			},
 		},
 	}
@@ -407,6 +414,17 @@ func resourceAlicloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 			}
 			d.Set("ip_whitelist", iPWhitelistMaps)
 		}
+	}
+	describeDBInstanceSSLObject, err := gpdbService.DescribeDBInstanceSSL(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := describeDBInstanceSSLObject["SSLEnabled"]; ok && strconv.FormatBool(v.(bool)) != "" {
+		sslEnabled := 0
+		if v == "true" {
+			sslEnabled = 1
+		}
+		d.Set("ssl_enabled'", sslEnabled)
 	}
 	return nil
 }
@@ -711,6 +729,40 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("storage_size")
+	}
+	update = false
+	request = map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("ssl_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("ssl_enabled"); ok {
+		request["SSLEnabled"] = v
+	}
+	if update {
+		action := "ModifyDBInstanceSSL"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("ssl_enabled")
 	}
 	d.Partial(false)
 	return resourceAlicloudGpdbDbInstanceRead(d, meta)
