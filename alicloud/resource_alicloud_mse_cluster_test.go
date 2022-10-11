@@ -146,12 +146,6 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cluster_specification"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"acl_entry_list": []string{"127.0.0.1/32"},
 				}),
@@ -182,6 +176,22 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 						"acl_entry_list.#":   "1",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_2_4_60_c",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_2_4_60_c",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"acl_entry_list"},
 			},
 		},
 	})
@@ -236,12 +246,6 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cluster_specification"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"acl_entry_list": []string{"127.0.0.1/32"},
 				}),
@@ -272,6 +276,12 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 						"acl_entry_list.#":   "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"acl_entry_list"},
 			},
 		},
 	})
@@ -324,10 +334,41 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cluster_specification"},
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_60_c",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_60_c",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_count": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_count": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_2_4_60_c",
+					"instance_count":        "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_2_4_60_c",
+						"instance_count":        "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -384,10 +425,9 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cluster_specification"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
