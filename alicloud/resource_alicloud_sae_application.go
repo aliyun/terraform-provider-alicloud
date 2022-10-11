@@ -211,6 +211,7 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"sls_configs": {
 				Type:     schema.TypeString,
@@ -266,6 +267,14 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"acr_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"acr_assume_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -403,6 +412,12 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	if v, exist := d.GetOk("vswitch_id"); exist {
 		request["VSwitchId"] = StringPointer(v.(string))
 	}
+	if v, ok := d.GetOk("acr_assume_role_arn"); ok {
+		request["AcrAssumeRoleArn"] = StringPointer(v.(string))
+	}
+	if v, ok := d.GetOk("acr_instance_id"); ok {
+		request["AcrInstanceId"] = StringPointer(v.(string))
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
@@ -444,6 +459,8 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 		}
 		return WrapError(err)
 	}
+	d.Set("acr_assume_role_arn", object["AcrAssumeRoleArn"])
+	d.Set("acr_instance_id", object["AcrInstanceId"])
 	d.Set("app_description", object["AppDescription"])
 	d.Set("app_name", object["AppName"])
 	d.Set("command", object["Command"])
@@ -576,6 +593,20 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	//DeployApplication
 	request = map[string]*string{
 		"AppId": StringPointer(d.Id()),
+	}
+
+	if !d.IsNewResource() && d.HasChange("acr_assume_role_arn") {
+		update = true
+	}
+	if v, ok := d.GetOk("acr_assume_role_arn"); ok {
+		request["AcrAssumeRoleArn"] = StringPointer(v.(string))
+	}
+
+	if !d.IsNewResource() && d.HasChange("acr_instance_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("acr_instance_id"); ok {
+		request["AcrInstanceId"] = StringPointer(v.(string))
 	}
 
 	if !d.IsNewResource() && d.HasChange("command") {
@@ -909,6 +940,8 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("tomcat_config")
 		d.SetPartial("war_start_options")
 		d.SetPartial("web_container")
+		d.SetPartial("acr_assume_role_arn")
+		d.SetPartial("acr_instance_id")
 	}
 
 	// 【Exists】update security_group_id

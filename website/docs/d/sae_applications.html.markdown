@@ -83,6 +83,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `applications` - A list of Sae Applications. Each element contains the following attributes:
     * `acr_assume_role_arn` - The ARN of the RAM role required when pulling images across accounts.
+    * `acr_instance_id` - The ID of the ACR EE instance.
     * `app_description` - Application description information. No more than 1024 characters.
     * `app_name` - Application Name. Combinations of numbers, letters, and dashes (-) are allowed. It must start with a letter and the maximum length is 36 characters.
     * `application_id` - The first ID of the resource.
