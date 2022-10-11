@@ -57,8 +57,8 @@ resource "alicloud_lindorm_instance" "default" {
 The following arguments are supported:
 
 * `cold_storage` - (Optional, Computed) The cold storage capacity of the instance. Unit: GB.
-* `core_num` - (Optional) The core num.
-* `core_spec` - (Optional) The core spec. **NOTE:** When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
+* `core_num` - (Optional) The core num. **NOTE:** Field `core_num` has been deprecated from provider version 1.188.0 and it will be removed in the future version.
+* `core_spec` - (Optional) The core spec. **NOTE:**" Field `core_spec` has been deprecated from provider version 1.188.0 and it will be removed in the future version. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
    - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
    - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
 * `deletion_proection` - (Optional, Computed) The deletion protection of instance.

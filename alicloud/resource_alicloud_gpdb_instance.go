@@ -2,14 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"log"
-	"strings"
-	"time"
 )
 
 func resourceAlicloudGpdbInstance() *schema.Resource {

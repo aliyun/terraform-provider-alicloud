@@ -34,12 +34,14 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				ValidateFunc: validation.Any(validation.IntInSlice([]int{0}), validation.IntBetween(800, 100000)),
 			},
 			"core_num": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Deprecated: "Field 'core_num' has been deprecated from provider version 1.188.0 and it will be removed in the future version.",
 			},
 			"core_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Deprecated:   "Field 'core_spec' has been deprecated from provider version 1.188.0 and it will be removed in the future version.",
 				ValidateFunc: validation.StringInSlice([]string{"lindorm.i2.xlarge", "lindorm.i2.2xlarge", "lindorm.i2.4xlarge", "lindorm.i2.8xlarge", "lindorm.d1.2xlarge", "lindorm.d1.4xlarge", "lindorm.d1.6xlarge"}, false),
 			},
 			"deletion_proection": {
@@ -240,9 +242,6 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("cold_storage"); ok {
 		request["ColdStorage"] = v
-	}
-	if v, ok := d.GetOk("core_spec"); ok {
-		request["CoreSpec"] = v
 	}
 	request["DiskCategory"] = d.Get("disk_category")
 	if v, ok := d.GetOk("duration"); ok {
@@ -762,18 +761,6 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceReq["PhoenixCoreSpec"] = v
 		}
 	}
-	if d.HasChange("core_num") {
-		update = true
-		if v, ok := d.GetOk("core_num"); ok {
-			upgradeLindormInstanceReq["CoreNum"] = v
-		}
-	}
-	if d.HasChange("core_spec") && !d.IsNewResource() {
-		update = true
-		if v, ok := d.GetOk("core_spec"); ok {
-			upgradeLindormInstanceReq["CoreSpec"] = v
-		}
-	}
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceReq)
 		if err != nil {
@@ -781,8 +768,6 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("phoenix_node_count")
 		d.SetPartial("phoenix_node_specification")
-		d.SetPartial("core_num")
-		d.SetPartial("core_spec")
 	}
 
 	update = false

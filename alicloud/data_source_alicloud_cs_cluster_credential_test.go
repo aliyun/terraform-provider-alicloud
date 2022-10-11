@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"testing"
 )
 
 func TestAccAlicloudCSClusterCredentialDataSource(t *testing.T) {
