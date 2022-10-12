@@ -48,49 +48,44 @@ type ETLSink struct {
 }
 
 type ListETLResponse struct {
-	Total   int         `json:"total"`
-	Count   int         `json:"count"`
+	Total   int    `json:"total"`
+	Count   int    `json:"count"`
 	Results []*ETL `json:"results"`
 }
 
-
 func NewETL(endpoint, accessKeyId, accessKeySecret, logstore, name, project string) ETL {
 	sink := ETLSink{
-		AccessKeyId:accessKeyId,
-		AccessKeySecret:accessKeySecret,
-		Endpoint:endpoint,
-		Logstore:logstore,
-		Name:name,
-		Project:project,
-		Type: ETLSinksType,
+		AccessKeyId:     accessKeyId,
+		AccessKeySecret: accessKeySecret,
+		Endpoint:        endpoint,
+		Logstore:        logstore,
+		Name:            name,
+		Project:         project,
+		Type:            ETLSinksType,
 	}
-	config := ETLConfiguration {
-		AccessKeyId:accessKeyId,
-		AccessKeySecret:accessKeySecret,
-		FromTime: time.Now().Unix(),
-		Script: "e_set('new','aliyun')",
-		Version:ETLVersion,
-		Logstore:logstore,
-		ETLSinks:[]ETLSink{sink},
-		Parameters: map[string]string{},
-
+	config := ETLConfiguration{
+		AccessKeyId:     accessKeyId,
+		AccessKeySecret: accessKeySecret,
+		FromTime:        time.Now().Unix(),
+		Script:          "e_set('new','aliyun')",
+		Version:         ETLVersion,
+		Logstore:        logstore,
+		ETLSinks:        []ETLSink{sink},
+		Parameters:      map[string]string{},
 	}
 	schedule := ETLSchedule{
-		Type:"Resident",
+		Type: "Resident",
 	}
-	etljob := ETL {
-		Configuration:config,
-		DisplayName:"displayname",
-		Description:"go sdk case",
-		Name:name,
-		Schedule:schedule,
-		Type:ETLType,
-
+	etljob := ETL{
+		Configuration: config,
+		DisplayName:   "displayname",
+		Description:   "go sdk case",
+		Name:          name,
+		Schedule:      schedule,
+		Type:          ETLType,
 	}
 	return etljob
 }
-
-
 
 func (c *Client) CreateETL(project string, etljob ETL) error {
 	body, err := json.Marshal(etljob)
@@ -206,6 +201,24 @@ func (c *Client) StopETL(project, name string) error {
 
 	uri := fmt.Sprintf("/jobs/%s?action=STOP", name)
 	r, err := c.request(project, "PUT", uri, h, nil)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) RestartETL(project string, etljob ETL) error {
+	body, err := json.Marshal(etljob)
+	if err != nil {
+		return NewClientError(err)
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s?action=RESTART", etljob.Name)
+	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
 	}

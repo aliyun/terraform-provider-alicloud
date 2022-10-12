@@ -12,7 +12,7 @@ require (
 	github.com/alibabacloud-go/tea-utils v1.4.5
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1538
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.5
-	github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20220926050328-48be6df7023a
+	github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20221010075026-bd1a0c47d122
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.1+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.6

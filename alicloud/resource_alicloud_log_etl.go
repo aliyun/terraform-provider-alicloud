@@ -363,7 +363,11 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 			if err != nil {
 				return nil, err
 			}
-			return nil, slsClient.UpdateETL(parts[0], etl)
+			status := d.Get("status").(string)
+			if status == "STOPPING" || status == "STOPPED" {
+				return nil, slsClient.UpdateETL(parts[0], etl)
+			}
+			return nil, slsClient.RestartETL(parts[0], etl)
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {

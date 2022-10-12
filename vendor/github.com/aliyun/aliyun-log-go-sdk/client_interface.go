@@ -149,6 +149,15 @@ type ClientInterface interface {
 	RemoveConfigFromMachineGroup(project string, confName, groupName string) (err error)
 
 	// #################### ETL Operations #####################
+	CreateETL(project string, etljob ETL) error
+	UpdateETL(project string, etljob ETL) error
+	GetETL(project string, etlName string) (ETLJob *ETL, err error)
+	ListETL(project string, offset int, size int) (*ListETLResponse, error)
+	DeleteETL(project string, etlName string) error
+	StartETL(project, name string) error
+	StopETL(project, name string) error
+	RestartETL(project string, etljob ETL) error
+
 	CreateEtlMeta(project string, etlMeta *EtlMeta) (err error)
 	UpdateEtlMeta(project string, etlMeta *EtlMeta) (err error)
 	DeleteEtlMeta(project string, etlMetaName, etlMetaKey string) (err error)
