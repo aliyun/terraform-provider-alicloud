@@ -74,14 +74,25 @@ func resourceAliyunSlbBackendServersCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("backend_servers"); ok {
 		request.BackendServers = expandBackendServersInfoToString(v.(*schema.Set).List())
 	}
-	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
-		return slbClient.AddBackendServers(request)
+	var response *slb.AddBackendServersResponse
+	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
+			return slbClient.AddBackendServers(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ServiceIsConfiguring"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*slb.AddBackendServersResponse)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_backend_servers", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*slb.AddBackendServersResponse)
+
 	d.SetId(response.LoadBalancerId)
 
 	return resourceAliyunSlbBackendServersRead(d, meta)
