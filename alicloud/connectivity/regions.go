@@ -190,6 +190,7 @@ var HBRSupportRegions = []Region{Beijing, ChengDu, Huhehaote, Qingdao, Shanghai,
 var NASCPFSSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, HeYuan, Huhehaote, WuLanChaBu, Qingdao, ChengDu}
 var WAFSupportRegions = []Region{Hangzhou, APSouth1}
 var MSCSupportRegions = []Region{Hangzhou}
+var VPCPublicIpAddressPoolCidrBlockSupportRegions = []Region{Hangzhou}
 
 // Other regions requires the custom should have icp
 var FCCustomDomainSupportRegions = []Region{EUCentral1, APSouthEast1}
