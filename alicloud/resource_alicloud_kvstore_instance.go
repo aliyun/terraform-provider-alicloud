@@ -635,7 +635,9 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 		d.Set("auto_renew", autoRenew)
-		d.Set("auto_renew_period", describeInstanceAutoRenewalAttributeObject.Duration)
+		if describeInstanceAutoRenewalAttributeObject.Duration != 0 {
+			d.Set("auto_renew_period", describeInstanceAutoRenewalAttributeObject.Duration)
+		}
 	}
 	//refresh parameters
 	if err = refreshParameters(d, meta); err != nil {

@@ -1372,7 +1372,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
-	d.Set("storage_threshold", d.Get("storage_threshold"))
+	if d.Get("storage_threshold").(int) != 0 {
+		d.Set("storage_threshold", d.Get("storage_threshold"))
+	}
 	d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
 
 	d.Set("resource_group_id", instance["ResourceGroupId"])
@@ -1392,7 +1394,9 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("db_instance_storage_type", instance["DBInstanceStorageType"])
 	d.Set("zone_id", instance["ZoneId"])
 	d.Set("instance_charge_type", instance["PayType"])
-	d.Set("period", d.Get("period"))
+	if d.Get("period").(int) != 0 {
+		d.Set("period", d.Get("period"))
+	}
 	d.Set("vswitch_id", instance["VSwitchId"])
 	d.Set("private_ip_address", privateIpAddress)
 	d.Set("connection_string", instance["ConnectionString"])

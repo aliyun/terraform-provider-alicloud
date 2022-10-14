@@ -846,7 +846,9 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
 	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
 
-	d.Set("spot_duration", instance.SpotDuration)
+	if instance.SpotDuration != 0 {
+		d.Set("spot_duration", instance.SpotDuration)
+	}
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
@@ -914,7 +916,9 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		if len(response.InstanceRenewAttributes.InstanceRenewAttribute) > 0 {
 			renew := response.InstanceRenewAttributes.InstanceRenewAttribute[0]
 			d.Set("renewal_status", renew.RenewalStatus)
-			d.Set("auto_renew_period", renew.Duration)
+			if renew.Duration != 0 {
+				d.Set("auto_renew_period", renew.Duration)
+			}
 			if renew.RenewalStatus == "AutoRenewal" {
 				periodUnit = renew.PeriodUnit
 			}
