@@ -1,35 +1,36 @@
-## 1.188.0 (Unreleased)
+## 1.189.0 (Unreleased)
+## 1.188.0 (October 15, 2022)
 
-- **New Resource:** `alicloud_message_service_queue` [GH-5444]
-- **New Resource:** `alicloud_message_service_topic` [GH-5446]
-- **New Resource:** `alicloud_message_service_subscription` [GH-5491]
-- **New Resource:** `alicloud_cen_transit_router_prefix_list_association` [GH-5361]
-- **New Resource:** `alicloud_dms_enterprise_proxy` [GH-5479]
-- **New Data Source:** `alicloud_dms_enterprise_proxies` [GH-5479]
-- **New Data Source:** `alicloud_cen_transit_router_prefix_list_associations` [GH-5361]
-- **New Data Source:** `alicloud_message_service_subscriptions` [GH-5491]
-- **New Data Source:** `alicloud_message_service_topics` [GH-5446]
-- **New Data Source:** `alicloud_message_service_queues` [GH-5444]
+- **New Resource:** `alicloud_message_service_queue` ([#5444](https://github.com/aliyun/terraform-provider-alicloud/issues/5444))
+- **New Resource:** `alicloud_message_service_topic` ([#5446](https://github.com/aliyun/terraform-provider-alicloud/issues/5446))
+- **New Resource:** `alicloud_message_service_subscription` ([#5491](https://github.com/aliyun/terraform-provider-alicloud/issues/5491))
+- **New Resource:** `alicloud_cen_transit_router_prefix_list_association` ([#5361](https://github.com/aliyun/terraform-provider-alicloud/issues/5361))
+- **New Resource:** `alicloud_dms_enterprise_proxy` ([#5479](https://github.com/aliyun/terraform-provider-alicloud/issues/5479))
+- **New Data Source:** `alicloud_dms_enterprise_proxies` ([#5479](https://github.com/aliyun/terraform-provider-alicloud/issues/5479))
+- **New Data Source:** `alicloud_cen_transit_router_prefix_list_associations` ([#5361](https://github.com/aliyun/terraform-provider-alicloud/issues/5361))
+- **New Data Source:** `alicloud_message_service_subscriptions` ([#5491](https://github.com/aliyun/terraform-provider-alicloud/issues/5491))
+- **New Data Source:** `alicloud_message_service_topics` ([#5446](https://github.com/aliyun/terraform-provider-alicloud/issues/5446))
+- **New Data Source:** `alicloud_message_service_queues` ([#5444](https://github.com/aliyun/terraform-provider-alicloud/issues/5444))
 
 ENHANCEMENTS:
 
-- resource/alicloud_slb_backend_server: Add error retry code [GH-5521]
-- resource/alicloud_mse_cluster: Removed the forceNew for field 'cluster_specification' and instance_count, supports modifying them online; Supported for new action UpdateClusterSpec [GH-5501]
-- resource/alicloud_gpdb_instance: Adds new attribute ssl_enabled [GH-5508]
-- resource/alicloud_instance: Adds new attribute spot_duration [GH-5501]
-- resource/alicloud_lindorm_instance: Remove the discarded fields core_num and core_spec [GH-5512]
-- resource_alicloud_vpn_gateway_vpn_attachment: Corrected field ike_config.local_id, ike_config.remote_id to Computed [GH-5493]
-- resource/alicloud_log_oss_export: adds log_read_role_arn field [GH-5498]
-- resource/alicloud_polardb_cluster: Supported creation_category set to NormalMultimaster [GH-5502]
-- resource/alicloud_cs_kubernetes_node_pool: Add polardb ip whitelist support [GH-5495]
-- resource/alicloud_gpdb_instance: Adds new unit test case and test sweeper. [GH-5494]
-- resource/alicloud_resource_manager_account: Added the field abandon_able_check_id; Supported for new action DeleteAccount [GH-5454]
-- resource/alicloud_instance: Add return value judgment restriction [GH-5523]
-- Resource alicloud_log_store support updating encrypt_conf [GH-5507]
+- resource/alicloud_slb_backend_server: Add error retry code ([#5521](https://github.com/aliyun/terraform-provider-alicloud/issues/5521))
+- resource/alicloud_mse_cluster: Removed the forceNew for field 'cluster_specification' and instance_count, supports modifying them online; Supported for new action UpdateClusterSpec ([#5501](https://github.com/aliyun/terraform-provider-alicloud/issues/5501))
+- resource/alicloud_gpdb_instance: Adds new attribute ssl_enabled ([#5508](https://github.com/aliyun/terraform-provider-alicloud/issues/5508))
+- resource/alicloud_instance: Adds new attribute spot_duration ([#5501](https://github.com/aliyun/terraform-provider-alicloud/issues/5501))
+- resource/alicloud_lindorm_instance: Remove the discarded fields core_num and core_spec ([#5512](https://github.com/aliyun/terraform-provider-alicloud/issues/5512))
+- resource_alicloud_vpn_gateway_vpn_attachment: Corrected field ike_config.local_id, ike_config.remote_id to Computed ([#5493](https://github.com/aliyun/terraform-provider-alicloud/issues/5493))
+- resource/alicloud_log_oss_export: adds log_read_role_arn field ([#5498](https://github.com/aliyun/terraform-provider-alicloud/issues/5498))
+- resource/alicloud_polardb_cluster: Supported creation_category set to NormalMultimaster ([#5502](https://github.com/aliyun/terraform-provider-alicloud/issues/5502))
+- resource/alicloud_cs_kubernetes_node_pool: Add polardb ip whitelist support ([#5495](https://github.com/aliyun/terraform-provider-alicloud/issues/5495))
+- resource/alicloud_gpdb_instance: Adds new unit test case and test sweeper. ([#5494](https://github.com/aliyun/terraform-provider-alicloud/issues/5494))
+- resource/alicloud_resource_manager_account: Added the field abandon_able_check_id; Supported for new action DeleteAccount ([#5454](https://github.com/aliyun/terraform-provider-alicloud/issues/5454))
+- resource/alicloud_instance: Add return value judgment restriction ([#5523](https://github.com/aliyun/terraform-provider-alicloud/issues/5523))
+- Resource alicloud_log_store support updating encrypt_conf ([#5507](https://github.com/aliyun/terraform-provider-alicloud/issues/5507))
 
 BUG FIXES:
 
-- resource/alicloud_ecs_launch_template: Fixed InvalidParameter error [GH-5496]
+- resource/alicloud_ecs_launch_template: Fixed InvalidParameter error ([#5496](https://github.com/aliyun/terraform-provider-alicloud/issues/5496))
 
 ## 1.187.0 (September 30, 2022)
 
