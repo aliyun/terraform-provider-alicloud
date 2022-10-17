@@ -162,12 +162,6 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"billing_type", "payment_type", "ratio", "auto_use_coupon"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"bandwidth_package_name": name + "update",
 				}),
@@ -220,6 +214,12 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 						"bandwidth":              "50",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_use_coupon", "auto_pay", "duration"},
 			},
 		},
 	})
@@ -278,6 +278,7 @@ func TestUnitAlicloudGaBandwidthPackage(t *testing.T) {
 		"Bandwidth":              10,
 		"BandwidthPackageId":     "MockBandwidthPackageId",
 		"BandwidthType":          "CreateBandwidthPackageValue",
+		"BillingType":            "CreateBandwidthPackageValue",
 		"CbnGeographicRegionIdA": "CreateBandwidthPackageValue",
 		"CbnGeographicRegionIdB": "CreateBandwidthPackageValue",
 		"CreateTime":             "DefaultValue",
@@ -285,6 +286,7 @@ func TestUnitAlicloudGaBandwidthPackage(t *testing.T) {
 		"ChargeType":             "CreateBandwidthPackageValue",
 		"RegionId":               "CreateBandwidthPackageValue",
 		"State":                  "active",
+		"Ratio":                  10,
 		"Type":                   "CreateBandwidthPackageValue",
 		"AutoRenewDuration":      1,
 		"RenewalStatus":          "CreateBandwidthPackageValue",

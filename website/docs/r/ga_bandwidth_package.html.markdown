@@ -48,8 +48,8 @@ The following arguments are supported:
 -> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
 
 * `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`.
-* `cbn_geographic_region_ida` - (Optional, ForceNew) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value is `China-mainland`.
-* `cbn_geographic_region_idb` - (Optional, ForceNew) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value is `Global`.
+* `cbn_geographic_region_ida` - (Optional, ForceNew, Computed) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value is `China-mainland`.
+* `cbn_geographic_region_idb` - (Optional, ForceNew, Computed) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value is `Global`.
 * `description` - (Optional) The description of bandwidth package.
 * `duration` - (Optional) The subscription duration. **NOTE:** The ForceNew attribute has be removed from version 1.148.0. If `payment_type` is set to `Subscription`, this parameter is required.
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Valid values: `PayAsYouGo`, `Subscription`. Default value is `Subscription`.
@@ -72,8 +72,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when creating the Bandwidth Package.
-* `update` - (Defaults to 2 mins) Used when updating the Bandwidth Package.
+* `create` - (Defaults to 3 mins) Used when create the Bandwidth Package.
+* `update` - (Defaults to 5 mins) Used when update the Bandwidth Package.
+* `delete` - (Defaults to 3 mins) Used when delete the Bandwidth Package.
 
 ## Import
 
