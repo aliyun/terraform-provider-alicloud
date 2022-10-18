@@ -64,12 +64,6 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"accelerator_id", "endpoint_group_type"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
@@ -100,7 +94,6 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 					}),
 				),
 			},
-
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_interval_seconds": `5`,
@@ -225,6 +218,11 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -237,49 +235,49 @@ var AlicloudGaEndpointGroupMap = map[string]string{
 
 func AlicloudGaEndpointGroupBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default  = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_ga_accelerators" "default" {
-  status = "active"
-}
+	data "alicloud_ga_accelerators" "default" {
+  		status = "active"
+	}
 
-resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
-  	type                   = "Basic"
-  	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
-  	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-    auto_pay               = true
-    auto_use_coupon        = true
-}
+	resource "alicloud_ga_bandwidth_package" "default" {
+  		bandwidth              = 100
+  		type                   = "Basic"
+  		bandwidth_type         = "Basic"
+  		payment_type           = "PayAsYouGo"
+  		billing_type           = "PayBy95"
+  		ratio                  = 30
+  		bandwidth_package_name = var.name
+  		auto_pay               = true
+  		auto_use_coupon        = true
+	}
 
-resource "alicloud_ga_bandwidth_package_attachment" "default" {
-	// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
-	accelerator_id = data.alicloud_ga_accelerators.default.ids.0
-	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
-}
+	resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  		// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
+  		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
+  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	}
 
-resource "alicloud_ga_listener" "default" {
-  port_ranges{
-    from_port="60"
-    to_port="70"
-  }
-  accelerator_id=alicloud_ga_bandwidth_package_attachment.default.accelerator_id
-  client_affinity="SOURCE_IP"
-  protocol="UDP"
-  name=var.name
-}
+	resource "alicloud_ga_listener" "default" {
+  		port_ranges {
+    		from_port = "60"
+    		to_port   = "70"
+  		}
+  		accelerator_id  = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  		client_affinity = "SOURCE_IP"
+  		protocol        = "UDP"
+  		name            = var.name
+	}
 
-resource "alicloud_eip_address" "default" {
-  count = 2
-  bandwidth            = "10"
-  internet_charge_type = "PayByBandwidth"
-  address_name = var.name
-}
+	resource "alicloud_eip_address" "default" {
+  		count                = 2
+  		bandwidth            = "10"
+  		internet_charge_type = "PayByBandwidth"
+  		address_name         = var.name
+	}
 `, name)
 }
 
@@ -335,7 +333,8 @@ func TestUnitAlicloudGaEndpointGroup(t *testing.T) {
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeEndpointGroup
-		"Description": "CreateEndpointGroupValue",
+		"AcceleratorId": "CreateEndpointGroupValue",
+		"Description":   "CreateEndpointGroupValue",
 		"EndpointConfigurations": []interface{}{
 			map[string]interface{}{
 				"EnableClientIPPreservation": true,
@@ -345,11 +344,13 @@ func TestUnitAlicloudGaEndpointGroup(t *testing.T) {
 			},
 		},
 		"EndpointGroupRegion":        "CreateEndpointGroupValue",
+		"EndpointGroupType":          "CreateEndpointGroupValue",
 		"HealthCheckIntervalSeconds": 3,
 		"HealthCheckPath":            "CreateEndpointGroupValue",
 		"HealthCheckPort":            20,
 		"HealthCheckProtocol":        "CreateEndpointGroupValue",
 		"ListenerId":                 "CreateEndpointGroupValue",
+		"EndpointRequestProtocol":    "CreateEndpointGroupValue",
 		"Name":                       "CreateEndpointGroupValue",
 		"PortOverrides": []interface{}{
 			map[string]interface{}{
@@ -447,9 +448,7 @@ func TestUnitAlicloudGaEndpointGroup(t *testing.T) {
 	assert.NotNil(t, err)
 	// UpdateEndpointGroup
 	attributesDiff := map[string]interface{}{
-		"accelerator_id":        "UpdateEndpointGroup",
-		"description":           "UpdateEndpointGroup",
-		"endpoint_group_region": "UpdateEndpointGroup",
+		"description": "UpdateEndpointGroup",
 		"endpoint_configurations": []map[string]interface{}{
 			{
 				"enable_clientip_preservation": false,
@@ -458,8 +457,6 @@ func TestUnitAlicloudGaEndpointGroup(t *testing.T) {
 				"weight":                       30,
 			},
 		},
-		"endpoint_group_type":           "UpdateEndpointGroup",
-		"listener_id":                   "UpdateEndpointGroup",
 		"endpoint_request_protocol":     "UpdateEndpointGroup",
 		"health_check_interval_seconds": 4,
 		"health_check_path":             "UpdateEndpointGroup",
@@ -491,12 +488,11 @@ func TestUnitAlicloudGaEndpointGroup(t *testing.T) {
 				"Weight":                     30,
 			},
 		},
-		"EndpointGroupRegion":        "UpdateEndpointGroup",
 		"HealthCheckIntervalSeconds": 4,
 		"HealthCheckPath":            "UpdateEndpointGroup",
 		"HealthCheckPort":            30,
 		"HealthCheckProtocol":        "UpdateEndpointGroup",
-		"ListenerId":                 "UpdateEndpointGroup",
+		"EndpointRequestProtocol":    "UpdateEndpointGroup",
 		"Name":                       "UpdateEndpointGroup",
 		"PortOverrides": []interface{}{
 			map[string]interface{}{
