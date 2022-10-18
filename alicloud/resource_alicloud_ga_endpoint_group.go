@@ -23,13 +23,14 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
+			Delete: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -43,7 +44,7 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 						"enable_clientip_preservation": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  false,
+							Computed: true,
 						},
 						"endpoint": {
 							Type:     schema.TypeString,
@@ -64,15 +65,15 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 			},
 			"endpoint_group_region": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
+				ForceNew: true,
 			},
 			"endpoint_group_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"default", "virtual"}, false),
-				Default:      "default",
 			},
 			"endpoint_request_protocol": {
 				Type:         schema.TypeString,
@@ -163,9 +164,10 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		EndpointConfigurations[i]["Type"] = EndpointConfigurationsMap["type"]
 		EndpointConfigurations[i]["Weight"] = EndpointConfigurationsMap["weight"]
 	}
-	request["EndpointConfigurations"] = EndpointConfigurations
 
+	request["EndpointConfigurations"] = EndpointConfigurations
 	request["EndpointGroupRegion"] = d.Get("endpoint_group_region")
+
 	if v, ok := d.GetOk("endpoint_group_type"); ok {
 		request["EndpointGroupType"] = v
 	}
@@ -219,7 +221,7 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -244,6 +246,7 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudGaEndpointGroupRead(d, meta)
 }
+
 func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -283,7 +286,9 @@ func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("health_check_protocol", object["HealthCheckProtocol"])
 	d.Set("listener_id", object["ListenerId"])
 	d.Set("name", object["Name"])
-
+	d.Set("accelerator_id", object["AcceleratorId"])
+	d.Set("endpoint_group_type", object["EndpointGroupType"])
+	d.Set("endpoint_request_protocol", object["EndpointRequestProtocol"])
 	portOverrides := make([]map[string]interface{}, 0)
 	if portOverridesList, ok := object["PortOverrides"].([]interface{}); ok {
 		for _, v := range portOverridesList {
@@ -305,6 +310,7 @@ func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("traffic_percentage", formatInt(object["TrafficPercentage"]))
 	return nil
 }
+
 func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewGaplusClient()
@@ -329,10 +335,11 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		EndpointConfigurations[i]["Type"] = EndpointConfigurationsMap["type"]
 		EndpointConfigurations[i]["Weight"] = EndpointConfigurationsMap["weight"]
 	}
-	request["EndpointConfigurations"] = EndpointConfigurations
 
+	request["EndpointConfigurations"] = EndpointConfigurations
 	request["EndpointGroupRegion"] = d.Get("endpoint_group_region")
 	request["RegionId"] = client.RegionId
+
 	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
@@ -372,11 +379,17 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 	if d.HasChange("threshold_count") {
 		update = true
 	}
-	request["ThresholdCount"] = d.Get("threshold_count")
+	if v, ok := d.GetOk("threshold_count"); ok {
+		request["ThresholdCount"] = v
+	}
+
 	if d.HasChange("traffic_percentage") {
 		update = true
-		request["TrafficPercentage"] = d.Get("traffic_percentage")
 	}
+	if v, ok := d.GetOkExists("traffic_percentage"); ok {
+		request["TrafficPercentage"] = v
+	}
+
 	if update {
 		if _, ok := d.GetOk("endpoint_request_protocol"); ok {
 			request["EndpointRequestProtocol"] = d.Get("endpoint_request_protocol")
@@ -385,7 +398,7 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateEndpointGroup")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
@@ -408,6 +421,7 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 	return resourceAlicloudGaEndpointGroupRead(d, meta)
 }
+
 func resourceAlicloudGaEndpointGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -425,7 +439,7 @@ func resourceAlicloudGaEndpointGroupDelete(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {

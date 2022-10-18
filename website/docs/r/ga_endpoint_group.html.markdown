@@ -73,11 +73,11 @@ resource "alicloud_ga_endpoint_group" "example" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required) The ID of the Global Accelerator instance to which the endpoint group will be added.
+* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
 * `description` - (Optional) The description of the endpoint group.
-* `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group.
-* `endpoint_group_region` - (ForceNew, Required) The ID of the region where the endpoint group is deployed.
-* `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Valid values: `default`, `virtual`. Default value is `default`.
+* `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group. See the following `Block endpoint_configurations`.
+* `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
+* `endpoint_group_type` - (Optional, ForceNew, Computed) The endpoint group type. Valid values: `default`, `virtual`. Default value is `default`.
 
 -> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
     
@@ -91,7 +91,7 @@ The following arguments are supported:
 * `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `name` - (Optional) The name of the endpoint group.
-* `port_overrides` - (Optional) Mapping between listening port and forwarding port of boarding point.
+* `port_overrides` - (Optional) Mapping between listening port and forwarding port of boarding point. See the following `Block port_overrides`.
 
 -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 
@@ -109,10 +109,8 @@ The port_overrides supports the following:
 
 The endpoint_configurations supports the following: 
 
-* `enable_clientip_preservation` - (Optional) Indicates whether client IP addresses are reserved. Valid values: `true`: Client IP addresses are reserved, `false`: Client IP addresses are not reserved. Default value is `false`.
+* `enable_clientip_preservation` - (Optional, Computed) Indicates whether client IP addresses are reserved. Valid values: `true`: Client IP addresses are reserved, `false`: Client IP addresses are not reserved. Default value is `false`.
 * `endpoint` - (Required) The IP address or domain name of Endpoint N in the endpoint group.
-* `probe_port` - (Computed) Probe Port.
-* `probe_protocol` - (Computed) Probe Protocol.
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values: `Domain`: a custom domain name, `Ip`: a custom IP address, `PublicIp`: an Alibaba Cloud public IP address, `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance, `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
 
 -> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
@@ -133,8 +131,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Endpoint Group.
-* `delete` - (Defaults to 6 mins) Used when delete the Endpoint Group.
 * `update` - (Defaults to 2 mins) Used when update the Endpoint Group.
+* `delete` - (Defaults to 6 mins) Used when delete the Endpoint Group.
 
 ## Import
 
