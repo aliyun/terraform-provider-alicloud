@@ -1,0 +1,19 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source: {repository: golang, tag: 1.18.5}
+
+inputs:
+  - name: terraform-provider-alicloud
+  - name: aliyun-cli
+  - name: terraform-qa
+
+run:
+  path: terraform-provider-alicloud/ci/tasks/qa-test.sh
+params:
+  TF_TASK_ACCESS_KEY:    ""
+  TF_TASK_SECRET_KEY:    ""
+  TF_TASK_BUCKET_NAME:   "terraform-ci"
+  TF_TASK_BUCKET_REGION: "cn-beijing"
