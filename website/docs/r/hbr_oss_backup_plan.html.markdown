@@ -57,7 +57,9 @@ The following arguments are supported:
 * `backup_type` - (Required, ForceNew) Backup type. Valid values: `COMPLETE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
 * `prefix` - (Optional) Backup prefix. Once specified, only objects with matching prefixes will be backed up.
-
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 ## Attributes Reference
 
