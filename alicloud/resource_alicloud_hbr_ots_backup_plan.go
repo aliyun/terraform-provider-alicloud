@@ -57,6 +57,23 @@ func resourceAlicloudHbrOtsBackupPlan() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 			},
+			"cross_account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SELF_ACCOUNT", "CROSS_ACCOUNT"}, false),
+			},
+			"cross_account_user_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cross_account_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"ots_detail": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -129,6 +146,18 @@ func resourceAlicloudHbrOtsBackupPlanCreate(d *schema.ResourceData, meta interfa
 		request["InstanceName"] = v
 	}
 
+	if v, ok := d.GetOk("cross_account_type"); ok {
+		request["CrossAccountType"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_user_id"); ok {
+		request["CrossAccountUserId"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_role_name"); ok {
+		request["CrossAccountRoleName"] = v
+	}
+
 	if v, ok := d.GetOk("ots_detail"); ok {
 		otsDetails := make(map[string]interface{}, 0)
 		for _, otsdetail := range v.(*schema.Set).List() {
@@ -160,7 +189,7 @@ func resourceAlicloudHbrOtsBackupPlanCreate(d *schema.ResourceData, meta interfa
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -195,6 +224,7 @@ func resourceAlicloudHbrOtsBackupPlanRead(d *schema.ResourceData, meta interface
 		}
 		return WrapError(err)
 	}
+
 	d.Set("backup_type", object["BackupType"])
 	d.Set("ots_backup_plan_name", object["PlanName"])
 	d.Set("instance_name", object["InstanceName"])
@@ -202,6 +232,9 @@ func resourceAlicloudHbrOtsBackupPlanRead(d *schema.ResourceData, meta interface
 	d.Set("schedule", object["Schedule"])
 	d.Set("vault_id", object["VaultId"])
 	d.Set("disabled", object["Disabled"])
+	d.Set("cross_account_type", object["CrossAccountType"])
+	d.Set("cross_account_user_id", formatInt(object["CrossAccountUserId"]))
+	d.Set("cross_account_role_name", object["CrossAccountRoleName"])
 
 	otsDetails := make([]map[string]interface{}, 0)
 	if v, ok := object["OtsDetail"].(map[string]interface{}); ok {
@@ -308,7 +341,7 @@ func resourceAlicloudHbrOtsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "UpdateBackupPlan"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -354,7 +387,7 @@ func resourceAlicloudHbrOtsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 			request["SourceType"] = "OTS"
 
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
 					if NeedRetry(err) {
@@ -378,6 +411,7 @@ func resourceAlicloudHbrOtsBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	d.Partial(false)
 	return resourceAlicloudHbrOtsBackupPlanRead(d, meta)
 }
+
 func resourceAlicloudHbrOtsBackupPlanDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteBackupPlan"
@@ -395,7 +429,7 @@ func resourceAlicloudHbrOtsBackupPlanDelete(d *schema.ResourceData, meta interfa
 		request["VaultId"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {

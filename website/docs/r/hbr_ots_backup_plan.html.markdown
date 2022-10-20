@@ -23,6 +23,7 @@ Basic Usage
 variable "name" {
   default = "testAcc"
 }
+
 resource "alicloud_hbr_vault" "default" {
   vault_name = var.name
   vault_type = "OTS_BACKUP"
@@ -76,9 +77,11 @@ The following arguments are supported:
   - `interval` ISO8601 time interval. E.g: `PT1H` means one hour apart. `P1D` means one day apart.
 * `vault_id` - (Required) The ID of backup vault.
 * `instance_name` - (Optional) The name of the Table store instance. **Note:** Required while source_type equals `OTS_TABLE`.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 * `ots_detail` - (Optional) The details about the Table store instance. See the following `Block ots_detail`. **Note:** Required while source_type equals `OTS_TABLE`.
 * `rules` - (Optional,Available in v1.164.0+) The backup plan rule. See the following `Block rules`. **Note:** Required while source_type equals `OTS_TABLE`.
-
 
 ### Block ots_detail
 
@@ -97,7 +100,6 @@ The rules support the following:
 * `rule_name` - (Optional)  The name of the backup rule.**Note:** Required while source_type equals `OTS_TABLE`. `rule_name` should be unique for the specific user.
 * `backup_type` - (Optional) The name of the tableStore instance. Valid values: `COMPLETE`, `INCREMENTAL`. **Note:** Required while source_type equals `OTS_TABLE`.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: true, false.
-
 
 ## Attributes Reference
 

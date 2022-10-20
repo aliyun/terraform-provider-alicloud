@@ -138,12 +138,14 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vault_id":             "${alicloud_hbr_vault.default.id}",
-					"ots_backup_plan_name": name,
-					"backup_type":          "COMPLETE",
-					"schedule":             "I|1602673264|PT2H",
-					"retention":            "1",
-					"instance_name":        "${alicloud_ots_instance.foo.name}",
+					"vault_id":                "${alicloud_hbr_vault.default.id}",
+					"ots_backup_plan_name":    name,
+					"backup_type":             "COMPLETE",
+					"retention":               "1",
+					"instance_name":           "${alicloud_ots_instance.foo.name}",
+					"cross_account_type":      "SELF_ACCOUNT",
+					"cross_account_user_id":   "${data.alicloud_account.default.id}",
+					"cross_account_role_name": "${alicloud_ram_role.default.id}",
 					"ots_detail": []map[string]interface{}{
 						{
 							"table_names": []string{
@@ -151,14 +153,26 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 							},
 						},
 					},
+					"rules": []map[string]interface{}{
+						{
+							"schedule":    "I|1602673264|PT2H",
+							"retention":   "1",
+							"disabled":    "false",
+							"rule_name":   name,
+							"backup_type": "COMPLETE",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_type":          "COMPLETE",
-						"schedule":             "I|1602673264|PT2H",
-						"ots_backup_plan_name": name,
-						"retention":            "1",
-						"ots_detail.#":         "1",
+						"backup_type":             "COMPLETE",
+						"ots_backup_plan_name":    name,
+						"retention":               "1",
+						"cross_account_type":      "SELF_ACCOUNT",
+						"cross_account_user_id":   CHECKSET,
+						"cross_account_role_name": CHECKSET,
+						"ots_detail.#":            "1",
+						"rules.#":                 "1",
 					}),
 				),
 			},
@@ -194,11 +208,19 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"schedule": "I|1602673264|P1D",
+					"rules": []map[string]interface{}{
+						{
+							"schedule":    "I|1602673264|P1D",
+							"retention":   "1",
+							"disabled":    "false",
+							"rule_name":   name,
+							"backup_type": "COMPLETE",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"schedule": "I|1602673264|P1D",
+						"rules.#": "1",
 					}),
 				),
 			},
@@ -212,7 +234,6 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 					}),
 				),
 			},
-
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -306,6 +327,12 @@ func TestAccAlicloudHBROtsBackupPlan_basic1(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"update_paths"},
+			},
 		},
 	})
 }
@@ -314,37 +341,60 @@ var AlicloudHBROtsBackupPlanMap0 = map[string]string{}
 
 func AlicloudHBROtsBackupPlanBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-resource "alicloud_hbr_vault" "default" {
-  vault_name = var.name
-  vault_type = "OTS_BACKUP"
-}
+	variable "name" {
+		default = "%s"
+	}
 
-resource "alicloud_ots_instance" "foo" {
-  name        = var.name
-  description = var.name
-  accessed_by = "Any"
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
+	data "alicloud_account" "default" {
+	}
 
-resource "alicloud_ots_table" "basic" {
-  instance_name = alicloud_ots_instance.foo.name
-  table_name    = var.name
-  primary_key {
-    name = "pk1"
-    type = "Integer"
-  }
-  time_to_live                  = -1
-  max_version                   = 1
-  deviation_cell_version_in_sec = 1
-}
+	resource "alicloud_hbr_vault" "default" {
+  		vault_name = var.name
+		vault_type = "OTS_BACKUP"
+	}
 
+	resource "alicloud_ots_instance" "foo" {
+  		name        = var.name
+  		description = var.name
+  		accessed_by = "Any"
+  		tags = {
+    		Created = "TF"
+    		For     = "acceptance test"
+  		}
+	}
 
+	resource "alicloud_ots_table" "basic" {
+  		instance_name = alicloud_ots_instance.foo.name
+  		table_name    = var.name
+  		primary_key {
+    		name = "pk1"
+    		type = "Integer"
+		}
+  		time_to_live                  = -1
+  		max_version                   = 1
+  		deviation_cell_version_in_sec = 1
+	}
+
+	resource "alicloud_ram_role" "default" {
+  		name     = var.name
+  		document = <<EOF
+		{
+			"Statement": [
+			{
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": [
+						"crossbackup.hbr.aliyuncs.com"
+					]
+				}
+			}
+			],
+  			"Version": "1"
+		}
+  		EOF
+  		force    = true
+	}
 `, name)
 }
 
