@@ -44,19 +44,25 @@ func TestAccAlicloudHBREcsBackupPlan_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vault_id":             "${alicloud_hbr_vault.default.id}",
-					"instance_id":          "${data.alicloud_instances.default.instances.0.id}",
-					"backup_type":          "COMPLETE",
-					"schedule":             "I|1602673264|PT2H",
-					"ecs_backup_plan_name": "tf-testAcc-hbr-backup-plan",
-					"retention":            "1",
+					"vault_id":                "${alicloud_hbr_vault.default.id}",
+					"instance_id":             "${alicloud_instance.default.id}",
+					"backup_type":             "COMPLETE",
+					"schedule":                "I|1602673264|PT2H",
+					"ecs_backup_plan_name":    "tf-testAcc-hbr-backup-plan",
+					"retention":               "1",
+					"cross_account_type":      "SELF_ACCOUNT",
+					"cross_account_user_id":   "${data.alicloud_account.default.id}",
+					"cross_account_role_name": "${alicloud_ram_role.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_type":          "COMPLETE",
-						"schedule":             "I|1602673264|PT2H",
-						"ecs_backup_plan_name": "tf-testAcc-hbr-backup-plan",
-						"retention":            "1",
+						"backup_type":             "COMPLETE",
+						"schedule":                "I|1602673264|PT2H",
+						"ecs_backup_plan_name":    "tf-testAcc-hbr-backup-plan",
+						"retention":               "1",
+						"cross_account_type":      "SELF_ACCOUNT",
+						"cross_account_user_id":   CHECKSET,
+						"cross_account_role_name": CHECKSET,
 					}),
 				),
 			},
@@ -230,18 +236,70 @@ var AlicloudHBREcsBackupPlanMap0 = map[string]string{
 
 func AlicloudHBREcsBackupPlanBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_hbr_vault" "default" {
-  vault_name = "${var.name}"
-}
+	data "alicloud_zones" "default" {
+	}
 
-data "alicloud_instances" "default" {
-  name_regex = "no-deleteing-hbr-ecs-backup-plan"
-  status = "Running"
-}
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+	
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex = "^centos_6"
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	resource "alicloud_hbr_vault" "default" {
+  		vault_name = "${var.name}"
+	}
+
+	resource "alicloud_security_group" "default" {
+		vpc_id      = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+		instance_name     = var.name
+		availability_zone = data.alicloud_zones.default.zones.0.id
+		vswitch_id        = data.alicloud_vswitches.default.ids.0
+		security_groups   = [alicloud_security_group.default.id]
+		instance_type     = data.alicloud_instance_types.default.instance_types.0.id
+		image_id          = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_ram_role" "default" {
+		name     = var.name
+  		document = <<EOF
+		{
+			"Statement": [
+			{
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": [
+						"crossbackup.hbr.aliyuncs.com"
+					]
+				}
+			}
+			],
+  			"Version": "1"
+		}
+  		EOF
+  		force    = true
+	}
 `, name)
 }
 

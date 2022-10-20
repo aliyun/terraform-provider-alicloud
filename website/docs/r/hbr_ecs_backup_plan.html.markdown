@@ -74,6 +74,9 @@ The following arguments are support:
 * `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
 * `update_paths` - (Optional, Deprecated in v1.139.0+) Attribute update_paths has been deprecated in v1.139.0+, and you do not need to set it anymore.
 * `detail` - (Optional) The detail of the backup plan.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.189.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 ## Notice
 
