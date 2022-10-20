@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -806,6 +805,8 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 	d.Set("system_disk_category", disk.Category)
+	d.Set("system_disk_name", disk.DiskName)
+	d.Set("system_disk_description", disk.Description)
 	d.Set("system_disk_size", disk.Size)
 	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
 	d.Set("system_disk_storage_cluster_id", disk.StorageClusterId)
@@ -1048,40 +1049,89 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("system_disk_size") {
-		diskReq := ecs.CreateDescribeDisksRequest()
-		diskReq.InstanceId = d.Id()
-		diskReq.DiskType = "system"
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeDisks(diskReq)
-		})
+	if !d.IsNewResource() && (d.HasChange("system_disk_size") || d.HasChange("system_disk_auto_snapshot_policy_id") || d.HasChange("system_disk_name") || d.HasChange("system_disk_description")) {
+		disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), diskReq.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapError(err)
 		}
-		addDebug(diskReq.GetActionName(), raw, diskReq.RpcRequest, diskReq)
-		resp := raw.(*ecs.DescribeDisksResponse)
+		if d.HasChange("system_disk_size") {
+			instance, errDesc := ecsService.DescribeInstance(d.Id())
+			if errDesc != nil {
+				return WrapError(errDesc)
+			}
 
-		instance, errDesc := ecsService.DescribeInstance(d.Id())
-		if errDesc != nil {
-			return WrapError(errDesc)
+			request := ecs.CreateResizeDiskRequest()
+			request.NewSize = requests.NewInteger(d.Get("system_disk_size").(int))
+			if instance.Status == string(Stopped) {
+				request.Type = "offline"
+			} else {
+				request.Type = "online"
+			}
+			request.DiskId = disk["DiskId"].(string)
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.ResizeDisk(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			d.SetPartial("system_disk_size")
 		}
 
-		request := ecs.CreateResizeDiskRequest()
-		request.NewSize = requests.NewInteger(d.Get("system_disk_size").(int))
-		if instance.Status == string(Stopped) {
-			request.Type = "offline"
-		} else {
-			request.Type = "online"
+		if d.HasChange("system_disk_auto_snapshot_policy_id") {
+			action := "ApplyAutoSnapshotPolicy"
+			var response map[string]interface{}
+			request := map[string]interface{}{
+				"RegionId": client.RegionId,
+			}
+			request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+			request["diskIds"] = convertListToJsonString([]interface{}{disk["DiskId"]})
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("system_disk_auto_snapshot_policy_id")
 		}
-		request.DiskId = resp.Disks.Disk[0].DiskId
-		_, err = client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.ResizeDisk(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+		if d.HasChange("system_disk_name") || d.HasChange("system_disk_description") {
+			var response map[string]interface{}
+			modifyDiskAttributeReq := map[string]interface{}{
+				"DiskId": disk["DiskId"],
+			}
+			modifyDiskAttributeReq["DiskName"] = d.Get("system_disk_name")
+			modifyDiskAttributeReq["Description"] = d.Get("system_disk_description")
+			action := "ModifyDiskAttribute"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, modifyDiskAttributeReq, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, modifyDiskAttributeReq)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("system_disk_name")
+			d.SetPartial("system_disk_description")
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("system_disk_size")
 	}
 
 	run := false
@@ -1442,36 +1492,6 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("deployment_set_id")
 	}
 
-	if !d.IsNewResource() && d.HasChange("system_disk_auto_snapshot_policy_id") {
-		Disk, err := ecsService.DescribeEcsSystemDisk(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		action := "ApplyAutoSnapshotPolicy"
-		var response map[string]interface{}
-		request := map[string]interface{}{
-			"RegionId": client.RegionId,
-		}
-		request["autoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
-		request["diskIds"] = convertListToJsonString([]interface{}{Disk["DiskId"]})
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("system_disk_auto_snapshot_policy_id")
-	}
 	if d.HasChange("maintenance_time") || d.HasChange("maintenance_action") || d.HasChange("maintenance_notify") {
 		var response map[string]interface{}
 		action := "ModifyInstanceMaintenanceAttributes"
@@ -1580,212 +1600,6 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
-}
-
-func buildAliyunInstanceArgs(d *schema.ResourceData, meta interface{}) (*ecs.RunInstancesRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-
-	request := ecs.CreateRunInstancesRequest()
-	request.RegionId = client.RegionId
-	request.InstanceType = d.Get("instance_type").(string)
-
-	imageID := d.Get("image_id").(string)
-
-	request.ImageId = imageID
-
-	systemDiskCategory := DiskCategory(d.Get("system_disk_category").(string))
-
-	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
-		request.ZoneId = v.(string)
-	}
-
-	DiskName := d.Get("system_disk_name").(string)
-
-	Description := d.Get("system_disk_description").(string)
-
-	request.SystemDiskDiskName = DiskName
-
-	request.SystemDiskDescription = Description
-
-	request.SystemDiskPerformanceLevel = d.Get("system_disk_performance_level").(string)
-
-	request.SystemDiskCategory = string(systemDiskCategory)
-	request.SystemDiskSize = strconv.Itoa(d.Get("system_disk_size").(int))
-
-	if v, ok := d.GetOk("system_disk_auto_snapshot_policy_id"); ok && v.(string) != "" {
-		request.SystemDiskAutoSnapshotPolicyId = v.(string)
-	}
-
-	if v, ok := d.GetOk("security_groups"); ok {
-		// At present, the classic network instance does not support multi sg in runInstances
-		sgs := expandStringList(v.(*schema.Set).List())
-		if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
-			request.SecurityGroupId = sgs[0]
-		} else {
-			request.SecurityGroupIds = &sgs
-		}
-	}
-
-	if v := d.Get("instance_name").(string); v != "" {
-		request.InstanceName = v
-	}
-
-	if v := d.Get("credit_specification").(string); v != "" {
-		request.CreditSpecification = v
-	}
-
-	if v := d.Get("resource_group_id").(string); v != "" {
-		request.ResourceGroupId = v
-	}
-
-	if v := d.Get("description").(string); v != "" {
-		request.Description = v
-	}
-
-	if v := d.Get("internet_charge_type").(string); v != "" {
-		request.InternetChargeType = v
-	}
-
-	request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
-
-	if v, ok := d.GetOk("internet_max_bandwidth_in"); ok {
-		request.InternetMaxBandwidthIn = requests.NewInteger(v.(int))
-	}
-
-	if v := d.Get("host_name").(string); v != "" {
-		request.HostName = v
-	}
-
-	if v := d.Get("password").(string); v != "" {
-		request.Password = v
-	}
-
-	if v := d.Get("kms_encrypted_password").(string); v != "" {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-		if err != nil {
-			return request, WrapError(err)
-		}
-		request.Password = decryptResp
-	}
-
-	vswitchValue := d.Get("subnet_id").(string)
-	if vswitchValue == "" {
-		vswitchValue = d.Get("vswitch_id").(string)
-	}
-	if vswitchValue != "" {
-		request.VSwitchId = vswitchValue
-		if v, ok := d.GetOk("private_ip"); ok && v.(string) != "" {
-			request.PrivateIpAddress = v.(string)
-		}
-	}
-
-	if v := d.Get("instance_charge_type").(string); v != "" {
-		request.InstanceChargeType = v
-	}
-
-	if request.InstanceChargeType == string(PrePaid) {
-		if v, ok := d.GetOk("period"); ok {
-			request.Period = requests.NewInteger(v.(int))
-		}
-		request.PeriodUnit = d.Get("period_unit").(string)
-	} else {
-		if v := d.Get("spot_strategy").(string); v != "" {
-			request.SpotStrategy = v
-		}
-		if v := d.Get("spot_price_limit").(float64); v > 0 {
-			request.SpotPriceLimit = requests.NewFloat(v)
-		}
-	}
-
-	if v := d.Get("user_data").(string); v != "" {
-		_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-		if base64DecodeError == nil {
-			request.UserData = v
-		} else {
-			request.UserData = base64.StdEncoding.EncodeToString([]byte(v))
-		}
-	}
-
-	if v := d.Get("role_name").(string); v != "" {
-		request.RamRoleName = v
-	}
-
-	if v := d.Get("key_name").(string); v != "" {
-		request.KeyPairName = v
-	}
-
-	if v, ok := d.GetOk("security_enhancement_strategy"); ok {
-		request.SecurityEnhancementStrategy = v.(string)
-	}
-	if v, ok := d.GetOk("auto_release_time"); ok && v.(string) != "" {
-		request.AutoReleaseTime = v.(string)
-	}
-	request.DryRun = requests.NewBoolean(d.Get("dry_run").(bool))
-	request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
-
-	if v, ok := d.GetOk("tags"); ok && len(v.(map[string]interface{})) > 0 {
-		tags := make([]ecs.RunInstancesTag, 0)
-		for key, value := range v.(map[string]interface{}) {
-			tags = append(tags, ecs.RunInstancesTag{
-				Key:   key,
-				Value: value.(string),
-			})
-		}
-		request.Tag = &tags
-	}
-	request.ClientToken = buildClientToken(request.GetActionName())
-
-	if v, ok := d.GetOk("data_disks"); ok {
-		disks := v.([]interface{})
-		var dataDiskRequests []ecs.RunInstancesDataDisk
-		for i := range disks {
-			disk := disks[i].(map[string]interface{})
-
-			dataDiskRequest := ecs.RunInstancesDataDisk{
-				Category:           disk["category"].(string),
-				DeleteWithInstance: strconv.FormatBool(disk["delete_with_instance"].(bool)),
-				Encrypted:          strconv.FormatBool(disk["encrypted"].(bool)),
-			}
-
-			if kmsKeyId, ok := disk["kms_key_id"]; ok {
-				dataDiskRequest.KMSKeyId = kmsKeyId.(string)
-			}
-			if name, ok := disk["name"]; ok {
-				dataDiskRequest.DiskName = name.(string)
-			}
-			if snapshotId, ok := disk["snapshot_id"]; ok {
-				dataDiskRequest.SnapshotId = snapshotId.(string)
-			}
-			if description, ok := disk["description"]; ok {
-				dataDiskRequest.Description = description.(string)
-			}
-			if autoSnapshotPolicyId, ok := disk["auto_snapshot_policy_id"]; ok {
-				dataDiskRequest.AutoSnapshotPolicyId = autoSnapshotPolicyId.(string)
-			}
-			dataDiskRequest.Size = fmt.Sprintf("%d", disk["size"].(int))
-			dataDiskRequest.Category = disk["category"].(string)
-			if dataDiskRequest.Category == string(DiskEphemeralSSD) {
-				dataDiskRequest.DeleteWithInstance = ""
-			}
-			if performanceLevel, ok := disk["performance_level"]; ok && dataDiskRequest.Category == string(DiskCloudESSD) {
-				dataDiskRequest.PerformanceLevel = performanceLevel.(string)
-			}
-
-			dataDiskRequests = append(dataDiskRequests, dataDiskRequest)
-		}
-		request.DataDisk = &dataDiskRequests
-	}
-
-	if v, ok := d.GetOk("hpc_cluster_id"); ok {
-		request.HpcClusterId = v.(string)
-	}
-
-	if v, ok := d.GetOk("deployment_set_id"); ok {
-		request.DeploymentSetId = v.(string)
-	}
-
-	return request, nil
 }
 
 func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDelete bool) error {

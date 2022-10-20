@@ -808,6 +808,44 @@ func TestAccAlicloudECSInstanceVpc(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_name": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_name": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+					"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_name":        fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_name", rand),
+						"system_disk_description": fmt.Sprintf("tf-testAccEcsInstanceConfigBasic%d_system_disk_description", rand),
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
 		},
 	})
 }
