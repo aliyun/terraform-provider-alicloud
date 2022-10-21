@@ -64,10 +64,10 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 	request["BandwidthPackageId"] = d.Get("bandwidth_package_id")
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator", "GreaterThanGa.IpSetBandwidth", "BandwidthIllegal.BandwidthPackage", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -88,6 +88,7 @@ func resourceAlicloudGaBandwidthPackageAttachmentCreate(d *schema.ResourceData, 
 
 	return resourceAlicloudGaBandwidthPackageAttachmentRead(d, meta)
 }
+
 func resourceAlicloudGaBandwidthPackageAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -107,12 +108,15 @@ func resourceAlicloudGaBandwidthPackageAttachmentRead(d *schema.ResourceData, me
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("bandwidth_package_id", parts[1])
 	d.Set("accelerator_id", parts[0])
 	d.Set("accelerators", []string{parts[0]})
 	d.Set("status", object["State"])
+
 	return nil
 }
+
 func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -136,10 +140,10 @@ func resourceAlicloudGaBandwidthPackageAttachmentDelete(d *schema.ResourceData, 
 	request["AcceleratorId"] = parts[0]
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator", "BindExist.CrossDomain", "Exist.EndpointGroup", "Exist.IpSet", "BandwidthPackageCannotUnbind.HasCrossRegion", "BandwidthPackageCannotUnbind.IpSet", "BandwidthPackageCannotUnbind.EndpointGroup"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

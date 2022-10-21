@@ -25,6 +25,7 @@ resource "alicloud_ga_accelerator" "example" {
   auto_use_coupon = true
   spec            = "1"
 }
+
 resource "alicloud_ga_bandwidth_package" "example" {
   bandwidth      = 20
   type           = "Basic"
@@ -33,11 +34,11 @@ resource "alicloud_ga_bandwidth_package" "example" {
   auto_pay       = true
   ratio          = 30
 }
+
 resource "alicloud_ga_bandwidth_package_attachment" "example" {
   accelerator_id       = alicloud_ga_accelerator.example.id
   bandwidth_package_id = alicloud_ga_bandwidth_package.example.id
 }
-
 ```
 
 ## Argument Reference
@@ -64,8 +65,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Ga Bandwidth Package Attachment can be imported using the id, e.g.
+Ga Bandwidth Package Attachment can be imported using the id. Format to `<accelerator_id>:<bandwidth_package_id>`, e.g.
 
 ```
-$ terraform import alicloud_ga_bandwidth_package_attachment.example <accelerator_id>:<bandwidth_package_id>
+$ terraform import alicloud_ga_bandwidth_package_attachment.example your_accelerator_id:your_bandwidth_package_id
 ```
