@@ -63,7 +63,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `dts_job_id` - The ID of the data synchronization task in Data Transmission Service (DTS). This parameter is valid only for analytic instances.
 	* `elastic_io_resource` - The elastic io resource.
 	* `engine` - The engine of the database.
-	* `engine_version` - The engine version of the database..
+	* `engine_version` - The engine version of the database.
 	* `executor_count` - The number of nodes. The node resources are used for data computing in elastic mode.
 	* `expire_time` - The time when the cluster expires.
 	* `expired` - Indicates whether the cluster has expired.

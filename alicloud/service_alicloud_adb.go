@@ -830,3 +830,65 @@ func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, failStates []string
 		return object, object["DBClusterStatus"].(string), nil
 	}
 }
+
+func (s *AdbService) DescribeAdbDbClusterLakeVersion(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewAdsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeDBClusterAttribute"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.DBCluster", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBCluster", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DBClusterLakeVersion", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAdbDbClusterLakeVersion(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["DBClusterStatus"]) == failState {
+				return object, fmt.Sprint(object["DBClusterStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DBClusterStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["DBClusterStatus"]), nil
+	}
+}
