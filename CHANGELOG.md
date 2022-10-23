@@ -1,4 +1,27 @@
 ## 1.189.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_public_ip_address_pool_cidr_block` [GH-5509]
+- **New Resource:** `alicloud_gpdb_db_instance_plan` [GH-5522]
+- **New Resource:** `alicloud_rds_service_linked_role` [GH-5518]
+- **New Data Source:** `alicloud_gpdb_db_instance_plans` [GH-5522]
+- **New Data Source:** `alicloud_vpc_public_ip_address_pool_cidr_blocks` [GH-5509]
+
+ENHANCEMENTS:
+
+- resource/alicloud_rds_upgrade_db_instance:Repair pg major version upgrade [GH-5506]
+- resource/alicloud_ecd_policy_group: Adds new attribute recording_expires [GH-5439]
+- resource/alicloud_cms_group_metric_rule: Adds new attribute targets [GH-5539]
+- resource/alicloud_instance: Supports attribute system_disk_name, system_disk_description import and update. [GH-5534]
+- resource/alicloud_hbr_restore_job: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5504]
+- resource/alicloud_hbr_ecs_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5532]
+- resource/alicloud_hbr_ots_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5531]
+- resource/alicloud_hbr_oss_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5530]
+- resource/alicloud_hbr_nas_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5503]
+- resource/alicloud_sae_application: Support new attribute acr_instance_id, acr_assume_role_arn. [GH-5511]
+- resource/alicloud_eip_address: Added the field public_ip_address_pool_id [GH-5525]
+- provider: Supports new environment parameter ALIBABACLOUD_ACCESS_KEY_SECRET and ALIBABACLOUD_ACCESS_KEY_ID [GH-5529]
+- ci: add pipeline debug [GH-5528]
+
 ## 1.188.0 (October 15, 2022)
 
 - **New Resource:** `alicloud_message_service_queue` ([#5444](https://github.com/aliyun/terraform-provider-alicloud/issues/5444))
