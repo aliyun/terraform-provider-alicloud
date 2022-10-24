@@ -282,11 +282,91 @@ func TestAccAlicloudCmsGroupMetricRule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsGroupMetricRule_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_group_metric_rule.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudCmsGroupMetricRuleMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsGroupMetricRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCmsGroupMetricRuletf-testacc-rule-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudCmsGroupMetricRuleBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"escalations": []map[string]interface{}{
+						{
+							"critical": []map[string]interface{}{
+								{
+									"comparison_operator": "GreaterThanOrEqualToThreshold",
+									"statistics":          "Average",
+									"threshold":           "90",
+									"times":               "3",
+								},
+							},
+						},
+					},
+					"group_id":               "${alicloud_cms_monitor_group.default.id}",
+					"group_metric_rule_name": "${var.name}",
+					"category":               "ecs",
+					"metric_name":            "cpu_total",
+					"namespace":              "acs_ecs_dashboard",
+					"rule_id":                "4a9a8978-a9cc-55ca-aa7c-530ccd91ae57",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"escalations.#":          "1",
+						"group_id":               CHECKSET,
+						"group_metric_rule_name": name,
+						"category":               "ecs",
+						"metric_name":            "cpu_total",
+						"namespace":              "acs_ecs_dashboard",
+						"rule_id":                "4a9a8978-a9cc-55ca-aa7c-530ccd91ae57",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"targets": []map[string]interface{}{
+						{
+							"id":    "1",
+							"arn":   "acs:mns:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":/queues/test/message",
+							"level": "Critical",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"targets.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"category", "interval"},
+			},
+		},
+	})
+}
+
 var resourceAlicloudCmsGroupMetricRuleMap = map[string]string{
 	"contact_groups": CHECKSET,
 	"dimensions":     CHECKSET,
 	"email_subject":  CHECKSET,
-	"period":         "300",
+	"period":         "60",
 	"silence_time":   "86400",
 	"status":         CHECKSET,
 }
