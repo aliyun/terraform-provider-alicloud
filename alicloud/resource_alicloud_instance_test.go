@@ -1385,11 +1385,11 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 					"instance_type":        "${data.alicloud_instance_types.new1.instance_types.0.id}",
 					"instance_name":        "${var.name}",
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":                 REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.nano",
+						"instance_type":                 CHECKSET,
 						"user_data":                     REMOVEKEY,
 						"security_enhancement_strategy": REMOVEKEY,
 					}),
@@ -1401,7 +1401,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.small",
+						"instance_type": CHECKSET,
 					}),
 				),
 			},
@@ -1433,7 +1433,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type": REGEXMATCH + "^ecs.t5-[a-z0-9]{1,}.large",
+						"instance_type": CHECKSET,
 					}),
 				),
 			},
@@ -1714,7 +1714,7 @@ func TestAccAlicloudECSInstancSecondaryIps(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"internet_max_bandwidth_out":    "5",
 					"secondary_private_ips": []string{
-						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 191)}",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1734,8 +1734,8 @@ func TestAccAlicloudECSInstancSecondaryIps(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"secondary_private_ips": []string{
-						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 3)}",
-						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 7)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 195)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 197)}",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2426,19 +2426,18 @@ func resourceInstanceTypeConfigDependence(name string) string {
 	  most_recent = true
 	  owners      = "system"
 	}
-	resource "alicloud_vpc" "default" {
-	  name       = "${var.name}"
-	  cidr_block = "172.16.0.0/16"
+	data "alicloud_vpcs" "default"	{
+		name_regex = "default-NODELETING"
 	}
-	resource "alicloud_vswitch" "default" {
-	  vpc_id            = "${alicloud_vpc.default.id}"
-	  cidr_block        = "172.16.0.0/24"
-	  availability_zone = "${reverse(data.alicloud_zones.default.zones).1.id}"
-	  name              = "${var.name}"
+	
+	data "alicloud_vswitches" "default" {
+	  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+	  zone_id = reverse(data.alicloud_zones.default.zones).1.id
 	}
+
 	resource "alicloud_security_group" "default" {
-	  name   = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
+	  name   = var.name
+	  vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	resource "alicloud_security_group_rule" "default" {
 	  	type = "ingress"
@@ -2456,34 +2455,28 @@ func resourceInstanceTypeConfigDependence(name string) string {
 	}
 
 	data "alicloud_instance_types" "new1" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
+		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
 		cpu_core_count = 1
-		memory_size = 0.5
-		instance_type_family = "ecs.t5"
+		memory_size = 1
 	}
 
 	data "alicloud_instance_types" "new2" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
+		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
 		cpu_core_count = 1
-		memory_size = 1
-		instance_type_family = "ecs.t5"
+		memory_size = 2
 	}
 
 	data "alicloud_instance_types" "new3" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 1
-		memory_size = 2
-		instance_type_family = "ecs.t5"
+		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
+		cpu_core_count = 2
+		memory_size = 4
 	}
 
 	data "alicloud_instance_types" "new4" {
-		availability_zone = "${alicloud_vswitch.default.availability_zone}"
-		cpu_core_count = 2
-		memory_size = 4
-		instance_type_family = "ecs.t5"
+		availability_zone = reverse(data.alicloud_zones.default.zones).1.id
+		cpu_core_count = 4
+		memory_size = 8
 	}
-
-
 
 `, name)
 }
