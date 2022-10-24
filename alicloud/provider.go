@@ -770,6 +770,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bp_studio_applications":                       dataSourceAlicloudBpStudioApplications(),
 			"alicloud_cloud_sso_access_assignments":                 dataSourceAlicloudCloudSsoAccessAssignments(),
 			"alicloud_cen_transit_router_cidrs":                     dataSourceAlicloudCenTransitRouterCidrs(),
+			"alicloud_ga_basic_accelerators":                        dataSourceAlicloudGaBasicAccelerators(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1435,6 +1436,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_network_acl_attachment":                           resourceAlicloudVpcNetworkAclAttachment(),
 			"alicloud_cen_transit_router_cidr":                              resourceAlicloudCenTransitRouterCidr(),
 			"alicloud_das_switch_das_pro":                                   resourceAlicloudDasSwitchDasPro(),
+			"alicloud_ga_basic_accelerator":                                 resourceAlicloudGaBasicAccelerator(),
 		},
 
 		ConfigureFunc: providerConfigure,
