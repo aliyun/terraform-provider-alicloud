@@ -71,26 +71,6 @@ resource "alicloud_eci_container_group" "example" {
     name = "empty2"
     type = "EmptyDirVolume"
   }
-  liveness_probe {
-    period_seconds        = "5"
-    initial_delay_seconds = "5"
-    success_threshold     = "1"
-    failure_threshold     = "3"
-    timeout_seconds       = "1"
-    exec {
-      commands = ["cat /tmp/healthy"]
-    }
-  }
-  readiness_probe {
-    period_seconds        = "5"
-    initial_delay_seconds = "5"
-    success_threshold     = "1"
-    failure_threshold     = "3"
-    timeout_seconds       = "1"
-    exec {
-      commands = ["cat /tmp/healthy"]
-    }
-  }
 }
 ```
 
@@ -124,8 +104,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `acr_registry_info` - (Optional, ForceNew, Available in 1.189.0+) The ACR enterprise edition example properties.
-
+  
 #### Block volumes
 
 The volumes supports the following: 
@@ -236,75 +215,6 @@ The containers supports the following:
 * `ports` - (Optional, ForceNew) The structure of port.
 * `volume_mounts` - (Optional) The structure of volumeMounts.
 * `working_dir` - (Optional) The working directory of the container.
-* `liveness_probe` - (Optional, Available in 1.189.0+) The health check of the container.
-* `readiness_probe` - (Optional, Available in 1.189.0+) The health check of the container.
-
-#### Block liveness_probe
-
-The liveness_probe supports the following:
-
-* `period_seconds` - (Optional) Buffer time for the program to handle operations before closing.
-* `initial_delay_seconds` - (Optional) Check the time to start execution, calculated from the completion of container startup.
-* `success_threshold` - (Optional) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
-* `failure_threshold` - (Optional) Threshold for the number of checks that are determined to have failed since the last successful check (must be consecutive failures), default is 3.
-* `timeout_seconds` - (Optional) Check the timeout, the default is 1 second, the minimum is 1 second.
-* `tcp_socket` - (Optional) Health check using TCP socket method.
-* `exec` - (Optional) Health check using command line method.
-* `http_get` - (Optional) Health check using HTTP request method.
-
-#### Block liveness_probe http_get
-
-The liveness_probe http_get supports the following:
-
-* `scheme` - (Optional) The protocol type corresponding to the HTTP Get request when using the HTTP request method for health checks. Valid values: `HTTP`, `HTTPS`.
-* `port` - (Optional) When using the HTTP request method for health check, the port number for HTTP Get request detection.
-* `path` - (Optional) The path of HTTP Get request detection when setting the postStart callback function using the HTTP request method.
-
-#### Block liveness_probe tcp_socket
-
-The liveness_probe tcp_socket supports the following:
-
-* `port` - (Optional) The port for TCP socket detection when using the TCP socket method for health check.
-
-#### Block liveness_probe exec
-
-The liveness_probe exec supports the following:
-
-* `commands` - (Optional) Commands to be executed inside the container when performing health checks using the command line method.
-
-
-#### Block readiness_probe
-
-The readiness_probe supports the following:
-
-* `period_seconds` - (Optional) Buffer time for the program to handle operations before closing.
-* `initial_delay_seconds` - (Optional) Check the time to start execution, calculated from the completion of container startup.
-* `success_threshold` - (Optional) The check count threshold for re-identifying successful checks since the last failed check (must be consecutive successes), default is 1. Current must be 1.
-* `failure_threshold` - (Optional) Threshold for the number of checks that are determined to have failed since the last successful check (must be consecutive failures), default is 3.
-* `timeout_seconds` - (Optional) Check the timeout, the default is 1 second, the minimum is 1 second.
-* `tcp_socket` - (Optional) Health check using TCP socket method.
-* `exec` - (Optional) Health check using command line method.
-* `http_get` - (Optional) Health check using HTTP request method.
-
-#### Block readiness_probe http_get
-
-The readiness_probe http_get supports the following:
-
-* `scheme` - (Optional) The protocol type corresponding to the HTTP Get request when using the HTTP request method for health checks. Valid values: `HTTP`, `HTTPS`.
-* `port` - (Optional) When using the HTTP request method for health check, the port number for HTTP Get request detection.
-* `path` - (Optional) The path of HTTP Get request detection when setting the postStart callback function using the HTTP request method.
-
-#### Block readiness_probe tcp_socket
-
-The readiness_probe tcp_socket supports the following:
-
-* `port` - (Optional) The port for TCP socket detection when using the TCP socket method for health check.
-
-#### Block readiness_probe exec
-
-The readiness_probe exec supports the following:
-
-* `commands` - (Optional) Commands to be executed inside the container when performing health checks using the command line method.
 
 #### Block volume_mounts
 
@@ -339,15 +249,6 @@ The sysctls supports the following:
 
 * `name` - (Optional, ForceNew) The name of the security context that the container group runs.
 * `value` - (Optional, ForceNew) The variable value of the security context that the container group runs.
-
-#### Block acr_registry_info
-
-The acr_registry_info supports the following:
-
-* `domains` - (Optional) The domain name of the ACR Enterprise Edition instance. Defaults to all domain names of the corresponding instance. Support specifying individual domain names, multiple separated by half comma.
-* `instance_id` - (Optional) The ACR enterprise edition example ID.
-* `region_id` - (Optional) The ACR enterprise edition instance belongs to the region.
-* `instance_name` - (Optional) The name of the ACR enterprise edition instance.
 
 ## Attributes Reference
 
