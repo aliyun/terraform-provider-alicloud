@@ -24,22 +24,26 @@ func resourceAlicloudGaAcl() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"acl_entries": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'acl_entries' has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource 'alicloud_ga_acl_entry_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"entry": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"entry_description": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[A-Za-z0-9._/-]{1,256}$`), "The description of the IP entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_)."),
 						},
 					},
@@ -96,7 +100,7 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -121,6 +125,7 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 
 	return resourceAlicloudGaAclRead(d, meta)
 }
+
 func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -153,6 +158,7 @@ func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("status", object["AclStatus"])
 	return nil
 }
+
 func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -183,7 +189,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 20*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Acl"}) || NeedRetry(err) {
@@ -228,7 +234,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 20*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, removeEntriesFromAclReq, &runtime)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"StateError.Acl"}) || NeedRetry(err) {
@@ -271,7 +277,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 20*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, addEntriesToAclReq, &runtime)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"StateError.Acl"}) || NeedRetry(err) {
@@ -298,6 +304,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 	d.Partial(false)
 	return resourceAlicloudGaAclRead(d, meta)
 }
+
 func resourceAlicloudGaAclDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -318,10 +325,10 @@ func resourceAlicloudGaAclDelete(d *schema.ResourceData, meta interface{}) error
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 20*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Acl"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Acl", "AclHasBindListener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
