@@ -367,7 +367,23 @@ func resourceAlicloudLogETLUpdate(d *schema.ResourceData, meta interface{}) erro
 			if status == "STOPPING" || status == "STOPPED" {
 				return nil, slsClient.UpdateETL(parts[0], etl)
 			}
-			return nil, slsClient.RestartETL(parts[0], etl)
+			if err = slsClient.RestartETL(parts[0], etl); err != nil {
+				return nil, err
+			}
+			deadline := time.Now().Add(time.Duration(Timeout5Minute) * time.Second)
+			for {
+				time.Sleep(5 * time.Second)
+				etl, err := slsClient.GetETL(parts[0], parts[1])
+				if err != nil {
+					return nil, err
+				}
+				if etl.Status == "RUNNING" {
+					return nil, nil
+				}
+				if time.Now().After(deadline) {
+					return nil, WrapErrorf(err, WaitTimeoutMsg, d.Id(), GetFunc(1), Timeout5Minute, etl.Status, "RUNNING", ProviderERROR)
+				}
+			}
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{LogClientTimeout}) {
