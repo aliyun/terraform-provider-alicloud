@@ -34,7 +34,7 @@ resource "alicloud_ga_acl" "default" {
 
 The following arguments are supported:
 
-* `acl_entries` - (Optional) The entries of the Acl. See the following `Block acl_entries`.
+* `acl_entries` - (Optional, Computed) The entries of the Acl. See the following `Block acl_entries`. **NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`."
 * `acl_name` - (Optional) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter.
 * `address_ip_version` - (Required, ForceNew) The IP version. Valid values: `IPv4` and `IPv6`.
 * `dry_run` - (Optional) The dry run.
@@ -43,8 +43,8 @@ The following arguments are supported:
 
 The acl_entries supports the following: 
 
-* `entry` - (Optional) The IP entry that you want to add to the ACL.
-* `entry_description` - (Optional) The description of the IP entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_).
+* `entry` - (Optional, Computed) The IP entry that you want to add to the ACL.
+* `entry_description` - (Optional, Computed) The description of the IP entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_).
 
 ## Attributes Reference
 
@@ -58,8 +58,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Acl.
-* `delete` - (Defaults to 5 mins) Used when delete the Acl.
 * `update` - (Defaults to 5 mins) Used when update the Acl.
+* `delete` - (Defaults to 5 mins) Used when delete the Acl.
 
 ## Import
 

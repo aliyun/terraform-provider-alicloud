@@ -1416,6 +1416,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pool_cidr_block":                resourceAlicloudVpcPublicIpAddressPoolCidrBlock(),
 			"alicloud_gpdb_db_instance_plan":                                resourceAlicloudGpdbDbInstancePlan(),
 			"alicloud_adb_db_cluster_lake_version":                          resourceAlicloudAdbDbClusterLakeVersion(),
+			"alicloud_ga_acl_entry_attachment":                              resourceAlicloudGaAclEntryAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
