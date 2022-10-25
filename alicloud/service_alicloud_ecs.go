@@ -123,6 +123,7 @@ func (s *EcsService) DescribeInstance(id string) (instance ecs.Instance, err err
 	request := ecs.CreateDescribeInstancesRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceIds = convertListToJsonString([]interface{}{id})
+	request.AdditionalAttributes = &[]string{"META_OPTIONS"}
 
 	var response *ecs.DescribeInstancesResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)

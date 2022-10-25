@@ -479,6 +479,25 @@ func resourceAliyunInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(0, 6),
 			},
+			"http_tokens": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"optional", "required"}, false),
+			},
+			"http_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
+			},
+			"http_put_response_hop_limit": {
+				Type:         schema.TypeInt,
+				ForceNew:     true,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntBetween(1, 64),
+			},
 		},
 	}
 }
@@ -740,6 +759,18 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["DeploymentSetId"] = v
 	}
 
+	if v, ok := d.GetOk("http_tokens"); ok {
+		request["HttpTokens"] = v
+	}
+
+	if v, ok := d.GetOk("http_endpoint"); ok {
+		request["HttpEndpoint"] = v
+	}
+
+	if v, ok := d.GetOk("http_put_response_hop_limit"); ok {
+		request["HttpPutResponseHopLimit"] = v
+	}
+
 	request["IoOptimized"] = "optimized"
 	if d.Get("is_outdated").(bool) == true {
 		request["IoOptimized"] = "none"
@@ -846,8 +877,10 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	}
 	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
 	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
-
 	d.Set("spot_duration", instance.SpotDuration)
+	d.Set("http_tokens", instance.MetadataOptions.HttpTokens)
+	d.Set("http_endpoint", instance.MetadataOptions.HttpEndpoint)
+	d.Set("http_put_response_hop_limit", instance.MetadataOptions.HttpPutResponseHopLimit)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
@@ -1543,6 +1576,44 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 		d.SetPartial("maintenance_time")
 		d.SetPartial("maintenance_action")
 		d.SetPartial("maintenance_notify")
+	}
+
+	if d.HasChange("http_endpoint") || d.HasChange("http_tokens") {
+		var response map[string]interface{}
+		action := "ModifyInstanceMetadataOptions"
+		request := map[string]interface{}{
+			"RegionId":   client.RegionId,
+			"InstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("http_endpoint"); ok {
+			request["HttpEndpoint"] = v
+		} else {
+			request["HttpEndpoint"] = "enabled"
+		}
+		if v, ok := d.GetOk("http_tokens"); ok {
+			request["HttpTokens"] = v
+		}
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("http_endpoint")
+		d.SetPartial("http_tokens")
 	}
 
 	d.Partial(false)

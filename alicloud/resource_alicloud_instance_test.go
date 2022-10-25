@@ -525,7 +525,7 @@ func TestAccAlicloudECSInstanceVpc(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":                     "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -676,11 +676,11 @@ func TestAccAlicloudECSInstanceVpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip": "172.16.0.10",
+					"private_ip": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"private_ip": "172.16.0.10",
+						"private_ip": CHECKSET,
 					}),
 				),
 			},
@@ -890,7 +890,7 @@ func TestAccAlicloudECSInstancePrepaid(t *testing.T) {
 					"user_data":                     "I_am_user_data",
 					"period":                        "1",
 					"instance_charge_type":          "PrePaid",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":                     "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1020,11 +1020,11 @@ func TestAccAlicloudECSInstancePrepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"private_ip": "172.16.0.10",
+					"private_ip": "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"private_ip": "172.16.0.10",
+						"private_ip": CHECKSET,
 					}),
 				),
 			},
@@ -1237,7 +1237,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 					"user_data":                     "I_am_user_data",
 
 					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":            "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
@@ -1468,7 +1468,7 @@ func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":                 "${alicloud_vswitch.default.id}",
+					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
 					"image_id":                   "${data.alicloud_images.default.images.0.id}",
 					"availability_zone":          "${data.alicloud_instance_types.special.instance_types.0.availability_zones.0}",
 					"instance_type":              "${data.alicloud_instance_types.special.instance_types.0.id}",
@@ -1537,7 +1537,7 @@ func TestAccAlicloudECSInstanceMulti(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
 
-					"vswitch_id": "${alicloud_vswitch.default.id}",
+					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":  "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1590,7 +1590,7 @@ func TestAccAlicloudECSInstanceHpcCluster(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"hpc_cluster_id":                "${alicloud_ecs_hpc_cluster.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1631,20 +1631,20 @@ resource "alicloud_ecs_hpc_cluster" "default" {
   name          = "${var.name}"
   description   = "For Terraform Test"
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vswitch_name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+
 resource "alicloud_security_group" "default" {
   count = "2"
   name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_security_group_rule" "default" {
 	count = 2
@@ -1674,7 +1674,7 @@ resource "alicloud_kms_key" "key" {
 `, name)
 }
 
-func TestAccAlicloudECSInstancSecondaryIps(t *testing.T) {
+func TestAccAlicloudECSInstanceSecondaryIps(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1754,7 +1754,7 @@ func TestAccAlicloudECSInstancSecondaryIps(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstancSecondaryIpCount(t *testing.T) {
+func TestAccAlicloudECSInstanceSecondaryIpCount(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1838,7 +1838,7 @@ func TestAccAlicloudECSInstancSecondaryIpCount(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanc_AutoRelaseTimeUpdate(t *testing.T) {
+func TestAccAlicloudECSInstance_AutoRelaseTimeUpdate(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2093,7 +2093,7 @@ func TestAccAlicloudECSInstance_StatusUpdated(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":                     "${alicloud_ram_role.default.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2144,6 +2144,138 @@ func TestAccAlicloudECSInstance_StatusUpdated(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAlicloudECSInstanceMetadataOptions(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceMetadataOptionsDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"http_tokens":                   "optional",
+					"http_endpoint":                 "enabled",
+					"http_put_response_hop_limit":   "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":               name,
+						"http_tokens":                 "optional",
+						"http_endpoint":               "enabled",
+						"http_put_response_hop_limit": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_endpoint": "disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_endpoint": "disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_tokens": "required",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"http_tokens": "required",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"http_tokens":   "optional",
+					"http_endpoint": "enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"http_tokens":   "optional",
+						"http_endpoint": "enabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func resourceInstanceMetadataOptionsDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_zones" default {
+  available_resource_creation = "Instance"
+}
+
+data "alicloud_instance_types" "default" {
+	availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  	cpu_core_count    = 1
+	memory_size       = 2
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
+
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+variable "name" {
+	default = "%s"
+}
+
+`, name)
 }
 
 func resourceInstanceVpcDeploymentSetIDDependence(name string) string {
@@ -2247,20 +2379,19 @@ data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vswitch_name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+
 resource "alicloud_security_group" "default" {
   count = "2"
   name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_security_group_rule" "default" {
 	count = 2
@@ -2322,20 +2453,19 @@ data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
 }
-resource "alicloud_vpc" "default" {
-  vpc_name       = "${var.name}"
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
-  vpc_id            = "${alicloud_vpc.default.id}"
-  cidr_block        = "172.16.0.0/24"
-  zone_id = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-  vswitch_name              = "${var.name}"
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
+
 resource "alicloud_security_group" "default" {
   count = "2"
   name   = "${var.name}"
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_security_group_rule" "default" {
 	count = 2
@@ -2822,7 +2952,7 @@ func TestAccAlicloudECSInstanceSystemDisk(t *testing.T) {
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"instance_charge_type":          "PostPaid",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"force_delete":                  "true",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
@@ -2886,7 +3016,7 @@ func TestAccAlicloudECSInstanceMaintenance(t *testing.T) {
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"instance_charge_type":          "PostPaid",
-					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
 					"force_delete":                  "true",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
@@ -2966,22 +3096,19 @@ data "alicloud_images" "default" {
   	owners     = "system"
 }
 
-resource "alicloud_vpc" "default" {
-  	vpc_name   = var.name
-  	cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vswitch" "default" {
-  	vpc_id       = alicloud_vpc.default.id
-  	cidr_block   = "172.16.0.0/24"
-  	zone_id      = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  	vswitch_name = var.name
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
 }
 
 resource "alicloud_security_group" "default" {
   	count  = "2"
   	name   = var.name
-  	vpc_id = alicloud_vpc.default.id
+  	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "default" {
