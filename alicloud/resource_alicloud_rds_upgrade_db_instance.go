@@ -351,6 +351,12 @@ func resourceAlicloudRdsUpgradeDbInstance() *schema.Resource {
 					return d.Get("payment_type") != "PayAsYouGo"
 				},
 			},
+			"tcp_connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+			},
 		},
 	}
 }
@@ -440,7 +446,7 @@ func resourceAlicloudRdsUpgradeDbInstanceCreate(d *schema.ResourceData, meta int
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, OperationDeniedDBStatus) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -543,6 +549,11 @@ func resourceAlicloudRdsUpgradeDbInstanceRead(d *schema.ResourceData, meta inter
 		}
 		d.Set("ssl_enabled'", sslEnabled)
 	}
+	res, err := rdsService.DescribeHADiagnoseConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tcp_connection_type", res["TcpConnectionType"])
 	return nil
 }
 func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -564,6 +575,12 @@ func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta int
 	}
 	if d.HasChange("pg_hba_conf") {
 		err := rdsService.ModifyPgHbaConfig(d, "pg_hba_conf")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+	if d.HasChange("tcp_connection_type") {
+		err := rdsService.ModifyHADiagnoseConfig(d, "tcp_connection_type")
 		if err != nil {
 			return WrapError(err)
 		}

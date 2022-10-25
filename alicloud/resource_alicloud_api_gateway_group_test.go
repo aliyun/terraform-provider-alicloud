@@ -177,6 +177,57 @@ func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccAlicloudApigatewayGroup_basic01(t *testing.T) {
+	var v *cloudapi.DescribeApiGroupResponse
+
+	resourceId := "alicloud_api_gateway_group.default"
+	ra := resourceAttrInit(resourceId, apigatewayGroupBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccGroup_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayGroupConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${var.name}",
+					"description": "${var.description}",
+					"instance_id": "api-shared-vpc-001",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        name,
+						"description": "tf_testAcc api gateway description",
+						"instance_id": "api-shared-vpc-001",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAlicloudApigatewayGroup_multi(t *testing.T) {
 	var v *cloudapi.DescribeApiGroupResponse
 	resourceId := "alicloud_api_gateway_group.default.9"

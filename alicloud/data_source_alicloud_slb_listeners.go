@@ -207,6 +207,10 @@ func dataSourceAlicloudSlbListeners() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"proxy_protocol_v2_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -388,6 +392,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
 			mapping["health_check_interval"] = response.HealthCheckInterval
 			mapping["health_check_http_code"] = response.HealthCheckHttpCode
+			mapping["proxy_protocol_v2_enabled"] = response.ProxyProtocolV2Enabled
 		case Udp:
 			request := slb.CreateDescribeLoadBalancerUDPListenerAttributeRequest()
 			request.LoadBalancerId = loadBalancerId
@@ -413,6 +418,7 @@ func slbListenersDescriptionAttributes(d *schema.ResourceData, listeners []slb.L
 			mapping["healthy_threshold"] = response.HealthyThreshold
 			mapping["unhealthy_threshold"] = response.UnhealthyThreshold
 			mapping["health_check_interval"] = response.HealthCheckInterval
+			mapping["proxy_protocol_v2_enabled"] = response.ProxyProtocolV2Enabled
 		}
 
 		ids = append(ids, strconv.Itoa(listener.ListenerPort))

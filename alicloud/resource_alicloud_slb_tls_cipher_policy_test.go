@@ -224,7 +224,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudSLBTlsCipherPolicy_unit(t *testing.T) {
+func TestUnitAlicloudSLBTlsCipherPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_slb_tls_cipher_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_slb_tls_cipher_policy"].Schema).Data(nil, nil)

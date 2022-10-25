@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -66,9 +68,24 @@ func resourceAliyunEssAlbServerGroupAttachmentCreate(d *schema.ResourceData, met
 		Weight:           strconv.Itoa(formatInt(d.Get("weight"))),
 	})
 	request.AlbServerGroup = &attachScalingGroupAlbServerGroups
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.AttachAlbServerGroups(request)
+	wait := incrementalWait(1*time.Second, 2*time.Second)
+
+	var raw interface{}
+	var err error
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.AttachAlbServerGroups(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

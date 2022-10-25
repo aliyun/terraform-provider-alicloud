@@ -172,6 +172,13 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
 			},
+			"eip_bind_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
+			},
 		},
 	}
 }
@@ -229,6 +236,9 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 		request["NetworkType"] = v
 	}
 	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("eip_bind_mode"); ok {
+		request["EipBindMode"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -257,6 +267,7 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudNatGatewayUpdate(d, meta)
 }
+
 func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -284,6 +295,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("payment_type", convertNatGatewayPaymentTypeResponse(object["InstanceChargeType"].(string)))
 	d.Set("instance_charge_type", object["InstanceChargeType"])
 	d.Set("network_type", object["NetworkType"])
+	d.Set("eip_bind_mode", object["EipBindMode"])
 	//if object["InstanceChargeType"] == "PrePaid" {
 	//	period, err := computePeriodByUnit(object["CreationTime"], object["ExpiredTime"], d.Get("period").(int), "Month")
 	//	if err != nil {
@@ -311,6 +323,7 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("deletion_protection", object["DeletionProtection"])
 	return nil
 }
+
 func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -487,6 +500,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 	d.Partial(false)
 	return resourceAlicloudNatGatewayRead(d, meta)
 }
+
 func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
 		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_nat_gateway. Terraform will remove this resource from the state file, however resources may remain.")
@@ -533,6 +547,7 @@ func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	return nil
 }
+
 func convertNatGatewayPaymentTypeRequest(source string) string {
 	switch source {
 	case "PayAsYouGo":

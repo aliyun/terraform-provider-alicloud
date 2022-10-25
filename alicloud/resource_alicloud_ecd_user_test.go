@@ -182,7 +182,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudECDUser_unit(t *testing.T) {
+func TestUnitAlicloudECDUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecd_user"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecd_user"].Schema).Data(nil, nil)

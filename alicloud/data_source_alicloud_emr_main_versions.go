@@ -131,14 +131,22 @@ func dataSourceAlicloudEmrMainVersionsRead(d *schema.ResourceData, meta interfac
 				}
 				if len(filter) == 0 {
 					for _, v := range source {
-						result = append(result, fmt.Sprint(v.(map[string]interface{})["ClusterType"]))
+						clusterType := fmt.Sprint(v.(map[string]interface{})["ClusterType"])
+						if "CLICKHOUSE" == clusterType { // emr cluster 'CLICKHOUSE' not supported, ignore it.
+							continue
+						}
+						result = append(result, clusterType)
 					}
 					return
 				}
 
 				sourceMapping := make(map[string]bool, 0)
 				for _, v := range source {
-					sourceMapping[fmt.Sprint(v.(map[string]interface{})["ClusterType"])] = true
+					clusterType := fmt.Sprint(v.(map[string]interface{})["ClusterType"])
+					if "CLICKHOUSE" == clusterType { // emr cluster 'CLICKHOUSE' not supported, ignore it.
+						continue
+					}
+					sourceMapping[clusterType] = true
 				}
 
 				for _, f := range filter {

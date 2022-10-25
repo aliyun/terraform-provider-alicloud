@@ -61,6 +61,8 @@ const (
 	BALANCE_POLICY        = "BALANCE"
 
 	UpgradeClusterTimeout = 30 * time.Minute
+
+	IdMsgWithTask = IdMsg + "TaskInfo: %s" // wait for async task info
 )
 
 var (
@@ -198,6 +200,63 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CsKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+
+// DescribeClusterKubeConfig return cluster kube_config credential.
+// It's used for kubernetes/managed_kubernetes/serverless_kubernetes.
+// Deprecated, use CsClient.DescribeClusterKubeConfigWithExpiration
+func (s *CsService) DescribeClusterKubeConfig(clusterId string, isResource bool) (*cs.ClusterConfig, error) {
+	invoker := NewInvoker()
+	var response interface{}
+	var requestInfo *cs.Client
+	var config *cs.ClusterConfig
+	if err := invoker.Run(func() error {
+		raw, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+			requestInfo = csClient
+			return csClient.DescribeClusterUserConfig(clusterId, false)
+		})
+		response = raw
+		return err
+	}); err != nil {
+		if isResource {
+			return nil, WrapErrorf(err, DefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
+		}
+		return nil, WrapErrorf(err, DataDefaultErrorMsg, clusterId, "DescribeClusterUserConfig", DenverdinoAliyungo)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["Id"] = clusterId
+		addDebug("DescribeClusterUserConfig", response, requestInfo, requestMap)
+	}
+	config, _ = response.(*cs.ClusterConfig)
+	return config, nil
+}
+
+// DescribeClusterKubeConfigWithExpiration return cluster kube_config credential with expiration time.
+// It's used for kubernetes/managed_kubernetes/serverless_kubernetes.
+func (s *CsClient) DescribeClusterKubeConfigWithExpiration(clusterId string, temporaryDurationMinutes int64) (*client.DescribeClusterUserKubeconfigResponseBody, error) {
+	if clusterId == "" {
+		return nil, WrapError(fmt.Errorf("clusterid is empty"))
+	}
+
+	request := &client.DescribeClusterUserKubeconfigRequest{
+		PrivateIpAddress: tea.Bool(false),
+	}
+	if temporaryDurationMinutes > 0 {
+		request.TemporaryDurationMinutes = tea.Int64(temporaryDurationMinutes)
+	}
+	kubeConfig, err := s.client.DescribeClusterUserKubeconfig(tea.String(clusterId), request)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		addDebug("DescribeClusterUserConfig", kubeConfig, request, requestMap)
+	}
+
+	return kubeConfig.Body, nil
 }
 
 // This function returns the latest addon status information
@@ -956,4 +1015,33 @@ func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutosca
 	}
 
 	return request, nil
+}
+
+func (s *CsClient) DescribeTaskInfo(taskId string) string {
+	if taskId == "" {
+		return ""
+	}
+	resp, err := s.client.DescribeTaskInfo(tea.String(taskId))
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("[TASK FAILED!!!]\nDetails: %++v", resp.Body.GoString())
+}
+
+func (s *CsClient) ModifyNodePoolNodeConfig(clusterId, nodepoolId string, request *client.ModifyNodePoolNodeConfigRequest) (interface{}, error) {
+	log.Printf("[DEBUG] modifyNodePoolKubeletRequest %++v", *request)
+
+	resp, err := s.client.ModifyNodePoolNodeConfig(tea.String(clusterId), tea.String(nodepoolId), request)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = clusterId
+		requestMap["NodePoolId"] = nodepoolId
+		requestMap["Args"] = request
+		addDebug("ModifyNodePoolKubeletConfig", resp, requestMap)
+	}
+	return resp, err
 }

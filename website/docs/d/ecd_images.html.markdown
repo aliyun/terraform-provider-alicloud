@@ -86,6 +86,8 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Image name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the image. Valid values: `Creating`, `Available`, `CreateFailed`.
+* `os_type` - (Optional, ForceNew, Available in 1.170.0+) The operating system type of the image. Valid values: `Windows` and `Linux`.
+* `desktop_instance_type` - (Optional, ForceNew, Available in 1.170.0+) The desktop type of the image.
 
 ## Argument Reference
 

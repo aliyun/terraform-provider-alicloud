@@ -99,7 +99,7 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
 `, name)
 }
 
-func TestAccAlicloudCloudStorageGatewayGatewaySMBUser_unit(t *testing.T) {
+func TestUnitAlicloudCloudStorageGatewayGatewaySMBUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_smb_user"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_smb_user"].Schema).Data(nil, nil)

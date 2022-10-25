@@ -342,9 +342,12 @@ func dataSourceAlicloudHbrBackupJobsRead(d *schema.ResourceData, meta interface{
 		}
 		otsDetails := make([]map[string]interface{}, 0)
 		if v, ok := object["OtsDetail"].(map[string]interface{}); ok {
-			otsDetail := make(map[string]interface{}, 0)
-			otsDetail["table_names"] = v["TableNames"].(map[string]interface{})["TableName"]
-			otsDetails = append(otsDetails, otsDetail)
+			if tableNames, ok := v["TableNames"]; ok {
+				tableNamesArg := tableNames.(map[string]interface{})
+				otsDetails = append(otsDetails, map[string]interface{}{
+					"table_names": tableNamesArg["TableName"],
+				})
+			}
 		}
 		mapping["ots_detail"] = otsDetails
 		ids = append(ids, fmt.Sprint(mapping["id"]))

@@ -675,7 +675,7 @@ data "alicloud_config_aggregators" "default" {}
 `, name)
 }
 
-func TestAccAlicloudConfigAggregateConfigRule_unit(t *testing.T) {
+func TestUnitAlicloudConfigAggregateConfigRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregate_config_rule"].Schema).Data(nil, nil)

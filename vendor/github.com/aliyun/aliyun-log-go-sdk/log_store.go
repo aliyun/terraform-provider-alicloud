@@ -26,9 +26,11 @@ type LogStore struct {
 	WebTracking   bool   `json:"enable_tracking"`
 	AutoSplit     bool   `json:"autoSplit"`
 	MaxSplitShard int    `json:"maxSplitShard"`
+
 	AppendMeta    bool   `json:"appendMeta"`
 	TelemetryType string `json:"telemetryType"`
 	HotTTL        uint32 `json:"hot_ttl,omitempty"`
+	Mode          string `json:"mode,omitempty"` // "lite" or "standard"(default), can't be modified after creation
 
 	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`

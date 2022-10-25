@@ -235,6 +235,10 @@ func resourceAlicloudRdsAccountRead(d *schema.ResourceData, meta interface{}) er
 func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
+	conn, err := client.NewRdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -257,12 +261,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if update {
-
 		action := "ModifyAccountDescription"
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -309,12 +308,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		resetAccountPasswordReq["AccountPassword"] = decryptResp
 	}
 	if update {
-
 		action := "ResetAccountPassword"
-		conn, err := client.NewRdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, resetAccountPasswordReq, &util.RuntimeOptions{})

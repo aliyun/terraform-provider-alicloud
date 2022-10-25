@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_key\_pairs
 
--> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_key_pairs](https://www.terraform.io/docs/providers/alicloud/d/ecs_key_pairs.html) from version 1.121.0.
+-> **DEPRECATED:** This datasource has been renamed to [alicloud_ecs_key_pairs](https://www.terraform.io/docs/providers/alicloud/d/ecs_key_pairs) from version 1.121.0.
 
 This data source provides a list of key pairs in an Alibaba Cloud account according to the specified filters.
 

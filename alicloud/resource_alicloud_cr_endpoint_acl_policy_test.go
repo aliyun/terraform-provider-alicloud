@@ -84,7 +84,7 @@ data "alicloud_cr_endpoint_acl_service" "default" {
 `, name)
 }
 
-func TestAccAlicloudCREndpointAclPolicy_unit(t *testing.T) {
+func TestUnitAlicloudCREndpointAclPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cr_endpoint_acl_policy"].Schema).Data(nil, nil)
@@ -117,6 +117,7 @@ func TestAccAlicloudCREndpointAclPolicy_unit(t *testing.T) {
 				"InstanceId":   "instance_id",
 			},
 		},
+		"IsSuccess": "true",
 	}
 
 	responseMock := map[string]func(errorCode string) (map[string]interface{}, error){

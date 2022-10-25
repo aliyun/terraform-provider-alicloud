@@ -30,7 +30,7 @@ vars-pipeline*
 vars-publish*
 develop*
 !vendor/github.com/valyala/**/*.pem
-
+task-config
 website/vendor
 
 # Test exclusions

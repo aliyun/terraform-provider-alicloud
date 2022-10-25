@@ -59,6 +59,8 @@ The following attributes are exported in addition to the arguments listed above:
 * `meshes` - A list of Service Mesh Service Meshes. Each element contains the following attributes:
     * `clusters` - Cluster List.
     * `create_time` - The created time of the resource.
+    * `istio_operator_version` - The Istio Operator Version. **Note:** the `istio_operator_version` is available from the version v1.170.0.
+    * `sidecar_version` - The SideCar Version. **Note:** the `sidecar_version` is available from the version v1.170.0.
     * `endpoints` - The endpoint details.
         * `intranet_api_server_endpoint` - The internal address of the API Server.
         * `intranet_pilot_endpoint` - The internal address of the Istio Pilot.
@@ -74,6 +76,11 @@ The following attributes are exported in addition to the arguments listed above:
         * `pilot_public_loadbalancer_id` - The IP address of a public network exposure Istio Pilot corresponds to the Load Balance.
     * `mesh_config` - The configuration of the Service grid.
         * `access_log` - The configuration of the access logging.
+            * `enabled` - Whether to enable of the access logging. Valid values: `true` and `false`.
+            * `project` - The SLS Project of the access logging.
+        * `control_plane_log` - The configuration of the control plane logging. **NOTE:** Available in 1.174.0+
+            * `enabled` - Whether to enable of the control plane logging. Valid values: `true` and `false`.
+            * `project` - The SLS Project of the control plane logging.            
         * `customized_zipkin` - Whether or not to enable the use of a custom zipkin.
         * `enable_locality_lb` - Whether to enable service can access the service through the nearest node access.
         * `tracing` - Whether to enable link trace.

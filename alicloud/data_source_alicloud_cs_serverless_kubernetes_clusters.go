@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -34,6 +37,10 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 				Default:  false,
 			},
 			"output_file": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"kube_config_file_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -106,7 +113,8 @@ func dataSourceAlicloudCSServerlessKubernetesClusters() *schema.Resource {
 							Type:     schema.TypeMap,
 							Optional: true,
 							Computed: true,
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -195,7 +203,19 @@ func dataSourceAlicloudCSServerlessKubernetesClustersRead(d *schema.ResourceData
 
 func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusters []*cs.ServerlessClusterResponse, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
 	csService := CsService{client}
+	csClient := CsClient{roaClient}
+	invoker := NewInvoker()
+
+	detailEnabled := false
+	if v, ok := d.GetOk("enable_details"); ok {
+		detailEnabled = v.(bool)
+	}
 
 	var ids, names []string
 	var s []map[string]interface{}
@@ -205,7 +225,7 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 			"name": ct.Name,
 		}
 
-		if detailedEnabled, ok := d.GetOk("enable_details"); ok && !detailedEnabled.(bool) {
+		if !detailEnabled {
 			ids = append(ids, ct.ClusterId)
 			names = append(names, ct.Name)
 			s = append(s, mapping)
@@ -219,9 +239,6 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		mapping["tags"] = csService.tagsToMap(ct.Tags)
 		//set default value
 		mapping["endpoint_public_access_enabled"] = false
-
-		invoker := NewInvoker()
-		client := meta.(*connectivity.AliyunClient)
 
 		var response interface{}
 		if err := invoker.Run(func() error {
@@ -266,6 +283,20 @@ func csServerlessKubernetesClusterDescriptionAttributes(d *schema.ResourceData, 
 		ids = append(ids, ct.ClusterId)
 		names = append(names, ct.Name)
 		s = append(s, mapping)
+
+		// kube_config
+		if ct.State == "failed" {
+			continue
+		}
+		if v, ok := d.GetOk("kube_config_file_prefix"); ok && v.(string) != "" {
+			filePath := fmt.Sprintf("%s-%s-kubeconfig", v.(string), ct.ClusterId)
+			kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(ct.ClusterId, 0)
+			if err != nil {
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_serverless_kubernetes_clusters", "DescribeClusterKubeConfigWithExpiration", AlibabaCloudSdkGoERROR)
+			}
+			writeToFile(filePath, tea.StringValue(kubeConfig.Config))
+		}
+
 	}
 
 	_ = d.Set("ids", ids)

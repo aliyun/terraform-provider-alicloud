@@ -111,7 +111,7 @@ func TestAccAlicloudDMSEnterpriseUser_basic(t *testing.T) {
 	resourceId := "alicloud_dms_enterprise_user.default"
 	ra := resourceAttrInit(resourceId, DmsEnterpriseUserMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Dms_enterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &DmsEnterpriseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDmsEnterpriseUser")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -239,7 +239,7 @@ func DmsEnterpriseUserBasicdependence(name string) string {
 	}`, name)
 }
 
-func TestAccAlicloudDMSEnterpriseUser_unit(t *testing.T) {
+func TestUnitAlicloudDMSEnterpriseUser(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_dms_enterprise_user"].Schema).Data(nil, nil)

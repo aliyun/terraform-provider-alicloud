@@ -61,3 +61,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `office_site_id` - The ID of office site.
 	* `office_site_name` - The name of office site.
 	* `status` - The status of network package. Valid values: `Creating`, `InUse`, `Releasing`,`Released`.
+	* `eip_addresses` - The public IP address list of the network packet.

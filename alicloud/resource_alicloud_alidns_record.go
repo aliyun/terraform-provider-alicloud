@@ -25,6 +25,7 @@ func resourceAlicloudAlidnsRecord() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(4 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
 			Delete: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -114,12 +115,12 @@ func resourceAlicloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}
 	}
 	request.Value = d.Get("value").(string)
 	wait := incrementalWait(3*time.Second, 10*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.AddDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError", "LastOperationNotFinished"}) {
+			if IsExpectedErrors(err, []string{"InternalError", "LastOperationNotFinished"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -136,6 +137,7 @@ func resourceAlicloudAlidnsRecordCreate(d *schema.ResourceData, meta interface{}
 
 	return resourceAlicloudAlidnsRecordUpdate(d, meta)
 }
+
 func resourceAlicloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alidnsService := AlidnsService{client}
@@ -157,8 +159,10 @@ func resourceAlicloudAlidnsRecordRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("ttl", object.TTL)
 	d.Set("type", object.Type)
 	d.Set("value", object.Value)
+
 	return nil
 }
+
 func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	d.Partial(true)
@@ -179,10 +183,21 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 	}
 	request.UserClientIp = d.Get("user_client_ip").(string)
 	if update {
-		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
-			return alidnsClient.SetDomainRecordStatus(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
+				return alidnsClient.SetDomainRecordStatus(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"LastOperationNotFinished"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw)
+			return nil
 		})
-		addDebug(request.GetActionName(), raw)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -256,8 +271,10 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("ttl")
 	}
 	d.Partial(false)
+
 	return resourceAlicloudAlidnsRecordRead(d, meta)
 }
+
 func resourceAlicloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := alidns.CreateDeleteDomainRecordRequest()
@@ -269,12 +286,12 @@ func resourceAlicloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}
 		request.UserClientIp = v.(string)
 	}
 	wait := incrementalWait(3*time.Second, 10*time.Second)
-	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithAlidnsClient(func(alidnsClient *alidns.Client) (interface{}, error) {
 			return alidnsClient.DeleteDomainRecord(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalError", "RecordForbidden.DNSChange"}) {
+			if IsExpectedErrors(err, []string{"InternalError", "RecordForbidden.DNSChange", "LastOperationNotFinished"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -289,5 +306,6 @@ func resourceAlicloudAlidnsRecordDelete(d *schema.ResourceData, meta interface{}
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

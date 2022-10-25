@@ -48,7 +48,7 @@ The following arguments are supported:
   - Enabled (default value)
   - PendingDeletion
   
-* `origin` - (Optional, ForceNew) The source of key material. Valid values: 
+* `origin` - (Optional, ForceNew, Computed) The source of key material. Valid values: 
   - Aliyun_KMS (default value)
   - EXTERNAL
   **NOTE**: The value of this parameter is case-sensitive. If you set the `key_spec` to an asymmetric CMK type, 
@@ -57,7 +57,8 @@ The following arguments are supported:
     
 * `pending_window_in_days` - (Optional) The number of days before the CMK is deleted. 
   During this period, the CMK is in the PendingDeletion state. 
-  After this period ends, you cannot cancel the deletion. Valid values: 7 to 30. Unit: days.
+  After this period ends, you cannot cancel the deletion. Valid values: 7 to 366. Unit: days.
+  **NOTE:** From version 1.184.0, `pending_window_in_days` can be set to `366`.
 * `protection_level` - (Optional, ForceNew) The protection level of the CMK. Valid values:
   - SOFTWARE (default value)
   - HSM
@@ -73,6 +74,7 @@ The following arguments are supported:
                                            
 -> **NOTE:** When the pre-deletion days elapses, the key is permanently deleted and cannot be recovered.
 
+* `dkms_instance_id` - (Optional, ForceNew, Available in v1.183.0+) The instance ID of the exclusive KMS instance.
 
 ## Attributes Reference
 

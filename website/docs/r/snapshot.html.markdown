@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_snapshot
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_snapshot](https://www.terraform.io/docs/providers/alicloud/r/ecs_snapshot.html) from version 1.120.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_snapshot](https://www.terraform.io/docs/providers/alicloud/r/ecs_snapshot) from version 1.120.0.
 
 Provides an ECS snapshot resource.
 

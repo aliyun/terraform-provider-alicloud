@@ -17,10 +17,42 @@ func TestAccAlicloudCSKubernetesVersionDataSource(t *testing.T) {
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
+				Config: dataSourceCSManagedKubernetesVersion(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metadata.0.version":           CHECKSET,
+						"metadata.0.runtime.0.name":    CHECKSET,
+						"metadata.0.runtime.0.version": CHECKSET,
+					}),
+				),
+			},
+			{
 				Config: dataSourceCSKubernetesVersion(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"metadata": CHECKSET,
+						"metadata.0.version":           CHECKSET,
+						"metadata.0.runtime.0.name":    CHECKSET,
+						"metadata.0.runtime.0.version": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: dataSourceCSServerlessKubernetesVersion(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metadata.0.version":           CHECKSET,
+						"metadata.0.runtime.0.name":    CHECKSET,
+						"metadata.0.runtime.0.version": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: dataSourceCSEdgeKubernetesVersion(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metadata.0.version":           CHECKSET,
+						"metadata.0.runtime.0.name":    CHECKSET,
+						"metadata.0.runtime.0.version": CHECKSET,
 					}),
 				),
 			},
@@ -28,13 +60,42 @@ func TestAccAlicloudCSKubernetesVersionDataSource(t *testing.T) {
 	})
 }
 
-func dataSourceCSKubernetesVersion() string {
+func dataSourceCSManagedKubernetesVersion() string {
 	return fmt.Sprintf(`
-# return all kubernetes version
+# managed kubernetes version
 data "alicloud_cs_kubernetes_version" "default" {
   cluster_type = "ManagedKubernetes"
-  kubernetes_version = "1.22.3-aliyun.1"
   profile = "Default"
+}
+`)
+}
+
+func dataSourceCSKubernetesVersion() string {
+	return fmt.Sprintf(`
+# kubernetes version
+data "alicloud_cs_kubernetes_version" "default" {
+  cluster_type = "Kubernetes"
+  profile = "Default"
+}
+`)
+}
+
+func dataSourceCSServerlessKubernetesVersion() string {
+	return fmt.Sprintf(`
+# serverless kubernetes version
+data "alicloud_cs_kubernetes_version" "default" {
+  cluster_type = "ManagedKubernetes"
+  profile = "Serverless"
+}
+`)
+}
+
+func dataSourceCSEdgeKubernetesVersion() string {
+	return fmt.Sprintf(`
+# edge kubernetes version
+data "alicloud_cs_kubernetes_version" "default" {
+  cluster_type = "ManagedKubernetes"
+  profile = "Edge"
 }
 `)
 }

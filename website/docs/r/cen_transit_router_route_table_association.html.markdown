@@ -65,11 +65,11 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id            = alicloud_cen_instance.default.id
   transit_router_id = alicloud_cen_transit_router.default.transit_router_id
   vpc_id            = alicloud_vpc.default.id
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
     vswitch_id = alicloud_vswitch.default_master.id
   }
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.slave_zones.0
     vswitch_id = alicloud_vswitch.default_slave.id
   }

@@ -1,0 +1,140 @@
+syntax = "proto2";
+package otsprotocol;
+
+enum DeliveryTaskType {
+    BASE = 0;
+    INC = 1;
+    BASE_INC = 2;
+}
+
+message CreateDeliveryTaskRequest {
+    optional string tableName = 1;
+    optional string taskName = 2;
+    optional OSSTaskConfig taskConfig = 3;
+    optional DeliveryTaskType taskType = 4;
+}
+
+message OSSTaskConfig {
+    optional string ossPrefix = 1;
+    optional TimeFormatter formatter = 2;
+    optional string ossDirtyPrefix = 3;
+    optional string ossBucket = 4;
+    optional string ossEndpoint = 5;
+    optional string ossStsRole = 6;
+    optional EventColumn eventTimeColumn = 7;
+    optional Format format = 8;
+    repeated ParquetSchema schema = 11;
+}
+
+message CreateDeliveryTaskResponse {}
+
+message DeleteDeliveryTaskRequest {
+    optional string tableName = 1;
+    optional string taskName = 2;
+}
+
+message DeleteDeliveryTaskResponse {}
+
+message DescribeDeliveryTaskRequest {
+    optional string tableName = 1;
+    optional string taskName = 2;
+}
+
+message DescribeDeliveryTaskResponse {
+    optional OSSTaskConfig taskConfig = 1;
+    optional TaskSyncStat task_sync_stat = 2;
+    optional DeliveryTaskType taskType = 3;
+}
+
+message TaskSyncStat {
+    enum TaskSyncPhase {
+        INIT = 0;
+        FULL = 1;
+        INCR = 2;
+    }
+    optional TaskSyncPhase task_sync_phase = 1;
+    optional int64 current_sync_timestamp = 2; // 同步进度，参考TunnelService。
+    optional ErrorType error_code = 3; // UnAuthorized/InvalidOssBucket...
+    optional string detail = 4;
+}
+
+message UpdateDeliveryTaskRequest {
+    optional string table = 1;
+    optional string taskName = 2;
+    optional OSSTaskConfig taskConfig = 5;
+}
+
+message UpdateDeliveryTaskResponse {}
+
+message ListDeliveryTaskRequest {
+    optional string tableName = 1;
+}
+
+message ListDeliveryTaskResponse {
+    repeated DeliveryTaskInfo tasks = 1;
+}
+
+message DeliveryTaskInfo {
+    optional string tableName = 1;
+    optional string taskName = 2;
+    optional DeliveryTaskType taskType = 3;
+}
+
+message EventColumn {
+    optional string columnName = 1;
+    enum eventTimeFormat{
+        RFC822 = 1;
+        RFC850 = 2;
+        RFC1123 = 3;
+        RFC3339 = 4;
+        Unix    = 5;
+    }
+    optional eventTimeFormat timeFormat = 2;
+}
+
+enum Format {
+    Parquet = 0;
+}
+
+enum Encoding {
+    PLAIN = 0;
+    PLAIN_DICTIONARY = 1;
+    DELTA_BINARY_PACKED = 2;
+    DELTA_BYTE_ARRAY = 3;
+    DELTA_LENGTH_BYTE_ARRAY = 4;
+}
+
+enum TimeFormatter {
+    YDMFormatter = 0;
+}
+
+enum ErrorType {
+    UNAUTHORIZED = 1;
+    INVALID_OSS_BUCKET = 2;
+}
+
+message ParquetSchema {
+    enum DataType {
+        BOOL = 0;
+        INT64 = 1;
+        UTF8 = 2;
+        DOUBLE = 3;
+        DATE = 4;
+        DECIMAL = 5;
+        TIME_MILLIS = 6;
+        TIME_MICROS = 7;
+        TIMESTAMP_MILLIS = 8;
+        TIMESTAMP_MICROS = 9;
+        LIST = 10;
+        MAP = 11;
+        INTERVAL = 12;
+        FLOAT = 13;
+        INT32 = 14;
+        INT96 = 15;
+    }
+    optional string columnName = 1;
+    optional string ossColumnName = 2;
+    optional DataType type = 3; // parquet logical type
+    optional Encoding encode = 4;
+    optional string typeExtend = 5;
+}

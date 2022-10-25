@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -271,7 +272,38 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Default:  false,
 			},
 			"tags": tagsSchema(),
-
+			"babelfish_config": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"babelfish_enabled": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"migration_mode": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"single-db", "multi-db"}, false),
+						},
+						"master_username": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"master_user_password": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"babelfish_port": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"maintain_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -459,6 +491,24 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"tcp_connection_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+			},
 		},
 	}
 }
@@ -518,6 +568,13 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("deletion_protection") && d.Get("instance_charge_type") == string(Postpaid) {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if d.HasChange("tcp_connection_type") {
+		err := rdsService.ModifyHADiagnoseConfig(d, "tcp_connection_type")
 		if err != nil {
 			return WrapError(err)
 		}
@@ -945,6 +1002,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("connection_string_prefix") {
 		connectUpdate = true
 	}
+	if d.HasChange("babelfish_port") {
+		connectUpdate = true
+	}
 	if connectUpdate {
 		instance, err := rdsService.DescribeDBInstance(d.Id())
 		if err != nil {
@@ -961,6 +1021,10 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if v, ok := d.GetOk("connection_string_prefix"); ok && v != connectionStringPrefix {
 			connectRequest["ConnectionStringPrefix"] = v
 		}
+		if v, ok := d.GetOk("babelfish_port"); ok {
+			connectRequest["BabelfishPort"] = v
+		}
+
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -982,7 +1046,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("port")
 		d.SetPartial("connection_string")
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1338,6 +1402,8 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	d.Set("deletion_protection", instance["DeletionProtection"])
+	d.Set("vpc_id", instance["VpcId"])
+	d.Set("category", instance["Category"])
 	slaveZones := instance["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
 	if len(slaveZones) == 2 {
 		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
@@ -1407,6 +1473,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_ids", groups)
 	}
 
+	connection, err := rdsService.DescribeDBConnection(d.Id() + ":" + d.Get("connection_string_prefix").(string))
+	if err != nil {
+		return WrapError(err)
+	}
+	if connection["BabelfishPort"] != nil {
+		d.Set("babelfish_port", connection["BabelfishPort"])
+	}
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
@@ -1434,6 +1507,13 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("ha_config", res["HAConfig"])
 	d.Set("manual_ha_time", res["ManualHATime"])
+
+	res, err = rdsService.DescribeHADiagnoseConfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tcp_connection_type", res["TcpConnectionType"])
+
 	return nil
 }
 
@@ -1523,38 +1603,41 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["ZoneId"] = Trim(zone.(string))
 	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
 
 	request["InstanceNetworkType"] = Classic
-
-	if vswitchId != "" {
-		request["VSwitchId"] = vswitchId
+	if request["VSwitchId"] != nil {
 		request["InstanceNetworkType"] = strings.ToUpper(string(Vpc))
-
 		// check vswitchId in zone
-		v := strings.Split(vswitchId, COMMA_SEPARATED)[0]
+		v := strings.Split(request["VSwitchId"].(string), COMMA_SEPARATED)[0]
+		if request["ZoneId"] == nil || request["VPCId"] == nil {
 
-		vsw, err := vpcService.DescribeVSwitch(v)
-		if err != nil {
-			return nil, WrapError(err)
+			vsw, err := vpcService.DescribeVSwitch(v)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+
+			if v, ok := request["VPCId"].(string); !ok || v == "" {
+				request["VPCId"] = vsw.VpcId
+			}
+			if v, ok := request["ZoneId"].(string); !ok || v == "" {
+				request["ZoneId"] = vsw.ZoneId
+			}
+			//else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
+			//	zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
+			//	if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
+			//		return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
+			//	}
+			//} else if request.ZoneId != vsw.ZoneId {
+			//	return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+			//}
 		}
-
-		if request["ZoneId"] == nil {
-			request["ZoneId"] = vsw.ZoneId
-		}
-
-		if request["VPCId"] == nil {
-			request["VPCId"] = vsw.VpcId
-		}
-
-		//else if strings.Contains(request.ZoneId, MULTI_IZ_SYMBOL) {
-		//	zonestr := strings.Split(strings.SplitAfter(request.ZoneId, "(")[1], ")")[0]
-		//	if !strings.Contains(zonestr, string([]byte(vsw.ZoneId)[len(vsw.ZoneId)-1])) {
-		//		return nil, WrapError(Error("The specified vswitch %s isn't in the multi zone %s.", vsw.VSwitchId, request.ZoneId))
-		//	}
-		//} else if request.ZoneId != vsw.ZoneId {
-		//	return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
-		//}
 	}
 
 	request["PayType"] = Trim(d.Get("instance_charge_type").(string))
@@ -1593,6 +1676,30 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("db_is_ignore_case"); ok {
 		request["DBIsIgnoreCase"] = v
+	}
+
+	if request["Engine"] == string(PostgreSQL) {
+		if v, ok := d.GetOk("babelfish_config"); ok {
+			v := v.(*schema.Set).List()[0].(map[string]interface{})
+			babelfishConfig, err := json.Marshal(struct {
+				BabelfishEnabled   string `json:"babelfishEnabled"`
+				MigrationMode      string `json:"migrationMode"`
+				MasterUsername     string `json:"masterUsername"`
+				MasterUserPassword string `json:"masterUserPassword"`
+			}{v["babelfish_enabled"].(string),
+				v["migration_mode"].(string),
+				v["master_username"].(string),
+				v["master_user_password"].(string),
+			})
+			if err != nil {
+				return nil, err
+			}
+			request["BabelfishConfig"] = string(babelfishConfig)
+		}
+	}
+
+	if v, ok := d.GetOk("category"); ok {
+		request["Category"] = v
 	}
 
 	uuid, err := uuid.GenerateUUID()

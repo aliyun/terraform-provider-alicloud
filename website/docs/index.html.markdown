@@ -143,7 +143,7 @@ provider "alicloud" {
 }
 ```
 
--> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue.html) does not support ECS Role Credential.
+-> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue) does not support ECS Role Credential.
 
 ### Assume role
 
@@ -240,6 +240,8 @@ The length should not more than 64. From the version 1.145.0+, it supports to be
 * `client_read_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client read request. Default to 60000.
 
 * `client_connect_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client connection server. Default to 60000.
+
+* `max_retry_timeout` - (Optional, Available in 1.183.0+) The maximum retry timeout in second of the request. Default to `0`.
 
 The nested `assume_role` block supports the following:
 
@@ -380,6 +382,8 @@ Nested `endpoints` block supports the following:
 * `quickbi` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Quick BI endpoints.
 
 * `cloudsso` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom Cloud SSO endpoints.
+
+* `edas` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom EDAS endpoints.
 
 ## Testing
 

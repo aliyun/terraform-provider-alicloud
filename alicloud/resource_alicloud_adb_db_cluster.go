@@ -25,9 +25,9 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(50 * time.Minute),
-			Delete: schema.DefaultTimeout(50 * time.Minute),
-			Update: schema.DefaultTimeout(72 * time.Minute),
+			Create: schema.DefaultTimeout(120 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Hour),
+			Update: schema.DefaultTimeout(6 * time.Hour),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_renew_period": {
@@ -92,7 +92,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 			"elastic_io_resource": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  0,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("mode"); ok && v.(string) == "reserver" {
 						return true
@@ -171,6 +171,12 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -241,6 +247,10 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 		request["PayType"] = "Postpaid"
 	}
 
+	if v, ok := d.GetOkExists("elastic_io_resource"); ok {
+		request["ElasticIOResource"] = v
+	}
+
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -249,21 +259,28 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["DBClusterNetworkType"] = "VPC"
+		request["VSwitchId"] = v
+	}
 
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+	if (request["ZoneId"] == nil || request["VPCId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitchWithTeadsl(vswitchId)
+		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["DBClusterNetworkType"] = "VPC"
-		request["VPCId"] = vsw["VpcId"]
-		request["VSwitchId"] = vswitchId
-		if v, ok := request["ZoneId"].(string); !ok || v == "" {
+		if request["VPCId"] == nil {
+			request["VPCId"] = vsw["VpcId"]
+		}
+		if request["ZoneId"] == nil {
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateDBCluster")
@@ -274,7 +291,7 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["DBClusterId"]))
-	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 900*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 300*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -310,6 +327,7 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("tags", tagsToMap(object["Tags"].(map[string]interface{})["Tag"]))
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VPCId"])
 
 	if object["PayType"].(string) == string(Prepaid) {
 		describeAutoRenewAttributeObject, err := adbService.DescribeAutoRenewAttribute(d.Id())
@@ -368,7 +386,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -396,7 +414,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -424,7 +442,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -449,12 +467,11 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	if !d.IsNewResource() && (d.HasChange("pay_type") || d.HasChange("payment_type")) {
 		update = true
 	}
-	if pay_type, ok := d.GetOk("pay_type"); ok {
-		request["PayType"] = convertAdbDbClusterDBClusterPayTypeRequest(pay_type.(string))
-	}
 
-	if payment_type, ok := d.GetOk("payment_type"); ok {
-		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(payment_type.(string))
+	if paymentType, ok := d.GetOk("payment_type"); ok {
+		request["PayType"] = convertAdbDBClusterPaymentTypeRequest(paymentType.(string))
+	} else if payType, ok := d.GetOk("pay_type"); ok {
+		request["PayType"] = convertAdbDbClusterDBClusterPayTypeRequest(payType.(string))
 	}
 	if request["PayType"] == "Prepaid" {
 		request["Period"] = d.Get("period")
@@ -474,7 +491,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -521,7 +538,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -557,7 +574,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			modifyDBClusterAccessWhiteListReq["SecurityIps"] = LOCAL_HOST_IP
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterAccessWhiteListReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -594,11 +611,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		update = true
 		modifyDBClusterReq["DBNodeGroupCount"] = d.Get("db_node_count")
 	}
-	if !d.IsNewResource() && d.HasChange("db_node_storage") {
-		update = true
-		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
-	}
-	if d.HasChange("elastic_io_resource") {
+	if !d.IsNewResource() && d.HasChange("elastic_io_resource") {
 		update = true
 		modifyDBClusterReq["ElasticIOResource"] = d.Get("elastic_io_resource")
 	}
@@ -616,7 +629,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -631,7 +644,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 900*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -642,8 +655,53 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("db_node_storage")
 		d.SetPartial("elastic_io_resource")
 	}
+	update = false
+	modifyDBClusterReq = map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("db_node_storage") {
+		update = true
+		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
+	}
+	modifyDBClusterReq["RegionId"] = client.RegionId
+	if update {
+		if _, ok := d.GetOk("mode"); ok {
+			modifyDBClusterReq["Mode"] = d.Get("mode")
+		}
+		if _, ok := d.GetOk("modify_type"); ok {
+			modifyDBClusterReq["ModifyType"] = d.Get("modify_type")
+		}
+		action := "ModifyDBCluster"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
+			if err != nil {
+				// There is service bug and needs checking IncorrectDBInstanceState.
+				// If the bug is fixed, the IncorrectDBInstanceState checking can be removed.
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, modifyDBClusterReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("db_node_storage")
+	}
 	d.Partial(false)
-	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -666,7 +724,7 @@ func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

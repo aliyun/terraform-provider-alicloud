@@ -110,12 +110,18 @@ The following arguments are supported:
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. If not specified, 
 Terraform will autogenerate a default name is `ECS-Instance`.
 * `allocate_public_ip` - (Deprecated) It has been deprecated from version "1.7.0". Setting "internet_max_bandwidth_out" larger than 0 can allocate a public ip address for an instance.
-* `system_disk_category` - (Optional,ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`. `cloud` only is used to some none I/O optimized instance. Default to `cloud_efficiency`.
+* `system_disk_category` - (Optional,ForceNew) Valid values are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud`, `cloud_auto`. only is used to some none I/O optimized instance. Default to `cloud_efficiency`. Valid values `cloud_auto` Available in 1.184.0+.
 * `system_disk_name` - (Optional, Available in 1.101.0+) The name of the system disk. The name must be 2 to 128 characters in length and can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
 * `system_disk_description` - (Optional, Available in 1.101.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_size` - (Optional) Size of the system disk, measured in GiB. Value range: [20, 500]. The specified value must be equal to or greater than max{20, Imagesize}. Default value: max{40, ImageSize}. 
 * `system_disk_performance_level` (Optional) The performance level of the ESSD used as the system disk, Valid values: `PL0`, `PL1`, `PL2`, `PL3`, Default to `PL1`;For more information about ESSD, See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/122389.htm).
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.73.0+, Modifiable in 1.169.0+) The ID of the automatic snapshot policy applied to the system disk.
+* `system_disk_storage_cluster_id` - (Optional, ForceNew, Available 1.177.0+) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters, see [What is Dedicated Block Storage Cluster?](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/dedicated-block-storage-clusters-overview).
+* `system_disk_encrypted` - (Optional, ForceNew, Available 1.177.0+) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`. **Note:** The Encrypt System Disk During Instance Creation feature is in public preview. This public preview is provided only in Hongkong Zone B, Hongkong Zone C, Singapore Zone B, and Singapore Zone C.
+    - `true`: encrypts the system disk.
+    - `false`: does not encrypt the system disk.
+* `system_disk_kms_key_id` - (Optional, ForceNew, Available 1.177.0+) The ID of the Key Management Service (KMS) key to be used for the system disk.
+* `system_disk_encrypt_algorithm` - (Optional, ForceNew, Available 1.177.0+) The algorithm to be used to encrypt the system disk. Valid values are `aes-256`, `sm4-128`. Default value is `aes-256`.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
 * `internet_charge_type` - (Optional) Internet charge type of the instance, Valid values are `PayByBandwidth`, `PayByTraffic`. Default is `PayByTraffic`. At present, 'PrePaid' instance cannot change the value to "PayByBandwidth" from "PayByTraffic".
 * `internet_max_bandwidth_in` - (Optional) Maximum incoming bandwidth from the public network, measured in Mbps (Mega bit per second). Value range: [1, 200]. If this value is not specified, then automatically sets it to 200 Mbps.
@@ -206,15 +212,25 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
     * `auto_snapshot_policy_id` - (Optional, ForceNew, Available in 1.73.0+) The ID of the automatic snapshot policy applied to the system disk.
     * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.
     * `description` - (Optional, ForceNew) The description of the data disk.
+    * `device` - (Optional, ForceNew, Available in 1.183.0+) The mount point of the data disk.
 * `status` - (Optional 1.85.0+) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 * `hpc_cluster_id` - (Optional, ForceNew, Available in 1.144.0+) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available in 1.144.0+) A list of Secondary private IP addresses which is selected from within the CIDR block of the VSwitch.
 * `secondary_private_ip_address_count` - (Optional, Available in 1.145.0+) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
-* `deployment_set_id` - (Optional, Available in 1.149.0+) The ID of the deployment set to which to deploy the instance.
+* `deployment_set_id` - (Optional, Available in 1.176.0+) The ID of the deployment set to which to deploy the instance. **NOTE:** From version 1.176.0, instance's deploymentSetId can be removed when 'deployment_set_id' = "".
 * `operator_type` - (Optional, Available in 1.164.0+) The operation type. It is valid when `instance_charge_type` is `PrePaid`. Default value: `upgrade`. Valid values: `upgrade`, `downgrade`. **NOTE:**  When the new instance type specified by the `instance_type` parameter has lower specifications than the current instance type, you must set `operator_type` to `downgrade`.
-* `stopped_mode` - (Optional,Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
+* `stopped_mode` - (Optional, Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
     * `KeepCharging` : standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
     * `StopCharging` : economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
+* `maintenance_time` - (Optional, Available in 1.181.0+ ) The time of maintenance. See the following `Block maintenance_time`.
+* `maintenance_action` - (Optional, Computed, Available in 1.181.0+ ) The maintenance action. Valid values: `Stop`, `AutoRecover` and `AutoRedeploy`.
+    * `Stop` : stops the instance.
+    * `AutoRecover` : automatically recovers the instance.
+    * `AutoRedeploy` : fails the instance over, which may cause damage to the data disks attached to the instance.
+* `maintenance_notify` - (Optional, Available in 1.181.0+ ) Specifies whether to send an event notification before instance shutdown. Valid values: `true`, `false`. Default value: `false`.
+    * `true` : sends an event notification.
+    * `false` : does not send an event notification.
+* `spot_duration` - (Optional, Available in 1.188.0+) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -229,6 +245,12 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
  However, at present, 'PrePaid' instance cannot narrow its max bandwidth out when its 'internet_charge_type' is "PayByBandwidth".
 
 -> **NOTE:** From version 1.7.0, instance's type can be changed. When it is changed, the instance will reboot to make the change take effect.
+
+#### Block maintenance_time
+
+The maintenance_time supports the following:
+* `start_time` - (Optional) The start time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
+* `end_time` - (Optional) The end time of maintenance. The time must be on the hour at exactly 0 minute and 0 second. The `start_time` and `end_time` parameters must be specified at the same time. The `end_time` value must be 1 to 23 hours later than the `start_time` value. Specify the time in the HH:mm:ss format. The time must be in UTC+8.
 
 ## Attributes Reference
 

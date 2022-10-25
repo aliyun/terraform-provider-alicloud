@@ -215,7 +215,6 @@ const (
 	DomesticSite = AccountSite("Domestic")
 	IntlSite     = AccountSite("International")
 )
-
 const (
 	SnapshotCreatingInProcessing = Status("progressing")
 	SnapshotCreatingAccomplished = Status("accomplished")
@@ -261,6 +260,12 @@ const (
 	All   = Protocol("all")
 	Icmp  = Protocol("icmp")
 	Gre   = Protocol("gre")
+)
+
+const (
+	// HeaderEnableEBTrigger header key for enabling eventbridge trigger
+	// TODO: delete the header after eventbridge trigger is totally exposed to user
+	HeaderEnableEBTrigger = "x-fc-enable-eventbridge-trigger"
 )
 
 // ValidProtocols network protocol list
@@ -351,6 +356,28 @@ func convertJsonStringToStringList(src interface{}) (result []interface{}) {
 		result = append(result, fmt.Sprint(formatInt(v)))
 	}
 	return
+}
+
+func encodeToBase64String(configured []string) string {
+	result := ""
+	for i, v := range configured {
+		result += v
+		if i < len(configured)-1 {
+			result += ","
+		}
+	}
+	return base64.StdEncoding.EncodeToString([]byte(result))
+}
+
+func decodeFromBase64String(configured string) (result []string, err error) {
+
+	decodeString, err := base64.StdEncoding.DecodeString(configured)
+	if err != nil {
+		return result, err
+	}
+
+	result = strings.Split(string(decodeString), ",")
+	return result, nil
 }
 
 func convertJsonStringToMap(configured string) (map[string]interface{}, error) {
@@ -1226,5 +1253,187 @@ OuterLoop:
 		}
 	}
 
+	return true
+}
+
+func Interface2String(val interface{}) string {
+	if v, ok := val.(string); ok {
+		return v
+	}
+	return fmt.Sprint(val)
+}
+
+func Interface2StrSlice(ii []interface{}) []string {
+	ss := make([]string, 0, len(ii))
+	for _, i := range ii {
+		s := Interface2String(i)
+		ss = append(ss, s)
+	}
+	return ss
+}
+
+func Str2InterfaceSlice(ss []string) []interface{} {
+	ii := make([]interface{}, 0, len(ss))
+	for _, s := range ss {
+		ii = append(ii, s)
+	}
+	return ii
+}
+
+func Interface2Bool(i interface{}) bool {
+	if i == nil {
+		return false
+	}
+	t := reflect.TypeOf(i).Kind()
+	switch t {
+	case reflect.String:
+		return convertStringToBool(i.(string))
+	case reflect.Bool:
+		return i.(bool)
+	default:
+		return false
+	}
+}
+
+func IsEmpty(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.String:
+		return fmt.Sprint(i) == ""
+	case reflect.Int:
+		return i.(int) <= 0
+	case reflect.Int8:
+		return i.(int8) <= 0
+	case reflect.Int16:
+		return i.(int16) <= 0
+	case reflect.Int32:
+		return i.(int32) <= 0
+	case reflect.Int64:
+		return i.(int64) <= 0
+	case reflect.Float32:
+		return i.(float32) <= 0
+	case reflect.Float64:
+		return i.(float64) <= 0
+	case reflect.Map:
+		return len(i.(map[string]interface{})) <= 0
+	case reflect.Ptr:
+		return reflect.ValueOf(i).IsNil()
+	default:
+		return false
+	}
+}
+
+func GetDaysBetween2Date(format string, date1Str string, date2Str string) (int, error) {
+	var day int
+	t1, err := time.ParseInLocation(format, date1Str, time.Local)
+	if err != nil {
+		return 0, err
+	}
+	t2, err := time.ParseInLocation(format, date2Str, time.Local)
+	if err != nil {
+		return 0, err
+	}
+
+	swap := false
+	if t1.Unix() > t2.Unix() {
+		t1, t2 = t2, t1
+		swap = true
+	}
+
+	t1_ := t1.Add(time.Duration(t2.Sub(t1).Milliseconds()%86400000) * time.Millisecond)
+	day = int(t2.Sub(t1).Hours() / 24)
+	if t1_.Day() != t1.Day() {
+		day += 1
+	}
+
+	if swap {
+		day = -day
+	}
+
+	return day, nil
+}
+
+func compareCmsHybridMonitorFcTaskYamlConfigAreEquivalent(tem1, tem2 string) (bool, error) {
+	type MetricList struct {
+		MetricList []string `yaml:"metric_list"`
+	}
+	type Product struct {
+		MetricInfo []MetricList `yaml:"metric_info"`
+		Namespace  string       `yaml:"namespace"`
+	}
+	type Products struct {
+		Products []Product
+	}
+
+	var P1 Products
+	err := yaml.Unmarshal([]byte(tem1), &P1)
+	if err != nil {
+		fmt.Sprintln(false)
+	}
+
+	y1 := make([]string, 0)
+	for _, product := range P1.Products {
+		s1, _ := json.Marshal(product)
+		y1 = append(y1, string(s1))
+	}
+
+	var P2 Products
+	err = yaml.Unmarshal([]byte(tem2), &P2)
+	if err != nil {
+		fmt.Sprintln(false)
+	}
+
+	y2 := make([]string, 0)
+	for _, product := range P2.Products {
+		s2, _ := json.Marshal(product)
+		y2 = append(y2, string(s2))
+	}
+
+	sort.Strings(y1)
+	sort.Strings(y2)
+	return reflect.DeepEqual(y1, y2), nil
+}
+
+func getOneStringOrAllStringSlice(stringSli []interface{}) interface{} {
+	if len(stringSli) == 1 {
+		return stringSli[0].(string)
+	}
+	sli := make([]string, len(stringSli))
+	for i, v := range stringSli {
+		sli[i] = v.(string)
+	}
+	return sli
+}
+
+func Unique(strings []string) []string {
+	dict := make(map[string]bool)
+	var ss []string
+	for _, s := range strings {
+		if s == "" {
+			continue
+		}
+		if _, ok := dict[s]; !ok {
+			dict[s] = true
+			ss = append(ss, s)
+		}
+	}
+	return ss
+}
+
+func IsSubCollection(sub []string, full []string) bool {
+	for _, s := range sub {
+		var find bool
+		for _, f := range full {
+			if s == f {
+				find = true
+				break
+			}
+		}
+		if !find {
+			return false
+		}
+	}
 	return true
 }

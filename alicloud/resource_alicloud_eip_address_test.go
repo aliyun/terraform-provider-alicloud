@@ -151,11 +151,13 @@ func TestAccAlicloudEIPAddress_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"address_name": "${var.name}",
+					"address_name":              "${var.name}",
+					"security_protection_types": []string{"AntiDDoS_Enhanced"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"address_name": name,
+						"address_name":                name,
+						"security_protection_types.#": "1",
 					}),
 				),
 			},
@@ -291,6 +293,7 @@ data "alicloud_resource_manager_resource_groups" "default"{
 func TestAccAlicloudEIPAddress_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_address.default"
+	checkoutSupportedRegions(t, true, connectivity.VPCPublicIpAddressPoolCidrBlockSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -310,17 +313,19 @@ func TestAccAlicloudEIPAddress_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"isp":                  "BGP",
-					"address_name":         "${var.name}",
-					"internet_charge_type": "PayByTraffic",
-					"payment_type":         "PayAsYouGo",
+					"isp":                       "BGP",
+					"address_name":              "${var.name}",
+					"internet_charge_type":      "PayByTraffic",
+					"payment_type":              "PayAsYouGo",
+					"public_ip_address_pool_id": "${alicloud_vpc_public_ip_address_pool_cidr_block.default.public_ip_address_pool_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"isp":                  "BGP",
-						"address_name":         name,
-						"internet_charge_type": "PayByTraffic",
-						"payment_type":         "PayAsYouGo",
+						"isp":                       "BGP",
+						"address_name":              name,
+						"internet_charge_type":      "PayByTraffic",
+						"payment_type":              "PayAsYouGo",
+						"public_ip_address_pool_id": CHECKSET,
 					}),
 				),
 			},
@@ -397,9 +402,18 @@ var AlicloudEIPAddressMap1 = map[string]string{
 
 func AlicloudEIPAddressBasicDependence1(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_vpc_public_ip_address_pool" "default" {
+		public_ip_address_pool_name = var.name
+	}
+
+	resource "alicloud_vpc_public_ip_address_pool_cidr_block" "default" {
+  		public_ip_address_pool_id = alicloud_vpc_public_ip_address_pool.default.id
+  		cidr_block                = "47.118.126.0/25"
+	}
 `, name)
 }
 
@@ -773,7 +787,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudEIPAddress_unit(t *testing.T) {
+func TestUnitAlicloudEIPAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_eip_address"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_eip_address"].Schema).Data(nil, nil)

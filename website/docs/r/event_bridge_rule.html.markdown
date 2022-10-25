@@ -61,9 +61,13 @@ The following arguments are supported:
 ### Block targets
 
 * `endpoint` - (Required) The endpoint of target.
-* `param_list` - (Required) A list of param.
+* `param_list` - (Required) A list of param. See the following `Block param_list`.
 * `target_id` - (Required, ForceNew) The ID of target.
 * `type` - (Required) The type of target. Valid values: `acs.fc.function`, `acs.mns.topic`, `acs.mns.queue`,`http`,`acs.sms`,`acs.mail`,`acs.dingtalk`,`https`, `acs.eventbridge`,`acs.rabbitmq` and `acs.rocketmq`.
+* `push_retry_strategy` - (Optional, Computed, Available in v1.184.0+) The retry policy that is used to push the event. Valid values:
+  - `BACKOFF_RETRY`: Backoff retry. The request can be retried up to three times. The interval between two consecutive retries is a random value between 10 and 20 seconds.
+  - `EXPONENTIAL_DECAY_RETRY`: Exponential decay retry. The request can be retried up to 176 times. The interval between two consecutive retries exponentially increases to 512 seconds, and the total retry time is one day. The specific retry intervals are 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 512, ..., and 512 seconds, including a maximum of one hundred and sixty-seven 512 seconds in total.
+* `dead_letter_queue` - (Optional, Available in v1.184.0+) Dead letter queue. Events that are not processed or exceed the number of retries will be written to the dead letter. Support message service MNS and message queue RocketMQ. See the following `Block dead_letter_queue`.
 
 ### Block param_list
 
@@ -84,6 +88,9 @@ param_list {
 In order to fix the diff, from version 1.160.0, 
 this resource has removed the param which `resource_key = "IsBase64Encode"` and `value = "false"`.
 If you want to set `resource_key = "IsBase64Encode"`, please avoid to set `value = "false"`.
+
+### Block dead_letter_queue
+* `arn` - (Optional) The srn of the dead letter queue.
 
 ## Attributes Reference
 

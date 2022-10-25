@@ -383,8 +383,9 @@ func ecsSecurityGroupRulePortRangeDiffSuppressFunc(k, old, new string, d *schema
 
 func ecsSecurityGroupRulePreFixListIdDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	_, cidrIpExist := d.GetOk("cidr_ip")
+	_, ipv6CidrIpExist := d.GetOk("ipv6_cidr_ip")
 	_, SourceSecurityGroupIdExist := d.GetOk("source_security_group_id")
-	if cidrIpExist || SourceSecurityGroupIdExist {
+	if cidrIpExist || SourceSecurityGroupIdExist || ipv6CidrIpExist {
 		return true
 	}
 	return false
@@ -621,4 +622,30 @@ func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 		return false
 	}
 	return true
+}
+
+func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if new == "" {
+		return true
+	}
+	if old == "" {
+		return false
+	}
+	if new == old {
+		return false
+	}
+
+	new = strings.TrimSuffix(strings.TrimPrefix(new, "["), "]")
+	old = strings.TrimSuffix(strings.TrimPrefix(old, "["), "]")
+	var newvlist, oldvlist []string
+	for _, v := range strings.Split(new, "}") {
+		newvlist = append(newvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
+	}
+	for _, v := range strings.Split(old, "}") {
+		oldvlist = append(oldvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
+	}
+	sort.Strings(newvlist)
+	sort.Strings(oldvlist)
+	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
+
 }

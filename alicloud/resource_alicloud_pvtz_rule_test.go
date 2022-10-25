@@ -185,7 +185,7 @@ resource "alicloud_pvtz_endpoint" "default" {
 `, name, defaultRegionToTest)
 }
 
-func TestAccAlicloudPvtzRule_unit(t *testing.T) {
+func TestUnitAlicloudPvtzRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_pvtz_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_pvtz_rule"].Schema).Data(nil, nil)

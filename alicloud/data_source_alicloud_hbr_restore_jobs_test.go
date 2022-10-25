@@ -136,8 +136,7 @@ data "alicloud_hbr_restore_jobs" "default" {
 
 var existHbrRestoreJobMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"jobs.#":    CHECKSET,
-		"jobs.0.id": CHECKSET,
+		"jobs.#": CHECKSET,
 	}
 }
 

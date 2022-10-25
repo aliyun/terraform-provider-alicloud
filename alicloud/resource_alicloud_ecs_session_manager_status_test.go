@@ -93,7 +93,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudECSSessionManagerStatus_unit(t *testing.T) {
+func TestUnitAlicloudECSSessionManagerStatus(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_session_manager_status"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_session_manager_status"].Schema).Data(nil, nil)

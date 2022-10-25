@@ -46,6 +46,16 @@ func resourceAlicloudLogDashboard() *schema.Resource {
 				ValidateFunc:     validation.ValidateJsonString,
 				DiffSuppressFunc: chartListDiffSuppress,
 			},
+			"attribute": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+			},
 		},
 	}
 }
@@ -58,6 +68,15 @@ func resourceAlicloudLogDashboardCreate(d *schema.ResourceData, meta interface{}
 		"dashboardName": d.Get("dashboard_name").(string),
 		"displayName":   d.Get("display_name").(string),
 	}
+
+	if v, ok := d.GetOk("attribute"); ok {
+		attribute := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(v.(string)), &attribute); err != nil {
+			return WrapError(err)
+		}
+		dashboard["attribute"] = attribute
+	}
+
 	chartList := []interface{}{}
 	jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &chartList)
 	if jsonErr != nil {
@@ -116,6 +135,14 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("project_name", parts[0])
 	d.Set("dashboard_name", dashboard["dashboardName"])
 	d.Set("display_name", dashboard["displayName"])
+	if v, ok := dashboard["attribute"]; ok {
+		if attributeBytes, err := json.Marshal(v); err == nil {
+			d.Set("attribute", string(attributeBytes))
+		} else {
+			return WrapError(err)
+		}
+	}
+
 	for k, v := range dashboard["charts"].([]interface{}) {
 		if action, actionOK := v.(map[string]interface{})["action"]; actionOK {
 			if action == nil {
@@ -144,12 +171,22 @@ func resourceAlicloudLogDashboardUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("char_list") {
 		update = true
 	}
+	if d.HasChange("attribute") {
+		update = true
+	}
 
 	if update {
 		client := meta.(*connectivity.AliyunClient)
 		dashboard := map[string]interface{}{
 			"dashboardName": parts[1],
 			"displayName":   d.Get("display_name").(string),
+		}
+		if v, ok := d.GetOk("attribute"); ok {
+			attribute := map[string]interface{}{}
+			if err := json.Unmarshal([]byte(v.(string)), &attribute); err != nil {
+				return WrapError(err)
+			}
+			dashboard["attribute"] = attribute
 		}
 		chartList := []interface{}{}
 		jsonErr := json.Unmarshal([]byte(d.Get("char_list").(string)), &chartList)

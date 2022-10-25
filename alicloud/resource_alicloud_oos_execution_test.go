@@ -192,7 +192,7 @@ func OosExecutionBasicdependence(name string) string {
 	`, name)
 }
 
-func TestAccAlicloudOOSExecution_unit(t *testing.T) {
+func TestUnitAlicloudOOSExecution(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_execution"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_execution"].Schema).Data(nil, nil)

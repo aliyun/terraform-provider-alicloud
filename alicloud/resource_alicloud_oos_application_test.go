@@ -253,7 +253,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 `, name)
 }
 
-func TestAccAlicloudOOSApplication_unit(t *testing.T) {
+func TestUnitAlicloudOOSApplication(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_oos_application"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_oos_application"].Schema).Data(nil, nil)

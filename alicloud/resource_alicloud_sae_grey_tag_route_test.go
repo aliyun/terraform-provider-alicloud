@@ -274,7 +274,7 @@ resource "alicloud_sae_application" "default" {
 `, name, defaultRegionToTest)
 }
 
-func TestAccAlicloudSAEGreyTagRoute_unit(t *testing.T) {
+func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)

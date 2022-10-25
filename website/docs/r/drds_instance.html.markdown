@@ -53,6 +53,7 @@ The following arguments are supported:
         - value range : `drds.sn1.16c32g.32c64g`, `drds.sn1.16c32g.64c128g`
     - `drds.sn1.32c64g` for DRDS instance Extreme Edition;
         - value range : `drds.sn1.32c64g.128c256g`
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
        
 ### Timeouts
 

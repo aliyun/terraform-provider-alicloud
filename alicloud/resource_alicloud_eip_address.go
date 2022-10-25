@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+
 	"github.com/denverdino/aliyungo/common"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -24,7 +26,6 @@ func resourceAlicloudEipAddress() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(9 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -117,6 +118,17 @@ func resourceAlicloudEipAddress() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"security_protection_types": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"public_ip_address_pool_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -128,7 +140,6 @@ func resourceAlicloudEipAddress() *schema.Resource {
 
 func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
 	var response map[string]interface{}
 	action := "AllocateEipAddress"
 	request := make(map[string]interface{})
@@ -185,11 +196,17 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("security_protection_types"); ok {
+		request["SecurityProtectionTypes"] = v
+	}
+	if v, ok := d.GetOk("public_ip_address_pool_id"); ok {
+		request["PublicIpAddressPoolId"] = v
+	}
 	request["ClientToken"] = buildClientToken("AllocateEipAddress")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -210,12 +227,9 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 
 	d.SetId(fmt.Sprint(response["AllocationId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.EipAddressStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
-	}
 	return resourceAlicloudEipAddressUpdate(d, meta)
 }
+
 func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -239,15 +253,30 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", object["ChargeType"])
 	d.Set("ip_address", object["IpAddress"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
-	d.Set("status", object["Status"])
-
-	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "EIP")
-	if err != nil {
-		return WrapError(err)
+	if securityProtectionTypes, ok := object["SecurityProtectionTypes"]; ok {
+		securityProtectionTypeList := securityProtectionTypes.(map[string]interface{})["SecurityProtectionType"].([]interface{})
+		d.Set("security_protection_types", securityProtectionTypeList)
 	}
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("public_ip_address_pool_id", object["PublicIpAddressPoolId"])
+	d.Set("status", object["Status"])
+	tagsMap := make(map[string]interface{})
+	tagsRaw, _ := jsonpath.Get("$.Tags.Tag", object)
+	if tagsRaw != nil {
+		for _, value0 := range tagsRaw.([]interface{}) {
+			tags := value0.(map[string]interface{})
+			key := tags["Key"].(string)
+			value := tags["Value"]
+			if !ignoredTags(key, value) {
+				tagsMap[key] = value
+			}
+		}
+	}
+	if len(tagsMap) > 0 {
+		d.Set("tags", tagsMap)
+	}
 	return nil
 }
+
 func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -280,7 +309,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -310,7 +339,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "MoveResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, moveResourceGroupReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -351,7 +380,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	if update {
 		action := "ModifyEipAddressAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, modifyEipAddressAttributeReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -374,6 +403,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	d.Partial(false)
 	return resourceAlicloudEipAddressRead(d, meta)
 }
+
 func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
 		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_eip_address. Terraform will remove this resource from the state file, however resources may remain.")
@@ -393,7 +423,7 @@ func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {
@@ -416,6 +446,7 @@ func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	return nil
 }
+
 func convertEipAddressPaymentTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":

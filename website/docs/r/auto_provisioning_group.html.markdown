@@ -81,7 +81,7 @@ The following arguments are supported:
 * `auto_provisioning_group_type` - (Optional, ForceNew) The type of the auto provisioning group. Valid values:`request` and `maintain`,Default value: `maintain`.
 * `spot_allocation_strategy` - (Optional, ForceNew) The scale-out policy for preemptible instances. Valid values:`lowest-price` and `diversified`,Default value: `lowest-price`.
 * `spot_target_capacity` - (Optional) The target capacity of preemptible instances in the auto provisioning group.
-* `spot_instance_interruption_behavior` - (Optional, ForceNew) The default behavior after preemptible instances are shut down. Value values: `stop` and `terminate`,Default value: `stop`.
+* `spot_instance_interruption_behavior` - (Optional, ForceNew) The default behavior after preemptible instances are shut down. Valid values: `stop` and `terminate`,Default value: `stop`.
 * `spot_instance_pools_to_use_count` - (Optional, ForceNew) This parameter takes effect when the `SpotAllocationStrategy` parameter is set to `lowest-price`. The auto provisioning group selects instance types of the lowest cost to create instances.
 * `pay_as_you_go_allocation_strategy` - (Optional, ForceNew) The scale-out policy for pay-as-you-go instances. Valid values: `lowest-price` and `prioritized`,Default value: `lowest-price`.
 * `pay_as_you_go_target_capacity` - (Optional) The target capacity of pay-as-you-go instances in the auto provisioning group.

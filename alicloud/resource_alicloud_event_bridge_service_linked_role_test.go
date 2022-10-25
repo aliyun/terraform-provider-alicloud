@@ -101,7 +101,7 @@ func testAccCheckAlicloudEventBridgeServiceLinkedRoleDependence(name string) str
 	return ""
 }
 
-func TestAccAlicloudEventBridgeServiceLinkedRole_unit(t *testing.T) {
+func TestUnitAlicloudEventBridgeServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_event_bridge_service_linked_role"].Schema).Data(nil, nil)

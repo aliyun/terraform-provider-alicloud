@@ -212,7 +212,7 @@ resource "alicloud_cms_alarm_contact_group" "default" {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
-func TestAccAlicloudAlidnsGtmInstance_unit(t *testing.T) {
+func TestUnitAlicloudAlidnsGtmInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alidns_gtm_instance"].Schema).Data(nil, nil)

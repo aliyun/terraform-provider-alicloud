@@ -3,6 +3,7 @@ package connectivity
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	roa "github.com/alibabacloud-go/tea-roa/client"
 
@@ -36,12 +37,13 @@ type Config struct {
 	ClientConnectTimeout int
 	SourceIp             string
 	SecureTransport      string
+	MaxRetryTimeout      int
 
 	RamRoleArn               string
 	RamRoleSessionName       string
 	RamRolePolicy            string
 	RamRoleSessionExpiration int
-	Endpoints                map[string]interface{}
+	Endpoints                *sync.Map
 	RKvstoreEndpoint         string
 	EcsEndpoint              string
 	RdsEndpoint              string
@@ -164,6 +166,15 @@ type Config struct {
 	DdosbasicEndpoint           string
 	SmartagEndpoint             string
 	TagEndpoint                 string
+	EdasEndpoint                string
+	EdasschedulerxEndpoint      string
+	EhsEndpoint                 string
+	DysmsEndpoint               string
+	CbsEndpoint                 string
+	NlbEndpoint                 string
+	VpcpeerEndpoint             string
+	EbsEndpoint                 string
+	DmsenterpriseEndpoint       string
 }
 
 func (c *Config) loadAndValidate() error {
@@ -183,7 +194,8 @@ func (c *Config) validateRegion() error {
 		}
 	}
 
-	return fmt.Errorf("Invalid Alibaba Cloud region: %s", c.RegionId)
+	return fmt.Errorf("Invalid Alibaba Cloud region: %s. "+
+		"You can skip checking this region by setting provider parameter 'skip_region_validation'.", c.RegionId)
 }
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {

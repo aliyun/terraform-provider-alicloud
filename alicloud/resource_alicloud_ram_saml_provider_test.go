@@ -106,7 +106,7 @@ func AlicloudRamSamlProviderBasicDependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudRAMSamlProvider_unit(t *testing.T) {
+func TestUnitAlicloudRAMSamlProvider(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ram_saml_provider"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ram_saml_provider"].Schema).Data(nil, nil)

@@ -127,6 +127,7 @@ The following arguments are supported:
 * `master_slave_server_group_id` - (Optional) The ID of the master slave server group.
 * `forward_port` - (Optional, ForceNew, Available in 1.40.0+) The port that http redirect to https.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
+* `proxy_protocol_v2_enabled` - (Optional, Available in 1.187.0+) Whether to support carrying the client source address to the backend server through the Proxy Protocol. Valid values are `true` and `false`. Default to `false`.
 
 -> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port,listener_forward,load_balancer_id,frontend_port,protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 

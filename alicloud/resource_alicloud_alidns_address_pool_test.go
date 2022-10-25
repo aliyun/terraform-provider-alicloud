@@ -210,7 +210,7 @@ locals {
 `, name, os.Getenv("ALICLOUD_ICP_DOMAIN_NAME"))
 }
 
-func TestAccAlicloudAlidnsAddressPool_unit(t *testing.T) {
+func TestUnitAlicloudAlidnsAddressPool(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alidns_address_pool"].Schema).Data(nil, nil)

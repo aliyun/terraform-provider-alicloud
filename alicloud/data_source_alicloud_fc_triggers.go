@@ -110,6 +110,7 @@ func dataSourceAlicloudFcTriggersRead(d *schema.ResourceData, meta interface{}) 
 	}
 	for {
 		request := fc.NewListTriggersInput(serviceName, functionName)
+		request.WithHeader(HeaderEnableEBTrigger, "enable")
 		if nextToken != "" {
 			request.NextToken = &nextToken
 		}

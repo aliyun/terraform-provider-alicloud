@@ -107,7 +107,7 @@ resource "alicloud_dbfs_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudDBFSInstanceAttachment_unit(t *testing.T) {
+func TestUnitAlicloudDBFSInstanceAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_dbfs_instance_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_dbfs_instance_attachment"].Schema).Data(nil, nil)

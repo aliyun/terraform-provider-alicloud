@@ -90,6 +90,11 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -115,6 +120,9 @@ func resourceAlicloudOosTemplateCreate(d *schema.ResourceData, meta interface{})
 	request["TemplateName"] = d.Get("template_name")
 	if v, ok := d.GetOk("version_name"); ok {
 		request["VersionName"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -166,6 +174,7 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("template_version", object["TemplateVersion"])
 	d.Set("updated_by", object["UpdatedBy"])
 	d.Set("updated_date", object["UpdatedDate"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	return nil
 }
 func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -195,6 +204,10 @@ func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("version_name") {
 		update = true
 		request["VersionName"] = d.Get("version_name")
+	}
+	if d.HasChange("resource_group_id") {
+		update = true
+		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
 	if update {
 		action := "UpdateTemplate"

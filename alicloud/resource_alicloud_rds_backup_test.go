@@ -131,7 +131,7 @@ resource "alicloud_db_database" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsBackup_unit(t *testing.T) {
+func TestUnitAlicloudRdsBackup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_rds_backup"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_rds_backup"].Schema).Data(nil, nil)

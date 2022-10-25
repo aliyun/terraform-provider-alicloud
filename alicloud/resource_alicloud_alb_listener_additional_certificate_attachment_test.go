@@ -199,7 +199,7 @@ locals{
 `, name, defaultRegionToTest, defaultRegionToTest)
 }
 
-func TestAccAlicloudALBListenerAdditionalCertificateAttachment_unit(t *testing.T) {
+func TestUnitAlicloudALBListenerAdditionalCertificateAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alb_listener_additional_certificate_attachment"].Schema).Data(nil, nil)

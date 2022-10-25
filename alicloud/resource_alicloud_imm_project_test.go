@@ -230,7 +230,7 @@ resource "alicloud_ram_role" "role" {
 `, name)
 }
 
-func TestAccAlicloudImmProject_unit(t *testing.T) {
+func TestUnitAlicloudImmProject(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_imm_project"].Schema).Data(nil, nil)

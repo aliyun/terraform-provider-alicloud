@@ -58,7 +58,7 @@ func testAccCheckAlicloudSecurityCenterServiceLinkedRoleDependence(name string) 
 	return ""
 }
 
-func TestAccAlicloudSASServiceLinkedRole_unit(t *testing.T) {
+func TestUnitAlicloudSASServiceLinkedRole(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_security_center_service_linked_role"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_security_center_service_linked_role"].Schema).Data(nil, nil)

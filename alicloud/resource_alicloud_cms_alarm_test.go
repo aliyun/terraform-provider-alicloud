@@ -118,8 +118,7 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "dimensions.device", "/dev/vda1,/dev/vdb1"),
+					resource.TestCheckResourceAttrSet("alicloud_cms_alarm.basic", "metric_dimensions"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
@@ -130,6 +129,42 @@ func TestAccAlicloudCmsAlarm_basic(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCmsAlarm_basic1(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.basic"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarmContactGroup%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarm_basic1(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.basic", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "name", "tf-testAccCmsAlarm_basic"),
+					resource.TestCheckResourceAttrSet("alicloud_cms_alarm.basic", "metric_dimensions"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_critical.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_warn.#", "1"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.basic", "escalations_info.#", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"start_time", "end_time"},
 			},
 		},
 	})
@@ -157,8 +192,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
+					resource.TestCheckResourceAttrSet("alicloud_cms_alarm.update", "metric_dimensions"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/$")),
 				),
 			},
@@ -170,8 +204,7 @@ func TestAccAlicloudCmsAlarm_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_critical.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_warn.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "escalations_info.#", "1"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.%", "2"),
-					resource.TestCheckResourceAttr("alicloud_cms_alarm.update", "dimensions.device", "/dev/vda1,/dev/vdb1"),
+					resource.TestCheckResourceAttrSet("alicloud_cms_alarm.update", "metric_dimensions"),
 					resource.TestMatchResourceAttr("alicloud_cms_alarm.update", "webhook", regexp.MustCompile("^https://[0-9]+.eu-central-1.fc.aliyuncs.com/[0-9-]+/proxy/Terraform/AlarmEndpointMock/updated$")),
 				),
 			},
@@ -200,6 +233,82 @@ func TestAccAlicloudCmsAlarm_disable(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "name", "tf-testAccCmsAlarm_disable"),
 					resource.TestCheckResourceAttr("alicloud_cms_alarm.disable", "enabled", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCmsAlarm_prometheus(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.prometheus"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarm%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarmPrometheus(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.prometheus", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "name", "tf-testAccCmsAlarm_prometheus"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "prometheus.#", "1"),
+				),
+			},
+			{
+				Config: testAccCmsAlarmPrometheusUpdate(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.prometheus", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "name", "tf-testAccCmsAlarm_prometheus"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.prometheus", "prometheus.#", "1"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudCmsAlarm_tags(t *testing.T) {
+	var alarm map[string]interface{}
+	resourceName := "alicloud_cms_alarm.tags"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sCmsAlarm%d", defaultRegionToTest, rand)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsAlarmDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsAlarmTags(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckCmsAlarmExists("alicloud_cms_alarm.tags", alarm),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "name", "tf-testAccCmsAlarm_tags"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.%", "2"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.Created", "TF"),
+					resource.TestCheckResourceAttr("alicloud_cms_alarm.tags", "tags.For", "Acceptance-test"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dimensions", "start_time", "end_time"},
 			},
 		},
 	})
@@ -263,43 +372,83 @@ func testAccCheckCmsAlarmDestroy(s *terraform.State) error {
 func testAccCmsAlarm_basic(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+	  default = "%s"
 	}
-
+	
 	resource "alicloud_cms_alarm_contact_group" "default" {
 	  alarm_contact_group_name = "${var.name}"
-	  describe = "Test For Alarm."  
+	  describe                 = "Test For Alarm."
 	}
-
+	
 	resource "alicloud_cms_alarm" "basic" {
-	  name = "tf-testAccCmsAlarm_basic"
-	  project = "acs_ecs_dashboard"
-	  metric = "disk_writebytes"
-	  dimensions = {
-	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
-	    device = "/dev/vda1,/dev/vdb1"
-	  }
-	  period = 900
+	  name               = "tf-testAccCmsAlarm_basic"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
 	  escalations_critical {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<="
-		threshold = 35
-		times = 2
+		threshold           = 35
+		times               = 2
 	  }
 	  escalations_warn {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<="
-		threshold = 35
-		times = 2
+		threshold           = 35
+		times               = 2
 	  }
 	  escalations_info {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<="
-		threshold = 35
-		times = 2
+		threshold           = 35
+		times               = 2
 	  }
-	  contact_groups = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
-      effective_interval = "06:00-20:00"
+	  contact_groups     = [
+      alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+	}
+	`, name)
+}
+
+func testAccCmsAlarm_basic1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+	
+	resource "alicloud_cms_alarm" "basic" {
+	  name               = "tf-testAccCmsAlarm_basic"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
+	  escalations_critical {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_warn {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_info {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  contact_groups     = [
+      alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
 	}
 	`, name)
 }
@@ -307,95 +456,91 @@ func testAccCmsAlarm_basic(name string) string {
 func testAccCmsAlarm_update(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+	  default = "%s"
 	}
-
+	
 	resource "alicloud_cms_alarm_contact_group" "default" {
 	  alarm_contact_group_name = "${var.name}"
-	  describe = "Test For Alarm."  
+	  describe                 = "Test For Alarm."
 	}
-
-data "alicloud_account" "current"{
-}
-
-resource "alicloud_cms_alarm" "update" {
-  name = "tf-testAccCmsAlarm_update"
-  project = "acs_ecs_dashboard"
-  metric = "disk_writebytes"
-  dimensions = {
-    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
-    device = "/dev/vda1,/dev/vdb1"
-  }
-  period = 900
-  escalations_critical {
-	statistics = "Average"
-	comparison_operator = "<="
-	threshold = 35
-	times = 2
-  }
-  escalations_warn {
-	statistics = "Average"
-	comparison_operator = "<="
-	threshold = 35
-	times = 2
-  }
-  escalations_info {
-	statistics = "Average"
-	comparison_operator = "<="
-	threshold = 35
-	times = 2
-  }
-  contact_groups = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
-  effective_interval = "06:00-20:00"
-  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
-}
+	
+	data "alicloud_account" "current" {
+	}
+	
+	resource "alicloud_cms_alarm" "update" {
+	  name               = "tf-testAccCmsAlarm_update"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
+	  escalations_critical {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_warn {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_info {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  contact_groups     = [
+	  alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+	  webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
+	}
 `, name)
 }
 
 func testAccCmsAlarm_updateAfter(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+	  default = "%s"
 	}
-
+	
 	resource "alicloud_cms_alarm_contact_group" "default" {
 	  alarm_contact_group_name = "${var.name}"
-	  describe = "Test For Alarm."  
+	  describe                 = "Test For Alarm."
 	}
-
-	data "alicloud_account" "current"{
+	
+	data "alicloud_account" "current" {
 	}
 	
 	resource "alicloud_cms_alarm" "update" {
-	  name = "tf-testAccCmsAlarm_update"
-	  project = "acs_ecs_dashboard"
-	  metric = "disk_writebytes"
-	  dimensions = {
-	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
-	    device = "/dev/vda1,/dev/vdb1"
-	  }
-	  period = 900
+	  name               = "tf-testAccCmsAlarm_update"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
 	  escalations_critical {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 3
+		threshold           = 35
+		times               = 3
 	  }
 	  escalations_warn {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 3
+		threshold           = 35
+		times               = 3
 	  }
 	  escalations_info {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 2
+		threshold           = 35
+		times               = 2
 	  }
-    contact_groups = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
-      effective_interval = "06:00-20:00"
-  	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/updated"
+	  contact_groups     = [
+	  alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+	  webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/updated"
 	}
 	`, name)
 }
@@ -403,48 +548,152 @@ func testAccCmsAlarm_updateAfter(name string) string {
 func testAccCmsAlarm_disable(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+	  default = "%s"
 	}
-
+	
 	resource "alicloud_cms_alarm_contact_group" "default" {
 	  alarm_contact_group_name = "${var.name}"
-	  describe = "Test For Alarm."  
+	  describe                 = "Test For Alarm."
 	}
-
-	data "alicloud_account" "current"{
+	
+	data "alicloud_account" "current" {
 	}
 	
 	resource "alicloud_cms_alarm" "disable" {
-	  name = "tf-testAccCmsAlarm_disable"
-	  project = "acs_ecs_dashboard"
-	  metric = "disk_writebytes"
-	  dimensions = {
-	    instanceId = "i-bp1247jeep0y53nu3bnk,i-bp11gdcik8z6dl5jm84p"
-	    device = "/dev/vda1,/dev/vdb1"
-	  }
-	  period = 900
+	  name               = "tf-testAccCmsAlarm_disable"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
 	  escalations_critical {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 3
+		threshold           = 35
+		times               = 3
 	  }
 	  escalations_warn {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 3
+		threshold           = 35
+		times               = 3
 	  }
 	  escalations_info {
-		statistics = "Average"
+		statistics          = "Average"
 		comparison_operator = "<"
-		threshold = 35
-		times = 2
+		threshold           = 35
+		times               = 2
 	  }
-    contact_groups = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
-      effective_interval = "06:00-20:00"
-	  enabled = false
-	  webhook = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
+	  contact_groups     = [
+	  alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+	  enabled            = false
+	  webhook            = "https://${data.alicloud_account.current.id}.eu-central-1.fc.aliyuncs.com/2016-08-15/proxy/Terraform/AlarmEndpointMock/"
+	}
+	`, name)
+}
+
+func testAccCmsAlarmPrometheus(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+	
+	resource "alicloud_cms_alarm" "prometheus" {
+	  name               = "tf-testAccCmsAlarm_prometheus"
+	  project            = "acs_prometheus"
+	  metric             = "tf-test-1"
+	  period             = 90
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  prometheus {
+		prom_ql = "cpuUsage{instanceId=\"xxxx\"}[1m]>90"
+		level = "Critical"
+		times = 3
+		annotations = {
+			 summary = "value"
+		}
+	  }
+	}
+	`, name)
+}
+
+func testAccCmsAlarmPrometheusUpdate(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+
+	resource "alicloud_cms_namespace" "default" {
+		description   = var.name
+		namespace     = "tf-testacc-cloudmonitorservicenamespace"
+		specification = "cms.s1.large"
+	}
+	
+	resource "alicloud_cms_alarm" "prometheus" {
+	  name               = "tf-testAccCmsAlarm_prometheus"
+	  project            = "acs_prometheus"
+	  metric             = alicloud_cms_namespace.default.id
+	  period             = 90
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  prometheus {
+		prom_ql = "cpuUsage{instanceId=\"xxxx\"}[1m]>80"
+		level = "Info"
+		times = 4
+		annotations = {
+			 summary = "value1"
+		}
+	  }
+	}
+	`, name)
+}
+
+func testAccCmsAlarmTags(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+	  alarm_contact_group_name = "${var.name}"
+	  describe                 = "Test For Alarm."
+	}
+	
+	resource "alicloud_cms_alarm" "tags" {
+	  name               = "tf-testAccCmsAlarm_tags"
+	  project            = "acs_ecs_dashboard"
+	  metric             = "disk_writebytes"
+	  metric_dimensions  = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
+	  period             = 900
+	  escalations_critical {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_warn {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  escalations_info {
+		statistics          = "Average"
+		comparison_operator = "<="
+		threshold           = 35
+		times               = 2
+	  }
+	  contact_groups     = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
+	  effective_interval = "06:00-20:00"
+      tags = {
+		Created = "TF"
+		For 	= "Acceptance-test"
+	  }
 	}
 	`, name)
 }

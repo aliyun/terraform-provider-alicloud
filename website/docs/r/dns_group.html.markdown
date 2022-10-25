@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_dns\_group
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.84.0`. Please use new resource [alicloud_alidns_domain_group](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_group.html).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.84.0`. Please use new resource [alicloud_alidns_domain_group](https://www.terraform.io/docs/providers/alicloud/r/alidns_domain_group).
 
 Provides a DNS Group resource.
 

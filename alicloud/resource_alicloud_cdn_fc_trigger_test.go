@@ -112,7 +112,7 @@ data "alicloud_regions" "default" {
 `, name)
 }
 
-func TestAccAlicloudCdnFcTrigger_unit(t *testing.T) {
+func TestUnitAlicloudCdnFcTrigger(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cdn_fc_trigger"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cdn_fc_trigger"].Schema).Data(nil, nil)

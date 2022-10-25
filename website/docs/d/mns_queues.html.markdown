@@ -4,16 +4,18 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_mns_queues"
 sidebar_current: "docs-alicloud-datasource-mns-queues"
 description: |-
-    Provides a list of mns queues available to the user.
+  Provides a list of mns queues available to the user.
 ---
 
 # alicloud\_mns\_queues
 
 This data source provides a list of MNS queues in an Alibaba Cloud account according to the specified parameters.
 
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.188.0`. Please use new datasource [message_service_queues](https://www.terraform.io/docs/providers/alicloud/d/message_service_queues).
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_mns_queues" "queues" {
   name_prefix = "tf-"
 }

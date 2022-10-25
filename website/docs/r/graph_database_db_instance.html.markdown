@@ -37,15 +37,18 @@ resource "alicloud_graph_database_db_instance" "example" {
 
 The following arguments are supported:
 
-* `db_instance_category` - (Required, ForceNew) The category of the db instance. Valid values: `HA`.
+* `db_instance_category` - (Required, ForceNew) The category of the db instance. Valid values: `HA`, `SINGLE`(Available in 1.173.0+).
 * `db_instance_description` - (Optional) According to the practical example or notes.
 * `db_instance_network_type` - (Required, ForceNew) The network type of the db instance. Valid values: `vpc`.
 * `db_instance_storage_type` - (Required) Disk storage type. Valid values: `cloud_essd`, `cloud_ssd`. Modification is not supported.
-* `db_node_class` - (Required) The class of the db node. Valid values: `gdb.r.xlarge`, `gdb.r.2xlarge`, `gdb.r.4xlarge`, `gdb.r.8xlarge`, `gdb.r.16xlarge`.
+* `db_node_class` - (Required) The class of the db node. Valid values: `gdb.r.xlarge`, `gdb.r.2xlarge`, `gdb.r.4xlarge`, `gdb.r.8xlarge`, `gdb.r.16xlarge`, `gdb.r.xlarge_basic`, `gdb.r.2xlarge_basic`, `gdb.r.4xlarge_basic`, `gdb.r.8xlarge_basic`, `gdb.r.16xlarge_basic`.
 * `db_node_storage` - (Required) Instance storage space, which is measured in GB.
 * `db_version` - (Required, ForceNew) Kernel Version. Valid values: `1.0` or `1.0-OpenCypher`. `1.0`: represented as gremlin, `1.0-OpenCypher`: said opencypher.
 * `payment_type` - (Required, ForceNew) The paymen type of the resource. Valid values: `PayAsYouGo`.
 * `db_instance_ip_array` - (Optional, Computed) IP ADDRESS whitelist for the instance group list. See the following `Block db_instance_ip_array`.
+* `vswitch_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The ID of attaching vswitch to instance.
+* `vpc_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) ID of the VPC.
+* `zone_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The zone ID of the resource.
 
 #### Block db_instance_ip_array
 
@@ -66,8 +69,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when create the Db Instance.
-* `delete` - (Defaults to 1 mins) Used when delete the Db Instance.
+* `create` - (Defaults to 60 mins) Used when create the Db Instance.
+* `delete` - (Defaults to 10 mins) Used when delete the Db Instance.
 * `update` - (Defaults to 60 mins) Used when update the Db Instance.
 
 ## Import

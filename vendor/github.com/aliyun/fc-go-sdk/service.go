@@ -342,7 +342,6 @@ func (i *UpdateServiceInput) WithNASConfig(nasConfig *NASConfig) *UpdateServiceI
 	return i
 }
 
-
 func (i *UpdateServiceInput) WithTracingConfig(tracingConfig *TracingConfig) *UpdateServiceInput {
 	i.TracingConfig = tracingConfig
 	return i
