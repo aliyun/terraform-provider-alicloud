@@ -57,6 +57,24 @@ func resourceAlicloudHbrVault() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"LRS", "ZRS"}, false),
 			},
+			"encrypt_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"HBR_PRIVATE", "KMS"}, false),
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("encrypt_type"); ok && v.(string) == "HBR_PRIVATE" {
+						return true
+					}
+					return false
+				},
+			},
 		},
 	}
 }
@@ -83,6 +101,14 @@ func resourceAlicloudHbrVaultCreate(d *schema.ResourceData, meta interface{}) er
 	}
 	if v, ok := d.GetOk("redundancy_type"); ok {
 		request["RedundancyType"] = v
+	}
+
+	if v, ok := d.GetOk("encrypt_type"); ok {
+		request["EncryptType"] = v
+	}
+
+	if v, ok := d.GetOk("kms_key_id"); ok {
+		request["KmsKeyId"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -114,6 +140,7 @@ func resourceAlicloudHbrVaultCreate(d *schema.ResourceData, meta interface{}) er
 
 	return resourceAlicloudHbrVaultRead(d, meta)
 }
+
 func resourceAlicloudHbrVaultRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	hbrService := HbrService{client}
@@ -132,9 +159,12 @@ func resourceAlicloudHbrVaultRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("vault_storage_class", object["VaultStorageClass"])
 	d.Set("vault_type", object["VaultType"])
 	d.Set("redundancy_type", object["RedundancyType"])
+	d.Set("encrypt_type", object["EncryptType"])
+	d.Set("kms_key_id", object["KmsKeyId"])
 
 	return nil
 }
+
 func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -180,6 +210,7 @@ func resourceAlicloudHbrVaultUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 	return resourceAlicloudHbrVaultRead(d, meta)
 }
+
 func resourceAlicloudHbrVaultDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteVault"

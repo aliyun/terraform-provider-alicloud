@@ -325,6 +325,27 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log_config": []map[string]string{
+						{
+							"project":                 "${alicloud_log_store.default.project}",
+							"logstore":                "${alicloud_log_store.default.name}",
+							"enable_request_metrics":  "true",
+							"enable_instance_metrics": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_config.0.project":                 name,
+						"log_config.0.logstore":                name,
+						"log_config.0.enable_request_metrics":  CHECKSET,
+						"log_config.0.enable_instance_metrics": CHECKSET,
+						"version":                              "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"log_config":      REMOVEKEY,
 					"role":            REMOVEKEY,
 					"internet_access": REMOVEKEY,
@@ -332,12 +353,14 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.0.project":  REMOVEKEY,
-						"log_config.0.logstore": REMOVEKEY,
-						"role":                  REMOVEKEY,
-						"internet_access":       REMOVEKEY,
-						"description":           REMOVEKEY,
-						"version":               "6",
+						"log_config.0.project":                 REMOVEKEY,
+						"log_config.0.logstore":                REMOVEKEY,
+						"log_config.0.enable_request_metrics":  REMOVEKEY,
+						"log_config.0.enable_instance_metrics": REMOVEKEY,
+						"role":                                 REMOVEKEY,
+						"internet_access":                      REMOVEKEY,
+						"description":                          REMOVEKEY,
+						"version":                              "7",
 					}),
 				),
 			},
@@ -429,15 +452,19 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"log_config": []map[string]string{
 						{
-							"project":  "${alicloud_log_project.default.name}",
-							"logstore": "${alicloud_log_store.default.name}",
+							"project":                 "${alicloud_log_project.default.name}",
+							"logstore":                "${alicloud_log_store.default.name}",
+							"enable_request_metrics":  "true",
+							"enable_instance_metrics": "true",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.0.project":  name,
-						"log_config.0.logstore": name,
+						"log_config.0.project":                 name,
+						"log_config.0.logstore":                name,
+						"log_config.0.enable_request_metrics":  CHECKSET,
+						"log_config.0.enable_instance_metrics": CHECKSET,
 					}),
 				),
 			},
@@ -449,10 +476,12 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_config.0.project":  REMOVEKEY,
-						"log_config.0.logstore": REMOVEKEY,
-						"internet_access":       REMOVEKEY,
-						"description":           REMOVEKEY,
+						"log_config.0.project":                 REMOVEKEY,
+						"log_config.0.logstore":                REMOVEKEY,
+						"log_config.0.enable_request_metrics":  REMOVEKEY,
+						"log_config.0.enable_instance_metrics": REMOVEKEY,
+						"internet_access":                      REMOVEKEY,
+						"description":                          REMOVEKEY,
 					}),
 				),
 			},

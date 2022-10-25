@@ -211,6 +211,11 @@ func dataSourceAlicloudCSEdgeKubernetesClustersRead(d *schema.ResourceData, meta
 }
 
 func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, clusterTypes []cs.KubernetesCluster, meta interface{}) error {
+	detailEnabled := false
+	if v, ok := d.GetOk("enable_details"); ok {
+		detailEnabled = v.(bool)
+	}
+
 	var ids, names []string
 	var s []map[string]interface{}
 	for _, ct := range clusterTypes {
@@ -219,7 +224,7 @@ func csEdgeKubernetesClusterDescriptionAttributes(d *schema.ResourceData, cluste
 			"name": ct.Name,
 		}
 
-		if detailedEnabled, ok := d.GetOk("enable_details"); ok && !detailedEnabled.(bool) {
+		if !detailEnabled {
 			ids = append(ids, ct.ClusterID)
 			names = append(names, ct.Name)
 			s = append(s, mapping)

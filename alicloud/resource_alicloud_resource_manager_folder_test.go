@@ -176,7 +176,7 @@ func ResourceManagerFolderBasicdependence(name string) string {
 	return ""
 }
 
-func TestAccAlicloudResourceManagerFolder_unit(t *testing.T) {
+func TestUnitAlicloudResourceManagerFolder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_folder"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_folder"].Schema).Data(nil, nil)

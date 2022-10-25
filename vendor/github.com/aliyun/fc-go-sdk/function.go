@@ -82,6 +82,7 @@ type CustomContainerConfig struct {
 	Command          *string `json:"command"`
 	Args             *string `json:"args"`
 	AccelerationType *string `json:"accelerationType"`
+	InstanceID       *string `json:"instanceID"`
 }
 
 func NewCustomContainerConfig() *CustomContainerConfig {
@@ -105,6 +106,11 @@ func (c *CustomContainerConfig) WithArgs(args string) *CustomContainerConfig {
 
 func (c *CustomContainerConfig) WithAccelerationType(accelerationType string) *CustomContainerConfig {
 	c.AccelerationType = &accelerationType
+	return c
+}
+
+func (c *CustomContainerConfig) WithInstanceID(instanceID string) *CustomContainerConfig {
+	c.InstanceID = &instanceID
 	return c
 }
 
@@ -690,18 +696,28 @@ type DeleteFunctionInput struct {
 	ServiceName  *string
 	FunctionName *string
 	IfMatch      *string
+	headers      Header
 }
 
 func NewDeleteFunctionInput(serviceName string, functionName string) *DeleteFunctionInput {
 	return &DeleteFunctionInput{
 		ServiceName:  &serviceName,
 		FunctionName: &functionName,
+		headers:      make(Header),
 	}
 }
 
 func (s *DeleteFunctionInput) WithIfMatch(ifMatch string) *DeleteFunctionInput {
 	s.IfMatch = &ifMatch
 	return s
+}
+
+func (i *DeleteFunctionInput) WithHeader(key, value string) *DeleteFunctionInput {
+	if i.headers == nil {
+		i.headers = make(Header)
+	}
+	i.headers[key] = value
+	return i
 }
 
 func (i *DeleteFunctionInput) GetQueryParams() url.Values {
@@ -714,7 +730,10 @@ func (i *DeleteFunctionInput) GetPath() string {
 }
 
 func (i *DeleteFunctionInput) GetHeaders() Header {
-	header := make(Header)
+	if i.headers == nil {
+		i.headers = make(Header)
+	}
+	header := i.headers
 	if i.IfMatch != nil {
 		header[ifMatch] = *i.IfMatch
 	}

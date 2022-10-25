@@ -43,6 +43,12 @@ func TestAccAlicloudLogAlert_basic(t *testing.T) {
 					"alert_displayname": displayname,
 					"condition":         "count >100",
 					"dashboard":         "terraform-dashboard",
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "5m",
+						},
+					},
 					"query_list": []map[string]interface{}{
 						{
 							"logstore":    "${alicloud_log_store.default.name}",
@@ -139,7 +145,21 @@ func TestAccAlicloudLogAlert_basic(t *testing.T) {
 					}),
 				),
 			},
-
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "1m",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"schedule.#": "1",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"alert_displayname": "update_alert_name",
@@ -240,6 +260,12 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 					"alert_name":        "alert_name",
 					"alert_displayname": displayname,
 					"send_resolved":     "true",
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "5m",
+						},
+					},
 					"query_list": []map[string]interface{}{
 						{
 							"store":       "${alicloud_log_store.default.name}",
@@ -334,6 +360,7 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 						"alert_name":                         "alert_name",
 						"alert_displayname":                  displayname,
 						"send_resolved":                      "true",
+						"schedule.#":                         "1",
 						"query_list.#":                       "2",
 						"query_list.0.store":                 CHECKSET,
 						"query_list.0.store_type":            "log",
@@ -374,6 +401,21 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 						"severity_configurations.2.severity":                       "2",
 						"severity_configurations.2.eval_condition.condition":       "",
 						"severity_configurations.2.eval_condition.count_condition": "__count__ > 0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "1m",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"schedule.#": "1",
 					}),
 				),
 			},

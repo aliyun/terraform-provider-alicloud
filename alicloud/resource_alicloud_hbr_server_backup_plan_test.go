@@ -3,14 +3,22 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
+	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -564,4 +572,393 @@ data "alicloud_instances" "default" {
   status = "Running"
 }
 `, name)
+}
+
+func TestUnitAlicloudHBRServerBackupPlan(t *testing.T) {
+	p := Provider().(*schema.Provider).ResourcesMap
+	dInit, _ := schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(nil, nil)
+	dInit.MarkNewResource()
+	attributes := map[string]interface{}{
+		"ecs_server_backup_plan_name": "CreateBackupPlanValue",
+		"instance_id":                 "CreateBackupPlanValue",
+		"schedule":                    "CreateBackupPlanValue",
+		"retention":                   4,
+		"disabled":                    false,
+		"detail": []map[string]interface{}{
+			{
+				"app_consistent":        true,
+				"snapshot_group":        false,
+				"enable_fs_freeze":      false,
+				"pre_script_path":       "CreateBackupPlanValue",
+				"post_script_path":      "CreateBackupPlanValue",
+				"timeout_in_seconds":    180,
+				"disk_id_list":          []string{"CreateBackupPlanValue"},
+				"do_copy":               false,
+				"destination_retention": 1,
+				"destination_region_id": "CreateBackupPlanValue",
+			},
+		},
+	}
+	for key, value := range attributes {
+		err := dInit.Set(key, value)
+		assert.Nil(t, err)
+		err = dExisted.Set(key, value)
+		assert.Nil(t, err)
+		if err != nil {
+			log.Printf("[ERROR] the field %s setting error", key)
+		}
+	}
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		t.Skipf("Skipping the test case with err: %s", err)
+		t.Skipped()
+	}
+	rawClient = rawClient.(*connectivity.AliyunClient)
+	ReadMockResponse := map[string]interface{}{
+		// DescribeBackupPlans
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"PlanId":     "CreateBackupPlanValue",
+					"PlanName":   "CreateBackupPlanValue",
+					"InstanceId": "CreateBackupPlanValue",
+					"Retention":  4,
+					"Schedule":   "CreateBackupPlanValue",
+					"Disabled":   false,
+					"Detail": map[string]interface{}{
+						"appConsistent":        true,
+						"snapshotGroup":        false,
+						"enableFsFreeze":       false,
+						"preScriptPath":        "CreateBackupPlanValue",
+						"postScriptPath":       "CreateBackupPlanValue",
+						"timeoutInSeconds":     "180",
+						"doCopy":               false,
+						"destinationRegionId":  "CreateBackupPlanValue",
+						"destinationRetention": 1,
+						"diskIdList":           []interface{}{"CreateBackupPlanValue"},
+					},
+				},
+			},
+		},
+		"PlanId":  "CreateBackupPlanValue",
+		"Success": "true",
+	}
+	CreateMockResponse := map[string]interface{}{
+		// CreateBackupPlan
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"PlanId": "CreateBackupPlanValue",
+				},
+			},
+		},
+		"PlanId":  "CreateBackupPlanValue",
+		"Success": "true",
+	}
+	failedResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, &tea.SDKError{
+			Code:       String(errorCode),
+			Data:       String(errorCode),
+			Message:    String(errorCode),
+			StatusCode: tea.Int(400),
+		}
+	}
+	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_hbr_server_backup_plan", errorCode))
+	}
+	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
+		if len(operationMockResponse) > 0 {
+			mapMerge(ReadMockResponse, operationMockResponse)
+		}
+		return ReadMockResponse, nil
+	}
+
+	// Create
+	patches := gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHbrClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudHbrServerBackupPlanCreate(dInit, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	ReadMockResponseDiff := map[string]interface{}{
+		// DescribeBackupPlans Response
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"PlanId": "CreateBackupPlanValue",
+				},
+			},
+		},
+		"PlanId":  "CreateBackupPlanValue",
+		"Success": "true",
+	}
+	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "CreateBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						successResponseMock(ReadMockResponseDiff)
+						return CreateMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudHbrServerBackupPlanCreate(dInit, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(dInit.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dInit.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Update
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHbrClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudHbrServerBackupPlanUpdate(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	// UpdateBackupPlan
+	attributesDiff := map[string]interface{}{
+		"ecs_server_backup_plan_name": "UpdateBackupPlanValue",
+		"schedule":                    "UpdateBackupPlanValue",
+		"retention":                   5,
+		"detail": []map[string]interface{}{
+			{
+				"app_consistent":        false,
+				"snapshot_group":        true,
+				"enable_fs_freeze":      true,
+				"pre_script_path":       "UpdateBackupPlanValue",
+				"post_script_path":      "UpdateBackupPlanValue",
+				"timeout_in_seconds":    200,
+				"disk_id_list":          []string{"UpdateBackupPlanValue"},
+				"do_copy":               true,
+				"destination_retention": 2,
+				"destination_region_id": "UpdateBackupPlanValue",
+			},
+		},
+	}
+	diff, err := newInstanceDiff("alicloud_hbr_server_backup_plan", attributes, attributesDiff, dInit.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(dInit.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeBackupPlans
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"PlanName":  "UpdateBackupPlanValue",
+					"Retention": 5,
+					"Schedule":  "UpdateBackupPlanValue",
+					"Detail": map[string]interface{}{
+						"appConsistent":        false,
+						"snapshotGroup":        true,
+						"enableFsFreeze":       true,
+						"preScriptPath":        "UpdateBackupPlanValue",
+						"postScriptPath":       "UpdateBackupPlanValue",
+						"timeoutInSeconds":     "200",
+						"doCopy":               true,
+						"destinationRegionId":  "UpdateBackupPlanValue",
+						"destinationRetention": 2,
+						"diskIdList":           []interface{}{"UpdateBackupPlanValue"},
+					},
+				},
+			},
+		},
+		"Success": "true",
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "UpdateBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudHbrServerBackupPlanUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// DisableBackupPlan
+	attributesDiff = map[string]interface{}{
+		"disabled": true,
+	}
+	diff, err = newInstanceDiff("alicloud_hbr_server_backup_plan", attributes, attributesDiff, dExisted.State())
+	if err != nil {
+		t.Error(err)
+	}
+	dExisted, _ = schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(dExisted.State(), diff)
+	ReadMockResponseDiff = map[string]interface{}{
+		// DescribeBackupPlans
+		"BackupPlans": map[string]interface{}{
+			"BackupPlan": []interface{}{
+				map[string]interface{}{
+					"Disabled": true,
+				},
+			},
+		},
+		"Success": "true",
+	}
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DisableBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if retryIndex >= len(errorCodes)-1 {
+						return successResponseMock(ReadMockResponseDiff)
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudHbrServerBackupPlanUpdate(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		default:
+			assert.Nil(t, err)
+			dCompare, _ := schema.InternalMap(p["alicloud_hbr_server_backup_plan"].Schema).Data(dExisted.State(), nil)
+			for key, value := range attributes {
+				_ = dCompare.Set(key, value)
+			}
+			assert.Equal(t, dCompare.State().Attributes, dExisted.State().Attributes)
+		}
+		if retryIndex >= len(errorCodes)-1 {
+			break
+		}
+	}
+
+	// Read
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DescribeBackupPlans" {
+				switch errorCode {
+				case "{}":
+					return notFoundResponseMock(errorCode)
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudHbrServerBackupPlanRead(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "{}":
+			assert.Nil(t, err)
+		}
+	}
+
+	// Delete
+	patches = gomonkey.ApplyMethod(reflect.TypeOf(&connectivity.AliyunClient{}), "NewHbrClient", func(_ *connectivity.AliyunClient) (*client.Client, error) {
+		return nil, &tea.SDKError{
+			Code:       String("loadEndpoint error"),
+			Data:       String("loadEndpoint error"),
+			Message:    String("loadEndpoint error"),
+			StatusCode: tea.Int(400),
+		}
+	})
+	err = resourceAlicloudHbrServerBackupPlanDelete(dExisted, rawClient)
+	patches.Reset()
+	assert.NotNil(t, err)
+	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
+	for index, errorCode := range errorCodes {
+		retryIndex := index - 1
+		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
+			if *action == "DeleteBackupPlan" {
+				switch errorCode {
+				case "NonRetryableError":
+					return failedResponseMock(errorCode)
+				default:
+					retryIndex++
+					if errorCodes[retryIndex] == "nil" {
+						ReadMockResponse = map[string]interface{}{}
+						return ReadMockResponse, nil
+					}
+					return failedResponseMock(errorCodes[retryIndex])
+				}
+			}
+			return ReadMockResponse, nil
+		})
+		err := resourceAlicloudHbrServerBackupPlanDelete(dExisted, rawClient)
+		patches.Reset()
+		switch errorCode {
+		case "NonRetryableError":
+			assert.NotNil(t, err)
+		case "nil":
+			assert.Nil(t, err)
+		}
+	}
 }

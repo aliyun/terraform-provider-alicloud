@@ -58,11 +58,6 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": fmt.Sprintf("%s1", name),
 				}),
@@ -81,6 +76,79 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 						"folder_id": os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2"),
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudResourceManagerAccount_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_account.default"
+	ra := resourceAttrInit(resourceId, ResourceManagerAccountMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourcemanagerService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, ResourceManagerAccountBasicdependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckEnterpriseAccountEnabled(t)
+			testAccPreCheck(t)
+			// The created account resource cannot be deleted, and the created dependent resource folder will also be deleted. Therefore, the existing folder is specified in the environment variable for testing. If it is not specified, skip the test.
+			testAccPreCheckWithResourceManagerFloderIdSetting(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"display_name": name,
+					"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "ACCOUNT",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name": name,
+						"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "ACCOUNT",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "ACCOUNT_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "ACCOUNT_Update",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

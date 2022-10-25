@@ -298,7 +298,7 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		paidType := PostPaid
-		if object["PaidType"] == 0 {
+		if fmt.Sprint(object["PaidType"]) == "0" {
 			paidType = PrePaid
 		}
 

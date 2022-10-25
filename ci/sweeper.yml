@@ -1,0 +1,175 @@
+groups:
+  - name: All
+    jobs:
+      - Sweeper-1
+      - Sweeper-2
+      - Sweeper-3
+      - Sweeper-4
+      - Sweeper-5
+
+shared:
+  - &clone-provider
+    get: terraform-provider-alicloud
+    resource: terraform-provider-alicloud
+    trigger: false
+
+  - &get-aliyun-cli
+    get: aliyun-cli
+    resource: aliyun-cli
+
+  - &run
+    task: terraform ci
+    file: terraform-provider-alicloud/ci/tasks/run.yml
+    params: &run-params
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_REGION: {{alicloud_region}}
+      ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
+      TEST_CASE_CODE: ""
+      SWEEPER: false
+      CHECKOUT_REGION: "true"
+      ACCESS_URL: {{access_ci_url}}
+      ACCESS_USER_NAME: {{access_ci_user_name}}
+      ACCESS_PASSWORD: {{access_ci_password}}
+      DING_TALK_TOKEN: {{ding_talk_token}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_RESOURCE_GROUP_ID: {{alicloud_resource_group_id}}
+      CONCOURSE_TARGET: {{alicloud_concourse_target}}
+      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
+      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
+      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
+      CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: {{alicloud_concourse_target_pipeline_name}}
+      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
+      ALICLOUD_ACCESS_KEY_MASTER: {{alicloud_access_key_master}}
+      ALICLOUD_SECRET_KEY_MASTER: {{alicloud_secret_key_master}}
+      ALICLOUD_ACCESS_KEY_SLAVE:  {{alicloud_access_key_slave}}
+      ALICLOUD_SECRET_KEY_SLAVE:  {{alicloud_secret_key_slave}}
+
+jobs:
+  - name: Sweeper-1
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: sweeper1
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          SWEEPER: true
+          TEST_CASE_CODE: "-"
+
+  - name: Sweeper-2
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: sweeper2
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          SWEEPER: true
+          TEST_CASE_CODE: "-"
+
+  - name: Sweeper-3
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: sweeper3
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          SWEEPER: true
+          TEST_CASE_CODE: "-"
+
+  - name: Sweeper-4
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: sweeper4
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          SWEEPER: true
+          TEST_CASE_CODE: "-"
+
+  - name: Sweeper-5
+    plan:
+      - <<: *clone-provider
+      - get: trigger
+        trigger: true
+        resource: sweeper5
+      - aggregate:
+          - *get-aliyun-cli
+      - <<: *run
+        params:
+          <<: *run-params
+          SWEEPER: true
+          TEST_CASE_CODE: "-"
+
+resources:
+  - name: terraform-provider-alicloud
+    type: git
+    source:
+      uri: https://github.com/aliyun/terraform-provider-alicloud.git
+      branch: master
+
+  - name: aliyun-cli
+    type: s3
+    source:
+      access_key_id: {{aliyun_cli_access_key}}
+      secret_access_key: {{aliyun_cli_secret_key}}
+      bucket: {{aliyun_cli_bucket}}
+      regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
+      region_name: {{aliyun_cli_region}}
+      endpoint: oss-((aliyun_cli_region)).aliyuncs.com
+
+  #apply to sweeper
+  - name: sweeper1
+    type: time
+    source:
+      start: 01:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
+      location: {{time_location}}
+
+  - name: sweeper2
+    type: time
+    source:
+      start: 02:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
+      location: {{time_location}}
+
+  - name: sweeper3
+    type: time
+    source:
+      start: 03:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
+      location: {{time_location}}
+
+  - name: sweeper4
+    type: time
+    source:
+      start: 04:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
+      location: {{time_location}}
+
+  - name: sweeper5
+    type: time
+    source:
+      start: 05:00 AM
+      stop: 10:00 PM
+      days: [Sunday, Saturday]
+      location: {{time_location}}

@@ -1,0 +1,229 @@
+syntax = "proto2";
+
+package otsprotocol;
+
+message TimeseriesTableOptions {
+  optional int32 time_to_live = 1;
+}
+
+message TimeseriesTableMeta {
+  required string table_name = 1;
+  optional TimeseriesTableOptions table_options = 2;
+  optional string status = 3;
+}
+
+message CreateTimeseriesTableRequest {
+  required TimeseriesTableMeta table_meta = 1;
+}
+
+message CreateTimeseriesTableResponse {
+}
+
+message ListTimeseriesTableRequest {
+}
+
+message ListTimeseriesTableResponse {
+  repeated TimeseriesTableMeta table_metas = 1;
+}
+
+message DeleteTimeseriesTableRequest {
+  required string table_name = 1;
+}
+
+message DeleteTimeseriesTableResponse {
+}
+
+message UpdateTimeseriesTableRequest {
+  required string table_name = 1;
+  optional TimeseriesTableOptions table_options = 2;
+}
+
+message UpdateTimeseriesTableResponse {
+}
+
+message DescribeTimeseriesTableRequest {
+  required string table_name = 1;
+}
+
+message DescribeTimeseriesTableResponse {
+  required TimeseriesTableMeta table_meta = 1;
+}
+
+enum MetaQueryConditionType {
+  COMPOSITE_CONDITION = 1;
+  MEASUREMENT_CONDITION = 2;
+  SOURCE_CONDITION = 3;
+  TAG_CONDITION = 4;
+  UPDATE_TIME_CONDITION = 5;
+  ATTRIBUTE_CONDITION = 6;
+}
+
+message MetaQueryCondition {
+  required MetaQueryConditionType type = 1;
+  required bytes proto_data = 2;
+}
+
+enum MetaQueryCompositeOperator {
+  OP_AND = 1;
+  OP_OR = 2;
+  OP_NOT = 3;
+}
+
+message MetaQueryCompositeCondition {
+  required MetaQueryCompositeOperator op = 1;
+  repeated MetaQueryCondition sub_conditions = 2;
+}
+
+enum MetaQuerySingleOperator {
+  OP_EQUAL = 1;
+  OP_GREATER_THAN = 2;
+  OP_GREATER_EQUAL = 3;
+  OP_LESS_THAN = 4;
+  OP_LESS_EQUAL = 5;
+  OP_PREFIX = 6;
+}
+
+message MetaQueryMeasurementCondition {
+  required MetaQuerySingleOperator op = 1;
+  required string value = 2;
+}
+
+message MetaQuerySourceCondition {
+  required MetaQuerySingleOperator op = 1;
+  required string value = 2;
+}
+
+message MetaQueryTagCondition {
+  required MetaQuerySingleOperator op = 1;
+  required string tag_name = 2;
+  required string value = 3;
+}
+
+message MetaQueryAttributeCondition {
+  required MetaQuerySingleOperator op = 1;
+  required string attr_name = 2;
+  required string value = 3;
+}
+
+message MetaQueryUpdateTimeCondition {
+  required MetaQuerySingleOperator op = 1;
+  required int64 value = 2;
+}
+
+message TimeseriesKey {
+  required string measurement = 1;
+  required string source = 2;
+  required string tags = 3;
+}
+
+message TimeseriesMeta {
+  required TimeseriesKey time_series_key = 1;
+  optional string attributes = 2;
+  optional int64 update_time = 3;
+}
+
+message QueryTimeseriesMetaRequest {
+  required string table_name = 1;
+  optional MetaQueryCondition condition = 2;
+  optional bool get_total_hit = 3;
+  optional bytes token = 4;
+  optional int32 limit = 5;
+}
+
+message QueryTimeseriesMetaResponse {
+  repeated TimeseriesMeta timeseries_metas = 1;
+  optional int64 total_hit = 2;
+  optional bytes next_token = 3;
+}
+
+enum RowsSerializeType {
+  RST_FLAT_BUFFER = 0;
+  RST_PLAIN_BUFFER = 1;
+  RST_PROTO_BUFFER = 2;
+}
+
+message TimeseriesRows {
+  required RowsSerializeType type = 1;
+  required bytes rows_data = 2;
+  optional int32 flatbuffer_crc32c = 3;
+}
+
+enum MetaUpdateMode {
+  MUM_NORMAL = 0;
+  MUM_IGNORE = 1;
+}
+
+message PutTimeseriesDataRequest {
+  required string table_name = 1;
+  required TimeseriesRows rows_data = 2;
+  optional MetaUpdateMode meta_update_mode = 3;
+}
+
+message FailedRowInfo {
+  required int32 row_index = 1;
+  optional string error_code = 2;
+  optional string error_message = 3;
+}
+
+message MetaUpdateStatus {
+  repeated uint32 row_ids = 1;
+  repeated uint32 meta_update_times = 2;
+}
+
+message PutTimeseriesDataResponse {
+  repeated FailedRowInfo failed_rows = 1;
+  optional MetaUpdateStatus meta_update_status = 2;
+}
+
+message GetTimeseriesDataRequest {
+  required string table_name = 1;
+  required TimeseriesKey time_series_key = 2;
+  optional int64 begin_time = 3;
+  optional int64 end_time = 4;
+  optional int64 specific_time = 5;
+  optional bytes token = 6;
+  optional int32 limit = 7;
+}
+
+message GetTimeseriesDataResponse {
+  required bytes rows_data = 1;
+  optional bytes next_token = 2;
+}
+
+message UpdateTimeseriesMetaRequest {
+  required string table_name = 1;
+  repeated TimeseriesMeta timeseries_meta = 2;
+}
+
+message UpdateTimeseriesMetaResponse {
+  repeated FailedRowInfo failed_rows = 1;
+}
+
+message DeleteTimeseriesMetaRequest {
+  required string table_name = 1;
+  repeated TimeseriesKey timeseries_key = 2;
+}
+
+message DeleteTimeseriesMetaResponse {
+  repeated FailedRowInfo failed_rows = 1;
+}
+
+message TimeseriesField {
+  optional string field_name = 1;
+  optional int64 value_int = 2;
+  optional string value_string = 3;
+  optional bool value_bool = 4;
+  optional double value_double = 5;
+  optional bytes value_binary = 6;
+}
+
+message TimeseriesRow {
+  optional TimeseriesKey timeseries_key = 1;
+  optional int64 time = 2;
+  repeated TimeseriesField fields = 3;
+  optional uint32 meta_cache_update_time = 4;
+}
+
+message TimeseriesPBRows {
+  repeated TimeseriesRow rows = 1;
+}

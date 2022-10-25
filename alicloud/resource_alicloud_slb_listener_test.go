@@ -1305,6 +1305,185 @@ func TestAccAlicloudSLBListener_https_healcheckmethod(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_listener.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbListenerConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbListenerConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
+					"frontend_port":             "22",
+					"backend_port":              "22",
+					"protocol":                  "tcp",
+					"scheduler":                 string(WRRScheduler),
+					"bandwidth":                 "10",
+					"acl_status":                "on",
+					"acl_type":                  string(AclTypeBlack),
+					"acl_id":                    "${alicloud_slb_acl.default.id}",
+					"persistence_timeout":       "3600",
+					"health_check_type":         string(HTTPHealthCheckType),
+					"health_check_domain":       "",
+					"health_check_uri":          "/console",
+					"health_check_connect_port": "20",
+					"healthy_threshold":         "8",
+					"unhealthy_threshold":       "8",
+					"health_check_timeout":      "8",
+					"health_check_interval":     "5",
+					"health_check_http_code":    string(HTTP_2XX),
+					"established_timeout":       "600",
+					"description":               name,
+					"proxy_protocol_v2_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":          CHECKSET,
+						"frontend_port":             "22",
+						"backend_port":              "22",
+						"protocol":                  "tcp",
+						"scheduler":                 string(WRRScheduler),
+						"bandwidth":                 "10",
+						"acl_status":                "on",
+						"acl_type":                  string(AclTypeBlack),
+						"acl_id":                    CHECKSET,
+						"persistence_timeout":       "3600",
+						"health_check_type":         string(HTTPHealthCheckType),
+						"health_check_domain":       "",
+						"health_check_uri":          "/console",
+						"health_check_connect_port": "20",
+						"healthy_threshold":         "8",
+						"unhealthy_threshold":       "8",
+						"health_check_timeout":      "8",
+						"health_check_interval":     "5",
+						"health_check_http_code":    string(HTTP_2XX),
+						"established_timeout":       "600",
+						"description":               name,
+						"proxy_protocol_v2_enabled": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proxy_protocol_v2_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proxy_protocol_v2_enabled": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_listener.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccSlbListenerConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceSlbListenerConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckSlbListenerDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":          "${alicloud_slb_load_balancer.default.id}",
+					"backend_port":              "2001",
+					"frontend_port":             "2001",
+					"protocol":                  "udp",
+					"bandwidth":                 "10",
+					"scheduler":                 string(WRRScheduler),
+					"healthy_threshold":         "8",
+					"unhealthy_threshold":       "8",
+					"health_check_timeout":      "8",
+					"health_check_interval":     "4",
+					"persistence_timeout":       "3600",
+					"health_check_connect_port": "20",
+					"acl_status":                "on",
+					"acl_type":                  string(AclTypeBlack),
+					"acl_id":                    "${alicloud_slb_acl.default.id}",
+					"description":               name,
+					"proxy_protocol_v2_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(
+						map[string]string{
+							"load_balancer_id":          CHECKSET,
+							"backend_port":              "2001",
+							"frontend_port":             "2001",
+							"protocol":                  "udp",
+							"bandwidth":                 "10",
+							"scheduler":                 string(WRRScheduler),
+							"healthy_threshold":         "8",
+							"unhealthy_threshold":       "8",
+							"health_check_timeout":      "8",
+							"health_check_interval":     "4",
+							"persistence_timeout":       "3600",
+							"health_check_connect_port": "20",
+							"acl_status":                "on",
+							"acl_type":                  string(AclTypeBlack),
+							"acl_id":                    CHECKSET,
+							"description":               name,
+							"proxy_protocol_v2_enabled": "true",
+						}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_protection_validation"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proxy_protocol_v2_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proxy_protocol_v2_enabled": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func testAccSlbListenerHttpForward(name string) string {
 	return fmt.Sprintf(`
 	%s

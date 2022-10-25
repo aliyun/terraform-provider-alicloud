@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -259,58 +260,64 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                  name,
-					"master_vswitch_ids":    []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
-					"worker_vswitch_ids":    []string{"${local.vswitch_id}"},
-					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
-					"worker_number":         "1",
-					"master_disk_category":  "cloud_ssd",
-					"worker_disk_size":      "50",
-					"password":              "Yourpassword1234",
-					"pod_cidr":              "10.99.0.0/16",
-					"service_cidr":          "172.16.0.0/16",
-					"enable_ssh":            "true",
-					"load_balancer_spec":    "slb.s2.small",
-					"install_cloud_monitor": "true",
-					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"deletion_protection":   "true",
-					"timezone":              "Asia/Shanghai",
-					"os_type":               "Linux",
-					"platform":              "CentOS",
-					"node_port_range":       "30000-32767",
-					"cluster_domain":        "cluster.local",
-					"custom_san":            "www.terraform.io",
-					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
-					"taints":                []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
-					"runtime":               map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
+					"name":                        name,
+					"master_vswitch_ids":          []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
+					"master_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_instance_types":       []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
+					"worker_number":               "1",
+					"master_disk_category":        "cloud_ssd",
+					"worker_disk_size":            "50",
+					"password":                    "Yourpassword1234",
+					"pod_cidr":                    "10.72.0.0/16",
+					"service_cidr":                "172.18.0.0/16",
+					"enable_ssh":                  "true",
+					"load_balancer_spec":          "slb.s2.small",
+					"install_cloud_monitor":       "true",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"deletion_protection":         "false",
+					"timezone":                    "Asia/Shanghai",
+					"os_type":                     "Linux",
+					"platform":                    "CentOS",
+					"node_port_range":             "30000-32767",
+					"cluster_domain":              "cluster.local",
+					"custom_san":                  "www.terraform.io",
+					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
+					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
+					"runtime":                     map[string]interface{}{"name": "containerd", "version": "1.5.13"},
+					"proxy_mode":                  "ipvs",
+					"new_nat_gateway":             "true",
+					"worker_instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                  name,
-						"worker_number":         "1",
-						"master_disk_category":  "cloud_ssd",
-						"worker_disk_size":      "50",
-						"password":              "Yourpassword1234",
-						"pod_cidr":              "10.99.0.0/16",
-						"service_cidr":          "172.16.0.0/16",
-						"enable_ssh":            "true",
-						"install_cloud_monitor": "true",
-						"resource_group_id":     CHECKSET,
-						"deletion_protection":   "true",
-						"timezone":              "Asia/Shanghai",
-						"os_type":               "Linux",
-						"platform":              "CentOS",
-						"node_port_range":       "30000-32767",
-						"cluster_domain":        "cluster.local",
-						"custom_san":            "www.terraform.io",
-						"rds_instances.#":       "1",
-						"taints.#":              "1",
-						"taints.0.key":          "tf-key1",
-						"taints.0.value":        "tf-value1",
-						"taints.0.effect":       "NoSchedule",
-						"runtime.Name":          "docker",
-						"runtime.Version":       "19.03.5",
+						"name":                        name,
+						"worker_number":               "1",
+						"master_disk_category":        "cloud_ssd",
+						"worker_disk_size":            "50",
+						"password":                    "Yourpassword1234",
+						"pod_cidr":                    "10.90.0.0/16",
+						"service_cidr":                "172.18.0.0/16",
+						"enable_ssh":                  "true",
+						"install_cloud_monitor":       "true",
+						"resource_group_id":           CHECKSET,
+						"deletion_protection":         "false",
+						"timezone":                    "Asia/Shanghai",
+						"os_type":                     "Linux",
+						"platform":                    "CentOS",
+						"node_port_range":             "30000-32767",
+						"cluster_domain":              "cluster.local",
+						"custom_san":                  "www.terraform.io",
+						"rds_instances.#":             "1",
+						"taints.#":                    "1",
+						"taints.0.key":                "tf-key1",
+						"taints.0.value":              "tf-value1",
+						"taints.0.effect":             "NoSchedule",
+						"runtime.name":                "containerd",
+						"runtime.version":             "1.5.13",
+						"proxy_mode":                  "ipvs",
+						"new_nat_gateway":             "true",
+						"worker_instance_charge_type": "PostPaid",
 					}),
 				),
 			},
@@ -324,16 +331,6 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 					"node_cidr_mask", "slb_internet_enabled", "vswitch_ids", "worker_disk_category", "worker_disk_size",
 					"worker_instance_charge_type", "worker_instance_types", "log_config", "worker_number",
 					"worker_data_disk_category", "worker_data_disk_size", "master_vswitch_ids", "worker_vswitch_ids", "exclude_autoscaler_nodes", "cpu_policy", "proxy_mode", "cluster_domain", "custom_san", "node_port_range", "os_type", "platform", "timezone", "runtime", "taints", "rds_instances", "load_balancer_spec"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"new_nat_gateway": "true",
-					}),
-				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -367,13 +364,11 @@ func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway":       REMOVEKEY,
 					"worker_number":         "3",
 					"install_cloud_monitor": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway":       "true",
 						"worker_number":         "3",
 						"install_cloud_monitor": "true",
 					}),
@@ -433,59 +428,65 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                  name,
-					"master_vswitch_ids":    []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
-					"worker_vswitch_ids":    []string{"${local.vswitch_id}"},
-					"master_instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
-					"worker_instance_types": []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
-					"worker_number":         "1",
-					"master_disk_category":  "cloud_ssd",
-					"worker_disk_size":      "50",
-					"password":              "Yourpassword1234",
-					"pod_cidr":              "10.99.0.0/16",
-					"service_cidr":          "172.16.0.0/16",
-					"enable_ssh":            "true",
-					"install_cloud_monitor": "true",
-					"user_ca":               tmpFile.Name(),
-					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"deletion_protection":   "false",
-					"timezone":              "Asia/Shanghai",
-					"os_type":               "Linux",
-					"platform":              "CentOS",
-					"node_port_range":       "30000-32767",
-					"cluster_domain":        "cluster.local",
-					"custom_san":            "www.terraform.io",
-					"rds_instances":         []string{"${alicloud_db_instance.default.id}"},
-					"taints":                []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
-					"runtime":               map[string]interface{}{"Name": "docker", "Version": "19.03.5"},
+					"name":                        name,
+					"master_vswitch_ids":          []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
+					"worker_vswitch_ids":          []string{"${local.vswitch_id}"},
+					"master_instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"worker_instance_types":       []string{"${data.alicloud_instance_types.default1.instance_types.0.id}"},
+					"worker_number":               "1",
+					"master_disk_category":        "cloud_ssd",
+					"worker_disk_size":            "50",
+					"password":                    "Yourpassword1234",
+					"pod_cidr":                    "10.74.0.0/16",
+					"service_cidr":                "172.19.0.0/16",
+					"enable_ssh":                  "true",
+					"install_cloud_monitor":       "true",
+					"user_ca":                     tmpFile.Name(),
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"deletion_protection":         "false",
+					"timezone":                    "Asia/Shanghai",
+					"os_type":                     "Linux",
+					"platform":                    "CentOS",
+					"node_port_range":             "30000-32767",
+					"cluster_domain":              "cluster.local",
+					"custom_san":                  "www.terraform.io",
+					"rds_instances":               []string{"${alicloud_db_instance.default.id}"},
+					"taints":                      []map[string]string{{"key": "tf-key1", "value": "tf-value1", "effect": "NoSchedule"}},
+					"runtime":                     map[string]interface{}{"name": "containerd", "version": "1.5.13"},
+					"proxy_mode":                  "ipvs",
+					"new_nat_gateway":             "true",
+					"worker_instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckUserCA(resourceId, v),
 					testAccCheck(map[string]string{
-						"name":                  name,
-						"worker_number":         "1",
-						"master_disk_category":  "cloud_ssd",
-						"worker_disk_size":      "50",
-						"password":              "Yourpassword1234",
-						"pod_cidr":              "10.99.0.0/16",
-						"service_cidr":          "172.16.0.0/16",
-						"enable_ssh":            "true",
-						"install_cloud_monitor": "true",
-						"resource_group_id":     CHECKSET,
-						"deletion_protection":   "false",
-						"timezone":              "Asia/Shanghai",
-						"os_type":               "Linux",
-						"platform":              "CentOS",
-						"node_port_range":       "30000-32767",
-						"cluster_domain":        "cluster.local",
-						"custom_san":            "www.terraform.io",
-						"rds_instances.#":       "1",
-						"taints.#":              "1",
-						"taints.0.key":          "tf-key1",
-						"taints.0.value":        "tf-value1",
-						"taints.0.effect":       "NoSchedule",
-						"runtime.Name":          "docker",
-						"runtime.Version":       "19.03.5",
+						"name":                        name,
+						"worker_number":               "1",
+						"master_disk_category":        "cloud_ssd",
+						"worker_disk_size":            "50",
+						"password":                    "Yourpassword1234",
+						"pod_cidr":                    "10.91.0.0/16",
+						"service_cidr":                "172.19.0.0/16",
+						"enable_ssh":                  "true",
+						"install_cloud_monitor":       "true",
+						"resource_group_id":           CHECKSET,
+						"deletion_protection":         "false",
+						"timezone":                    "Asia/Shanghai",
+						"os_type":                     "Linux",
+						"platform":                    "CentOS",
+						"node_port_range":             "30000-32767",
+						"cluster_domain":              "cluster.local",
+						"custom_san":                  "www.terraform.io",
+						"rds_instances.#":             "1",
+						"taints.#":                    "1",
+						"taints.0.key":                "tf-key1",
+						"taints.0.value":              "tf-value1",
+						"taints.0.effect":             "NoSchedule",
+						"runtime.name":                "containerd",
+						"runtime.version":             "1.5.13",
+						"proxy_mode":                  "ipvs",
+						"new_nat_gateway":             "true",
+						"worker_instance_charge_type": "PostPaid",
 					}),
 				),
 			},
@@ -502,16 +503,6 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"new_nat_gateway": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"install_cloud_monitor": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -522,13 +513,11 @@ func TestAccAlicloudCSKubernetes_ca(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"new_nat_gateway":       REMOVEKEY,
 					"worker_number":         "3",
 					"install_cloud_monitor": REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"new_nat_gateway":       "true",
 						"worker_number":         "3",
 						"install_cloud_monitor": "true",
 					}),
@@ -554,7 +543,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKubernetes-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSKubernetesConfigDependence_essd)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -569,12 +558,13 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// global args
 					"name":                name,
-					"version":             "1.18.8-aliyun.1",
+					"version":             "1.24.6-aliyun.1",
 					"password":            "Yourpassword1234",
-					"pod_cidr":            "10.99.0.0/16",
-					"service_cidr":        "172.16.0.0/16",
+					"pod_cidr":            "10.92.0.0/16",
+					"service_cidr":        "172.20.0.0/16",
 					"enable_ssh":          "true",
-					"deletion_protection": "true",
+					"deletion_protection": "false",
+					"node_port_range":     "30000-32767",
 					// master args
 					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
@@ -593,17 +583,21 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 					"tags": map[string]string{
 						"Platform": "TF",
 					},
+					"proxy_mode":                  "ipvs",
+					"new_nat_gateway":             "true",
+					"worker_instance_charge_type": "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						// global args
 						"name":                name,
-						"version":             "1.18.8-aliyun.1",
+						"version":             "1.24.6-aliyun.1",
 						"password":            "Yourpassword1234",
-						"pod_cidr":            "10.99.0.0/16",
-						"service_cidr":        "172.16.0.0/16",
+						"pod_cidr":            "10.92.0.0/16",
+						"service_cidr":        "172.20.0.0/16",
 						"enable_ssh":          "true",
-						"deletion_protection": "true",
+						"deletion_protection": "false",
+						"node_port_range":     "30000-32767",
 						// master args
 						"master_disk_category":          "cloud_essd",
 						"master_disk_size":              "100",
@@ -615,6 +609,9 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 						"worker_disk_performance_level": "PL0",
 						"tags.%":                        "1",
 						"tags.Platform":                 "TF",
+						"proxy_mode":                    "ipvs",
+						"new_nat_gateway":               "true",
+						"worker_instance_charge_type":   "PostPaid",
 					}),
 				),
 			},
@@ -674,7 +671,7 @@ func TestAccAlicloudCSKubernetes_essd(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						// worker args
-						"worker_number":                  "1",
+						"worker_number":                  "2",
 						"worker_vswitch_ids.#":           "1",
 						"worker_instance_types.#":        "1",
 						"worker_disk_category":           "cloud_essd",
@@ -702,16 +699,15 @@ data "alicloud_zones" "default" {
 
 data "alicloud_instance_types" "default" {
   availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count       = 2
-  memory_size          = 4
+  cpu_core_count       = 4
+  memory_size          = 8
   kubernetes_node_role = "Master"
 }
 
 data "alicloud_instance_types" "default1" {
   availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.c6"
-  cpu_core_count       = 2
-  memory_size          = 4
+  cpu_core_count       = 4
+  memory_size          = 8
   kubernetes_node_role = "Worker"
 }
 
@@ -746,6 +742,62 @@ resource "alicloud_db_instance" "default" {
   instance_name        = "tf-testacckubernetes"
   vswitch_id           = local.vswitch_id
   monitoring_period    = "60"
+}
+
+resource "alicloud_snapshot_policy" "default" {
+  name            = "${var.name}"
+  repeat_weekdays = ["1", "2", "3"]
+  retention_days  = -1
+  time_points     = ["1", "22", "23"]
+}
+	`, name)
+}
+
+func resourceCSKubernetesConfigDependence_essd(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
+  kubernetes_node_role = "Master"
+}
+
+data "alicloud_instance_types" "default1" {
+  availability_zone    = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count       = 4
+  memory_size          = 8
+  system_disk_category = "cloud_essd"
+  kubernetes_node_role = "Worker"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_snapshot_policy" "default" {
@@ -902,5 +954,88 @@ func testAccCheckUserCA(n string, d *cs.KubernetesClusterDetail) resource.TestCh
 		} else {
 			return fmt.Errorf("connections.api_server_internet not found in cluster %s", cluster.Primary.Attributes)
 		}
+	}
+}
+
+func Test_parseRRSAMetadata(t *testing.T) {
+	type args struct {
+		meta string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "empty error",
+			args: args{
+				meta: "",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid error",
+			args: args{
+				meta: `
+{
+	"RRSAConfig": 1234
+}`,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "valid enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": true,
+		"issuer": "https://example.com,https://kubernetes.default.svc,kubernetes.default.svc",
+		"oidc_name": "ack-rrsa-c12345",
+		"oidc_arn": "acs:ram::12345:oidc-provider/ack-rrsa-c12345"
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                true,
+				"rrsa_oidc_issuer_url":   "https://example.com",
+				"ram_oidc_provider_name": "ack-rrsa-c12345",
+				"ram_oidc_provider_arn":  "acs:ram::12345:oidc-provider/ack-rrsa-c12345",
+			}},
+			wantErr: false,
+		},
+		{
+			name: "valid not enabled",
+			args: args{
+				meta: `{
+	"RRSAConfig": {
+		"enabled": false,
+		"issuer": "",
+		"oidc_name": "",
+		"oidc_arn": ""
+	}
+}`,
+			},
+			want: []map[string]interface{}{{
+				"enabled":                false,
+				"rrsa_oidc_issuer_url":   "",
+				"ram_oidc_provider_name": "",
+				"ram_oidc_provider_arn":  "",
+			}},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := flattenRRSAMetadata(tt.args.meta)
+			if tt.wantErr && err == nil {
+				t.Errorf("flattenRRSAMetadata(%v) want error got nil", tt.args.meta)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("flattenRRSAMetadata(%v) want %v got %v", tt.args.meta, tt.want, got)
+			}
+		})
 	}
 }

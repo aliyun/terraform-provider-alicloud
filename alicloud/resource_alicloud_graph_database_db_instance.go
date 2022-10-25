@@ -23,8 +23,8 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -53,7 +53,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"HA"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"HA", "SINGLE"}, false),
 			},
 			"db_instance_description": {
 				Type:     schema.TypeString,
@@ -74,7 +74,7 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 			"db_node_class": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"gdb.r.xlarge", "gdb.r.2xlarge", "gdb.r.4xlarge", "gdb.r.8xlarge", "gdb.r.16xlarge", "gdb.r.xlarge_basic", "gdb.r.2xlarge_basic", "gdb.r.4xlarge_basic", "gdb.r.8xlarge_basic", "gdb.r.16xlarge_basic"}, false),
 			},
 			"db_node_storage": {
 				Type:         schema.TypeInt,
@@ -99,11 +99,21 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -129,6 +139,15 @@ func resourceAlicloudGraphDatabaseDbInstanceCreate(d *schema.ResourceData, meta 
 	request["DBInstanceVersion"] = d.Get("db_version")
 	request["PayType"] = convertGraphDatabaseDbInstancePaymentTypeRequest(d.Get("payment_type").(string))
 	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
 	request["ClientToken"] = buildClientToken("CreateDBInstance")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -181,6 +200,7 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 	d.Set("status", object["DBInstanceStatus"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VpcId"])
 	if DBInstanceIPArray, ok := object["DBInstanceIPArray"]; ok {
 		DBInstanceIPArrayAry, ok := DBInstanceIPArray.([]interface{})
 		if ok && len(DBInstanceIPArrayAry) > 0 {
@@ -202,6 +222,10 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gdbService := GdbService{client}
+	conn, err := client.NewGdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -217,10 +241,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	}
 	if update {
 		action := "ModifyDBInstanceDescription"
-		conn, err := client.NewGdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -259,10 +279,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				dBInstanceIPArrayArg := dBInstanceIPArray.(map[string]interface{})
 
 				action := "ModifyDBInstanceAccessWhiteList"
-				conn, err := client.NewGdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				if v, ok := dBInstanceIPArrayArg["db_instance_ip_array_name"]; !ok || v.(string) == "default" {
 					continue
 				}
@@ -292,10 +308,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				dBInstanceIPArrayArg := dBInstanceIPArray.(map[string]interface{})
 
 				action := "ModifyDBInstanceAccessWhiteList"
-				conn, err := client.NewGdsClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayAttribute"] = dBInstanceIPArrayArg["db_instance_ip_array_attribute"]
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = dBInstanceIPArrayArg["security_ips"]
@@ -337,10 +349,6 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 	if update {
 		modifyDBInstanceSpecReq["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 		action := "ModifyDBInstanceSpec"
-		conn, err := client.NewGdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		modifyDBInstanceSpecReq["ClientToken"] = buildClientToken("ModifyDBInstanceSpec")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)

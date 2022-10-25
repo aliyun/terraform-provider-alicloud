@@ -33,21 +33,27 @@ func TestAccAlicloudHBRNasBackupPlan_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_type":          "COMPLETE",
-					"vault_id":             "${alicloud_hbr_vault.default.id}",
-					"file_system_id":       "${alicloud_nas_file_system.default.id}",
-					"schedule":             "I|1602673264|PT2H",
-					"nas_backup_plan_name": "tf-testAccCase",
-					"retention":            "1",
-					"path":                 []string{"/"},
+					"backup_type":             "COMPLETE",
+					"vault_id":                "${alicloud_hbr_vault.default.id}",
+					"file_system_id":          "${alicloud_nas_file_system.default.id}",
+					"schedule":                "I|1602673264|PT2H",
+					"nas_backup_plan_name":    "tf-testAccCase",
+					"retention":               "1",
+					"cross_account_type":      "SELF_ACCOUNT",
+					"cross_account_user_id":   "${data.alicloud_account.default.id}",
+					"cross_account_role_name": "${alicloud_ram_role.default.id}",
+					"path":                    []string{"/"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_type":          "COMPLETE",
-						"schedule":             "I|1602673264|PT2H",
-						"nas_backup_plan_name": "tf-testAccCase",
-						"retention":            "1",
-						"path.#":               "1",
+						"backup_type":             "COMPLETE",
+						"schedule":                "I|1602673264|PT2H",
+						"nas_backup_plan_name":    "tf-testAccCase",
+						"retention":               "1",
+						"cross_account_type":      "SELF_ACCOUNT",
+						"cross_account_user_id":   CHECKSET,
+						"cross_account_role_name": CHECKSET,
+						"path.#":                  "1",
 					}),
 				),
 			},
@@ -178,24 +184,48 @@ var AlicloudHBRNasBackupPlanMap0 = map[string]string{
 
 func AlicloudHBRNasBackupPlanBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_hbr_vault" "default" {
-  vault_name = var.name
-}
+	data "alicloud_account" "default" {
+	}
 
-resource "alicloud_nas_file_system" "default" {
-  protocol_type = "NFS"
-  storage_type  = "Performance"
-  description   = var.name
-  encrypt_type  = "1"
-}
+	resource "alicloud_hbr_vault" "default" {
+  		vault_name = var.name
+	}
 
-data "alicloud_nas_file_systems" "default" {
-  protocol_type       = "NFS"
-  description_regex   = alicloud_nas_file_system.default.description
-}
+	resource "alicloud_nas_file_system" "default" {
+  		protocol_type = "NFS"
+  		storage_type  = "Performance"
+  		description   = var.name
+  		encrypt_type  = "1"
+	}
+
+	data "alicloud_nas_file_systems" "default" {
+  		protocol_type     = "NFS"
+  		description_regex = alicloud_nas_file_system.default.description
+	}
+
+	resource "alicloud_ram_role" "default" {
+  		name     = var.name
+  		document = <<EOF
+		{
+			"Statement": [
+			{
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": [
+						"crossbackup.hbr.aliyuncs.com"
+					]
+				}
+			}
+			],
+  			"Version": "1"
+		}
+  		EOF
+  		force    = true
+	}
 `, name)
 }

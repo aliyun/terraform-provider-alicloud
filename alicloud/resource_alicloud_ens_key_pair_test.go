@@ -73,7 +73,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudENSKeyPair_unit(t *testing.T) {
+func TestUnitAlicloudENSKeyPair(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ens_key_pair"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ens_key_pair"].Schema).Data(nil, nil)

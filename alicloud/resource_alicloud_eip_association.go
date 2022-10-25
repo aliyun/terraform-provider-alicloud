@@ -88,7 +88,7 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 			return vpcClient.AssociateEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -101,10 +101,6 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 
 	if err := vpcService.WaitForEip(request.AllocationId, InUse, 60); err != nil {
 		return WrapError(err)
-	}
-	// There is at least 30 seconds delay for ecs instance
-	if request.InstanceType == EcsInstance {
-		time.Sleep(30 * time.Second)
 	}
 
 	d.SetId(request.AllocationId + ":" + request.InstanceId)
@@ -171,7 +167,7 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectHaVipStatus", "TaskConflict",
-				"InvalidIpStatus.HasBeenUsedBySnatTable", "InvalidIpStatus.HasBeenUsedByForwardEntry", "InvalidStatus.EniStatusNotSupport"}) {
+				"InvalidIpStatus.HasBeenUsedBySnatTable", "InvalidIpStatus.HasBeenUsedByForwardEntry", "InvalidStatus.EniStatusNotSupport"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

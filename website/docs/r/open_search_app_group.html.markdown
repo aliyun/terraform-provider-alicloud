@@ -38,7 +38,7 @@ resource "alicloud_open_search_app_group" "default" {
 
 ## Argument Reference
 
-The resource does not support any argument.
+The following arguments are supported:
 
 * `app_group_name` - (Required,ForceNew) Application Group Name.
 * `type` - (Required,ForceNew) Application type. Valid Values: `standard`, `enhanced`.

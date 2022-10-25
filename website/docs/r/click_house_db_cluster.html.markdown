@@ -71,6 +71,8 @@ The following arguments are supported:
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.
 * `maintain_time` - (Optional) The maintenance window of DBCluster. Valid format: `hh:mmZ-hh:mm Z`.
 * `db_cluster_access_white_list` - (Optional, Available in v1.145.0+) The db cluster access white list.
+* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
+* `zone_id` - (Optional, ForceNew, Available in v1.185.0+) The zone ID of the instance.
 
 #### Block db_cluster_access_white_list
 

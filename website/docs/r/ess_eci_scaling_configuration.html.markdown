@@ -3,7 +3,8 @@ subcategory: "Auto Scaling(ESS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_eci_scaling_configuration"
 sidebar_current: "docs-alicloud-resource-ess-eci-scaling-configuration"
-description: |- Provides a ESS eci scaling configuration resource.
+description: |-
+  Provides a ESS eci scaling configuration resource.
 ---
 
 # alicloud\_ess\_eci\_scaling\_configuration

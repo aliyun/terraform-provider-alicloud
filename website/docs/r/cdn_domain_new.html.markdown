@@ -44,6 +44,7 @@ The following arguments are supported:
 * `sources` - (Optional, Type: list) The source address list of the accelerated domain. Defaults to null. See Block Sources.
 * `certificate_config` - (Optional, Type: list, Available in 1.52.0+)  Certificate config of the accelerated domain. It's a list and consist of at most 1 item.
 * `resource_group_id` - (Optional, Available in v1.67.0+) Resource group ID.
+* `tags` - (Optional, Available in v1.55.2+) A mapping of tags to assign to the resource.
 
 ### Block sources
 
@@ -65,7 +66,6 @@ The `certificate_config` block supports the following:
 * `force_set` - (Optional) Set `1` to ignore the repeated verification for certificate name, and cover the information of the origin certificate (with the same name). Set `0` to work the verification.
 * `cert_name` - (Optional) The SSL certificate name.
 * `cert_type` - (Optional) The SSL certificate type, can be "upload", "cas" and "free".
-* `tags` - (Optional, Available in v1.55.2+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

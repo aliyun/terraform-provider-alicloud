@@ -62,11 +62,11 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   cen_id            = alicloud_cen_instance.default.id
   transit_router_id = alicloud_cen_transit_router.default.id
   vpc_id            = alicloud_vpc.default.id
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.master_zones.0
     vswitch_id = alicloud_vswitch.default_master.id
   }
-  zone_mapping {
+  zone_mappings {
     zone_id    = data.alicloud_cen_transit_router_available_resource.default.zones.0.slave_zones.0
     vswitch_id = alicloud_vswitch.default_slave.id
   }
@@ -89,13 +89,13 @@ The following arguments are supported:
 * `route_table_propagation_enabled` - (Optional) Whether to enabled route table propagation. The system default value is `true`.
 * `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
 * `payment_type` - (Optional, ForceNew, Available in 1.168.0+) The payment type of the resource. Valid values: `PayAsYouGo`.
-* `zone_mappings` - (Required, ForceNew) The list of zone mapping of the VPC.
+* `zone_mappings` - (Required) The list of zone mapping of the VPC. **NOTE:** From version 1.184.0, `zone_mappings` can be modified.
 
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 
-#### ZoneMapping Block
+#### ZoneMappings Block
 
-The `zone_mapping` supports the following:
+The `zone_mappings` supports the following:
 
 * `vswitch_id` - (Optional, ForceNew) The VSwitch id of attachment.
 * `zone_id` - (Optional, ForceNew) The zone Id of VSwitch.

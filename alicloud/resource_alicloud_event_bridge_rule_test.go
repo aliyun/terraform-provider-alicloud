@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -221,6 +222,82 @@ func TestAccAlicloudEventBridgeRule_basic0(t *testing.T) {
 						"description":    name,
 						"filter_pattern": "{\"source\":[\"crmabc.newsletter\"],\"type\":[\"UserSignUp\", \"UserLogin\"]}",
 						"targets.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"targets": []map[string]interface{}{
+						{
+							"endpoint":            "http://test.com",
+							"target_id":           "tf-test1",
+							"type":                "http",
+							"push_retry_strategy": "BACKOFF_RETRY",
+							"dead_letter_queue": []map[string]interface{}{
+								{
+									"arn": "acs:mns:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + "/queues/rule-deadletterqueue",
+								},
+							},
+							"param_list": []map[string]interface{}{
+								{
+									"form":         "CONSTANT",
+									"resource_key": "url",
+									"value":        "http://test.com",
+								},
+								{
+									"form":         "ORIGINAL",
+									"resource_key": "Body",
+								},
+								{
+									"form":         "CONSTANT",
+									"resource_key": "Network",
+									"value":        "PublicNetwork",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"targets.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"targets": []map[string]interface{}{
+						{
+							"endpoint":            "http://tftest.com",
+							"type":                "http",
+							"target_id":           "tf-test1",
+							"push_retry_strategy": "EXPONENTIAL_DECAY_RETRY",
+							"dead_letter_queue": []map[string]interface{}{
+								{
+									"arn": "acs:mq:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + "/instances/myinstance/topic/mytopic",
+								},
+							},
+							"param_list": []map[string]interface{}{
+								{
+									"form":         "CONSTANT",
+									"resource_key": "url",
+									"value":        "http://tftest.com",
+								},
+								{
+									"form":         "ORIGINAL",
+									"resource_key": "Body",
+								},
+								{
+									"form":         "CONSTANT",
+									"resource_key": "Network",
+									"value":        "PublicNetwork",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"targets.#": "1",
 					}),
 				),
 			},

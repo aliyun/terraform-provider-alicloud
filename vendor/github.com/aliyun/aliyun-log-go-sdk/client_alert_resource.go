@@ -9,7 +9,7 @@ const (
 	ResourceNameUserGroup          = "sls.common.user_group"
 	ResourceNameContentTemplate    = "sls.alert.content_template"
 	ResourceNameGlobalConfig       = "sls.alert.global_config"
-	ResourceNameWebhookIntegration = "sls.alert.webhook_application"
+	ResourceNameWebhookIntegration = "sls.alert.action_webhook"
 )
 
 type (
@@ -100,6 +100,7 @@ type (
 		Url     string                   `json:"url"`
 		Type    string                   `json:"type"`
 		Headers []*ResourceWebhookHeader `json:"headers"`
+		Secret  string                   `json:"secret"`
 	}
 
 	// GlobalConfig is the global configuration for alerts.

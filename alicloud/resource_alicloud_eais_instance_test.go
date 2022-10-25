@@ -190,7 +190,7 @@ func AlicloudEaisInstanceBasicDependence0(name string) string {
 `, name)
 }
 
-func TestAccAlicloudEaisInstance_unit(t *testing.T) {
+func TestUnitAlicloudEaisInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_eais_instance"].Schema).Data(nil, nil)
@@ -306,7 +306,7 @@ func TestAccAlicloudEaisInstance_unit(t *testing.T) {
 
 	// Update
 	err = resourceAlicloudEaisInstanceUpdate(dExisted, rawClient)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
 	// Read
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}

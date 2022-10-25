@@ -183,6 +183,9 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	request := map[string]interface{}{}
 	request["RuleName"] = d.Id()
@@ -251,6 +254,9 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 func resourceAlicloudDdoscooSchedulerRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewDdoscooClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	action := "DeleteSchedulerRule"
 	var response map[string]interface{}
 	request := map[string]interface{}{}

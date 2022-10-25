@@ -234,7 +234,7 @@ resource "alicloud_vpc_traffic_mirror_filter" "default" {
 `, name)
 }
 
-func TestAccAlicloudVPCTrafficMirrorFilterEgressRule_unit(t *testing.T) {
+func TestUnitAlicloudVPCTrafficMirrorFilterEgressRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter_egress_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_traffic_mirror_filter_egress_rule"].Schema).Data(nil, nil)

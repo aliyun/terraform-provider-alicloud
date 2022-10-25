@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECS disk resource.
 
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://www.terraform.io/docs/providers/alicloud/r/ecs_disk.html) from version 1.122.0.
+-> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://www.terraform.io/docs/providers/alicloud/r/ecs_disk) from version 1.122.0.
 
 -> **NOTE:** One of `size` or `snapshot_id` is required when specifying an ECS disk. If all of them be specified, `size` must more than the size of snapshot which `snapshot_id` represents. Currently, `alicloud_disk` doesn't resize disk.
 

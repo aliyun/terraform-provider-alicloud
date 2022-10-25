@@ -315,8 +315,22 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 	request.RepoName = parts[2]
 	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.GetRepository(request)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.GetRepository(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, raw, request.RpcRequest, request)
+		response, _ = raw.(*cr_ee.GetRepositoryResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
@@ -324,9 +338,7 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, raw, request.RpcRequest, request)
 
-	response, _ = raw.(*cr_ee.GetRepositoryResponse)
 	if !response.GetRepositoryIsSuccess {
 		if response.Code == "REPO_NOT_EXIST" {
 			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)

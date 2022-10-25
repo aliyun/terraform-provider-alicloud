@@ -8,6 +8,7 @@ set -e
 : ${ALICLOUD_ACCOUNT_ID:?}
 : ${ALICLOUD_ACCOUNT_SITE:="Domestic"}
 : ${TEST_CASE_CODE:?}
+: ${TEST_CASE_PREFIX:="TestAccAlicloud"}
 : ${SWEEPER:?}
 : ${CHECKOUT_REGION:="false"}
 : ${ACCESS_URL:=""}
@@ -115,7 +116,7 @@ LOGPERREGION=$region.log
 touch $LOGPERREGION
 
 echo -e "\n---------------  Running ${TEST_CASE_CODE} Test Cases ---------------"
-TestRunPrefix="TestAccAlicloud${TEST_CASE_CODE}"
+TestRunPrefix="${TEST_CASE_PREFIX}${TEST_CASE_CODE}"
 RunTime=$(date "+%Y-%m-%d")
 echo $time2
 CoverProfileName="${TEST_CASE_CODE}-${RunTime}.out"

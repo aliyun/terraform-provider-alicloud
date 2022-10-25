@@ -395,7 +395,7 @@ func TestAccAlicloudCenTransitRouterPeerAttachment_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenTransitRouterPeerAttachment_unit(t *testing.T) {
+func TestUnitAlicloudCenTransitRouterPeerAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_peer_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router_peer_attachment"].Schema).Data(nil, nil)

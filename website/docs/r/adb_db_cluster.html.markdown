@@ -46,7 +46,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_adb_db_cluster" "this" {
   db_cluster_category = "Cluster"
-  db_cluster_class    = "C8"
+  db_node_class       = "C8"
   db_node_count       = "4"
   db_node_storage     = "400"
   mode                = "reserver"
@@ -77,7 +77,7 @@ The following arguments are supported:
 * `db_node_count` - (Optional) The db node count.
 * `db_node_storage` - (Optional) The db node storage.
 * `description` - (Optional, Computed) The description of DBCluster.
-* `elastic_io_resource` - (Optional) The elastic io resource.
+* `elastic_io_resource` - (Optional, Computed) The elastic io resource.
 * `maintain_time` - (Optional, Computed) The maintenance window of the cluster. Format: hh:mmZ-hh:mmZ.
 * `mode` - (Required) The mode of the cluster. Valid values: `reserver`, `flexible`.
 * `modify_type` - (Optional) The modify type.
@@ -90,6 +90,7 @@ The following arguments are supported:
 * `security_ips` - (Optional, Computed) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
 * `zone_id` - (Optional, Computed, ForceNew) The zone ID of the resource.
+* `vpc_id` - (Optional, Computed, ForceNew, Available in 1.178.0+) The vpc ID of the resource.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
@@ -112,9 +113,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 50 mins) Used when create the DBCluster.
-* `delete` - (Defaults to 50 mins) Used when delete the DBCluster.
-* `update` - (Defaults to 72 mins) Used when update the DBCluster.
+* `create` - (Defaults to 120 mins) Used when create the DBCluster.
+* `delete` - (Defaults to 3 hours) Used when delete the DBCluster.
+* `update` - (Defaults to 6  hours) Used when update the DBCluster.
 
 ## Import
 

@@ -31,19 +31,44 @@ resource "alicloud_ots_table" "table" {
 
   primary_key {
     name = var.primary_key_1_name
-    type = var.primary_key_integer_type
+    type = var.integer_type
   }
   primary_key {
     name = var.primary_key_2_name
-    type = var.primary_key_integer_type
+    type = var.integer_type
   }
   primary_key {
     name = var.primary_key_3_name
-    type = var.primary_key_integer_type
+    type = var.integer_type
   }
   primary_key {
     name = var.primary_key_4_name
-    type = var.primary_key_string_type
+    type = var.string_type
+  }
+
+  defined_column {
+    name = var.defined_column_1_name
+    type = var.integer_type
+  }
+
+  defined_column {
+    name = var.defined_column_2_name
+    type = var.string_type
+  }
+
+  defined_column {
+    name = var.defined_column_3_name
+    type = var.binary_type
+  }
+
+  defined_column {
+    name = var.defined_column_4_name
+    type = var.boolean_type
+  }
+
+  defined_column {
+    name = var.defined_column_5_name
+    type = var.double_type
   }
 
   time_to_live = var.time_to_live

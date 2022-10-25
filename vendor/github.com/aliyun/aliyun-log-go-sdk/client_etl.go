@@ -168,7 +168,7 @@ func (c *Client) ListETL(project string, offset int, size int) (*ListETLResponse
 		"Content-Type":      "application/json",
 	}
 
-	uri := fmt.Sprintf("/jobs?offset=%d&size=%d", offset, size)
+	uri := fmt.Sprintf("/jobs?offset=%d&size=%d&jobType=ETL", offset, size)
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
 		return nil, err

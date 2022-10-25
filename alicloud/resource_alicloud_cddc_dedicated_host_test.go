@@ -242,7 +242,7 @@ locals {
 `, name)
 }
 
-func TestAccAlicloudCddcDedicatedHost_unit(t *testing.T) {
+func TestUnitAlicloudCddcDedicatedHost(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cddc_dedicated_host"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cddc_dedicated_host"].Schema).Data(nil, nil)

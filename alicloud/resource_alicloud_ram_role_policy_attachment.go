@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"strings"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -19,7 +22,10 @@ func resourceAlicloudRamRolePolicyAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"role_name": {
 				Type:     schema.TypeString,
@@ -49,14 +55,24 @@ func resourceAlicloudRamRolePolicyAttachmentCreate(d *schema.ResourceData, meta 
 	request.PolicyType = d.Get("policy_type").(string)
 	request.PolicyName = d.Get("policy_name").(string)
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.AttachPolicyToRole(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.AttachPolicyToRole(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_role_policy_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	// In order to be compatible with previous Id (before 1.9.6) which format to role:<policy_name>:<policy_type>:<role_name>
 	d.SetId(strings.Join([]string{"role", request.PolicyName, request.PolicyType, request.RoleName}, COLON_SEPARATED))
 
@@ -108,8 +124,20 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 	request.PolicyType = parts[2]
 	request.RoleName = parts[3]
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.DetachPolicyFromRole(request)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.DetachPolicyFromRole(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
@@ -117,8 +145,6 @@ func resourceAlicloudRamRolePolicyAttachmentDelete(d *schema.ResourceData, meta 
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	return WrapError(ramService.WaitForRamRolePolicyAttachment(d.Id(), Deleted, DefaultTimeout))
 }

@@ -152,7 +152,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudMongodbShardingNetworkPrivateAddress_unit(t *testing.T) {
+func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_private_address"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_private_address"].Schema).Data(nil, nil)

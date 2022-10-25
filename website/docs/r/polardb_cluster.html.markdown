@@ -86,7 +86,7 @@ The following arguments are supported:
 * `vswitch_id` - (Optional) The virtual switch ID to launch DB instances in one VPC.
 -> **NOTE:** If vswitch_id is not specified, system will get a vswitch belongs to the user automatically.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
-* `description` - (Optional) The description of cluster.
+* `description` - (Optional, Computed) The description of cluster.
 * `collector_status` - (Optional, Available in 1.114.0+) Specifies whether to enable or disable SQL data collector. Valid values are `Enable`, `Disabled`.
 * `parameters` - (Optional) Set of parameters needs to be set after DB cluster was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/98122.htm) .
 * `tags` - (Optional, Available in 1.68.0+) A mapping of tags to assign to the resource.
@@ -101,6 +101,20 @@ The following arguments are supported:
 * `deletion_lock` - (Optional, Available in 1.169.0+) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
 -> **NOTE:**  Cannot modify after created when `pay_type` is `Prepaid` .`deletion_lock` the cluster protection lock can be turned on or off when `pay_type` is `Postpaid`.
 * `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://help.aliyun.com/document_detail/98170.html)
+* `imci_switch` - (Optional, Available in 1.173.0+) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
+-> **NOTE:**  Only polardb MySQL Cluster version is available. The cluster with minor version number of 8.0.1 supports the column index feature, and the specific kernel version must be 8.0.1.1.22 or above.
+-> **NOTE:**  The single node, the single node version of the history library, and the cluster version of the history library do not support column save indexes.
+* `sub_category` - (Optional, Available in 1.177.0+)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
+* `creation_option` - (Optional, Available in 1.179.0+) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`.Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `CreationOption`.
+-> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby.
+* `creation_category` - (Optional, Available in 1.179.0+) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`.Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `CreationCategory`.
+-> **NOTE:** You can set this parameter to Basic only when DBType is set to MySQL and DBVersion is set to 5.6, 5.7, or 8.0. You can set this parameter to Archive only when DBType is set to MySQL and DBVersion is set to 8.0. From version 1.188.0, `creation_category` can be set to `NormalMultimaster`.
+* `source_resource_id` - (Optional, Available in 1.179.0+) The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `SourceResourceId`.
+* `gdn_id` - (Optional, Available in 1.179.0+) The ID of the global database network (GDN).
+-> **NOTE:** This parameter is required if CreationOption is set to CreateGdnStandby.
+* `clone_data_point` - (Optional, Available in 1.179.0+) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `CloneDataPoint`.
+-> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
+* `vpc_id` - (Optional, ForceNew, Computed, Available in v1.185.0+) The id of the VPC.
 
 ### Block db_cluster_ip_array
 

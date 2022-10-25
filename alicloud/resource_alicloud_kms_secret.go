@@ -93,6 +93,11 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -125,6 +130,10 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 	request["SecretData"] = d.Get("secret_data")
 	if v, ok := d.GetOk("secret_data_type"); ok {
 		request["SecretDataType"] = v
+	}
+
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
 	}
 
 	request["SecretName"] = d.Get("secret_name")
@@ -194,11 +203,16 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("secret_data_type", getSecretValueObject["SecretDataType"])
 	d.Set("version_id", getSecretValueObject["VersionId"])
 	d.Set("version_stages", getSecretValueObject["VersionStages"].(map[string]interface{})["VersionStage"])
+	d.Set("dkms_instance_id", object["DKMSInstanceId"])
 	return nil
 }
 func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
+	conn, err := client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -214,10 +228,6 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 		request["Description"] = d.Get("description")
 		action := "UpdateSecret"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 1*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -258,10 +268,6 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 	if update {
 		action := "PutSecretValue"
-		conn, err := client.NewKmsClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 1*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

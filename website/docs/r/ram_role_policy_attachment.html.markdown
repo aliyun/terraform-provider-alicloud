@@ -83,6 +83,13 @@ The following attributes are exported:
 
 * `id` - The attachment ID. Composed of policy name, policy type and role name with format `role:<policy_name>:<policy_type>:<role_name>`.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins, Available in 1.173.0+) Used when creating the RAM Role Policy attachment.
+* `delete` - (Defaults to 1 mins, Available in 1.173.0+) Used when deleting the RAM Role Policy attachment.
+
 ## Import
 
 RAM Role Policy attachment can be imported using the id, e.g.

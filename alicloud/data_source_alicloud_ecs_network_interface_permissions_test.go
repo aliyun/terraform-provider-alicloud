@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudEcsNetworkInterfacePermissionsDataSource(t *testing.T) {
+func TestAccAlicloudECSNetworkInterfacePermissionsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudEcsNetworkInterfacePermissionsDataSourceName(rand, map[string]string{

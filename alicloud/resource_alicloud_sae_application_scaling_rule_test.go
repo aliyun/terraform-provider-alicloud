@@ -442,7 +442,7 @@ var AlicloudSAEApplicationScalingRuleMap0 = map[string]string{
 	"app_id": CHECKSET,
 }
 
-func TestAccAlicloudSAEApplicationScalingRule_unit(t *testing.T) {
+func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, nil)

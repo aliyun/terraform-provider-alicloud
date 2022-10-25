@@ -57,9 +57,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `Create` - (Defaults to 4 mins) Used when terminating the Alidns record instance.  
-* `delete` - (Defaults to 6 mins) Used when terminating the Alidns record instance.  
-
+* `create` - (Defaults to 4 mins) Used when create the Alidns record instance.
+* `update` - (Defaults to 3 mins) Used when update the Alidns record instance.
+* `delete` - (Defaults to 6 mins) Used when delete the Alidns record instance.
 
 ## Import
 

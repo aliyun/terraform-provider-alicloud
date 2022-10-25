@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -135,6 +136,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ECS", "ECI"}, false),
 			},
+			"protected_instances": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+			},
 		},
 	}
 }
@@ -256,6 +262,14 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	}
 
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+
+	instances, _ := essService.DescribeInstances(d.Id(), "Protected")
+	var protectedInstances []string
+	for _, v := range instances {
+		protectedInstances = append(protectedInstances, v.InstanceId)
+	}
+	d.Set("protected_instances", protectedInstances)
+
 	return nil
 }
 
@@ -371,6 +385,16 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		}
 		d.SetPartial("db_instance_ids")
 	}
+
+	if d.HasChange("protected_instances") {
+		oldProtectedInstances, newProtectedInstances := d.GetChange("protected_instances")
+		err = setProtectedInstances(d, client, oldProtectedInstances.(*schema.Set), newProtectedInstances.(*schema.Set))
+		if err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("protected_instances")
+	}
+
 	d.Partial(false)
 	return resourceAliyunEssScalingGroupRead(d, meta)
 }
@@ -511,6 +535,47 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 			addDebug(detachLoadbalancersRequest.GetActionName(), raw, detachLoadbalancersRequest.RpcRequest, detachLoadbalancersRequest)
 		}
 	}
+	return nil
+}
+
+func setProtectedInstances(d *schema.ResourceData, client *connectivity.AliyunClient, oldInstances *schema.Set, newInstances *schema.Set) error {
+	unprotected := oldInstances.Difference(newInstances)
+	protected := newInstances.Difference(oldInstances)
+
+	request := ess.CreateSetInstancesProtectionRequest()
+	request.RegionId = client.RegionId
+	request.ScalingGroupId = d.Id()
+
+	// set protected
+	if protected.Len() > 0 {
+		var subLists = partition(protected, 20)
+		for _, subList := range subLists {
+			request.InstanceId = &subList
+			request.ProtectedFromScaleIn = requests.Boolean(strconv.FormatBool(true))
+			_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.SetInstancesProtection(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
+	// set unprotected
+	if unprotected.Len() > 0 {
+		var subLists = partition(unprotected, 20)
+		for _, subList := range subLists {
+			request.InstanceId = &subList
+			request.ProtectedFromScaleIn = requests.Boolean(strconv.FormatBool(false))
+			_, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+				return essClient.SetInstancesProtection(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
 	return nil
 }
 

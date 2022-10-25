@@ -133,7 +133,7 @@ func KvstoreAuditLogConfigBasicdependence(name string) string {
 	`, name)
 }
 
-func TestAccAlicloudKVStoreAuditLogConfig_unit(t *testing.T) {
+func TestUnitAlicloudKVStoreAuditLogConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kvstore_audit_log_config"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_kvstore_audit_log_config"].Schema).Data(nil, nil)

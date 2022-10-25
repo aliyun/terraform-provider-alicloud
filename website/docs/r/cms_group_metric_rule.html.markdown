@@ -73,7 +73,8 @@ The following arguments are supported:
 * `period` - (Optional) The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.                       
 * `rule_id` - (Required, ForceNew) The ID of the alert rule.
 * `silence_time` - (Optional) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
-* `webhook` - (Optional) The callback URL.                        
+* `webhook` - (Optional) The callback URL.  
+* `targets` - (Optional, Available in 1.189.0+) The information about the resource for which alerts are triggered.
 
 #### Block escalations
 
@@ -94,6 +95,17 @@ The escalations supports the following:
     * `statistics` - (Optional) The statistical aggregation method for warn-level alerts.                                
     * `threshold` - (Optional) The threshold for warn-level alerts.
     * `times` - (Optional) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.    
+
+#### Block targets
+
+The targets supports the following:
+
+* `id` - (Optional) The ID of the resource for which alerts are triggered.
+* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
+* `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
+
+-> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
 
 ## Attributes Reference
 

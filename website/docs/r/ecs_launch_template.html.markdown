@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_launch_template" "default" {
-  name                          = "tf_test_name"
+  launch_template_name          = "tf_test_name"
   description                   = "Test For Terraform"
   image_id                      = "m-bp1i3ucxxxxx"
   host_name                     = "host_name"
@@ -99,6 +99,7 @@ The following arguments are supported:
 * `host_name` - (Optional) Instance host name.It cannot start or end with a period (.) or a hyphen (-) and it cannot have two or more consecutive periods (.) or hyphens (-).For Windows: The host name can be [2, 15] characters in length. It can contain A-Z, a-z, numbers, periods (.), and hyphens (-). It cannot only contain numbers. For other operating systems: The host name can be [2, 64] characters in length. It can be segments separated by periods (.). It can contain A-Z, a-z, numbers, and hyphens (-).
 * `image_id` - (Optional) The Image ID.
 * `image_owner_alias` - (Optional) Mirror source. Valid values: `system`, `self`, `others`, `marketplace`, `""`. Default to: `""`.
+* `instance_name` - (Optional) The name of the instance. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
 * `instance_charge_type` - (Optional) Billing methods. Valid values: `PostPaid`, `PrePaid`.
 * `instance_type` - (Optional) Instance type. For more information, call resource_alicloud_instances to obtain the latest instance type list.
 * `internet_charge_type` - (Optional) Internet bandwidth billing method. Valid values: `PayByTraffic`, `PayByBandwidth`.
@@ -128,13 +129,19 @@ The following arguments are supported:
 * `template_resource_group_id` - (Optional, ForceNew) The template resource group id.
 * `user_data` - (Optional, Computed) The User Data.
 * `version_description` - (Optional) The description of the launch template version. The description must be 2 to 256 characters in length and cannot start with http:// or https://.                                    
+* `vpc_id` - (Optional) The ID of the VPC.
 * `vswitch_id` - (Optional) When creating a VPC-Connected instance, you must specify its VSwitch ID.
 * `zone_id` - (Optional) The zone ID of the instance.
 * `tags` - (Optional) A mapping of tags to assign to instance, block storage, and elastic network.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `template_tags` - (Optional) A mapping of tags to assign to the launch template.
-  
+* `name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `launch_template_name` instead.
+* `userdata` - (Deprecated) It has been deprecated from version 1.120.0, and use field `user_data` instead.
+* `system_disk_name` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_category` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_size` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
+* `system_disk_description` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 
 #### Block system_disk
 

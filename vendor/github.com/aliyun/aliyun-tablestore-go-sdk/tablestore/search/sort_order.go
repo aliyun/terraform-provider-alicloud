@@ -1,8 +1,10 @@
 package search
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
 )
@@ -44,4 +46,45 @@ func ParseSortOrder(order *otsprotocol.SortOrder) *SortOrder {
 	} else {
 		return nil
 	}
+}
+
+func (order SortOrder) String() string {
+	switch order {
+	case SortOrder_ASC:
+		return "ASC"
+	case SortOrder_DESC:
+		return "DESC"
+	default:
+		return fmt.Sprintf("%d", order)
+	}
+}
+
+func ToSortOrder(order string) (SortOrder, error) {
+	switch strings.ToUpper(order) {
+	case "ASC":
+		return SortOrder_ASC, nil
+	case "DESC":
+		return SortOrder_DESC, nil
+	default:
+		return SortOrder_ASC, errors.New("Invalid sort order: " + order)
+	}
+}
+
+func (op *SortOrder) UnmarshalJSON(data []byte) (err error) {
+	var opStr string
+	err = json.Unmarshal(data, &opStr)
+	if err != nil {
+		return
+	}
+
+	*op, err = ToSortOrder(opStr)
+	if err != nil {
+		return err
+	}
+	return
+}
+
+func (op *SortOrder) MarshalJSON() (data []byte, err error) {
+	data, err = json.Marshal(op.String())
+	return
 }

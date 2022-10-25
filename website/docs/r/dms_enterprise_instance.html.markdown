@@ -49,7 +49,7 @@ The following arguments are supported:
 * `database_user` - (Required) Database access account.
 * `database_password` - (Required) Database access password.
 * `instance_alias` - It has been deprecated from provider version 1.100.0 and 'instance_name' instead.
-* `instance_name` - (Required, Available in v1.100.0+) Instance name, to help users quickly distinguish positioning.
+* `instance_name` - (Optional, Computed, Available in v1.100.0+) Instance name, to help users quickly distinguish positioning.
 * `dba_uid` - (Required, ForceNew)  The DBA of the instance is passed into the Alibaba Cloud uid of the DBA.
 * `safe_rule` - (Required, ForceNew) The security rule of the instance is passed into the name of the security rule in the enterprise.
 * `query_timeout` - (Required) Query timeout time, unit: s (seconds).
@@ -61,6 +61,11 @@ The following arguments are supported:
 * `data_link_name` - (Optional) Cross-database query datalink name.
 * `ddl_online` - (Optional) Whether to use online services, currently only supports MySQL and PolarDB. Valid values: `0` Not used, `1` Native online DDL priority, `2` DMS lock-free table structure change priority.
 * `use_dsql` - (Optional) Whether to enable cross-instance query. Valid values: `0` not open, `1` open.
+* `instance_id` - (Optional, Computed) The instance id of the database instance. 
+* `dba_id` - (Optional, Computed) The dba id of the database instance.
+* `skip_test` - (Optional) Whether the instance ignores test connectivity. Valid values: `true`, `false`.
+* `safe_rule_id` - (Optional, Computed) The safe rule id of the database instance.
+* `instance_alias` - (Optional, Computed, Deprecated from v1.100.0) Field `instance_alias` has been deprecated from version 1.100.0. Use `instance_name` instead.
                             
 ## Attributes Reference
 

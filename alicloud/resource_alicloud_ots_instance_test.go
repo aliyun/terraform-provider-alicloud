@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
+
 	"log"
 	"strings"
 	"time"
@@ -93,6 +95,7 @@ func testSweepOtsInstances(region string) error {
 		tables, _ := raw.(*tablestore.ListTableResponse)
 		if tables != nil && len(tables.TableNames) > 0 {
 			for _, t := range tables.TableNames {
+				sweepTunnelsInTable(otsService.client, name, t)
 				req := new(tablestore.DeleteTableRequest)
 				req.TableName = t
 				if _, err := otsService.client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
@@ -119,6 +122,33 @@ func testSweepOtsInstances(region string) error {
 		time.Sleep(3 * time.Minute)
 	}
 	return nil
+}
+
+func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string, tableName string) {
+	log.Printf("[INFO] Deleting OTS Tunnels, instance: %s, table: %s", instanceName, tableName)
+	raw, err := client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
+		return tunnelClient.ListTunnel(&otsTunnel.ListTunnelRequest{
+			TableName: tableName,
+		})
+	})
+	if err != nil {
+		log.Printf("[ERROR] List OTS Tunnel failed, instance: %s, table: %s, error: %#v", instanceName, tableName, err)
+		return
+	}
+
+	tunnels, _ := raw.(*otsTunnel.ListTunnelResponse)
+	if tunnels != nil && len(tunnels.Tunnels) > 0 {
+		for _, t := range tunnels.Tunnels {
+			if _, err := client.WithTableStoreTunnelClient(instanceName, func(tunnelClient otsTunnel.TunnelClient) (interface{}, error) {
+				return tunnelClient.DeleteTunnel(&otsTunnel.DeleteTunnelRequest{
+					TableName:  tableName,
+					TunnelName: t.TunnelName,
+				})
+			}); err != nil {
+				log.Printf("[ERROR] Delete OTS Tunnel failed, instance: %s, table: %s, tunnel: %s, error: %#v", instanceName, tableName, t.TunnelName, err)
+			}
+		}
+	}
 }
 
 func TestAccAlicloudOtsInstance_basic(t *testing.T) {

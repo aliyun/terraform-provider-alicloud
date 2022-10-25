@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -87,6 +88,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"enable_rrsa": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"private_zone": {
 				Type:          schema.TypeBool,
 				Optional:      true,
@@ -116,9 +121,10 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Default:  false,
 			},
 			"kube_config": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
+				Type:       schema.TypeString,
+				ForceNew:   true,
+				Optional:   true,
+				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -225,6 +231,32 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
+			},
+			"rrsa_metadata": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"rrsa_oidc_issuer_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ram_oidc_provider_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -353,6 +385,10 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 		args.ClusterSpec = spec.(string)
 	}
 
+	if enableRRSA, ok := d.GetOk("enable_rrsa"); ok {
+		args.EnableRRSA = enableRRSA.(bool)
+	}
+
 	//set tags
 	if len(tags) > 0 {
 		args.Tags = tags
@@ -396,6 +432,7 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
 	}
+	csClient := CsClient{rosClient}
 
 	object, err := csService.DescribeCsServerlessKubernetes(d.Id())
 	if err != nil {
@@ -434,6 +471,12 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		d.Set("logging_type", "SLS")
 	}
 
+	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if object.State == "failed" {
+		return nil
+	}
+
 	var requestInfo *cs.Client
 	var response interface{}
 
@@ -469,31 +512,22 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
-	var config *cs.ClusterConfig
+	// kube_config
 	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		var requestInfo *cs.Client
-
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return csClient.DescribeClusterUserConfig(d.Id(), !d.Get("endpoint_public_access_enabled").(bool))
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterConfig", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			addDebug("GetClusterConfig", response, requestInfo, requestMap)
-		}
-		config, _ = response.(*cs.ClusterConfig)
-
-		if err := writeToFile(file.(string), config.Config); err != nil {
-			return WrapError(err)
+		kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+		if err != nil {
+			log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
+		} else {
+			writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
 		}
 	}
+
+	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+		return WrapError(err)
+	} else {
+		d.Set("rrsa_metadata", data)
+	}
+
 	return nil
 }
 
@@ -551,15 +585,35 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 }
 
 func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
-	var update bool
+	update := false
 	action := "ModifyCluster"
 	client := meta.(*connectivity.AliyunClient)
 	csService := CsService{client}
 
 	var modifyClusterRequest cs.ModifyClusterArgs
+
 	if d.HasChange("deletion_protection") {
 		update = true
 		modifyClusterRequest.DeletionProtection = d.Get("deletion_protection").(bool)
+	}
+
+	if d.HasChange("enable_rrsa") {
+		enableRRSA := false
+		if v, ok := d.GetOk("enable_rrsa"); ok {
+			enableRRSA = v.(bool)
+		}
+		// it's not allowed to disable rrsa
+		if !enableRRSA {
+			return fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file")
+		}
+		// version check
+		version := d.Get("version").(string)
+		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, version); res < 0 || err != nil {
+			return fmt.Errorf("RRSA is not supported in current version: %s", version)
+		}
+		update = true
+		modifyClusterRequest.EnableRRSA = enableRRSA
 	}
 
 	if update {
@@ -590,6 +644,7 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	d.SetPartial("deletion_protection")
+	d.SetPartial("enable_rrsa")
 
 	return nil
 }

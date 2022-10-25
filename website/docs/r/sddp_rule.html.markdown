@@ -34,7 +34,7 @@ resource "alicloud_sddp_rule" "default" {
 
 The following arguments are supported:
 
-* `category` - (Optional, ForceNew) Sensitive Data Identification Rules for the Type of. Valid values:
+* `category` - (Required, ForceNew) Sensitive Data Identification Rules for the Type of. Valid values:
   * `0`: Keyword.
   * `2`: Regular expression.
 * `content` - (Required, ForceNew) Sensitive Data Identification Rules the Content.
@@ -43,7 +43,6 @@ The following arguments are supported:
   * `0`: the Built-in.
   * `1`: The User-Defined.
 * `description` - (Optional) Sensitive Data Identification a Description of the Rule Information.
-* `ids` - (Optional) The ids.
 * `lang` - (Optional) The Request and Receive the Language of the Message Type. Valid values:
   * `zh`: Chinese.
   * `en`: English.
@@ -60,7 +59,7 @@ The following arguments are supported:
 * `rule_name` - (Required, ForceNew) Sensitive Data Identification Name of the Rule.
 * `rule_type` - (Optional) Rule Type.
 * `stat_express` - (Optional) Triggered the Alarm Conditions.
-* `status` - (Optional, ForceNew) Sensitive Data Identification Rules Detection State of.
+* `status` - (Optional, Computed) Sensitive Data Identification Rules Detection State of.
 * `target` - (Optional) The Target of rule.
 * `warn_level` - (Optional) The Level of Risk. Valid values: 
   * `1`: Weak warn Level. 

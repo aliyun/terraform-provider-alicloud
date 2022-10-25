@@ -12,6 +12,20 @@ import (
 	"strings"
 )
 
+const (
+	// AuthQueryKeyExpires : keys in request queries
+	AuthQueryKeyExpires = "x-fc-expires"
+
+	// AuthQueryKeyAccessKeyID : keys in request queries
+	AuthQueryKeyAccessKeyID = "x-fc-access-key-id"
+
+	// AuthQueryKeySignature : keys in request queries
+	AuthQueryKeySignature = "x-fc-signature"
+
+	// AuthQueryKeySecurityToken : keys in requres queries
+	AuthQueryKeySecurityToken = "x-fc-security-token"
+)
+
 type headers struct {
 	Keys []string
 	Vals []string
@@ -22,8 +36,7 @@ func GetAuthStr(accessKeyID string, accessKeySecret string, method string, heade
 	return "FC " + accessKeyID + ":" + GetSignature(accessKeySecret, method, header, resource)
 }
 
-// GetSignResourceWithQueries get signature resource with queries
-func GetSignResourceWithQueries(path string, queries map[string][]string) string {
+func getSignQueries(queries map[string][]string) string {
 	paramsList := []string{}
 	for key, values := range queries {
 		if len(values) == 0 {
@@ -35,18 +48,41 @@ func GetSignResourceWithQueries(path string, queries map[string][]string) string
 		}
 	}
 	sort.Strings(paramsList)
-	resource := path + "\n" + strings.Join(paramsList, "\n")
-	return resource
+	return strings.Join(paramsList, "\n")
+}
+
+// GetSignResourceWithQueries get signature resource with queries
+func GetSignResourceWithQueries(path string, queries map[string][]string) string {
+	return path + "\n" + getSignQueries(queries)
+}
+
+// getExpiresFromURLQueries returns expires and true if AuthQueryKeyExpires in queries
+func getExpiresFromURLQueries(fcResource string) (string, bool) {
+	originItems := strings.Split(fcResource, "\n")
+	queriesUnescaped := map[string]string{}
+
+	for _, item := range originItems[1:] {
+		kvPair := strings.Split(item, "=")
+		if len(kvPair) > 1 {
+			queriesUnescaped[kvPair[0]] = kvPair[1]
+		}
+	}
+
+	expires, ok := queriesUnescaped[AuthQueryKeyExpires]
+	return expires, ok
 }
 
 // GetSignature calculate user's signature
 func GetSignature(key string, method string, req map[string]string, fcResource string) string {
 	header := &headers{}
+	lowerKeyHeaders := map[string]string{}
 	for k, v := range req {
-		if strings.HasPrefix(strings.ToLower(k), HTTPHeaderPrefix) {
-			header.Keys = append(header.Keys, strings.ToLower(k))
+		lowerKey := strings.ToLower(k)
+		if strings.HasPrefix(lowerKey, HTTPHeaderPrefix) {
+			header.Keys = append(header.Keys, lowerKey)
 			header.Vals = append(header.Vals, v)
 		}
+		lowerKeyHeaders[lowerKey] = v
 	}
 	sort.Sort(header)
 
@@ -55,7 +91,12 @@ func GetSignature(key string, method string, req map[string]string, fcResource s
 		fcHeaders += header.Keys[i] + ":" + header.Vals[i] + "\n"
 	}
 
-	signStr := method + "\n" + req[HTTPHeaderContentMD5] + "\n" + req[HTTPHeaderContentType] + "\n" + req[HTTPHeaderDate] + "\n" + fcHeaders + fcResource
+	date := req[HTTPHeaderDate]
+	if expires, ok := getExpiresFromURLQueries(fcResource); ok {
+		date = expires
+	}
+
+	signStr := method + "\n" + lowerKeyHeaders[strings.ToLower(HTTPHeaderContentMD5)] + "\n" + lowerKeyHeaders[strings.ToLower(HTTPHeaderContentType)] + "\n" + date + "\n" + fcHeaders + fcResource
 
 	h := hmac.New(func() hash.Hash { return sha256.New() }, []byte(key))
 	io.WriteString(h, signStr)

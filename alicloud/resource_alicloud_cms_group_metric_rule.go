@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"time"
 
@@ -163,7 +164,7 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  300,
+				Computed: true,
 			},
 			"rule_id": {
 				Type:     schema.TypeString,
@@ -182,6 +183,32 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 			"webhook": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"targets": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"arn": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Critical", "Warn", "Info"}, false),
+						},
+						"json_params": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -375,6 +402,22 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 	d.Set("silence_time", formatInt(object["SilenceTime"]))
 	d.Set("status", object["AlertState"])
 	d.Set("webhook", object["Webhook"])
+
+	target, err := cmsService.DescribeMetricRuleTargets(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	targets := make([]map[string]interface{}, 0)
+	if target != nil {
+		targetsMap := make(map[string]interface{})
+		targetsMap["id"] = target["Id"]
+		targetsMap["arn"] = target["Arn"]
+		targetsMap["level"] = target["Level"]
+		targetsMap["json_params"] = target["JsonParams"]
+		targets = append(targets, targetsMap)
+		d.Set("targets", targets)
+	}
+
 	return nil
 }
 func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -501,6 +544,45 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 			return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
 		}
+	}
+	update = false
+	request = map[string]interface{}{
+		"RuleId": d.Id(),
+	}
+	if d.HasChange("targets") {
+		update = true
+	}
+	if v, ok := d.GetOk("targets"); ok {
+		Targets := make([]map[string]interface{}, len(v.(*schema.Set).List()))
+		for i, TargetsValue := range v.(*schema.Set).List() {
+			TargetsMap := TargetsValue.(map[string]interface{})
+			Targets[i] = make(map[string]interface{})
+			Targets[i]["Id"] = TargetsMap["id"]
+			Targets[i]["Arn"] = TargetsMap["arn"]
+			Targets[i]["Level"] = TargetsMap["level"]
+			Targets[i]["JsonParams"] = TargetsMap["json_params"]
+		}
+		request["Targets"] = Targets
+	}
+	if update {
+		action := "PutMetricRuleTargets"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("targets")
 	}
 	return resourceAlicloudCmsGroupMetricRuleRead(d, meta)
 }

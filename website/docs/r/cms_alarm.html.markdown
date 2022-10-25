@@ -18,13 +18,9 @@ Basic Usage
 
 ```terraform 
 resource "alicloud_cms_alarm" "basic" {
-  name    = "tf-testAccCmsAlarm_basic"
-  project = "acs_ecs_dashboard"
-  metric  = "disk_writebytes"
-  dimensions = {
-    instanceId = "i-bp1247,i-bp11gd"
-    device     = "/dev/vda1,/dev/vdb1"
-  }
+  name              = "tf-testAccCmsAlarm_basic"
+  project           = "acs_ecs_dashboard"
+  metric_dimensions = "[{\"instanceId\":\"i-bp1247jeep0y53nu3bnk\",\"device\":\"/dev/vda1\"},{\"instanceId\":\"i-bp11gdcik8z6dl5jm84p\",\"device\":\"/dev/vdb1\"}]"
   escalations_critical {
     statistics          = "Average"
     comparison_operator = "<="
@@ -44,8 +40,9 @@ The following arguments are supported:
 
 * `name` - (Required) The alarm rule name.
 * `project` - (Required, ForceNew) Monitor project name, such as "acs_ecs_dashboard" and "acs_rds_dashboard". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+  **NOTE:** The `dimensions` and `metric_dimensions` must be empty when `project` is `acs_prometheus`, otherwise, one of them must be set.
 * `metric` - (Required, ForceNew) Name of the monitoring metrics corresponding to a project, such as "CPUUtilization" and "networkin_rate". For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
-* `dimensions` - (Required, ForceNew) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+* `dimensions` - (Optional, Computed, Deprecated from 1.173.0+) Field `dimensions` has been deprecated from version 1.95.0. Use `metric_dimensions` instead.
 * `period` - (Optional) Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
 * `escalations_critical` - (Optional, Available in 1.94.0+) A configuration of critical alarm (documented below).
 * `escalations_warn` - (Optional, Available in 1.94.0+) A configuration of critical warn (documented below).
@@ -62,6 +59,9 @@ The following arguments are supported:
 * `notify_type` - Notification type. Valid value [0, 1]. The value 0 indicates TradeManager+email, and the value 1 indicates that TradeManager+email+SMS
 * `enabled` - (Optional) Whether to enable alarm rule. Default to true.
 * `webhook`- (Optional, Available in 1.46.0+) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
+* `metric_dimensions` - (Optional, Computed, Available in 1.174.0+) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
+* `prometheus` - (Optional, Available in 1.179.0+) The Prometheus alert rule. See the following `Block prometheus`. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
+* `tags` - (Optional, Available in 1.180.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.
 
@@ -91,6 +91,16 @@ The escalations_info supports the following:
 * `comparison_operator` - Critical level alarm comparison operator. Valid values: ["<=", "<", ">", ">=", "==", "!="]. Default to "==".
 * `threshold` - Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - Critical level alarm retry times. Default to 3.
+
+#### Block prometheus
+
+The prometheus supports the following:
+
+* `prom_ql` - The PromQL query statement. **Note:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
+* `level` - The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `times` - The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
+* `annotations` - The annotations of the Prometheus alert rule. When a Prometheus alert is triggered, the system renders the annotated keys and values to help you understand the metrics and alert rule.
+
 
 ## Attributes Reference
 

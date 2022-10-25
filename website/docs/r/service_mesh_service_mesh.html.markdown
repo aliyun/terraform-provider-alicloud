@@ -58,7 +58,7 @@ The following arguments are supported:
 * `mesh_config` - (Optional) The configuration of the Service grid. See the following `Block mesh_config`.
 * `network` - (Required, ForceNew) The network configuration of the Service grid. See the following `Block network`.
 * `service_mesh_name` - (Optional, ForceNew) The name of the resource.
-* `version` - (Optional, ForceNew) The version of the resource. Valid values: `v1.8.6.52-g60741c97-aliyun` and `v1.9.7.31-g24cdcb43-aliyun`.
+* `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
 * `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 * `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
@@ -85,10 +85,11 @@ The extra_configuration supports the following:
 The mesh_config supports the following: 
 
 * `access_log` - (Optional) The configuration of the access logging.
-* `audit` - (Optional) The configuration of the audit. See the following `Block audit`.
+* `control_plane_log` - (Optional, ForceNew, Computed, Available in 1.174.0+) The configuration of the control plane logging. 
+* `audit` - (Optional, Computed) The configuration of the audit. See the following `Block audit`.
 * `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
-* `kiali` - (Optional) The configuration of the Kiali. See the following `Block kiali`.
+* `kiali` - (Optional, Computed) The configuration of the Kiali. See the following `Block kiali`.
 * `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See the following `Block opa`.
 * `outbound_traffic_policy` - (Optional) The policy of the Out to the traffic. Valid values: `ALLOW_ANY` and `REGISTRY_ONLY`.
 * `pilot` - (Optional, ForceNew) The configuration of the Link trace sampling. See the following `Block pilot`.
@@ -97,16 +98,30 @@ The mesh_config supports the following:
 * `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
 * `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
 
+#### Block access_log
+
+The access_log supports the following:
+
+* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the access logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available in 1.174.0+) The SLS Project of the access logging.
+
+#### Block control_plane_log
+
+The control_plane_log supports the following:
+
+* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the control plane logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available in 1.174.0+) The SLS Project of the control plane logging.
+
 #### Block sidecar_injector
 
 The sidecar_injector supports the following: 
 
 * `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
 * `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
-* `limit_cpu` - (Optional) The limit cpu of the Sidecar injector Pods.
-* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
-* `request_cpu` - (Optional) The requested cpu the Sidecar injector Pods.
-* `request_memory` - (Optional) The requested memory the Sidecar injector Pods.
+* `limit_cpu` - (Optional, Computed) The limit cpu of the Sidecar injector Pods.
+* `limit_memory` - (Optional, Computed) Sidecar injector Pods on the throttle.
+* `request_cpu` - (Optional, Computed) The requested cpu the Sidecar injector Pods.
+* `request_memory` - (Optional, Computed) The requested memory the Sidecar injector Pods.
 
 #### Block proxy
 
@@ -128,7 +143,7 @@ The pilot supports the following:
 
 The kiali supports the following: 
 
-* `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
+* `enabled` - (Optional, Computed) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
 
 #### Block opa
 

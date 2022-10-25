@@ -31,7 +31,7 @@ const (
 	// cell op type
 	DELETE_ALL_VERSION = 0x1
 	DELETE_ONE_VERSION = 0x3
-	INCREMENT = 0x4;
+	INCREMENT          = 0x4
 
 	// variant type
 	VT_INTEGER = 0x0

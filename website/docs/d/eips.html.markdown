@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_eips
 
--> **DEPRECATED:**  This datasource has been deprecated from version `1.126.0`. Please use new datasource [alicloud_eip_addresses](https://www.terraform.io/docs/providers/alicloud/d/eip_addresses.html).
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.126.0`. Please use new datasource [alicloud_eip_addresses](https://www.terraform.io/docs/providers/alicloud/d/eip_addresses).
 
 This data source provides a list of EIPs (Elastic IP address) owned by an Alibaba Cloud account.
 
