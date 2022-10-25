@@ -231,6 +231,11 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
     * `true` : sends an event notification.
     * `false` : does not send an event notification.
 * `spot_duration` - (Optional, Available in 1.188.0+) The retention time of the preemptive instance in hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, `6`. Retention duration 2~6 is under invitation test, please submit a work order if you need to open. If the value is `0`, the mode is no protection period. Default value is `1`.
+* `http_tokens` - (Optional, Computed, Available in 1.192.0+) Specifies whether to forcefully use the security-enhanced mode (IMDSv2) to access instance metadata. Default value: optional. Valid values:
+  - optional: does not forcefully use the security-enhanced mode (IMDSv2).
+  - required: forcefully uses the security-enhanced mode (IMDSv2). After you set this parameter to required, you cannot access instance metadata in normal mode.
+* `http_endpoint` - (Optional, Computed, Available in 1.192.0+) Specifies whether to enable the access channel for instance metadata. Valid values: `enabled`, `disabled`. Default value: `enabled`.
+* `http_put_response_hop_limit` - (Optional, Computed, ForceNew, Available in 1.192.0+) The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
