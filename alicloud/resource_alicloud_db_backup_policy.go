@@ -173,6 +173,12 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Flash", "Standard"}, false),
+			},
 		},
 	}
 }
@@ -209,6 +215,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 	d.Set("local_log_retention_hours", formatInt(object["LocalLogRetentionHours"]))
 	d.Set("local_log_retention_space", formatInt(object["LocalLogRetentionSpace"]))
 	d.Set("released_keep_policy", object["ReleasedKeepPolicy"])
+	d.Set("category", object["Category"])
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -240,7 +247,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("backup_period") || d.HasChange("backup_time") || d.HasChange("retention_period") ||
 		d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") || d.HasChange("backup_retention_period") ||
 		d.HasChange("compress_type") || d.HasChange("log_backup_frequency") || d.HasChange("archive_backup_retention_period") ||
-		d.HasChange("archive_backup_keep_count") || d.HasChange("archive_backup_keep_policy") || d.HasChange("released_keep_policy") {
+		d.HasChange("archive_backup_keep_count") || d.HasChange("archive_backup_keep_policy") || d.HasChange("released_keep_policy") || d.HasChange("category") {
 		updateForData = true
 	}
 
