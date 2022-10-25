@@ -68,21 +68,21 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_retention_period": "7",
+					"backup_retention_period": "900",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_retention_period": "7",
+						"backup_retention_period": "900",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_backup_retention_period": "7",
+					"log_backup_retention_period": "900",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_backup_retention_period": "7",
+						"log_backup_retention_period": "900",
 					}),
 				),
 			},
@@ -128,15 +128,15 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"archive_backup_retention_period": "50",
-					"archive_backup_keep_count":       "3",
-					"archive_backup_keep_policy":      "ByWeek",
+					"archive_backup_retention_period": "150",
+					"archive_backup_keep_count":       "1",
+					"archive_backup_keep_policy":      "ByMonth",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"archive_backup_retention_period": "50",
-						"archive_backup_keep_count":       "3",
-						"archive_backup_keep_policy":      "ByWeek",
+						"archive_backup_retention_period": "150",
+						"archive_backup_keep_count":       "1",
+						"archive_backup_keep_policy":      "ByMonth",
 					}),
 				),
 			},
@@ -154,11 +154,11 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable_backup_log": "false",
+					"enable_backup_log": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enable_backup_log": "false",
+						"enable_backup_log": "true",
 					}),
 				),
 			},
@@ -177,27 +177,29 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 					"instance_id":                     "${alicloud_db_instance.default.id}",
 					"preferred_backup_period":         []string{"Tuesday", "Monday", "Wednesday"},
 					"preferred_backup_time":           "13:00Z-14:00Z",
-					"backup_retention_period":         "700",
+					"backup_retention_period":         "830",
 					"enable_backup_log":               "true",
 					"log_backup_retention_period":     "700",
 					"local_log_retention_hours":       "48",
 					"high_space_usage_protection":     "Enable",
-					"archive_backup_retention_period": "150",
-					"archive_backup_keep_count":       "2",
-					"archive_backup_keep_policy":      "ByMonth",
+					"archive_backup_retention_period": "100",
+					"archive_backup_keep_count":       "3",
+					"archive_backup_keep_policy":      "ByWeek",
+					"category":                        "Standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"preferred_backup_period.#":       "3",
 						"preferred_backup_time":           "13:00Z-14:00Z",
-						"backup_retention_period":         "700",
+						"backup_retention_period":         "830",
 						"enable_backup_log":               "true",
 						"log_backup_retention_period":     "700",
 						"local_log_retention_hours":       "48",
 						"high_space_usage_protection":     "Enable",
-						"archive_backup_retention_period": "150",
-						"archive_backup_keep_count":       "2",
-						"archive_backup_keep_policy":      "ByMonth",
+						"archive_backup_retention_period": "100",
+						"archive_backup_keep_count":       "3",
+						"archive_backup_keep_policy":      "ByWeek",
+						"category":                        "Standard",
 					}),
 				),
 			}},
