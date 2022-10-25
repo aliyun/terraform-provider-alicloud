@@ -81,6 +81,7 @@ The following arguments are supported:
   * **None**: No archived backup files are retained.
   * **Lastest**: Only the most recent archived backup file is retained.
   * **All**: All archived backup files are retained.
+* `category` - (Optional, available in 1.190.0+) Whether to enable second level backup.Valid values are `Flash`, `Standard`, Note:It only takes effect when the BackupPolicyMode parameter is DataBackupPolicy.
 
 -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
 
