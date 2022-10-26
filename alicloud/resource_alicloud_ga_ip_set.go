@@ -24,8 +24,8 @@ func resourceAlicloudGaIpSet() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerate_region_id": {
@@ -89,10 +89,10 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 	request["ClientToken"] = buildClientToken("CreateIpSets")
 	action := "CreateIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotExist.BasicBandwidthPackage", "NotSuitable.RegionSelection"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -117,6 +117,7 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	return resourceAlicloudGaIpSetRead(d, meta)
 }
+
 func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -134,8 +135,10 @@ func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("ip_address_list", object["IpAddressList"])
 	d.Set("ip_version", object["IpVersion"])
 	d.Set("status", object["State"])
+
 	return nil
 }
+
 func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -159,11 +162,11 @@ func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 		runtime.SetAutoretry(true)
 		action := "UpdateIpSet"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateIpSet")
 			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -182,6 +185,7 @@ func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 	return resourceAlicloudGaIpSetRead(d, meta)
 }
+
 func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -197,11 +201,11 @@ func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 	runtime.SetAutoretry(true)
 	action := "DeleteIpSets"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

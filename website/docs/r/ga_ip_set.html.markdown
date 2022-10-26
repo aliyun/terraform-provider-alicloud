@@ -71,8 +71,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the Ip Set.
-* `delete` - (Defaults to 1 mins) Used when delete the Ip Set.
 * `update` - (Defaults to 2 mins) Used when update the Ip Set.
+* `delete` - (Defaults to 1 mins) Used when delete the Ip Set.
 
 ## Import
 
