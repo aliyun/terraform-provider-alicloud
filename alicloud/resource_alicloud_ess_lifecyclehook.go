@@ -49,7 +49,7 @@ func resourceAlicloudEssLifecycleHook() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "CONTINUE",
-				ValidateFunc: validation.StringInSlice([]string{"CONTINUE", "ABANDON"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"CONTINUE", "ABANDON", "ROLLBACK"}, false),
 			},
 			"notification_arn": {
 				Type:     schema.TypeString,
