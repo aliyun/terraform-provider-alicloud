@@ -74,10 +74,10 @@ func resourceAlicloudGaAclAttachmentCreate(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Acl", "StateError.Accelerator", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -99,6 +99,7 @@ func resourceAlicloudGaAclAttachmentCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudGaAclAttachmentRead(d, meta)
 }
+
 func resourceAlicloudGaAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -121,10 +122,12 @@ func resourceAlicloudGaAclAttachmentRead(d *schema.ResourceData, meta interface{
 	d.Set("status", object["Status"])
 	return nil
 }
+
 func resourceAlicloudGaAclAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
 	return resourceAlicloudGaAclAttachmentRead(d, meta)
 }
+
 func resourceAlicloudGaAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -151,10 +154,10 @@ func resourceAlicloudGaAclAttachmentDelete(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Acl", "StateError.Accelerator", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
