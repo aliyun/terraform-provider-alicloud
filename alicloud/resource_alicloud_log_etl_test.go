@@ -107,6 +107,17 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"script": "e_set('new','new_value')",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "STOPPED",
+						"script": "e_set('new','new_value')",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"status": "RUNNING",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -134,6 +145,7 @@ func TestAccAlicloudLogETL_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"status":            "RUNNING",
 						"script":            "e_set('aliyun','aliyun')",
 						"parameters.update": "update",
 						"parameters.test1":  REMOVEKEY,
