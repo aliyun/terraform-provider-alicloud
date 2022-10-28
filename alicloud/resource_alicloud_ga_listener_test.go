@@ -52,7 +52,7 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 							"to_port":   "70",
 						},
 					},
-					"proxy_protocol": "true",
+					//"proxy_protocol": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -60,89 +60,7 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 						"description":    "create_description",
 						"name":           name,
 						"port_ranges.#":  "1",
-						"proxy_protocol": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"client_affinity": "SOURCE_IP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"client_affinity": "SOURCE_IP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": "test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": "test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"port_ranges": []map[string]interface{}{
-						{
-							"from_port": "100",
-							"to_port":   "110",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"port_ranges.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"client_affinity": "NONE",
-					"protocol":        "UDP",
-					"proxy_protocol":  "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"client_affinity": "NONE",
-						"protocol":        "UDP",
-						"proxy_protocol":  "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"client_affinity": "SOURCE_IP",
-					"description":     "create_description",
-					"protocol":        "TCP",
-					"port_ranges": []map[string]interface{}{
-						{
-							"from_port": "60",
-							"to_port":   "70",
-						},
-					},
-					"name": "${var.name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"client_affinity": "SOURCE_IP",
-						"description":     "create_description",
-						"protocol":        "TCP",
-						"port_ranges.#":   "1",
-						"name":            name,
+						//"proxy_protocol": "true",
 					}),
 				),
 			},
@@ -184,10 +102,32 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"accelerator_id", "proxy_protocol"},
+				Config: testAccConfig(map[string]interface{}{
+					"client_affinity": "SOURCE_IP",
+					"description":     "create_description",
+					"protocol":        "TCP",
+					"port_ranges": []map[string]interface{}{
+						{
+							"from_port": "60",
+							"to_port":   "70",
+						},
+					},
+					"name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"client_affinity": "SOURCE_IP",
+						"description":     "create_description",
+						"protocol":        "TCP",
+						"port_ranges.#":   "1",
+						"name":            name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

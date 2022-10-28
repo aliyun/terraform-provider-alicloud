@@ -30,6 +30,7 @@ func resourceAlicloudGaListener() *schema.Resource {
 			"accelerator_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"certificates": {
 				Type:     schema.TypeList,
@@ -193,6 +194,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaListener(d.Id())
+	fmt.Println("object：", object)
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ga_listener gaService.DescribeGaListener Failed!!! %s", err)
@@ -214,15 +216,22 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 	}
-	if err := d.Set("certificates", certificates); err != nil {
-		return WrapError(err)
+	fmt.Println("certificates：", certificates)
+	fmt.Println("d.Set(\"certificates\", certificates)：", d.Set("certificates", certificates))
+	if fmt.Sprint(object["Protocol"]) == "HTTPS" {
+		if err := d.Set("certificates", certificates); err != nil {
+			return WrapError(err)
+		}
 	}
+
+	d.Set("accelerator_id", object["AcceleratorId"])
 	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("description", object["Description"])
 	d.Set("name", object["Name"])
-	if val, ok := d.GetOk("proxy_protocol"); ok {
-		d.Set("proxy_protocol", val)
-	}
+	//if val, ok := d.GetOk("proxy_protocol"); ok {
+	//	d.Set("proxy_protocol", val)
+	//}
+	d.Set("proxy_protocol", object["ProxyProtocol"])
 
 	portRanges := make([]map[string]interface{}, 0)
 	if portRangesList, ok := object["PortRanges"].([]interface{}); ok {
@@ -242,8 +251,11 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("protocol", object["Protocol"])
 	d.Set("status", object["State"])
-	d.Set("security_policy_id", object["SecurityPolicyId"])
-
+	fmt.Println("object[\"SecurityPolicyId\"])：", object["SecurityPolicyId"])
+	fmt.Println("d.Set(\"security_policy_id\", object[\"SecurityPolicyId\"])：", d.Set("security_policy_id", object["SecurityPolicyId"]))
+	if fmt.Sprint(object["Protocol"]) == "HTTPS" {
+		d.Set("security_policy_id", object["SecurityPolicyId"])
+	}
 	return nil
 }
 
@@ -259,31 +271,41 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	request := map[string]interface{}{
 		"ListenerId": d.Id(),
 	}
+
 	if d.HasChange("certificates") {
 		update = true
-		if v, ok := d.GetOk("certificates"); ok {
-			Certificates := make([]map[string]interface{}, len(v.([]interface{})))
-			for i, CertificatesValue := range v.([]interface{}) {
-				CertificatesMap := CertificatesValue.(map[string]interface{})
-				Certificates[i] = make(map[string]interface{})
-				Certificates[i]["Id"] = CertificatesMap["id"]
-			}
-			request["Certificates"] = Certificates
-		}
-
 	}
+	if v, ok := d.GetOk("certificates"); ok && fmt.Sprint(d.Get("protocol")) == "HTTPS" {
+		Certificates := make([]map[string]interface{}, len(v.([]interface{})))
+		for i, CertificatesValue := range v.([]interface{}) {
+			CertificatesMap := CertificatesValue.(map[string]interface{})
+			Certificates[i] = make(map[string]interface{})
+			Certificates[i]["Id"] = CertificatesMap["id"]
+		}
+		request["Certificates"] = Certificates
+	}
+
 	if d.HasChange("client_affinity") {
 		update = true
-		request["ClientAffinity"] = d.Get("client_affinity")
 	}
+	if v, ok := d.GetOk("client_affinity"); ok {
+		request["ClientAffinity"] = v
+	}
+
 	if d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
 	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
 	if d.HasChange("name") {
 		update = true
-		request["Name"] = d.Get("name")
 	}
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+
 	if d.HasChange("port_ranges") {
 		update = true
 		PortRanges := make([]map[string]interface{}, len(d.Get("port_ranges").([]interface{})))
@@ -294,21 +316,32 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 			PortRanges[i]["ToPort"] = PortRangesMap["to_port"]
 		}
 		request["PortRanges"] = PortRanges
-
 	}
+
 	if d.HasChange("protocol") {
 		update = true
-		request["Protocol"] = d.Get("protocol")
 	}
+	if v, ok := d.GetOk("protocol"); ok {
+		request["Protocol"] = v
+	}
+
 	if d.HasChange("security_policy_id") {
 		update = true
-		request["SecurityPolicyId"] = d.Get("security_policy_id")
+		//request["SecurityPolicyId"] = d.Get("security_policy_id")
 	}
+	if v, ok := d.GetOk("security_policy_id"); ok && fmt.Sprint(d.Get("protocol")) == "HTTPS" {
+		request["SecurityPolicyId"] = v
+	}
+
+	if d.HasChange("proxy_protocol") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("proxy_protocol"); ok {
+		request["ProxyProtocol"] = v
+	}
+
 	request["RegionId"] = client.RegionId
 	if update {
-		if _, ok := d.GetOkExists("proxy_protocol"); ok {
-			request["ProxyProtocol"] = d.Get("proxy_protocol")
-		}
 		action := "UpdateListener"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
