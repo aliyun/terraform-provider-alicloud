@@ -903,6 +903,9 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (object map[string]int
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Alarms.Alarm", response)
 	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+	}
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }

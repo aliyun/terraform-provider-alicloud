@@ -50,7 +50,6 @@ func resourceAlicloudEcsKeyPair() *schema.Resource {
 			"public_key": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				StateFunc: func(v interface{}) string {
 					switch v.(type) {
 					case string:

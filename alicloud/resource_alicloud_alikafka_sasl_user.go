@@ -57,7 +57,6 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"plain", "scram"}, false),
 			},
 		},
