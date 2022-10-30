@@ -2308,3 +2308,56 @@ func (s *RdsService) DescribeRdsServiceLinkedRole(id string) (*ram.GetRoleRespon
 	}
 	return response, nil
 }
+
+func (s *RdsService) RdsDBProxyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeDBProxy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if _, ok := object["DBProxyInstanceStatus"]; !ok && failState == "Deleted" {
+				return nil, "", nil
+			}
+			if object["DBProxyInstanceStatus"] == failState {
+				return object, fmt.Sprint(object["DBProxyInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, object["DBProxyInstanceStatus"]))
+			}
+		}
+		return object, fmt.Sprint(object["DBProxyInstanceStatus"]), nil
+	}
+}
+
+func (s *RdsService) GetDbProxyInstanceSsl(id string) (object map[string]interface{}, err error) {
+	action := "GetDbProxyInstanceSsl"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.DbProxyCertListItems.DbProxyCertListItems", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RDS", id)), NotFoundWithResponse, response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, nil
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
