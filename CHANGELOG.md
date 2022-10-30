@@ -1,4 +1,28 @@
 ## 1.190.0 (Unreleased)
+
+- **New Resource:** `alicloud_ga_acl_entry_attachment` [GH-5546]
+- **New Resource:** `alicloud_adb_db_cluster_lake_version` [GH-5541]
+- **New Data Source:** `alicloud_adb_db_cluster_lake_versions` [GH-5541]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ga_acl_attachment: Added retry strategy for error code StateError.Acl, StateError.Accelerator, NotActive.Listener [GH-5551]
+- resource/alicloud_ga_ip_set: Added retry strategy for error code NotExist.BasicBandwidthPackage, NotSuitable.RegionSelection [GH-5549]
+- resource/alicloud_ga_bandwidth_package_attachment: Added retry strategy for error code Great erThanGa.IpSetBandwidth, BandwidthIllegal.BandwidthPackage, BindExist.CrossDomain, Exist.EndpointGroup, Exist.IpSet ,BandwidthPackageCannotUnbind.HasCrossRegion, BandwidthPackageCannotUnbind.IpSet, BandwidthPackageCannotUnbind.EndpointGroup, StateError.Accelerator, NotExist.BasicBandwidthPackage [GH-5535]
+- resource/alicloud_ecs_key_pair: Remove the public_key ForceNew attribute [GH-5552]
+- alicloud/alicloud_log_etl: restart etl jobs after update etl config [GH-5517]
+- resource/alicloud_db_backup_policy: RDS backup policy support Category [GH-5547]
+- resource/alicloud_ess_lifecyclehook:support default_result is ROLLBACK [GH-5560]
+- resource/alicloud_eci_container_group: Adds new attribute liveness_probe,readiness_probe,acr_registry_info [GH-5548]
+- data source/alicloud_hbr_backup_jobs: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5536]
+- docs: Improves the docs tag for terraform import command [GH-5556]
+
+BUG FIXES:
+
+- resource/alicloud_instance_test: fix test case TestAccAlicloudECSInstanceTypeUpdate and TestAccAlicloudECSInstancSecondaryIps. [GH-5453]
+- resource/alicloud_ga_endpoint_group: Fixed the import error caused by accelerator_id, endpoint_group_type and endpoint_request_protocol no value; Removes the endpoint_configurations.enable_clientip_preservation, endpoint_group_type default value and adds computed [GH-5527]
+- resource/alicloud_ga_bandwidth_package: Fixed the import error caused by billing_type and ratio no value; Removes the cbn_geographic_region_ida, cbn_geographic_region_idb default value and adds computed; Added retry strategy for error code StateError.Accelerator, StateError.BandwidthPackage, BandwidthIllegal.BandwidthPackage [GH-5526]
+
 ## 1.189.0 (October 25, 2022)
 
 - **New Resource:** `alicloud_vpc_public_ip_address_pool_cidr_block` ([#5509](https://github.com/aliyun/terraform-provider-alicloud/issues/5509))
