@@ -56,6 +56,6 @@ The following attributes are exported:
 
 Alidns Custom Line can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_custom_line.example <id>
 ```

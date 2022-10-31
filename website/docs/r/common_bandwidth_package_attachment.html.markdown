@@ -53,6 +53,6 @@ The following attributes are exported:
 
 The common bandwidth package attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_common_bandwidth_package_attachment.foo cbwp-abc123456:eip-abc123456
 ```

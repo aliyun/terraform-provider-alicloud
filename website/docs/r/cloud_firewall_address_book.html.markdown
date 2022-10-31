@@ -65,6 +65,6 @@ The following attributes are exported:
 
 Cloud Firewall Address Book can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_firewall_address_book.example <id>
 ```

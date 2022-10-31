@@ -44,6 +44,6 @@ The following attributes are exported:
 
 ECS Session Manager Status can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_session_manager_status.example <session_manager_status_name>
 ```

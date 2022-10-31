@@ -78,6 +78,6 @@ The following attributes are exported:
 
 Datahub topic can be imported using the ID, e.g.
 
-```
+```shell
 $ terraform import alicloud_datahub_topic.example tf_datahub_project:tf_datahub_topic
 ```

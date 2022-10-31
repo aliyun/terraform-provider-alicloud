@@ -123,6 +123,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Alarm rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_alarm.alarm abc12345
 ```

@@ -126,6 +126,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Snapshot Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_snapshot_group.example <id>
 ```

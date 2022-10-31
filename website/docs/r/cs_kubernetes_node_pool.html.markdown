@@ -537,6 +537,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cluster nodepool can be imported using the id, e.g. Then complete the nodepool.tf accords to the result of `terraform plan`.
 
-```
-  $ terraform import alicloud_cs_kubernetes_node_pool.custom_nodepool cluster_id:nodepool_id
+```shell
+$ terraform import alicloud_cs_kubernetes_node_pool.custom_nodepool cluster_id:nodepool_id
 ```

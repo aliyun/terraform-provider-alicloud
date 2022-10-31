@@ -131,7 +131,7 @@ The following attributes are exported:
 
 CEN instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_route_entry.example cen-abc123456:vtb-abc123:192.168.0.0/24
 ```
 

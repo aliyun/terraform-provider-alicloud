@@ -97,6 +97,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 If you need full function, please import Cassandra cluster first.
 Cassandra dataCenter can be imported using the dcId:clusterId, e.g.
 
-```
+```shell
 $ terraform import alicloud_cassandra_data_center.dc_2 cn-shenxxxx-x:cds-wz933ryoaurxxxxx
 ```

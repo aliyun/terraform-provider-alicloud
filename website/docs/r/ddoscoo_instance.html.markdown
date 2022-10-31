@@ -64,6 +64,6 @@ The following attributes are exported:
 
 Ddoscoo instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddoscoo_instance.example ddoscoo-cn-123456
 ```

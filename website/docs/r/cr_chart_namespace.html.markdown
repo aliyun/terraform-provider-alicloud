@@ -54,6 +54,6 @@ The following attributes are exported:
 
 CR Chart Namespace can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_chart_namespace.example <instance_id>:<namespace_name>
 ```

@@ -64,6 +64,6 @@ The following attributes are exported:
 
 Ddos Basic Antiddos can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddos_basic_antiddos.example <instance_id>:<instance_type>:<ddos_type>
 ```

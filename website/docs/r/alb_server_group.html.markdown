@@ -204,6 +204,6 @@ specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.ht
 
 ALB Server Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alb_server_group.example <id>
 ```

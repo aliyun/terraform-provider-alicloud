@@ -46,6 +46,6 @@ The following attributes are exported:
 
 Direct Mail Receivers can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_direct_mail_receivers.example <id>
 ```

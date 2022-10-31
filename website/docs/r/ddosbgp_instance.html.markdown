@@ -58,6 +58,6 @@ The following attributes are exported:
 
 Ddosbgp instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddosbgp.example ddosbgp-abc123456
 ```

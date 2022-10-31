@@ -89,6 +89,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Ad Connector Office Site can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_ad_connector_office_site.example <id>
 ```

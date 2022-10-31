@@ -83,6 +83,6 @@ The following attributes are exported:
 
 Ess notification can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_notification.example 'scaling_group_id:notification_arn'
 ```

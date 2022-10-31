@@ -66,6 +66,6 @@ The following attributes are exported:
 
 Cloud Firewall Control Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_firewall_control_policy.example <acl_uuid>:<direction>
 ```
