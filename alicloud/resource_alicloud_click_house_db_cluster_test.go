@@ -89,6 +89,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 	}
 	return nil
 }
+
 func TestAccAlicloudClickHouseDBCluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
@@ -452,7 +453,7 @@ func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_version":      "20.3.10.75",
+					"db_cluster_version":      "22.8.5.29",
 					"category":                "Basic",
 					"db_cluster_class":        "S8",
 					"db_cluster_network_type": "vpc",
@@ -465,7 +466,7 @@ func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_version":      "20.3.10.75",
+						"db_cluster_version":      "22.8.5.29",
 						"category":                "Basic",
 						"db_cluster_class":        "S8",
 						"db_cluster_network_type": "vpc",
