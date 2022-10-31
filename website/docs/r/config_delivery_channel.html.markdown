@@ -87,6 +87,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Alicloud Config Delivery Channel can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_config_delivery_channel.example cdc-49a2ad756057********
 ```

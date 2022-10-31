@@ -99,6 +99,6 @@ The following attributes are exported:
 
 Alidns Gtm Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_gtm_instance.example <id>
 ```

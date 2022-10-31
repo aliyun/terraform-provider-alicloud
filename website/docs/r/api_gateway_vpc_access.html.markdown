@@ -46,6 +46,6 @@ The following attributes are exported:
 
 Api gateway app can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_vpc_access.example "APiGatewayVpc:vpc-aswcj19ajsz:i-ajdjfsdlf:8080"
 ```

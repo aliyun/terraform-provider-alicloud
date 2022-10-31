@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 EBS Disk Replica Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ebs_disk_replica_group.example <id>
 ```

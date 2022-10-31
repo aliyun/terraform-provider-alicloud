@@ -101,6 +101,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 OTS tunnel can be imported using id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ots_tunnel.foo "<instance_name>:<table_name>:<tunnel_name>"
 ```

@@ -72,7 +72,7 @@ The following attributes are exported:
 
 The Cloud Connect Network Grant can be imported using the instance_id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_connect_network_grant.example ccn-abc123456:cen-abc123456
 ```
 

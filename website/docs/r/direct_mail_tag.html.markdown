@@ -42,6 +42,6 @@ The following attributes are exported:
 
 Direct Mail Tag can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_direct_mail_tag.example <id>
 ```

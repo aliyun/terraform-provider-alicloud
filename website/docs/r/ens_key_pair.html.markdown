@@ -43,6 +43,6 @@ The following attributes are exported:
 
 ENS Key Pair can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ens_key_pair.example <key_pair_name>:<version>
 ```

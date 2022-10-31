@@ -56,6 +56,6 @@ The following attributes are exported:
 
 WAF Certificate can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_waf_certificate.example <instance_id>:<domain>:<certificate_id>
 ```

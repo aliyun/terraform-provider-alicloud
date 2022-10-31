@@ -53,6 +53,6 @@ The following attributes are exported:
 
 ALB Security Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alb_security_policy.example <id>
 ```

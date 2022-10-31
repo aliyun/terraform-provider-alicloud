@@ -89,6 +89,6 @@ The following attributes are exported:
 
 DFS Mount Point can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dfs_mount_point.example <file_system_id>:<mount_point_id>
 ```

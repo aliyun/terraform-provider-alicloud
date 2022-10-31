@@ -210,6 +210,6 @@ The following attributes are exported:
 
 CR Chain can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_chain.example <instance_id>:<chain_id>
 ```

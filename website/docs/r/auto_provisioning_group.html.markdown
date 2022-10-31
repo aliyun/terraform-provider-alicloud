@@ -114,6 +114,6 @@ The following attributes are exported:
 
 ECS auto provisioning group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_auto_provisioning_group.example asg-abc123456
 ```

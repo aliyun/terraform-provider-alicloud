@@ -125,6 +125,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 OTS secondary index can be imported using id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ots_secondary_index.index1 "<instance_name>:<table_name>:<index_name>:<index_type>"
 ```

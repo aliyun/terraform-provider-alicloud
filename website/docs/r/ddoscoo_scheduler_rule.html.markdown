@@ -91,6 +91,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DdosCoo Scheduler Rule can be imported using the id or the rule name, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddoscoo_scheduler_rule.example fbb20dc77e8fc******
 ```

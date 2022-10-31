@@ -54,6 +54,6 @@ The following attributes are exported:
 
 ECS Dedicated Host Cluster can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_dedicated_host_cluster.example <id>
 ```

@@ -169,6 +169,6 @@ The following attributes are exported:
 
 Api gateway api can be imported using the id.Format to `<API Group Id>:<API Id>` e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_api.example "ab2351f2ce904edaa8d92a0510832b91:e4f728fca5a94148b023b99a3e5d0b62"
 ```

@@ -77,6 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DCDN Ipa Domain can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dcdn_ipa_domain.example <domain_name>
 ```

@@ -93,6 +93,6 @@ The following attributes are exported:
 
 ECS Image Pipeline can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_image_pipeline.example <id>
 ```

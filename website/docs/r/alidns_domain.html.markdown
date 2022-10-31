@@ -63,6 +63,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Alidns domain can be imported using the id or domain name, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_domain.example aliyun.com
 ```

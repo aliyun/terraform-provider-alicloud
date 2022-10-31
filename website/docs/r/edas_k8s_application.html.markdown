@@ -111,6 +111,6 @@ The following attributes are exported:
 
 EDAS k8s application can be imported as below, e.g.
 
-```
+```shell
 $ terraform import alicloud_edas_k8s_application.new_k8s_application application_id
 ```

@@ -56,6 +56,6 @@ The following attributes are exported:
 
 ECD Simple Office Site can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_simple_office_site.example <id>
 ```
