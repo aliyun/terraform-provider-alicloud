@@ -1,8 +1,8 @@
 ---
 subcategory: "Service Mesh"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_service_mesh_service_meshes"
-sidebar_current: "docs-alicloud-datasource-service-mesh-service-meshes"
+page_title: "Alicloud: alicloud_service_mesh_versions"
+sidebar_current: "docs-alicloud-datasource-service-mesh-versions"
 description: |-
   Provides a list of Service Mesh Versions to the user.
 ---

@@ -763,6 +763,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_db_cluster_lake_versions":                 dataSourceAlicloudAdbDbClusterLakeVersions(),
 			"alicloud_nlb_load_balancers":                           dataSourceAlicloudNlbLoadBalancers(),
 			"alicloud_nlb_zones":                                    dataSourceAlicloudNlbZones(),
+			"alicloud_service_mesh_extension_providers":             dataSourceAlicloudServiceMeshExtensionProviders(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1420,6 +1421,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_db_cluster_lake_version":                          resourceAlicloudAdbDbClusterLakeVersion(),
 			"alicloud_ga_acl_entry_attachment":                              resourceAlicloudGaAclEntryAttachment(),
 			"alicloud_nlb_load_balancer":                                    resourceAlicloudNlbLoadBalancer(),
+			"alicloud_service_mesh_extension_provider":                      resourceAlicloudServiceMeshExtensionProvider(),
 		},
 
 		ConfigureFunc: providerConfigure,
