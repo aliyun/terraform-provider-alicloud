@@ -2042,7 +2042,7 @@ func (s *VpcService) ExpressConnectPhysicalConnectionStateRefreshFunc(id string,
 	}
 }
 
-func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string) (object map[string]interface{}, err error) {
+func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string, includeCrossAccountVbr bool) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
 	if err != nil {
@@ -2050,9 +2050,10 @@ func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string) (objec
 	}
 	action := "DescribeVirtualBorderRouters"
 	request := map[string]interface{}{
-		"RegionId":   s.client.RegionId,
-		"PageNumber": 1,
-		"PageSize":   50,
+		"RegionId":               s.client.RegionId,
+		"PageNumber":             1,
+		"PageSize":               50,
+		"IncludeCrossAccountVbr": includeCrossAccountVbr,
 	}
 	idExist := false
 	for {
@@ -2098,9 +2099,9 @@ func (s *VpcService) DescribeExpressConnectVirtualBorderRouter(id string) (objec
 	return
 }
 
-func (s *VpcService) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *VpcService) ExpressConnectVirtualBorderRouterStateRefreshFunc(id string, includeCrossAccountVbr bool, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeExpressConnectVirtualBorderRouter(id)
+		object, err := s.DescribeExpressConnectVirtualBorderRouter(id, includeCrossAccountVbr)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

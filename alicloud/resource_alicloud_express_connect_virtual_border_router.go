@@ -116,6 +116,11 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"include_cross_account_vbr": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -189,7 +194,11 @@ func resourceAlicloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	object, err := vpcService.DescribeExpressConnectVirtualBorderRouter(d.Id())
+	includeCrossAccountVbr := false
+	if v, ok := d.GetOkExists("include_cross_account_vbr"); ok {
+		includeCrossAccountVbr = v.(bool)
+	}
+	object, err := vpcService.DescribeExpressConnectVirtualBorderRouter(d.Id(), includeCrossAccountVbr)
 	if err != nil {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_express_connect_virtual_border_router vpcService.DescribeExpressConnectVirtualBorderRouter Failed!!! %s", err)
@@ -279,6 +288,13 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		if v, ok := d.GetOk("local_ipv6_gateway_ip"); ok {
 			request["LocalIpv6GatewayIp"] = v
 		}
+	}
+	if d.HasChange("include_cross_account_vbr") {
+		d.SetPartial("include_cross_account_vbr")
+	}
+	includeCrossAccountVbr := false
+	if v, ok := d.GetOkExists("include_cross_account_vbr"); ok {
+		includeCrossAccountVbr = v.(bool)
 	}
 	if d.HasChange("min_rx_interval") {
 		update = true
@@ -377,7 +393,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		d.SetPartial("vlan_id")
 	}
 	if d.HasChange("status") {
-		object, err := vpcService.DescribeExpressConnectVirtualBorderRouter(d.Id())
+		object, err := vpcService.DescribeExpressConnectVirtualBorderRouter(d.Id(), includeCrossAccountVbr)
 		if err != nil {
 			return WrapError(err)
 		}
@@ -409,7 +425,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), []string{}))
+				stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), includeCrossAccountVbr, []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
@@ -439,7 +455,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"terminated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), []string{}))
+				stateConf := BuildStateConf([]string{}, []string{"terminated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.ExpressConnectVirtualBorderRouterStateRefreshFunc(d.Id(), includeCrossAccountVbr, []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
