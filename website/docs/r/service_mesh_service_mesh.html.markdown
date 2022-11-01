@@ -57,7 +57,7 @@ The following arguments are supported:
 * `load_balancer` - (Optional, ForceNew) The configuration of the Load Balancer. See the following `Block load_balancer`.
 * `mesh_config` - (Optional) The configuration of the Service grid. See the following `Block mesh_config`.
 * `network` - (Required, ForceNew) The network configuration of the Service grid. See the following `Block network`.
-* `service_mesh_name` - (Optional, ForceNew) The name of the resource.
+* `service_mesh_name` - (Optional, ForceNew, Computed) The name of the resource.
 * `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
 * `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
@@ -182,8 +182,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Service Mesh.
-* `delete` - (Defaults to 5 mins) Used when delete the Service Mesh.
 * `update` - (Defaults to 5 mins) Used when update the Service Mesh.
+* `delete` - (Defaults to 5 mins) Used when delete the Service Mesh.
 
 ## Import
 

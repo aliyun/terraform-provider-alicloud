@@ -24,8 +24,8 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"force": {
@@ -323,6 +323,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -540,7 +541,7 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ERR404", "InvalidActiveState.ACK"}) || NeedRetry(err) {
@@ -906,7 +907,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if update {
 		action := "UpdateMeshFeature"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, updateMeshFeatureReq, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -946,7 +947,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if update {
 		action := "UpdateMeshCRAggregation"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), UpdateMeshCRAggregationReq, nil, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -980,7 +981,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if update {
 		action := "UpgradeMeshEditionPartially"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), UpgradeEditionReq, nil, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -1003,8 +1004,8 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 	if d.HasChange("cluster_ids") {
 		oraw, nraw := d.GetChange("cluster_ids")
-		removed := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
-		created := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
+		removed := oraw.([]interface{})
+		created := nraw.([]interface{})
 		if len(removed) > 0 {
 			for _, item := range removed {
 				removeClusterReq := map[string]interface{}{
@@ -1015,7 +1016,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, removeClusterReq, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
@@ -1043,7 +1044,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, addClusterReq, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
@@ -1087,7 +1088,7 @@ func resourceAlicloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 		request["Force"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ErrorPermitted.ClustersNotEmpty", "RelatedResourceReused"}) || NeedRetry(err) {
