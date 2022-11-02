@@ -158,10 +158,10 @@ The following attributes are exported:
 
 ## Import
 
-Oss Bucket Replication can be imported using the id, e.g.
+Oss Bucket Replication can be imported using the bucket name and rule_id, e.g.
 
 ```
-$ terraform import alicloud_oss_bucket_replication.example
+$ terraform import alicloud_oss_bucket_replication.example <bucket>:<rule_id>
 ```
 
 ### Timeouts
