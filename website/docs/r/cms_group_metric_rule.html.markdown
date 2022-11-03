@@ -63,7 +63,7 @@ The following arguments are supported:
 * `dimensions` - (Optional, Computed) The dimensions that specify the resources to be associated with the alert rule.
 * `effective_interval` - (Optional) The time period during which the alert rule is effective.
 * `email_subject` - (Optional, Computed) The subject of the alert notification email.                                         .
-* `escalations` - (Required) Alarm level. See the block for escalations.
+* `escalations` - (Required) Alarm level. See the following `Block escalations`.
 * `group_id` - (Required) The ID of the application group.
 * `group_metric_rule_name` - (Required) The name of the alert rule.                                      
 * `interval` - (Optional, ForceNew) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.                                    
@@ -74,7 +74,7 @@ The following arguments are supported:
 * `rule_id` - (Required, ForceNew) The ID of the alert rule.
 * `silence_time` - (Optional) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
 * `webhook` - (Optional) The callback URL.  
-* `targets` - (Optional, Available in 1.189.0+) The information about the resource for which alerts are triggered.
+* `targets` - (Optional, Computed, Available in 1.189.0+) The information about the resource for which alerts are triggered. See the following `Block targets`.
 
 #### Block escalations
 
@@ -113,6 +113,16 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Group Metric Rule. Value as `rule_id`.
 * `status` - The status of Group Metric Rule.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.191.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 3 mins) Used when create the Group Metric Rule.
+* `update` - (Defaults to 3 mins) Used when update the Group Metric Rule.
+* `delete` - (Defaults to 3 mins) Used when delete the Group Metric Rule.
 
 ## Import
 

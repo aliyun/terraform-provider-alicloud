@@ -901,7 +901,7 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (object map[string]int
 	addDebug(action, response, request)
 	v, err := jsonpath.Get("$.Targets.Target", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Alarms.Alarm", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Targets.Target", response)
 	}
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
