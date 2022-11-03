@@ -46,6 +46,6 @@ The following attributes are exported:
 
 RDC Organization can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_rdc_organization.example <id>
 ```

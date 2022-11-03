@@ -133,6 +133,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DMS Enterprise Proxy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dms_enterprise_proxy.example <id>
 ```

@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CDN Fc Trigger can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cdn_fc_trigger.example <trigger_arn>
 ```

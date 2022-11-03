@@ -15,7 +15,7 @@ Provides a ESS scaling configuration resource.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "essscalingconfiguration"
 }
@@ -194,7 +194,7 @@ The following attributes are exported:
 
 ESS scaling configuration can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_scaling_configuration.example asg-abc123456
 ```
 

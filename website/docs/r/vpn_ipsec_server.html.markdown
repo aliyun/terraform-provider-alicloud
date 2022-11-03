@@ -109,6 +109,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN Ipsec Server can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_ipsec_server.example <id>
 ```

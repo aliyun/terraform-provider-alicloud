@@ -70,6 +70,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Auto Snapshot Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_auto_snapshot_policy.example <id>
 ```

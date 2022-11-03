@@ -22,7 +22,7 @@ For information about Sag Qos Car and how to use it, see [What is Qos Car](https
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_qos" "default" {
   name = "tf-testAccSagQosName"
 }
@@ -65,7 +65,7 @@ The following attributes are exported:
 
 The Sag Qos Car can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_qos_car.example qos-abc123456:qoscar-abc123456
 ```
 

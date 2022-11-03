@@ -90,6 +90,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Hybrid Backup Recovery (HBR) Hana Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_hana_backup_plan.example <plan_id>:<vault_id>:<cluster_id>
 ```

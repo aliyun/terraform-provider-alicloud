@@ -17,7 +17,7 @@ Provides a ECS disk resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a new ECS disk.
 resource "alicloud_disk" "ecs_disk" {
   # cn-beijing
@@ -67,6 +67,6 @@ The following attributes are exported:
 
 Cloud disk can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_disk.example d-abc12345678
 ```

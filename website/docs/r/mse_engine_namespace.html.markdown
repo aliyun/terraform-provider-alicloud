@@ -71,6 +71,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Microservice Engine (MSE) Engine Namespace can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mse_engine_namespace.example <cluster_id>:<namespace_id>
 ```

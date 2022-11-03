@@ -21,7 +21,7 @@ For information about Sag SnatEntry and how to use it, see [What is Sag SnatEntr
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_snat_entry" "default" {
   sag_id     = "sag-3rb1t3iagy3w0zgwy9"
   cidr_block = "192.168.7.0/24"
@@ -46,7 +46,7 @@ The following attributes are exported:
 
 The Sag SnatEntry can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_snat_entry.example sag-abc123456:snat-abc123456
 ```
 

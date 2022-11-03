@@ -74,6 +74,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ROS Stack Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ros_stack_group.example <stack_group_name>
 ```

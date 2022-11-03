@@ -52,6 +52,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Traffic Mirror Filter can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_traffic_mirror_filter.example <id>
 ```

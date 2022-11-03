@@ -92,6 +92,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Express Connect Physical Connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_express_connect_physical_connection.example <id>
 ```

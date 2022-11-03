@@ -101,6 +101,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MongoDB Sharding Network Public Address can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mongodb_sharding_network_public_address.example <db_instance_id>:<node_id>
 ```

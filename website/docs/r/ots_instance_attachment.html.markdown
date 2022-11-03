@@ -13,7 +13,7 @@ This resource will help you to bind a VPC to an OTS instance.
 
 ## Example Usage
 
-```
+```terraform
 # Create an OTS instance
 resource "alicloud_ots_instance" "foo" {
   name        = "my-ots-instance"

@@ -19,7 +19,7 @@ Anti-DDoS Advanced instance resource. "Ddosbgp" is the short term of this produc
 
 Basic Usage
 
-```
+```terraform
 provider "alicloud" {
   endpoints {
     bssopenapi = "business.aliyuncs.com"

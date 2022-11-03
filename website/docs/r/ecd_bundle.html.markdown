@@ -77,6 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Bundle can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_bundle.example <id>
 ```

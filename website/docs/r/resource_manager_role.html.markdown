@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Resource Manager can be imported using the id or role_name, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_role.example testrd
 ```

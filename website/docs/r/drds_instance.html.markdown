@@ -21,7 +21,7 @@ For information about DRDS and how to use it, see [What is DRDS](https://www.ali
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_drds_instance" "default" {
   description          = "drds instance"
   instance_charge_type = "PostPaid"
@@ -75,6 +75,6 @@ The following attributes are exported:
 
 Distributed Relational Database Service (DRDS) can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_drds_instance.example drds-abc123456
 ```

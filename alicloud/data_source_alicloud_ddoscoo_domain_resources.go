@@ -204,7 +204,7 @@ func dataSourceAlicloudDdoscooDomainResourcesRead(d *schema.ResourceData, meta i
 			}
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < PageSizeSmall {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1

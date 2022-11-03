@@ -78,6 +78,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Ad Connector Directory can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_ad_connector_directory.example <id>
 ```

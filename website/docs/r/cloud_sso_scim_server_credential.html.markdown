@@ -55,6 +55,6 @@ The following attributes are exported:
 
 Cloud SSO SCIM Server Credential can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_scim_server_credential.example <directory_id>:<credential_id>
 ```

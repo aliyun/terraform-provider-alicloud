@@ -23,7 +23,7 @@ You can use DCDN to improve the overall performance of your website and accelera
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_dcdn_domain" "example" {
   domain_name = "example.com"
   sources {
@@ -83,6 +83,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DCDN Domain can be imported using the id or DCDN Domain name, e.g.
 
-```
+```shell
 $ terraform import alicloud_dcdn_domain.example example.com
 ```

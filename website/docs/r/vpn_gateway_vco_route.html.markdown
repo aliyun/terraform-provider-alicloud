@@ -124,6 +124,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN Gateway Vco Route can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_gateway_vco_route.example <vpn_connection_id>:<route_dest>:<next_hop>:<weight>
 ```

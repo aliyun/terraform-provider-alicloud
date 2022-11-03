@@ -44,6 +44,6 @@ The following attributes are exported:
 
 RDS Service Linked Role can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_rds_service_linked_role.default <service_name>
 ```

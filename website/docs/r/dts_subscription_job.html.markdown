@@ -163,6 +163,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DTS Subscription Job can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_subscription_job.example <id>
 ```

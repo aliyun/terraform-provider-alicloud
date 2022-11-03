@@ -57,6 +57,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VOD Editing Project can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vod_editing_project.example <id>
 ```

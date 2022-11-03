@@ -16,7 +16,7 @@ you should use resource alicloud_ots_table's new field 'instance_name' and 'tabl
 
 ## Example Usage
 
-``` terraform
+```terraform
 variable "name" {
   default = "terraformtest"
 }
@@ -105,7 +105,7 @@ The following attributes are exported:
 
 OTS table can be imported using id, e.g.
 
-```
-$ terraform import alicloud_ots_table.table "my-ots:ots_table"
+```shell
+$ terraform import alicloud_ots_table.table my-ots:ots_table
 ```
 

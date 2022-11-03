@@ -64,6 +64,6 @@ The following attributes are exported:
 
 Intelligent Media Management Project can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_imm_project.example <project>
 ```

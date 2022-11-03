@@ -19,7 +19,7 @@ Provides a Elasticsearch instance resource. It contains data nodes, dedicated ma
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_elasticsearch_instance" "instance" {
   instance_charge_type = "PostPaid"
   data_node_amount     = "2"
@@ -103,7 +103,7 @@ The following attributes are exported:
 
 Elasticsearch can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_elasticsearch_instance.example es-cn-abcde123456
 ```
 

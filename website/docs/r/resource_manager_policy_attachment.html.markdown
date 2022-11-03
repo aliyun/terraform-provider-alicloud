@@ -75,6 +75,6 @@ The following arguments are supported:
 
 Resource Manager Policy Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_policy_attachment.example tf-testaccrdpolicy:Custom:tf-testaccrdpolicy@11827252********.onaliyun.com:IMSUser:rg******
 ```

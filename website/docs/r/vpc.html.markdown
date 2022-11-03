@@ -70,7 +70,7 @@ The following attributes are exported:
 
 VPC can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc.example vpc-abc123456
 ```
 

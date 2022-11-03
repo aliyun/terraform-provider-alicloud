@@ -21,7 +21,7 @@ Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this prod
 
 Basic Usage
 
-```
+```terraform
 provider "alicloud" {
   endpoints {
     bssopenapi = "business.aliyuncs.com"
@@ -66,6 +66,6 @@ The following attributes are exported:
 
 Yundun_dbaudit instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_yundun_dbaudit_instance.example dbaudit-exampe123456
 ```

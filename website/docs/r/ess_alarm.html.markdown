@@ -12,7 +12,7 @@ description: |-
 Provides a ESS alarm task resource.
 
 ## Example Usage
-```
+```terraform
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -139,6 +139,6 @@ The following attributes are exported:
 
 Ess alarm can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_alarm.example asg-2ze500_045efffe-4d05
 ```

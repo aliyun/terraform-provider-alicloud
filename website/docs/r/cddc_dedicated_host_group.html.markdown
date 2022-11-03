@@ -63,6 +63,6 @@ The following attributes are exported:
 
 ApsaraDB for MyBase Dedicated Host Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cddc_dedicated_host_group.example <id>
 ```

@@ -71,6 +71,6 @@ The following attributes are exported:
 
 RabbitMQ (AMQP) Exchange can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_amqp_exchange.example <instance_id>:<virtual_host_name>:<exchange_name>
 ```

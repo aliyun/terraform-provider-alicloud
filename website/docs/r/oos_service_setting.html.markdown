@@ -63,6 +63,6 @@ The following attributes are exported:
 
 OOS Service Setting can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_service_setting.example <id>
 ```

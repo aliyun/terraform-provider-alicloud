@@ -649,7 +649,7 @@ The following attributes are exported:
 
 Aliclioud E-MapReduce cluster can be imported using the id e.g.
 
-```
+```shell
 $ terraform import alicloud_emr_cluster.default C-B47FB8FE96C67XXXX
 ```
 

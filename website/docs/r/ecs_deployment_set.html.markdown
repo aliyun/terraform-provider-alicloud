@@ -52,6 +52,6 @@ The following attributes are exported:
 
 ECS Deployment Set can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_deployment_set.example <id>
 ```

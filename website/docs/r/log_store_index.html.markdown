@@ -16,7 +16,7 @@ You can use this function by enabling the index and field statistics. [Refer to 
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
@@ -86,6 +86,6 @@ The following attributes are exported:
 
 Log store index can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_store_index.example tf-log:tf-log-store
 ```

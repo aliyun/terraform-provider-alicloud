@@ -21,7 +21,7 @@ For information about VPN gateway and how to use it, see [What is VPN gateway](h
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_vpc" "vpc" {
   name       = "tf_test_foo"
   cidr_block = "172.16.0.0/12"
@@ -99,7 +99,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_gateway.example vpn-abc123456
 ```
 

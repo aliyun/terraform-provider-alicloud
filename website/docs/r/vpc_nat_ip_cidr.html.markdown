@@ -75,6 +75,6 @@ The following attributes are exported:
 
 VPC Nat Ip Cidr can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_nat_ip_cidr.example <nat_gateway_id>:<nat_ip_cidr>
 ```

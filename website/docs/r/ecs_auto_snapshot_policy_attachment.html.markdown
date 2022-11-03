@@ -44,6 +44,6 @@ The following attributes are exported:
 
 ECS Auto Snapshot Policy Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_auto_snapshot_policy_attachment.example s-abcd12345:d-abcd12345
 ```

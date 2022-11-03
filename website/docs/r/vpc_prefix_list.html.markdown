@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Prefix List can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_prefix_list.example <id>
 ```

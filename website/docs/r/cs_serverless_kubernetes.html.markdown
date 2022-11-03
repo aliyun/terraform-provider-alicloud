@@ -193,6 +193,6 @@ The following attributes are exported:
 
 Serverless Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`.
 
-```
+```shell
 $ terraform import alicloud_cs_serverless_kubernetes.main ce4273f9156874b46bb
 ```

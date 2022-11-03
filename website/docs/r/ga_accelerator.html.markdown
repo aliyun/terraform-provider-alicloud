@@ -74,6 +74,6 @@ The following attributes are exported:
 
 Ga Accelerator can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_accelerator.example <accelerator_id>
 ```

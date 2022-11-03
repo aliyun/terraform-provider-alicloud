@@ -101,6 +101,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 HBase can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbase_instance.example hb-wz96815u13k659fvd
 ```

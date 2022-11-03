@@ -110,6 +110,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CEN transit router route table association can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_transit_router_route_table_association.default tr-********:tr-attach-********
 ```

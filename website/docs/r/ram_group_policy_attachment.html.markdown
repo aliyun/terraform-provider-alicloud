@@ -69,6 +69,6 @@ The following attributes are exported:
 
 RAM Group Policy attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_group_policy_attachment.example group:my-policy:Custom:my-group
 ```

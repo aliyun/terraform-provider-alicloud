@@ -87,6 +87,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 AliKafka Instance Allowed Ip Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ali_kafka_instance_allowed_ip_attachment.example <instance_id>:<allowed_type>:<port_range>:<allowed_ip>
 ```

@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Enterprise Network (CEN) Transit Router Grant Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_transit_router_grant_attachment.example <instance_type>:<instance_id>:<cen_owner_id>:<cen_id>
 ```

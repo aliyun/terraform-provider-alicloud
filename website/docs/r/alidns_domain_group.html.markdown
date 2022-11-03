@@ -39,6 +39,6 @@ The following attributes are exported:
 
 Alidns domain group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_domain_group.example 0932eb3ddee7499085c4d13d45*****
 ```

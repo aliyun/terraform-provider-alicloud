@@ -22,7 +22,7 @@ For information about VPN Route Entry and how to use it, see [What is VPN Route 
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -102,6 +102,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN route entry can be imported using the id(VpnGatewayId +":"+ NextHop +":"+ RouteDest), e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_route_entry.example vpn-abc123456:vco-abc123456:10.0.0.10/24
 ```

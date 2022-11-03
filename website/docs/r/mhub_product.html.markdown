@@ -44,6 +44,6 @@ The following attributes are exported:
 
 MHUB Product can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mhub_product.example <id>
 ```

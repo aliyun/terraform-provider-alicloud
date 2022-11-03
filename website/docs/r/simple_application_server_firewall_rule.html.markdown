@@ -63,6 +63,6 @@ The following attributes are exported:
 
 Simple Application Server Firewall Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_simple_application_server_firewall_rule.example <instance_id>:<firewall_rule_id>
 ```

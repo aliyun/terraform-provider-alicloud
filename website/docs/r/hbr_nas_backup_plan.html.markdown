@@ -85,6 +85,6 @@ The following attributes are exported:
 
 HBR Nas Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_nas_backup_plan.example <id>
 ```

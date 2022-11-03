@@ -100,6 +100,6 @@ The following attributes are exported:
 
 Alidns Address Pool can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_address_pool.example <id>
 ```

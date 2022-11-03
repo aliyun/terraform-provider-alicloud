@@ -62,7 +62,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 The route table can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_route_table.foo vtb-abc123456
 ```
 

@@ -94,6 +94,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 RAM Role Policy attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_role_policy_attachment.example role:my-policy:Custom:my-role
 ```

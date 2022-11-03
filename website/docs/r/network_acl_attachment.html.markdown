@@ -20,7 +20,7 @@ Note that because this resource conflicts with the `resources` attribute of `ali
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "NatGatewayConfigSpec"
 }

@@ -130,6 +130,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cluster addon can be imported by cluster id and addon name. Then write the addon.tf file according to the result of `terraform plan`.
 
-```
-  $ terraform import alicloud_cs_kubernetes_addon.my_addon <cluster_id>:<addon_name>
+```shell
+$ terraform import alicloud_cs_kubernetes_addon.my_addon <cluster_id>:<addon_name>
 ```

@@ -17,7 +17,7 @@ The project is the basic unit of resource management in Datahub Service and is u
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_datahub_project" "example" {
   name    = "tf_datahub_project"
   comment = "created by terraform"
@@ -42,6 +42,6 @@ The following attributes are exported:
 
 Datahub project can be imported using the *name* or ID, e.g.
 
-```
+```shell
 $ terraform import alicloud_datahub_project.example tf_datahub_project
 ```

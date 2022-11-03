@@ -18,7 +18,7 @@ Compute Service (ECS) instances in real time in the Log Service console. [Refer 
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "test-tf"
   description = "create by terraform"
@@ -72,6 +72,6 @@ The following attributes are exported:
 
 Logtial config can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_logtail_config.example tf-log:tf-log-store:tf-log-config
 ```

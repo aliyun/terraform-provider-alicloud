@@ -86,6 +86,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Network Interface Permission can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_network_interface_permission.example <id>
 ```

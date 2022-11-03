@@ -61,6 +61,6 @@ The following attributes are exported:
 
 DTS Synchronization Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_synchronization_instance.example <id>
 ```

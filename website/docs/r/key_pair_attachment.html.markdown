@@ -19,7 +19,7 @@ Provides a key pair attachment resource to bind key pair for several ECS instanc
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_ssd"
   available_resource_creation = "VSwitch"

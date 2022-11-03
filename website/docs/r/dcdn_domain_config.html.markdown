@@ -70,6 +70,6 @@ The following attributes are exported:
 
 DCDN domain config can be imported using the id, e.g.
 
-```
-terraform import alicloud_dcdn_domain_config.example <domain_name>:<function_name>:<config_id>
+```shell
+$ terraform import alicloud_dcdn_domain_config.example <domain_name>:<function_name>:<config_id>
 ```

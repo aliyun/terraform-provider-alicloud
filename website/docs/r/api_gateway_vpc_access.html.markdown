@@ -19,7 +19,7 @@ For information about Api Gateway vpc and how to use it, see [Set Vpc Access](ht
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_api_gateway_vpc_access" "foo" {
   name        = "ApiGatewayVpc"
   vpc_id      = "vpc-awkcj192ka9zalz"

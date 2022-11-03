@@ -16,7 +16,7 @@ Provides a [ADB](https://www.alibabacloud.com/help/product/92664.htm) cluster ba
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "adbClusterconfig"
 }
@@ -81,6 +81,6 @@ The following attributes are exported:
 
 ADB backup policy can be imported using the id or cluster id, e.g.
 
-```
+```shell
 $ terraform import alicloud_adb_backup_policy.example "am-12345678"
 ```

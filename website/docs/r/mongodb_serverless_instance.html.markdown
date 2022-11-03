@@ -111,6 +111,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MongoDB Serverless Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mongodb_serverless_instance.example <id>
 ```

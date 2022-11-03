@@ -21,7 +21,7 @@ For information about Container Registry Enterprise Edition namespaces and how t
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cr_ee_namespace" "my-namespace" {
   instance_id        = "cri-xxx"
   name               = "my-namespace"
@@ -49,6 +49,6 @@ The following attributes are exported:
 
 Container Registry Enterprise Edition namespace can be imported using the `{instance_id}:{namespace}`, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_ee_namespace.default cri-xxx:my-namespace
 ```

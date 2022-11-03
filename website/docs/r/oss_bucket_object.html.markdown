@@ -15,7 +15,7 @@ Provides a resource to put a object(content or file) to a oss bucket.
 
 ### Uploading a file to a bucket
 
-```
+```terraform
 resource "alicloud_oss_bucket_object" "object-source" {
   bucket = "your_bucket_name"
   key    = "new_object_key"
@@ -25,7 +25,7 @@ resource "alicloud_oss_bucket_object" "object-source" {
 
 ### Uploading a content to a bucket
 
-```
+```terraform
 resource "alicloud_oss_bucket" "example" {
   bucket = "your_bucket_name"
   acl    = "public-read"

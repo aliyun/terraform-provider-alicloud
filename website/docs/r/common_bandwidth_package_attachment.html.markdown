@@ -19,7 +19,7 @@ For information about common bandwidth package and how to use it, see [What is C
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_common_bandwidth_package" "foo" {
   bandwidth   = "2"
   name        = "test_common_bandwidth_package"

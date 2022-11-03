@@ -76,6 +76,6 @@ The following attributes are exported:
 
 Hybrid Backup Recovery (HBR) Server Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_server_backup_plan.example <id>
 ```

@@ -45,6 +45,6 @@ The following attributes are exported:
 
 Private Link Vpc Endpoint Service User can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_privatelink_vpc_endpoint_service_user.example <service_id>:<user_id>
 ```

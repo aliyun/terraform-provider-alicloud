@@ -46,6 +46,6 @@ The following attributes are exported:
 
 DTS Job Monitor Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_job_monitor_rule.example <dts_job_id>
 ```

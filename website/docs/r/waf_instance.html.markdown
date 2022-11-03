@@ -17,7 +17,7 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_waf_instance" "default" {
   big_screen           = "0"
   exclusive_ip_package = "1"
@@ -72,6 +72,6 @@ The following attributes are exported:
 
 WAF instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_waf_instance.default waf-cn-132435
 ```

@@ -22,7 +22,7 @@ For information about Alikafka sasl user and how to use it, see [What is Alikafk
 
 Basic Usage
 
-```
+```terraform
 variable "username" {
   default = "testusername"
 }
@@ -83,7 +83,7 @@ The following attributes are exported:
 
 Alikafka Sasl User can be imported using the id, e.g.
 
-```
+```shell
 terraform import alicloud_alikafka_sasl_user.example <instance_id>:<username>
 ```
 

@@ -55,6 +55,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Alicloud Config Configuration Recorder can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_config_configuration_recorder.example 122378463********
 ```

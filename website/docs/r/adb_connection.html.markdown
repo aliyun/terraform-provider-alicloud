@@ -18,7 +18,7 @@ Provides an ADB connection resource to allocate an Internet connection string fo
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "ADB"
 }
@@ -81,6 +81,6 @@ The following attributes are exported:
 
 ADB connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_adb_connection.example am-12345678
 ```

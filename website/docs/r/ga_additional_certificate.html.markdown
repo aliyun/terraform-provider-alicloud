@@ -99,6 +99,6 @@ The following attributes are exported:
 
 Global Accelerator (GA) Additional Certificate can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_additional_certificate.example <accelerator_id>:<listener_id>:<domain>
 ```

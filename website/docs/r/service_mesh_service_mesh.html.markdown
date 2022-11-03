@@ -189,6 +189,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Service Mesh Service Mesh can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_service_mesh_service_mesh.example <id>
 ```

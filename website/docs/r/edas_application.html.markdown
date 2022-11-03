@@ -17,7 +17,7 @@ Creates an EDAS ecs application on EDAS. The application will be deployed when `
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_application" "default" {
   application_name  = "xxx"
   cluster_id        = "xxx"
@@ -61,6 +61,6 @@ The following attributes are exported:
 
 EDAS application can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_edas_application.app app_Id
 ```

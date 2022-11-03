@@ -46,6 +46,6 @@ The following attributes are exported:
 
 Resource Manager Service Linked Role can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_service_linked_role.default <service_name>:<role_name>
 ```

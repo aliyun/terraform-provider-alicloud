@@ -113,6 +113,6 @@ The following attributes are exported:
 
 Private Zone Rule Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_rule_attachment.example <rule_id>
 ```

@@ -85,6 +85,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Serverless Workflow Flow can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_fnf_flow.example <name>
 ```

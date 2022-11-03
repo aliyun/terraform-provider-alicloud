@@ -73,6 +73,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ONS GROUP can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ons_group.group MQ_INST_1234567890_Baso1234567:GID-onsGroupDemo
 ```

@@ -21,7 +21,7 @@ For information about cloud connect network and how to use it, see [What is Clou
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cloud_connect_network" "default" {
   name        = "tf-testAccCloudConnectNetworkName"
   description = "tf-testAccCloudConnectNetworkDescription"
@@ -49,7 +49,7 @@ The following attributes are exported:
 
 The cloud connect network instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_connect_network.example ccn-abc123456
 ```
 

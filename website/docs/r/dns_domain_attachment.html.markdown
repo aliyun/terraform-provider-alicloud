@@ -17,7 +17,7 @@ Provides bind the domain name to the DNS instance resource.
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_dns_domain_attachment" "dns" {
   instance_id     = "dns-cn-mp91lyq9xxxx"
   domain_names    = ["test111.abc", "test222.abc"]
@@ -41,6 +41,6 @@ The following attributes are exported:
 
 DNS domain attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dns_domain_attachment.example dns-cn-v0h1ldjhxxx
 ```

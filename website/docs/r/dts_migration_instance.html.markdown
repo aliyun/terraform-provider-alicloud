@@ -59,6 +59,6 @@ The following attributes are exported:
 
 DTS Migration Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_migration_instance.example <id>
 ```

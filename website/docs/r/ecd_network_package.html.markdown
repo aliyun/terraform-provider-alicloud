@@ -53,6 +53,6 @@ The following attributes are exported:
 
 ECD Network Package can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_network_package.example <id>
 ```

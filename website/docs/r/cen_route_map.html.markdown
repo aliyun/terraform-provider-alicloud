@@ -21,7 +21,7 @@ For information about CEN Route Map and how to use it, see [Manage CEN Route Map
 
 Basic Usage
 
-```
+```terraform
 # Create a cen Route map resource and use it.
 resource "alicloud_cen_instance" "default" {
   name = "test-name"
@@ -142,7 +142,7 @@ The RouteMapId attributes are exported:
 
 CEN RouteMap can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_route_map.default <cen_id>:<route_map_id>.
 ```
 

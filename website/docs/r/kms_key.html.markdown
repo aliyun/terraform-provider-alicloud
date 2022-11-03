@@ -17,7 +17,7 @@ A kms key can help user to protect data security in the transmission process. Fo
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_kms_key" "key" {
   description             = "Hello KMS"
   pending_window_in_days  = "7"
@@ -93,6 +93,6 @@ The following arguments are supported:
 
 Alikms key can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kms_key.example abc123456
 ```

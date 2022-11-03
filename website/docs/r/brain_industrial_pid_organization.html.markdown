@@ -41,6 +41,6 @@ The following attributes are exported:
 
 Brain Industrial Pid Organization can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_brain_industrial_pid_organization.example <id>
 ```

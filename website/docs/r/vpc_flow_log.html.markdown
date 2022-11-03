@@ -21,7 +21,7 @@ For information about VPC Flow log and how to use it, see [Flow log overview](ht
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "terratest_vpc_flow_log"
 }
@@ -82,6 +82,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Flow Log can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_flow_log.example fl-abc123456
 ```

@@ -138,6 +138,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Storage Gateway Gateway File Share can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_storage_gateway_gateway_file_share.example <gateway_id>:<index_id>
 ```

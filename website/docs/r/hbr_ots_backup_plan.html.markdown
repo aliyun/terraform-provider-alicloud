@@ -111,6 +111,6 @@ The following attributes are exported:
 
 HBR Ots Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_ots_backup_plan.example <id>
 ```

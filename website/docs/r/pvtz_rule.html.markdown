@@ -102,6 +102,6 @@ The following attributes are exported:
 
 Private Zone Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_rule.example <id>
 ```

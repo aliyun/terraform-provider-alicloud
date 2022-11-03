@@ -195,6 +195,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MongoDB can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mongodb_sharding_instance.example dds-bp1291daeda44195
 ```

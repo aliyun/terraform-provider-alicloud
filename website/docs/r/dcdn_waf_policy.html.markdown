@@ -55,6 +55,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DCDN Waf Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dcdn_waf_policy.example <id>
 ```

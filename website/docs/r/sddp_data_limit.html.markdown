@@ -122,6 +122,6 @@ The following attributes are exported:
 
 Data Security Center Data Limit can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sddp_data_limit.example <id>
 ```

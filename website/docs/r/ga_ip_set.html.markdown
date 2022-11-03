@@ -78,6 +78,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ga Ip Set can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_ip_set.example <id>
 ```

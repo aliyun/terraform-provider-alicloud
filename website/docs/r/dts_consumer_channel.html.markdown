@@ -118,6 +118,6 @@ The following attributes are exported:
 
 DTS Consumer Channel can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_consumer_channel.example <dts_instance_id>:<consumer_group_id>
 ```

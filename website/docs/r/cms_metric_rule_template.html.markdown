@@ -120,6 +120,6 @@ The following attributes are exported:
 
 Cloud Monitor Service Metric Rule Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_metric_rule_template.example <id>
 ```

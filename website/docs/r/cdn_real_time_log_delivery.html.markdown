@@ -57,6 +57,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CDN Real Time Log Delivery can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cdn_real_time_log_delivery.example <domain>
 ```

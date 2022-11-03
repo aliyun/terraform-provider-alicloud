@@ -24,7 +24,7 @@ You can add forwarding rules to a listener to forward requests based on the doma
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbrulebasicconfig"
 }
@@ -175,6 +175,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Load balancer forwarding rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_rule.example rule-abc123456
 ```

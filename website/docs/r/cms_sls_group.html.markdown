@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Monitor Service Sls Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_sls_group.example <sls_group_name>
 ```

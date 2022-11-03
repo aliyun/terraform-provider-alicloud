@@ -76,5 +76,5 @@ terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name
 **NOTE:** Before 1.132.0+, CDN domain config can be imported using the id, e.g.
 
 ```shell
-terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>
+$ terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>
 ```

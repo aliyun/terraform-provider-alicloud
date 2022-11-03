@@ -63,6 +63,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Eipanycast Anycast Eip Address Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eipanycast_anycast_eip_address_attachment.example `anycast_id`:`bind_instance_id`:`bind_instance_region_id`:`bind_instance_type`
 ```

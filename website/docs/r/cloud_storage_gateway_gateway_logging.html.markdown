@@ -95,6 +95,6 @@ The following attributes are exported:
 
 Cloud Storage Gateway Gateway Logging can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_storage_gateway_gateway_logging.example <gateway_id>
 ```

@@ -82,6 +82,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 EAIS Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eais_instance.example <id>
 ```

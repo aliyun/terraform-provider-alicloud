@@ -16,7 +16,7 @@ This resouce used to create a dedicated host and store its initial version. For 
 ## Example Usage
 Basic Usage
 
-```
+```terraform
 resource "alicloud_ecs_dedicated_host" "default" {
   dedicated_host_type = "ddh.g5"
   tags = {
@@ -30,7 +30,7 @@ resource "alicloud_ecs_dedicated_host" "default" {
 
 Create Prepaid DDH
 
-```
+```terraform
 resource "alicloud_ecs_dedicated_host" "default" {
   dedicated_host_type = "ddh.g5"
   tags = {
@@ -95,6 +95,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ecs dedicated host can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_dedicated_host.default dh-2zedmxxxx
 ```

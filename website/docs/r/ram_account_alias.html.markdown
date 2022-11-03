@@ -14,7 +14,7 @@ Provides a RAM cloud account alias.
 
 ## Example Usage
 
-```
+```terraform
 # Create a alias for cloud account.
 resource "alicloud_ram_account_alias" "alias" {
   account_alias = "hallo"
@@ -35,6 +35,6 @@ The following attributes are exported:
 
 ## Import
 RAM account alias can be imported using the id, e.g.
-```
+```shell
 $ terraform import alicloud_ram_account_alias.example my-alias
 ```

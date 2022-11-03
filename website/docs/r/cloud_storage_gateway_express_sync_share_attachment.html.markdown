@@ -126,6 +126,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Storage Gateway Express Sync Share Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_storage_gateway_express_sync_share_attachment.example <express_sync_id>:<gateway_id>:<share_name>
 ```

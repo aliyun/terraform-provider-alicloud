@@ -96,6 +96,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Click House Account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_click_house_account.example <db_cluster_id>:<account_name>
 ```

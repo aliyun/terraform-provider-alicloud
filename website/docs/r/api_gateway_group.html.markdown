@@ -19,7 +19,7 @@ For information about Api Gateway Group and how to use it, see [Create An Api Gr
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_api_gateway_group" "apiGroup" {
   name        = "ApiGatewayGroup"
   description = "description of the api group"
@@ -45,6 +45,6 @@ The following attributes are exported:
 
 Api gateway group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_group.example "ab2351f2ce904edaa8d92a0510832b91"
 ```

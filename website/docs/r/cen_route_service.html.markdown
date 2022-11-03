@@ -81,7 +81,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CEN Route Service can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_route_service.example cen-ahixm0efqh********:cn-shanghai:100.118.28.52/32:cn-shanghai
 ```
 

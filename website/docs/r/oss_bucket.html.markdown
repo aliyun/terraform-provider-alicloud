@@ -436,6 +436,6 @@ The following attributes are exported:
 
 OSS bucket can be imported using the bucket name, e.g.
 
-```
+```shell
 $ terraform import alicloud_oss_bucket.bucket bucket-12345678
 ```

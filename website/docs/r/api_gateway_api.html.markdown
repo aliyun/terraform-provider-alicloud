@@ -19,7 +19,7 @@ For information about Api Gateway Api and how to use it, see [Create an API](htt
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_api_gateway_group" "apiGroup" {
   name        = "ApiGatewayGroup"
   description = "description of the api group"

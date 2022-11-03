@@ -51,6 +51,6 @@ The following attributes are exported:
 
 VPC Ipv4 Cidr Block can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_ipv4_cidr_block.example <vpc_id>:<secondary_cidr_block>
 ```

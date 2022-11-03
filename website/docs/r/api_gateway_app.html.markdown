@@ -19,7 +19,7 @@ For information about Api Gateway App and how to use it, see [Create An APP](htt
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_api_gateway_app" "apiTest" {
   name        = "ApiGatewayAPp"
   description = "description of the app"
@@ -43,6 +43,6 @@ The following attributes are exported:
 
 Api gateway app can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_app.example "7379660"
 ```

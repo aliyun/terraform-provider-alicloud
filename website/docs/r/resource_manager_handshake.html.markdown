@@ -48,6 +48,6 @@ The following attributes are exported:
 
 Resource Manager handshake can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_handshake.example h-QmdexeFm1kE*****
 ```

@@ -76,6 +76,6 @@ The following attributes are exported:
 
 Hybrid Backup Recovery (HBR) Ecs Backup Client can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_ecs_backup_client.example <id>
 ```

@@ -58,7 +58,7 @@ The following attributes are exported:
 
 Private Zone can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_zone.example abc123456
 ```
 

@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Enterprise Network (CEN) Traffic Marking Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_traffic_marking_policy.example <transit_router_id>:<traffic_marking_policy_id>
 ```

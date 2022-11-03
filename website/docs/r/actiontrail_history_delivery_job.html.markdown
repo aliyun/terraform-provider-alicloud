@@ -74,6 +74,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Actiontrail History Delivery Job can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_actiontrail_history_delivery_job.example <id>
 ```

@@ -141,6 +141,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Hybrid Backup Recovery (HBR) Restore Job can be imported using the id. Format to `<restore_job_id>:<restore_type>`, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_restore_job.example your_restore_job_id:your_restore_type
 ```

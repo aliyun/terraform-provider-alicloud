@@ -27,7 +27,7 @@ For information about server group and how to use it, see [Configure a server gr
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbservergroupvpc"
 }
@@ -132,6 +132,6 @@ The following attributes are exported:
 
 Load balancer backend server group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_server_group.example abc123456
 ```

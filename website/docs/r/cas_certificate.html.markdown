@@ -21,7 +21,7 @@ Provides a CAS Certificate resource.
 
 ## Example Usage
 
-```
+```terraform
 # Add a new Certificate.
 resource "alicloud_cas_certificate" "cert" {
   name = "test"

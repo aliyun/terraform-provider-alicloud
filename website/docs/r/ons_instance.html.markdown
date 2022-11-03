@@ -21,7 +21,7 @@ For more information about how to use it, see [RocketMQ Instance Management API]
 
 Basic Usage
 
-```terraform 
+```terraform
 resource "alicloud_ons_instance" "example" {
   instance_name = "tf-example-ons-instance"
   remark        = "tf-example-ons-instance-remark"
@@ -54,6 +54,6 @@ The following attributes are exported:
 
 ONS INSTANCE can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ons_instance.instance MQ_INST_1234567890_Baso1234567
 ```

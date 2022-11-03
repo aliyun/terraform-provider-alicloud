@@ -64,6 +64,6 @@ The following attributes are exported:
 
 Resource Manager Control Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_control_policy.example <id>
 ```

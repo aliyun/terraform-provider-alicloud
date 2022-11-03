@@ -20,7 +20,7 @@ For information about SLS Alert and how to use it, see [SLS Alert Overview](http
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "test-tf"
   description = "create by terraform"
@@ -76,7 +76,7 @@ resource "alicloud_log_alert" "example" {
 ```
 
 Basic Usage for new alert
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "test-tf"
   description = "create by terraform"
@@ -268,6 +268,6 @@ The following attributes are exported:
 
 Log alert can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_alert.example tf-log:tf-log-alert
 ```

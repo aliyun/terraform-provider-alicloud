@@ -21,7 +21,7 @@ For information about Cloud Connect Network Attachment and how to use it, see [W
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cloud_connect_network" "ccn" {
   name       = "tf-testAccCloudConnectNetworkAttachment-xxx"
   is_default = "true"
@@ -50,6 +50,6 @@ The following attributes are exported:
 
 The Cloud Connect Network Attachment can be imported using the instance_id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_connect_network_attachment.example ccn-abc123456:sag-abc123456
 ```

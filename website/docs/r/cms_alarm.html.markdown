@@ -16,7 +16,7 @@ Details for [alarm rule](https://www.alibabacloud.com/help/doc-detail/28608.htm)
 
 Basic Usage
 
-```terraform 
+```terraform
 resource "alicloud_cms_alarm" "basic" {
   name              = "tf-testAccCmsAlarm_basic"
   project           = "acs_ecs_dashboard"

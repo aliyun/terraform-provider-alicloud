@@ -20,7 +20,7 @@ For information about Server Certificate and how to use it, see [Configure Serve
 
 * using server_certificate/private content as string example
 
-```
+```terraform
 # create a server certificate
 resource "alicloud_slb_server_certificate" "foo" {
   name               = "slbservercertificate"
@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Server Load balancer Server Certificate can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_server_certificate.example abc123456
 ```

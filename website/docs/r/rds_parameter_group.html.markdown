@@ -63,6 +63,6 @@ The following attributes are exported:
 
 RDS Parameter Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_rds_parameter_group.example <id>
 ```

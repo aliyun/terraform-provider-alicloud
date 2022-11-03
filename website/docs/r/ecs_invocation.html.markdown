@@ -75,6 +75,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Invocation can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_invocation.example <id>
 ```

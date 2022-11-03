@@ -23,7 +23,7 @@ For information about alb server group attachment, see [AttachAlbServerGroups](h
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "testAccEssAlbServerGroupsAttachment"
 }
@@ -115,6 +115,6 @@ The following attributes are exported:
 
 ESS alb server groups can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_alb_server_group_attachment.example asg-xxx:sgp-xxx:5000 
 ```

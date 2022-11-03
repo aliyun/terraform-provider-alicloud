@@ -86,6 +86,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 AnalyticDB for MySQL (ADB) DB Cluster Lake Version can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_adb_db_cluster_lake_version.example <id>
 ```

@@ -13,7 +13,7 @@ Provides a ESS scaling rule resource.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "essscalingruleconfig"
 }
@@ -131,6 +131,6 @@ The following attributes are exported:
 
 ESS scaling rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_scaling_rule.example abc123456
 ```

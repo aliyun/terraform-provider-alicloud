@@ -122,6 +122,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Network Attached Storage (NAS) Data Flow can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_data_flow.example <file_system_id>:<data_flow_id>
 ```

@@ -85,6 +85,6 @@ The following attributes are exported:
 
 Log Dashboard can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_dashboard.example tf-project:tf-logstore:tf-dashboard
 ```

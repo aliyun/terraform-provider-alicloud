@@ -21,7 +21,7 @@ For information about VPN connection and how to use it, see [What is vpn connect
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_vpn_gateway" "foo" {
   name                 = "testAccVpnConfig_create"
   vpc_id               = "vpc-fake-id"
@@ -145,7 +145,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_connection.example vco-abc123456
 ```
 

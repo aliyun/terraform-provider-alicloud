@@ -80,6 +80,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Express Connect Virtual Border Router can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_express_connect_virtual_border_router.example <id>
 ```

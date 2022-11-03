@@ -40,6 +40,6 @@ Target related: `AliyunServiceRoleForEventBridgeConnectVPC`, `AliyunServiceRoleF
 
 Event Bridge service-linked roles(SLR) can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_event_bridge_service_linked_role.example <product_name>
 ```

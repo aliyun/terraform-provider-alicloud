@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Ram Directory can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_ram_directory.example <id>
 ```

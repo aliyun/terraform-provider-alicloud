@@ -72,6 +72,6 @@ The following attributes are exported:
 
 RAM User Policy attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_user_policy_attachment.example user:my-policy:Custom:my-user
 ```

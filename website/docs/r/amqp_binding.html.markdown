@@ -79,6 +79,6 @@ The following attributes are exported:
 
 RabbitMQ (AMQP) Binding can be imported using the id, e.g.
 
-```
-$ terraform import alicloud_amqp_binding.example <instance_id>:<virtual_host_name>:<source_exchange>:<destination_name>
+```shell
+terraform import alicloud_amqp_binding.example <instance_id>:<virtual_host_name>:<source_exchange>:<destination_name>
 ```

@@ -17,7 +17,7 @@ For more information about how to use it, see [Attach a network in a different a
 
 Basic Usage
 
-```
+```terraform
 # Create a new instance-grant and use it to grant one child instance of account1 to a new CEN of account 2.
 provider "alicloud" {
   access_key = "access123"
@@ -81,6 +81,6 @@ The following attributes are exported:
 
 CEN instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_instance_grant.example cen-abc123456:vpc-abc123456:uid123456
 ```

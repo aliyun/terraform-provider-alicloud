@@ -19,7 +19,7 @@ For information about SLS Resource and how to use it, see [Resource management](
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_resource_record" "example" {
   resource_name         = "user.tf.test_resource"
   record_id             = "user_tf_test_resource_1"
@@ -46,6 +46,6 @@ The following attributes are exported:
 
 Log resource record can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_resource_record.example user.tf.test_resource:user_tf_test_resource_1
 ```

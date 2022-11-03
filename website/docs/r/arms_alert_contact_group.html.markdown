@@ -50,6 +50,6 @@ The following attributes are exported:
 
 Application Real-Time Monitoring Service (ARMS) Alert Contact Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_arms_alert_contact_group.example <id>
 ```

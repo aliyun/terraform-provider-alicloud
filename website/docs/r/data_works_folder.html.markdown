@@ -43,6 +43,6 @@ The following attributes are exported:
 
 Data Works Folder can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_data_works_folder.example <folder_id>:<$.ProjectId>
 ```

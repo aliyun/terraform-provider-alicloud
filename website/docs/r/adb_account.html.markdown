@@ -15,7 +15,7 @@ Provides a [ADB](https://www.alibabacloud.com/help/product/92664.htm) account re
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "ADB"
 }
@@ -80,6 +80,6 @@ The following attributes are exported:
 
 ADB account can be imported using the id, e.g.
 
-```
-$ terraform import alicloud_adb_account.example "am-12345:tf_account"
+```shell
+$ terraform import alicloud_adb_account.example am-12345:tf_account
 ```

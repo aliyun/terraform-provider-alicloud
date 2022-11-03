@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Alarm contact can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_alarm_contact.example abc12345
 ```

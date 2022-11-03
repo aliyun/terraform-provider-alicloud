@@ -19,7 +19,7 @@ For information about Container Registry Enterprise Edition instances and how to
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cr_ee_instance" "my-instance" {
   payment_type        = "Subscription"
   period              = 1
@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Container Registry Enterprise Edition instance can be imported using the `id`, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_ee_instance.default cri-test
 ```

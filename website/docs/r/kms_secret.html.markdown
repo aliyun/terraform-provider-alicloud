@@ -17,7 +17,7 @@ This resouce used to create a secret and store its initial version.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_kms_secret" "default" {
   secret_name                   = "secret-foo"
   description                   = "from terraform"
@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 KMS secret can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kms_secret.default secret-foo
 ```

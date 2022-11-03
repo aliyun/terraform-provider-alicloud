@@ -491,6 +491,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Kubernetes cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`.
 
-```
-  $ terraform import alicloud_cs_kubernetes.main cluster-id
+```shell
+$ terraform import alicloud_cs_kubernetes.main cluster-id
 ```

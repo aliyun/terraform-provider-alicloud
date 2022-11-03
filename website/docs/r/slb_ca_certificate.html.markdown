@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Server Load balancer CA Certificate can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_ca_certificate.example abc123456
 ```

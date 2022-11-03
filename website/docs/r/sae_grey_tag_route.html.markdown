@@ -154,6 +154,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Serverless App Engine (SAE) GreyTagRoute can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sae_grey_tag_route.example <id>
 ```

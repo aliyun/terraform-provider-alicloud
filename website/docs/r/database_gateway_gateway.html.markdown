@@ -44,6 +44,6 @@ The following attributes are exported:
 
 Database Gateway Gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_database_gateway_gateway.example <id>
 ```

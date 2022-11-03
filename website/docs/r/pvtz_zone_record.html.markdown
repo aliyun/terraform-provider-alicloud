@@ -17,7 +17,7 @@ Provides a Private Zone Record resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_pvtz_zone" "zone" {
   name = "foo.test.com"
 }
@@ -68,7 +68,7 @@ The following attributes are exported:
 
 Private Zone Record can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_zone_record.example abc123456
 ```
 

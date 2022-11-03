@@ -20,7 +20,7 @@ Provides an ALIKAFKA topic resource.
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -81,7 +81,7 @@ The following attributes are exported:
 
 ALIKAFKA TOPIC can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
 ```
 

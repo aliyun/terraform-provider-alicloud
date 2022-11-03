@@ -60,6 +60,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Api Gateway Model can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_model.example <group_id>:<model_name>
 ```

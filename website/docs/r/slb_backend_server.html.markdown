@@ -15,7 +15,7 @@ Add a group of backend servers (ECS or ENI instance) to the Server Load Balancer
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbbackendservertest"
 }
@@ -115,6 +115,6 @@ The following attributes are exported:
 
 Load balancer backend server can be imported using the load balancer id.
 
-```
+```shell
 $ terraform import alicloud_slb_backend_server.example <load_balancer_id>
 ```

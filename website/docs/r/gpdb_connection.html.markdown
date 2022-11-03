@@ -18,7 +18,7 @@ Provides a connection resource to allocate an Internet connection string for ins
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Gpdb"
 }
@@ -88,6 +88,6 @@ The following attributes are exported:
 
 AnalyticDB for PostgreSQL's connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_gpdb_connection.example abc12345678
 ```

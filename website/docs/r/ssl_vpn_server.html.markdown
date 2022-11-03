@@ -17,7 +17,7 @@ Provides a SSL VPN server resource. [Refer to details](https://www.alibabacloud.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_vpn_gateway" "foo" {
   name                 = "testAccVpnConfig_create"
   vpc_id               = "vpc-fake-id"
@@ -70,7 +70,7 @@ The following attributes are exported:
 
 SSL-VPN server can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ssl_vpn_server.example vss-abc123456
 ```
 

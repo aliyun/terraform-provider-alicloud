@@ -40,6 +40,6 @@ The following arguments are supported:
 
 Resource Manager Folder can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_folder.example fd-u8B321****	
 ```

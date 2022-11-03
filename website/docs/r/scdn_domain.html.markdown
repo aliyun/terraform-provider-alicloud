@@ -97,6 +97,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 SCDN Domain can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_scdn_domain.example <domain_name>
 ```

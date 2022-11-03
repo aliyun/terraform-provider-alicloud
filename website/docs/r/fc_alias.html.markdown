@@ -53,6 +53,6 @@ The following arguments are supported:
 
 Function Compute alias can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_fc_alias.example my_alias_id
 ```

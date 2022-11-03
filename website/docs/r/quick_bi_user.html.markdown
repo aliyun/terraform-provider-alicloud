@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Quick BI User can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_quick_bi_user.example <id>
 ```

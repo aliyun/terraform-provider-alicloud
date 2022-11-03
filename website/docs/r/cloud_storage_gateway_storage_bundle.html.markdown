@@ -43,6 +43,6 @@ The following attributes are exported:
 
 Cloud Storage Gateway Storage Bundle can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_storage_gateway_storage_bundle.example <id>
 ```

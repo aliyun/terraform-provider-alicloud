@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Key Pair can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_key_pair.example <key_name>
 ```

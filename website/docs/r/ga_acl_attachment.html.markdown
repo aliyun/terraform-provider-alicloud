@@ -114,6 +114,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Global Accelerator (GA) Acl Attachment can be imported using the id. Format to `<listener_id>:<acl_id>`, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_acl_attachment.example your_listener_id:your_acl_id
 ```

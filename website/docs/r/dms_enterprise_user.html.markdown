@@ -52,6 +52,6 @@ The following attributes are exported:
 
 DMS Enterprise User can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dms_enterprise_user.example 24356xxx
 ```

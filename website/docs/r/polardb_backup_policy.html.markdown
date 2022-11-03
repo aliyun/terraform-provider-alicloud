@@ -80,6 +80,6 @@ The following attributes are exported:
 
 PolarDB backup policy can be imported using the id or cluster id, e.g.
 
-```
+```shell
 $ terraform import alicloud_polardb_backup_policy.example "rm-12345678"
 ```

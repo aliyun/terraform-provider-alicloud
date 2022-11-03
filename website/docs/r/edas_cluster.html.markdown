@@ -17,7 +17,7 @@ Provides an EDAS cluster resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_cluster" "default" {
   cluster_name      = var.cluster_name
   cluster_type      = var.cluster_type
@@ -47,6 +47,6 @@ The following attributes are exported:
 
 EDAS cluster can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_edas_cluster.cluster cluster_id
 ```

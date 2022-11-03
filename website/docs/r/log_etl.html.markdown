@@ -19,7 +19,7 @@ which is widely applicable to scenarios such as data regularization, enrichment,
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
@@ -200,6 +200,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Log etl can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_etl.example tf-log-project:tf-log-etl-name
 ```

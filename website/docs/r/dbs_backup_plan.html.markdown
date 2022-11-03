@@ -177,6 +177,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DBS Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dbs_backup_plan.example <id>
 ```

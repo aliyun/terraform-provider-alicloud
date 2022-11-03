@@ -64,6 +64,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Dhcp Options Set can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_dhcp_options_set.example <id>
 ```

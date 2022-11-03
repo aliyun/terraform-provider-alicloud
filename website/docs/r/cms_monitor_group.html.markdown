@@ -55,6 +55,6 @@ The following attributes are exported:
 
 Cloud Monitor Service Monitor Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_monitor_group.example <id>
 ```

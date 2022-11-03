@@ -77,6 +77,6 @@ The following attributes are exported:
 
 Resource Manager Control Policy Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_control_policy_attachment.example <policy_id>:<target_id>
 ```

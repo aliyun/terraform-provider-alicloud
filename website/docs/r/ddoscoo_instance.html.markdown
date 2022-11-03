@@ -21,7 +21,7 @@ BGP-Line Anti-DDoS instance resource. "Ddoscoo" is the short term of this produc
 
 Basic Usage
 
-```
+```terraform
 provider "alicloud" {
   endpoints {
     bssopenapi = "business.aliyuncs.com"

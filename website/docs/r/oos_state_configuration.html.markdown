@@ -63,6 +63,6 @@ The following attributes are exported:
 
 OOS State Configuration can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_state_configuration.example <id>
 ```

@@ -54,6 +54,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Public Ip Address Pool can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_public_ip_address_pool.example <id>
 ```

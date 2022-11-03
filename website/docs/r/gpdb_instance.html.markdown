@@ -139,6 +139,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 AnalyticDB for PostgreSQL can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_gpdb_instance.example <id>
 ```

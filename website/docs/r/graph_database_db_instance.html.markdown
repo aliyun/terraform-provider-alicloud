@@ -77,6 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Graph Database Db Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_graph_database_db_instance.example <id>
 ```

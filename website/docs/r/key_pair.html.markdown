@@ -17,7 +17,7 @@ Provides a key pair resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_key_pair" "basic" {
   key_name = "terraform-test-key-pair"
 }
@@ -54,6 +54,6 @@ The following arguments are supported:
 
 Key pair can be imported using the name, e.g.
 
-```
+```shell
 $ terraform import alicloud_key_pair.example my_public_key
 ```

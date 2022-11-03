@@ -56,6 +56,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Monitor Service Hybrid Monitor Fc Task can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_hybrid_monitor_fc_task.example <hybrid_monitor_fc_task_id>:<namespace>
 ```

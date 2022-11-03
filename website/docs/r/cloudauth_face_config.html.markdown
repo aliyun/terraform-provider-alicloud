@@ -45,6 +45,6 @@ The following attributes are exported:
 
 Cloudauth Face Config can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloudauth_face_config.example <lang>
 ```

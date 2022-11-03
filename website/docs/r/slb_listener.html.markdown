@@ -22,7 +22,7 @@ For information about listener and how to use it, to see the following:
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "testcreatehttplistener"
 }
@@ -216,6 +216,6 @@ The following attributes are exported:
 
 Load balancer listener can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_listener.example "lb-abc123456:tcp:22"
 ```

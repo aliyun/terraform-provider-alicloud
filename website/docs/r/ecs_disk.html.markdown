@@ -92,6 +92,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECS Disk can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_disk.example d-abcd12345
 ```

@@ -19,7 +19,7 @@ For information about Elastic Network Interface and how to use it, see [Elastic 
 
 Bacis Usage
 
-```
+```terraform
 variable "name" {
   default = "networkInterfaceAttachment"
 }
@@ -104,6 +104,6 @@ In addition to all arguments above, the following attributes are exported:
 
 Network Interfaces Attachment resource can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_network_interface_attachment.eni eni-abc123456789000:i-abc123456789000
 ```

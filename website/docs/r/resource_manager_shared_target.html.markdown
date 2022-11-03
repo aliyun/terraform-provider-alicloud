@@ -58,6 +58,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Resource Manager Shared Target can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_shared_target.example <resource_share_id>:<target_id>
 ```

@@ -20,7 +20,7 @@ For more details about guaranteed-performance instance, see [Guaranteed-performa
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "terraformtestslbconfig"
 }
@@ -108,6 +108,6 @@ The following attributes are exported:
 
 Load balancer can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_load_balancer.example lb-abc123456
 ```

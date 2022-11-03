@@ -17,7 +17,7 @@ For information about scaling group suspend process, see [SuspendProcesses](http
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "testAccEssSuspendProcess"
 }
@@ -104,7 +104,7 @@ The following attributes are exported:
 
 ESS suspend process can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_suspend_process.example asg-xxx:sgp-xxx:5000 
 ```
 

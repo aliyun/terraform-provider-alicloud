@@ -103,6 +103,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Private Zone Endpoint can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_endpoint.example <id>
 ```

@@ -77,6 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ROS Change Set can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ros_change_set.example <change_set_id>
 ```

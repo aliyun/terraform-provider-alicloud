@@ -80,6 +80,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ga Bandwidth Package can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_bandwidth_package.example <id>
 ```

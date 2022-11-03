@@ -24,7 +24,7 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 ### Create a Mongodb instance
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "MongoDB"
 }
@@ -131,6 +131,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MongoDB can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mongodb_instance.example dds-bp1291daeda44194
 ```

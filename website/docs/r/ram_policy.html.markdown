@@ -80,6 +80,6 @@ The following attributes are exported:
 
 RAM policy can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_policy.example my-policy
 ```

@@ -99,6 +99,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ROS Template Scratch can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ros_template_scratch.example <id>
 ```

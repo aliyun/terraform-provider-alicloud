@@ -66,6 +66,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Nas File System can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_nas_file_system.example <id>
 ```

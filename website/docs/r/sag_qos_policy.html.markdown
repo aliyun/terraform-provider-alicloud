@@ -22,7 +22,7 @@ For information about Sag Qos Policy and how to use it, see [What is Qos Policy]
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_qos" "default" {
   name = "tf-testAccSagQosName"
 }
@@ -67,7 +67,7 @@ The following attributes are exported:
 
 The Sag Qos Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_qos_policy.example qos-abc123456:qospy-abc123456
 ```
 

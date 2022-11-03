@@ -17,7 +17,7 @@ Create an alias for the master key (CMK).
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_kms_key" "this" {}
 
 resource "alicloud_kms_alias" "this" {
@@ -48,6 +48,6 @@ The following arguments are supported:
 
 KMS alias can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kms_alias.example alias/test_kms_alias
 ```

@@ -77,6 +77,6 @@ The following attributes are exported:
 
 Simple Application Server Custom Image can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_simple_application_server_custom_image.example <id>
 ```

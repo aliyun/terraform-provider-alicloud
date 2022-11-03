@@ -19,7 +19,7 @@ For information about CEN and how to use it, see [Cross-region interconnection b
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "tf-testAccCenBandwidthLimitConfig"
 }
@@ -122,8 +122,8 @@ The following attributes are exported:
 
 CEN bandwidth limit can be imported using the id, e.g.
 
-```
-terraform import alicloud_cen_bandwidth_limit.example cen-abc123456:cn-beijing:eu-west-1
+```shell
+$ terraform import alicloud_cen_bandwidth_limit.example cen-abc123456:cn-beijing:eu-west-1
 ```
 
 ->**NOTE:** The sequence of the region_id_1 and region_id_2 makes no difference when import. But the in the id of the resource, they are sorted lexicographically.

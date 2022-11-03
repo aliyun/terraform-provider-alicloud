@@ -85,5 +85,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Cloud Config Aggregate Config Rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_config_aggregate_config_rule.example <aggregator_id>:<config_rule_id>
+$ terraform import alicloud_config_aggregate_config_rule.example "<aggregator_id>:<config_rule_id>"
 ```

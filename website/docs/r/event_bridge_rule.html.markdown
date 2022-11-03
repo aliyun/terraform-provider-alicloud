@@ -110,6 +110,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Event Bridge Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_event_bridge_rule.example <event_bus_name>:<rule_name>
 ```

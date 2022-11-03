@@ -58,6 +58,6 @@ The following attributes are exported:
 
 Anti-DDoS Pro Port can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddoscoo_port.example <instance_id>:<frontend_port>:<frontend_protocol>
 ```

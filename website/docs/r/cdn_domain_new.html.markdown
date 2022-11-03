@@ -19,7 +19,7 @@ For information about Cdn Domain New and how to use it, see [Add a domain](https
 
 Basic Usage
 
-```
+```terraform
 # Create a new Domain.
 resource "alicloud_cdn_domain_new" "domain" {
   domain_name = "terraform.test.com"

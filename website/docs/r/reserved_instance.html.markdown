@@ -65,7 +65,7 @@ The following attributes are exported:
 
 reservedInstance can be imported using id, e.g.
 
-```
+```shell
 $ terraform import alicloud_reserved_instance.default ecsri-uf6df4xm0h3licit****
 ```
 

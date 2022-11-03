@@ -103,6 +103,6 @@ The following attributes are exported:
 
 ApsaraDB for MyBase Dedicated Host Account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cddc_dedicated_host_account.example <dedicated_host_id>:<account_name>
 ```

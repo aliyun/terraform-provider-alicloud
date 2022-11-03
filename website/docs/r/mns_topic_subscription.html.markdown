@@ -61,6 +61,6 @@ The following attributes are exported:
 
 MNS Topic subscription can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mns_topic_subscription.subscription tf-example-mnstopic:tf-example-mnstopic-sub
 ```

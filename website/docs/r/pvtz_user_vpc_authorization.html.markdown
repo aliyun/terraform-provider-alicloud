@@ -50,6 +50,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Private Zone User Vpc Authorization can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_pvtz_user_vpc_authorization.example <authorized_user_id>:<auth_type>
 ```

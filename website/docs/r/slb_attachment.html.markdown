@@ -15,7 +15,7 @@ Add a group of backend servers (ECS instance) to the Server Load Balancer or rem
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbattachmenttest"
 }
@@ -102,6 +102,6 @@ The following attributes are exported:
 
 Load balancer attachment can be imported using the id or load balancer id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_attachment.example lb-abc123456
 ```

@@ -44,6 +44,6 @@ The following attributes are exported:
 
 Elastic Cloud Phone (ECP) Key Pair can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecp_key_pair.example <key_pair_name>
 ```

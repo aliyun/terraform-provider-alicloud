@@ -86,6 +86,6 @@ The following attributes are exported:
 
 ECD Command can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_command.example <id>
 ```

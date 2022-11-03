@@ -19,7 +19,7 @@ For information about Elastic Network Interface and how to use it, see [Elastic 
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "networkInterfaceName"
 }
@@ -79,6 +79,6 @@ The following attributes are exported:
 
 ENI can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_network_interface.eni eni-abc1234567890000
 ```

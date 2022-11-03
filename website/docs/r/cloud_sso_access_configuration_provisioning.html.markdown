@@ -68,6 +68,6 @@ The following attributes are exported:
 
 Cloud SSO Access Configuration Provisioning can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_access_assignment.example <directory_id>:<access_configuration_id>:<target_type>:<target_id>
 ```

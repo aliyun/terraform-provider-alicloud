@@ -76,6 +76,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 PolarDB Global Database Network can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_polardb_global_database_network.example <id>
 ```

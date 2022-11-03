@@ -20,7 +20,7 @@ Provides an ALIKAFKA sasl acl resource.
 
 Basic Usage
 
-```
+```terraform
 variable "username" {
   default = "testusername"
 }
@@ -97,6 +97,6 @@ The following attributes are exported:
 
 ALIKAFKA GROUP can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alikafka_sasl_acl.acl alikafka_post-cn-123455abc:username:Topic:test-topic:LITERAL:Write
 ```
