@@ -114,6 +114,6 @@ specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.ht
 
 Elastic Cloud Phone (ECP) Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecp_instance.example <id>
 ```

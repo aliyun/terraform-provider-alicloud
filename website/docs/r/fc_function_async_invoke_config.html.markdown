@@ -113,6 +113,6 @@ In addition to all arguments above, the following arguments are exported:
 
 Function Compute Function Async Invoke Configs can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_fc_function_async_invoke_config.example my_function
 ```

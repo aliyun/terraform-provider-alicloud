@@ -17,7 +17,7 @@ For information about OTS search index and how to use it, see [Search index over
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "terraformtest"
 }
@@ -157,6 +157,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 OTS search index can be imported using id, e.g.
 
-```
-$ terraform import alicloud_ots_search_index.index1 "<instance_name>:<table_name>:<index_name>:<index_type>"
+```shell
+$ terraform import alicloud_ots_search_index.index1 <instance_name>:<table_name>:<index_name>:<index_type>
 ```

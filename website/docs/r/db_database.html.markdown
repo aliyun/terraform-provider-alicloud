@@ -15,7 +15,7 @@ Provides an RDS database resource. A DB database deployed in a DB instance. A DB
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -84,6 +84,6 @@ The following attributes are exported:
 
 RDS database can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_database.example "rm-12345:tf_database"
 ```

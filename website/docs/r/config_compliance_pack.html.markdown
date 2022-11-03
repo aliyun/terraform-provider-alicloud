@@ -108,6 +108,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Config Compliance Pack can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_config_compliance_pack.example <id>
 ```

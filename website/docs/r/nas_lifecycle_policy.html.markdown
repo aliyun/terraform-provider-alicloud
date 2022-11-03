@@ -53,6 +53,6 @@ The following attributes are exported:
 
 Network Attached Storage (NAS) Lifecycle Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_lifecycle_policy.example <file_system_id>:<lifecycle_policy_name>
 ```

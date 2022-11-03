@@ -67,6 +67,6 @@ The following attributes are exported:
 
 Event Bridge Event Source can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_event_bridge_event_source.example <event_source_name>
 ```

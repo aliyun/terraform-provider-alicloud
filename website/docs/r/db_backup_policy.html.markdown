@@ -15,7 +15,7 @@ Provides an RDS instance backup policy resource and used to configure instance b
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -95,6 +95,6 @@ The following attributes are exported:
 
 RDS backup policy can be imported using the id or instance id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_backup_policy.example "rm-12345678"
 ```

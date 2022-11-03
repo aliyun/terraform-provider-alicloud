@@ -80,6 +80,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 The disk attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_disk_attachment.example d-abc12345678:i-abc12355
 ```

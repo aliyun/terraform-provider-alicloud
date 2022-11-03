@@ -97,6 +97,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Forward Entry can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_forward_entry.foo ftb-1aece3:fwd-232ce2
 ```

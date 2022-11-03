@@ -82,6 +82,6 @@ The following attributes are exported:
 
 Web Application Firewall(WAF) Protection Module can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_waf_protection_module.example <instance_id>:<domain>:<defense_type>
 ```

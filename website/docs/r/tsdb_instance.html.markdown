@@ -99,6 +99,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 TSDB Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_tsdb_instance.example <id>
 ```

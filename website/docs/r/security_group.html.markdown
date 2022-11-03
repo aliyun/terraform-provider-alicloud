@@ -19,7 +19,7 @@ Provides a security group resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_security_group" "group" {
   name        = "terraform-test-group"
   description = "New security group"
@@ -27,7 +27,7 @@ resource "alicloud_security_group" "group" {
 ```
 Basic usage for vpc
 
-```
+```terraform
 resource "alicloud_security_group" "group" {
   name   = "new-group"
   vpc_id = alicloud_vpc.vpc.id
@@ -70,6 +70,6 @@ The following attributes are exported:
 
 Security Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_security_group.example sg-abc123456
 ```

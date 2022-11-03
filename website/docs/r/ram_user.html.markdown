@@ -15,7 +15,7 @@ Provides a RAM User resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a new RAM user.
 resource "alicloud_ram_user" "user" {
   name         = "user_test"
@@ -47,6 +47,6 @@ The following attributes are exported:
 
 RAM user can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_user.example 123456789xxx
 ```

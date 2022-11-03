@@ -66,6 +66,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Network Attached Storage (NAS) Auto Snapshot Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_auto_snapshot_policy.example <id>
 ```

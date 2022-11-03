@@ -59,6 +59,6 @@ The following attributes are exported:
 
 Video Surveillance System Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_video_surveillance_system_group.example <id>
 ```

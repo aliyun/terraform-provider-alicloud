@@ -59,6 +59,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 NLB Security Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nlb_security_policy.example <id>
 ```

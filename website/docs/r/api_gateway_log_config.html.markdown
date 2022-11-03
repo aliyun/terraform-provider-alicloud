@@ -53,6 +53,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Api Gateway Log Config can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_log_config.example <log_type>
 ```

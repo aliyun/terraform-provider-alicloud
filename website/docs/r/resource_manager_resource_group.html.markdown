@@ -46,6 +46,6 @@ The following arguments are supported:
 
 Resource Manager Resource Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_resource_group.example abc123456
 ```

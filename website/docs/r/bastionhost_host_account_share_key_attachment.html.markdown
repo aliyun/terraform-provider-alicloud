@@ -83,6 +83,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Bastion Host Account Share Key Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_bastionhost_host_account_share_key_attachment.example <instance_id>:<host_share_key_id>:<host_account_id>
 ```

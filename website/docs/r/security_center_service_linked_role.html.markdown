@@ -46,6 +46,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 SecurityCenter service-linked roles(SLR) can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_security_center_service_linked_role.example <product_name>
 ```

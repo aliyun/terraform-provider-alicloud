@@ -17,7 +17,7 @@ Provides a new resource to manage [Action Trail](https://www.alibabacloud.com/he
 
 ## Example Usage
 
-```
+```terraform
 # Create a new action trail.
 resource "alicloud_actiontrail" "foo" {
   name            = "action-trail"
@@ -52,6 +52,6 @@ The following attributes are exported:
 
 Action trail can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_actiontrail.foo abc12345678
 ```

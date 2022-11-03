@@ -16,7 +16,7 @@ Provides an RDS connection resource to allocate an Internet connection string fo
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -81,6 +81,6 @@ The following attributes are exported:
 
 RDS connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_connection.example abc12345678
 ```

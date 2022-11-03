@@ -82,6 +82,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Microservice Engine (MSE) Gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mse_gateway.example <id>
 ```

@@ -19,7 +19,7 @@ For information about Api Gateway App attachment and how to use it, see [Add spe
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_api_gateway_app_attachment" "foo" {
   api_id     = "d29d25b9cfdf4742b1a3f6537299a749"
   group_id   = "aaef8cdbb404420f9398a74ed1db7fff"

@@ -81,6 +81,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 RAM role can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_role.example my-role
 ```

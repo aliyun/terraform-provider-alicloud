@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Cloud SSO Directory can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_directory.example <id>
 ```

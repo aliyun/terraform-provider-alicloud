@@ -162,6 +162,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Monitor Service Hybrid Monitor Sls Task can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_hybrid_monitor_sls_task.example <id>
 ```

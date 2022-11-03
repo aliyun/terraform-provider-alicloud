@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Apsara Agile Live (IMP) App Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_imp_app_template.example <id>
 ```

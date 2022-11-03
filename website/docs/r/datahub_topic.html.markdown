@@ -17,7 +17,7 @@ Basic Usage
 
 - BLob Topic
 
-```
+```terraform
 resource "alicloud_datahub_topic" "example" {
   name         = "tf_datahub_topic"
   project_name = "tf_datahub_project"

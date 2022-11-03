@@ -17,7 +17,7 @@ Provides a ESS eci scaling configuration resource.
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "essscalingconfiguration"
 }
@@ -253,7 +253,7 @@ The following attributes are exported:
 
 ESS eci scaling configuration can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_eci_scaling_configuration.example asc-abc123456
 ```
 

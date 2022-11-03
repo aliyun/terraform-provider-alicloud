@@ -19,7 +19,7 @@ Represents a single `ingress` or `egress` group rule, which can be added to exte
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_security_group" "default" {
   name = "default"
 }

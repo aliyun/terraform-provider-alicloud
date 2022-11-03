@@ -30,7 +30,7 @@ after creating cluster successfully, and you can put them into the specified loc
 
 ## Example Usage
 
-```
+```terraform
 # If vpc_id is not specified, a new one will be created
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -73,7 +73,7 @@ resource "alicloud_cs_edge_kubernetes" "k8s" {
 ```
 
 You could create a professional kubernetes edge cluster now.
-```
+```terraform
 resource "alicloud_cs_edge_kubernetes" "k8s_pro" {
   name                  = var.cluster_name
   cluster_spec          = "ack.pro.small"
@@ -301,6 +301,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Kubernetes edge cluster can be imported using the id, e.g. Then complete the main.tf accords to the result of `terraform plan`.
 
-```
-  $ terraform import alicloud_cs_edge_kubernetes.main cluster-id
+```shell
+$ terraform import alicloud_cs_edge_kubernetes.main cluster-id
 ```

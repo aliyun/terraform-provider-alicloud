@@ -21,7 +21,7 @@ For information about Sag DnatEntry and how to use it, see [What is Sag DnatEntr
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_dnat_entry" "default" {
   sag_id        = "sag-3rb1t3iagy3w0zgwy9"
   type          = "Intranet"
@@ -55,6 +55,6 @@ The following attributes are exported:
 
 The Sag DnatEntry can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_dnat_entry.example sag-abc123456:dnat-abc123456
 ```

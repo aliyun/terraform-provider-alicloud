@@ -21,7 +21,7 @@ For information about Sag Acl Rule and how to use it, see [What is access contro
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_acl" "default" {
   name        = "tf-testAccSagAclName"
   sag_count   = "0"
@@ -65,7 +65,7 @@ The following attributes are exported:
 
 The Sag Acl Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_acl_rule.example acr-abc123456
 ```
 

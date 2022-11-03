@@ -17,7 +17,7 @@ Attaches several ECS instances to a specified scaling group or remove them from 
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "essattachmentconfig"
 }
@@ -135,6 +135,6 @@ The following attributes are exported:
 
 ESS attachment can be imported using the id or scaling group id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_attachment.example asg-abc123456
 ```

@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Network Attached Storage (NAS) Recycle Bin can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_recycle_bin.example <file_system_id>
 ```

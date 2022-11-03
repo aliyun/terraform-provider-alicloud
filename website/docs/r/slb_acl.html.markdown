@@ -36,7 +36,7 @@ For information about acl and how to use it, see [Configure an access control li
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "terraformslbaclconfig"
 }
@@ -86,6 +86,6 @@ The following attributes are exported:
 
 Server Load balancer access control list can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_acl.example acl-abc123456
 ```

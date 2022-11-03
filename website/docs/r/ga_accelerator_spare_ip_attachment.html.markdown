@@ -75,6 +75,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Global Accelerator (GA) Accelerator Spare Ip Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_accelerator_spare_ip_attachment.example <accelerator_id>:<spare_ip>
 ```

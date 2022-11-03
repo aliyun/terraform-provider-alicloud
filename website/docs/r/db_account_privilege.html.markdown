@@ -15,7 +15,7 @@ Provides an RDS account privilege resource and used to grant several database so
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -97,6 +97,6 @@ The following attributes are exported:
 
 RDS account privilege can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_account_privilege.example "rm-12345:tf_account:ReadOnly"
 ```

@@ -72,6 +72,6 @@ The following attributes are exported:
 
 Application Real-Time Monitoring Service (ARMS) Prometheus Alert Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_arms_prometheus_alert_rule.example <cluster_id>:<prometheus_alert_rule_id>
 ```

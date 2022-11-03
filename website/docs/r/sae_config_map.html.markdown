@@ -55,6 +55,6 @@ The following attributes are exported:
 
 Serverless App Engine (SAE) Config Map can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sae_config_map.example <id>
 ```

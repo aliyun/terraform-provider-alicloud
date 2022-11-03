@@ -21,7 +21,7 @@ For information about CEN flow log and how to use it, see [Manage CEN flowlog](h
 
 Basic Usage
 
-```
+```terraform
 # Create a cen flowlog resource and use it to publish a route entry pointing to an ECS.
 resource "alicloud_cen_instance" "default" {
     name = "my-cen"
@@ -68,7 +68,7 @@ The following attributes are exported:
 
 CEN flowlog can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_flowlog.default flowlog-tig1xxxxxx
 ```
 

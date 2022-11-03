@@ -17,7 +17,7 @@ For information about CEN route entries publishment and how to use it, see [Mana
 
 Basic Usage
 
-```
+```terraform
 # Create a cen_route_entry resource and use it to publish a route entry pointing to an ECS.
 provider "alicloud" {
   alias  = "hz"

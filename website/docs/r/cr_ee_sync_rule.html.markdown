@@ -21,7 +21,7 @@ For information about Container Registry Enterprise Edition sync rules and how t
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cr_ee_sync_rule" "default" {
   instance_id           = "my-source-instance-id"
   namespace_name        = "my-source-namespace"
@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Container Registry Enterprise Edition sync rule can be imported using the id. Format to `{instance_id}:{namespace_name}:{rule_id}`, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_ee_sync_rule.default `cri-xxx:my-namespace:crsr-yyy`
 ```

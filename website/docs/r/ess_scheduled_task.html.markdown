@@ -13,7 +13,7 @@ Provides a ESS schedule resource.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "essscheduleconfig"
 }
@@ -139,7 +139,7 @@ The following attributes are exported:
 
 ESS schedule task can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_scheduled_task.example abc123456
 ```
 

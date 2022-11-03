@@ -54,6 +54,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Resource Manager Delegated Administrator can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_delegated_administrator.example <account_id>:<service_principal>
 ```

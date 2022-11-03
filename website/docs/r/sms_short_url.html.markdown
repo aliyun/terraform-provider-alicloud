@@ -53,6 +53,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 SMS Short Url can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sms_short_url.example <id>
 ```

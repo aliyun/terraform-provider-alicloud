@@ -75,6 +75,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CR Endpoint Acl Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_endpoint_acl_policy.example <instance_id>:<endpoint_type>:<entry>
 ```

@@ -18,7 +18,7 @@ Provides an EDAS deploy group resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_deploy_group" "default" {
   app_id     = var.app_id
   group_name = var.group_name
@@ -44,6 +44,6 @@ The following attributes are exported:
 
 EDAS deploy group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_edas_deploy_group.group app_id:group_name:group_id
 ```

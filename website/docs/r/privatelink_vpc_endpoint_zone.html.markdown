@@ -55,6 +55,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Private Link Vpc Endpoint Zone can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_privatelink_vpc_endpoint_zone.example <endpoint_id>:<zone_id>
 ```

@@ -20,7 +20,7 @@ Provides an Alicloud EIP Association resource for associating Elastic IP to ECS 
 
 ## Example Usage
 
-```
+```terraform
 # Create a new EIP association and use it to associate a EIP form a instance.
 data "alicloud_zones" "default" {
 }
@@ -102,6 +102,6 @@ The following attributes are exported:
 
 Elastic IP address association can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eip_association.example eip-abc12345678:i-abc12355
 ```

@@ -51,7 +51,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 The havip can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_havip.foo havip-abc123456
 ```
 

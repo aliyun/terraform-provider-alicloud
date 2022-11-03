@@ -47,6 +47,6 @@ The following attributes are exported:
 
 OOS Patch Baseline can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_patch_baseline.example <patch_baseline_name>
 ```

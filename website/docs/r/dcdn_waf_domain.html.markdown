@@ -60,6 +60,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DCDN Waf Domain can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dcdn_waf_domain.example <domain_name>
 ```

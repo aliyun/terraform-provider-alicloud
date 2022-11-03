@@ -75,6 +75,6 @@ The following attributes are exported:
 
 OOS Secret Parameter can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_secret_parameter.example <secret_parameter_name>
 ```

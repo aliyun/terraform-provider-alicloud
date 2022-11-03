@@ -98,6 +98,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 GPDB Account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_gpdb_account.example <db_instance_id>:<account_name>
 ```

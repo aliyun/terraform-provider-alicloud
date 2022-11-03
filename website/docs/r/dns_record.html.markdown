@@ -17,7 +17,7 @@ Provides a DNS Record resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a new Domain record
 resource "alicloud_dns_record" "record" {
   name        = "domainname"
@@ -58,6 +58,6 @@ The following attributes are exported:
 
 RDS record can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dns_record.example abc123456
 ```

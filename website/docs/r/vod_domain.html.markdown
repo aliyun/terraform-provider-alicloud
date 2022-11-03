@@ -95,6 +95,6 @@ The following attributes are exported:
 
 VOD Domain can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vod_domain.example <domain_name>
 ```

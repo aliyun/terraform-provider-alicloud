@@ -14,7 +14,7 @@ Provides a RAM User Login Profile resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a RAM login profile.
 resource "alicloud_ram_user" "user" {
   name         = "user_test"
@@ -52,6 +52,6 @@ The following attributes are exported:
 
 RAM login profile can be imported using the id or user name, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_login_profile.example my-login
 ```

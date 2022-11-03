@@ -81,6 +81,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Alicloud Config Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_config_rule.this cr-ed4bad756057********
 ```

@@ -84,6 +84,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Enterprise Network (CEN) Transit Router Prefix List Association can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_transit_router_prefix_list_association.default <prefix_list_id>:<transit_router_id>:<transit_router_table_id>:<next_hop>.
 ```

@@ -87,6 +87,6 @@ The following attributes are exported:
 
 Cassandra Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cassandra_backup_plan.example <cluster_id>:<data_center_id>
 ```

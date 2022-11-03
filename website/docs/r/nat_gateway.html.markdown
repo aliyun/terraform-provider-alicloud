@@ -164,6 +164,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Nat gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nat_gateway.example ngw-abc123456
 ```

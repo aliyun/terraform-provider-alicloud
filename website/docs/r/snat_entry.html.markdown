@@ -106,6 +106,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Snat Entry can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_snat_entry.foo stb-1aece3:snat-232ce2
 ```

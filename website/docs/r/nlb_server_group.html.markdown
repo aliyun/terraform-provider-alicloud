@@ -113,6 +113,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 NLB Server Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nlb_server_group.example <id>
 ```

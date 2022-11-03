@@ -17,7 +17,7 @@ Provides a DdosCoo Scheduler Rule resource. For information about DdosCoo Schedu
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_ddoscoo_scheduler_rule" "example" {
   rule_name = "tf-testacc7929727"
   rule_type = 3

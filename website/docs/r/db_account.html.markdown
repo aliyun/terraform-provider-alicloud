@@ -15,7 +15,7 @@ Provides an RDS account resource and used to manage databases.
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -82,6 +82,6 @@ The following attributes are exported:
 
 RDS account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_account.example "rm-12345:tf_account"
 ```

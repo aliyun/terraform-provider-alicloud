@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Direct Mail Mail Address can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_direct_mail_mail_address.example <id>
 ```

@@ -53,7 +53,7 @@ The following attributes are exported:
 
 CEN instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_instance.example cen-abc123456
 ```
 

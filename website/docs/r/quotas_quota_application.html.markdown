@@ -72,6 +72,6 @@ The following attributes are exported:
 
 Quotas Application Info can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_quotas_quota_application.example <id>
 ```

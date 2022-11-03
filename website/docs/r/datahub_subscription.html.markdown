@@ -15,7 +15,7 @@ The subscription is the basic unit of resource usage in Datahub Service under Pu
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_datahub_subscription" "example" {
   project_name = "tf_datahub_project"
   topic_name   = "tf_datahub_topic"
@@ -44,6 +44,6 @@ The following attributes are exported:
 
 Datahub subscription can be imported using the ID, e.g.
 
-```
+```shell
 $ terraform import alicloud_datahub_subscription.example tf_datahub_project:tf_datahub_topic:1539073399567UgCzY
 ```

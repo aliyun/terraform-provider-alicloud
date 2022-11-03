@@ -19,7 +19,7 @@ For information about OSS replication and how to use it, see [What is cross-regi
 
 Set bucket replication configuration
 
-```
+```terraform
 resource "alicloud_oss_bucket_replication" "cross-region-replication" {
     bucket = "bucket-in-hangzhou"
 
@@ -160,7 +160,7 @@ The following attributes are exported:
 
 Oss Bucket Replication can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oss_bucket_replication.example
 ```
 

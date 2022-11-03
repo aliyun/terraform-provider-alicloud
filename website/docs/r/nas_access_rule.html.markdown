@@ -58,7 +58,7 @@ The following attributes are exported:
 
 Nas Access Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_access_rule.foo tf-testAccNasConfigName:1
 ```
 

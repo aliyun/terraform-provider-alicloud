@@ -15,7 +15,7 @@ For information about server group server attachment and how to use it, see [Con
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "slbservergroupvpc"
 }
@@ -130,6 +130,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Load balancer backend server group server attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_server_group_server_attachment.example <server_group_id>:<server_id>:<port>
 ```

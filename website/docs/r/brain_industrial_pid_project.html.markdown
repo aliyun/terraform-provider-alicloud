@@ -43,6 +43,6 @@ The following attributes are exported:
 
 Brain Industrial Pid Project can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_brain_industrial_pid_project.example <id>
 ```

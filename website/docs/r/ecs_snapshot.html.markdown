@@ -63,6 +63,6 @@ The following attributes are exported:
 
 ECS Snapshot can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_snapshot.example <id>
 ```

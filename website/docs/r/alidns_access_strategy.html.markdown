@@ -147,6 +147,6 @@ The following attributes are exported:
 
 DNS Access Strategy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_access_strategy.example <id>
 ```

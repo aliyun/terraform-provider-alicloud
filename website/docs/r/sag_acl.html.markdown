@@ -21,7 +21,7 @@ For information about Sag Acl and how to use it, see [What is access control lis
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_acl" "default" {
   name        = "tf-testAccSagAclName"
 }
@@ -42,7 +42,7 @@ The following attributes are exported:
 
 The Sag Acl can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_acl.example acl-abc123456
 ```
 

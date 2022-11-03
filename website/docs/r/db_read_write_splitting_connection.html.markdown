@@ -13,7 +13,7 @@ Provides an RDS read write splitting connection resource to allocate an Intranet
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -91,6 +91,6 @@ The following attributes are exported:
 
 RDS read write splitting connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_db_read_write_splitting_connection.example abc12345678
 ```

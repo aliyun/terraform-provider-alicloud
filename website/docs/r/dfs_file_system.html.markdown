@@ -60,6 +60,6 @@ The following attributes are exported:
 
 DFS File System can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dfs_file_system.example <id>
 ```

@@ -73,7 +73,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 CEN bandwidth package can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_bandwidth_package.example cenbwp-abc123456
 ```
 

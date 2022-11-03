@@ -21,7 +21,7 @@ For information about Cloud Connect Network Grant and how to use it, see [What i
 
 Basic Usage
 
-```
+```terraform
 provider "alicloud" {
   alias = "ccn_account"
 }

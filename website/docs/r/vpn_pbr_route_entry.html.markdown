@@ -20,7 +20,7 @@ For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pb
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "tfacc"
 }
@@ -80,6 +80,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN Pbr route entry can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_pbr_route_entry.example <vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>
 ```

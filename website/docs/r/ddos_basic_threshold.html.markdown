@@ -94,6 +94,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ddos Basic Threshold can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddos_basic_threshold.example <instance_type>:<instance_id>:<internet_ip>
 ```

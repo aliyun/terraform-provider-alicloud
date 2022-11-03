@@ -15,7 +15,7 @@ Provides a CEN bandwidth package attachment resource. The resource can be used t
 
 Basic Usage
 
-```
+```terraform
 # Create a new bandwidth package attachment and use it to attach a bandwidth package to a new CEN
 resource "alicloud_cen_instance" "cen" {
   name        = "tf-testAccCenBandwidthPackageAttachmentConfig"
@@ -52,8 +52,8 @@ The following attributes are exported:
 
 CEN bandwidth package attachment resource can be imported using the id, e.g.
 
-```
-$terraform import alicloud_cen_bandwidth_package_attachment.example bwp-abc123456
+```shell
+$ terraform import alicloud_cen_bandwidth_package_attachment.example bwp-abc123456
 ```
 
 

@@ -148,6 +148,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 PolarDB cluster can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_polardb_cluster.example pc-abc12345678
 ```

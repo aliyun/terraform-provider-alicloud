@@ -114,6 +114,6 @@ The following attributes are exported:
 
 DNS Monitor Config can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_monitor_config.example <id>
 ```

@@ -18,7 +18,7 @@ Available in 1.72.0+
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cms_site_monitor" "basic" {
   address   = "http://www.alibabacloud.com"
   task_name = "tf-testAccCmsSiteMonitor_basic"
@@ -53,6 +53,6 @@ The following attributes are exported:
 
 Alarm rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_site_monitor.alarm abc12345
 ```

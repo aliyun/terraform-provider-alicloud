@@ -106,6 +106,6 @@ specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.ht
 
 ECI Virtual Node can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eci_virtual_node.example <id>
 ```

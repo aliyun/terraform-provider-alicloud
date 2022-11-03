@@ -17,7 +17,7 @@ This operation is provided to scale out an EDAS application.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_application_scale" "default" {
   app_id       = var.app_id
   deploy_group = var.deploy_group

@@ -20,7 +20,7 @@ Your account is international if you can use it to login in [International Web C
 
 ## Example Usage
 
-```
+```terraform
 # Create a new EIP.
 resource "alicloud_eip" "example" {
   bandwidth            = "10"
@@ -65,6 +65,6 @@ The following attributes are exported:
 
 Elastic IP address can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eip_address.example eip-abc12345678
 ```

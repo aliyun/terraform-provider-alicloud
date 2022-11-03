@@ -61,6 +61,6 @@ The following attributes are exported:
 
 DFS Access Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dfs_access_rule.example <access_group_id>:<access_rule_id>
 ```

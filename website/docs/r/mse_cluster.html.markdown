@@ -77,6 +77,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MSE Cluster can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mse_cluster.example mse-cn-0d9xxxx
 ```

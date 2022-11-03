@@ -19,7 +19,7 @@ In addition to inheriting all SLS functions, it also enhances the real-time auto
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_audit" "example" {
   display_name = "tf-audit-test"
   aliuid       = "12345678"
@@ -339,6 +339,6 @@ The following attributes are exported:
 
 Log audit can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_audit.example tf-audit-test
 ```

@@ -79,6 +79,6 @@ The following attributes are exported:
 
 PolarDB account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_polardb_account.example "pc-12345:tf_account"
 ```

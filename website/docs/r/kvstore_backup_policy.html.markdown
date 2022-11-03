@@ -17,7 +17,7 @@ Provides a backup policy for ApsaraDB Redis / Memcache instance resource.
 
 Basic Usage
 
-```
+```terraform
 variable "creation" {
   default = "KVStore"
 }
@@ -84,6 +84,6 @@ The following attributes are exported:
 
 KVStore backup policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kvstore_backup_policy.example r-abc12345678
 ```

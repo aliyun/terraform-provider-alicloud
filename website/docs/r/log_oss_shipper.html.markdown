@@ -17,7 +17,7 @@ Log service data delivery management, this service provides the function of deli
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log-project"
   description = "created by terraform"
@@ -96,6 +96,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Log oss shipper can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_oss_shipper.example tf-log-project:tf-log-logstore:tf-log-shipper
 ```

@@ -17,7 +17,7 @@ Provides an Alicloud HaVip Attachment resource for associating HaVip to ECS Inst
 
 Basic Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -98,6 +98,6 @@ The following attributes are exported:
 
 The havip attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_havip_attachment.foo havip-abc123456:i-abc123456
 ```

@@ -45,6 +45,6 @@ The following attributes are exported:
 
 Iot Device Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_iot_device_group.example <id>
 ```

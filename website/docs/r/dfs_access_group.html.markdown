@@ -45,6 +45,6 @@ The following attributes are exported:
 
 DFS Access Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dfs_access_group.example <id>
 ```

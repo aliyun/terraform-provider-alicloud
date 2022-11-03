@@ -96,6 +96,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud SSO Access Configuration can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_access_configuration.example <directory_id>:<access_configuration_id>
 ```

@@ -18,7 +18,7 @@ Provides a VPC router interface resource aim to build a connection between two V
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_vpc" "foo" {
   name       = "tf_test_foo12345"
   cidr_block = "172.16.0.0/12"
@@ -83,7 +83,7 @@ The following attributes are exported:
 
 The router interface can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_router_interface.interface ri-abc123456
 ```
 

@@ -60,6 +60,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Application Load Balancer (ALB) Health Check Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alb_health_check_template.example <id>
 ```

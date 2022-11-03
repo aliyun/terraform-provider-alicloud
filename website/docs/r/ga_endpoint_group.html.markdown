@@ -138,6 +138,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ga Endpoint Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_endpoint_group.example <id>
 ```

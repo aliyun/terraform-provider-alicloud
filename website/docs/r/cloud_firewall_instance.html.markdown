@@ -78,6 +78,6 @@ The following attributes are exported:
 
 Cloud Firewall Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_firewall_instance.example <id>
 ```

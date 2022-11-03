@@ -83,6 +83,6 @@ The following attributes are exported:
 
 Open Search App Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_open_search_app_group.example <id>
 ```

@@ -26,7 +26,7 @@ Provides a ECS instance resource.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "auto_provisioning_group"
 }
@@ -277,6 +277,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_instance.example i-abc12345678
 ```

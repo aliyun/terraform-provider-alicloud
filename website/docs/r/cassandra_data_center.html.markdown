@@ -26,7 +26,7 @@ The official website mark  more regions. Or you can call [DescribeRegions](https
 
 ### Create a cassandra dataCenter
 
-```
+```terraform
 resource "alicloud_cassandra_cluster" "default" {
   cluster_name        = "cassandra-cluster-name-tf"
   data_center_name    = "dc-1"

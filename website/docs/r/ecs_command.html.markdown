@@ -52,6 +52,6 @@ The following attributes are exported:
 
 ECS Command can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_command.example <id>
 ```

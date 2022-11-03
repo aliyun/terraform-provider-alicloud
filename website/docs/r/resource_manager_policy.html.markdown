@@ -51,6 +51,6 @@ The following arguments are supported:
 
 Resource Manager Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_policy.example abc12345
 ```

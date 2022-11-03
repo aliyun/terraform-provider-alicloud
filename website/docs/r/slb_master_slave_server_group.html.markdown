@@ -27,7 +27,7 @@ A master slave server group contains two ECS instances. The master slave server 
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -170,6 +170,6 @@ The following attributes are exported:
 
 Load balancer master slave server group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_master_slave_server_group.example abc123456
 ```

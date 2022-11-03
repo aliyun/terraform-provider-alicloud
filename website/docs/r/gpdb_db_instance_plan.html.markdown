@@ -157,6 +157,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 GPDB DB Instance Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_gpdb_db_instance_plan.example <db_instance_id>:<plan_id>
 ```

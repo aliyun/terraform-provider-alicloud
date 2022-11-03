@@ -110,6 +110,6 @@ The following arguments are exported:
 
 Function Compute custom domain can be imported using the id or the domain name, e.g.
 
-```
+```shell
 $ terraform import alicloud_fc_custom_domain.foo my-fc-custom-domain
 ```

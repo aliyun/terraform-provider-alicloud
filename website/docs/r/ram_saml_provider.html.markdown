@@ -48,6 +48,6 @@ The following attributes are exported:
 
 RAM SAML Provider can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_saml_provider.example <saml_provider_name>
 ```

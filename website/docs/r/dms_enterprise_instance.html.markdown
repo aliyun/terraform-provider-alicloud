@@ -88,6 +88,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 DMS Enterprise can be imported using host and port, e.g.
 
-```
+```shell
 $ terraform import alicloud_dms_enterprise_instance.example rm-uf648hgs7874xxxx.mysql.rds.aliyuncs.com:3306
 ```

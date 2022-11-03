@@ -72,6 +72,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Message Notification Service Subscription can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_message_service_subscription.example <topic_name>:<subscription_name>
 ```

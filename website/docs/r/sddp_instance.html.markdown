@@ -72,6 +72,6 @@ The following attributes are exported:
 
 Data Security Center Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sddp_instance.example <id>
 ```

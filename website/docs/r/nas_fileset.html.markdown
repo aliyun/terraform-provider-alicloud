@@ -79,6 +79,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Network Attached Storage (NAS) Fileset can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_fileset.example <file_system_id>:<fileset_id>
 ```

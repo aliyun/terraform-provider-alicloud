@@ -17,7 +17,7 @@ It defines the maximum and minimum numbers of ECS instances in the group, and th
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "essscalinggroupconfig"
 }
@@ -156,6 +156,6 @@ The following attributes are exported:
 
 ESS scaling group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_scaling_group.example asg-abc123456
 ```

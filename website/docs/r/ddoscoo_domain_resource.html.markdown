@@ -68,6 +68,6 @@ The following attributes are exported:
 
 Anti-DDoS Pro Domain Resource can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddoscoo_domain_resource.example <domain>
 ```

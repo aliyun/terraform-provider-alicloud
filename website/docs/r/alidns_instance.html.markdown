@@ -52,6 +52,6 @@ The following arguments are supported:
 
 DNS instance be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_instance.example dns-cn-v0h1ldjhfff
 ```

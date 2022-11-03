@@ -64,6 +64,6 @@ The following attributes are exported:
 
 CEN instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_instance_attachment.example cen-m7i7pjmkon********:vpc-2ze2w07mcy9nz********:VPC:cn-beijing
 ```

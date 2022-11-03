@@ -51,6 +51,6 @@ The following attributes are exported:
 
 ROS Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ros_template.example <template_id>
 ```

@@ -52,6 +52,6 @@ The following attributes are exported:
 
 SSL Certificates Certificate can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ssl_certificates_service_certificate.example <id>
 ```

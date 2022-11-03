@@ -59,6 +59,6 @@ The following attributes are exported:
 
 VPC Ipv6 Internet Bandwidth can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_ipv6_internet_bandwidth.example <id>
 ```

@@ -136,6 +136,6 @@ The following attributes are exported:
 
 Application Real-Time Monitoring Service (ARMS) Alert Contact can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_arms_dispatch_rule.example <id>
 ```

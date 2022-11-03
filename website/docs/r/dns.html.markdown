@@ -17,7 +17,7 @@ Provides a DNS resource.
 
 ## Example Usage
 
-```
+```terraform
 # Add a new Domain.
 resource "alicloud_dns" "dns" {
   name     = "starmove.com"
@@ -46,6 +46,6 @@ The following attributes are exported:
 
 DNS can be imported using the id or domain name, e.g.
 
-```
+```shell
 $ terraform import alicloud_dns.example "aliyun.com"
 ```

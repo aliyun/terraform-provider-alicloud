@@ -83,6 +83,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 RabbitMQ (AMQP) Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_amqp_instance.example <id>
 ```

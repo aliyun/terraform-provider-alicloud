@@ -84,6 +84,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 MongoDB Audit Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_mongodb_audit_policy.example <db_instance_id>
 ```

@@ -42,6 +42,6 @@ The following attributes are exported:
 
 Msc Sub Webhook can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_msc_sub_webhook.example <id>
 ```

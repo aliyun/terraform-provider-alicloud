@@ -62,6 +62,6 @@ The following attributes are exported:
 
 Quotas Quota Alarm can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_quotas_quota_alarm.example <id>
 ```

@@ -44,6 +44,6 @@ The following attributes are exported:
 
 Bastion Host Host Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_bastionhost_host_attachment.example <instance_id>:<host_group_id>:<host_id>
 ```

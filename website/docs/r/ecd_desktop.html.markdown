@@ -109,6 +109,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECD Desktop can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_desktop.example <id>
 ```

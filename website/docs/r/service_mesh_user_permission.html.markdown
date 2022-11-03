@@ -110,6 +110,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Service Mesh User Permission can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_service_mesh_user_permission.example <id>
 ```

@@ -59,6 +59,6 @@ The following attributes are exported:
 
 ECS Image Component can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_image_component.example <id>
 ```

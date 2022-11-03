@@ -66,6 +66,6 @@ The following attributes are exported:
 
 Cloud Monitor Service Dynamic Tag Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_dynamic_tag_group.example <id>
 ```

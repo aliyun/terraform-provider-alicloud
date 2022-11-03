@@ -16,7 +16,7 @@ Log Service manages all the ECS instances whose logs need to be collected by usi
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
@@ -61,6 +61,6 @@ The following attributes are exported:
 
 Log machine group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_machine_group.example tf-log:tf-machine-group
 ```

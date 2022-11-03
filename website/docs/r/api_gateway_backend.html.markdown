@@ -50,6 +50,6 @@ The following attributes are exported:
 
 Api Gateway Backend can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_api_gateway_backend.example <id>
 ```

@@ -63,6 +63,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Message Notification Service Queue can be imported using the id or queue_name, e.g.
 
-```
+```shell
 $ terraform import alicloud_message_service_queue.example <queue_name>
 ```

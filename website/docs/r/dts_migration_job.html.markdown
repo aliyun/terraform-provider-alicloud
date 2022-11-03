@@ -172,6 +172,6 @@ The following attributes are exported:
 
 DTS Migration Job can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dts_migration_job.example <id>
 ```

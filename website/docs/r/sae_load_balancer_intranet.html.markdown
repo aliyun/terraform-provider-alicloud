@@ -61,6 +61,6 @@ The following attributes are exported:
 
 The resource can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sae_load_balancer_intranet.example <id>
 ```

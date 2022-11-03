@@ -96,6 +96,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ROS Stack Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ros_stack_instance.example <stack_group_name>:<stack_instance_account_id>:<stack_instance_region_id>
 ```

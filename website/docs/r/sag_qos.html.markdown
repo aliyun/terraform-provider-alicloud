@@ -21,7 +21,7 @@ For information about Sag Qos and how to use it, see [What is Qos](https://www.a
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_qos" "default" {
   name        = "tf-testAccSagQosName"
 }
@@ -42,7 +42,7 @@ The following attributes are exported:
 
 The Sag Qos can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_qos.example qos-abc123456
 ```
 

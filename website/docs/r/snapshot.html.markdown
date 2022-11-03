@@ -17,7 +17,7 @@ For information about snapshot and how to use it, see [Snapshot](https://www.ali
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_snapshot" "snapshot" {
   disk_id     = alicloud_disk_attachment.instance-attachment.disk_id
   name        = "test-snapshot"
@@ -58,6 +58,6 @@ The following attributes are exported:
 
 Snapshot can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_snapshot.snapshot s-abc1234567890000
 ```

@@ -115,6 +115,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Load balancer can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_load_balancer.example lb-abc123456
 ```

@@ -17,7 +17,7 @@ Provides an EDAS K8s cluster resource. For information about EDAS K8s Cluster an
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_edas_k8s_cluster" "default" {
   cs_cluster_id = "xxxx-xxx-xxx"
 }
@@ -50,6 +50,6 @@ The following attributes are exported:
 
 EDAS cluster can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_edas_k8s_cluster.cluster cluster_id
 ```

@@ -19,7 +19,7 @@ Provides a market order resource.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_market_order" "order" {
   product_code    = "cmapi033136"
   pay_type        = "prepay"
@@ -54,7 +54,7 @@ The following attributes are exported:
 
 Market order can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_market_order.order your-order-id
 ```
  

@@ -16,7 +16,7 @@ You can manage all the logs and the related log sources of an application by usi
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
@@ -58,6 +58,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Log project can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_project.example tf-log
 ```

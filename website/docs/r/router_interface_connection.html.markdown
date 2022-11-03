@@ -22,7 +22,7 @@ After that, all of the two router interfaces will be active.
 
 ## Example Usage
 
-```
+```terraform
 provider "alicloud" {
   region = var.region
 }
@@ -103,7 +103,7 @@ The following attributes are exported:
 
 The router interface connection can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_router_interface_connection.foo ri-abc123456
 ```
 

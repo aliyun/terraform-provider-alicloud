@@ -21,7 +21,7 @@ Creates a custom image. You can then use a custom image to create ECS instances 
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_image" "default" {
   instance_id        = "i-bp1g6zv0ce8oghu7k***"
   image_name         = "test-image"
@@ -74,6 +74,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
  
  image can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_image.default m-uf66871ape***yg1q***
 ```

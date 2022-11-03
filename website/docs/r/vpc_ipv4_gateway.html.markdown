@@ -58,6 +58,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Ipv4 Gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_ipv4_gateway.example <id>
 ```

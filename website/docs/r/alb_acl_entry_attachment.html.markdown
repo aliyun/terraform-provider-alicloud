@@ -17,7 +17,7 @@ For information about acl entry attachment and how to use it, see [Configure an 
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "terraformalbaclconfig"
 }
@@ -62,6 +62,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Acl entry attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alb_acl_entry_attachment.example <acl_id>:<entry>
 ```

@@ -17,7 +17,7 @@ Provides a Alikms Key Version resource. For information about Alikms Key Version
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_kms_key" "this" {}
 
 resource "alicloud_kms_key_version" "keyversion" {
@@ -44,6 +44,6 @@ The following arguments are supported:
 
 Alikms key version can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kms_key_version.example 72da539a-2fa8-4f2d-b854-*****	
 ```

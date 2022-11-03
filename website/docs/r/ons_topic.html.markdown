@@ -67,6 +67,6 @@ The following attributes are exported:
 
 ONS TOPIC can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ons_topic.topic MQ_INST_1234567890_Baso1234567:onsTopicDemo
 ```

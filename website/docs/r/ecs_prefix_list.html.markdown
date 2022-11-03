@@ -68,6 +68,6 @@ The following attributes are exported:
 
 ECS Prefix List can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_prefix_list.example <id>
 ```

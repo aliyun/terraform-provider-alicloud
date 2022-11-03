@@ -122,6 +122,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ga Listener can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ga_listener.example <id>
 ```

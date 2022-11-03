@@ -102,6 +102,6 @@ The following attributes are exported:
 
 Elastic Desktop Service(EDS) Policy Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecd_policy_group.example <id>
 ```

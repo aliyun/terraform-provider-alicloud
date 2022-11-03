@@ -23,7 +23,7 @@ Provides a network acl entries resource to create ingress and egress entries.
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "NetworkAclEntries"
 }

@@ -76,6 +76,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Network Attached Storage (NAS) Snapshot can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_snapshot.example <id>
 ```

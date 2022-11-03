@@ -61,6 +61,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Ddos Bgp Ip can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ddosbgp_ip.example <instance_id>:<ip>
 ```

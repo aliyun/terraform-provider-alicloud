@@ -59,6 +59,6 @@ The following attributes are exported:
 
 Ehpc Job Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ehpc_job_template.example <id>
 ```

@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Data Security Center Config can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sddp_config.example <code>
 ```

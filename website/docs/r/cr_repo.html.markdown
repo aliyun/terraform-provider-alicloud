@@ -19,7 +19,7 @@ This resource will help you to manager Container Registry repositories.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_cr_namespace" "my-namespace" {
   name               = "my-namespace"
   auto_create        = false
@@ -59,6 +59,6 @@ The following attributes are exported:
 
 Container Registry repository can be imported using the `namespace/repository`, e.g.
 
-```
+```shell
 $ terraform import alicloud_cr_repo.default `my-namespace/my-repo`
 ```

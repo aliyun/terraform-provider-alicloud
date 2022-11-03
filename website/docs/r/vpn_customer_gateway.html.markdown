@@ -20,7 +20,7 @@ For information about VPN customer gateway and how to use it, see [What is VPN c
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_vpn_customer_gateway" "foo" {
   name        = "vpnCgwNameExample"
   ip_address  = "43.104.22.228"
@@ -58,7 +58,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPN customer gateway can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpn_customer_gateway.example cgw-abc123456
 ```
 

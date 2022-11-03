@@ -20,7 +20,7 @@ For more detail product introduction, see [here](https://www.alibabacloud.com/he
 
 ### Create a AnalyticDB for PostgreSQL instance
 
-```
+```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "Gpdb"
 }
@@ -102,6 +102,6 @@ The following attributes are exported:
 
 AnalyticDB for PostgreSQL can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_gpdb_elastic_instance.adb_pg_instance gp-bpxxxxxxxxxxxxxx
 ```

@@ -231,6 +231,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 RDS Clone DB Instance can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_rds_clone_db_instance.example <id>
 ```

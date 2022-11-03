@@ -39,6 +39,6 @@ The following attributes are exported:
 
 DNS domain attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alidns_domain_attachment.example dns-cn-v0h1ldjhxxx
 ```

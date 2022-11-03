@@ -71,6 +71,6 @@ The following attributes are exported:
 
 Vswitch can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vswitch.example vsw-abc123456
 ```

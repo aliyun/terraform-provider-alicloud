@@ -39,6 +39,6 @@ The following arguments are supported:
 
 Dbfs service-linked roles(SLR) can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_dbfs_service_linked_role.example <product_name>
 ```

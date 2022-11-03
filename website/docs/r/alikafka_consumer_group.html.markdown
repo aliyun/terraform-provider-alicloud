@@ -20,7 +20,7 @@ Provides an ALIKAFKA consumer group resource.
 
 Basic Usage
 
-```
+```terraform
 variable "consumer_id" {
   default = "CID-alikafkaGroupDatasourceName"
 }
@@ -74,6 +74,6 @@ The following attributes are exported:
 
 ALIKAFKA GROUP can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alikafka_consumer_group.group alikafka_post-cn-123455abc:consumerId
 ```

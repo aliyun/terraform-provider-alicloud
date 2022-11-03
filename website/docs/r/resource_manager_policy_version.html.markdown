@@ -69,6 +69,6 @@ The following arguments are supported:
 
 Resource Manager Policy Version can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_policy_version.example tftest:v2
 ```

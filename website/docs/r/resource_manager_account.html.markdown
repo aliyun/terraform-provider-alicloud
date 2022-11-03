@@ -69,6 +69,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Resource Manager Account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_account.example 13148890145*****
 ```

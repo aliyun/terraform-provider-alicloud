@@ -65,6 +65,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Bgp Network can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_bgp_network.example <router_id>:<dst_cidr_block>
 ```

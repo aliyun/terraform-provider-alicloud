@@ -15,7 +15,7 @@ Provides a DNS Group resource.
 
 ## Example Usage
 
-```
+```terraform
 # Add a new Domain group.
 resource "alicloud_dns_group" "group" {
   name = "testgroup"

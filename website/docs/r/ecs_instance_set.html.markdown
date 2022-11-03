@@ -23,7 +23,7 @@ For information about ECS Instance Set and how to use it, see [What is Instance 
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "tf-testaccecsset"
 }

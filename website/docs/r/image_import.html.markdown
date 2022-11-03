@@ -19,7 +19,7 @@ Import a copy of your local on-premise file to ECS, and appear as a custom repla
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_image_import" "this" {
   description  = "test import image"
   architecture = "x86_64"
@@ -72,6 +72,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
  
 image can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_image_import.default m-uf66871ape***yg1q***
 ```

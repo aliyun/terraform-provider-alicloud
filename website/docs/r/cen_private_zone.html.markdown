@@ -21,7 +21,7 @@ For information about CEN Private Zone and how to use it, see [Manage CEN Privat
 
 Basic Usage
 
-```
+```terraform
 # Create a cen Private Zone resource and use it.
 resource "alicloud_cen_instance" "default" {
   name = "test_name"
@@ -73,6 +73,6 @@ The following attributes are exported:
 
 CEN Private Zone can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cen_private_zone.example cen-abc123456:cn-hangzhou
 ```

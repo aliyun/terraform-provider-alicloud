@@ -31,7 +31,7 @@ Attaches/Detaches vserver groups to a specified scaling group.
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "testAccEssVserverGroupsAttachment"
 }
@@ -124,6 +124,6 @@ The following attributes are exported:
 
 ESS vserver groups can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ess_vserver_groups.example abc123456
 ```

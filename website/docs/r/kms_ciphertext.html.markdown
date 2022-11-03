@@ -15,7 +15,7 @@ Encrypt a given plaintext with KMS. The produced ciphertext stays stable across 
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_kms_key" "key" {
   description             = "example key"
   is_enabled              = true

@@ -68,7 +68,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 The common bandwidth package can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_common_bandwidth_package.foo cbwp-abc123456
 ```
 

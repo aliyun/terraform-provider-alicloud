@@ -106,6 +106,6 @@ The following attributes are exported:
 
 HBR Ecs Backup Plan can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_ecs_backup_plan.example <id>
 ```

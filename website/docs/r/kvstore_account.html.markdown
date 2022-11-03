@@ -102,6 +102,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 KVStore account can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_kvstore_account.example <instance_id>:<account_name>
 ```

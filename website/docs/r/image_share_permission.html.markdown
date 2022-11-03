@@ -21,7 +21,7 @@ Manage image sharing permissions. You can share your custom image to other Aliba
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_image_share_permission" "default" {
   image_id           = "m-bp1gxyh***"
   account_id         = "1234567890"
@@ -46,6 +46,6 @@ The following arguments are supported:
  
 image can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_image_share_permission.default m-uf66yg1q:123456789
 ```

@@ -55,6 +55,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Message Notification Service Topic can be imported using the id or topic_name, e.g.
 
-```
+```shell
 $ terraform import alicloud_message_service_topic.example <topic_name>
 ```

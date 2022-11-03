@@ -14,7 +14,7 @@ It is foundation of creating data table.
 
 ## Example Usage
 
-```
+```terraform
 # Create an OTS instance
 resource "alicloud_ots_instance" "foo" {
   name        = "my-ots-instance"
@@ -57,7 +57,7 @@ The following attributes are exported:
 
 OTS instance can be imported using instance id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_ots_instance.foo "my-ots-instance"
 ```
 

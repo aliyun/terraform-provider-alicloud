@@ -62,6 +62,6 @@ The following attributes are exported:
 
 OOS Parameter can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_parameter.example <parameter_name>
 ```

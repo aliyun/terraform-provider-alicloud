@@ -16,7 +16,7 @@ and each project can create multiple Logstores. [Refer to details](https://www.a
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log"
   description = "created by terraform"
@@ -127,6 +127,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Log store can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_store.example tf-log:tf-log-store
 ```

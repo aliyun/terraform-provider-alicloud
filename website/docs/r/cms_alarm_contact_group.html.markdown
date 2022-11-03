@@ -44,6 +44,6 @@ The following attributes are exported:
 
 CMS Alarm Contact Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_alarm_contact_group.example tf-testacc123
 ```

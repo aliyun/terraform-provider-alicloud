@@ -19,13 +19,13 @@ Provides a RAM password policy configuration for entire account. Only one resour
 
 Empty resource sets defaults values for every property.
 
-```
+```terraform
 resource "alicloud_ram_account_password_policy" "default" {
 
 }
 ```
 
-```
+```terraform
 resource "alicloud_ram_account_password_policy" "corporate" {
   minimum_password_length      = 9
   require_lowercase_characters = false

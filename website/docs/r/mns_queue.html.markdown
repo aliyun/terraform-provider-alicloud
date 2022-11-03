@@ -51,6 +51,6 @@ The following attributes are exported:
 
 MNS QUEUE can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_mns_queue.queue queuename
 ```

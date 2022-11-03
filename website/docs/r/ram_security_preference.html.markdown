@@ -61,6 +61,6 @@ The following attributes are exported:
 
 RAM Security Preference can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_security_preference.example <id>
 ```

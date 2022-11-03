@@ -18,7 +18,7 @@ Please refer to the [documentation](https://www.alibabacloud.com/help/doc-detail
 
 ## Example Usage
 
-```
+```terraform
 # Create a new load balancer and domain extension
 
 resource "alicloud_slb_load_balancer" "instance" {
@@ -81,6 +81,6 @@ The following attributes are exported:
 
 Load balancer domain_extension can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_domain_extension.example de-abc123456
 ```

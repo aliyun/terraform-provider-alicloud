@@ -56,6 +56,6 @@ The following attributes are exported:
 
 Msc Sub Subscription can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_msc_sub_subscription.example <id>
 ```

@@ -58,6 +58,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 HBR Vault can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_vault.example <id>
 ```

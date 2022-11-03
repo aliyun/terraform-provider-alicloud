@@ -45,6 +45,6 @@ The following attributes are exported:
 
 ECS Key Pair Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_key_pair_attachment.example <key_pair_name>:<instance_ids>
 ```

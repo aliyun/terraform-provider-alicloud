@@ -50,6 +50,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Resource Manager Resource Share can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_resource_manager_resource_share.example <id>
 ```

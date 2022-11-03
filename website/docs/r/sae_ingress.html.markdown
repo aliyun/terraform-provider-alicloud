@@ -114,6 +114,6 @@ The following attributes are exported:
 
 Serverless App Engine (SAE) Ingress can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_sae_ingress.example <id>
 ```

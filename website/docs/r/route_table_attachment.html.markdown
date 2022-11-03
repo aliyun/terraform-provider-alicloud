@@ -19,7 +19,7 @@ For information about route table and how to use it, see [What is Route Table](h
 
 Basic Usage
 
-```
+```terraform
 variable "name" {
   default = "route-table-attachment-example-name"
 }
@@ -68,7 +68,7 @@ The following attributes are exported:
 
 The route table attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_route_table_attachment.foo vtb-abc123456:vsw-abc123456
 ```
 

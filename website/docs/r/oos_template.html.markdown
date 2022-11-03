@@ -83,6 +83,6 @@ The following attributes are exported:
 
 OOS Template can be imported using the id or template_name, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_template.example template_name
 ```

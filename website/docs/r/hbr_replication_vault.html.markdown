@@ -80,6 +80,6 @@ The following attributes are exported:
 
 Hybrid Backup Recovery (HBR) Replication Vault can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_hbr_replication_vault.example <id>
 ```

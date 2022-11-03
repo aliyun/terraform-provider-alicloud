@@ -14,7 +14,7 @@ Provides a ESS notification resource. More about Ess notification, see [Autoscal
 -> **NOTE:** Available in 1.55.0+
 
 ## Example Usage
-```
+```terraform
 variable "name" {
   default = "tf-testAccEssNotification-%d"
 }

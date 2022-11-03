@@ -73,6 +73,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 NAS MountTarget  can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_nas_mount_target.foo 192094b415:192094b415-luw38.cn-beijing.nas.aliyuncs.com
 ```

@@ -68,6 +68,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 RDS Backup can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_rds_backup.example <db_instance_id>:<backup_id>
 ```

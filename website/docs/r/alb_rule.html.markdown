@@ -306,6 +306,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Application Load Balancer (ALB) Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_alb_rule.example <id>
 ```

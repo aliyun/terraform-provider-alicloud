@@ -17,7 +17,7 @@ Log service ingestion, this service provides the function of importing logs of v
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "example" {
   name        = "tf-log-project"
   description = "created by terraform"
@@ -101,6 +101,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Log ingestion can be imported using the id or name, e.g.
 
-```
+```shell
 $ terraform import alicloud_log_ingestion.example tf-log-project:tf-log-logstore:ingestion_name
 ```

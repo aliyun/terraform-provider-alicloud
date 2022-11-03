@@ -118,6 +118,6 @@ The following attributes are exported:
 
 Cloud Monitor Service Group Metric Rule can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cms_group_metric_rule.example <rule_id>
 ```

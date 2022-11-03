@@ -88,6 +88,6 @@ The following attributes are exported:
 
 PolarDB endpoint can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_polardb_endpoint.example pc-abc123456:pe-abc123456
 ```

@@ -51,6 +51,6 @@ The following attributes are exported:
 
 Brain Industrial Pid Loop can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_brain_industrial_pid_loop.example <id>
 ```

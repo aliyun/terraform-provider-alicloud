@@ -17,7 +17,7 @@ For information about Launch Template and how to use it, see [Launch Template](h
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_images" "images" {
   owners = "system"
 }
@@ -168,6 +168,6 @@ The following attributes are exported:
 
 Launch Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_launch_template.lt lt-abc1234567890000
 ```

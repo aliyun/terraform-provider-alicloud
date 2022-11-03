@@ -95,6 +95,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 Cloud Config Aggregate Delivery can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_config_aggregate_delivery.example <aggregator_id>:<delivery_channel_id>
 ```

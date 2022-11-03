@@ -13,7 +13,7 @@ Provides a RAM Group membership resource.
 
 ## Example Usage
 
-```
+```terraform
 # Create a RAM Group membership.
 resource "alicloud_ram_group" "group" {
   name     = "groupName"
@@ -62,6 +62,6 @@ The following attributes are exported:
 ## Import
 RAM Group membership can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ram_group_membership.example my-group
 ```

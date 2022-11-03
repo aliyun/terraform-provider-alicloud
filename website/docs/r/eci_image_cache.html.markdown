@@ -19,7 +19,7 @@ An ECI Image Cache can help user to solve the time-consuming problem of image pu
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_eci_image_cache" "example" {
   image_cache_name  = "tf-test"
   images            = ["registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-xxxx:latest"]
@@ -58,6 +58,6 @@ The following arguments are supported:
 
 ECI Image Cache can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eci_image_cache.example abc123456
 ```

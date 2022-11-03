@@ -21,7 +21,7 @@ Copies a custom image from one region to another. You can use copied images to p
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_image_copy" "default" {
   source_image_id    = "m-bp1gxyhdswlsn18tu***"
   source_region_id   = "cn-hangzhou"
@@ -66,6 +66,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
  
 image can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_image_copy.default m-uf66871ape***yg1q***
 ```

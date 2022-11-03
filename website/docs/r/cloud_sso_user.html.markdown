@@ -61,6 +61,6 @@ The following attributes are exported:
 
 Cloud SSO User can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_user.example <directory_id>:<user_id>
 ```

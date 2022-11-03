@@ -44,6 +44,6 @@ The following attributes are exported:
 
 RabbitMQ (AMQP) Virtual Host can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_amqp_virtual_host.example <instance_id>:<virtual_host_name>
 ```

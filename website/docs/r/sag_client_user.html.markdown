@@ -21,7 +21,7 @@ For information about Sag ClientUser and how to use it, see [What is Sag ClientU
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_sag_client_user" "default" {
   sag_id    = "sag-xxxxx"
   bandwidth = "20"
@@ -52,7 +52,7 @@ The following attributes are exported:
 
 The Sag ClientUser can be imported using the name, e.g.
 
-```
+```shell
 $ terraform import alicloud_sag_client_user.example sag-abc123456:tf-username-abc123456
 ```
 

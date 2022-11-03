@@ -50,6 +50,26 @@ resource "alicloud_eci_container_group" "example" {
       key   = "test"
       value = "nginx"
     }
+    liveness_probe {
+      period_seconds        = "5"
+      initial_delay_seconds = "5"
+      success_threshold     = "1"
+      failure_threshold     = "3"
+      timeout_seconds       = "1"
+      exec {
+        commands = ["cat /tmp/healthy"]
+      }
+    }
+    readiness_probe {
+      period_seconds        = "5"
+      initial_delay_seconds = "5"
+      success_threshold     = "1"
+      failure_threshold     = "3"
+      timeout_seconds       = "1"
+      exec {
+        commands = ["cat /tmp/healthy"]
+      }
+    }
   }
   containers {
     image    = "registry-vpc.cn-beijing.aliyuncs.com/eci_open/centos:7"
@@ -70,26 +90,6 @@ resource "alicloud_eci_container_group" "example" {
   volumes {
     name = "empty2"
     type = "EmptyDirVolume"
-  }
-  liveness_probe {
-    period_seconds        = "5"
-    initial_delay_seconds = "5"
-    success_threshold     = "1"
-    failure_threshold     = "3"
-    timeout_seconds       = "1"
-    exec {
-      commands = ["cat /tmp/healthy"]
-    }
-  }
-  readiness_probe {
-    period_seconds        = "5"
-    initial_delay_seconds = "5"
-    success_threshold     = "1"
-    failure_threshold     = "3"
-    timeout_seconds       = "1"
-    exec {
-      commands = ["cat /tmp/healthy"]
-    }
   }
 }
 ```
@@ -369,6 +369,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ECI Container Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_eci_container_group.example <container_group_id>
 ```

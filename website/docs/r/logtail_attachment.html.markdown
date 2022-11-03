@@ -21,7 +21,7 @@ This resource amis to attach one logtail configure to a machine group.
 
 Basic Usage
 
-```
+```terraform
 resource "alicloud_log_project" "test" {
   name        = "test-tf2"
   description = "create by terraform"
@@ -93,6 +93,6 @@ The following attributes are exported:
 
 Logtial to machine group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_logtail_to_machine_group.example tf-log:tf-log-config:tf-log-machine-group
 ```

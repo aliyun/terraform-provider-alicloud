@@ -110,6 +110,6 @@ The following attributes are exported:
 
 ECS Network Interface Attachment can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_network_interface_attachment.example eni-abcd1234:i-abcd1234
 ```

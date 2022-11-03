@@ -46,6 +46,6 @@ The following attributes are exported:
 
 SLB Tls Cipher Policy can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_slb_tls_cipher_policy.example <id>
 ```

@@ -56,6 +56,6 @@ The following attributes are exported:
 
 OOS Application can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_oos_application.example <id>
 ```

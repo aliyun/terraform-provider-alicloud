@@ -476,6 +476,6 @@ The following arguments are exported:
 
 Function Compute trigger can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_fc_trigger.foo my-fc-service:hello-world:hello-trigger
 ```

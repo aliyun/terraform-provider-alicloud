@@ -56,6 +56,6 @@ The following attributes are exported:
 
 Cloud SSO Group can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_cloud_sso_group.example <directory_id>:<group_id>
 ```

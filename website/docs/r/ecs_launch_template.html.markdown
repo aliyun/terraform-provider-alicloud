@@ -188,6 +188,6 @@ The following attributes are exported:
 
 ECS Launch Template can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_ecs_launch_template.example <id>
 ```

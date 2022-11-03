@@ -94,6 +94,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 VPC Nat Ip can be imported using the id, e.g.
 
-```
+```shell
 $ terraform import alicloud_vpc_nat_ip.example <nat_gateway_id>:<nat_ip_id>
 ```
