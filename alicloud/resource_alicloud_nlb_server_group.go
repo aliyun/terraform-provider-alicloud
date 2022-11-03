@@ -469,7 +469,7 @@ func resourceAlicloudNlbServerGroupDelete(d *schema.ResourceData, meta interface
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"SystemBusy"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

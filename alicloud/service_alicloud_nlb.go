@@ -347,3 +347,64 @@ func (s *NlbService) NlbLoadBalancerStateRefreshFunc(d *schema.ResourceData, fai
 		return object, fmt.Sprint(object["LoadBalancerStatus"]), nil
 	}
 }
+
+func (s *NlbService) DescribeNlbListener(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewNlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ListenerId": id,
+		"RegionId":   s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "GetListenerAttribute"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.listener"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *NlbService) NlbListenerStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeNlbListener(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["ListenerStatus"]) == failState {
+				return object, fmt.Sprint(object["ListenerStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["ListenerStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["ListenerStatus"]), nil
+	}
+}
