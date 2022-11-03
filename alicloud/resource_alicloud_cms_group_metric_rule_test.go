@@ -322,7 +322,14 @@ func TestAccAlicloudCmsGroupMetricRule_basic1(t *testing.T) {
 					"category":               "ecs",
 					"metric_name":            "cpu_total",
 					"namespace":              "acs_ecs_dashboard",
-					"rule_id":                "4a9a8978-a9cc-55ca-aa7c-530ccd91ae57",
+					"rule_id":                "tf-test-targets",
+					"targets": []map[string]interface{}{
+						{
+							"id":    "1",
+							"arn":   "acs:mns:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":/queues/test/message",
+							"level": "Warn",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -332,7 +339,8 @@ func TestAccAlicloudCmsGroupMetricRule_basic1(t *testing.T) {
 						"category":               "ecs",
 						"metric_name":            "cpu_total",
 						"namespace":              "acs_ecs_dashboard",
-						"rule_id":                "4a9a8978-a9cc-55ca-aa7c-530ccd91ae57",
+						"rule_id":                "tf-test-targets",
+						"targets.#":              "1",
 					}),
 				),
 			},
@@ -454,6 +462,7 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 		t.Skipf("Skipping the test case with err: %s", err)
 		t.Skipped()
 	}
+
 	rawClient = rawClient.(*connectivity.AliyunClient)
 	ReadMockResponse := map[string]interface{}{
 		// DescribeMetricRuleList
@@ -491,11 +500,14 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 					"NoEffectiveInterval": "CreateGroupMetricRuleValue",
 					"Period":              1,
 					"SilenceTime":         10,
-					"AlertState":          "CreateGroupMetricRuleValue",
+					"AlertState":          "OK",
 					"Webhook":             "CreateGroupMetricRuleValue",
 					"RuleId":              "CreateGroupMetricRuleValue",
 				},
 			},
+		},
+		"Targets": map[string]interface{}{
+			"Target": []interface{}{},
 		},
 		"Code":    200,
 		"Message": "Message",
@@ -543,18 +555,6 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 		err := resourceAlicloudCmsGroupMetricRuleCreate(dInit, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
-		ReadMockResponseDiff = map[string]interface{}{
-			// DescribeMetricRuleList Response
-			"Alarms": map[string]interface{}{
-				"Alarm": []interface{}{
-					map[string]interface{}{
-						"RuleId": "CreateGroupMetricRuleValue",
-					},
-				},
-			},
-			"Code":    200,
-			"Message": "Message",
-		}
 		errorCodes := []string{"NonRetryableError", "Throttling", "ExceedingQuota", "Throttling.User", "nil"}
 		for index, errorCode := range errorCodes {
 			retryIndex := index - 1 // a counter used to cover retry scenario; the same below
@@ -607,6 +607,7 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 		assert.NotNil(t, err)
 		// PutGroupMetricRule
 		attributesDiff := map[string]interface{}{
+			"rule_id":                "CreateGroupMetricRuleValue",
 			"group_id":               "PutGroupMetricRuleValue",
 			"group_metric_rule_name": "PutGroupMetricRuleValue",
 			"metric_name":            "PutGroupMetricRuleValue",
@@ -660,6 +661,7 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 			"Alarms": map[string]interface{}{
 				"Alarm": []interface{}{
 					map[string]interface{}{
+						"RuleId":            "CreateGroupMetricRuleValue",
 						"GroupId":           "PutGroupMetricRuleValue",
 						"RuleName":          "PutGroupMetricRuleValue",
 						"MetricName":        "PutGroupMetricRuleValue",
@@ -691,11 +693,15 @@ func TestUnitAlicloudCmsGroupMetricRule(t *testing.T) {
 						"NoEffectiveInterval": "PutGroupMetricRuleValue",
 						"Period":              2,
 						"SilenceTime":         20,
+						"AlertState":          "OK",
 						"Webhook":             "PutGroupMetricRuleValue",
 						"Category":            "PutGroupMetricRuleValue",
 						"Interval":            "PutGroupMetricRuleValue",
 					},
 				},
+			},
+			"Targets": map[string]interface{}{
+				"Target": []interface{}{},
 			},
 			"Code":    200,
 			"Message": "Message",

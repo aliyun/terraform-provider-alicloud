@@ -26,6 +26,7 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"category": {
@@ -309,7 +310,7 @@ func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
@@ -330,8 +331,9 @@ func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 
 	d.SetId(fmt.Sprint(request["RuleId"]))
 
-	return resourceAlicloudCmsGroupMetricRuleRead(d, meta)
+	return resourceAlicloudCmsGroupMetricRuleUpdate(d, meta)
 }
+
 func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
@@ -345,7 +347,7 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Set("rule_id", d.Id())
+	d.Set("rule_id", object["RuleId"])
 	d.Set("contact_groups", object["ContactGroups"])
 	d.Set("dimensions", object["Dimensions"])
 	d.Set("effective_interval", object["EffectiveInterval"])
@@ -406,8 +408,12 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 
 	target, err := cmsService.DescribeMetricRuleTargets(d.Id())
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapError(err)
 	}
+
 	targets := make([]map[string]interface{}, 0)
 	if target != nil {
 		targetsMap := make(map[string]interface{})
@@ -421,6 +427,7 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 
 	return nil
 }
+
 func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewCmsClient()
@@ -432,36 +439,36 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 	request := map[string]interface{}{
 		"RuleId": d.Id(),
 	}
-	if d.HasChange("group_id") {
+	if !d.IsNewResource() && d.HasChange("group_id") {
 		update = true
 	}
 	request["GroupId"] = d.Get("group_id")
-	if d.HasChange("group_metric_rule_name") {
+	if !d.IsNewResource() && d.HasChange("group_metric_rule_name") {
 		update = true
 	}
 	request["RuleName"] = d.Get("group_metric_rule_name")
-	if d.HasChange("metric_name") {
+	if !d.IsNewResource() && d.HasChange("metric_name") {
 		update = true
 	}
 	request["MetricName"] = d.Get("metric_name")
 	request["Namespace"] = d.Get("namespace")
-	if d.HasChange("contact_groups") {
+	if !d.IsNewResource() && d.HasChange("contact_groups") {
 		update = true
 		request["ContactGroups"] = d.Get("contact_groups")
 	}
-	if d.HasChange("dimensions") {
+	if !d.IsNewResource() && d.HasChange("dimensions") {
 		update = true
 		request["Dimensions"] = d.Get("dimensions")
 	}
-	if d.HasChange("effective_interval") {
+	if !d.IsNewResource() && d.HasChange("effective_interval") {
 		update = true
 		request["EffectiveInterval"] = d.Get("effective_interval")
 	}
-	if d.HasChange("email_subject") {
+	if !d.IsNewResource() && d.HasChange("email_subject") {
 		update = true
 		request["EmailSubject"] = d.Get("email_subject")
 	}
-	if d.HasChange("escalations") {
+	if !d.IsNewResource() && d.HasChange("escalations") {
 		update = true
 		if d.Get("escalations") != nil {
 			escalationsMap := make(map[string]interface{})
@@ -504,19 +511,19 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 			request["Escalations"] = escalationsMap
 		}
 	}
-	if d.HasChange("no_effective_interval") {
+	if !d.IsNewResource() && d.HasChange("no_effective_interval") {
 		update = true
 		request["NoEffectiveInterval"] = d.Get("no_effective_interval")
 	}
-	if d.HasChange("period") {
+	if !d.IsNewResource() && d.HasChange("period") {
 		update = true
 		request["Period"] = d.Get("period")
 	}
-	if d.HasChange("silence_time") {
+	if !d.IsNewResource() && d.HasChange("silence_time") {
 		update = true
 		request["SilenceTime"] = d.Get("silence_time")
 	}
-	if d.HasChange("webhook") {
+	if !d.IsNewResource() && d.HasChange("webhook") {
 		update = true
 		request["Webhook"] = d.Get("webhook")
 	}
@@ -527,7 +534,7 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 		}
 		action := "PutGroupMetricRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
@@ -550,9 +557,11 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 	request = map[string]interface{}{
 		"RuleId": d.Id(),
 	}
+
 	if d.HasChange("targets") {
 		update = true
 	}
+
 	if v, ok := d.GetOk("targets"); ok {
 		Targets := make([]map[string]interface{}, len(v.(*schema.Set).List()))
 		for i, TargetsValue := range v.(*schema.Set).List() {
@@ -587,6 +596,7 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 	}
 	return resourceAlicloudCmsGroupMetricRuleRead(d, meta)
 }
+
 func resourceAlicloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMetricRules"
@@ -600,7 +610,7 @@ func resourceAlicloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta inter
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
