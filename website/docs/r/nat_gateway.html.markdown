@@ -11,7 +11,6 @@ description: |-
 
 Provides a resource to create a VPC NAT Gateway.
 
-
 -> **NOTE:** Resource bandwidth packages will not be supported since 00:00 on November 4, 2017, and public IP can be replaced be elastic IPs.
 If a Nat Gateway has already bought some bandwidth packages, it can not bind elastic IP and you have to submit the [work order](https://selfservice.console.aliyun.com/ticket/createIndex) to solve.
 If you want to add public IP, you can use resource 'alicloud_eip_association' to bind several elastic IPs for one Nat Gateway.
@@ -165,5 +164,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Nat gateway can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nat_gateway.example ngw-abc123456
+$ terraform import alicloud_nat_gateway.example <id>
 ```
