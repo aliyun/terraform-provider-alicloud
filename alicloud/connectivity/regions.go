@@ -229,3 +229,4 @@ var ApiGatewaySupportRegions = []Region{APSouthEast3, Huhehaote, APSouth1, Shang
 var DMSEnterpriseSupportRegions = []Region{APSouthEast5, Shenzhen, Beijing, APSouth1, EUWest1, APSouthEast3, APNorthEast1, Hangzhou, Qingdao, Shanghai}
 var GPDBDBInstancePlanSupportRegions = []Region{Hangzhou}
 var ADBDBClusterLakeVersionSupportRegions = []Region{Hangzhou}
+var LindormInstanceRegions = []Region{Shanghai}

@@ -58,7 +58,7 @@ The following arguments are supported:
 
 * `cold_storage` - (Optional, Computed) The cold storage capacity of the instance. Unit: GB.
 * `core_num` - (Optional) The core num. **NOTE:** Field `core_num` has been deprecated from provider version 1.188.0 and it will be removed in the future version.
-* `core_spec` - (Optional) The core spec. **NOTE:**" Field `core_spec` has been deprecated from provider version 1.188.0 and it will be removed in the future version. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
+* `core_spec` - (Optional) The core spec. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
    - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
    - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
 * `deletion_proection` - (Optional, Computed) The deletion protection of instance.
@@ -89,6 +89,17 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed, ForceNew, Available in v1.177.0+) The ID of the resource group.
 * `tags` - (Optional, Available in v1.177.0+) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
+* `log_num` - (Optional, Available in v1.191.0+) The multiple Availability Zone Instance, number of log nodes. this parameter is required if you want to create multiple availability zone instances. Valid values: `4` to `400`.
+* `log_single_storage` - (Optional, Available in v1.191.0+) The multi-availability instance, log single-node disk capacity. This parameter is required if you want to create multiple availability zone instances. Valid values: `400` to `64000`.
+* `arbiter_zone_id` - (Optional, ForceNew, Available in v1.191.0+) The multiple Availability Zone Instance, the availability zone ID of the coordinating availability zone. required if you need to create multiple availability zone instances.
+* `multi_zone_combination` - (Optional, ForceNew, Available in v1.191.0+) The multi-zone combinations. Availability zone combinations are supported on the sale page. required if you need to create multiple availability zone instances. Valid values: `ap-southeast-5abc-aliyun`, `cn-hangzhou-ehi-aliyun`, `cn-beijing-acd-aliyun`, `ap-southeast-1-abc-aliyun`, `cn-zhangjiakou-abc-aliyun`, `cn-shanghai-efg-aliyun`, `cn-shanghai-abd-aliyun`, `cn-hangzhou-bef-aliyun`, `cn-hangzhou-bce-aliyun`, `cn-beijing-fgh-aliyun`, `cn-shenzhen-abc-aliyun`.
+* `arbiter_vswitch_id` - (Optional, ForceNew, Available in v1.191.0+) The multi-availability zone instance, coordinating the virtual switch ID of the availability zone, the switch must be located under the availability zone corresponding to the ArbiterZoneId. This parameter is required if you need to create multiple availability zone instances.
+* `standby_zone_id` - (Optional, ForceNew, Available in v1.191.0+) The multiple availability zone instances with availability zone IDs for the prepared availability zones. required if you need to create multiple availability zone instances.
+* `log_spec` - (Optional, Available in v1.191.0+) The multiple availability zone instances, log node specification. required if you need to create multiple availability zone instances. Valid values: `lindorm.sn1.large`, `lindorm.sn1.2xlarge`.
+* `log_disk_category` - (Optional, Available in v1.191.0+) The multi-available zone instance, log node disk type. required if you need to create multiple availability zone instances. Valid values: `cloud_efficiency`, `cloud_ssd`.
+* `core_single_storage` - (Optional, Available in v1.191.0+) The multiple availability zone instances, CORE single node capacity. required if you want to create multiple availability zone instances. Valid values: `400` to `64000`.
+* `standby_vswitch_id` - (Optional, ForceNew, Available in v1.191.0+) The multiple availability zone instances, the virtual switch ID of the ready availability zone must be under the availability zone corresponding to the StandbyZoneId. required if you need to create multiple availability zone instances.
+* `arch_version` - (Optional, ForceNew, Available in v1.191.0+) The deployment architecture. If you do not fill in this parameter, the default is 1.0. to create multiple availability instances, fill in 2.0. if you need to create multiple availability instances, this parameter is required. Valid values: `1.0` to `2.0`.
 
 ## Attributes Reference
 
@@ -101,6 +112,8 @@ The following attributes are exported:
 * `enabled_table_engine` - (Available in v1.163.0+) Whether to enable table engine.
 * `enabled_search_engine` - (Available in v1.163.0+) Whether to enable search engine.
 * `enabled_lts_engine` - (Available in v1.163.0+) Whether to enable lts engine.
+* `primary_vswitch_id` - (Available in v1.191.0+) Multi-available zone instances, the virtual switch ID of the primary available zone, must be under the available zone corresponding to the PrimaryZoneId.
+* `primary_zone_id` - (Available in v1.191.0+) Multi-availability zone instance with the availability zone ID of the main availability zone.
 
 ### Timeouts
 
