@@ -37,8 +37,8 @@ to create a VPC and several VSwitches one-click.
 
 The following arguments are supported:
 
-* `availability_zone` - (Required, ForceNew, Deprecated in v1.119.0+) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
-* `zone_id` - (Required, ForceNew, Available in 1.119.0+) The AZ for the switch.
+* `availability_zone` - (Optional, ForceNew, Deprecated in v1.119.0+) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
+* `zone_id` - (Optional, ForceNew, Available in 1.119.0+) The AZ for the switch. **Note:** Required for a VPC switch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 * `cidr_block` - (Required, ForceNew) The CIDR block for the switch.
 * `name` - (Optional, Deprecated in v1.119.0+) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.
