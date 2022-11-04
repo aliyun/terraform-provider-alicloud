@@ -700,6 +700,94 @@ func TestAccAlicloudLindormInstance_VpcId(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
+	resourceId := "alicloud_lindorm_instance.default_1"
+	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HitsdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeLindormInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccLindorminstance%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudLindormInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"arch_version":            "2.0",
+					"disk_category":           "local_ssd_pro",
+					"payment_type":            "PayAsYouGo",
+					"zone_id":                 "${data.alicloud_zones.default.zones.4.id}",
+					"vswitch_id":              "${data.alicloud_vswitches.default.ids[0]}",
+					"instance_name":           name,
+					"table_engine_node_count": "8",
+					"instance_storage":        "1920",
+					"core_spec":               "lindorm.i2.xlarge",
+					"log_num":                 "8",
+					"log_single_storage":      "400",
+					"arbiter_zone_id":         "${data.alicloud_zones.default.zones.5.id}",
+					"arbiter_vswitch_id":      "${data.alicloud_vswitches.arbitervswitchid.ids[0]}",
+					"standby_zone_id":         "${data.alicloud_zones.default.zones.6.id}",
+					"log_spec":                "lindorm.sn1.large",
+					"log_disk_category":       "cloud_ssd",
+					"core_single_storage":     "400",
+					"standby_vswitch_id":      "${data.alicloud_vswitches.standbyvswitchid.ids[0]}",
+					"multi_zone_combination":  "cn-shanghai-efg-aliyun",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_category":           "local_ssd_pro",
+						"payment_type":            "PayAsYouGo",
+						"zone_id":                 CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"instance_name":           name,
+						"table_engine_node_count": "8",
+						"instance_storage":        "1920",
+						"core_spec":               "lindorm.i2.xlarge",
+						"log_num":                 "8",
+						"log_single_storage":      "400",
+						"arbiter_zone_id":         CHECKSET,
+						"multi_zone_combination":  "cn-shanghai-efg-aliyun",
+						"arbiter_vswitch_id":      CHECKSET,
+						"standby_zone_id":         CHECKSET,
+						"log_spec":                "lindorm.sn1.large",
+						"log_disk_category":       "cloud_ssd",
+						"core_single_storage":     "400",
+						"standby_vswitch_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"table_engine_node_count": "48",
+					"log_num":                 "48",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"table_engine_node_count": "48",
+						"log_num":                 "48",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration", "arch_version", "core_single_storage", "instance_storage"},
+			},
+		},
+	})
+}
+
 var AlicloudLindormInstanceMap0 = map[string]string{
 	"cold_storage":                  CHECKSET,
 	"search_engine_specification":   CHECKSET,
@@ -728,6 +816,8 @@ var AlicloudLindormInstanceMap0 = map[string]string{
 	"table_engine_specification":    CHECKSET,
 }
 
+var AlicloudLindormInstanceMap1 = map[string]string{}
+
 func AlicloudLindormInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -745,6 +835,40 @@ func AlicloudLindormInstanceBasicDependence0(name string) string {
 	data "alicloud_vswitches" "default" {
 		vpc_id = data.alicloud_vpcs.default.ids.0
 		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+	
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+`, name)
+}
+
+func AlicloudLindormInstanceBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	
+	data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+	
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+	
+	data "alicloud_vswitches" "default" {
+		vpc_id = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.4.id
+	}
+
+    data "alicloud_vswitches" "arbitervswitchid" {
+		vpc_id = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.5.id
+	}
+
+    data "alicloud_vswitches" "standbyvswitchid" {
+		vpc_id = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.6.id
 	}
 	
 	data "alicloud_resource_manager_resource_groups" "default" {

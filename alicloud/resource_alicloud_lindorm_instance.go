@@ -41,7 +41,6 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"core_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Deprecated:   "Field 'core_spec' has been deprecated from provider version 1.188.0 and it will be removed in the future version.",
 				ValidateFunc: validation.StringInSlice([]string{"lindorm.i2.xlarge", "lindorm.i2.2xlarge", "lindorm.i2.4xlarge", "lindorm.i2.8xlarge", "lindorm.d1.2xlarge", "lindorm.d1.4xlarge", "lindorm.d1.6xlarge"}, false),
 			},
 			"deletion_proection": {
@@ -227,6 +226,72 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
+			"log_num": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(4, 400),
+			},
+			"log_single_storage": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(400, 64000),
+			},
+			"arbiter_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"multi_zone_combination": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ap-southeast-5abc-aliyun", "cn-hangzhou-ehi-aliyun", "cn-beijing-acd-aliyun", "ap-southeast-1-abc-aliyun", "cn-zhangjiakou-abc-aliyun", "cn-shanghai-efg-aliyun", "cn-shanghai-abd-aliyun", "cn-hangzhou-bef-aliyun", "cn-hangzhou-bce-aliyun", "cn-beijing-fgh-aliyun", "cn-shenzhen-abc-aliyun"}, false),
+			},
+			"arbiter_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"standby_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"log_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"lindorm.sn1.large", "lindorm.sn1.2xlarge"}, false),
+			},
+			"log_disk_category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd"}, false),
+			},
+			"core_single_storage": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(400, 64000),
+			},
+			"standby_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"arch_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"1.0", "2.0"}, false),
+			},
+			"primary_vswitch_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"primary_zone_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -301,6 +366,54 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		request["ResourceGroupId"] = v
 	}
 
+	if v, ok := d.GetOk("core_spec"); ok {
+		request["CoreSpec"] = v
+	}
+
+	if v, ok := d.GetOk("log_num"); ok {
+		request["LogNum"] = v
+	}
+
+	if v, ok := d.GetOk("log_single_storage"); ok {
+		request["LogSingleStorage"] = v
+	}
+
+	if v, ok := d.GetOk("arbiter_zone_id"); ok {
+		request["ArbiterZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("multi_zone_combination"); ok {
+		request["MultiZoneCombination"] = v
+	}
+
+	if v, ok := d.GetOk("arbiter_vswitch_id"); ok {
+		request["ArbiterVSwitchId"] = v
+	}
+
+	if v, ok := d.GetOk("standby_zone_id"); ok {
+		request["StandbyZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("log_spec"); ok {
+		request["LogSpec"] = v
+	}
+
+	if v, ok := d.GetOk("log_disk_category"); ok {
+		request["LogDiskCategory"] = v
+	}
+
+	if v, ok := d.GetOk("core_single_storage"); ok {
+		request["CoreSingleStorage"] = v
+	}
+
+	if v, ok := d.GetOk("standby_vswitch_id"); ok {
+		request["StandbyVSwitchId"] = v
+	}
+
+	if v, ok := d.GetOk("arch_version"); ok {
+		request["ArchVersion"] = v
+	}
+
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
 		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
@@ -330,7 +443,6 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_lindorm_instance", action, AlibabaCloudSdkGoERROR)
 	}
-
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 	hitsdbService := HitsdbService{client}
 	stateConf := BuildStateConf([]string{}, []string{"ACTIVATION"}, d.Timeout(schema.TimeoutCreate), 1*time.Minute, hitsdbService.LindormInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -358,13 +470,30 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("deletion_proection", object["DeletionProtection"])
 	d.Set("disk_category", object["DiskCategory"])
 	d.Set("instance_name", object["InstanceAlias"])
-	d.Set("instance_storage", object["InstanceStorage"])
 	d.Set("payment_type", convertLindormInstancePaymentTypeResponse(object["PayType"]))
 	d.Set("status", object["InstanceStatus"])
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("vpc_id", object["VpcId"])
+	if object["ServiceType"] == "lindorm_multizone" {
+		d.Set("log_num", object["LogNum"])
+		d.Set("log_single_storage", object["LogSingleStorage"])
+		d.Set("arbiter_zone_id", object["ArbiterZoneId"])
+		d.Set("multi_zone_combination", object["MultiZoneCombination"])
+		d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
+		d.Set("standby_zone_id", object["StandbyZoneId"])
+		d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
+		d.Set("log_spec", object["LogSpec"])
+		d.Set("log_disk_category", object["LogDiskCategory"])
+		d.Set("standby_vswitch_id", object["StandbyVSwitchId"])
+		d.Set("core_spec", object["CoreSpec"])
+
+	}
+	if object["DiskCategory"] != "local_ssd_pro" && object["DiskCategory"] != "local_hdd_pro" {
+		d.Set("core_single_storage", object["CoreSingleStorage"])
+		d.Set("instance_storage", object["InstanceStorage"])
+	}
 
 	engineType := formatInt(object["EngineType"])
 	d.Set("enabled_file_engine", engineType&0x08 == 8)
@@ -505,6 +634,29 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("deletion_proection")
 	}
 
+	upgradeLindormLogReq := map[string]interface{}{}
+
+	if !d.IsNewResource() && d.HasChange("log_single_storage") {
+		update = true
+		upgradeLindormLogReq["UpgradeType"] = "upgrade-disk-size"
+		upgradeLindormLogReq["LogSingleStorage"] = d.Get("log_single_storage")
+	}
+
+	if !d.IsNewResource() && d.HasChange("log_spec") {
+		update = true
+		upgradeLindormLogReq["UpgradeType"] = "upgrade-lindorm-engine"
+		upgradeLindormLogReq["LogSpec"] = d.Get("log_spec")
+	}
+	if update {
+		err := UpgradeLindormInstance(d, meta, upgradeLindormLogReq)
+		if err != nil {
+			return err
+		}
+		d.SetPartial("log_single_storage")
+		d.SetPartial("core_single_storage")
+		d.SetPartial("log_spec")
+	}
+
 	update = false
 	upgradeLindormInstanceColdStorageReq := map[string]interface{}{
 		"UpgradeType": "upgrade-cold-storage",
@@ -637,13 +789,24 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		if enabled && d.HasChange("table_engine_node_count") {
-			upgradeLindormInstanceTableNumReq := map[string]interface{}{}
-			upgradeLindormInstanceTableNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
-			upgradeLindormInstanceTableNumReq["LindormNum"] = newLindormNum
-			upgradeLindormInstanceTableNumReq["ClusterStorage"] = currentInstanceStorage
-			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableNumReq)
-			if err != nil {
-				return err
+			if !d.IsNewResource() && d.HasChange("log_num") && d.HasChange("table_engine_node_count") {
+				upgradeLindormLogNumReq := map[string]interface{}{}
+				upgradeLindormLogNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
+				upgradeLindormLogNumReq["LogNum"] = d.Get("log_num")
+				upgradeLindormLogNumReq["LindormNum"] = d.Get("table_engine_node_count")
+				err := UpgradeLindormInstance(d, meta, upgradeLindormLogNumReq)
+				if err != nil {
+					return err
+				}
+			} else {
+				upgradeLindormInstanceTableNumReq := map[string]interface{}{}
+				upgradeLindormInstanceTableNumReq["UpgradeType"] = "upgrade-lindorm-core-num"
+				upgradeLindormInstanceTableNumReq["LindormNum"] = newLindormNum
+				upgradeLindormInstanceTableNumReq["ClusterStorage"] = currentInstanceStorage
+				err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableNumReq)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
