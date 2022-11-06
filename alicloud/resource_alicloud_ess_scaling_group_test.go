@@ -868,7 +868,7 @@ resource "alicloud_vswitch" "tmpVs" {
 }
 
 resource "alicloud_security_group" "default1" {
-  name   = "tftestacc"
+  name   = var.name
   vpc_id = "${alicloud_vpc.default.id}"
 }
 resource "alicloud_ess_scaling_group" "default" {
@@ -913,7 +913,7 @@ resource "alicloud_vswitch" "tmpVs" {
 }
 
 resource "alicloud_security_group" "default1" {
-  name   = "tftestacc"
+  name   = var.name
   vpc_id = "${alicloud_vpc.default.id}"
 }
 resource "alicloud_ess_scaling_group" "default" {
@@ -1805,7 +1805,7 @@ resource "alicloud_vswitch" "tmpVs" {
 }
 
 resource "alicloud_security_group" "default1" {
-  name   = "tftestacc"
+  name   = var.name
   vpc_id = "${alicloud_vpc.default.id}"
 }
 resource "alicloud_ess_scaling_group" "default" {
@@ -1835,7 +1835,7 @@ resource "alicloud_vswitch" "tmpVs" {
 }
 
 resource "alicloud_security_group" "default1" {
-  name   = "tftestacc"
+  name   = var.name
   vpc_id = "${alicloud_vpc.default.id}"
 }
 resource "alicloud_ess_scaling_group" "default" {

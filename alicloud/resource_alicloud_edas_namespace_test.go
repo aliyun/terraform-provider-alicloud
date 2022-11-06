@@ -46,6 +46,7 @@ func testSweepEdasNamespace(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+		"tftestacc",
 	}
 	action := "/pop/v5/user_region_defs"
 	request := map[string]*string{}
