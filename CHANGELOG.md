@@ -1,4 +1,26 @@
 ## 1.191.0 (Unreleased)
+
+- **New Resource:** `alicloud_nlb_load_balancer` [GH-5561]
+- **New Resource:** `alicloud_service_mesh_extension_provider` [GH-5560]
+- **New Resource:** `alicloud_nlb_listener` [GH-5562]
+- **New Data Source:** `alicloud_nlb_listeners` [GH-5562]
+- **New Data Source:** `alicloud_service_mesh_extension_providers` [GH-5560]
+- **New Data Source:** `alicloud_nlb_load_balancers` [GH-5561]
+
+ENHANCEMENTS:
+
+- resource/alicloud_nat_gateway: Added retry strategy for error code IncorrectStatus.VSWITCH [GH-5567]
+- resource/alicloud_vswitch: Added retry strategy for error code CreateVSwitch.IncorrectStatus.cbnStatus [GH-5566]
+- resource/alicloud_click_house_db_cluster: Supported db_cluster_version set to 22.8.5.29 [GH-5557]
+- resource/alicloud_lindorm_instance: Adds new multiple availability zone instance related attribute [GH-5568]
+- resource:resource_alicloud_express_connect_virtual_border_router add attribute include_cross_account_vbr [GH-5558]
+- resource/alicloud_db_instance：Add RDS MySQL large version upgrade [GH-5553]
+- docs: Improves the docs tag of the terraform import command and the docs tag of the template example [GH-5563]
+
+BUG FIXES:
+
+- resource/alicloud_cms_group_metric_rule: Fixed the create error by targets no value [GH-5564]
+
 ## 1.190.0 (October 31, 2022)
 
 - **New Resource:** `alicloud_ga_acl_entry_attachment` ([#5546](https://github.com/aliyun/terraform-provider-alicloud/issues/5546))
