@@ -23,19 +23,28 @@ func TestAccAlicloudGaBandwidthPackageAttachment_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id":       "${alicloud_ga_accelerator.default.id}",
+					"accelerator_id":       "${local.accelerator_id}",
 					"bandwidth_package_id": "${alicloud_ga_bandwidth_package.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"accelerator_id":       CHECKSET,
+						"bandwidth_package_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_package_id": "${alicloud_ga_bandwidth_package.update.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"bandwidth_package_id": CHECKSET,
 					}),
 				),
@@ -56,28 +65,47 @@ var AlicloudGaBandwidthPackageAttachmentMap = map[string]string{
 
 func AlicloudGaBandwidthPackageAttachmentBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default  = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_ga_accelerator" "default" {
-  duration         = 1
-  spec             = "1"
-  accelerator_name = var.name
-  auto_use_coupon  = true
-  description      = var.name
-}
-resource "alicloud_ga_bandwidth_package" "default" {
-   	bandwidth              =  100
-  	type                   = "Basic"
-  	bandwidth_type         = "Basic"
-	payment_type           = "PayAsYouGo"
-  	billing_type           = "PayBy95"
-	ratio       = 30
-	bandwidth_package_name = var.name
-    auto_pay               = true
-    auto_use_coupon        = true
-}
+	locals {
+  		accelerator_id = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? data.alicloud_ga_accelerators.default.accelerators.0.id : alicloud_ga_accelerator.default.0.id
+	}
 
+	data "alicloud_ga_accelerators" "default" {
+  		status = "active"
+	}
+
+	resource "alicloud_ga_accelerator" "default" {
+		count            = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? 0 : 1
+		duration         = 1
+		spec             = "1"
+		accelerator_name = var.name
+  		auto_use_coupon  = true
+  		description      = var.name
+	}
+
+	resource "alicloud_ga_bandwidth_package" "default" {
+  		bandwidth       = 100
+  		type            = "Basic"
+  		bandwidth_type  = "Basic"
+  		payment_type    = "PayAsYouGo"
+  		billing_type    = "PayBy95"
+  		ratio           = 30
+  		auto_pay        = true
+  		auto_use_coupon = true
+	}
+
+	resource "alicloud_ga_bandwidth_package" "update" {
+  		bandwidth       = 100
+  		type            = "Basic"
+  		bandwidth_type  = "Basic"
+  		payment_type    = "PayAsYouGo"
+  		billing_type    = "PayBy95"
+  		ratio           = 30
+  		auto_pay        = true
+  		auto_use_coupon = true
+	}
 `, name)
 }

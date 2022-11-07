@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Bandwidth Package Attachment resource.
 
-For information about Global Accelerator (GA) Bandwidth Package Attachment and how to use it, see [What is Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/doc-detail/153241.htm).
+For information about Global Accelerator (GA) Bandwidth Package Attachment and how to use it, see [What is Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/bandwidthpackageaddaccelerator).
 
 -> **NOTE:** Available in v1.113.0+.
 
@@ -45,8 +45,8 @@ resource "alicloud_ga_bandwidth_package_attachment" "example" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required) The ID of the Global Accelerator instance from which you want to disassociate the bandwidth plan.
-* `bandwidth_package_id` - (Required, ForceNew) The ID of the bandwidth plan to disassociate.
+* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance from which you want to disassociate the bandwidth plan.
+* `bandwidth_package_id` - (Required) The ID of the bandwidth plan to disassociate. **NOTE:** From version 1.192.0, `bandwidth_package_id` can be modified.
 
 ## Attributes Reference
 
@@ -61,6 +61,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bandwidth Package Attachment.
+* `update` - (Defaults to 5 mins) Used when update the Bandwidth Package Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Bandwidth Package Attachment.
 
 ## Import
