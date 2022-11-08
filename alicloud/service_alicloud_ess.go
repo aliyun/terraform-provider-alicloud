@@ -391,7 +391,7 @@ func (s *EssService) flattenDataDiskMappings(list []ess.DataDisk) []map[string]i
 			"delete_with_instance":    i.DeleteWithInstance,
 			"encrypted":               i.Encrypted,
 			"kms_key_id":              i.KMSKeyId,
-			"disk_name":               i.DiskName,
+			"name":                    i.DiskName,
 			"description":             i.Description,
 			"auto_snapshot_policy_id": i.AutoSnapshotPolicyId,
 			"performance_level":       i.PerformanceLevel,

@@ -58,12 +58,6 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"active": "true",
 				}),
@@ -335,6 +329,12 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
+			},
 		},
 	})
 }
@@ -384,12 +384,6 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 						"password_inherit": "false",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -485,6 +479,12 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 						"data_disk.0.performance_level":    "PL1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})
@@ -648,12 +648,6 @@ func TestAccAlicloudEssScalingConfigurationInstancePatternInfo(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"active": "true",
 				}),
@@ -760,13 +754,15 @@ func TestAccAlicloudEssScalingConfigurationInstancePatternInfo(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_pattern_info.#":                       "1",
-						"instance_pattern_info.0.instance_family_level": "EntryLevel",
-						"instance_pattern_info.0.cores":                 "4",
-						"instance_pattern_info.0.memory":                "4.0",
-						"instance_pattern_info.0.max_price":             "2.1",
+						"instance_pattern_info.#": "1",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 		},
 	})

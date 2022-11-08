@@ -190,6 +190,14 @@ The following attributes are exported:
 
 * `id` - The scaling configuration ID.
 
+#### Timeouts
+
+-> **NOTE:** Available in 1.192.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the ESS scaling configuration.
+
 ## Import
 
 ESS scaling configuration can be imported using the id, e.g.

@@ -26,7 +26,9 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"active": {
 				Type:     schema.TypeBool,
@@ -169,9 +171,9 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Default:  true,
 						},
 						"encrypted": {
-							Type:     schema.TypeBool,
+							Type:     schema.TypeString,
 							Optional: true,
-							Default:  false,
+							Default:  "false",
 						},
 						"kms_key_id": {
 							Type:     schema.TypeString,
@@ -354,7 +356,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request.IoOptimized = string(NoneOptimized)
 	}
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 			return essClient.CreateScalingConfiguration(request)
 		})
@@ -369,7 +371,7 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		d.SetId(response.ScalingConfigurationId)
 		return nil
 	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scalingconfiguration", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_configuration", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return resourceAliyunEssScalingConfigurationUpdate(d, meta)
@@ -637,7 +639,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 					SnapshotId:           pack["snapshot_id"].(string),
 					DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
 					Device:               pack["device"].(string),
-					Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
+					Encrypted:            pack["encrypted"].(string),
 					KMSKeyId:             pack["kms_key_id"].(string),
 					DiskName:             pack["name"].(string),
 					Description:          pack["description"].(string),
@@ -1003,7 +1005,7 @@ func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta inter
 				SnapshotId:           pack["snapshot_id"].(string),
 				DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
 				Device:               pack["device"].(string),
-				Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
+				Encrypted:            pack["encrypted"].(string),
 				KMSKeyId:             pack["kms_key_id"].(string),
 				DiskName:             pack["name"].(string),
 				Description:          pack["description"].(string),

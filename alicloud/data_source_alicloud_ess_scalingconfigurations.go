@@ -192,7 +192,7 @@ func dataSourceAlicloudEssScalingConfigurationsRead(d *schema.ResourceData, meta
 			return essClient.DescribeScalingConfigurations(request)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scalingconfigurations", request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ess_scaling_configurations", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		response := raw.(*ess.DescribeScalingConfigurationsResponse)
