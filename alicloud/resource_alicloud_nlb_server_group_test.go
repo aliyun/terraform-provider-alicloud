@@ -194,16 +194,15 @@ func TestAccAlicloudNLBServerGroup_basic0(t *testing.T) {
 }
 
 var AlicloudNLBServerGroupMap0 = map[string]string{
-	"server_group_name":        CHECKSET,
-	"address_ip_version":       CHECKSET,
-	"health_check.#":           CHECKSET,
-	"protocol":                 CHECKSET,
-	"server_group_type":        CHECKSET,
-	"status":                   CHECKSET,
-	"connection_drain":         CHECKSET,
-	"connection_drain_timeout": CHECKSET,
-	"scheduler":                CHECKSET,
-	"vpc_id":                   CHECKSET,
+	"server_group_name":  CHECKSET,
+	"address_ip_version": CHECKSET,
+	"health_check.#":     CHECKSET,
+	"protocol":           CHECKSET,
+	"server_group_type":  CHECKSET,
+	"status":             CHECKSET,
+	"connection_drain":   CHECKSET,
+	"scheduler":          CHECKSET,
+	"vpc_id":             CHECKSET,
 }
 
 func AlicloudNLBServerGroupBasicDependence0(name string) string {
