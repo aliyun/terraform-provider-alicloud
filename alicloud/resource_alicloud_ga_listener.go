@@ -163,11 +163,11 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate))), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotExist.BasicBandwidthPackage"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -313,11 +313,11 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate))), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateListener")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -354,11 +354,11 @@ func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete))), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener", "Exist.ForwardingRule", "Exist.EndpointGroup"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
