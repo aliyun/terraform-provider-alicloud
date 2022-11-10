@@ -1399,6 +1399,7 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 		"TransitRouterTableId": parts[2],
 	}
 
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1418,19 +1419,26 @@ func (s *CbnService) DescribeCenTransitRouterPrefixListAssociation(id string) (o
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	v, err := jsonpath.Get("$.PrefixLists", response)
+	resp, err := jsonpath.Get("$.PrefixLists", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PrefixLists", response)
 	}
 
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
-	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PrefixListId"]) != parts[0] {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CEN", id)), NotFoundWithResponse, response)
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterPrefixListAssociation", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["NextHop"]) == parts[3] {
+			idExist = true
+			return v.(map[string]interface{}), nil
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterPrefixListAssociation", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 

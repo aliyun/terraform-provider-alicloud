@@ -186,6 +186,7 @@ func resourceAlicloudCenTransitRouterPrefixListAssociationDelete(d *schema.Resou
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
