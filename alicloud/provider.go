@@ -765,6 +765,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_zones":                                    dataSourceAlicloudNlbZones(),
 			"alicloud_service_mesh_extension_providers":             dataSourceAlicloudServiceMeshExtensionProviders(),
 			"alicloud_nlb_listeners":                                dataSourceAlicloudNlbListeners(),
+			"alicloud_nlb_server_group_server_attachments":          dataSourceAlicloudNlbServerGroupServerAttachments(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1424,6 +1425,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_load_balancer":                                    resourceAlicloudNlbLoadBalancer(),
 			"alicloud_service_mesh_extension_provider":                      resourceAlicloudServiceMeshExtensionProvider(),
 			"alicloud_nlb_listener":                                         resourceAlicloudNlbListener(),
+			"alicloud_nlb_server_group_server_attachment":                   resourceAlicloudNlbServerGroupServerAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
