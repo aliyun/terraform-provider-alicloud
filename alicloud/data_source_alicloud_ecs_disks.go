@@ -89,7 +89,6 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  true,
 			},
 			"enable_automated_snapshot_policy": {
 				Type:     schema.TypeBool,
