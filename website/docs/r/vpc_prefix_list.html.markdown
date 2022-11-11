@@ -37,8 +37,8 @@ resource "alicloud_vpc_prefix_list" "default" {
 The following arguments are supported:
 
 * `entrys` - (Optional) The CIDR address block list of the prefix list. See the following `Block entrys`.
-* `ip_version` - (Optional, ForceNew) The IP version of the prefix list. Valid values: `IPV4`, `IPV6`.
-* `max_entries` - (Optional) The maximum number of entries for CIDR address blocks in the prefix list.
+* `ip_version` - (Optional, Computed, ForceNew) The IP version of the prefix list. Valid values: `IPV4`, `IPV6`.
+* `max_entries` - (Optional, Computed) The maximum number of entries for CIDR address blocks in the prefix list.
 * `prefix_list_description` - (Optional) The description of the prefix list. It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
 * `prefix_list_name` - (Optional) The name of the prefix list. The name must be 2 to 128 characters in length and must start with a letter. It can contain digits, periods (.), underscores (_), and hyphens (-).
 

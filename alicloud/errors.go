@@ -219,7 +219,7 @@ func NeedRetry(err error) bool {
 		return true
 	}
 
-	throttlingRegex := regexp.MustCompile("^Throttling.*")
+	throttlingRegex := regexp.MustCompile("Throttling")
 	codeRegex := regexp.MustCompile("^code: 5[\\d]{2}")
 
 	if e, ok := err.(*tea.SDKError); ok {
