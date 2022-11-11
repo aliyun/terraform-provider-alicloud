@@ -194,7 +194,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	includeCrossAccountVbr := false
+	includeCrossAccountVbr := true
 	if v, ok := d.GetOkExists("include_cross_account_vbr"); ok {
 		includeCrossAccountVbr = v.(bool)
 	}
@@ -292,7 +292,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 	if d.HasChange("include_cross_account_vbr") {
 		d.SetPartial("include_cross_account_vbr")
 	}
-	includeCrossAccountVbr := false
+	includeCrossAccountVbr := true
 	if v, ok := d.GetOkExists("include_cross_account_vbr"); ok {
 		includeCrossAccountVbr = v.(bool)
 	}
