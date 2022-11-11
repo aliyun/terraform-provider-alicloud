@@ -16,10 +16,7 @@ Supported Versions
 
 | Terraform version | minimum provider version |maxmimum provider version
 | ---- | ---- | ----| 
-| 0.11.x	| 1.0.0	| 1.122.0 |
-| 0.12.x	| 1.0.0	| 1.122.0 |
-| 0.13.x	| 1.0.0	| 1.122.0 |
-| 0.14.x	| 1.0.0	| 1.122.0 |
+| >= 0.11.x	| 1.0.0	| latest |
 
 Requirements
 ------------
