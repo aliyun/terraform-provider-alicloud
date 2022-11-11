@@ -15,8 +15,6 @@ For information about Cloud SSO Group and how to use it, see [What is Group](htt
 
 -> **NOTE:** Available in v1.138.0+.
 
--> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
-
 ## Example Usage
 
 Basic Usage
