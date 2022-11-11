@@ -129,6 +129,13 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"server_group_type": {
+				Type:         schema.TypeString,
+				ForceNew:     true,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Instance", "Ip", "Fc"}, false),
+			},
 			"servers": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -241,6 +248,9 @@ func resourceAlicloudAlbServerGroupCreate(d *schema.ResourceData, meta interface
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
+	}
+	if v, ok := d.GetOk("server_group_type"); ok {
+		request["ServerGroupType"] = v
 	}
 
 	if v, ok := d.GetOk("health_check_config"); ok {
@@ -384,6 +394,7 @@ func resourceAlicloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 	d.Set("servers", serversMaps)
+	d.Set("server_group_type", object["ServerGroupType"])
 
 	listTagResourcesObject, err := albService.ListTagResources(d.Id(), "servergroup")
 	d.Set("tags", tagsToMap(listTagResourcesObject))

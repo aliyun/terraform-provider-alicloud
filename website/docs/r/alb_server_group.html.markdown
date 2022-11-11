@@ -118,7 +118,7 @@ resource "alicloud_alb_server_group" "default" {
 The following arguments are supported:
 
 * `dry_run` - (Optional) The dry run.
-* `health_check_config` - (Optional, ForceNew) The configuration of health checks.
+* `health_check_config` - (Optional) The configuration of health checks.
 * `protocol` - (Optional, Computed, ForceNew) The server protocol. Valid values: ` HTTPS`, `HTTP`.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `scheduler` - (Optional, Computed) The scheduling algorithm. Valid values: ` Sch`, ` Wlc`, `Wrr`.
@@ -126,6 +126,11 @@ The following arguments are supported:
 * `servers` - (Optional) The backend server.
 * `sticky_session_config` - (Optional, ForceNew) The configuration of the sticky session.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC that you want to access.
+* `server_group_type` - (Optional, ForceNew, Computed, Available in v1.193.0+) The type of the server group. Valid values:
+  - `Instance` (default): allows you add servers by specifying Ecs, Ens, or Eci.
+  - `Ip`: allows you to add servers by specifying IP addresses.
+  - `Fc`: allows you to add servers by specifying functions of Function Compute.
+* `tags` - (Optional) A mapping of tags to assign to the resource.
 
 #### Block sticky_session_config
 
