@@ -31,12 +31,12 @@ func resourceAlicloudVpcPrefixList() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"entrys": {
 				Type:     schema.TypeSet,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cidr": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"description": {
 							Type:         schema.TypeString,
