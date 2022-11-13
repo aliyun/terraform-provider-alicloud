@@ -918,6 +918,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_log_oss_export":                                       resourceAlicloudLogOssExport(),
 			"alicloud_log_oss_shipper":                                      resourceAlicloudLogOssShipper(),
 			"alicloud_log_project":                                          resourceAlicloudLogProject(),
+			"alicloud_log_project_policy":                                   resourceAlicloudLogProjectPolicy(),
 			"alicloud_log_resource":                                         resourceAlicloudLogResource(),
 			"alicloud_log_resource_record":                                  resourceAlicloudLogResourceRecord(),
 			"alicloud_log_store":                                            resourceAlicloudLogStore(),
