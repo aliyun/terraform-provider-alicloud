@@ -265,6 +265,45 @@ func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCPrefixList_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_prefix_list.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcPrefixList")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcprefixlist%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCPrefixListBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"prefix_list_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"prefix_list_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudVPCPrefixListMap1 = map[string]string{
 	"max_entries": CHECKSET,
 	"entrys.#":    CHECKSET,

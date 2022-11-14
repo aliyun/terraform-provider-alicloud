@@ -3575,6 +3575,9 @@ func (s *VpcService) GetVpcPrefixListEntries(id string) (objects []map[string]in
 		if err != nil {
 			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
+		if formatInt(response["TotalCount"]) == 0 {
+			return objects, nil
+		}
 		resp, err := jsonpath.Get("$.PrefixListEntry", response)
 		if err != nil {
 			return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
