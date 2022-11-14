@@ -85,8 +85,8 @@ The following arguments are supported:
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
 * `resource_type` - (Optional) The resource type of transit router vpc attachment. Valid value `VPC`. Default value is `VPC`.
-* `route_table_association_enabled` - (Optional) Whether to enabled route table association. The system default value is `true`.
-* `route_table_propagation_enabled` - (Optional) Whether to enabled route table propagation. The system default value is `true`.
+* `route_table_association_enabled` - (Optional, Deprecated) Whether to enabled route table association. The system default value is `true`. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
+* `route_table_propagation_enabled` - (Optional, Deprecated) Whether to enabled route table propagation. The system default value is `true`. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
 * `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
 * `payment_type` - (Optional, ForceNew, Available in 1.168.0+) The payment type of the resource. Valid values: `PayAsYouGo`.
 * `zone_mappings` - (Required) The list of zone mapping of the VPC. **NOTE:** From version 1.184.0, `zone_mappings` can be modified.
