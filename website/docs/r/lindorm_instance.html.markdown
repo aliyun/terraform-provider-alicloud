@@ -100,6 +100,8 @@ The following arguments are supported:
 * `core_single_storage` - (Optional, Available in v1.191.0+) The multiple availability zone instances, CORE single node capacity. required if you want to create multiple availability zone instances. Valid values: `400` to `64000`.
 * `standby_vswitch_id` - (Optional, ForceNew, Available in v1.191.0+) The multiple availability zone instances, the virtual switch ID of the ready availability zone must be under the availability zone corresponding to the StandbyZoneId. required if you need to create multiple availability zone instances.
 * `arch_version` - (Optional, ForceNew, Available in v1.191.0+) The deployment architecture. If you do not fill in this parameter, the default is 1.0. to create multiple availability instances, fill in 2.0. if you need to create multiple availability instances, this parameter is required. Valid values: `1.0` to `2.0`.
+* `primary_vswitch_id` - (Optional, ForceNew, Available in v1.192.0+) Multi-available zone instances, the virtual switch ID of the primary available zone, must be under the available zone corresponding to the PrimaryZoneId. required if you need to create multiple availability zone instances.
+* `primary_zone_id` - (Optional, ForceNew, Available in v1.192.0+) Multi-availability zone instance with the availability zone ID of the main availability zone. required if you need to create multiple availability zone instances.
 
 ## Attributes Reference
 
@@ -112,8 +114,6 @@ The following attributes are exported:
 * `enabled_table_engine` - (Available in v1.163.0+) Whether to enable table engine.
 * `enabled_search_engine` - (Available in v1.163.0+) Whether to enable search engine.
 * `enabled_lts_engine` - (Available in v1.163.0+) Whether to enable lts engine.
-* `primary_vswitch_id` - (Available in v1.191.0+) Multi-available zone instances, the virtual switch ID of the primary available zone, must be under the available zone corresponding to the PrimaryZoneId.
-* `primary_zone_id` - (Available in v1.191.0+) Multi-availability zone instance with the availability zone ID of the main availability zone.
 
 ### Timeouts
 
