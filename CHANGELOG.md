@@ -1,4 +1,33 @@
 ## 1.192.0 (Unreleased)
+
+- **New Resource:** `alicloud_nlb_server_group_server_attachment` [GH-5576]
+- **New Resource:** `alicloud_bp_studio_application` [GH-5475]
+- **New Data Source:** `alicloud_bp_studio_applications` [GH-5475]
+- **New Data Source:** `alicloud_nlb_server_group_server_attachments` [GH-5576]
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: Enlarges the db instance creating timeout [GH-5591]
+- resource/alicloud_lindorm_instance: Adds new attribute primary_zone_id,primary_vswitch_id [GH-5587]
+- resource/alicloud_cen_transit_router_vpc_attachment: Removed the field route_table_association_enabled and route_table_propagation_enable [GH-5588]
+- resource/alicloud_instance: Support new attribute http_tokens, http_endpoint, http_put_response_hop_limit. [GH-5586]
+- resource/alicloud_resource_manager_shared_resource: The resource_type attribute supports the option of PrefixList and Image. [GH-5589]
+- resource/alicloud_vpc_prefix_list: Added retry stragety for error code SystemBusy, OperationConflict, LastTokenProcessing, IncorrectStatus.PrefixList, IncorrectStatus.%s [GH-5579]
+- resource/alicloud_vswitch: Added retry strategy for error code CreateVSwitch.IncorrectStatus.cbnStatus, IncorrectStatus.%s, IncorrectVSwitchStatus, OperationConflict, OperationFailed.LastTokenProcessing,OperationFailed.DistibuteLock, IncorrectStatus.VSwitch, IncorrectStatus.VpcRouteEntry, ServiceUnavailable, DependencyViolation.SnatEntry, DependencyViolation.MulticastDomain, DependencyViolation, IncorrectRouteEntryStatus, InternalError, TaskConflict, DependencyViolation.EnhancedNatgw, DependencyViolation.RouteTable, DependencyViolation.HaVip, DeleteVSwitch.IncorrectStatus.cbnStatus, LastTokenProcessing, OperationDenied.OtherSubnetProcessing, DependencyViolation.SNAT, DependencyViolation.NetworkAcl [GH-5585]
+- resource/alicloud_vpc_prefix_list: Add notfound error determination [GH-5548]
+- resource/alicloud_ga_bandwidth_package_attachment: Removed the ForceNew for field bandwidth_package_id, supports modifying them online; Supported for new action ReplaceBandwidthPackage [GH-5571]
+- resource/alicloud_ga_listener: Added retry stragety for error code NotExist.BasicBandwidthPackage, NotActive.Listener, Exist.ForwardingRule, Exist.EndpointGroup [GH-5575]
+- resource/alicloud_instance: Add error retry code [GH-5582]
+- resource/alicloud_db_instance: Increase status wait when updating payment type. [GH-5574]
+- Resource:alicloud_express_connect_virtual_border_router.The parameter [GH-5578]
+- docs: Remove incorrect area restriction description. [GH-5580]
+
+BUG FIXES:
+
+- resource/alicloud_cen_transit_router_prefix_list_association: Fixed the read error caused by next_hop error value [GH-5577]
+- resource/alicloud_nlb_server_group: fix test case TestAccAlicloudNLBServerGroup_basic1. [GH-5572]
+- resource/alicloud_vpc_prefix_list: Fix bugs at creation [GH-5582]
+
 ## 1.191.0 (November 08, 2022)
 
 - **New Resource:** `alicloud_nlb_load_balancer` ([#5561](https://github.com/aliyun/terraform-provider-alicloud/issues/5561))
