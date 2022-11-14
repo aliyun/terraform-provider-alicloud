@@ -286,11 +286,13 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			},
 			"primary_vswitch_id": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 			"primary_zone_id": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -410,6 +412,14 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		request["StandbyVSwitchId"] = v
 	}
 
+	if v, ok := d.GetOk("primary_zone_id"); ok {
+		request["PrimaryZoneId"] = v
+	}
+
+	if v, ok := d.GetOk("primary_vswitch_id"); ok {
+		request["PrimaryVSwitchId"] = v
+	}
+
 	if v, ok := d.GetOk("arch_version"); ok {
 		request["ArchVersion"] = v
 	}
@@ -474,6 +484,8 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("status", object["InstanceStatus"])
 	d.Set("vswitch_id", object["VswitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("primary_zone_id", object["PrimaryZoneId"])
+	d.Set("primary_vswitch_id", object["PrimaryVSwitchId"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("vpc_id", object["VpcId"])
 	if object["ServiceType"] == "lindorm_multizone" {
