@@ -43,12 +43,14 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Default:  "VPC",
 			},
 			"route_table_association_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'route_table_association_enabled' has been deprecated from provider version 1.192.0. Please use the resource 'alicloud_cen_transit_router_route_table_association' instead.",
 			},
 			"route_table_propagation_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field 'route_table_propagation_enabled' has been deprecated from provider version 1.192.0. Please use the resource 'alicloud_cen_transit_router_route_table_propagation' instead.",
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -197,6 +199,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 
 	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -241,6 +244,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	}
 	return nil
 }
+
 func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -357,6 +361,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	d.Partial(false)
 	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -402,6 +407,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	}
 	return nil
 }
+
 func convertCenTransitRouterVpcAttachmentPaymentTypeResponse(source string) string {
 	switch source {
 	case "POSTPAY":
@@ -409,6 +415,7 @@ func convertCenTransitRouterVpcAttachmentPaymentTypeResponse(source string) stri
 	}
 	return source
 }
+
 func convertCenTransitRouterVpcAttachmentPaymentTypeRequest(source string) string {
 	switch source {
 	case "PayAsYouGo":
