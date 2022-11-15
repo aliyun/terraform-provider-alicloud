@@ -126,6 +126,9 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":        "${var.name}",
 					"license_code":       "bhah_ent_50_asset",
+					"plan_code":          "cloudbastion",
+					"storage":            "5",
+					"bandwidth":          "5",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
@@ -280,6 +283,9 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"license_code":         "bhah_ent_50_asset",
 					"period":               "1",
+					"plan_code":            "cloudbastion",
+					"storage":              "5",
+					"bandwidth":            "5",
 					"description":          "${var.name}",
 					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
@@ -305,9 +311,10 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       false,
+				ImportStateVerifyIgnore: []string{"period", "plan_code", "storage", "bandwidth"},
 			},
 		},
 	})
@@ -337,19 +344,53 @@ func TestAccAlicloudBastionhostInstance_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":        "${var.name}",
 					"license_code":       "bhah_ent_50_asset",
+					"plan_code":          "cloudbastion",
+					"storage":            "5",
+					"bandwidth":          "5",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"renewal_status":     "ManualRenewal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":          name,
 						"period":               "1",
 						"security_group_ids.#": "2",
+						"renewal_status":       "ManualRenewal",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_period":        "2",
+					"renewal_period_unit": "M",
+					"renewal_status":      "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_period":        "2",
+						"renewal_period_unit": "M",
+						"renewal_status":      "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "NotRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "NotRenewal",
+						"renew_period":   "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "plan_code", "storage", "bandwidth"},
 			},
 		},
 	})
@@ -384,6 +425,9 @@ func TestAccAlicloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing
 				Config: testAccConfig(map[string]interface{}{
 					"description":        "${var.name}",
 					"license_code":       "bhah_ent_50_asset",
+					"plan_code":          "cloudbastion",
+					"storage":            "5",
+					"bandwidth":          "5",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
