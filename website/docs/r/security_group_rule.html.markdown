@@ -23,7 +23,6 @@ Basic Usage
 resource "alicloud_security_group" "default" {
   name = "default"
 }
-
 resource "alicloud_security_group_rule" "allow_all_tcp" {
   type              = "ingress"
   ip_protocol       = "tcp"
@@ -57,7 +56,7 @@ The following arguments are supported:
 * `source_security_group_id` - (Optional, ForceNew) The target security group ID within the same region. If this field is specified, the `nic_type` can only select `intranet`.
 * `source_group_owner_account` - (Optional, ForceNew) The Alibaba Cloud user account Id of the target security group when security groups are authorized across accounts.  This parameter is invalid if `cidr_ip` has already been set.
 * `description` - (Optional) The description of the security group rule. The description can be up to 1 to 512 characters in length. Defaults to null.
-* `prefix_list_id`- (Optional) The ID of the source/destination prefix list to which you want to control access. **NOTE:** If you specify `cidr_ip`,`source_security_group_id`,`ipv6_cidr_ip` parameter, this parameter is ignored.
+* `prefix_list_id`- (Optional, ForceNew) The ID of the source/destination prefix list to which you want to control access. **NOTE:** If you specify `cidr_ip`,`source_security_group_id`,`ipv6_cidr_ip` parameter, this parameter is ignored.
 * `ipv6_cidr_ip`- (Optional, ForceNew, Available in 1.174.0) Source IPv6 CIDR address block that requires access. Supports IP address ranges in CIDR format and IPv6 format. **NOTE:** This parameter cannot be set at the same time as the `cidr_ip` parameter.
 
 -> **NOTE:**  You must specify one of the following field: `cidr_ip`,`source_security_group_id`,`prefix_list_id`,`ipv6_cidr_ip`. 

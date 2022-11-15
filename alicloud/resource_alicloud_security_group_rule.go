@@ -107,6 +107,7 @@ func resourceAliyunSecurityGroupRule() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
+				ForceNew:         true,
 				DiffSuppressFunc: ecsSecurityGroupRulePreFixListIdDiffSuppressFunc,
 			},
 			"ipv6_cidr_ip": {
