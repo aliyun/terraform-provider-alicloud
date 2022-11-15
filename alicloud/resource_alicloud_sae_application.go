@@ -275,6 +275,11 @@ func resourceAlicloudSaeApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"micro_registration": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"0", "1", "2"}, false),
+			},
 		},
 	}
 }
@@ -418,6 +423,9 @@ func resourceAlicloudSaeApplicationCreate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("acr_instance_id"); ok {
 		request["AcrInstanceId"] = StringPointer(v.(string))
 	}
+	if v, ok := d.GetOk("micro_registration"); ok {
+		request["MicroRegistration"] = StringPointer(v.(string))
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
@@ -532,6 +540,7 @@ func resourceAlicloudSaeApplicationRead(d *schema.ResourceData, meta interface{}
 	d.Set("status", describeApplicationStatusObject["CurrentStatus"])
 	listTagResourcesObject, err := saeService.ListTagResources(d.Id(), "application")
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("micro_registration", object["MicroRegistration"])
 	return nil
 }
 func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -881,6 +890,13 @@ func resourceAlicloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 	if v, ok := d.GetOk("package_version"); ok {
 		request["PackageVersion"] = StringPointer(v.(string))
 	}
+	if !d.IsNewResource() && d.HasChange("micro_registration") {
+		update = true
+	}
+	if v, ok := d.GetOk("micro_registration"); ok {
+		request["MicroRegistration"] = StringPointer(v.(string))
+	}
+
 	if update {
 		action := "/pop/v1/sam/app/deployApplication"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
