@@ -28,6 +28,9 @@ Basic Usage
 resource "alicloud_bastionhost_instance" "default" {
   description        = "Terraform-test"
   license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
   period             = "1"
   vswitch_id         = "v-testVswitch"
   security_group_ids = ["sg-test", "sg-12345"]
@@ -38,9 +41,13 @@ resource "alicloud_bastionhost_instance" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
+
 resource "alicloud_bastionhost_instance" "default" {
   description        = "Terraform-test"
   license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
   period             = 1
   security_group_ids = [alicloud_security_group.default.0.id, alicloud_security_group.default.1.id]
   vswitch_id         = "v-testVswitch"
@@ -73,7 +80,6 @@ resource "alicloud_bastionhost_instance" "default" {
     is_ssl             = false
     base_dn            = "dc=test,dc=com"
   }
-
   lifecycle {
     ignore_changes = [ldap_auth_server.0.password, ad_auth_server.0.password]
   }
@@ -92,6 +98,11 @@ You can resume managing the subscription bastionhost instance via the AlibabaClo
 The following arguments are supported:
 
 * `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://help.aliyun.com/document_detail/96469.html).
+* `plan_code` - (Required, ForceNew, Available in 1.193.0+) The plan code of Cloud Bastionhost instance. Valid values:
+  - `cloudbastion`: Basic Edition.
+  - `cloudbastion_ha`: HA Edition.
+* `storage` - (Required, ForceNew, Available in 1.193.0+) The storage of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: TB.
+* `bandwidth` - (Required, ForceNew, Available in 1.193.0+) The bandwidth of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: Mbit/s.
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Optional) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
@@ -105,10 +116,13 @@ The following arguments are supported:
 * `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
 * `ad_auth_server` - (Optional, Available from 1.169.0+) The AD auth server of the Instance. See the following `Block ad_auth_server`.
 * `ldap_auth_server` - (Optional, Available from 1.169.0+) The LDAP auth server of the Instance. See the following `Block ldap_auth_server`.
-* `renew_period` - (Optional, ForceNew, Available from 1.187.0+) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`. 
-* `renewal_status` - (Optional, Computed, ForceNew, Available from 1.187.0+) Automatic renewal status. Valid values: `AutoRenewal`,`ManualRenewal`. 
+* `renew_period` - (Optional, Available from 1.187.0+) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that `renewal_status` is `AutoRenewal`. From version 1.193.0, `renew_period` can be modified.
+* `renewal_status` - (Optional, Computed, Available from 1.187.0+) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`. From version 1.193.0, `renewal_status` can be modified.
+* `renewal_period_unit` - (Optional, Computed, Available from 1.193.0+) The unit of the auto-renewal period. Valid values:  **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
+  - `M`: months.
+  - `Y`: years.
 
--> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
+  -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
 ```
   # ... ignore the change about ad_auth_server.0.password and ldap_auth_server.0.password in alicloud_bastionhost_instance
   lifecycle {

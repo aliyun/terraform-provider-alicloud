@@ -21,17 +21,14 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 		Read:   resourceAlicloudBastionhostInstanceRead,
 		Update: resourceAlicloudBastionhostInstanceUpdate,
 		Delete: resourceAlicloudBastionhostInstanceDelete,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(40 * time.Minute),
 			Update: schema.DefaultTimeout(20 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
-
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
-
 		Schema: map[string]*schema.Schema{
 			"description": {
 				Type:         schema.TypeString,
@@ -42,10 +39,26 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"plan_code": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloudbastion", "cloudbastion_ha"}, false),
+			},
+			"storage": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"bandwidth": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 				Optional:     true,
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -58,10 +71,10 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tagsSchema(),
-
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"enable_public_access": {
 				Type:     schema.TypeBool,
@@ -203,8 +216,19 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 			"renew_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.Any(validation.IntBetween(1, 9), validation.IntInSlice([]int{12, 24, 36})),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+						return false
+					}
+					return true
+				},
+			},
+			"renewal_period_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"M", "Y"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 						return false
@@ -216,8 +240,7 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
 			},
 		},
 	}
@@ -243,7 +266,15 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	})
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "PlanCode",
-		"Value": "cloudbastion",
+		"Value": d.Get("plan_code").(string),
+	})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Storage",
+		"Value": d.Get("storage").(string),
+	})
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Bandwidth",
+		"Value": d.Get("bandwidth").(string),
 	})
 	request["SubscriptionType"] = "Subscription"
 	if v, ok := d.GetOk("period"); ok {
@@ -269,7 +300,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -338,6 +369,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("vswitch_id", instance["VswitchId"])
 	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
 	d.Set("enable_public_access", instance["PublicNetworkAccess"])
+	d.Set("resource_group_id", instance["ResourceGroupId"])
 	tags, err := BastionhostService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
 		return WrapError(err)
@@ -390,6 +422,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 
 	d.Set("renewal_status", getQueryInstanceObject["RenewStatus"])
 	d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"]))
+	d.Set("renewal_period_unit", getQueryInstanceObject["RenewalDurationUnit"])
 
 	return nil
 }
@@ -502,7 +535,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 			action := "ModifyInstanceADAuthServer"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, modifyAdRequest, &util.RuntimeOptions{})
 				if err != nil {
 					if NeedRetry(err) {
@@ -545,7 +578,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 
 			action := "ModifyInstanceLDAPAuthServer"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, modifyLdapRequest, &util.RuntimeOptions{})
 				if err != nil {
 					if NeedRetry(err) {
@@ -562,6 +595,76 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			}
 			d.SetPartial("ldap_auth_server")
 		}
+	}
+
+	var setRenewalResponse map[string]interface{}
+	update := false
+	setRenewalReq := map[string]interface{}{
+		"InstanceIDs":      d.Id(),
+		"ProductCode":      "bastionhost",
+		"ProductType":      "bastionhost",
+		"SubscriptionType": "Subscription",
+	}
+
+	if !d.IsNewResource() && d.HasChange("renewal_status") {
+		update = true
+	}
+	if v, ok := d.GetOk("renewal_status"); ok {
+		setRenewalReq["RenewalStatus"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("renew_period") {
+		update = true
+		if v, ok := d.GetOk("renew_period"); ok {
+			setRenewalReq["RenewalPeriod"] = v
+		}
+	}
+
+	if d.HasChange("renewal_period_unit") {
+		update = true
+	}
+	if v, ok := d.GetOk("renewal_period_unit"); ok {
+		setRenewalReq["RenewalPeriodUnit"] = v
+	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_period_unit", "renewal_status", d.Get("renewal_status")))
+	}
+
+	if update {
+		action := "SetRenewal"
+		conn, err := client.NewBssopenapiClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			setRenewalResponse, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, setRenewalReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"NotApplicable"}) {
+					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+					setRenewalReq["ProductType"] = "ons_onsproxy_public_intl"
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, setRenewalResponse, setRenewalReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if fmt.Sprint(setRenewalResponse["Code"]) != "Success" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, setRenewalResponse))
+		}
+
+		d.SetPartial("renewal_status")
+		d.SetPartial("renew_period")
+		d.SetPartial("renewal_period_unit")
 	}
 
 	d.Partial(false)
