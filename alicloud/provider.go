@@ -767,6 +767,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_listeners":                                dataSourceAlicloudNlbListeners(),
 			"alicloud_nlb_server_group_server_attachments":          dataSourceAlicloudNlbServerGroupServerAttachments(),
 			"alicloud_bp_studio_applications":                       dataSourceAlicloudBpStudioApplications(),
+			"alicloud_cloud_sso_access_assignments":                 dataSourceAlicloudCloudSsoAccessAssignments(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
