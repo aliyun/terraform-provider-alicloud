@@ -71,7 +71,7 @@ The following arguments are supported:
 * `description` - (Optional) The description of the network acl instance.
 * `ingress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. The details see Block `ingress_acl_entries`.
 * `egress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the egress entries of the network acl. The order of the egress entries determines the priority. The details see Block `egress_acl_entries`.
-* `resources` - (Optional, Available in 1.124.0+) The associated resources.
+* `resources` - (Optional, Computed, Available in 1.124.0+) The associated resources. See the following `Block resources`. **NOTE:** "Field `resources` has been deprecated from provider version 1.193.0 and it will be removed in the future version. Please use the new resource `alicloud_vpc_network_acl_attachment`."
 
 ### Block ingress_acl_entries
 
@@ -93,8 +93,8 @@ The following arguments are supported:
 
 ### Block resources 
 
-* `resource_id` - (Optional, Available in 1.124.0+) The ID of the associated resource.
-* `resource_type` - (Optional, Available in 1.124.0+) The type of the associated resource. Valid values `VSwitch`.
+* `resource_id` - (Optional, Computed, Available in 1.124.0+) The ID of the associated resource.
+* `resource_type` - (Optional, Computed, Available in 1.124.0+) The type of the associated resource. Valid values `VSwitch`.
 
 ## Attributes Reference
 
@@ -120,5 +120,3 @@ The network acl can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_network_acl.default nacl-abc123456
 ```
-
-
