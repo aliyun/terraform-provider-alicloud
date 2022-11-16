@@ -1429,6 +1429,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_listener":                                         resourceAlicloudNlbListener(),
 			"alicloud_nlb_server_group_server_attachment":                   resourceAlicloudNlbServerGroupServerAttachment(),
 			"alicloud_bp_studio_application":                                resourceAlicloudBpStudioApplication(),
+			"alicloud_vpc_network_acl_attachment":                           resourceAlicloudVpcNetworkAclAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,

@@ -23,8 +23,8 @@ func resourceAlicloudNetworkAcl() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
@@ -118,17 +118,21 @@ func resourceAlicloudNetworkAcl() *schema.Resource {
 				ValidateFunc:  validation.StringLenBetween(2, 128),
 			},
 			"resources": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'resources' has been deprecated from provider version 1.193.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_network_acl_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 						"resource_type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -194,6 +198,7 @@ func resourceAlicloudNetworkAclCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudNetworkAclUpdate(d, meta)
 }
+
 func resourceAlicloudNetworkAclRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -272,6 +277,7 @@ func resourceAlicloudNetworkAclRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("vpc_id", object["VpcId"])
 	return nil
 }
+
 func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -508,6 +514,7 @@ func resourceAlicloudNetworkAclUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	return resourceAlicloudNetworkAclRead(d, meta)
 }
+
 func resourceAlicloudNetworkAclDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
