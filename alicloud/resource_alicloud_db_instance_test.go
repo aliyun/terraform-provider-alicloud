@@ -313,26 +313,6 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"sql_collector_status": "Enabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sql_collector_status": "Enabled",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"sql_collector_config_value": "30",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sql_collector_config_value": "30",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -384,8 +364,6 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "cloud_essd",
-					"sql_collector_status":       "Enabled",
-					"sql_collector_config_value": "30",
 					"instance_name":              "tf-testAccDBInstanceConfig",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
@@ -404,17 +382,15 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"engine":                     "MySQL",
 						"engine_version":             "8.0",
 						"instance_type":              CHECKSET,
-						"instance_storage":           "15",
+						"instance_storage":           CHECKSET,
 						"db_instance_storage_type":   "cloud_essd",
-						"sql_collector_status":       "Enabled",
-						"sql_collector_config_value": "30",
 						"instance_name":              "tf-testAccDBInstanceConfig",
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,
 						"instance_charge_type":       "Postpaid",
 						"connection_string":          CHECKSET,
 						"port":                       CHECKSET,
-						"security_group_id":          "",
+						"security_group_id":          CHECKSET,
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
 						"parameters.#":               "1",
@@ -1308,7 +1284,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "PostgreSQL",
 					"engine_version":           "13.0",
-					"instance_type":            "pg.n2.2c.2m",
+					"instance_type":            "pg.x2.medium.2c",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"db_instance_storage_type": "cloud_essd",
 					"zone_id":                  "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
@@ -1320,6 +1296,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
 					"connection_string_prefix": connectionStringPrefix,
 					"port":                     "5999",
 					"babelfish_config":         babelfishConfig,
+					"deletion_protection":      "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1330,7 +1307,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
 						"db_instance_storage_type": "cloud_essd",
 						"private_ip_address":       CHECKSET,
 						"db_time_zone":             "America/New_York",
-						"deletion_protection":      "false",
+						"deletion_protection":      "true",
 						"port":                     "5999",
 						"connection_string_prefix": connectionStringPrefix,
 						"babelfish_config.#":       "1",
@@ -1345,11 +1322,11 @@ func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"deletion_protection": "true",
+					"deletion_protection": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"deletion_protection": "true",
+						"deletion_protection": "false",
 					}),
 				),
 			},
@@ -1422,6 +1399,17 @@ func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ha_config":      "Manual",
 						"manual_ha_time": manualHATime,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ha_config": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ha_config":      "Auto",
+						"manual_ha_time": "",
 					}),
 				),
 			},
@@ -1610,11 +1598,10 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"db_instance_storage_type": "cloud_essd",
-					"zone_id":                  "${local.zone_id}",
+					"zone_id":                  "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
-					"monitoring_period":        "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1623,6 +1610,7 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 						"instance_storage":         CHECKSET,
 						"instance_type":            CHECKSET,
 						"db_instance_storage_type": "cloud_essd",
+						"monitoring_period":        "300",
 					}),
 				),
 			},
@@ -1643,16 +1631,6 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_type": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"monitoring_period": "300",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"monitoring_period": "300",
 					}),
 				),
 			},
@@ -1685,7 +1663,6 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 					"instance_name":        "${var.name}",
 					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{},
-					"monitoring_period":    "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1694,12 +1671,12 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 						"instance_type":        CHECKSET,
 						"instance_storage":     CHECKSET,
 						"instance_name":        "tf-testAccDBInstanceConfig",
-						"monitoring_period":    "60",
+						"monitoring_period":    "300",
 						"zone_id":              CHECKSET,
 						"instance_charge_type": "Postpaid",
 						"connection_string":    CHECKSET,
 						"port":                 CHECKSET,
-						"security_group_id":    "",
+						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "0",
 					}),
 				),

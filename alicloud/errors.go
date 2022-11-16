@@ -49,6 +49,7 @@ var DBReadInstanceNotReadyStatus = []string{"OperationDenied.ReadDBInstanceStatu
 var NasNotFound = []string{"InvalidMountTarget.NotFound", "InvalidFileSystem.NotFound", "Forbidden.NasNotFound", "InvalidLBid.NotFound", "VolumeUnavailable"}
 var SnapshotInvalidOperations = []string{"OperationConflict", "ServiceUnavailable", "InternalError", "SnapshotCreatedDisk", "SnapshotCreatedImage"}
 var DiskNotSupportOnlineChangeErrors = []string{"InvalidDiskCategory.NotSupported", "InvalidRegion.NotSupport", "IncorrectInstanceStatus", "IncorrectDiskStatus", "InvalidOperation.InstanceTypeNotSupport"}
+var DBInstanceTDEErrors = []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType", "IncorrectDBInstanceType", "IncorrectEngineVersion", "DBSizeExceeded", "InvalidDBName.NotFound", "DbossGeneralError"}
 
 // details at: https://help.aliyun.com/document_detail/27300.html
 var OtsTableIsTemporarilyUnavailable = []string{"no such host", "OTSServerBusy", "OTSPartitionUnavailable", "OTSInternalServerError",
