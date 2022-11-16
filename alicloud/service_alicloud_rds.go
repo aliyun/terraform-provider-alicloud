@@ -990,13 +990,25 @@ func (s *RdsService) DescribeDBSecurityIps(instanceId string) ([]interface{}, er
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, instanceId, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	return response["Items"].(map[string]interface{})["DBInstanceIPArray"].([]interface{}), nil
 }
 
@@ -1066,11 +1078,23 @@ func (s *RdsService) DescribeSecurityGroupConfiguration(id string) ([]string, er
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	groupIds := make([]string, 0)
 	ecsSecurityGroupRelations := response["Items"].(map[string]interface{})["EcsSecurityGroupRelation"].([]interface{})
 	for _, v := range ecsSecurityGroupRelations {
@@ -1093,11 +1117,23 @@ func (s *RdsService) DescribeDBInstanceSSL(id string) (map[string]interface{}, e
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	return response, nil
 }
 
@@ -1135,11 +1171,23 @@ func (s *RdsService) DescribeHASwitchConfig(id string) (map[string]interface{}, 
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	return response, nil
 }
 
@@ -1271,15 +1319,23 @@ func (s *RdsService) DescribeDbInstanceMonitor(id string) (monitoringPeriod int,
 	if err != nil {
 		return 0, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
-		return 0, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, response, request)
-
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	monPeriod, err := strconv.Atoi(response["Period"].(string))
 	if err != nil {
-		return 0, WrapError(err)
+		return 0, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	return monPeriod, nil
 }
@@ -1297,14 +1353,26 @@ func (s *RdsService) DescribeSQLCollectorPolicy(id string) (map[string]interface
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	return response, nil
 }
 
@@ -1321,14 +1389,27 @@ func (s *RdsService) DescribeSQLCollectorRetention(id string) (map[string]interf
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	var response map[string]interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 	return response, nil
 }
 
@@ -1730,7 +1811,9 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
-
+		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
+			return WrapError(err)
+		}
 		d.SetPartial("tags")
 	}
 
@@ -1748,14 +1831,25 @@ func (s *RdsService) describeTags(d *schema.ResourceData) (tags []Tag, err error
 	if err != nil {
 		return nil, WrapError(err)
 	}
+	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
 	if err != nil {
 		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
-
 	return s.respToTags(response["Items"].(map[string]interface{})["TagInfos"].([]interface{})), nil
 }
 
