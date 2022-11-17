@@ -1,5 +1,5 @@
 ---
-subcategory: "Alikafka"
+subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ali_kafka_instance_allowed_ip_attachment"
 sidebar_current: "docs-alicloud-resource-alikafka-instance-allowed-ip-attachment"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Anti-DDoS Pro"
+subcategory: "Anti-DDoS Pro (DdosCoo)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddoscoo_instance"
 sidebar_current: "docs-alicloud-resource-ddoscoo-instance"

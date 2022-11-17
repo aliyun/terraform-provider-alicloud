@@ -1,5 +1,5 @@
 ---
-subcategory: "ApsaraDB for MyBase"
+subcategory: "ApsaraDB for MyBase (CDDC)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cddc_host_ecs_level_infos"
 sidebar_current: "docs-alicloud-datasource-cddc-host-ecs-level-infos"

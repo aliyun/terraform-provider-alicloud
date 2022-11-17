@@ -1,5 +1,5 @@
 ---
-subcategory: "Serverless Workflow"
+subcategory: "Serverless Workflow (FnF)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fnf_execution"
 sidebar_current: "docs-alicloud-resource-fnf-execution"

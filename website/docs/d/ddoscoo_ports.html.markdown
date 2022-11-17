@@ -1,5 +1,5 @@
 ---
-subcategory: "Anti-DDoS Pro"
+subcategory: "Anti-DDoS Pro (DdosCoo)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddoscoo_ports"
 sidebar_current: "docs-alicloud-datasource-ddoscoo-ports"

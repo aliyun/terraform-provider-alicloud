@@ -1,5 +1,5 @@
 ---
-subcategory: "Function Compute Service"
+subcategory: "Function Compute Service (FC)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_trigger"
 sidebar_current: "docs-alicloud-resource-fc"

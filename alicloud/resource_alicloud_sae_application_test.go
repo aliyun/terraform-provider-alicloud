@@ -138,7 +138,7 @@ func testSweepSaeApplication(region string) error {
 	return nil
 }
 
-//package_type = Image
+// package_type = Image
 func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
@@ -498,7 +498,7 @@ func TestAccAlicloudSAEApplication_basic0(t *testing.T) {
 	})
 }
 
-//package_type = FatJar
+// package_type = FatJar
 func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
@@ -786,7 +786,7 @@ func TestAccAlicloudSAEApplication_basic1(t *testing.T) {
 	})
 }
 
-//package_type = War
+// package_type = War
 func TestAccAlicloudSAEApplication_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)

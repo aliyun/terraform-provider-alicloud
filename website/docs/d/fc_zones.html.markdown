@@ -1,5 +1,5 @@
 ---
-subcategory: "Function Compute Service"
+subcategory: "Function Compute Service (FC)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fc_zones"
 sidebar_current: "docs-alicloud-datasource-fc-zones"

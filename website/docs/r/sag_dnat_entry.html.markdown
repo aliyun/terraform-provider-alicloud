@@ -1,5 +1,5 @@
 ---
-subcategory: "Smart Access Gateway"
+subcategory: "Smart Access Gateway (Smartag)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sag_dnat_entry"
 sidebar_current: "docs-alicloud-resource-sag-dnat-entry"

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-//  The test parameter encodedsaml_metadata_document should not be exposed
+// The test parameter encodedsaml_metadata_document should not be exposed
 func SkipTestAccAlicloudRAMSamlProvider_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_saml_provider.default"

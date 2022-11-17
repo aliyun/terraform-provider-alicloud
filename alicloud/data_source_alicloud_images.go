@@ -462,7 +462,7 @@ func imagesDescriptionAttributes(d *schema.ResourceData, images []ecs.Image, met
 	return nil
 }
 
-//Find most recent image
+// Find most recent image
 type imageSort []ecs.Image
 
 func (a imageSort) Len() int {
@@ -501,7 +501,7 @@ func imageDiskDeviceMappings(m []ecs.DiskDeviceMapping) []map[string]interface{}
 	return s
 }
 
-//Returns a mapping of image tags
+// Returns a mapping of image tags
 func imageTagsMappings(d *schema.ResourceData, imageId string, meta interface{}) map[string]string {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}

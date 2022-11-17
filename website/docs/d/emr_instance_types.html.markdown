@@ -1,5 +1,5 @@
 ---
-subcategory: "E-MapReduce"
+subcategory: "E-MapReduce (EMR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emr_instance_types"
 sidebar_current: "docs-alicloud-datasource-emr-instance-types"

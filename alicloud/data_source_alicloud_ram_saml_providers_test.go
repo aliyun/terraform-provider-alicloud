@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-//  The test parameter encodedsaml_metadata_document should not be exposed
+// The test parameter encodedsaml_metadata_document should not be exposed
 func SkipTestAccAlicloudRAMSamlProvidersDataSource(t *testing.T) {
 	resourceId := "data.alicloud_ram_saml_providers.default"
 	rand := acctest.RandIntRange(1000000, 9999999)

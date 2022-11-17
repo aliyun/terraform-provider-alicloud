@@ -1,5 +1,5 @@
 ---
-subcategory: "Datahub Service"
+subcategory: "Datahub Service (DataHub)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_datahub_service"
 sidebar_current: "docs-alicloud-datasource-datahub-service"

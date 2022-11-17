@@ -1,5 +1,5 @@
 ---
-subcategory: "Alikafka"
+subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_topics"
 sidebar_current: "docs-alicloud-datasource-alikafka-topics"

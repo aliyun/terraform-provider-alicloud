@@ -1,5 +1,5 @@
 ---
-subcategory: "Data Security Center"
+subcategory: "Data Security Center (SDDP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sddp_data_limit"
 sidebar_current: "docs-alicloud-resource-sddp-data-limit"
