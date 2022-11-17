@@ -1,5 +1,5 @@
 ---
-subcategory: "Data Security Center"
+subcategory: "Data Security Center (SDDP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sddp_instances"
 sidebar_current: "docs-alicloud-datasource-sddp-instances"

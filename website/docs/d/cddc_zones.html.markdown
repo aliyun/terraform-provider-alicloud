@@ -1,5 +1,5 @@
 ---
-subcategory: "ApsaraDB for MyBase"
+subcategory: "ApsaraDB for MyBase (CDDC)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cddc_zones"
 sidebar_current: "docs-alicloud-datasource-cddc-zones"

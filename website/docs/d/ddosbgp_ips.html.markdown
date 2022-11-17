@@ -1,5 +1,5 @@
 ---
-subcategory: "Anti-DDoS Pro"
+subcategory: "Anti-DDoS Pro (DdosBgp)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddosbgp_ips"
 sidebar_current: "docs-alicloud-datasource-ddos-bgp-ips"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Apsara File Storage for HDFS"
+subcategory: "Apsara File Storage for HDFS (DFS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dfs_access_groups"
 sidebar_current: "docs-alicloud-datasource-dfs-access-groups"

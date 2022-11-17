@@ -1,5 +1,5 @@
 ---
-subcategory: "SSL Certificates"
+subcategory: "SSL Certificates Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cas_certificate"
 sidebar_current: "docs-alicloud-resource-cas-certificate"

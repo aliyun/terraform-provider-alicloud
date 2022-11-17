@@ -459,7 +459,7 @@ func instancessDescriptionAttributes(d *schema.ResourceData, instances []ecs.Ins
 	return nil
 }
 
-//Returns a mapping of instance disks
+// Returns a mapping of instance disks
 func getInstanceDisksMappings(instanceMap map[string]string, meta interface{}) (map[string][]map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	request := ecs.CreateDescribeDisksRequest()

@@ -1,5 +1,5 @@
 ---
-subcategory: "Smart Access Gateway"
+subcategory: "Smart Access Gateway (Smartag)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cloud_connect_networks"
 sidebar_current: "docs-alicloud-datasource-cloud-connect-networks"

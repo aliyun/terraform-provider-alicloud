@@ -915,11 +915,11 @@ func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invok
 	return nil
 }
 
-//versionCompare check version,
-//if cueVersion is newer than neededVersion return 1
-//if curVersion is equal neededVersion return 0
-//if curVersion is older than neededVersion return -1
-//example: neededVersion = 1.20.11-aliyun.1, curVersion = 1.22.3-aliyun.1, it will return 1
+// versionCompare check version,
+// if cueVersion is newer than neededVersion return 1
+// if curVersion is equal neededVersion return 0
+// if curVersion is older than neededVersion return -1
+// example: neededVersion = 1.20.11-aliyun.1, curVersion = 1.22.3-aliyun.1, it will return 1
 func versionCompare(neededVersion, curVersion string) (int, error) {
 	if neededVersion == "" || curVersion == "" {
 		if neededVersion == "" && curVersion == "" {

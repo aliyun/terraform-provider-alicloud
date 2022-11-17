@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud DBAudit"
+subcategory: "Cloud DBAudit (DBAudit)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_yundun_dbaudit_instances"
 sidebar_current: "docs-alicloud-yundun_dbaudit-instances"

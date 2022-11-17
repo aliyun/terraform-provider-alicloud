@@ -378,7 +378,7 @@ variable "name" {
 }`, name)
 }
 
-//The instance requires the same zone as the vswitch, but currently the instance does not support zone query.
+// The instance requires the same zone as the vswitch, but currently the instance does not support zone query.
 func AlicloudGraphDatabaseDbInstanceBasicDependence1(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {

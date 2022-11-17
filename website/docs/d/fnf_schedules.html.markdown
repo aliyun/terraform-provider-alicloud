@@ -1,5 +1,5 @@
 ---
-subcategory: "Serverless Workflow"
+subcategory: "Serverless Workflow (FnF)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fnf_schedules"
 sidebar_current: "docs-alicloud-datasource-fnf-schedules"

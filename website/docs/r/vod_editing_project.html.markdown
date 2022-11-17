@@ -1,5 +1,5 @@
 ---
-subcategory: "ApsaraVideo VoD"
+subcategory: "ApsaraVideo VoD (VOD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vod_editing_project"
 sidebar_current: "docs-alicloud-resource-vod-editing-project"

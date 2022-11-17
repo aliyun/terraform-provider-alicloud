@@ -1,5 +1,5 @@
 ---
-subcategory: "API Gateway"
+subcategory: "Api Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_api_gateway_log_configs"
 sidebar_current: "docs-alicloud-datasource-api-gateway-log-configs"

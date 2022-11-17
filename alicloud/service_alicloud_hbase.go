@@ -174,7 +174,7 @@ func (s *HBaseService) DescribeHBaseInstance(id string) (object map[string]inter
 	return object, nil
 }
 
-//pop has limit, support next.
+// pop has limit, support next.
 func (s *HBaseService) DescribeIpWhitelist(id string) (instance hbase.DescribeIpWhitelistResponse, err error) {
 	request := hbase.CreateDescribeIpWhitelistRequest()
 	request.RegionId = s.client.RegionId
