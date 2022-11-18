@@ -84,7 +84,7 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 		request["ClientToken"] = buildClientToken("CreateIpv4Gateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -199,7 +199,7 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 		request["ClientToken"] = buildClientToken("DeleteIpv4Gateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

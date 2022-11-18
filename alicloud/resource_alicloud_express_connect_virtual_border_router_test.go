@@ -157,6 +157,7 @@ func TestAccAlicloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
 					"peering_subnet_mask":        "255.255.255.252",
 					"virtual_border_router_name": "tf-testAcc-PrT1AqAjKvGgLQpbygetjH6f",
 					"description":                "tf-testAcc-llZJhorzazsS81mf2PVyFEAA",
+					"bandwidth":                  "100",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -167,6 +168,17 @@ func TestAccAlicloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
 						"local_gateway_ip":           "10.0.0.1",
 						"peer_gateway_ip":            "10.0.0.2",
 						"peering_subnet_mask":        "255.255.255.252",
+						"bandwidth":                  "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "200",
 					}),
 				),
 			},

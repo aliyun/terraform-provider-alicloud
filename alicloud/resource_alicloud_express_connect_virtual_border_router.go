@@ -134,7 +134,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterCreate(d *schema.ResourceD
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("bandwidth"); ok {
+	if v, ok := d.GetOkExists("bandwidth"); ok {
 		request["Bandwidth"] = v
 	}
 	if v, ok := d.GetOk("circuit_code"); ok {
@@ -232,6 +232,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterRead(d *schema.ResourceDat
 		d.Set("vlan_id", formatInt(v))
 	}
 	d.Set("route_table_id", object["RouteTableId"])
+	d.Set("bandwidth", formatInt(object["Bandwidth"]))
 	return nil
 }
 func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -350,12 +351,16 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		update = true
 		request["VlanId"] = d.Get("vlan_id")
 	}
+
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
+		update = true
+		if v, ok := d.GetOkExists("bandwidth"); ok {
+			request["Bandwidth"] = v
+		}
+	}
 	if update {
 		if v, ok := d.GetOk("associated_physical_connections"); ok {
 			request["AssociatedPhysicalConnections"] = v
-		}
-		if v, ok := d.GetOk("bandwidth"); ok {
-			request["Bandwidth"] = v
 		}
 		action := "ModifyVirtualBorderRouterAttribute"
 		request["ClientToken"] = buildClientToken("ModifyVirtualBorderRouterAttribute")

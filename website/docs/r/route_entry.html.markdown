@@ -110,6 +110,7 @@ The following arguments are supported:
     - `IPv6Gateway`: an IPv6 gateway.
     - `Attachment`: a transit router.
     - `VpcPeer`: a VPC Peering Connection.
+    - `Ipv4Gateway`  (Available in 1.193.0+): an IPv4 gateway.
 
 * `nexthop_id` - (ForceNew) The route entry's next hop. ECS instance ID or VPC router interface ID.
 * `name` - (Optional, ForceNew, Available in 1.55.1+) The name of the route entry. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://.
