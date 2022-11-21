@@ -20,7 +20,7 @@ func dataSourceAlicloudInstanceTypeFamilies() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ecs-1", "ecs-2", "ecs-3", "ecs-4"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ecs-1", "ecs-2", "ecs-3", "ecs-4", "ecs-5", "ecs-6"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,

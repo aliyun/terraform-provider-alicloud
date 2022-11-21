@@ -124,7 +124,7 @@ The following arguments are supported:
 * `backup_log_interval_seconds` - (Optional) The backup log interval seconds.
 * `backup_method` - (Required, ForceNew) Backup method. Valid values: `duplication`, `logical`, `physical`.
 * `backup_objects` - (Optional, Computed, ForceNew) The backup object.
-* `backup_period` - (Optional, Computed, ForceNew) Full backup cycle, Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`.
+* `backup_period` - (Optional, Computed, ForceNew) Full backup cycle, Valid values: `Monday`, `Tuesday`, `Wednesday`, `Thursday`, `Friday`, `Saturday`, `Sunday`. supports the selection of multiple fetch values, separated by English commas (,).
 * `backup_plan_name` - (Required, ForceNew) The name of the resource.
 * `backup_rate_limit` - (Optional) The backup rate limit.
 * `backup_retention_period` - (Optional, Computed, ForceNew) The retention time of backup data. Valid values: 0 to 1825. Default value: 730 days.
@@ -169,8 +169,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when create the Backup Plan.
-* `update` - (Defaults to 5 mins) Used when update the Backup Plan.
+* `create` - (Defaults to 10 mins) Used when create the Backup Plan.
+* `update` - (Defaults to 10 mins) Used when update the Backup Plan.
 * `delete` - (Defaults to 3 mins) Used when delete the Backup Plan.
 
 ## Import
