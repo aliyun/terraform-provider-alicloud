@@ -209,6 +209,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 											string(oss.StorageStandard),
 											string(oss.StorageIA),
 											string(oss.StorageArchive),
+											string(oss.StorageColdArchive),
 										}, false),
 									},
 								},
