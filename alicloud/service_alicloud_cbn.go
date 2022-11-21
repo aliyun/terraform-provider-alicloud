@@ -1460,3 +1460,68 @@ func (s *CbnService) CenTransitRouterPrefixListAssociationStateRefreshFunc(d *sc
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "ListTransitRouterCidr"
+
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":            s.client.RegionId,
+		"ClientToken":         buildClientToken("ListTransitRouterCidr"),
+		"TransitRouterId":     parts[0],
+		"TransitRouterCidrId": parts[1],
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.CidrLists", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CidrLists", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterCidr", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["TransitRouterCidrId"]) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterCidr", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
