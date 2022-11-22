@@ -67,6 +67,7 @@ resource "alicloud_vswitch" "terway_vswitches" {
 resource "alicloud_cs_managed_kubernetes" "k8s" {
   count              = var.k8s_number
   name               = var.name
+  cluster_spec       = "ack.pro.small"
   # version can not be defined in variables.tf.
   version            = "1.24.6-aliyun.1"
   worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
@@ -195,11 +196,11 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `key_name` - (Deprecated from version 1.177.0)(Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. From ersion 1.109.1, It is not necessary in the professional managed cluster.
 * `kms_encrypted_password` - (Deprecated from version 1.177.0)(Optional, Available in 1.57.1+) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Deprecated from version 1.177.0)(Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `worker_instance_charge_type` - (Deprecated from version 1.177.0)(Optional) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
+* `worker_instance_charge_type` - (Deprecated from version 1.177.0)(Optional) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required, default is `PostPaid`.
 * `worker_period` - (Deprecated from version 1.177.0)(Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `worker_period_unit` - (Deprecated from version 1.177.0)(Optional) Worker payment period unit, the valid value is `Month`.
 * `worker_auto_renew` - (Deprecated from version 1.177.0)(Optional) Enable worker payment auto-renew, defaults to false.
-* `worker_auto_renew_period` - (Deprecated from version 1.177.0)(Optional) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
+* `worker_auto_renew_period` - (Deprecated from version 1.177.0, Optional) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
 * `worker_disk_category` - (Deprecated from version 1.177.0)(Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Deprecated from version 1.177.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB.
 * `worker_data_disks` - (Deprecated from version 1.177.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.

@@ -413,7 +413,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew, Available in 1.123.1+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `internet_charge_type` - (Optional, Available in 1.123.1+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
 * `internet_max_bandwidth_out` - (Optional, Available in 1.123.1+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
-* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`,`SpotAsPriceGo` and `NoSpot`.
+* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`,`SpotAsPriceGo` and `NoSpot`, default is `NoSpot`.
 * `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. You could enable multiple spot instances by setting this field repeatedly.
   * `instance_type` - (Optional, Available in 1.123.1+) Spot instance type.
   * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.

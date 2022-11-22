@@ -405,9 +405,9 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Computed: true,
 			},
 			"spot_strategy": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
 			},
 			"spot_price_limit": {
 				Type:     schema.TypeList,
@@ -675,14 +675,21 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(fmt.Errorf("node_count new value can not be parsed"), "parseError %d", newValue)
 		}
 
-		if newValue < oldValue {
-			removeNodePoolNodes(d, meta, parts, nil, nil)
-			// The removal of a node is logically independent.
-			// The removal of a node should not involve parameter changes.
-			return resourceAlicloudCSNodePoolRead(d, meta)
+		_, exist := d.GetOk("desired_size")
+		if exist {
+			update = true
+			desiredSize := int64(newValue)
+			args.ScalingGroup.DesiredSize = &desiredSize
+		} else {
+			if newValue < oldValue {
+				removeNodePoolNodes(d, meta, parts, nil, nil)
+				// The removal of a node is logically independent.
+				// The removal of a node should not involve parameter changes.
+				return resourceAlicloudCSNodePoolRead(d, meta)
+			}
+			update = true
+			args.Count = int64(newValue) - int64(oldValue)
 		}
-		update = true
-		args.Count = int64(newValue) - int64(oldValue)
 	}
 
 	if d.HasChange("name") {

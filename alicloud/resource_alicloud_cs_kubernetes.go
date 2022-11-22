@@ -264,10 +264,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Deprecated: "Field 'worker_data_disks' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks' to replace it",
 			},
 			"worker_instance_charge_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Deprecated:   "Field 'worker_instance_charge_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
+				Type:       schema.TypeString,
+				Computed:   true,
+				Optional:   true,
+				Deprecated: "Field 'worker_instance_charge_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,

@@ -392,6 +392,24 @@ func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName
 	}
 }
 
+func (s *CsClient) CsKubernetesAddonExistRefreshFunc(clusterId string, addonName string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsKubernetesAddonStatus(clusterId, addonName)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		if object.Version == "" {
+			return object, "Deleted", nil
+		}
+
+		return object, "Running", nil
+	}
+}
+
 func (s *CsClient) installAddon(d *schema.ResourceData) error {
 	clusterId := d.Get("cluster_id").(string)
 
