@@ -186,7 +186,7 @@ The following example is the definition of `master_vswitch_ids` block, the `work
 * `worker_number` - (Deprecated from version 1.177.0)(Optional) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
 * `worker_vswitch_ids` - (Deprecated from version 1.177.0)(Optional) The vswitches used by workers.
 * `worker_instance_types` - (Deprecated from version 1.177.0)(Optional) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster.
-* `worker_instance_charge_type` - (Deprecated from version 1.177.0)(Optional, Force new resource) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required.
+* `worker_instance_charge_type` - (Deprecated from version 1.177.0)(Optional, Force new resource) Worker payment type, its valid value is either or `PostPaid` or `PrePaid`. Defaults to `PostPaid`. If value is `PrePaid`, the files `worker_period`, `worker_period_unit`, `worker_auto_renew` and `worker_auto_renew_period` are required, default is `PostPaid`.
 * `worker_period` - (Deprecated from version 1.177.0)(Optional) Worker payment period. The unit is `Month`. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
 * `worker_period_unit` - (Deprecated from version 1.177.0)(Optional) Worker payment period unit, the valid value is `Month`.
 * `worker_auto_renew` - (Deprecated from version 1.177.0)(Optional) Enable worker payment auto-renew, defaults to false.

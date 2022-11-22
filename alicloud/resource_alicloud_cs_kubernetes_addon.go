@@ -178,7 +178,7 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
 	}
 
-	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	stateConf := BuildStateConf([]string{"Running"}, []string{"Deleted"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonExistRefreshFunc(clusterId, name))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterDelete", d.Id())
 	}
