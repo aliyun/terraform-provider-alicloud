@@ -1437,6 +1437,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_cidr":                              resourceAlicloudCenTransitRouterCidr(),
 			"alicloud_das_switch_das_pro":                                   resourceAlicloudDasSwitchDasPro(),
 			"alicloud_ga_basic_accelerator":                                 resourceAlicloudGaBasicAccelerator(),
+			"alicloud_ga_basic_endpoint_group":                              resourceAlicloudGaBasicEndpointGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
