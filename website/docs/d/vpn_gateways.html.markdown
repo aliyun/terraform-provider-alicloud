@@ -15,13 +15,13 @@ The VPNs data source lists a number of VPNs resource information owned by an Ali
 
 ```terraform
 data "alicloud_vpn_gateways" "vpn_gateways" {
-  vpc_id          = "fake-vpc-id"
-  ids             = ["fake-vpn-id1", "fake-vpn-id2"]
-  status          = "active"
-  business_status = "Normal"
-  name_regex      = "testAcc*"
-  include_reservation_data    = true
-  output_file     = "/tmp/vpns"
+  vpc_id                   = "fake-vpc-id"
+  ids                      = ["fake-vpn-id1", "fake-vpn-id2"]
+  status                   = "active"
+  business_status          = "Normal"
+  name_regex               = "testAcc*"
+  include_reservation_data = true
+  output_file              = "/tmp/vpns"
 }
 ```
 

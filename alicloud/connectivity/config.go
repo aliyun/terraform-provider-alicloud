@@ -175,6 +175,8 @@ type Config struct {
 	VpcpeerEndpoint             string
 	EbsEndpoint                 string
 	DmsenterpriseEndpoint       string
+	BpStudioEndpoint            string
+	DasEndpoint                 string
 }
 
 func (c *Config) loadAndValidate() error {
