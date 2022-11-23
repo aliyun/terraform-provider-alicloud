@@ -38,6 +38,7 @@ type LogStore struct {
 	project            *LogProject
 	putLogCompressType int
 	EncryptConf        *EncryptConf `json:"encrypt_conf,omitempty"`
+	ProductType        string       `json:"productType,omitempty"`
 }
 
 // Shard defines shard struct
