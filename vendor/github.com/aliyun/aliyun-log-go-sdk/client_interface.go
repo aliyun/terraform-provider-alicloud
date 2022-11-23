@@ -330,4 +330,11 @@ type ClientInterface interface {
 	ListExport(project, logstore, name, displayName string, offset, size int) (exports []*Export, total, count int, error error)
 	DeleteExport(project string, name string) error
 	RestartExport(project string, export *Export) error
+
+	// UpdateProjectPolicy updates project's policy.
+	UpdateProjectPolicy(project string, policy string) error
+	// DeleteProjectPolicy deletes project's policy.
+	DeleteProjectPolicy(project string) error
+	// GetProjectPolicy return project's policy.
+	GetProjectPolicy(project string) (string, error)
 }

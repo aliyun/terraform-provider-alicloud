@@ -102,6 +102,8 @@ github.com/aliyun/aliyun-datahub-sdk-go v0.1.5 h1:c2TFcJ5PjkqkHr2use7Av2wHB8jVgo
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5/go.mod h1:GwtZxKUD+aLBrtlkEcyPNAx+jRkBioEC7EKOlQ26lTc=
 github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20221010075026-bd1a0c47d122 h1:G2XM6JdA7ASH6kWSD/kp6uAZJvOh3ldXoYTToIfBfnk=
 github.com/aliyun/aliyun-log-go-sdk v0.1.39-0.20221010075026-bd1a0c47d122/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
+github.com/aliyun/aliyun-log-go-sdk v0.1.40 h1:GNlRoTe9Fi7dfhIMHAnb+b5837/fIw8lqs1DRqaU1CM=
+github.com/aliyun/aliyun-log-go-sdk v0.1.40/go.mod h1:1QQ59pEJiVVXqKgbHcU6FWIgxT5RKBt+CT8AiQ2bEts=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58 h1:hX1oYyN7d0y7GHwli6trhovosNAKo9f60uC3FPHMjoQ=
 github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58/go.mod h1:eD/mEH7SwtLSwI9p8fP9VTH2cYM3wFSY1WNaxEdLIFU=
 github.com/aliyun/aliyun-oss-go-sdk v2.2.1+incompatible h1:uuJIwCFhbZy+zdvLy5zrcIToPEQP0s5CFOZ0Zj03O/w=
