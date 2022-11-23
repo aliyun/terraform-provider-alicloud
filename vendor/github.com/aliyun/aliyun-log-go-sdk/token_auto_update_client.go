@@ -1684,3 +1684,33 @@ func (c *TokenAutoUpdateClient) GetMetricStore(project, name string) (metricStor
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) UpdateProjectPolicy(project, policy string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateProjectPolicy(project, policy)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteProjectPolicy(project string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteProjectPolicy(project)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetProjectPolicy(project string) (policy string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		policy, err = c.logClient.GetProjectPolicy(project)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
