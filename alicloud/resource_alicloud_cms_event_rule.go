@@ -77,6 +77,26 @@ func resourceAlicloudCmsEventRule() *schema.Resource {
 								Type: schema.TypeString,
 							},
 						},
+						"keyword_filter": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"relation": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"keywords": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
 						"sql_filter": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -122,6 +142,22 @@ func resourceAlicloudCmsEventRuleCreate(d *schema.ResourceData, meta interface{}
 		}
 		if v, ok := eventPatternArg["sql_filter"].(string); ok && v != "" {
 			eventPatternMap["SQLFilter"] = v
+		}
+
+		if v, ok := eventPatternArg["keyword_filter"]; ok && len(v.([]interface{})) > 0 {
+
+			keywordFilterMap := make(map[string]interface{}, 0)
+			keywordFilter := v.([]interface{})[0].(map[string]interface{})
+
+			if v, ok := keywordFilter["relation"].(string); ok && v != "" {
+				keywordFilterMap["Relation"] = v
+			}
+
+			if v, ok := keywordFilter["keywords"]; ok && v != "" {
+				keywordFilterMap["Keywords"] = v
+			}
+
+			eventPatternMap["KeywordFilter"], _ = convertArrayObjectToJsonString(keywordFilterMap)
 		}
 
 		eventPatternMaps = append(eventPatternMaps, eventPatternMap)
@@ -191,6 +227,14 @@ func resourceAlicloudCmsEventRuleRead(d *schema.ResourceData, meta interface{}) 
 		eventPatternMap["level_list"] = eventPattern["LevelList"].(map[string]interface{})["LevelList"]
 		eventPatternMap["name_list"] = eventPattern["NameList"].(map[string]interface{})["NameList"]
 		eventPatternMap["sql_filter"] = eventPattern["SQLFilter"]
+
+		keywordFilterMap := make(map[string]interface{})
+		if v, ok := eventPattern["KeywordFilter"]; ok && len(v.(map[string]interface{})) > 0 {
+			keywordFilter := v.(map[string]interface{})
+			keywordFilterMap["relation"] = keywordFilter["Relation"]
+			keywordFilterMap["keywords"] = keywordFilter["Keywords"].(map[string]interface{})["Keywords"]
+		}
+		eventPatternMap["keyword_filter"] = []map[string]interface{}{keywordFilterMap}
 		eventPatternMaps = append(eventPatternMaps, eventPatternMap)
 		d.Set("event_pattern", eventPatternMaps)
 	}
@@ -228,6 +272,21 @@ func resourceAlicloudCmsEventRuleUpdate(d *schema.ResourceData, meta interface{}
 		if v, ok := eventPatternArg["sql_filter"].(string); ok && v != "" {
 			eventPatternMap["SQLFilter"] = v
 		}
+		if v, ok := eventPatternArg["keyword_filter"]; ok && len(v.([]interface{})) > 0 {
+
+			keywordFilterMap := make(map[string]interface{}, 0)
+			keywordFilter := v.([]interface{})[0].(map[string]interface{})
+
+			if v, ok := keywordFilter["relation"].(string); ok && v != "" {
+				keywordFilterMap["Relation"] = v
+			}
+
+			if v, ok := keywordFilter["keywords"]; ok && v != "" {
+				keywordFilterMap["Keywords"] = v
+			}
+
+			eventPatternMap["KeywordFilter"], _ = convertArrayObjectToJsonString(keywordFilterMap)
+		}
 
 		eventPatternMaps = append(eventPatternMaps, eventPatternMap)
 	}
@@ -256,29 +315,7 @@ func resourceAlicloudCmsEventRuleUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("event_pattern") {
 		update = true
-		eventPatternMaps := make([]map[string]interface{}, 0)
-		for _, eventPattern := range d.Get("event_pattern").(*schema.Set).List() {
-			eventPatternMap := make(map[string]interface{}, 0)
-			eventPatternArg := eventPattern.(map[string]interface{})
 
-			if v, ok := eventPatternArg["product"].(string); ok {
-				eventPatternMap["Product"] = v
-			}
-			if v, ok := eventPatternArg["event_type_list"]; ok {
-				eventPatternMap["EventTypeList"] = v
-			}
-			if v, ok := eventPatternArg["level_list"]; ok {
-				eventPatternMap["LevelList"] = v
-			}
-			if v, ok := eventPatternArg["name_list"]; ok {
-				eventPatternMap["NameList"] = v
-			}
-			if v, ok := eventPatternArg["sql_filter"].(string); ok && v != "" {
-				eventPatternMap["SQLFilter"] = v
-			}
-
-			eventPatternMaps = append(eventPatternMaps, eventPatternMap)
-		}
 		request["EventPattern"] = eventPatternMaps
 
 	}
