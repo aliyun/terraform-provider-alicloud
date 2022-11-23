@@ -1434,6 +1434,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_bp_studio_application":                                resourceAlicloudBpStudioApplication(),
 			"alicloud_vpc_network_acl_attachment":                           resourceAlicloudVpcNetworkAclAttachment(),
 			"alicloud_cen_transit_router_cidr":                              resourceAlicloudCenTransitRouterCidr(),
+			"alicloud_das_switch_das_pro":                                   resourceAlicloudDasSwitchDasPro(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1665,6 +1666,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.VpcpeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
 		config.EbsEndpoint = strings.TrimSpace(endpoints["ebs"].(string))
 		config.DmsenterpriseEndpoint = strings.TrimSpace(endpoints["dmsenterprise"].(string))
+		config.BpStudioEndpoint = strings.TrimSpace(endpoints["bpstudio"].(string))
+		config.DasEndpoint = strings.TrimSpace(endpoints["das"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2002,6 +2005,10 @@ func init() {
 		"ebs_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ebs endpoints.",
 
 		"dmsenterprise_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dmsenterprise endpoints.",
+
+		"bpstudio_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom bpstudio endpoints.",
+
+		"das_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom das endpoints.",
 	}
 }
 
@@ -2046,6 +2053,20 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"das": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["das_endpoint"],
+				},
+
+				"bpstudio": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["bpstudio_endpoint"],
+				},
+
 				"dmsenterprise": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2965,6 +2986,8 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ebs"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dmsenterprise"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["bpstudio"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["das"].(string)))
 	return hashcode.String(buf.String())
 }
 
