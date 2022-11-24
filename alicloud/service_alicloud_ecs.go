@@ -1298,31 +1298,6 @@ func (s *EcsService) DescribeReservedInstance(id string) (reservedInstance ecs.R
 	return response.ReservedInstances.ReservedInstance[0], nil
 }
 
-func (s *EcsService) WaitForReservedInstance(id string, status Status, timeout int) error {
-	deadLine := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		reservedInstance, err := s.DescribeReservedInstance(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		if reservedInstance.Status == string(status) {
-			return nil
-		}
-
-		if time.Now().After(deadLine) {
-			return WrapErrorf(GetTimeErrorFromString("ECS WaitForSnapshotPolicy"), WaitTimeoutMsg, id, GetFunc(1), timeout, reservedInstance.Status, string(status), ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
 func (s *EcsService) DescribeLaunchTemplate(id string) (set ecs.LaunchTemplateSet, err error) {
 
 	request := ecs.CreateDescribeLaunchTemplatesRequest()
@@ -3304,6 +3279,105 @@ func (s *EcsService) DescribeSystemFailureDeleteEventInstanceIds(instanceIds []s
 	}
 
 	return ids, nil
+}
+func (s *EcsService) DescribeReservedInstanceAutoRenewAttribute(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ReservedInstanceId": []string{id},
+		"RegionId":           s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeReservedInstanceAutoRenewAttribute"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.ReservedInstanceRenewAttributes.ReservedInstanceRenewAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReservedInstanceRenewAttributes.ReservedInstanceRenewAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ReservedInstance", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *EcsService) DescribeEcsReservedInstance(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ReservedInstanceId": id,
+		"RegionId":           s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeReservedInstances"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.ReservedInstances.ReservedInstance", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ReservedInstances.ReservedInstance", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ReservedInstance", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *EcsService) EcsReservedInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsReservedInstance(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }
 
 func (s *EcsService) WaitForModifyIpv6AddressCount(id string, count int, timeout int) error {
