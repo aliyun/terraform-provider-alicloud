@@ -768,6 +768,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_server_group_server_attachments":          dataSourceAlicloudNlbServerGroupServerAttachments(),
 			"alicloud_bp_studio_applications":                       dataSourceAlicloudBpStudioApplications(),
 			"alicloud_cloud_sso_access_assignments":                 dataSourceAlicloudCloudSsoAccessAssignments(),
+			"alicloud_quotas_template_quotas":                       dataSourceAlicloudQuotasTemplateQuotas(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1430,6 +1431,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_server_group_server_attachment":                   resourceAlicloudNlbServerGroupServerAttachment(),
 			"alicloud_bp_studio_application":                                resourceAlicloudBpStudioApplication(),
 			"alicloud_vpc_network_acl_attachment":                           resourceAlicloudVpcNetworkAclAttachment(),
+			"alicloud_quotas_template_quota":                                resourceAlicloudQuotasTemplateQuota(),
 		},
 
 		ConfigureFunc: providerConfigure,
