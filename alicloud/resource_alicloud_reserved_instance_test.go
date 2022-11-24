@@ -37,26 +37,34 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 			{
 
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type":   "ecs.g6.large",
-					"instance_amount": "1",
-					"period_unit":     "Year",
-					"offering_type":   "All Upfront",
-					"name":            name,
-					"description":     "ReservedInstance",
-					"zone_id":         "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"scope":           "Zone",
-					"period":          "1",
+					"instance_type":     "ecs.g6.large",
+					"instance_amount":   "1",
+					"period_unit":       "Month",
+					"offering_type":     "All Upfront",
+					"name":              name,
+					"description":       "ReservedInstance",
+					"zone_id":           "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"scope":             "Zone",
+					"period":            "1",
+					"renewal_status":    "AutoRenewal",
+					"auto_renew_period": "36",
+					"tags":              map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":   "ecs.g6.large",
-						"instance_amount": "1",
-						"period_unit":     "Year",
-						"offering_type":   "All Upfront",
-						"name":            name,
-						"description":     "ReservedInstance",
-						"zone_id":         CHECKSET,
-						"scope":           "Zone",
+						"instance_type":     "ecs.g6.large",
+						"instance_amount":   "1",
+						"period_unit":       "Month",
+						"offering_type":     "All Upfront",
+						"name":              name,
+						"description":       "ReservedInstance",
+						"zone_id":           CHECKSET,
+						"scope":             "Zone",
+						"renewal_status":    "AutoRenewal",
+						"auto_renew_period": "36",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.Foo":          "Bar",
 					}),
 				),
 			},
@@ -98,6 +106,66 @@ func TestAccAliCloudReservedInstanceBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]interface{}{"Created": "TF1", "Foo": "Bar1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF1",
+						"tags.Foo":     "Bar1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "12",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_period": "12",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "Normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "36",
+					"renewal_status":    "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_period": "36",
+						"renewal_status":    "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "Normal",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit", "auto_renew_period"},
+			},
 		},
 	})
 }
@@ -129,27 +197,37 @@ func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 			{
 
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"instance_amount": "1",
-					"period":          "1",
-					"period_unit":     "Month",
-					"offering_type":   "All Upfront",
-					"name":            name,
-					"description":     "ReservedInstance",
-					"zone_id":         "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"scope":           "Zone",
+					"instance_type":          "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_amount":        "1",
+					"period":                 "1",
+					"period_unit":            "Month",
+					"offering_type":          "All Upfront",
+					"reserved_instance_name": name,
+					"description":            "ReservedInstance",
+					"zone_id":                "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"scope":                  "Zone",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_type":   CHECKSET,
-						"instance_amount": "1",
-						"period":          "1",
-						"period_unit":     "Month",
-						"offering_type":   "All Upfront",
-						"name":            name,
-						"description":     "ReservedInstance",
-						"zone_id":         CHECKSET,
-						"scope":           "Zone",
+						"instance_type":          CHECKSET,
+						"instance_amount":        "1",
+						"period":                 "1",
+						"period_unit":            "Month",
+						"offering_type":          "All Upfront",
+						"reserved_instance_name": name,
+						"description":            "ReservedInstance",
+						"zone_id":                CHECKSET,
+						"scope":                  "Zone",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"reserved_instance_name": name + "change",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"reserved_instance_name": name + "change",
 					}),
 				),
 			},
@@ -163,7 +241,14 @@ func TestAccAliCloudReservedInstanceBasic1(t *testing.T) {
 	})
 }
 
-var testAccReservedInstanceCheckMap = map[string]string{}
+var testAccReservedInstanceCheckMap = map[string]string{
+	"allocation_status": "",
+	"create_time":       CHECKSET,
+	"expired_time":      CHECKSET,
+	"start_time":        CHECKSET,
+	"status":            CHECKSET,
+	"operation_locks.#": "0",
+}
 
 func resourceReservedInstanceBasicConfigDependence(name string) string {
 	return fmt.Sprintf(`
