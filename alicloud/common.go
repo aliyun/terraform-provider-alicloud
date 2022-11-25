@@ -1038,6 +1038,39 @@ func formatInt(src interface{}) int {
 	}
 }
 
+func formatFloat64(src interface{}) float64 {
+	if src == nil {
+		return 0
+	}
+	attrType := reflect.TypeOf(src)
+	switch attrType.String() {
+	case "float64":
+		return src.(float64)
+	case "float32":
+		return float64(src.(float32))
+	case "int64":
+		return float64(src.(int64))
+	case "int32":
+		return float64(src.(int32))
+	case "int":
+		return float64(src.(int))
+	case "string":
+		v, err := strconv.ParseFloat(src.(string), 64)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	case "json.Number":
+		v, err := src.(json.Number).Float64()
+		if err != nil {
+			panic(err)
+		}
+		return v
+	default:
+		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+	}
+}
+
 func convertArrayObjectToJsonString(src interface{}) (string, error) {
 	res, err := json.Marshal(&src)
 	if err != nil {

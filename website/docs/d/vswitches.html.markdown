@@ -78,3 +78,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `tags` - The Tags of the VSwitch.
   * `vswitch_id` - ID of the VSwitch.
   * `vswitch_name` - Name of the VSwitch.
+  * `ipv6_cidr_block` - The IPv6 CIDR block of the switch.

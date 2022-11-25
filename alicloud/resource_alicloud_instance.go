@@ -498,6 +498,23 @@ func resourceAliyunInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(1, 64),
 			},
+			"ipv6_address_count": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ValidateFunc:  validation.IntBetween(1, 10),
+				ConflictsWith: []string{"ipv6_addresses"},
+			},
+			"ipv6_addresses": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				MaxItems:      10,
+				ForceNew:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"ipv6_address_count"},
+			},
 		},
 	}
 }
@@ -779,6 +796,12 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("spot_duration"); ok {
 		request["SpotDuration"] = v
 	}
+	if v, ok := d.GetOk("ipv6_addresses"); ok {
+		request["Ipv6Address"] = v.(*schema.Set).List()
+	}
+	if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+		request["Ipv6AddressCount"] = v
+	}
 
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -987,6 +1010,14 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 				secondaryPrivateIpsSli = append(secondaryPrivateIpsSli, v.(map[string]interface{})["PrivateIpAddress"])
 			}
 		}
+		ipv6SetList := make([]interface{}, 0)
+		for _, v := range object["Ipv6Sets"].(map[string]interface{})["Ipv6Set"].([]interface{}) {
+			ipv6Set := v.(map[string]interface{})
+			ipv6SetList = append(ipv6SetList, ipv6Set["Ipv6Address"])
+		}
+
+		d.Set("ipv6_addresses", ipv6SetList)
+		d.Set("ipv6_address_count", len(ipv6SetList))
 		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
 		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
 	}
