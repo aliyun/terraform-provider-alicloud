@@ -91,8 +91,8 @@ The ike_config mapping supports the following:
 * `ike_auth_alg` - (Optional) The authentication algorithm of phase-one negotiation. Valid value: md5 | sha1 . Default value: md5
 * `ike_pfs` - (Optional) The Diffie-Hellman key exchange algorithm used by phase-one negotiation. Valid value: group1 | group2 | group5 | group14 | group24. Default value: group2
 * `ike_lifetime` - (Optional) The SA lifecycle as the result of phase-one negotiation. The valid value of n is [0, 86400], the unit is second and the default value is 86400.
-* `ike_local_id` - (Optional) The identification of the VPN gateway.
-* `ike_remote_id` - (Optional) The identification of the customer gateway.
+* `ike_local_id` - (Optional, Computed) The identification of the VPN gateway.
+* `ike_remote_id` - (Optional, Computed) The identification of the customer gateway.
 
 ### Block ipsec_config
 
@@ -148,5 +148,3 @@ VPN connection can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_vpn_connection.example vco-abc123456
 ```
-
-
