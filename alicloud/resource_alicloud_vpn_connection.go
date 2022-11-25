@@ -32,26 +32,22 @@ func resourceAliyunVpnConnection() *schema.Resource {
 			Update: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"customer_gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"vpn_gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(2, 128),
 			},
-
 			"local_subnet": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -62,7 +58,6 @@ func resourceAliyunVpnConnection() *schema.Resource {
 				MinItems: 1,
 				MaxItems: 10,
 			},
-
 			"remote_subnet": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -73,13 +68,11 @@ func resourceAliyunVpnConnection() *schema.Resource {
 				MinItems: 1,
 				MaxItems: 10,
 			},
-
 			"effect_immediately": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-
 			"ike_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -131,17 +124,18 @@ func resourceAliyunVpnConnection() *schema.Resource {
 						"ike_local_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 						"ike_remote_id": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringLenBetween(1, 100),
 						},
 					},
 				},
 			},
-
 			"ipsec_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -175,7 +169,6 @@ func resourceAliyunVpnConnection() *schema.Resource {
 					},
 				},
 			},
-
 			"health_check_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -211,19 +204,16 @@ func resourceAliyunVpnConnection() *schema.Resource {
 					},
 				},
 			},
-
 			"enable_dpd": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
 			},
-
 			"enable_nat_traversal": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
 			},
-
 			"bgp_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -254,7 +244,6 @@ func resourceAliyunVpnConnection() *schema.Resource {
 					},
 				},
 			},
-
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -359,7 +348,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 
 	request["ClientToken"] = buildClientToken(action)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
@@ -595,7 +584,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 	if update {
 		request["ClientToken"] = buildClientToken(action)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
@@ -632,7 +621,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
