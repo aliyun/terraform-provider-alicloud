@@ -49,6 +49,12 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"health_check_type": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ECS", "NONE"}, false),
+				Optional:     true,
+			},
 			"default_cooldown": {
 				Type:         schema.TypeInt,
 				Default:      300,
@@ -255,6 +261,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("launch_template_id", object["LaunchTemplateId"])
 	d.Set("launch_template_version", object["LaunchTemplateVersion"])
 	d.Set("group_type", object["GroupType"])
+	d.Set("health_check_type", object["HealthCheckType"])
 
 	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
 	if err != nil {
@@ -292,6 +299,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("scaling_group_name") {
 		request.ScalingGroupName = d.Get("scaling_group_name").(string)
+	}
+
+	if d.HasChange("health_check_type") {
+		request.HealthCheckType = d.Get("health_check_type").(string)
 	}
 
 	if d.HasChange("min_size") {
@@ -479,6 +490,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("spot_instance_remedy"); ok {
 		request["SpotInstanceRemedy"] = v
+	}
+
+	if v, ok := d.GetOk("health_check_type"); ok {
+		request["HealthCheckType"] = v
 	}
 
 	if v, ok := d.GetOk("group_deletion_protection"); ok {
