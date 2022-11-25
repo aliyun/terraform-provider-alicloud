@@ -292,7 +292,8 @@ func TestAccAlicloudECSNetworkInterface_primary_ip_address(t *testing.T) {
 					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"primary_ip_address":     fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand),
+					"primary_ip_address":     "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 26)}",
+					"ipv6_addresses":         []string{"${cidrhost(data.alicloud_vswitches.default.vswitches.0.ipv6_cidr_block, 64)}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -301,6 +302,7 @@ func TestAccAlicloudECSNetworkInterface_primary_ip_address(t *testing.T) {
 						"security_group_ids.#":   "1",
 						"resource_group_id":      CHECKSET,
 						"primary_ip_address":     CHECKSET,
+						"ipv6_addresses.#":       "1",
 					}),
 				),
 			},
@@ -311,13 +313,33 @@ func TestAccAlicloudECSNetworkInterface_primary_ip_address(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"primary_ip_address": fmt.Sprintf("${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, %d)}", rand+1),
+					"ipv6_addresses": []string{
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.ipv6_cidr_block, 64)}",
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.ipv6_cidr_block, 32)}",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"primary_ip_address": CHECKSET,
+						"ipv6_addresses.#": "2",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_addresses": []string{
+						"${cidrhost(data.alicloud_vswitches.default.vswitches.0.ipv6_cidr_block, 32)}",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_addresses.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -350,6 +372,7 @@ func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *te
 					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
 					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"ipv6_address_count":     "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -357,6 +380,7 @@ func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *te
 						"vswitch_id":             CHECKSET,
 						"security_group_ids.#":   "1",
 						"resource_group_id":      CHECKSET,
+						"ipv6_address_count":     "1",
 					}),
 				),
 			},
@@ -384,6 +408,31 @@ func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *te
 						"secondary_private_ip_address_count": "1",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_address_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_address_count": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_address_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_address_count": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -646,11 +695,12 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "default-NODELETING-Ipv6"
 }
+
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 
 	"time"
@@ -3303,4 +3304,75 @@ func (s *EcsService) DescribeSystemFailureDeleteEventInstanceIds(instanceIds []s
 	}
 
 	return ids, nil
+}
+
+func (s *EcsService) WaitForModifyIpv6AddressCount(id string, count int, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	var ipv6SetList []interface{}
+	for {
+		object, err := s.DescribeEcsNetworkInterface(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if v, ok := object["Ipv6Sets"].(map[string]interface{})["Ipv6Set"]; ok {
+			ipv6SetList = v.([]interface{})
+
+			if len(ipv6SetList) == count {
+				return nil
+			}
+		} else if count == 0 {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, len(ipv6SetList), count, ProviderERROR)
+		}
+	}
+}
+
+func (s *EcsService) WaitForModifyIpv6Address(id string, addressList []string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	sort.Strings(addressList)
+	for {
+		ipv6SetList := make([]string, 0)
+		object, err := s.DescribeEcsNetworkInterface(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if v, ok := object["Ipv6Sets"].(map[string]interface{})["Ipv6Set"]; ok {
+			for _, v := range v.([]interface{}) {
+				ipv6Set := v.(map[string]interface{})
+				ipv6SetList = append(ipv6SetList, fmt.Sprint(ipv6Set["Ipv6Address"]))
+			}
+			sort.Strings(ipv6SetList)
+			if len(ipv6SetList) != len(addressList) {
+				continue
+			}
+
+			if len(ipv6SetList) == 0 {
+				return nil
+			}
+
+			diff := false
+			for key, value := range ipv6SetList {
+				if value != addressList[key] {
+					diff = true
+					continue
+				}
+			}
+			if !diff {
+				return nil
+			}
+
+		} else if len(addressList) == 0 {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, ipv6SetList, addressList, ProviderERROR)
+		}
+	}
 }

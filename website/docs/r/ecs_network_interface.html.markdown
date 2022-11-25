@@ -85,6 +85,8 @@ The following arguments are supported:
 * `security_groups` - (Optional, Computed, Deprecated in v1.123.1+) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `ipv6_address_count` - (Optional, Computed, Available in 1.193.0+) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
+* `ipv6_addresses` - (Optional, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 
 ## Attributes Reference
 
