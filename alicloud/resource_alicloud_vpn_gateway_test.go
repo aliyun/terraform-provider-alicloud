@@ -157,7 +157,8 @@ func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
 				Config: testAccVpnConfigBasic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": fmt.Sprintf("tf-testAccVpnConfig%d", rand),
+						"name":         fmt.Sprintf("tf-testAccVpnConfig%d", rand),
+						"network_type": "public",
 					}),
 				),
 			},
@@ -233,6 +234,7 @@ resource "alicloud_vpn_gateway" "default" {
 	enable_ssl = true
 	instance_charge_type = "PrePaid"
 	vswitch_id = local.vswitch_id
+	network_type = "public"
 }
 `, rand)
 }
