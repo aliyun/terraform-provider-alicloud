@@ -554,7 +554,19 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 
 	d.Set("bandwidth", object.Bandwidth)
 	d.Set("capacity", object.Capacity)
-	d.Set("config", object.Config)
+
+	if object.Config != "" {
+		configMap := make(map[string]string)
+		config, err := convertJsonStringToMap(object.Config)
+		if err != nil {
+			return WrapError(err)
+		}
+		for k, v := range config {
+			configMap[k] = fmt.Sprint(v)
+		}
+		d.Set("config", configMap)
+	}
+
 	d.Set("connection_domain", object.ConnectionDomain)
 	d.Set("db_instance_name", object.InstanceName)
 	d.Set("instance_name", object.InstanceName)
@@ -593,18 +605,19 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("backup_period", strings.Split(describeBackupPolicyObject.PreferredBackupPeriod, ","))
 	d.Set("backup_time", describeBackupPolicyObject.PreferredBackupTime)
 
-	if _, ok := d.GetOk("security_group_id"); ok {
+	describeSecurityGroupConfigurationObject, err := r_kvstoreService.DescribeSecurityGroupConfiguration(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
 
-		describeSecurityGroupConfigurationObject, err := r_kvstoreService.DescribeSecurityGroupConfiguration(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
+	if len(describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation) > 0 {
 		sgs := make([]string, 0)
 		for _, sg := range describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation {
 			sgs = append(sgs, sg.SecurityGroupId)
 		}
 		d.Set("security_group_id", strings.Join(sgs, ","))
 	}
+
 	if _, ok := d.GetOk("ssl_enable"); ok {
 
 		describeInstanceSSLObject, err := r_kvstoreService.DescribeInstanceSSL(d.Id())
@@ -613,16 +626,17 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		}
 		d.Set("ssl_enable", describeInstanceSSLObject.SSLEnabled)
 	}
-	if _, ok := d.GetOk("security_ips"); ok {
 
-		describeSecurityIpsObject, err := r_kvstoreService.DescribeSecurityIps(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
+	describeSecurityIpsObject, err := r_kvstoreService.DescribeSecurityIps(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if len(describeSecurityIpsObject.SecurityIpList) > 0 {
 		d.Set("security_ip_group_attribute", describeSecurityIpsObject.SecurityIpGroupAttribute)
 		d.Set("security_ip_group_name", describeSecurityIpsObject.SecurityIpGroupName)
 		d.Set("security_ips", strings.Split(describeSecurityIpsObject.SecurityIpList, ","))
 	}
+
 	if object.ChargeType == string(PrePaid) {
 
 		describeInstanceAutoRenewalAttributeObject, err := r_kvstoreService.DescribeInstanceAutoRenewalAttribute(d.Id())

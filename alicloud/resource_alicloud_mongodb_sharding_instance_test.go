@@ -118,6 +118,27 @@ func resourceMongodbShardingInstanceClassicConfig(name string) string {
 	resource "alicloud_security_group" "default" {
 		name = var.name
 	}
+
+	data "alicloud_vpcs" "default" {
+	  	name_regex = "default-NODELETING"
+	}
+	
+	data "alicloud_vswitches" "default" {
+	  	vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	
+	resource "alicloud_vswitch" "this" {
+	  	count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	  	vswitch_name = var.name
+	  	vpc_id       = data.alicloud_vpcs.default.ids.0
+	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
+	  	cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+	}
+	
+	locals {
+	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
+	  	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
+	}
 `, name)
 }
 
@@ -144,7 +165,8 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":        "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"vswitch_id":     "${local.vswitch_id}",
+					"zone_id":        "${local.zone_id}",
 					"engine_version": "3.4",
 					"name":           name,
 					"shard_list": []map[string]interface{}{
@@ -683,7 +705,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"engine_version":    "3.4",
 					"protocol_type":     "mongodb",
-					"network_type":      "Classic",
+					"network_type":      "VPC",
 					"shard_list": []map[string]interface{}{
 						{
 							"node_class":   "dds.shard.mid",
@@ -726,7 +748,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
 						"instance_charge_type":           "PostPaid",
 						"tags.%":                         "0",
 						"protocol_type":                  "mongodb",
-						"network_type":                   "Classic",
+						"network_type":                   "VPC",
 						"config_server_list.#":           CHECKSET,
 						"resource_group_id":              CHECKSET,
 					}),

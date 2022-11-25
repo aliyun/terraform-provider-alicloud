@@ -84,8 +84,8 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("entrys"); ok {
 		for entrysPtr, entrys := range v.(*schema.Set).List() {
 			entrysArg := entrys.(map[string]interface{})
-			request["PrefixListEntrys."+fmt.Sprint(entrysPtr+1)+".Cidr"] = entrysArg["cidr"]
-			request["PrefixListEntrys."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
+			request["PrefixListEntries."+fmt.Sprint(entrysPtr+1)+".Cidr"] = entrysArg["cidr"]
+			request["PrefixListEntries."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
 		}
 	}
 	if v, ok := d.GetOk("ip_version"); ok {
