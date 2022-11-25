@@ -236,6 +236,8 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
   - required: forcefully uses the security-enhanced mode (IMDSv2). After you set this parameter to required, you cannot access instance metadata in normal mode.
 * `http_endpoint` - (Optional, Computed, Available in 1.192.0+) Specifies whether to enable the access channel for instance metadata. Valid values: `enabled`, `disabled`. Default value: `enabled`.
 * `http_put_response_hop_limit` - (Optional, Computed, ForceNew, Available in 1.192.0+) The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
+* `ipv6_address_count` - (Optional, ForceNew, Computed, Available in 1.193.0+) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
+* `ipv6_addresses` - (Optional, ForceNew, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
