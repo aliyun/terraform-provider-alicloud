@@ -168,12 +168,10 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				ConflictsWith: []string{"instance_charge_type"},
 			},
 			"instance_charge_type": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
-				ConflictsWith: []string{"payment_type"},
-				Deprecated:    "Field 'instance_charge_type' has been deprecated from provider version 1.124. Use 'payment_type' replaces it.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayBySpec", "PayByCLCU"}, false),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -269,8 +267,9 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("payment_type"); ok {
 		request["PayType"] = convertSlbLoadBalancerPaymentTypeRequest(v.(string))
-	} else if v, ok := d.GetOk("instance_charge_type"); ok {
-		request["PayType"] = convertSlbLoadBalancerInstanceChargeTypeRequest(v.(string))
+	}
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		request["InstanceChargeType"] = v
 	}
 	if v, ok := request["PayType"]; ok && v.(string) == "PrePay" {
 		period := 1
@@ -358,7 +357,7 @@ func resourceAlicloudSlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("modification_protection_reason", object["ModificationProtectionReason"])
 	d.Set("modification_protection_status", object["ModificationProtectionStatus"])
 	d.Set("payment_type", convertSlbLoadBalancerPaymentTypeResponse(object["PayType"]))
-	d.Set("instance_charge_type", convertSlbLoadBalancerInstanceChargeTypeResponse(object["PayType"]))
+	d.Set("instance_charge_type", object["InstanceChargeType"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("slave_zone_id", object["SlaveZoneId"])
 	d.Set("status", object["LoadBalancerStatus"])
