@@ -62,8 +62,7 @@ func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.Secu
 	response, _ := raw.(*r_kvstore.DescribeSecurityIpsResponse)
 
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return object, err
+		return object, nil
 	} else {
 		for _, v := range response.SecurityIpGroups.SecurityIpGroup {
 			if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
@@ -180,8 +179,7 @@ func (s *R_kvstoreService) DescribeSecurityGroupConfiguration(id string) (object
 	response, _ := raw.(*r_kvstore.DescribeSecurityGroupConfigurationResponse)
 
 	if len(response.Items.EcsSecurityGroupRelation) < 1 {
-		err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
-		return object, err
+		return object, nil
 	}
 	return response.Items, nil
 }
