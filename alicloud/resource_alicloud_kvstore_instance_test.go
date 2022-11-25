@@ -668,6 +668,7 @@ func TestAccAlicloudKVStoreRedisInstance_classictest(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":       "${local.vswitch_id}",
 					"instance_class":   "redis.master.small.default",
 					"db_instance_name": name,
 					"instance_type":    "Redis",
@@ -884,6 +885,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_classictest(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":       "${local.vswitch_id}",
 					"instance_class":   "memcache.master.small.default",
 					"db_instance_name": name,
 					"instance_type":    "Memcache",
@@ -1129,6 +1131,7 @@ func TestAccAlicloudKVStoreRedisInstance_classicmulti(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":       "${local.vswitch_id}",
 					"count":            "2",
 					"instance_class":   "redis.master.small.default",
 					"db_instance_name": name,
@@ -1215,6 +1218,20 @@ func KvstoreInstanceClassicTestdependence(name string) string {
 	}
 	data "alicloud_resource_manager_resource_groups" "default"{
 	}
+    data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+	data "alicloud_vswitches" "default" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	data "alicloud_resource_manager_resource_groups" "default"{
+	}
+
+	data "alicloud_vswitches" "update" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 	`)
 }
 
@@ -1225,6 +1242,20 @@ func KvstoreMemcacheInstanceClassicTestdependence(name string) string {
 		engine = "memcache"
 	}
 	data "alicloud_resource_manager_resource_groups" "default"{
+	}
+    data "alicloud_vpcs" "default" {
+		name_regex = "default-NODELETING"
+	}
+	data "alicloud_vswitches" "default" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	data "alicloud_resource_manager_resource_groups" "default"{
+	}
+
+	data "alicloud_vswitches" "update" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	`)
 }

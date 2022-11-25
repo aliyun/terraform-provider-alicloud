@@ -610,13 +610,11 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	if len(describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation) > 0 {
-		sgs := make([]string, 0)
-		for _, sg := range describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation {
-			sgs = append(sgs, sg.SecurityGroupId)
-		}
-		d.Set("security_group_id", strings.Join(sgs, ","))
+	sgs := make([]string, 0)
+	for _, sg := range describeSecurityGroupConfigurationObject.EcsSecurityGroupRelation {
+		sgs = append(sgs, sg.SecurityGroupId)
 	}
+	d.Set("security_group_id", strings.Join(sgs, ","))
 
 	if _, ok := d.GetOk("ssl_enable"); ok {
 
@@ -631,11 +629,10 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	if len(describeSecurityIpsObject.SecurityIpList) > 0 {
-		d.Set("security_ip_group_attribute", describeSecurityIpsObject.SecurityIpGroupAttribute)
-		d.Set("security_ip_group_name", describeSecurityIpsObject.SecurityIpGroupName)
-		d.Set("security_ips", strings.Split(describeSecurityIpsObject.SecurityIpList, ","))
-	}
+
+	d.Set("security_ip_group_attribute", describeSecurityIpsObject.SecurityIpGroupAttribute)
+	d.Set("security_ip_group_name", describeSecurityIpsObject.SecurityIpGroupName)
+	d.Set("security_ips", strings.Split(describeSecurityIpsObject.SecurityIpList, ","))
 
 	if object.ChargeType == string(PrePaid) {
 
