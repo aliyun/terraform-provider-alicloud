@@ -130,7 +130,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":             "${local.zone_id}",
+					"vswitch_id":          "${local.vswitch_id}",
 					"engine_version":      "3.4",
 					"db_instance_storage": "10",
 					"db_instance_class":   "dds.mongo.mid",
@@ -315,6 +315,7 @@ func TestAccAlicloudMongoDBInstance_classic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id":          "${local.vswitch_id}",
 					"zone_id":             "${local.zone_id}",
 					"engine_version":      "4.0",
 					"db_instance_storage": "2000",
@@ -354,13 +355,31 @@ func resourceMongodbInstanceClassicConfig(name string) string {
 	data "alicloud_mongodb_zones" "default" {
 	}
 
-	locals {
-  		zone_id = data.alicloud_mongodb_zones.default.zones[length(data.alicloud_mongodb_zones.default.zones) - 1].id
-	}
-
 	resource "alicloud_security_group" "default" {
 		name = var.name
 	}
+
+	data "alicloud_vpcs" "default" {
+	  	name_regex = "default-NODELETING"
+	}
+	
+	data "alicloud_vswitches" "default" {
+	  	vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	
+	resource "alicloud_vswitch" "this" {
+	  	count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+	  	vswitch_name = var.name
+	  	vpc_id       = data.alicloud_vpcs.default.ids.0
+	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
+	  	cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+	}
+	
+	locals {
+	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
+	  	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
+	}
+
 `, name)
 }
 
