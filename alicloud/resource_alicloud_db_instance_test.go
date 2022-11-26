@@ -572,6 +572,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine_version = "5.7"
  	db_instance_storage_type = "local_ssd"
 	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
 }
 
 data "alicloud_vpcs" "default" {
@@ -759,6 +760,7 @@ data "alicloud_db_instance_classes" "default" {
 	engine_version = "2012_std_ha"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
+	category = "Basic"
 }
 
 data "alicloud_vpcs" "default" {
@@ -962,6 +964,7 @@ data "alicloud_db_instance_classes" "default" {
   	engine_version       = "12.0"
  	db_instance_storage_type = "cloud_ssd"
 	instance_charge_type = "PostPaid"
+	category = "Basic"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1886,7 +1889,7 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine":                   "MySQL",
-					"engine_version":           "8.0",
+					"engine_version":           "5.7",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
 					"instance_charge_type":     "Postpaid",
@@ -1902,7 +1905,7 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine":                   "MySQL",
-						"engine_version":           "8.0",
+						"engine_version":           "5.7",
 						"db_instance_storage_type": "local_ssd",
 						//"vpc_id":                   CHECKSET,
 					}),
