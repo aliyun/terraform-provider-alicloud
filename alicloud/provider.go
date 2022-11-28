@@ -1441,6 +1441,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_accelerator":                                 resourceAlicloudGaBasicAccelerator(),
 			"alicloud_ga_basic_endpoint_group":                              resourceAlicloudGaBasicEndpointGroup(),
 			"alicloud_cms_metric_rule_black_list":                           resourceAlicloudCmsMetricRuleBlackList(),
+			"alicloud_ga_basic_ip_set":                                      resourceAlicloudGaBasicIpSet(),
 		},
 
 		ConfigureFunc: providerConfigure,
