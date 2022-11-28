@@ -85,7 +85,7 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 			"load_balancer_edition": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard", "StandardWithWaf"}, false),
 			},
 			"load_balancer_name": {
 				Type:     schema.TypeString,
@@ -151,6 +151,13 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"address_ip_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Ipv4", "DualStack"}, false),
+			},
 		},
 	}
 }
@@ -203,10 +210,13 @@ func resourceAlicloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	}
 	request["ModificationProtectionConfig"] = modificationProtectionConfigMap
 	request["ClientToken"] = buildClientToken("CreateLoadBalancer")
+	if v, ok := d.GetOk("address_ip_version"); ok {
+		request["AddressIpVersion"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -224,7 +234,7 @@ func resourceAlicloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(response["LoadBalancerId"]))
 	albService := AlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -278,6 +288,7 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("modification_protection_config", modificationProtectionConfigSli)
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["LoadBalancerStatus"])
+	d.Set("address_ip_version", object["AddressIpVersion"])
 	d.Set("tags", tagsToMap(object["Tags"]))
 	d.Set("vpc_id", object["VpcId"])
 	if zoneMappingsList, ok := object["ZoneMappings"]; ok {
@@ -327,7 +338,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -342,7 +353,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -370,7 +381,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, updateLoadBalancerEditionReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -412,7 +423,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, disableLoadBalancerAccessLogReq, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
@@ -454,7 +465,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, enableLoadBalancerAccessLogReq, &runtime)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -471,7 +482,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -516,7 +527,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, updateLoadBalancerAttributeReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -531,7 +542,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -557,7 +568,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -572,7 +583,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
@@ -593,7 +604,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"IdempotenceProcessing", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -608,7 +619,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
@@ -638,7 +649,7 @@ func resourceAlicloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "ResourceNotFound.LoadBalancer", "SystemBusy", "Throttling"}) || NeedRetry(err) {

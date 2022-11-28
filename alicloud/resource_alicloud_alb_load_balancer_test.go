@@ -143,6 +143,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 							"zone_id":    "${local.zone_id_2}",
 						},
 					},
+					"address_ip_version": "Ipv4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -154,6 +155,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
 						"dns_name":                       CHECKSET,
+						"address_ip_version":             "Ipv4",
 					}),
 				),
 			},
@@ -164,6 +166,16 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_edition": "Standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_edition": "StandardWithWaf",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_edition": "StandardWithWaf",
 					}),
 				),
 			},
