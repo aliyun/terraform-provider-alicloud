@@ -20,7 +20,7 @@ data "alicloud_vpn_gateways" "vpn_gateways" {
   status          = "active"
   business_status = "Normal"
   name_regex      = "testAcc*"
-  enable_ipsec    = true
+  include_reservation_data    = true
   output_file     = "/tmp/vpns"
 }
 ```
@@ -35,7 +35,8 @@ The following arguments are supported:
 * `business_status` - (Optional) Limit search to specific business status - valid value is "Normal", "FinancialLocked".
 * `name_regex` - (Optional) A regex string of VPN name.
 * `output_file` - (Optional) Save the result to the file.
-* `enable_ipsec` - (Optional, Available 1.161.0+) Indicates whether the IPsec-VPN feature is enabled.
+* `enable_ipsec` - (Optional, Available 1.161.0+, has been deprecated from provider version 1.193.0, it will be removed in the future version.) Indicates whether the IPsec-VPN feature is enabled.
+* `include_reservation_data` - (Optional, Available 1.193.0+) Include ineffective ordering data.
 
 ## Attributes Reference
 
@@ -58,3 +59,4 @@ The following attributes are exported:
   * `enable_ipsec` - Whether the ipsec function is enabled.
   * `enable_ssl` - Whether the ssl function is enabled.
   * `ssl_connections` - Total count of ssl vpn connections.
+  * `network_type` - The network type of the VPN gateway.

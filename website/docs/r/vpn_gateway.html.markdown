@@ -75,6 +75,9 @@ The following arguments are supported:
 * `auto_propagate` - (Optional, Available in v1.184.0+) Specifies whether to automatically advertise BGP routes to the virtual private cloud (VPC). Valid values:
     - `true`: Enable.
     - `false`: Disable.
+* `network_type` - (Optional, ForceNew, Available in v1.193.0+) The network type of the VPN gateway. Value:
+    - public (default): Public VPN gateway. 
+    - public: Private VPN gateway.
 
 ## Attributes Reference
 

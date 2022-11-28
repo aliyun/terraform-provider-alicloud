@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"log"
 	"regexp"
 	"time"
@@ -3130,6 +3131,49 @@ func (s *VpcService) DescribeVpnGateway(id string) (object map[string]interface{
 
 	addDebug(action, response, request)
 	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *VpcService) DescribeVpnGateways(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeVpnGateways"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"VpnGatewayId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidCustomerGatewayInstanceId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VpnCustomerGateway", id)), NotFoundWithResponse, response)
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	totalCount, err := jsonpath.Get("$.TotalCount", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+	}
+	totalCountInt, err := totalCount.(json.Number).Int64()
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+	}
+	if totalCountInt == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("VpnCustomerGateway", id)), NotFoundWithResponse, response)
+	}
+
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.VpnGateways.VpnGateway[0]", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
