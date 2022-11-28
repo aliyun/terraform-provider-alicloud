@@ -116,20 +116,22 @@ data "alicloud_zones" "default" {
 data "alicloud_vpcs" "default" {
 	name_regex = "default-NODELETING"
 }
-data "alicloud_vswitches" "default" {
+resource "alicloud_vswitch" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+	cidr_block = "10.0.1.0/24"
+	zone_id = "cn-hangzhou-b"
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
+	bandwidth = "5"
 	enable_ssl = true
 	enable_ipsec = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}"
-	vswitch_id = data.alicloud_vswitches.default.ids.0
+	vswitch_id = alicloud_vswitch.default.id
+	network_type = "private"
 }
 
 data "alicloud_vpn_gateways" "default" {
@@ -158,6 +160,7 @@ var existVpnGatewaysMapFunc = func(rand int) map[string]string {
 		"gateways.0.business_status":      "Normal",
 		"gateways.0.instance_charge_type": string(PrePaid),
 		"gateways.0.ssl_connections":      "5",
+		"gateways.0.network_type":         "private",
 	}
 }
 

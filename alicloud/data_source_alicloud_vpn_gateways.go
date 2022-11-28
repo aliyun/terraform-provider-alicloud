@@ -1,11 +1,15 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -58,11 +62,16 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Normal", "FinancialLocked"}, false),
 			},
 			"enable_ipsec": {
+				Type:       schema.TypeBool,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "Field 'enable_ipsec' has been deprecated from provider version 1.193.0 and it will be removed in the future version.",
+			},
+			"include_reservation_data": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
 			},
-
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -130,6 +139,10 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -140,96 +153,146 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := vpc.CreateDescribeVpnGatewaysRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(PageSizeLarge)
-	request.PageNumber = requests.NewInteger(1)
-
-	var allVpns []vpc.VpnGateway
+	action := "DescribeVpnGateways"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("vpc_id"); ok && v.(string) != "" {
-		request.VpcId = v.(string)
+		request["VpcId"] = v.(string)
 	}
 
 	if v, ok := d.GetOk("status"); ok && v.(string) != "" {
-		request.Status = strings.ToLower(v.(string))
+		request["Status"] = strings.ToLower(v.(string))
 	}
-	enableIpsec, enableIpsecOk := d.GetOkExists("enable_ipsec")
+	if includeReservationData, includeReservationDataOk := d.GetOkExists("include_reservation_data"); includeReservationDataOk {
+		request["IncludeReservationData"] = includeReservationData.(bool)
+	}
 
 	if v, ok := d.GetOk("business_status"); ok && v.(string) != "" {
-		request.BusinessStatus = v.(string)
+		request["BusinessStatus"] = v.(string)
 	}
+
+	var objects []map[string]interface{}
+	var vpnGatewayNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		vpnGatewayNameRegex = r
+	}
+
+	idsMap := make(map[string]string)
+	if v, ok := d.GetOk("ids"); ok {
+		for _, vv := range v.([]interface{}) {
+			if vv == nil {
+				continue
+			}
+			idsMap[vv.(string)] = vv.(string)
+		}
+	}
+
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["PageNumber"] = 1
+	request["PageSize"] = PageSizeLarge
 
 	for {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpnGateways(request)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpn_gateways", request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*vpc.DescribeVpnGatewaysResponse)
-
-		if len(response.VpnGateways.VpnGateway) < 1 {
-			break
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpn_gateways", action, AlibabaCloudSdkGoERROR)
 		}
 
-		allVpns = append(allVpns, response.VpnGateways.VpnGateway...)
-
-		if len(response.VpnGateways.VpnGateway) < PageSizeLarge {
-			break
+		resp, err := jsonpath.Get("$.VpnGateways.VpnGateway", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.VpnGateways.VpnGateway", response)
 		}
 
-		if page, err := getNextpageNumber(request.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			request.PageNumber = page
-		}
-	}
-
-	var filteredVpns []vpc.VpnGateway
-	var reg *regexp.Regexp
-	var ids []string
-	if v, ok := d.GetOk("ids"); ok && len(v.([]interface{})) > 0 {
-		for _, item := range v.([]interface{}) {
-			if item == nil {
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if vpnGatewayNameRegex != nil && !vpnGatewayNameRegex.MatchString(fmt.Sprint(item["Name"])) {
 				continue
 			}
-			ids = append(ids, strings.Trim(item.(string), " "))
-		}
-	}
-	if nameRegex, ok := d.GetOk("name_regex"); ok && nameRegex.(string) != "" {
-		if r, err := regexp.Compile(nameRegex.(string)); err == nil {
-			reg = r
-		} else {
-			return WrapError(err)
-		}
-	}
-
-	for _, vpn := range allVpns {
-		if reg != nil {
-			if !reg.MatchString(vpn.Name) {
-				continue
-			}
-		}
-
-		if enableIpsecOk && (enableIpsec.(bool) != (vpn.IpsecVpn == "enable")) {
-			continue
-		}
-
-		if ids != nil && len(ids) != 0 {
-			for _, id := range ids {
-				if vpn.VpnGatewayId == id {
-					filteredVpns = append(filteredVpns, vpn)
+			if len(idsMap) > 0 {
+				if _, ok := idsMap[fmt.Sprintf("%v", item["VpnGatewayId"])]; !ok {
+					continue
 				}
 			}
-		} else {
-			filteredVpns = append(filteredVpns, vpn)
+			objects = append(objects, item)
 		}
-
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
-	return vpnsDecriptionAttributes(d, filteredVpns, meta)
+	ids := make([]string, 0)
+	names := make([]interface{}, 0)
+	s := make([]map[string]interface{}, 0)
+	for _, object := range objects {
+		createTime, _ := object["CreateTime"].(json.Number).Int64()
+		endTime, _ := object["EndTime"].(json.Number).Int64()
+		mapping := map[string]interface{}{
+			"id":                   object["VpnGatewayId"],
+			"vpc_id":               object["VpcId"],
+			"internet_ip":          object["InternetIp"],
+			"create_time":          TimestampToStr(createTime),
+			"end_time":             TimestampToStr(endTime),
+			"specification":        object["Spec"],
+			"name":                 object["Name"],
+			"description":          object["Description"],
+			"status":               convertStatus(object["Status"].(string)),
+			"business_status":      object["BusinessStatus"],
+			"instance_charge_type": convertChargeType(object["ChargeType"].(string)),
+			"enable_ipsec":         object["IpsecVpn"],
+			"enable_ssl":           object["SslVpn"],
+			"ssl_connections":      object["SslMaxConnections"],
+			"network_type":         object["NetworkType"],
+		}
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+		s = append(s, mapping)
+	}
+
+	d.SetId(dataResourceIdHash(ids))
+
+	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("gateways", s); err != nil {
+		return WrapError(err)
+	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
+
+	return nil
 }
 
 func convertStatus(lower string) string {
@@ -245,51 +308,4 @@ func convertChargeType(originType string) string {
 	} else {
 		return string(PrePaid)
 	}
-}
-
-func vpnsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.VpnGateway, meta interface{}) error {
-	var ids []string
-	var names []string
-	var s []map[string]interface{}
-	for _, vpn := range vpnSetTypes {
-		mapping := map[string]interface{}{
-			"id":                   vpn.VpnGatewayId,
-			"vpc_id":               vpn.VpcId,
-			"internet_ip":          vpn.InternetIp,
-			"create_time":          TimestampToStr(vpn.CreateTime),
-			"end_time":             TimestampToStr(vpn.EndTime),
-			"specification":        vpn.Spec,
-			"name":                 vpn.Name,
-			"description":          vpn.Description,
-			"status":               convertStatus(vpn.Status),
-			"business_status":      vpn.BusinessStatus,
-			"instance_charge_type": convertChargeType(vpn.ChargeType),
-			"enable_ipsec":         vpn.IpsecVpn,
-			"enable_ssl":           vpn.SslVpn,
-			"ssl_connections":      vpn.SslMaxConnections,
-		}
-
-		ids = append(ids, vpn.VpnGatewayId)
-		names = append(names, vpn.Name)
-		s = append(s, mapping)
-	}
-
-	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("gateways", s); err != nil {
-		return WrapError(err)
-	}
-
-	if err := d.Set("names", names); err != nil {
-		return WrapError(err)
-	}
-
-	if err := d.Set("ids", ids); err != nil {
-		return WrapError(err)
-	}
-
-	// create a json file in current directory and write data source to it.
-	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
-		writeToFile(output.(string), s)
-	}
-	return nil
 }

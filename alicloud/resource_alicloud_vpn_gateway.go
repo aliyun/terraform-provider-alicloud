@@ -126,6 +126,12 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"network_type": {
+				Type:         schema.TypeString,
+				ForceNew:     true,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"public", "private"}, false),
+			},
 		},
 	}
 }
@@ -184,6 +190,9 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 	} else {
 		request["AutoPay"] = true
 	}
+	if v, ok := d.GetOk("network_type"); ok {
+		request["NetworkType"] = v
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -226,6 +235,17 @@ func resourceAliyunVpnGatewayRead(d *schema.ResourceData, meta interface{}) erro
 		}
 		return WrapError(err)
 	}
+
+	objectFromList, err := vpcService.DescribeVpnGateways(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpn_gateway vpcService.DescribeVpnGateway Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	d.Set("network_type", objectFromList["NetworkType"])
 
 	d.Set("name", object["Name"])
 	d.Set("description", object["Description"])

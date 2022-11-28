@@ -403,6 +403,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"Created": "TF",
 						"For":     "Test",
 					},
+					"network_type": "private",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -416,6 +417,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"period":               "1",
 						"instance_charge_type": "PrePaid",
 						"tags.%":               "2",
+						"network_type":         "private",
 					}),
 				),
 			},
