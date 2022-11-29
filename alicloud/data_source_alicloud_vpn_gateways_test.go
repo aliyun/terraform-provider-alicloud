@@ -65,17 +65,6 @@ func TestAccAlicloudVPNGatewaysDataSource(t *testing.T) {
 		}),
 	}
 
-	enableIpsecConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
-			"enable_ipsec": `true`,
-		}),
-		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
-			"name_regex":   `"${alicloud_vpn_gateway.default.name}"`,
-			"enable_ipsec": `false`,
-		}),
-	}
-
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -83,7 +72,6 @@ func TestAccAlicloudVPNGatewaysDataSource(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"Normal"`,
-			"enable_ipsec":    `true`,
 		}),
 		fakeConfig: testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand, map[string]string{
 			"ids":             `[ "${alicloud_vpn_gateway.default.id}" ]`,
@@ -91,11 +79,10 @@ func TestAccAlicloudVPNGatewaysDataSource(t *testing.T) {
 			"vpc_id":          `"${alicloud_vpn_gateway.default.vpc_id}"`,
 			"status":          `"Active"`,
 			"business_status": `"FinancialLocked"`,
-			"enable_ipsec":    `false`,
 		}),
 	}
 
-	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, enableIpsecConf, allConf)
+	vpnGatewaysCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, vpcIdConf, statusConf, businessStatusConf, allConf)
 }
 
 func testAccCheckAlicloudVpnGatewaysDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -116,22 +103,22 @@ data "alicloud_zones" "default" {
 data "alicloud_vpcs" "default" {
 	name_regex = "default-NODELETING"
 }
-resource "alicloud_vswitch" "default" {
+
+data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	cidr_block = "10.0.1.0/24"
-	zone_id = "cn-hangzhou-b"
+	zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vpn_gateway" "default" {
 	name = "${var.name}"
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "5"
+	bandwidth = "10"
 	enable_ssl = true
 	enable_ipsec = true
 	instance_charge_type = "PrePaid"
 	description = "${var.name}"
-	vswitch_id = alicloud_vswitch.default.id
-	network_type = "private"
+	vswitch_id = data.alicloud_vswitches.default.ids.0
+	network_type = "public"
 }
 
 data "alicloud_vpn_gateways" "default" {
@@ -160,7 +147,7 @@ var existVpnGatewaysMapFunc = func(rand int) map[string]string {
 		"gateways.0.business_status":      "Normal",
 		"gateways.0.instance_charge_type": string(PrePaid),
 		"gateways.0.ssl_connections":      "5",
-		"gateways.0.network_type":         "private",
+		"gateways.0.network_type":         "public",
 	}
 }
 
