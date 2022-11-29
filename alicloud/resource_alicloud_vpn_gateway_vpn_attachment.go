@@ -25,7 +25,7 @@ func resourceAlicloudVpnGatewayVpnAttachment() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"customer_gateway_id": {
@@ -429,6 +429,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentRead(d *schema.ResourceData, meta in
 }
 func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
@@ -557,6 +558,10 @@ func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpnGatewayVpnAttachmentStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudVpnGatewayVpnAttachmentRead(d, meta)
