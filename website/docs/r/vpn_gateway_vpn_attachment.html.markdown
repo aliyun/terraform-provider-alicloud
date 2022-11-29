@@ -143,7 +143,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when creating the Vpn Attachment.
-* `update` - (Defaults to 1 mins) Used when updating the Vpn Attachment.
+* `update` - (Defaults to 10 mins) Used when updating the Vpn Attachment.
 * `delete` - (Defaults to 1 mins) Used when deleting the Vpn Attachment.
 
 
