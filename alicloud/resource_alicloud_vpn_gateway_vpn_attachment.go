@@ -559,7 +559,7 @@ func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpnGatewayVpnAttachmentStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"init", "attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpnGatewayVpnAttachmentStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
