@@ -77,9 +77,6 @@ func resourceAlicloudVpnPbrRouteEntryCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request["RegionId"] = client.RegionId
-
 	request["RegionId"] = client.RegionId
 	request["VpnGatewayId"] = d.Get("vpn_gateway_id")
 	request["RouteDest"] = d.Get("route_dest")
@@ -95,7 +92,7 @@ func resourceAlicloudVpnPbrRouteEntryCreate(d *schema.ResourceData, meta interfa
 		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
