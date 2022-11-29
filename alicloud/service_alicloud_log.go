@@ -622,40 +622,6 @@ func (s *LogService) WaitForLogDashboard(id string, status Status, timeout int) 
 	}
 }
 
-func (s *LogService) DescribeLogProjectPolicy(id string) (string, error) {
-	policy := ""
-	projectName := id
-	var requestInfo *sls.Client
-	err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			requestInfo = slsClient
-			return slsClient.GetProjectPolicy(projectName)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		if debugOn() {
-			addDebug("GetLogProjectPolicy", raw, requestInfo, map[string]string{
-				"project": projectName,
-			})
-		}
-		policy, _ = raw.(string)
-		return nil
-	})
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
-			return policy, WrapErrorf(err, NotFoundMsg, AliyunLogGoSdkERROR)
-		}
-		return policy, WrapErrorf(err, DefaultErrorMsg, id, "GetProjectPolicy", AliyunLogGoSdkERROR)
-	}
-
-	return policy, nil
-}
-
 func (s *LogService) DescribeLogProjectTags(project_name string) ([]*sls.ResourceTagResponse, error) {
 	var requestInfo *sls.Client
 	var respTags []*sls.ResourceTagResponse

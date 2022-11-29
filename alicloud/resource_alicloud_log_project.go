@@ -32,10 +32,6 @@ func resourceAlicloudLogProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"policy": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"tags": tagsSchema(),
 		},
 	}
@@ -98,13 +94,6 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 		if err := d.Set("tags", tags); err != nil {
 			return WrapError(err)
 		}
-	}
-	policy, err := logService.DescribeLogProjectPolicy(object.Name)
-	if err != nil {
-		return WrapError(err)
-	}
-	if policy != "" {
-		d.Set("policy", policy)
 	}
 
 	return nil
@@ -188,24 +177,6 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 			addDebug("UpdateTags", raw, requestInfo, request)
 		}
 		d.SetPartial("tags")
-	}
-
-	if d.HasChange("policy") {
-		policy := ""
-		if v, ok := d.GetOk("policy"); ok {
-			policy = v.(string)
-		}
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			if policy == "" {
-				return nil, slsClient.DeleteProjectPolicy(projectName)
-			}
-			return nil, slsClient.UpdateProjectPolicy(projectName, policy)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProjectPolicy", AliyunLogGoSdkERROR)
-		}
-		addDebug("UpdateProjectPolicy", raw, requestInfo, request)
-		d.SetPartial("policy")
 	}
 	d.Partial(false)
 
