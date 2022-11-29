@@ -24,36 +24,6 @@ resource "alicloud_log_project" "example" {
 }
 ```
 
-Project With Policy Usage
-
-```terraform
-resource "alicloud_log_project" "example_policy" {
-  name        = "tf-log"
-  description = "created by terraform"
-  policy      = <<EOF
-{
-  "Statement": [
-    {
-      "Action": [
-        "log:PostLogStoreLogs"
-      ],
-      "Condition": {
-        "StringNotLike": {
-          "acs:SourceVpc": [
-            "vpc-*"
-          ]
-        }
-      },
-      "Effect": "Deny",
-      "Resource": "acs:log:*:*:project/tf-log/*"
-    }
-  ],
-  "Version": "1"
-}
-EOF
-}
-```
-
 ## Module Support
 
 You can use the existing [sls module](https://registry.terraform.io/modules/terraform-alicloud-modules/sls/alicloud) 
@@ -66,7 +36,6 @@ The following arguments are supported:
 * `name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
 * `description` - (Optional) Description of the log project.
 * `tags` - (Optional) Log project tags.
-* `policy` - (Optional, Available in 1.193.0+) Log project policy, used to set a policy for a project.
 
 ## Attributes Reference
 
@@ -76,7 +45,6 @@ The following attributes are exported:
 * `name` - Log project name.
 * `description` - Log project description.
 * `tags` - Log project tags.
-* `policy` - Log project policy.
 
 ### Timeouts
 

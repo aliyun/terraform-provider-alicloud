@@ -163,26 +163,6 @@ func TestAccAlicloudLogProject_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"policy": `{\"Version\":\"1\",\"Statement\":[{\"Resource\":\"acs:log:*:*:project/exampleproject/*\",\"Effect\":\"Deny\",\"Action\":[\"log:PostLogStoreLogs\"],\"Condition\":{\"StringNotLike\":{\"acs:SourceVpc\":[\"vpc-*\"]}}}]}`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"policy": "{\"Version\":\"1\",\"Statement\":[{\"Resource\":\"acs:log:*:*:project/exampleproject/*\",\"Effect\":\"Deny\",\"Action\":[\"log:PostLogStoreLogs\"],\"Condition\":{\"StringNotLike\":{\"acs:SourceVpc\":[\"vpc-*\"]}}}]}",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"policy": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"policy": REMOVEKEY,
-					}),
-				),
-			},
 		},
 	})
 }
