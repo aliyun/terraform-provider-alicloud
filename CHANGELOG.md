@@ -1,4 +1,5 @@
-## 1.193.0 (Unreleased)
+## 1.194.0 (Unreleased)
+## 1.193.0 (November 29, 2022)
 
 - **New Resource:** `alicloud_das_switch_das_pro` [GH-5612]
 - **New Resource:** `alicloud_rds_db_proxy` [GH-5596]
@@ -23,11 +24,11 @@ ENHANCEMENTS:
 - resource/alicloud_ess_scaling_group:support health_check_type [GH-5616]
 - resource/alicloud_vpc_ipv4_cidr_block: Added retry stragety for error code [GH-5617]
 - resource/alicloud_cs_kubernetes_addon: Optimize components uninstall logic [GH-5611]
-- resource/alicloud_log_project: Support new attribute policy. [GH-5613]
 - resource/alicloud_route_entry: New enumeration values for documents [GH-5602]
 - resource/alicloud_vpc_peer_connection: Added update api for AcceptVpcPeerConnection,RejectVpcPeerConnection [GH-5602]
 - resource/alicloud_vpc_ipv4_gateway: Added retry stragety for error code OperationConflict [GH-5602]
 - resource/alicloud_dbs_backup_plan: Increase resource creation timeout. [GH-5604]
+- resource/alicloud_alb_server_group: Support new attribute server_group_type. [GH-5581]
 - data_source/alicloud_instance_types: Support new attribute minimum_eni_ipv6_address_quantity. [GH-5605]
 - data_source/alicloud_vswitches: Supports new output ipv6_cidr_block. [GH-5605]
 - docs: Improves the resource docs subcategory [GH-5599]
