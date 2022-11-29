@@ -1,48 +1,48 @@
 ## 1.194.0 (Unreleased)
 ## 1.193.0 (November 29, 2022)
 
-- **New Resource:** `alicloud_das_switch_das_pro` [GH-5612]
-- **New Resource:** `alicloud_rds_db_proxy` [GH-5596]
-- **New Resource:** `alicloud_vpc_network_acl_attachment` [GH-5598]
-- **New Resource:** `alicloud_cen_transit_router_cidr` [GH-5607]
-- **New Data Source:** `alicloud_cen_transit_router_cidrs` [GH-5607]
-- **New Data Source:** `alicloud_cloud_sso_access_assignments` [GH-5597]
-- **New Data Source:** `alicloud_rds_cross_regions` [GH-5615]
+- **New Resource:** `alicloud_das_switch_das_pro` ([#5612](https://github.com/aliyun/terraform-provider-alicloud/issues/5612))
+- **New Resource:** `alicloud_rds_db_proxy` ([#5596](https://github.com/aliyun/terraform-provider-alicloud/issues/5596))
+- **New Resource:** `alicloud_vpc_network_acl_attachment` ([#5598](https://github.com/aliyun/terraform-provider-alicloud/issues/5598))
+- **New Resource:** `alicloud_cen_transit_router_cidr` ([#5607](https://github.com/aliyun/terraform-provider-alicloud/issues/5607))
+- **New Data Source:** `alicloud_cen_transit_router_cidrs` ([#5607](https://github.com/aliyun/terraform-provider-alicloud/issues/5607))
+- **New Data Source:** `alicloud_cloud_sso_access_assignments` ([#5597](https://github.com/aliyun/terraform-provider-alicloud/issues/5597))
+- **New Data Source:** `alicloud_rds_cross_regions` ([#5615](https://github.com/aliyun/terraform-provider-alicloud/issues/5615))
 
 ENHANCEMENTS:
 
-- resource/alicloud_vpn_gateway_vpn_attachment: Add update asynchronous wait status [GH-5631]
-- resource/alicloud_vpn_gateway: Added retry stragety for error code [GH-5630]
-- resource/alicloud_vpn_gateway_vpn_attachment: Add update asynchronous wait logic [GH-5629]
-- resource/alicloud_instance: Support new attribute ipv6_address_count and ipv6_addresses. [GH-5605]
-- resource/alicloud_ecs_network_interface: Support new attribute ipv6_address_count and ipv6_addresses [GH-5622]
-- resource/alicloud_vpn_gateway: supports new attribute network_type [GH-5627]
-- resource/alicloud_bastionhost_instance: Added the field plan_code, storage and bandwidth; Supported for new action SetRenewal [GH-5595]
-- resource/resource_alicloud_db_instance_test: Repair automated testing [GH-5603]
-- resource/resource_alicloud_db_instance: Added retry stragety and Instance status verification [GH-5603]
-- resource/alicloud_slb_load_balance: Attribute instance_charge_type is no longer alias of payment_type. [GH-5623]
-- resource/alicloud_ess_scaling_group:support health_check_type [GH-5616]
-- resource/alicloud_vpc_ipv4_cidr_block: Added retry stragety for error code [GH-5617]
-- resource/alicloud_cs_kubernetes_addon: Optimize components uninstall logic [GH-5611]
-- resource/alicloud_route_entry: New enumeration values for documents [GH-5602]
-- resource/alicloud_vpc_peer_connection: Added update api for AcceptVpcPeerConnection,RejectVpcPeerConnection [GH-5602]
-- resource/alicloud_vpc_ipv4_gateway: Added retry stragety for error code OperationConflict [GH-5602]
-- resource/alicloud_dbs_backup_plan: Increase resource creation timeout. [GH-5604]
-- resource/alicloud_alb_server_group: Support new attribute server_group_type. [GH-5581]
-- data_source/alicloud_instance_types: Support new attribute minimum_eni_ipv6_address_quantity. [GH-5605]
-- data_source/alicloud_vswitches: Supports new output ipv6_cidr_block. [GH-5605]
-- docs: Improves the resource docs subcategory [GH-5599]
+- resource/alicloud_vpn_gateway_vpn_attachment: Add update asynchronous wait status ([#5631](https://github.com/aliyun/terraform-provider-alicloud/issues/5631))
+- resource/alicloud_vpn_gateway: Added retry stragety for error code ([#5630](https://github.com/aliyun/terraform-provider-alicloud/issues/5630))
+- resource/alicloud_vpn_gateway_vpn_attachment: Add update asynchronous wait logic ([#5629](https://github.com/aliyun/terraform-provider-alicloud/issues/5629))
+- resource/alicloud_instance: Support new attribute ipv6_address_count and ipv6_addresses. ([#5605](https://github.com/aliyun/terraform-provider-alicloud/issues/5605))
+- resource/alicloud_ecs_network_interface: Support new attribute ipv6_address_count and ipv6_addresses ([#5622](https://github.com/aliyun/terraform-provider-alicloud/issues/5622))
+- resource/alicloud_vpn_gateway: supports new attribute network_type ([#5627](https://github.com/aliyun/terraform-provider-alicloud/issues/5627))
+- resource/alicloud_bastionhost_instance: Added the field plan_code, storage and bandwidth; Supported for new action SetRenewal ([#5595](https://github.com/aliyun/terraform-provider-alicloud/issues/5595))
+- resource/resource_alicloud_db_instance_test: Repair automated testing ([#5603](https://github.com/aliyun/terraform-provider-alicloud/issues/5603))
+- resource/resource_alicloud_db_instance: Added retry stragety and Instance status verification ([#5603](https://github.com/aliyun/terraform-provider-alicloud/issues/5603))
+- resource/alicloud_slb_load_balance: Attribute instance_charge_type is no longer alias of payment_type. ([#5623](https://github.com/aliyun/terraform-provider-alicloud/issues/5623))
+- resource/alicloud_ess_scaling_group:support health_check_type ([#5616](https://github.com/aliyun/terraform-provider-alicloud/issues/5616))
+- resource/alicloud_vpc_ipv4_cidr_block: Added retry stragety for error code ([#5617](https://github.com/aliyun/terraform-provider-alicloud/issues/5617))
+- resource/alicloud_cs_kubernetes_addon: Optimize components uninstall logic ([#5611](https://github.com/aliyun/terraform-provider-alicloud/issues/5611))
+- resource/alicloud_route_entry: New enumeration values for documents ([#5602](https://github.com/aliyun/terraform-provider-alicloud/issues/5602))
+- resource/alicloud_vpc_peer_connection: Added update api for AcceptVpcPeerConnection,RejectVpcPeerConnection ([#5602](https://github.com/aliyun/terraform-provider-alicloud/issues/5602))
+- resource/alicloud_vpc_ipv4_gateway: Added retry stragety for error code OperationConflict ([#5602](https://github.com/aliyun/terraform-provider-alicloud/issues/5602))
+- resource/alicloud_dbs_backup_plan: Increase resource creation timeout. ([#5604](https://github.com/aliyun/terraform-provider-alicloud/issues/5604))
+- resource/alicloud_alb_server_group: Support new attribute server_group_type. ([#5581](https://github.com/aliyun/terraform-provider-alicloud/issues/5581))
+- data_source/alicloud_instance_types: Support new attribute minimum_eni_ipv6_address_quantity. ([#5605](https://github.com/aliyun/terraform-provider-alicloud/issues/5605))
+- data_source/alicloud_vswitches: Supports new output ipv6_cidr_block. ([#5605](https://github.com/aliyun/terraform-provider-alicloud/issues/5605))
+- docs: Improves the resource docs subcategory ([#5599](https://github.com/aliyun/terraform-provider-alicloud/issues/5599))
 
 BUG FIXES:
 
-- resource/alicloud_vpn_connection: fixed the ike_local_id and ike_remote_id to Computed [GH-5624]
-- resource/alicloud_db_instance_test: fix RDS test bug [GH-5625]
-- resource/alicloud_kvstore_instance: Fixed test case parameters [GH-5621]
-- resource/resource_alicloud_db_instance: Fix payment type conversion [GH-5603]
-- resource/alicloud_kvstore_instance: Fixed problems with importing no values [GH-5617]
-- resource/alicloud_express_connect_virtual_border_router: Fixed import of attributes bandwidth [GH-5602]
-- datasource/alicloud_vpn_gateways: fix problems with testing [GH-5628]
-- data_source/alicloud_instances_test: fix test case TestAccAlicloudECSInstancesDataSourceBasic [GH-5620]
+- resource/alicloud_vpn_connection: fixed the ike_local_id and ike_remote_id to Computed ([#5624](https://github.com/aliyun/terraform-provider-alicloud/issues/5624))
+- resource/alicloud_db_instance_test: fix RDS test bug ([#5625](https://github.com/aliyun/terraform-provider-alicloud/issues/5625))
+- resource/alicloud_kvstore_instance: Fixed test case parameters ([#5621](https://github.com/aliyun/terraform-provider-alicloud/issues/5621))
+- resource/resource_alicloud_db_instance: Fix payment type conversion ([#5603](https://github.com/aliyun/terraform-provider-alicloud/issues/5603))
+- resource/alicloud_kvstore_instance: Fixed problems with importing no values ([#5617](https://github.com/aliyun/terraform-provider-alicloud/issues/5617))
+- resource/alicloud_express_connect_virtual_border_router: Fixed import of attributes bandwidth ([#5602](https://github.com/aliyun/terraform-provider-alicloud/issues/5602))
+- datasource/alicloud_vpn_gateways: fix problems with testing ([#5628](https://github.com/aliyun/terraform-provider-alicloud/issues/5628))
+- data_source/alicloud_instances_test: fix test case TestAccAlicloudECSInstancesDataSourceBasic ([#5620](https://github.com/aliyun/terraform-provider-alicloud/issues/5620))
 
 ## 1.192.0 (November 15, 2022)
 
