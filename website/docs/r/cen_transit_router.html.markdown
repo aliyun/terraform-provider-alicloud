@@ -41,7 +41,7 @@ The following arguments are supported:
 * `transit_router_name` - (Optional) The name of the transit router.
 * `transit_router_description` - (Optional) The description of the transit router.
 * `dry_run` - (Optional) The dry run.
-
+* `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
