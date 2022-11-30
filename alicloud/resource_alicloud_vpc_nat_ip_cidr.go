@@ -82,7 +82,7 @@ func resourceAlicloudVpcNatIpCidrCreate(d *schema.ResourceData, meta interface{}
 		request["ClientToken"] = buildClientToken("CreateNatIpCidr")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -209,7 +209,7 @@ func resourceAlicloudVpcNatIpCidrDelete(d *schema.ResourceData, meta interface{}
 		request["ClientToken"] = buildClientToken("DeleteNatIpCidr")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

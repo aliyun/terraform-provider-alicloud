@@ -67,7 +67,7 @@ The following arguments are supported:
 * `forward_table_id` - (Required, ForceNew) The value can get from `alicloud_nat_gateway` Attributes "forward_table_ids".
 * `name` - (Optional, Available in 1.44.0+) Field `name` has been deprecated from provider version 1.119.1. New field `forward_entry_name` instead.
 * `forward_entry_name` - (Optional, Available in 1.119.1+) The name of forward entry.
-* `external_ip` - (Required, ForceNew) The external ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
+* `external_ip` - (Required) The external ip address, the ip must along bandwidth package public ip which `alicloud_nat_gateway` argument `bandwidth_packages`.
 * `external_port` - (Required) The external port, valid value is 1~65535|any.
 * `ip_protocol` - (Required) The ip protocol, valid value is tcp|udp|any.
 * `internal_ip` - (Required) The internal ip, must a private ip.
