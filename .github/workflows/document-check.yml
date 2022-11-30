@@ -2,7 +2,7 @@ name: Documentation Checks
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     pull_request_target:
       types:
@@ -58,7 +58,7 @@ jobs:
       - name: terrafmt
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          go get -t github.com/katbyte/terrafmt
+          go install github.com/katbyte/terrafmt@latest
           terrafmt diff ./website --check --pattern '*.markdown'
 
   basic-check:
@@ -69,7 +69,7 @@ jobs:
           fetch-depth: '3'
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.16.7'
+          go-version-file: .go-version
       - run: bash scripts/basic-check.sh
 
 #  terraform-validate:

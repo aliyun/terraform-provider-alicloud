@@ -59,6 +59,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"instance_storage": {
 				Type:     schema.TypeInt,
 				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Enable" {
+						return true
+					}
+					return false
+				},
 			},
 
 			"instance_charge_type": {
@@ -1663,8 +1669,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		"DBInstanceClass":       Trim(d.Get("instance_type").(string)),
 		"DBInstanceNetType":     Intranet,
 		"DBInstanceDescription": d.Get("instance_name"),
-		"DBInstanceStorageType": d.Get("db_instance_storage_type"),
 		"SourceIp":              client.SourceIp,
+	}
+	if v, ok := d.GetOk("db_instance_storage_type"); ok && v.(string) != "" {
+		request["DBInstanceStorageType"] = v
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request["ResourceGroupId"] = v

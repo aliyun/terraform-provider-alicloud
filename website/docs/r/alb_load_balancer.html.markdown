@@ -94,13 +94,14 @@ The following arguments are supported:
 * `deletion_protection_enabled` - (Optional) The deletion protection enabled. Valid values: `true` and `false`. Default value: `false`.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. Valid values: `true` and `false`.
 * `load_balancer_billing_config` - (Required, ForceNew) The configuration of the billing method.
-* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods.  Valid values: `Basic` and `Standard`.
+* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods.  Valid values: `Basic`, `Standard` and `StandardWithWaf`(Available in v1.194.0+). 
 * `load_balancer_name` - (Required) The name of the resource.
 * `modification_protection_config` - (Optional, Computed) Modify the Protection Configuration.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
 * `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
+* `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.194.0+) The IP version. Valid values: `Ipv4`, `DualStack`.
 
 #### Block load_balancer_billing_config
 
@@ -122,7 +123,7 @@ The modification_protection_config supports the following:
 * `status` - (Optional, Computed, Available in v1.132.0+) Specifies whether to enable the configuration read-only mode for the ALB instance. Valid values: `NonProtection` and `ConsoleProtection`.
   * `NonProtection` - disables the configuration read-only mode. After you disable the configuration read-only mode, you cannot set the ModificationProtectionReason parameter. If the parameter is set, the value is cleared.
   * `ConsoleProtection` - enables the configuration read-only mode. After you enable the configuration read-only mode, you can set the ModificationProtectionReason parameter.
-* `reason` - (Optional, Computed,Available in v1.132.0+) The reason for modification protection. This parameter must be 2 to 128 characters in length, and can contain letters, digits, periods, underscores, and hyphens. The reason must start with a letter. This parameter is required only if `ModificationProtectionStatus` is set to `ConsoleProtection`.
+* `reason` - (Optional, Computed, Available in v1.132.0+) The reason for modification protection. This parameter must be 2 to 128 characters in length, and can contain letters, digits, periods, underscores, and hyphens. The reason must start with a letter. **Note:** This parameter takes effect only when `status` is set to `ConsoleProtection`.
 
 #### Block access_log_config
 
