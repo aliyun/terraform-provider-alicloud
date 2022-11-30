@@ -131,6 +131,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 				ForceNew:     true,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"public", "private"}, false),
+				Computed:     true,
 			},
 		},
 	}

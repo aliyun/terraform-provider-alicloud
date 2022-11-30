@@ -77,7 +77,9 @@ The following arguments are supported:
     - `false`: Disable.
 * `network_type` - (Optional, ForceNew, Available in v1.193.0+) The network type of the VPN gateway. Value:
     - public (default): Public VPN gateway. 
-    - public: Private VPN gateway.
+    - private: Private VPN gateway.
+
+  -> **NOTE:** Private VPN gateway can only be purchased by white list users, and the bandwidth only supports 200M or 1000M; In addition, SSL is not supported.
 
 ## Attributes Reference
 
