@@ -260,11 +260,11 @@ func buildAlicloudEssScheduledTaskArgs(d *schema.ResourceData) *ess.CreateSchedu
 		request.LaunchExpirationTime = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("min_value"); ok && v.(int) != 0 {
+	if v, ok := d.GetOkExists("min_value"); ok {
 		request.MinValue = requests.NewInteger(v.(int))
 	}
 
-	if v, ok := d.GetOk("max_value"); ok && v.(int) != 0 {
+	if v, ok := d.GetOkExists("max_value"); ok {
 		request.MaxValue = requests.NewInteger(v.(int))
 	}
 
