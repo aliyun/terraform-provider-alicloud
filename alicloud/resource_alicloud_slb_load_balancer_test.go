@@ -473,6 +473,16 @@ func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_spec": "slb.lcu.elastic",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_spec": "slb.lcu.elastic",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -542,7 +552,7 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"address_type":                   "intranet",
 					"name":                           name,
-					"specification":                  "slb.s1.small",
+					"specification":                  "slb.lcu.elastic",
 					"vswitch_id":                     "${data.alicloud_vswitches.default.ids[0]}",
 					"address":                        "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
 					"master_zone_id":                 "${data.alicloud_slb_zones.default.zones.0.master_zone_id}",
@@ -556,7 +566,7 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 					testAccCheck(map[string]string{
 						"address_type":                   "intranet",
 						"name":                           name,
-						"specification":                  "slb.s1.small",
+						"specification":                  "slb.lcu.elastic",
 						"vswitch_id":                     CHECKSET,
 						"address":                        CHECKSET,
 						"master_zone_id":                 CHECKSET,
@@ -585,7 +595,7 @@ var AlicloudSlbLoadBalancerMap2 = map[string]string{
 	"internet_charge_type": "PayByTraffic",
 	"resource_group_id":    CHECKSET,
 	"slave_zone_id":        CHECKSET,
-	"load_balancer_spec":   "slb.s1.small",
+	"load_balancer_spec":   "slb.lcu.elastic",
 	"status":               "active",
 	"tags.#":               "0",
 }

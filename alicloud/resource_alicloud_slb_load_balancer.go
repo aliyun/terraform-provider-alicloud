@@ -12,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
+const slbPayByLcuSpec string = "slb.lcu.elastic"
+const slbPayByLcuChargeType string = "PayByCLCU"
+
 func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudSlbLoadBalancerCreate,
@@ -121,14 +124,14 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"slb.s1.small", "slb.s2.medium", "slb.s2.small", "slb.s3.large", "slb.s3.medium", "slb.s3.small", "slb.s4.large"}, false),
+				ValidateFunc:  validation.StringInSlice([]string{"slb.s1.small", "slb.s2.medium", "slb.s2.small", "slb.s3.large", "slb.s3.medium", "slb.s3.small", "slb.s4.large", slbPayByLcuSpec}, false),
 				ConflictsWith: []string{"specification"},
 			},
 			"specification": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"slb.s1.small", "slb.s2.medium", "slb.s2.small", "slb.s3.large", "slb.s3.medium", "slb.s3.small", "slb.s4.large"}, false),
+				ValidateFunc:  validation.StringInSlice([]string{"slb.s1.small", "slb.s2.medium", "slb.s2.small", "slb.s3.large", "slb.s3.medium", "slb.s3.small", "slb.s4.large", slbPayByLcuSpec}, false),
 				Deprecated:    "Field 'specification' has been deprecated from provider version 1.123.1. New field 'load_balancer_spec' instead",
 				ConflictsWith: []string{"load_balancer_spec"},
 			},
@@ -214,6 +217,7 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	action := "CreateLoadBalancer"
 	request := make(map[string]interface{})
 	conn, err := client.NewSlbClient()
+
 	if err != nil {
 		return WrapError(err)
 	}
@@ -247,10 +251,20 @@ func resourceAlicloudSlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		request["LoadBalancerName"] = v
 	}
 
+	var configedSpec string
+
 	if v, ok := d.GetOk("load_balancer_spec"); ok {
-		request["LoadBalancerSpec"] = v
+		configedSpec = v.(string)
 	} else if v, ok := d.GetOk("specification"); ok {
-		request["LoadBalancerSpec"] = v
+		configedSpec = v.(string)
+	}
+
+	if configedSpec != "" {
+		if configedSpec != slbPayByLcuSpec {
+			request["LoadBalancerSpec"] = configedSpec
+		} else {
+			request["InstanceChargeType"] = slbPayByLcuChargeType
+		}
 	}
 
 	if v, ok := d.GetOk("master_zone_id"); ok {
@@ -353,6 +367,10 @@ func resourceAlicloudSlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("name", object["LoadBalancerName"])
 	d.Set("load_balancer_spec", object["LoadBalancerSpec"])
 	d.Set("specification", object["LoadBalancerSpec"])
+	if object["InstanceChargeType"] == slbPayByLcuChargeType {
+		d.Set("load_balancer_spec", slbPayByLcuSpec)
+		d.Set("specification", slbPayByLcuSpec)
+	}
 	d.Set("master_zone_id", object["MasterZoneId"])
 	d.Set("modification_protection_reason", object["ModificationProtectionReason"])
 	d.Set("modification_protection_status", object["ModificationProtectionStatus"])
@@ -477,43 +495,6 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("load_balancer_name")
 	}
 	update = false
-	modifyLoadBalancerInstanceSpecReq := map[string]interface{}{
-		"LoadBalancerId": d.Id(),
-	}
-	if !d.IsNewResource() && d.HasChange("load_balancer_spec") {
-		update = true
-		modifyLoadBalancerInstanceSpecReq["LoadBalancerSpec"] = d.Get("load_balancer_spec")
-	} else if !d.IsNewResource() && d.HasChange("specification") {
-		update = true
-		modifyLoadBalancerInstanceSpecReq["LoadBalancerSpec"] = d.Get("specification")
-	}
-	modifyLoadBalancerInstanceSpecReq["RegionId"] = client.RegionId
-	if update {
-		action := "ModifyLoadBalancerInstanceSpec"
-		conn, err := client.NewSlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerInstanceSpecReq, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(action, response, modifyLoadBalancerInstanceSpecReq)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("specification")
-		d.SetPartial("load_balancer_spec")
-	}
-	update = false
 	setLoadBalancerModificationProtectionReq := map[string]interface{}{
 		"LoadBalancerId": d.Id(),
 	}
@@ -588,6 +569,48 @@ func resourceAlicloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("bandwidth")
 		d.SetPartial("internet_charge_type")
+	}
+	update = false
+	modifyLoadBalancerInstanceSpecReq := map[string]interface{}{
+		"LoadBalancerId": d.Id(),
+	}
+	if !d.IsNewResource() && d.HasChange("load_balancer_spec") {
+		update = true
+		modifyLoadBalancerInstanceSpecReq["LoadBalancerSpec"] = d.Get("load_balancer_spec")
+	} else if !d.IsNewResource() && d.HasChange("specification") {
+		update = true
+		modifyLoadBalancerInstanceSpecReq["LoadBalancerSpec"] = d.Get("specification")
+	}
+	modifyLoadBalancerInstanceSpecReq["RegionId"] = client.RegionId
+	if update {
+		action := "ModifyLoadBalancerInstanceSpec"
+		if modifyLoadBalancerInstanceSpecReq["LoadBalancerSpec"] == slbPayByLcuSpec {
+			action = "ModifyLoadBalancerInstanceChargeType"
+			modifyLoadBalancerInstanceSpecReq["InstanceChargeType"] = slbPayByLcuChargeType
+			delete(modifyLoadBalancerInstanceSpecReq, "LoadBalancerSpec")
+		}
+		conn, err := client.NewSlbClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-15"), StringPointer("AK"), nil, modifyLoadBalancerInstanceSpecReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, modifyLoadBalancerInstanceSpecReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("specification")
+		d.SetPartial("load_balancer_spec")
 	}
 	update = false
 	modifyLoadBalancerPayTypeReq := map[string]interface{}{
