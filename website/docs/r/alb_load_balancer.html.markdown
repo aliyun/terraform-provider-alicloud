@@ -86,20 +86,20 @@ resource "alicloud_alb_load_balancer" "default" {
 
 The following arguments are supported:
 
-* `access_log_config` - (Optional, Optional) The Access Logging Configuration Structure.
+* `access_log_config` - (Optional) The Access Logging Configuration Structure. See the following `Block access_log_config`.
 * `address_allocated_mode` - (Optional, ForceNew) The method in which IP addresses are assigned. Valid values: `Fixed` and `Dynamic`. Default value: `Dynamic`.
   *`Fixed`: The ALB instance uses a fixed IP address. 
   *`Dynamic`: An IP address is dynamically assigned to each zone of the ALB instance.
-* `address_type` - (Required, ForceNew) The type of IP address that the ALB instance uses to provide services. Valid values: `Intranet`, `Internet`.
+* `address_type` - (Required) The type of IP address that the ALB instance uses to provide services. Valid values: `Intranet`, `Internet`. **NOTE:** From version 1.193.1, `address_type` can be modified.
 * `deletion_protection_enabled` - (Optional) The deletion protection enabled. Valid values: `true` and `false`. Default value: `false`.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. Valid values: `true` and `false`.
-* `load_balancer_billing_config` - (Required, ForceNew) The configuration of the billing method.
-* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods.  Valid values: `Basic`, `Standard` and `StandardWithWaf`(Available in v1.194.0+). 
+* `load_balancer_billing_config` - (Required, ForceNew) The configuration of the billing method. See the following `Block load_balancer_billing_config`.
+* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods. Valid values: `Basic`, `Standard` and `StandardWithWaf`(Available in v1.194.0+).
 * `load_balancer_name` - (Required) The name of the resource.
-* `modification_protection_config` - (Optional, Computed) Modify the Protection Configuration.
-* `resource_group_id` - (Optional) The ID of the resource group.
+* `modification_protection_config` - (Optional, Computed) Modify the Protection Configuration. See the following `Block modification_protection_config`.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
-* `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones.
+* `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones. See the following `Block zone_mappings`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.194.0+) The IP version. Valid values: `Ipv4`, `DualStack`.
 
@@ -145,8 +145,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Load Balancer.
-* `delete` - (Defaults to 2 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 2 mins) Used when update the Load Balancer.
+* `delete` - (Defaults to 2 mins) Used when delete the Load Balancer.
 
 ## Import
 
