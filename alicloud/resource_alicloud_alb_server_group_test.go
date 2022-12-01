@@ -354,7 +354,6 @@ func TestAccAlicloudALBServerGroup_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"servers": []map[string]interface{}{
 						{
-							"description": "tf-testAcc",
 							"port":        "80",
 							"server_id":   "${alicloud_instance.instance.id}",
 							"server_ip":   "${alicloud_instance.instance.private_ip}",
@@ -362,7 +361,6 @@ func TestAccAlicloudALBServerGroup_basic1(t *testing.T) {
 							"weight":      "10",
 						},
 						{
-							"description": "tf-testAcc",
 							"port":        "8080",
 							"server_id":   "${alicloud_instance.instance.id}",
 							"server_ip":   "${alicloud_instance.instance.private_ip}",
@@ -614,6 +612,85 @@ func TestAccAlicloudALBServerGroup_Fc(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudALBServerGroup_Ip(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_server_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudALBServerGroupMapFc)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbServerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbservergroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBServerGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_type": "Ip",
+					"protocol":          "HTTP",
+					"server_group_name": "${var.name}",
+					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+					"health_check_config": []map[string]interface{}{
+						{
+							"health_check_enabled": "false",
+						},
+					},
+					"sticky_session_config": []map[string]interface{}{
+						{
+							"sticky_session_enabled": "false",
+						},
+					},
+					"servers": []map[string]interface{}{
+						{
+							"description":       "tf-testAcc1",
+							"port":              "80",
+							"server_id":         "127.0.0.1",
+							"server_ip":         "127.0.0.1",
+							"server_type":       "Ip",
+							"weight":            "10",
+							"remote_ip_enabled": "true",
+						},
+						{
+							"description":       "tf-testAcc1",
+							"port":              "88",
+							"server_id":         "127.0.0.2",
+							"server_ip":         "127.0.0.2",
+							"server_type":       "Ip",
+							"weight":            "10",
+							"remote_ip_enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                  CHECKSET,
+						"server_group_type":       "Ip",
+						"protocol":                "HTTP",
+						"server_group_name":       name,
+						"sticky_session_config.#": "1",
+						"health_check_config.#":   "1",
+						"servers.#":               "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
 			},
 		},
 	})

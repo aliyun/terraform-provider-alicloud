@@ -148,16 +148,22 @@ The sticky_session_config supports the following:
 
 The servers supports the following:
 
-* `server_type` - The type of the server. The type of the server. Valid values: `Ecs`, `Eni` and `Eci`.
-* `weight` - The weight of the server. Valid values: `0` to `100`. Default value: `100`. If the value is set to `0`, no
-  requests are forwarded to the server.
-* `description` - The description of the server.
-* `port` - The port that is used by the server. Valid values: `1` to `65535`.
-* `server_id` - The ID of the backend server.
+* `server_type` - (Required) The type of the server. The type of the server. Valid values: 
+  - Ecs: an ECS instance.
+  - Eni: an ENI.
+  - Eci: an elastic container instance.
+  - Ip(Available in v1.194.0+): an IP address.
+  - fc(Available in v1.194.0+): a function.
+* `weight` - (Optional, Computed) The weight of the server. Valid values: `0` to `100`. Default value: `100`. If the value is set to `0`, no
+  requests are forwarded to the server. **Note:** You do not need to set this parameter if you set `server_type` to `Fc`.
+* `description` - (Optional) The description of the server.
+* `port` - (Optional) The port that is used by the server. Valid values: `1` to `65535`. **Note:** This parameter is required if the `server_type` parameter is set to `Ecs`, `Eni`, `Eci`, or `Ip`. You do not need to configure this parameter if you set `server_type` to `Fc`.
+* `server_id` -  (Required) The ID of the backend server.
   - If `server_group_type` is set to `Instance`, set the parameter to the ID of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. These backend servers are specified by Ecs, Eni, or Eci.
   - If `server_group_type` is set to `Ip`, set the parameter to an IP address specified in the server group.
   - If `server_group_type` is set to `Fc`, set the parameter to the Alibaba Cloud Resource Name (ARN) of a function specified in the server group.
-* `server_ip` - The IP address of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. **Note:** You do not need to configure the parameter if you set `server_group_type` to `Fc`.
+* `server_ip` - (Optional, Computed) The IP address of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. **Note:** If `server_group_type` is set to `Fc`, you do not need to configure parameters, otherwise this attribute is required. If `server_group_type` is set to `Ip`, the value of this property is the same as the `server_id` value.
+* `remote_ip_enabled` - (Optional, Computed, Available in v1.194.0+) Specifies whether to enable the remote IP address feature. You can specify up to 40 servers in each call. **Note:** If `server_type` is set to `Ip`, this parameter is available.
 
 #### Block health_check_config
 
