@@ -88,6 +88,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"config": {
 				Type:          schema.TypeMap,
 				Optional:      true,
+				Computed:      true,
 				ConflictsWith: []string{"parameters"},
 			},
 			"connection_domain": {
