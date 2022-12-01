@@ -139,6 +139,7 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 			"servers": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
@@ -152,7 +153,7 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 						},
 						"server_id": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Required: true,
 						},
 						"server_ip": {
 							Type:     schema.TypeString,
@@ -165,14 +166,19 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 						},
 						"server_type": {
 							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Ecs", "Eni", "Eci"}, false),
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"Ecs", "Eni", "Eci", "Ip", "Fc"}, false),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
 							ValidateFunc: validation.IntBetween(0, 100),
+						},
+						"remote_ip_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -382,13 +388,24 @@ func resourceAlicloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 		for _, serversListItem := range serversList {
 			if serversListItemMap, ok := serversListItem.(map[string]interface{}); ok {
 				serversMap := make(map[string]interface{}, 0)
-				serversMap["description"] = serversListItemMap["Description"]
-				serversMap["port"] = serversListItemMap["Port"]
+				if v, ok := serversListItemMap["Description"]; ok {
+					serversMap["description"] = v
+				}
+				if v, ok := serversListItemMap["Port"]; ok {
+					serversMap["port"] = v
+				}
+				if v, ok := serversListItemMap["ServerIp"]; ok {
+					serversMap["server_ip"] = v
+				}
+				if v, ok := serversListItemMap["Weight"]; ok {
+					serversMap["weight"] = v
+				}
+				if v, ok := serversListItemMap["RemoteIpEnabled"]; ok {
+					serversMap["remote_ip_enabled"] = v
+				}
 				serversMap["server_id"] = serversListItemMap["ServerId"]
-				serversMap["server_ip"] = serversListItemMap["ServerIp"]
 				serversMap["server_type"] = serversListItemMap["ServerType"]
 				serversMap["status"] = serversListItemMap["Status"]
-				serversMap["weight"] = serversListItemMap["Weight"]
 				serversMaps = append(serversMaps, serversMap)
 			}
 		}
@@ -463,12 +480,14 @@ func resourceAlicloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			update = true
 			serversMap := map[string]interface{}{}
 			serversArg := servers.(map[string]interface{})
-			serversMap["Description"] = serversArg["description"]
-			serversMap["Port"] = serversArg["port"]
+			if v, ok := serversArg["port"]; ok {
+				serversMap["Port"] = v
+			}
+			if v, ok := serversArg["server_ip"]; ok {
+				serversMap["ServerIp"] = v
+			}
 			serversMap["ServerId"] = serversArg["server_id"]
-			serversMap["ServerIp"] = serversArg["server_ip"]
 			serversMap["ServerType"] = serversArg["server_type"]
-			serversMap["Weight"] = serversArg["weight"]
 			removeServersMaps = append(removeServersMaps, serversMap)
 		}
 		removeServersFromServerGroupReq["Servers"] = removeServersMaps
@@ -513,12 +532,23 @@ func resourceAlicloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			update = true
 			serversArg := servers.(map[string]interface{})
 			serversMap := map[string]interface{}{}
-			serversMap["Description"] = serversArg["description"]
-			serversMap["Port"] = serversArg["port"]
+			if v, ok := serversArg["description"]; ok && fmt.Sprint(v) != "" {
+				serversMap["Description"] = v
+			}
+			if v, ok := serversArg["port"]; ok {
+				serversMap["Port"] = v
+			}
+			if v, ok := serversArg["server_ip"]; ok {
+				serversMap["ServerIp"] = v
+			}
+			if v, ok := serversArg["weight"]; ok {
+				serversMap["Weight"] = v
+			}
+			if v, ok := serversArg["remote_ip_enabled"]; ok {
+				serversMap["RemoteIpEnabled"] = v
+			}
 			serversMap["ServerId"] = serversArg["server_id"]
-			serversMap["ServerIp"] = serversArg["server_ip"]
 			serversMap["ServerType"] = serversArg["server_type"]
-			serversMap["Weight"] = serversArg["weight"]
 			addServersMaps = append(addServersMaps, serversMap)
 		}
 		addServersToServerGroupReq["Servers"] = addServersMaps
