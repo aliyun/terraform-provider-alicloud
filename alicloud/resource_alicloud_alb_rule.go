@@ -42,7 +42,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 				Required: true,
 			},
 			"rule_actions": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -70,14 +70,14 @@ func resourceAlicloudAlbRule() *schema.Resource {
 							},
 						},
 						"forward_group_config": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"server_group_tuples": {
-										Type:     schema.TypeSet,
+										Type:     schema.TypeList,
 										Optional: true,
 										Computed: true,
 										Elem: &schema.Resource{
@@ -88,9 +88,10 @@ func resourceAlicloudAlbRule() *schema.Resource {
 													Optional: true,
 												},
 												"weight": {
-													Type:     schema.TypeInt,
-													Optional: true,
-													Computed: true,
+													Type:         schema.TypeInt,
+													Optional:     true,
+													Computed:     true,
+													ValidateFunc: validation.IntBetween(1, 100),
 												},
 											},
 										},
@@ -435,7 +436,7 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	request["ListenerId"] = d.Get("listener_id")
 	request["Priority"] = d.Get("priority")
 	ruleActionsMaps := make([]map[string]interface{}, 0)
-	for _, ruleActions := range d.Get("rule_actions").(*schema.Set).List() {
+	for _, ruleActions := range d.Get("rule_actions").([]interface{}) {
 		ruleActionsArg := ruleActions.(map[string]interface{})
 		ruleActionsMap := map[string]interface{}{}
 		ruleActionsMap["Order"] = ruleActionsArg["order"]
@@ -455,14 +456,17 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		}
 
 		forwardGroupConfigMap := map[string]interface{}{}
-		for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].(*schema.Set).List() {
+		for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
 			forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
 			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
+			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].([]interface{}) {
 				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 				serverGroupTuplesMap := map[string]interface{}{}
 				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-				serverGroupTuplesMap["Weight"] = serverGroupTuplesArg["weight"]
+				if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
+					serverGroupTuplesMap["Weight"] = v
+				}
+
 				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 			}
 			forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
@@ -681,7 +685,7 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 							serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 							serverGroupTuplesMap := map[string]interface{}{}
 							serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
-							serverGroupTuplesMap["weight"] = serverGroupTuplesArg["Weight"]
+							serverGroupTuplesMap["weight"] = formatInt(serverGroupTuplesArg["Weight"])
 							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 						}
 					}
@@ -952,7 +956,7 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("rule_actions") {
 		update = true
 		ruleActionsMaps := make([]map[string]interface{}, 0)
-		for _, ruleActions := range d.Get("rule_actions").(*schema.Set).List() {
+		for _, ruleActions := range d.Get("rule_actions").([]interface{}) {
 			ruleActionsArg := ruleActions.(map[string]interface{})
 			ruleActionsMap := map[string]interface{}{}
 			ruleActionsMap["Order"] = ruleActionsArg["order"]
@@ -972,14 +976,17 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			}
 
 			forwardGroupConfigMap := map[string]interface{}{}
-			for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].(*schema.Set).List() {
+			for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
 				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
 				serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
+				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].([]interface{}) {
 					serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 					serverGroupTuplesMap := map[string]interface{}{}
 					serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-					serverGroupTuplesMap["Weight"] = serverGroupTuplesArg["weight"]
+					if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
+						serverGroupTuplesMap["Weight"] = v
+					}
+
 					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 				}
 				forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
