@@ -100,7 +100,6 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 		request.VpcId = vsw.VpcId
 		request.ZoneId = vsw.ZoneId
 	}
-	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if request.PayType == string(PostPaid) {
 		request.PayType = "drdsPost"
@@ -112,6 +111,8 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 	var response *drds.CreateDrdsInstanceResponse
 	wait := incrementalWait(3*time.Second, 2*time.Second)
 	err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		// currently, the ClientToken does not work and it need to update when retry
+		request.ClientToken = buildClientToken(request.GetActionName())
 		raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
 			return drdsClient.CreateDrdsInstance(request)
 		})
