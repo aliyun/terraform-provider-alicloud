@@ -25,8 +25,8 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
+			Delete: schema.DefaultTimeout(2 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_log_config": {
@@ -55,7 +55,6 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 			"address_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Intranet", "Internet"}, false),
 			},
 			"deletion_protection_enabled": {
@@ -70,6 +69,7 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 			"load_balancer_billing_config": {
 				Type:     schema.TypeSet,
 				Required: true,
+				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -80,7 +80,6 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 						},
 					},
 				},
-				ForceNew: true,
 			},
 			"load_balancer_edition": {
 				Type:         schema.TypeString,
@@ -119,11 +118,6 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -132,6 +126,7 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 			"zone_mappings": {
 				Type:     schema.TypeSet,
 				Required: true,
+				ForceNew: true,
 				MinItems: 2,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -145,8 +140,8 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 						},
 					},
 				},
-				ForceNew: true,
 			},
+			"tags": tagsSchema(),
 			"dns_name": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -157,6 +152,10 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Ipv4", "DualStack"}, false),
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -241,6 +240,7 @@ func resourceAlicloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudAlbLoadBalancerUpdate(d, meta)
 }
+
 func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
@@ -307,6 +307,7 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("dns_name", object["DNSName"])
 	return nil
 }
+
 func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
@@ -627,9 +628,60 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("deletion_protection_enabled")
 	}
 
+	update = false
+	updateLoadBalancerAddressTypeConfigReq := map[string]interface{}{
+		"LoadBalancerId": d.Id(),
+		"ClientToken":    buildClientToken("UpdateLoadBalancerAddressTypeConfig"),
+	}
+
+	if !d.IsNewResource() && d.HasChange("address_type") {
+		update = true
+	}
+	updateLoadBalancerAddressTypeConfigReq["AddressType"] = d.Get("address_type")
+
+	if update {
+		if v, ok := d.GetOkExists("dry_run"); ok {
+			request["DryRun"] = v
+		}
+
+		action := "UpdateLoadBalancerAddressTypeConfig"
+		conn, err := client.NewAlbClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, updateLoadBalancerAddressTypeConfigReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updateLoadBalancerAddressTypeConfigReq)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("address_type")
+	}
+
 	d.Partial(false)
+
 	return resourceAlicloudAlbLoadBalancerRead(d, meta)
 }
+
 func resourceAlicloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLoadBalancer"
@@ -669,6 +721,7 @@ func resourceAlicloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	}
 	return nil
 }
+
 func convertAlbLoadBalancerPaymentTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
@@ -676,6 +729,7 @@ func convertAlbLoadBalancerPaymentTypeRequest(source interface{}) interface{} {
 	}
 	return source
 }
+
 func convertAlbLoadBalancerPaymentTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PostPay":
@@ -683,6 +737,7 @@ func convertAlbLoadBalancerPaymentTypeResponse(source interface{}) interface{} {
 	}
 	return source
 }
+
 func modificationProtectionConfigDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 
 	if v, ok := d.GetOk("modification_protection_config"); ok {
