@@ -631,12 +631,7 @@ func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error)
 			return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	dBInstanceNetInfos := response["DBInstanceNetInfos"].(map[string]interface{})["DBInstanceNetInfo"].([]interface{})
-	if len(dBInstanceNetInfos) < 1 {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
-	}
-
-	return dBInstanceNetInfos, nil
+	return response["DBInstanceNetInfos"].(map[string]interface{})["DBInstanceNetInfo"].([]interface{}), nil
 }
 
 func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, error) {
