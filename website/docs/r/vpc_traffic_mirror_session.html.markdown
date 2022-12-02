@@ -122,8 +122,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Traffic Mirror Session.
-* `delete` - (Defaults to 1 mins) Used when delete the Traffic Mirror Session.
 * `update` - (Defaults to 1 mins) Used when update the Traffic Mirror Session.
+* `delete` - (Defaults to 1 mins) Used when delete the Traffic Mirror Session.
 
 ## Import
 

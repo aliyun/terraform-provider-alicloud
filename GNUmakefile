@@ -103,3 +103,8 @@ alpha:
 	aliyun oss cp bin/$(RELEASE_ALPHA_NAME) oss://iac-service-prod-cn/terraform/alphaplugins/registry.terraform.io/aliyun/alicloud/$(RELEASE_ALPHA_VERSION)/linux_amd64/$(RELEASE_ALPHA_NAME)  --profile terraformer --region cn-hangzhou
 	aliyun oss cp bin/$(RELEASE_ALPHA_NAME) oss://iac-service-prod-cn/terraform/alphaplugins/registry.terraform.io/hashicorp/alicloud/$(RELEASE_ALPHA_VERSION)/linux_amd64/$(RELEASE_ALPHA_NAME)  --profile terraformer --region cn-hangzhou
 	rm -rf bin/$(RELEASE_ALPHA_NAME)
+
+macarm:
+	GOOS=darwin GOARCH=arm64 go build -o bin/terraform-provider-alicloud
+	tar czvf bin/terraform-provider-alicloud_darwin-arm64.tgz bin/terraform-provider-alicloud
+	rm -rf bin/terraform-provider-alicloud
