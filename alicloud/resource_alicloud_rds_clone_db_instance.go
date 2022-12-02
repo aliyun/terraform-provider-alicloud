@@ -535,7 +535,16 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	d.Set("private_ip_address", describeDBInstanceNetInfoObject[0].(map[string]interface{})["IPAddress"])
+	var privateIpAddress string
+	for _, item := range describeDBInstanceNetInfoObject {
+		ipType := item.(map[string]interface{})["IPType"]
+		if ipType == "Private" {
+			privateIpAddress = item.(map[string]interface{})["IPAddress"].(string)
+			break
+		}
+	}
+
+	d.Set("private_ip_address", privateIpAddress)
 
 	describeDBInstanceSSLObject, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {

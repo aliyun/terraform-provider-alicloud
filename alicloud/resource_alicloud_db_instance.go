@@ -1438,6 +1438,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 			break
 		}
 	}
+	d.Set("private_ip_address", privateIpAddress)
 
 	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
 	d.Set("storage_threshold", d.Get("storage_threshold"))
@@ -1462,9 +1463,18 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_charge_type", instance["PayType"])
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance["VSwitchId"])
-	d.Set("private_ip_address", privateIpAddress)
-	d.Set("connection_string", instance["ConnectionString"])
-	d.Set("connection_string_prefix", strings.Split(instance["ConnectionString"].(string), ".")[0])
+	// some instance class without connection string
+	if instance["ConnectionString"] != nil {
+		d.Set("connection_string", instance["ConnectionString"])
+		d.Set("connection_string_prefix", strings.Split(fmt.Sprint(instance["ConnectionString"]), ".")[0])
+		connection, err := rdsService.DescribeDBConnection(d.Id() + ":" + strings.Split(fmt.Sprint(instance["ConnectionString"]), ".")[0])
+		if err != nil {
+			return WrapError(err)
+		}
+		if connection["BabelfishPort"] != nil {
+			d.Set("babelfish_port", connection["BabelfishPort"])
+		}
+	}
 	d.Set("instance_name", instance["DBInstanceDescription"])
 	d.Set("maintain_time", instance["MaintainTime"])
 	d.Set("auto_upgrade_minor_version", instance["AutoUpgradeMinorVersion"])
@@ -1553,13 +1563,6 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("security_group_ids", groups)
 	}
 
-	connection, err := rdsService.DescribeDBConnection(d.Id() + ":" + d.Get("connection_string_prefix").(string))
-	if err != nil {
-		return WrapError(err)
-	}
-	if connection["BabelfishPort"] != nil {
-		d.Set("babelfish_port", connection["BabelfishPort"])
-	}
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
 		return WrapError(err)
