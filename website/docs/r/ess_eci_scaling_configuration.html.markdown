@@ -101,8 +101,11 @@ The following arguments are supported:
       be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
       a null string.
-* `image_registry_credentials` - (Optional)  The image registry credential. The details see
+* `image_registry_credentials` - (Optional) The image registry credential. The details see
   Block `image_registry_credential`.See [Block image_registry_credential](#block-image_registry_credential) below for
+  details.
+* `acr_registry_infos` - (Optional) Information about the Container Registry Enterprise Edition instance. The details see
+  Block `acr_registry_info`.See [Block acr_registry_info](#block-acr_registry_info) below for
   details.
 * `containers` - (Optional) The list of containers.See [Block container](#block-container) below for details.
 * `init_containers` - (Optional) The list of initContainers.See [Block init_container](#block-init_container) below for
@@ -199,6 +202,19 @@ The image_registry_credential supports the following:
   configured.
 * `user_name` - (Optional) The username used to log on to the image repository. It is required
   when `image_registry_credential` is configured.
+
+#### Block acr_registry_info
+
+The acr_registry_info supports the following:
+
+* `domains` - (Optional) Endpoint of Container Registry Enterprise Edition instance. By default, all endpoints of the Container Registry Enterprise Edition instance are displayed. It is required
+  when `acr_registry_info` is configured.
+* `instance_name` - (Optional) The name of Container Registry Enterprise Edition instance. It is required when `acr_registry_info` is
+  configured.
+* `instance_id` - (Optional) The ID of Container Registry Enterprise Edition instance. It is required
+  when `acr_registry_info` is configured.
+* `region_id` - (Optional) The region ID of Container Registry Enterprise Edition instance. It is required
+  when `acr_registry_info` is configured.
 
 #### Block container
 
