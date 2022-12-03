@@ -218,6 +218,28 @@ The container supports the following:
 * `volume_mounts` - (Optional) The structure of volumeMounts.
   See [Block_volume_mount_in_container](#block-volume_mount_in_container) below for details.
 * `working_dir` - (Optional) The working directory of the container.
+* `liveness_probe_exec_commands` - (Optional) Commands that you want to run in containers when you use the CLI to perform liveness probes.
+* `liveness_probe_period_seconds` - (Optional) The interval at which the liveness probe is performed. Unit: seconds. Default value: 10. Minimum value: 1.
+* `liveness_probe_http_get_path` - (Optional) The path to which HTTP GET requests are sent when you use HTTP requests to perform liveness probes.
+* `liveness_probe_failure_threshold` - (Optional) The minimum number of consecutive failures for the liveness probe to be considered failed after having been successful. Default value: 3.
+* `liveness_probe_initial_delay_seconds` - (Optional) The number of seconds after container has started before liveness probes are initiated.
+* `liveness_probe_http_get_port` - (Optional) The port to which HTTP GET requests are sent when you use HTTP requests to perform liveness probes.
+* `liveness_probe_http_get_scheme` - (Optional) The protocol type of HTTP GET requests when you use HTTP requests for liveness probes.Valid values:HTTP and HTTPS.
+* `liveness_probe_tcp_socket_port` - (Optional) The port detected by TCP sockets when you use TCP sockets to perform liveness probes.
+* `liveness_probe_success_threshold` - (Optional) The minimum number of consecutive successes for the liveness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
+* `liveness_probe_timeout_seconds` - (Optional) The timeout period for the liveness probe. Unit: seconds. Default value: 1. Minimum value: 1.
+* `readiness_probe_exec_commands` - (Optional) Commands that you want to run in containers when you use the CLI to perform readiness probes.
+* `readiness_probe_period_seconds` - (Optional) The interval at which the readiness probe is performed. Unit: seconds. Default value: 10. Minimum value: 1.
+* `readiness_probe_http_get_path` - (Optional) The path to which HTTP GET requests are sent when you use HTTP requests to perform readiness probes.
+* `readiness_probe_failure_threshold` - (Optional) The minimum number of consecutive failures for the readiness probe to be considered failed after having been successful. Default value: 3.
+* `readiness_probe_initial_delay_seconds` - (Optional) The number of seconds after container N has started before readiness probes are initiated.
+* `readiness_probe_http_get_port` - (Optional) The port to which HTTP GET requests are sent when you use HTTP requests to perform readiness probes.
+* `readiness_probe_http_get_scheme` - (Optional) The protocol type of HTTP GET requests when you use HTTP requests for readiness probes. Valid values: HTTP and HTTPS.
+* `readiness_probe_tcp_socket_port` - (Optional) The port detected by Transmission Control Protocol (TCP) sockets when you use TCP sockets to perform readiness probes.
+* `readiness_probe_success_threshold` - (Optional) The minimum number of consecutive successes for the readiness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
+* `readiness_probe_timeout_seconds` - (Optional) The timeout period for the readiness probe. Unit: seconds. Default value: 1. Minimum value: 1.
+
+
 
 #### Block environment_var_in_container
 
