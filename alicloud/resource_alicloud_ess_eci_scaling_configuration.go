@@ -608,26 +608,26 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
 
 		Containers[i]["ReadinessProbeExec"] = ContainersMap["readiness_probe_exec_commands"]
-		Containers[i]["ReadinessProbePeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
-		Containers[i]["ReadinessProbeHttpGetPath"] = ContainersMap["readiness_probe_http_get_path"]
-		Containers[i]["ReadinessProbeFailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
-		Containers[i]["ReadinessProbeInitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
-		Containers[i]["ReadinessProbeHttpGetPort"] = ContainersMap["readiness_probe_http_get_port"]
-		Containers[i]["ReadinessProbeHttpGetScheme"] = ContainersMap["readiness_probe_http_get_scheme"]
-		Containers[i]["ReadinessProbeTcpSocketPort"] = ContainersMap["readiness_probe_tcp_socket_port"]
-		Containers[i]["ReadinessProbeSuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
-		Containers[i]["ReadinessProbeTimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
-
-		Containers[i]["livenessProbeExec"] = ContainersMap["liveness_probe_exec_commands"]
-		Containers[i]["livenessProbePeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
-		Containers[i]["livenessProbeHttpGetPath"] = ContainersMap["liveness_probe_http_get_path"]
-		Containers[i]["livenessProbeFailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
-		Containers[i]["livenessProbeInitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
-		Containers[i]["livenessProbeHttpGetPort"] = ContainersMap["liveness_probe_http_get_port"]
-		Containers[i]["livenessProbeHttpGetScheme"] = ContainersMap["liveness_probe_http_get_scheme"]
-		Containers[i]["livenessProbeTcpSocketPort"] = ContainersMap["liveness_probe_tcp_socket_port"]
-		Containers[i]["livenessProbeSuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
-		Containers[i]["livenessProbeTimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+		//Containers[i]["ReadinessProbePeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+		//Containers[i]["ReadinessProbeHttpGetPath"] = ContainersMap["readiness_probe_http_get_path"]
+		//Containers[i]["ReadinessProbeFailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+		//Containers[i]["ReadinessProbeInitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+		//Containers[i]["ReadinessProbeHttpGetPort"] = ContainersMap["readiness_probe_http_get_port"]
+		//Containers[i]["ReadinessProbeHttpGetScheme"] = ContainersMap["readiness_probe_http_get_scheme"]
+		//Containers[i]["ReadinessProbeTcpSocketPort"] = ContainersMap["readiness_probe_tcp_socket_port"]
+		//Containers[i]["ReadinessProbeSuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+		//Containers[i]["ReadinessProbeTimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+		//
+		//Containers[i]["livenessProbeExec"] = ContainersMap["liveness_probe_exec_commands"]
+		//Containers[i]["livenessProbePeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+		//Containers[i]["livenessProbeHttpGetPath"] = ContainersMap["liveness_probe_http_get_path"]
+		//Containers[i]["livenessProbeFailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+		//Containers[i]["livenessProbeInitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+		//Containers[i]["livenessProbeHttpGetPort"] = ContainersMap["liveness_probe_http_get_port"]
+		//Containers[i]["livenessProbeHttpGetScheme"] = ContainersMap["liveness_probe_http_get_scheme"]
+		//Containers[i]["livenessProbeTcpSocketPort"] = ContainersMap["liveness_probe_tcp_socket_port"]
+		//Containers[i]["livenessProbeSuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+		//Containers[i]["livenessProbeTimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
 
 		Containers[i]["Arg"] = ContainersMap["args"]
 		Containers[i]["Cpu"] = ContainersMap["cpu"]
@@ -802,27 +802,26 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					"working_dir":                           m1["WorkingDir"],
 					"args":                                  m1["Args"],
 					"readiness_probe_exec_commands":         m1["ReadinessProbeExec"],
-					"readiness_probe_period_seconds":        m1["ReadinessProbePeriodSeconds"],
-					"readiness_probe_http_get_path":         m1["ReadinessProbeHttpGetPath"],
-					"readiness_probe_failure_threshold":     m1["ReadinessProbeFailureThreshold"],
-					"readiness_probe_initial_delay_seconds": m1["ReadinessProbeInitialDelaySeconds"],
-					"readiness_probe_http_get_port":         m1["ReadinessProbeHttpGetPort"],
-					"readiness_probe_http_get_scheme":       m1["ReadinessProbeHttpGetScheme"],
-					"readiness_probe_tcp_socket_port":       m1["ReadinessProbeTcpSocketPort"],
-					"readiness_probe_success_threshold":     m1["ReadinessProbeSuccessThreshold"],
-					"readiness_probe_timeout_seconds":       m1["ReadinessProbeTimeoutSeconds"],
-
-					"liveness_probe_exec_commands":         m1["livenessProbeExec"],
-					"liveness_probe_period_seconds":        m1["livenessProbePeriodSeconds"],
-					"liveness_probe_http_get_path":         m1["livenessProbeHttpGetPath"],
-					"liveness_probe_failure_threshold":     m1["livenessProbeFailureThreshold"],
-					"liveness_probe_initial_delay_seconds": m1["livenessProbeInitialDelaySeconds"],
-					"liveness_probe_http_get_port":         m1["livenessProbeHttpGetPort"],
-					"liveness_probe_http_get_scheme":       m1["livenessProbeHttpGetScheme"],
-					"liveness_probe_tcp_socket_port":       m1["livenessProbeTcpSocketPort"],
-					"liveness_probe_success_threshold":     m1["livenessProbeSuccessThreshold"],
-					"liveness_probe_timeout_seconds":       m1["livenessProbeSuccessThreshold"],
-
+					//"readiness_probe_period_seconds":        m1["ReadinessProbePeriodSeconds"],
+					//"readiness_probe_http_get_path":         m1["ReadinessProbeHttpGetPath"],
+					//"readiness_probe_failure_threshold":     m1["ReadinessProbeFailureThreshold"],
+					//"readiness_probe_initial_delay_seconds": m1["ReadinessProbeInitialDelaySeconds"],
+					//"readiness_probe_http_get_port":         m1["ReadinessProbeHttpGetPort"],
+					//"readiness_probe_http_get_scheme":       m1["ReadinessProbeHttpGetScheme"],
+					//"readiness_probe_tcp_socket_port":       m1["ReadinessProbeTcpSocketPort"],
+					//"readiness_probe_success_threshold":     m1["ReadinessProbeSuccessThreshold"],
+					//"readiness_probe_timeout_seconds":       m1["ReadinessProbeTimeoutSeconds"],
+					//
+					//"liveness_probe_exec_commands":         m1["livenessProbeExec"],
+					//"liveness_probe_period_seconds":        m1["livenessProbePeriodSeconds"],
+					//"liveness_probe_http_get_path":         m1["livenessProbeHttpGetPath"],
+					//"liveness_probe_failure_threshold":     m1["livenessProbeFailureThreshold"],
+					//"liveness_probe_initial_delay_seconds": m1["livenessProbeInitialDelaySeconds"],
+					//"liveness_probe_http_get_port":         m1["livenessProbeHttpGetPort"],
+					//"liveness_probe_http_get_scheme":       m1["livenessProbeHttpGetScheme"],
+					//"liveness_probe_tcp_socket_port":       m1["livenessProbeTcpSocketPort"],
+					//"liveness_probe_success_threshold":     m1["livenessProbeSuccessThreshold"],
+					//"liveness_probe_timeout_seconds":       m1["livenessProbeSuccessThreshold"],
 					"cpu":               m1["Cpu"],
 					"gpu":               m1["Gpu"],
 					"memory":            m1["Memory"],
@@ -1155,27 +1154,27 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i] = make(map[string]interface{})
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
 
-			Containers[i]["ReadinessProbeExec"] = ContainersMap["readiness_probe_exec_commands"]
-			Containers[i]["ReadinessProbePeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
-			Containers[i]["ReadinessProbeHttpGetPath"] = ContainersMap["readiness_probe_http_get_path"]
-			Containers[i]["ReadinessProbeFailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
-			Containers[i]["ReadinessProbeInitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
-			Containers[i]["ReadinessProbeHttpGetPort"] = ContainersMap["readiness_probe_http_get_port"]
-			Containers[i]["ReadinessProbeHttpGetScheme"] = ContainersMap["readiness_probe_http_get_scheme"]
-			Containers[i]["ReadinessProbeTcpSocketPort"] = ContainersMap["readiness_probe_tcp_socket_port"]
-			Containers[i]["ReadinessProbeSuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
-			Containers[i]["ReadinessProbeTimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
-
-			Containers[i]["livenessProbeExec"] = ContainersMap["liveness_probe_exec_commands"]
-			Containers[i]["livenessProbePeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
-			Containers[i]["livenessProbeHttpGetPath"] = ContainersMap["liveness_probe_http_get_path"]
-			Containers[i]["livenessProbeFailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
-			Containers[i]["livenessProbeInitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
-			Containers[i]["livenessProbeHttpGetPort"] = ContainersMap["liveness_probe_http_get_port"]
-			Containers[i]["livenessProbeHttpGetScheme"] = ContainersMap["liveness_probe_http_get_scheme"]
-			Containers[i]["livenessProbeTcpSocketPort"] = ContainersMap["liveness_probe_tcp_socket_port"]
-			Containers[i]["livenessProbeSuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
-			Containers[i]["livenessProbeTimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+			//Containers[i]["ReadinessProbeExec"] = ContainersMap["readiness_probe_exec_commands"]
+			//Containers[i]["ReadinessProbePeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+			//Containers[i]["ReadinessProbeHttpGetPath"] = ContainersMap["readiness_probe_http_get_path"]
+			//Containers[i]["ReadinessProbeFailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+			//Containers[i]["ReadinessProbeInitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+			//Containers[i]["ReadinessProbeHttpGetPort"] = ContainersMap["readiness_probe_http_get_port"]
+			//Containers[i]["ReadinessProbeHttpGetScheme"] = ContainersMap["readiness_probe_http_get_scheme"]
+			//Containers[i]["ReadinessProbeTcpSocketPort"] = ContainersMap["readiness_probe_tcp_socket_port"]
+			//Containers[i]["ReadinessProbeSuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+			//Containers[i]["ReadinessProbeTimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+			//
+			//Containers[i]["livenessProbeExec"] = ContainersMap["liveness_probe_exec_commands"]
+			//Containers[i]["livenessProbePeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+			//Containers[i]["livenessProbeHttpGetPath"] = ContainersMap["liveness_probe_http_get_path"]
+			//Containers[i]["livenessProbeFailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+			//Containers[i]["livenessProbeInitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+			//Containers[i]["livenessProbeHttpGetPort"] = ContainersMap["liveness_probe_http_get_port"]
+			//Containers[i]["livenessProbeHttpGetScheme"] = ContainersMap["liveness_probe_http_get_scheme"]
+			//Containers[i]["livenessProbeTcpSocketPort"] = ContainersMap["liveness_probe_tcp_socket_port"]
+			//Containers[i]["livenessProbeSuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+			//Containers[i]["livenessProbeTimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
 
 			Containers[i]["Arg"] = ContainersMap["args"]
 			Containers[i]["Cpu"] = ContainersMap["cpu"]
