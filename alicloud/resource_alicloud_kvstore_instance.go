@@ -285,6 +285,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"security_ips": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
