@@ -27,7 +27,10 @@ fmt:
 	goimports -w $(GOFMT_FILES)
 
 fmtcheck:
-	@sh -c "'$(CURDIR)/scripts/gofmtcheck.sh'"
+	"$(CURDIR)/scripts/gofmtcheck.sh"
+
+importscheck:
+	"$(CURDIR)/scripts/goimportscheck.sh"
 
 errcheck:
 	@sh -c "'$(CURDIR)/scripts/errcheck.sh'"
