@@ -117,6 +117,33 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"acr_registry_infos": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"domains": {
+							Type: schema.TypeSet,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"image_registry_credentials": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -486,6 +513,20 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		}
 		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
 	}
+	if v, ok := d.GetOk("acr_registry_infos"); ok {
+		acrRegistryInfoMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.(*schema.Set).List() {
+			obj := raw.(map[string]interface{})
+			// 创建的时候是DOMAIN
+			acrRegistryInfoMaps = append(acrRegistryInfoMaps, map[string]interface{}{
+				"Domain":       expandStringList(obj["domains"].(*schema.Set).List()),
+				"InstanceName": obj["instance_name"],
+				"InstanceId":   obj["instance_id"],
+				"RegionId":     obj["region_id"],
+			})
+		}
+		request["AcrRegistryInfo"] = acrRegistryInfoMaps
+	}
 
 	Containers := make([]map[string]interface{}, len(d.Get("containers").(*schema.Set).List()))
 	for i, v := range d.Get("containers").(*schema.Set).List() {
@@ -672,6 +713,22 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 		}
 	}
 	d.Set("image_registry_credentials", credentials)
+
+	acrRegistryInfos := make([]map[string]interface{}, 0)
+	if acrRegistryInfoList, ok := o["AcrRegistryInfos"].([]interface{}); ok {
+		for _, v := range acrRegistryInfoList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"domains":       m1["Domains"],
+					"instance_name": m1["InstanceName"],
+					"instance_id":   m1["InstanceId"],
+					"region_id":     m1["RegionId"],
+				}
+				acrRegistryInfos = append(acrRegistryInfos, temp1)
+			}
+		}
+	}
+	d.Set("acr_registry_infos", acrRegistryInfos)
 
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := o["Containers"].([]interface{}); ok {
@@ -1001,6 +1058,24 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				})
 			}
 			request["ImageRegistryCredential"] = imageRegisryCredentialMaps
+		}
+	}
+
+	if d.HasChange("acr_registry_infos") {
+		update = true
+		if v, ok := d.GetOk("acr_registry_infos"); ok {
+			acrRegistryInfoMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+				//更新的时候也是domain
+				acrRegistryInfoMaps = append(acrRegistryInfoMaps, map[string]interface{}{
+					"Domain":       expandStringList(obj["domains"].(*schema.Set).List()),
+					"InstanceName": obj["instance_name"],
+					"InstanceId":   obj["instance_id"],
+					"RegionId":     obj["region_id"],
+				})
+			}
+			request["AcrRegistryInfo"] = acrRegistryInfoMaps
 		}
 	}
 

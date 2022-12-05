@@ -96,6 +96,143 @@ func testSweepEciScalingConfiguration(region string) error {
 	return nil
 }
 
+func TestAccAlicloudEssEciScalingConfigurationSupportAcrRegistryInfo(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ess_eci_scaling_configuration.default"
+	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEssEciScalingConfiguration")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssEciScalingConfiguration)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name": name,
+					"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf",
+					"containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "key",
+									"value": "value",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "path",
+									"name":       "name",
+									"read_only":  "true",
+								},
+							},
+							"commands": []string{"cmd"},
+						},
+					},
+					"acr_registry_infos": []map[string]interface{}{
+						{
+							"domains":       []string{"test-registry-vpc.cn-hangzhou.cr.aliyuncs.com"},
+							"instance_id":   "cri-47rme9691uiowvfv",
+							"region_id":     "cn-hangzhou",
+							"instance_name": "zzz",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":           CHECKSET,
+						"scaling_configuration_name": name,
+						"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf",
+						"acr_registry_infos.#":       "1",
+						"containers.#":               "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name": name,
+					"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf",
+					"containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "key",
+									"value": "value",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "path",
+									"name":       "name",
+									"read_only":  "true",
+								},
+							},
+							"commands": []string{"cmd"},
+						},
+					},
+					"acr_registry_infos": []map[string]interface{}{
+						{
+							"domains":       []string{"test111-registry-vpc.cn-hangzhou.cr.aliyuncs.com", "zhanglinan-registry-vpc.cn-hangzhou.aliyuncs.com"},
+							"instance_id":   "cri-47rme9691uiowvfv11",
+							"region_id":     "cn-hangzhou",
+							"instance_name": "zzz1111",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":           CHECKSET,
+						"scaling_configuration_name": name,
+						"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf",
+						"acr_registry_infos.#":       "1",
+						"containers.#":               "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudEssEciScalingConfigurationBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ess_eci_scaling_configuration.default"
