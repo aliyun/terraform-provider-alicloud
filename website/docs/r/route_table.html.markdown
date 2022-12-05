@@ -42,6 +42,7 @@ The following arguments are supported:
 * `route_table_name` - (Optional, Available in v1.119.1+) The name of the route table.
 * `description` - (Optional) The description of the route table instance.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
+* `associate_type` - (Optional, Available in v1.194.0+) The type of routing table created. Valid values are `VSwitch` and `Gateway`
 
 ## Attributes Reference
 

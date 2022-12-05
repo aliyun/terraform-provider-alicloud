@@ -55,6 +55,13 @@ func resourceAlicloudRouteTable() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"associate_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"VSwitch", "Gateway"}, false),
+			},
 		},
 	}
 }
@@ -80,6 +87,9 @@ func resourceAlicloudRouteTableCreate(d *schema.ResourceData, meta interface{}) 
 		request["RouteTableName"] = v
 	}
 
+	if v, ok := d.GetOk("associate_type"); ok {
+		request["AssociateType"] = v
+	}
 	request["VpcId"] = d.Get("vpc_id")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -130,6 +140,7 @@ func resourceAlicloudRouteTableRead(d *schema.ResourceData, meta interface{}) er
 		d.Set("tags", tagsToMap(v["Tag"]))
 	}
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("associate_type", object["AssociateType"])
 	return nil
 }
 func resourceAlicloudRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -210,7 +221,7 @@ func resourceAlicloudRouteTableDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "DependencyViolation.RouteEntry", "IncorrectRouteTableStatus", "IncorrectStatus.cbnStatus"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "DependencyViolation.RouteEntry", "IncorrectRouteTableStatus", "IncorrectStatus.cbnStatus", "OperationDenied.GatewayAssociated"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

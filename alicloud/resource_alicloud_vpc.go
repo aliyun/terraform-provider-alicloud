@@ -28,11 +28,10 @@ func resourceAlicloudVpc() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"cidr_block": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Default:       "172.16.0.0/12",
-				ValidateFunc:  validateCIDRNetworkAddress,
-				ConflictsWith: []string{"enable_ipv6"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "172.16.0.0/12",
+				ValidateFunc: validateCIDRNetworkAddress,
 			},
 			"description": {
 				Type:         schema.TypeString,
@@ -44,9 +43,8 @@ func resourceAlicloudVpc() *schema.Resource {
 				Optional: true,
 			},
 			"enable_ipv6": {
-				Type:          schema.TypeBool,
-				Optional:      true,
-				ConflictsWith: []string{"cidr_block"},
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"ipv6_cidr_block": {
 				Type:     schema.TypeString,

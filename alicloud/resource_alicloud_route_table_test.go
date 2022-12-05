@@ -304,12 +304,14 @@ func TestAccAlicloudVPCRouteTable_basic2(t *testing.T) {
 					"vpc_id":           "${alicloud_vpc.default.id}",
 					"description":      name,
 					"route_table_name": name,
+					"associate_type":   "Gateway",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_id":           CHECKSET,
 						"description":      name,
 						"route_table_name": name,
+						"associate_type":   "Gateway",
 					}),
 				),
 			},
