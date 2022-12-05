@@ -117,6 +117,33 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"acr_registry_infos": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"domains": {
+							Type: schema.TypeSet,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
+						"instance_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"region_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"image_registry_credentials": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -235,6 +262,96 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
+						},
+						"liveness_probe_exec_commands": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"liveness_probe_period_seconds": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(1),
+						},
+						"liveness_probe_http_get_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"liveness_probe_failure_threshold": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"liveness_probe_initial_delay_seconds": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"liveness_probe_http_get_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"liveness_probe_http_get_scheme": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+						},
+						"liveness_probe_tcp_socket_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"liveness_probe_success_threshold": {
+							Type:         schema.TypeInt,
+							ValidateFunc: validation.IntInSlice([]int{1}),
+							Optional:     true,
+						},
+						"liveness_probe_timeout_seconds": {
+							Type:         schema.TypeInt,
+							ValidateFunc: validation.IntAtLeast(1),
+							Optional:     true,
+						},
+						"readiness_probe_exec_commands": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"readiness_probe_period_seconds": {
+							Type:         schema.TypeInt,
+							ValidateFunc: validation.IntAtLeast(1),
+							Optional:     true,
+						},
+						"readiness_probe_http_get_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"readiness_probe_failure_threshold": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"readiness_probe_initial_delay_seconds": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"readiness_probe_http_get_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"readiness_probe_http_get_scheme": {
+							Type:         schema.TypeString,
+							ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+							Optional:     true,
+						},
+						"readiness_probe_tcp_socket_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"readiness_probe_success_threshold": {
+							Type:         schema.TypeInt,
+							ValidateFunc: validation.IntInSlice([]int{1}),
+							Optional:     true,
+						},
+						"readiness_probe_timeout_seconds": {
+							Type:         schema.TypeInt,
+							ValidateFunc: validation.IntAtLeast(1),
+							Optional:     true,
 						},
 					},
 				},
@@ -487,6 +604,21 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
 	}
 
+	if v, ok := d.GetOk("acr_registry_infos"); ok {
+		acrRegistryInfoMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.(*schema.Set).List() {
+			obj := raw.(map[string]interface{})
+
+			acrRegistryInfoMaps = append(acrRegistryInfoMaps, map[string]interface{}{
+				"Domain":       expandStringList(obj["domains"].(*schema.Set).List()),
+				"InstanceName": obj["instance_name"],
+				"InstanceId":   obj["instance_id"],
+				"RegionId":     obj["region_id"],
+			})
+		}
+		request["AcrRegistryInfo"] = acrRegistryInfoMaps
+	}
+
 	Containers := make([]map[string]interface{}, len(d.Get("containers").(*schema.Set).List()))
 	for i, v := range d.Get("containers").(*schema.Set).List() {
 		ContainersMap := v.(map[string]interface{})
@@ -515,6 +647,29 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["Name"] = ContainersMap["name"]
 		Containers[i]["Image"] = ContainersMap["image"]
 		Containers[i]["ImagePullPolicy"] = ContainersMap["image_pull_policy"]
+
+		Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
+		Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+		Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
+		Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+		Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+		Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+		Containers[i]["ReadinessProbe.HttpGet.Scheme"] = ContainersMap["readiness_probe_http_get_scheme"]
+		Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
+		Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+		Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+
+		Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
+		Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+		Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
+		Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+		Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+		Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+		Containers[i]["LivenessProbe.HttpGet.Scheme"] = ContainersMap["liveness_probe_http_get_scheme"]
+		Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
+		Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+		Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+
 		VolumeMounts := make([]map[string]interface{}, len(ContainersMap["volume_mounts"].(*schema.Set).List()))
 		for i, VolumeMountsValue := range ContainersMap["volume_mounts"].(*schema.Set).List() {
 			VolumeMountsMap := VolumeMountsValue.(map[string]interface{})
@@ -612,6 +767,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
+
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_eci_scaling_configuration", action, AlibabaCloudSdkGoERROR)
@@ -673,6 +829,22 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	}
 	d.Set("image_registry_credentials", credentials)
 
+	acrRegistryInfos := make([]map[string]interface{}, 0)
+	if acrRegistryInfoList, ok := o["AcrRegistryInfos"].([]interface{}); ok {
+		for _, v := range acrRegistryInfoList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"domains":       m1["Domains"],
+					"instance_name": m1["InstanceName"],
+					"instance_id":   m1["InstanceId"],
+					"region_id":     m1["RegionId"],
+				}
+				acrRegistryInfos = append(acrRegistryInfos, temp1)
+			}
+		}
+	}
+	d.Set("acr_registry_infos", acrRegistryInfos)
+
 	containers := make([]map[string]interface{}, 0)
 	if containersList, ok := o["Containers"].([]interface{}); ok {
 		for _, v := range containersList {
@@ -687,6 +859,28 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					"image":             m1["Image"],
 					"image_pull_policy": m1["ImagePullPolicy"],
 					"commands":          m1["Commands"],
+
+					"readiness_probe_exec_commands":         m1["ReadinessProbeExecCommands"],
+					"readiness_probe_period_seconds":        m1["ReadinessProbePeriodSeconds"],
+					"readiness_probe_http_get_path":         m1["ReadinessProbeHttpGetPath"],
+					"readiness_probe_failure_threshold":     m1["ReadinessProbeFailureThreshold"],
+					"readiness_probe_initial_delay_seconds": m1["ReadinessProbeInitialDelaySeconds"],
+					"readiness_probe_http_get_port":         m1["ReadinessProbeHttpGetPort"],
+					"readiness_probe_http_get_scheme":       m1["ReadinessProbeHttpGetScheme"],
+					"readiness_probe_tcp_socket_port":       m1["ReadinessProbeTcpSocketPort"],
+					"readiness_probe_success_threshold":     m1["ReadinessProbeSuccessThreshold"],
+					"readiness_probe_timeout_seconds":       m1["ReadinessProbeTimeoutSeconds"],
+
+					"liveness_probe_exec_commands":         m1["LivenessProbeExecCommands"],
+					"liveness_probe_period_seconds":        m1["LivenessProbePeriodSeconds"],
+					"liveness_probe_http_get_path":         m1["LivenessProbeHttpGetPath"],
+					"liveness_probe_failure_threshold":     m1["LivenessProbeFailureThreshold"],
+					"liveness_probe_initial_delay_seconds": m1["LivenessProbeInitialDelaySeconds"],
+					"liveness_probe_http_get_port":         m1["LivenessProbeHttpGetPort"],
+					"liveness_probe_http_get_scheme":       m1["LivenessProbeHttpGetScheme"],
+					"liveness_probe_tcp_socket_port":       m1["LivenessProbeTcpSocketPort"],
+					"liveness_probe_success_threshold":     m1["LivenessProbeSuccessThreshold"],
+					"liveness_probe_timeout_seconds":       m1["LivenessProbeTimeoutSeconds"],
 				}
 				if m1["EnvironmentVars"] != nil {
 					environmentVarsMaps := make([]map[string]interface{}, 0)
@@ -1004,6 +1198,24 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
+	if d.HasChange("acr_registry_infos") {
+		update = true
+		if v, ok := d.GetOk("acr_registry_infos"); ok {
+			acrRegistryInfoMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+
+				acrRegistryInfoMaps = append(acrRegistryInfoMaps, map[string]interface{}{
+					"Domain":       expandStringList(obj["domains"].(*schema.Set).List()),
+					"InstanceName": obj["instance_name"],
+					"InstanceId":   obj["instance_id"],
+					"RegionId":     obj["region_id"],
+				})
+			}
+			request["AcrRegistryInfo"] = acrRegistryInfoMaps
+		}
+	}
+
 	if d.HasChange("containers") {
 		update = true
 		Containers := make([]map[string]interface{}, len(d.Get("containers").(*schema.Set).List()))
@@ -1019,6 +1231,28 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i]["Image"] = ContainersMap["image"]
 			Containers[i]["ImagePullPolicy"] = ContainersMap["image_pull_policy"]
 			Containers[i]["Command"] = ContainersMap["commands"]
+
+			Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
+			Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+			Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
+			Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+			Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+			Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+			Containers[i]["ReadinessProbe.HttpGet.Scheme"] = ContainersMap["readiness_probe_http_get_scheme"]
+			Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
+			Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+			Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+
+			Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
+			Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+			Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
+			Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+			Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+			Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+			Containers[i]["LivenessProbe.HttpGet.Scheme"] = ContainersMap["liveness_probe_http_get_scheme"]
+			Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
+			Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+			Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
 
 			EnvironmentVars := make([]map[string]interface{}, len(ContainersMap["environment_vars"].(*schema.Set).List()))
 			for i, EnvironmentVarsValue := range ContainersMap["environment_vars"].(*schema.Set).List() {
