@@ -11,8 +11,6 @@ import (
 
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -351,7 +349,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "VpnTask.CONFLICT"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -642,43 +640,4 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 	}
 
 	return nil
-}
-
-func buildAliyunVpnConnectionArgs(d *schema.ResourceData, meta interface{}) (*vpc.CreateVpnConnectionRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-
-	request := vpc.CreateCreateVpnConnectionRequest()
-	request.RegionId = client.RegionId
-	request.CustomerGatewayId = d.Get("customer_gateway_id").(string)
-	request.VpnGatewayId = d.Get("vpn_gateway_id").(string)
-	request.LocalSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("local_subnet").([]interface{}))
-	request.RemoteSubnet = vpnGatewayService.AssembleNetworkSubnetToString(d.Get("remote_subnet").([]interface{}))
-
-	if v := d.Get("name").(string); v != "" {
-		request.Name = v
-	}
-
-	if v, ok := d.GetOk("effect_immediately"); ok {
-		request.EffectImmediately = requests.NewBoolean(v.(bool))
-	}
-
-	if v, ok := d.GetOk("ike_config"); ok {
-		ikeConfig, err := vpnGatewayService.AssembleIkeConfig(v.([]interface{}))
-		if err != nil {
-			return nil, WrapError(err)
-		}
-		request.IkeConfig = ikeConfig
-	}
-
-	if v, ok := d.GetOk("ipsec_config"); ok {
-		ipsecConfig, err := vpnGatewayService.AssembleIpsecConfig(v.([]interface{}))
-		if err != nil {
-			return nil, fmt.Errorf("wrong ipsec_config: %#v", err)
-		}
-		request.IpsecConfig = ipsecConfig
-	}
-	request.ClientToken = buildClientToken(request.GetActionName())
-
-	return request, nil
 }
