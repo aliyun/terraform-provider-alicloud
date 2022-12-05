@@ -225,6 +225,9 @@ The following arguments are supported:
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
 * `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
+
+-> **NOTE:**
+- When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value.
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
     - [5, 2000] for MySQL/PostgreSQL/PPAS HA dual node edition;
     - [20,1000] for MySQL 5.7 basic single node edition;
@@ -310,7 +313,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    - Auto: Instances are automatically upgraded to a higher minor version.
    - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
    
-   Default to "Manual". See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
+   See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 * `upgrade_db_instance_kernel_version` - (Optional, Available in 1.126.0+) Whether to upgrade a minor version of the kernel. Valid values:
     - true: upgrade
     - false: not to upgrade

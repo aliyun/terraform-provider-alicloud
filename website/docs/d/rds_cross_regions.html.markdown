@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_rds_cross_regions"
 sidebar_current: "docs-alicloud-datasource-rds-cross-regions"
 description: |-
-Provide a list of available RDS remote disaster recovery regions for Alibaba Cloud accounts.
+  Provide a list of available RDS remote disaster recovery regions for Alibaba Cloud accounts.
 ---
 
 # alicloud\_rds\_cross\_regions
