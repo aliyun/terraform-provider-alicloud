@@ -67,6 +67,7 @@ The following arguments are supported:
 * `route_table_association_enabled` - (Optional,ForceNew) Whether to enabled route table association. The system default value is `true`.
 * `route_table_propagation_enabled` - (Optional,ForceNew) Whether to enabled route table propagation. The system default value is `true`.  
 * `dry_run` - (Optional) The dry run.
+* `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
 ->**NOTE:** Ensure that the vbr is not used in Express Connect.
 

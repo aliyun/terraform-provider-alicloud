@@ -62,12 +62,6 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "resource_type", "route_table_association_enabled", "route_table_propagation_enabled"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_publish_route_enabled": `false`,
 				}),
@@ -121,6 +115,12 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "resource_type", "route_table_association_enabled", "route_table_propagation_enabled"},
+			},
 		},
 	})
 }
@@ -160,6 +160,10 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
 					"route_table_association_enabled":       "false",
 					"route_table_propagation_enabled":       "false",
 					"vbr_owner_id":                          "${data.alicloud_account.default.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "TransitRouterVbrAttachment",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -174,6 +178,24 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
 						"route_table_association_enabled":       "false",
 						"route_table_propagation_enabled":       "false",
 						"vbr_owner_id":                          CHECKSET,
+						"tags.%":                                "2",
+						"tags.Created":                          "TF",
+						"tags.For":                              "TransitRouterVbrAttachment",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "TransitRouterVbrAttachment_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "TransitRouterVbrAttachment_Update",
 					}),
 				),
 			},
