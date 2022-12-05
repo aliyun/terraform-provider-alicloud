@@ -1,4 +1,8 @@
 ## 1.194.0 (Unreleased)
+
+ENHANCEMENTS:
+- resource/alicloud_ess_eci_scalingconfiguration: Add acr_registry_infos and container liveness_probe, readiness_probe.
+
 ## 1.193.0 (November 29, 2022)
 
 - **New Resource:** `alicloud_das_switch_das_pro` ([#5612](https://github.com/aliyun/terraform-provider-alicloud/issues/5612))

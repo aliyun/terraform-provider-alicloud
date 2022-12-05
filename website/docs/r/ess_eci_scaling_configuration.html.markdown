@@ -109,6 +109,9 @@ The following arguments are supported:
   details.
 * `volumes` - (Optional) The list of volumes.See [Block volume](#block-volume) below for details.
 * `host_aliases` - (Optional) HostAliases.See [Block host_alias](#block-host_alias) below for details.
+* `acr_registry_infos` - (Optional, Available in 1.194.0+) Information about the Container Registry Enterprise Edition instance. The details see
+  Block `acr_registry_info`.See [Block acr_registry_info](#block-acr_registry_info) below for
+  details.
 
 #### Block volume
 
@@ -218,6 +221,26 @@ The container supports the following:
 * `volume_mounts` - (Optional) The structure of volumeMounts.
   See [Block_volume_mount_in_container](#block-volume_mount_in_container) below for details.
 * `working_dir` - (Optional) The working directory of the container.
+* `liveness_probe_exec_commands` - (Optional, Available in 1.194.0+) Commands that you want to run in containers when you use the CLI to perform liveness probes.
+* `liveness_probe_period_seconds` - (Optional, Available in 1.194.0+) The interval at which the liveness probe is performed. Unit: seconds. Default value: 10. Minimum value: 1.
+* `liveness_probe_http_get_path` - (Optional, Available in 1.194.0+) The path to which HTTP GET requests are sent when you use HTTP requests to perform liveness probes.
+* `liveness_probe_failure_threshold` - (Optional, Available in 1.194.0+) The minimum number of consecutive failures for the liveness probe to be considered failed after having been successful. Default value: 3.
+* `liveness_probe_initial_delay_seconds` - (Optional, Available in 1.194.0+) The number of seconds after container has started before liveness probes are initiated.
+* `liveness_probe_http_get_port` - (Optional, Available in 1.194.0+) The port to which HTTP GET requests are sent when you use HTTP requests to perform liveness probes.
+* `liveness_probe_http_get_scheme` - (Optional, Available in 1.194.0+) The protocol type of HTTP GET requests when you use HTTP requests for liveness probes.Valid values:HTTP and HTTPS.
+* `liveness_probe_tcp_socket_port` - (Optional, Available in 1.194.0+) The port detected by TCP sockets when you use TCP sockets to perform liveness probes.
+* `liveness_probe_success_threshold` - (Optional, Available in 1.194.0+) The minimum number of consecutive successes for the liveness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
+* `liveness_probe_timeout_seconds` - (Optional, Available in 1.194.0+) The timeout period for the liveness probe. Unit: seconds. Default value: 1. Minimum value: 1.
+* `readiness_probe_exec_commands` - (Optional, Available in 1.194.0+) Commands that you want to run in containers when you use the CLI to perform readiness probes.
+* `readiness_probe_period_seconds` - (Optional, Available in 1.194.0+) The interval at which the readiness probe is performed. Unit: seconds. Default value: 10. Minimum value: 1.
+* `readiness_probe_http_get_path` - (Optional, Available in 1.194.0+) The path to which HTTP GET requests are sent when you use HTTP requests to perform readiness probes.
+* `readiness_probe_failure_threshold` - (Optional, Available in 1.194.0+) The minimum number of consecutive failures for the readiness probe to be considered failed after having been successful. Default value: 3.
+* `readiness_probe_initial_delay_seconds` - (Optional, Available in 1.194.0+) The number of seconds after container N has started before readiness probes are initiated.
+* `readiness_probe_http_get_port` - (Optional, Available in 1.194.0+) The port to which HTTP GET requests are sent when you use HTTP requests to perform readiness probes.
+* `readiness_probe_http_get_scheme` - (Optional, Available in 1.194.0+) The protocol type of HTTP GET requests when you use HTTP requests for readiness probes. Valid values: HTTP and HTTPS.
+* `readiness_probe_tcp_socket_port` - (Optional, Available in 1.194.0+) The port detected by Transmission Control Protocol (TCP) sockets when you use TCP sockets to perform readiness probes.
+* `readiness_probe_success_threshold` - (Optional, Available in 1.194.0+) The minimum number of consecutive successes for the readiness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
+* `readiness_probe_timeout_seconds` - (Optional, Available in 1.194.0+) The timeout period for the readiness probe. Unit: seconds. Default value: 1. Minimum value: 1.
 
 #### Block environment_var_in_container
 
@@ -242,6 +265,19 @@ The volume_mount supports the following:
   data in the volume.
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
+
+#### Block acr_registry_info
+
+The acr_registry_info supports the following:
+
+* `domains` - (Optional) Endpoint of Container Registry Enterprise Edition instance. By default, all endpoints of the Container Registry Enterprise Edition instance are displayed. It is required
+  when `acr_registry_info` is configured.
+* `instance_name` - (Optional) The name of Container Registry Enterprise Edition instance. It is required when `acr_registry_info` is
+  configured.
+* `instance_id` - (Optional) The ID of Container Registry Enterprise Edition instance. It is required
+  when `acr_registry_info` is configured.
+* `region_id` - (Optional) The region ID of Container Registry Enterprise Edition instance. It is required
+  when `acr_registry_info` is configured.
 
 ## Attributes Reference
 
