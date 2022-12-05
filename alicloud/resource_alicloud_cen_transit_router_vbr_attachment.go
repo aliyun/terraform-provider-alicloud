@@ -22,8 +22,8 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_publish_route_enabled": {
@@ -45,10 +45,6 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Optional: true,
 				Default:  "VBR",
 			},
-			"transit_router_attachment_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"route_table_association_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -58,10 +54,6 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"transit_router_attachment_description": {
 				Type:     schema.TypeString,
@@ -85,6 +77,15 @@ func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 		},
@@ -166,8 +167,9 @@ func resourceAlicloudCenTransitRouterVbrAttachmentCreate(d *schema.ResourceData,
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterVbrAttachmentRead(d, meta)
+	return resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -180,10 +182,12 @@ func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, m
 		}
 		return WrapError(err)
 	}
+
 	parts, err1 := ParseResourceId(d.Id(), 2)
 	if err1 != nil {
 		return WrapError(err1)
 	}
+
 	d.Set("cen_id", parts[0])
 	d.Set("auto_publish_route_enabled", object["AutoPublishRouteEnabled"])
 	d.Set("status", object["Status"])
@@ -193,8 +197,17 @@ func resourceAlicloudCenTransitRouterVbrAttachmentRead(d *schema.ResourceData, m
 	d.Set("transit_router_id", object["TransitRouterId"])
 	d.Set("vbr_id", object["VbrId"])
 	d.Set("vbr_owner_id", object["VbrOwnerId"])
+
+	listTagResourcesObject, err := cbnService.ListTagResources(d.Id(), "TransitRouterVbrAttachment")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
+
 func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -208,25 +221,38 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 		return WrapError(err1)
 	}
 	update := false
+	d.Partial(true)
 	request := map[string]interface{}{
 		"TransitRouterAttachmentId": parts[1],
 	}
-	if d.HasChange("auto_publish_route_enabled") || d.IsNewResource() {
-		update = true
-		request["AutoPublishRouteEnabled"] = d.Get("auto_publish_route_enabled")
+
+	if d.HasChange("tags") {
+		if err := cbnService.SetResourceTags(d, "TransitRouterVbrAttachment"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
-	if d.HasChange("resource_type") {
+
+	if !d.IsNewResource() && d.HasChange("auto_publish_route_enabled") {
 		update = true
-		request["ResourceType"] = d.Get("resource_type")
 	}
-	if d.HasChange("transit_router_attachment_description") {
+	request["AutoPublishRouteEnabled"] = d.Get("auto_publish_route_enabled")
+
+	if !d.IsNewResource() && d.HasChange("resource_type") {
 		update = true
-		request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
 	}
-	if d.HasChange("transit_router_attachment_name") {
+	request["ResourceType"] = d.Get("resource_type")
+
+	if !d.IsNewResource() && d.HasChange("transit_router_attachment_description") {
 		update = true
-		request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
 	}
+	request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
+
+	if !d.IsNewResource() && d.HasChange("transit_router_attachment_name") {
+		update = true
+	}
+	request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
+
 	if update {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
@@ -252,9 +278,18 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
+		d.SetPartial("auto_publish_route_enabled")
+		d.SetPartial("resource_type")
+		d.SetPartial("transit_router_attachment_description")
+		d.SetPartial("transit_router_attachment_name")
 	}
+
+	d.Partial(false)
+
 	return resourceAlicloudCenTransitRouterVbrAttachmentRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterVbrAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
