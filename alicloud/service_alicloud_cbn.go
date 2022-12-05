@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -471,7 +472,73 @@ func (s *CbnService) CenBandwidthPackageStateRefreshFunc(id string, failStates [
 	}
 }
 
+func (s *CbnService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListTagResources"
+
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ResourceType": resourceType,
+	}
+
+	resourceIdNum := strings.Count(id, ":")
+
+	switch resourceIdNum {
+	case 0:
+		request["ResourceId.1"] = id
+	case 1:
+		parts, err := ParseResourceId(id, 2)
+		if err != nil {
+			return object, WrapError(err)
+		}
+		request["ResourceId.1"] = parts[resourceIdNum]
+	}
+
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	for {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			v, err := jsonpath.Get("$.TagResources.TagResource", response)
+			if err != nil {
+				return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources.TagResource", response))
+			}
+
+			if v != nil {
+				tags = append(tags, v.([]interface{})...)
+			}
+
+			return nil
+		})
+		if err != nil {
+			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return
+		}
+		if response["NextToken"] == nil {
+			break
+		}
+		request["NextToken"] = response["NextToken"]
+	}
+
+	return tags, nil
+}
+
 func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+
+	resourceIdNum := strings.Count(d.Id(), ":")
 
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
@@ -486,13 +553,25 @@ func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string
 				removedTagKeys = append(removedTagKeys, v)
 			}
 		}
+
 		if len(removedTagKeys) > 0 {
 			action := "UntagResources"
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
-				"ResourceId.1": d.Id(),
 			}
+
+			switch resourceIdNum {
+			case 0:
+				request["ResourceId.1"] = d.Id()
+			case 1:
+				parts, err := ParseResourceId(d.Id(), 2)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ResourceId.1"] = parts[resourceIdNum]
+			}
+
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
@@ -519,8 +598,19 @@ func (s *CbnService) SetResourceTags(d *schema.ResourceData, resourceType string
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
-				"ResourceId.1": d.Id(),
 			}
+
+			switch resourceIdNum {
+			case 0:
+				request["ResourceId.1"] = d.Id()
+			case 1:
+				parts, err := ParseResourceId(d.Id(), 2)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ResourceId.1"] = parts[resourceIdNum]
+			}
+
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
