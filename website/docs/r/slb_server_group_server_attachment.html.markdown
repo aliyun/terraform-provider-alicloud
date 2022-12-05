@@ -13,6 +13,9 @@ description: |-
 
 For information about server group server attachment and how to use it, see [Configure a server group server attachment](https://www.alibabacloud.com/help/en/doc-detail/35218.html).
 
+-> **NOTE:** Applying this resource may conflict with applying `alicloud_slb_listener`, 
+and the `alicloud_slb_listener` block should use `depends_on = [alicloud_slb_server_group_server_attachment.xxx]` to avoid it.
+
 ## Example Usage
 
 ```terraform
@@ -97,6 +100,7 @@ resource "alicloud_slb_listener" "default" {
   bandwidth        = 10
   scheduler        = "rr"
   server_group_id  = alicloud_slb_server_group.default.id
+  depends_on       = [alicloud_slb_server_group_server_attachment.default]
 }
 ```
 
