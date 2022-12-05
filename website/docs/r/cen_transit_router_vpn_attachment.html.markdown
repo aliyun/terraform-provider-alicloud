@@ -106,6 +106,7 @@ The following arguments are supported:
 * `vpn_id` - (Required, ForceNew) The id of the vpn.
 * `vpn_owner_id` - (Optional, Computed, ForceNew) The owner id of vpn.
 * `zone` - (Required, ForceNew) The list of zone mapping. See the following `Block zone`.
+* `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
 #### zone Block
 
@@ -125,8 +126,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 40 mins) Used when create the Transit Router Vpn Attachment.
-* `delete` - (Defaults to 30 mins) Used when delete the Transit Router Vpn Attachment.
 * `update` - (Defaults to 1 mins) Used when update the Transit Router Vpn Attachment.
+* `delete` - (Defaults to 30 mins) Used when delete the Transit Router Vpn Attachment.
 
 ## Import
 

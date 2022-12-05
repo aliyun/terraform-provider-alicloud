@@ -53,7 +53,7 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic0(t *testing.T) {
 					"transit_router_attachment_description": "${var.name}",
 					"vpn_id":                                "${alicloud_vpn_gateway_vpn_attachment.default.id}",
 					"cen_id":                                "${alicloud_cen_transit_router.default.cen_id}",
-					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_id":                     "${alicloud_cen_transit_router_cidr.default.transit_router_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,71 +88,83 @@ var AlicloudCENTransitRouterVpnAttachmentMap0 = map[string]string{
 
 func AlicloudCENTransitRouterVpnAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_account" "default" {}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_cen_instance" "default" {
-	cen_instance_name = var.name
-}
+	data "alicloud_account" "default" {
+	}
 
-resource "alicloud_cen_transit_router" "default" {
-	cen_id = alicloud_cen_instance.default.id
-	transit_router_description = "desd"
-	transit_router_name = var.name
-}
-resource "alicloud_vpn_customer_gateway" "default" {
-  name        = "${var.name}"
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = "testAccVpnConnectionDesc"
-}
-resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  network_type        = "public"
-  local_subnet        = "0.0.0.0/0"
-  remote_subnet       = "0.0.0.0/0"
-  effect_immediately  = false
-  ike_config {
-    ike_auth_alg = "md5"
-    ike_enc_alg  = "des"
-    ike_version  = "ikev2"
-    ike_mode     = "main"
-    ike_lifetime = 86400
-    psk          = "tf-testvpn2"
-    ike_pfs      = "group1"
-    remote_id    = "testbob2"
-    local_id     = "testalice2"
-  }
-  ipsec_config {
-    ipsec_pfs      = "group5"
-    ipsec_enc_alg  = "des"
-    ipsec_auth_alg = "md5"
-    ipsec_lifetime = 86400
-  }
-  bgp_config {
-    enable       = true
-    local_asn    = 45014
-    tunnel_cidr  = "169.254.11.0/30"
-    local_bgp_ip = "169.254.11.1"
-  }
-  health_check_config {
-    enable   = true
-    sip      = "192.168.1.1"
-    dip      = "10.0.0.1"
-    interval = 10
-    retry    = 10
-    policy   = "revoke_route"
+	resource "alicloud_cen_instance" "default" {
+		cen_instance_name = var.name
+	}
 
-  }
-  enable_dpd           = true
-  enable_nat_traversal = true
-  vpn_attachment_name  = var.name
-}
+	resource "alicloud_cen_transit_router" "default" {
+		cen_id = alicloud_cen_instance.default.id
+		transit_router_description = "desd"
+		transit_router_name = var.name
+	}
 
-data "alicloud_cen_transit_router_available_resources" "default" {
-}
+	resource "alicloud_vpn_customer_gateway" "default" {
+  		name        = "${var.name}"
+  		ip_address  = "42.104.22.212"
+  		asn         = "45014"
+  		description = "testAccVpnConnectionDesc"
+	}
+
+	resource "alicloud_vpn_gateway_vpn_attachment" "default" {
+  		customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+  		network_type        = "public"
+  		local_subnet        = "0.0.0.0/0"
+  		remote_subnet       = "0.0.0.0/0"
+  		effect_immediately  = false
+  		ike_config {
+    		ike_auth_alg = "md5"
+    		ike_enc_alg  = "des"
+    		ike_version  = "ikev2"
+    		ike_mode     = "main"
+    		ike_lifetime = 86400
+    		psk          = "tf-testvpn2"
+    		ike_pfs      = "group1"
+    		remote_id    = "testbob2"
+    		local_id     = "testalice2"
+  		}
+
+  		ipsec_config {
+    		ipsec_pfs      = "group5"
+    		ipsec_enc_alg  = "des"
+			ipsec_auth_alg = "md5"
+    		ipsec_lifetime = 86400
+  		}
+		bgp_config {
+			enable       = true
+    		local_asn    = 45014
+    		tunnel_cidr  = "169.254.11.0/30"
+    		local_bgp_ip = "169.254.11.1"
+  		}
+  		health_check_config {
+    		enable   = true
+    		sip      = "192.168.1.1"
+    		dip      = "10.0.0.1"
+    		interval = 10
+    		retry    = 10
+    		policy   = "revoke_route"
+  		}
+  		enable_dpd           = true
+  		enable_nat_traversal = true
+  		vpn_attachment_name  = var.name
+	}
+
+	resource "alicloud_cen_transit_router_cidr" "default" {
+		transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  		cidr                     = "192.168.0.0/16"
+  		transit_router_cidr_name = var.name
+  		description              = var.name
+  		publish_cidr_route       = false
+	}
+	
+	data "alicloud_cen_transit_router_available_resources" "default" {
+	}
 `, name)
 }
 
@@ -184,14 +196,21 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 							"zone_id": "${data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0}",
 						},
 					},
-					"transit_router_id": "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_id": "${alicloud_cen_transit_router_cidr.default.transit_router_id}",
 					"vpn_id":            "${alicloud_vpn_gateway_vpn_attachment.default.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "TransitRouterVpnAttachment",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone.#":            "1",
 						"vpn_id":            CHECKSET,
 						"transit_router_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "TransitRouterVpnAttachment",
 					}),
 				),
 			},
@@ -222,6 +241,21 @@ func TestAccAlicloudCENTransitRouterVpnAttachment_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"auto_publish_route_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "TransitRouterVpnAttachment_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "TransitRouterVpnAttachment_Update",
 					}),
 				),
 			},
