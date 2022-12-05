@@ -138,12 +138,14 @@ func TestAccAlicloudVPCIpv4Gateway_basic0(t *testing.T) {
 					"ipv4_gateway_name":        "${var.name}",
 					"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
 					"ipv4_gateway_description": "${var.name}",
+					"enabled":                  "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ipv4_gateway_name":        name,
 						"vpc_id":                   CHECKSET,
 						"ipv4_gateway_description": name,
+						"enabled":                  "true",
 					}),
 				),
 			},
@@ -200,7 +202,7 @@ variable "name" {
   default = "%s"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NoDeleting"
+	name_regex = "default-NODELETING"
 }
 `, name)
 }

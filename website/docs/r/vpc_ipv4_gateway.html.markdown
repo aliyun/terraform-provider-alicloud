@@ -37,6 +37,7 @@ The following arguments are supported:
 * `ipv4_gateway_description` - (Optional) The description of the IPv4 gateway. The description must be `2` to `256` characters in length. It must start with a letter but cannot start with `http://` or `https://`.
 * `ipv4_gateway_name` - (Optional) The name of the IPv4 gateway. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where you want to create the IPv4 gateway. You can create only one IPv4 gateway in a VPC.
+* `enabled` - (Optional, Available in v1.194.0+) Whether the IPv4 gateway is active or not. Valid values are `true` and `false`.
 
 ## Attributes Reference
 

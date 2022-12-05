@@ -202,7 +202,7 @@ func resourceAliyunVpnGatewayCreate(d *schema.ResourceData, meta interface{}) er
 		request["ClientToken"] = buildClientToken("CreateVpnGateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.SslNotSupport"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

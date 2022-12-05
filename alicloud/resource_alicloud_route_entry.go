@@ -167,7 +167,7 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteRouteEntry(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "IncorrectRouteEntryStatus", "Forbbiden", "UnknownError"}) {
+			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "IncorrectRouteEntryStatus", "Forbbiden", "UnknownError", "OperationFailed.DistibuteLock"}) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
 				retryTimes += 7

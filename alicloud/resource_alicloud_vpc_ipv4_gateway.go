@@ -52,6 +52,10 @@ func resourceAlicloudVpcIpv4Gateway() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -104,7 +108,7 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcIpv4GatewayRead(d, meta)
+	return resourceAlicloudVpcIpv4GatewayUpdate(d, meta)
 }
 func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
@@ -122,10 +126,12 @@ func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}
 	d.Set("ipv4_gateway_name", object["Ipv4GatewayName"])
 	d.Set("status", object["Status"])
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("enabled", object["Enabled"])
 	return nil
 }
 func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
@@ -136,13 +142,13 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 		"Ipv4GatewayId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if d.HasChange("ipv4_gateway_description") {
+	if !d.IsNewResource() && d.HasChange("ipv4_gateway_description") {
 		update = true
 		if v, ok := d.GetOk("ipv4_gateway_description"); ok {
 			request["Ipv4GatewayDescription"] = v
 		}
 	}
-	if d.HasChange("ipv4_gateway_name") {
+	if !d.IsNewResource() && d.HasChange("ipv4_gateway_name") {
 		update = true
 		if v, ok := d.GetOk("ipv4_gateway_name"); ok {
 			request["Ipv4GatewayName"] = v
@@ -173,6 +179,47 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+
+	if d.HasChange("enabled") {
+		object, err := vpcService.DescribeVpcIpv4Gateway(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		target := d.Get("enabled")
+		if object["Enabled"].(bool) != true {
+			if target == "true" {
+				request = map[string]interface{}{
+					"Ipv4GatewayId": d.Id(),
+				}
+				request["RegionId"] = client.RegionId
+				action := "EnableVpcIpv4Gateway"
+				request["ClientToken"] = buildClientToken("EnableVpcIpv4Gateway")
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcIpv4GatewayStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+		}
+	}
+
 	return resourceAlicloudVpcIpv4GatewayRead(d, meta)
 }
 func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface{}) error {
@@ -199,7 +246,7 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 		request["ClientToken"] = buildClientToken("DeleteIpv4Gateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.Ipv4Gateway"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
