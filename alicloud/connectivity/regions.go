@@ -233,3 +233,4 @@ var NLBSupportRegions = []Region{Hangzhou}
 var BpStudioApplicationSupportRegions = []Region{Hangzhou}
 var CloudFirewallVpcFirewallCenSupportRegions = []Region{Beijing}
 var CloudFirewallVpcFirewallSupportRegions = []Region{EUCentral1}
+var VPCSupportRegions = []Region{APSouth1, Shanghai, APSouthEast5, APSouthEast2, Beijing, Qingdao, ShanghaiFinance, ChengDu, USEast1, Hongkong, EUWest1, APNorthEast1, GuangZhou, CnNorth2Gov1, Shenzhen, APSouthEast1, Hangzhou, Zhangjiakou, APSouthEast3, Huhehaote, USWest1, MEEast1, WuLanChaBu, HeYuan, EUCentral1}
