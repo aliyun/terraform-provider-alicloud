@@ -73,12 +73,6 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"zone_mappings": []map[string]interface{}{
 						{
@@ -148,6 +142,12 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
+			},
 		},
 	})
 }
@@ -197,6 +197,10 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 					"route_table_propagation_enabled": "false",
 					"vpc_owner_id":                    "${data.alicloud_account.default.id}",
 					"payment_type":                    "PayAsYouGo",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "TransitRouterVpcAttachment",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -212,6 +216,24 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 						"route_table_propagation_enabled":       "false",
 						"vpc_owner_id":                          CHECKSET,
 						"payment_type":                          "PayAsYouGo",
+						"tags.%":                                "2",
+						"tags.Created":                          "TF",
+						"tags.For":                              "TransitRouterVpcAttachment",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "TransitRouterVpcAttachment_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "TransitRouterVpcAttachment_Update",
 					}),
 				),
 			},

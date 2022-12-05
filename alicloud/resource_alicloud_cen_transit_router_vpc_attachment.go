@@ -24,8 +24,8 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cen_id": {
@@ -107,6 +107,7 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 					},
 				},
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -197,7 +198,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterVpcAttachmentRead(d, meta)
+	return resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d, meta)
 }
 
 func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, meta interface{}) error {
@@ -242,6 +243,14 @@ func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	if err := d.Set("zone_mappings", zoneMappings); err != nil {
 		return WrapError(err)
 	}
+
+	listTagResourcesObject, err := cbnService.ListTagResources(d.Id(), "TransitRouterVpcAttachment")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -259,21 +268,33 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	if err1 != nil {
 		return WrapError(err1)
 	}
+
 	request := map[string]interface{}{
 		"TransitRouterAttachmentId": parts[1],
 	}
-	if d.HasChange("resource_type") {
-		update = true
-		request["ResourceType"] = d.Get("resource_type")
+
+	if d.HasChange("tags") {
+		if err := cbnService.SetResourceTags(d, "TransitRouterVpcAttachment"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
-	if d.HasChange("transit_router_attachment_description") {
+
+	if !d.IsNewResource() && d.HasChange("resource_type") {
 		update = true
-		request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
 	}
-	if d.HasChange("transit_router_attachment_name") {
+	request["ResourceType"] = d.Get("resource_type")
+
+	if !d.IsNewResource() && d.HasChange("transit_router_attachment_description") {
 		update = true
-		request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
 	}
+	request["TransitRouterAttachmentDescription"] = d.Get("transit_router_attachment_description")
+
+	if !d.IsNewResource() && d.HasChange("transit_router_attachment_name") {
+		update = true
+	}
+	request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
+
 	if update {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
@@ -304,7 +325,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		d.SetPartial("transit_router_attachment_name")
 	}
 
-	if d.HasChange("zone_mappings") {
+	if !d.IsNewResource() && d.HasChange("zone_mappings") {
 		oraw, nraw := d.GetChange("zone_mappings")
 		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
 		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
