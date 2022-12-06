@@ -2,6 +2,8 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=alicloud
+RELEASE_ALPHA_VERSION=$(VERSION)-alpha$(shell date +'%Y%m%d')
+RELEASE_ALPHA_NAME=terraform-provider-alicloud_v$(RELEASE_ALPHA_VERSION)
 
 default: build
 
@@ -95,3 +97,10 @@ linux:
 	GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud
 	tar czvf bin/terraform-provider-alicloud_linux-amd64.tgz bin/terraform-provider-alicloud
 	rm -rf bin/terraform-provider-alicloud
+
+alpha:
+	GOOS=linux GOARCH=amd64 go build -o bin/$(RELEASE_ALPHA_NAME)
+	aliyun oss cp bin/$(RELEASE_ALPHA_NAME) oss://iac-service-prod-cn/terraform/alphaplugins/registry.terraform.io/aliyun/alicloud/$(RELEASE_ALPHA_VERSION)/linux_amd64/$(RELEASE_ALPHA_NAME)  --profile terraformer --region cn-hangzhou
+	aliyun oss cp bin/$(RELEASE_ALPHA_NAME) oss://iac-service-prod-cn/terraform/alphaplugins/registry.terraform.io/hashicorp/alicloud/$(RELEASE_ALPHA_VERSION)/linux_amd64/$(RELEASE_ALPHA_NAME)  --profile terraformer --region cn-hangzhou
+	rm -rf bin/$(RELEASE_ALPHA_NAME)
+#terraform/alphaplugins/registry.terraform.io/aliyun/alicloud/$(RELEASE_ALPHA_VERSION)
