@@ -771,6 +771,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_access_assignments":                 dataSourceAlicloudCloudSsoAccessAssignments(),
 			"alicloud_cen_transit_router_cidrs":                     dataSourceAlicloudCenTransitRouterCidrs(),
 			"alicloud_ga_basic_accelerators":                        dataSourceAlicloudGaBasicAccelerators(),
+			"alicloud_cms_metric_rule_black_lists":                  dataSourceAlicloudCmsMetricRuleBlackLists(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1439,6 +1440,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_das_switch_das_pro":                                   resourceAlicloudDasSwitchDasPro(),
 			"alicloud_ga_basic_accelerator":                                 resourceAlicloudGaBasicAccelerator(),
 			"alicloud_ga_basic_endpoint_group":                              resourceAlicloudGaBasicEndpointGroup(),
+			"alicloud_cms_metric_rule_black_list":                           resourceAlicloudCmsMetricRuleBlackList(),
 		},
 
 		ConfigureFunc: providerConfigure,

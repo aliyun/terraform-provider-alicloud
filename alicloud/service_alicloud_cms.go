@@ -909,3 +909,62 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (object map[string]int
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
+func (s *CmsService) DescribeCmsMetricRuleBlackList(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Ids.1": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeMetricRuleBlackList"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DescribeMetricRuleBlackList[0]", response)
+	totalCount, _ := jsonpath.Get("$.Total", response)
+	total, _ := totalCount.(json.Number).Int64()
+	if err != nil && total == 0 {
+		err = WrapErrorf(Error(GetNotFoundMessage("Cms", id)), NotFoundMsg, ProviderERROR)
+		return object, err
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CmsService) CmsMetricRuleBlackListStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCmsMetricRuleBlackList(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object[""]) == failState {
+				return object, fmt.Sprint(object[""]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[""])))
+			}
+		}
+		return object, fmt.Sprint(object[""]), nil
+	}
+}
