@@ -231,3 +231,5 @@ var ADBDBClusterLakeVersionSupportRegions = []Region{Hangzhou}
 var LindormInstanceRegions = []Region{Shanghai}
 var NLBSupportRegions = []Region{Hangzhou}
 var BpStudioApplicationSupportRegions = []Region{Hangzhou}
+var CloudFirewallVpcFirewallCenSupportRegions = []Region{Beijing}
+var CloudFirewallVpcFirewallSupportRegions = []Region{EUCentral1}
