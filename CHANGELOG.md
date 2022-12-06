@@ -1,7 +1,40 @@
 ## 1.194.0 (Unreleased)
+## 1.193.1 (December 06, 2022)
 
 ENHANCEMENTS:
-- resource/alicloud_ess_eci_scalingconfiguration: Add acr_registry_infos and container liveness_probe, readiness_probe.
+
+- resource/alicloud_ess_eci_scalingconfiguration: Add acr_registry_infos and container liveness_probe, readiness_probe. ([#5666](https://github.com/aliyun/terraform-provider-alicloud/issues/5666))
+- resource/alicloud_cen_transit_router_vbr_attachment: Added the field tags ([#5662](https://github.com/aliyun/terraform-provider-alicloud/issues/5662))
+- resource/alicloud_cen_transit_router_vpn_attachment: Added the field tags ([#5663](https://github.com/aliyun/terraform-provider-alicloud/issues/5663))
+- resource/alicloud_cen_transit_router: Added the field tags ([#5640](https://github.com/aliyun/terraform-provider-alicloud/issues/5640))
+- resource/alicloud_vpn_connection: Add retry error code. ([#5657](https://github.com/aliyun/terraform-provider-alicloud/issues/5657))
+- resource/alicloud_alb_load_balancer: Removed the ForceNew for field address_type, supports modifying them online; Supported for new action UpdateLoadBalancerAddressTypeConfig ([#5648](https://github.com/aliyun/terraform-provider-alicloud/issues/5648))
+- resource/alicloud_cen_transit_router_vpc_attachment: Added the field tags ([#5660](https://github.com/aliyun/terraform-provider-alicloud/issues/5660))
+- resource/alicloud_route_table: Adds new attribute associate_type ([#5656](https://github.com/aliyun/terraform-provider-alicloud/issues/5656))
+- resource/alicloud_vpc_ipv4_gateway : Adds new attribute enabled ([#5656](https://github.com/aliyun/terraform-provider-alicloud/issues/5656))
+- resource/alicloud_vpn_gateway: Added retry stragety for error code ([#5656](https://github.com/aliyun/terraform-provider-alicloud/issues/5656))
+- resource/alicloud_route_entry: Added retry stragety for error code ([#5656](https://github.com/aliyun/terraform-provider-alicloud/issues/5656))
+- resource/alicloud_alb_load_balancer: Support new attribute address_ip_version; Add optional StandardWithWaf for load_balancer_edition. ([#5651](https://github.com/aliyun/terraform-provider-alicloud/issues/5651))
+- resource/alicloud_vpn_gateway_vco_route: Add retry error code. ([#5647](https://github.com/aliyun/terraform-provider-alicloud/issues/5647))
+- resource/alicloud_vpn_pbr_route_entry: Added retry strategy for errorcode TaskConflict. ([#5632](https://github.com/aliyun/terraform-provider-alicloud/issues/5632))
+- resource_alicloud_vpn_route_entry: Added retry strategy for error code TaskConflict. ([#5632](https://github.com/aliyun/terraform-provider-alicloud/issues/5632))
+- resource/alicloud_kvstore_instance: Setting attribute security_ips to computed to fix the diff error ([#5650](https://github.com/aliyun/terraform-provider-alicloud/issues/5650))
+- resource/alicloud_db_instance: Adds checking connection string to meet some instance class without connection issue ([#5649](https://github.com/aliyun/terraform-provider-alicloud/issues/5649))
+- resource/alicloud_vpc_nat_ip_cidr: Add retry error code. ([#5639](https://github.com/aliyun/terraform-provider-alicloud/issues/5639))
+- resource/alicloud_forward_entry: Add retry error code. ([#5639](https://github.com/aliyun/terraform-provider-alicloud/issues/5639))
+- resource/alicloud_nat_gateway: Add retry error code. ([#5639](https://github.com/aliyun/terraform-provider-alicloud/issues/5639))
+- resource/alicloud_snat_entry: Add retry error code. ([#5639](https://github.com/aliyun/terraform-provider-alicloud/issues/5639))
+- resource/alicloud_vpc_nat_ip: Add retry error code. ([#5639](https://github.com/aliyun/terraform-provider-alicloud/issues/5639))
+- resource/alicloud_kvstore_instance: Setting config to computed to avoid diff error; Removes the useless classic testcases ([#5642](https://github.com/aliyun/terraform-provider-alicloud/issues/5642))
+- resource/alicloud_ess_scheduled_task: max_value & min_value support set zero value ([#5637](https://github.com/aliyun/terraform-provider-alicloud/issues/5637))
+- resource/alicloud_vpn_gateway: Add default value for network_type and fix document ([#5636](https://github.com/aliyun/terraform-provider-alicloud/issues/5636))
+- resource/alicloud_kvstore_instance: Corrects the creating timeout to 20min ([#5643](https://github.com/aliyun/terraform-provider-alicloud/issues/5643))
+- docs/alicloud_slb_server_group_attachment: Adds notes to avoid conflict error ([#5665](https://github.com/aliyun/terraform-provider-alicloud/issues/5665))
+
+BUG FIXES:
+
+- resource/alicloud_drds_instance: Fixes the InternalError error ([#5643](https://github.com/aliyun/terraform-provider-alicloud/issues/5643))
+- resource/alicloud_db_instance:fix RDS bugs ([#5659](https://github.com/aliyun/terraform-provider-alicloud/issues/5659))
 
 ## 1.193.0 (November 29, 2022)
 
