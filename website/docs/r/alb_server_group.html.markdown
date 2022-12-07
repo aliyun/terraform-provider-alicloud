@@ -153,8 +153,11 @@ The servers supports the following:
   requests are forwarded to the server.
 * `description` - The description of the server.
 * `port` - The port that is used by the server. Valid values: `1` to `65535`.
-* `server_id` - The ID of the ECS instance, ENI instance or ECI instance.
-* `server_ip` - The IP address of the ENI instance when it is in the inclusive ENI mode.
+* `server_id` - The ID of the backend server.
+  - If `server_group_type` is set to `Instance`, set the parameter to the ID of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. These backend servers are specified by Ecs, Eni, or Eci.
+  - If `server_group_type` is set to `Ip`, set the parameter to an IP address specified in the server group.
+  - If `server_group_type` is set to `Fc`, set the parameter to the Alibaba Cloud Resource Name (ARN) of a function specified in the server group.
+* `server_ip` - The IP address of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. **Note:** You do not need to configure the parameter if you set `server_group_type` to `Fc`.
 
 #### Block health_check_config
 

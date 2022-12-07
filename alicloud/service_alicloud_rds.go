@@ -878,6 +878,10 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	if v, ok := d.GetOk("category"); ok {
 		category = v.(string)
 	}
+	backupInterval := "-1"
+	if v, ok := d.GetOk("backup_interval"); ok {
+		backupInterval = v.(string)
+	}
 
 	instance, err := s.DescribeDBInstance(d.Id())
 	if err != nil {
@@ -908,6 +912,9 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			request["ArchiveBackupRetentionPeriod"] = archiveBackupRetentionPeriod
 			request["ArchiveBackupKeepCount"] = archiveBackupKeepCount
 			request["ArchiveBackupKeepPolicy"] = archiveBackupKeepPolicy
+		}
+		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
+			request["BackupInterval"] = backupInterval
 		}
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
