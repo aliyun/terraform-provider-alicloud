@@ -60,9 +60,9 @@ The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the basic GA instance.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where you want to create the endpoint group.
-* `endpoint_type` - (Optional, ForceNew) The type of the endpoint. Valid values: `ENI`, `SLB` and `ECS`.
-* `endpoint_address` - (Optional, ForceNew) The address of the endpoint.
-* `endpoint_sub_address` - (Optional, ForceNew) The sub address of the endpoint.
+* `endpoint_type` - (Optional, ForceNew, Computed) The type of the endpoint. Valid values: `ENI`, `SLB` and `ECS`.
+* `endpoint_address` - (Optional, ForceNew, Computed) The address of the endpoint.
+* `endpoint_sub_address` - (Optional, ForceNew, Computed) The sub address of the endpoint.
 * `basic_endpoint_group_name` - (Optional) The name of the endpoint group. The `basic_endpoint_group_name` must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter.
 * `description` - (Optional) The description of the endpoint group. The `description` cannot exceed 256 characters in length and cannot contain http:// or https://.
 
