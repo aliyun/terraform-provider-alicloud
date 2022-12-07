@@ -42,4 +42,5 @@ The following attributes are exported:
   * `description` - The description of the VPN customer gateway.
   * `ip_address` - The ip address of the VPN customer gateway.
   * `create_time` - The creation time of the VPN customer gateway.
+  * `asn` - The autonomous system number of the local data center gateway device of the VPN customer gateway.
 

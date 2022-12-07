@@ -69,6 +69,10 @@ func dataSourceAlicloudVpnCustomerGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"asn": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -159,6 +163,7 @@ func vpnCgwsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vpc.Custo
 			"ip_address":  vpn.IpAddress,
 			"description": vpn.Description,
 			"create_time": TimestampToStr(vpn.CreateTime),
+			"asn":         vpn.Asn,
 		}
 		ids = append(ids, vpn.CustomerGatewayId)
 		names = append(names, vpn.Name)

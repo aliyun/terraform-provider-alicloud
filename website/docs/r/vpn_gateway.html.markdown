@@ -60,10 +60,10 @@ The following arguments are supported:
 * `instance_charge_type` - (ForceNew) The charge type for instance. If it is an international site account, the valid value is PostPaid, otherwise PrePaid. 
                                 Default to PostPaid. 
 * `period` - (Optional) The filed is only required while the InstanceChargeType is PrePaid. Valid values: [1-9, 12, 24, 36]. Default to 1. 
-* `bandwidth` - (Required) The value should be 10, 100, 200. if the user is postpaid, otherwise it can be 5, 10, 20, 50, 100, 200.
+* `bandwidth` - (Required, ForceNew) The value should be 10, 100, 200. if the user is postpaid, otherwise it can be 5, 10, 20, 50, 100, 200.
                    It can't be changed by terraform.
 * `enable_ipsec` - (Optional) Enable or Disable IPSec VPN. At least one type of VPN should be enabled.
-* `enable_ssl`  - (Optional) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.
+* `enable_ssl`  - (Optional, ForceNew) Enable or Disable SSL VPN.  At least one type of VPN should be enabled.
 * `ssl_connections` - (Optional) The max connections of SSL VPN. Default to 5. The number of connections supported by each account is different. 
                         This field is ignored when enable_ssl is false.
 * `description` - (Optional) The description of the VPN instance.

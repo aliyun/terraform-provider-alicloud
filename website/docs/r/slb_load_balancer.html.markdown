@@ -97,6 +97,8 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 
 -> **NOTE:** Currently, the alibaba cloud international account does not support creating a `Subscription` SLB instance.
 
+-> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the PayType value is PayOnDemand.
+
 ## Attributes Reference
 
 The following attributes are exported:
