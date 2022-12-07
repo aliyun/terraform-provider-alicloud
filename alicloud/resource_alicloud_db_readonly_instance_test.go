@@ -12,12 +12,13 @@ import (
 
 func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 	var instance map[string]interface{}
+	var ips []map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
 	var DBReadonlyMap = map[string]string{
-		"instance_storage":      "5",
-		"engine_version":        "5.6",
+		"instance_storage":      "20",
+		"engine_version":        "8.0",
 		"engine":                "MySQL",
 		"port":                  "3306",
 		"instance_name":         name,
@@ -53,7 +54,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"instance_type":         "mysqlro.n2.small.1c",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${local.vswitch_id}",
@@ -81,7 +82,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 			// upgrade instanceType
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_type": "mysqlro.n2.medium.1c",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{"instance_type": CHECKSET}),
@@ -129,7 +130,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
 					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
-					"instance_type":         "${alicloud_db_instance.default.instance_type}",
+					"instance_type":         "mysqlro.n2.small.1c",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage + 2*data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
 					"instance_name":         "${var.name}",
 					"vswitch_id":            "${local.vswitch_id}",
@@ -141,6 +142,14 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					resource.ComposeTestCheckFunc(testAccCheckSecurityIpExists("alicloud_db_readonly_instance.default", ips)),
+				),
+			},
 		},
 	})
 
@@ -148,6 +157,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 
 func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 	var instance map[string]interface{}
+	var ips []map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccDBInstance_vpc_%d", rand)
@@ -358,6 +368,14 @@ func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 						"server_key":                  CHECKSET,
 						"deletion_protection":         "false",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKeyValueInMaps(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
 				),
 			},
 		},

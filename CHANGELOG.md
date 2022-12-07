@@ -1,5 +1,5 @@
-## 1.194.0 (Unreleased)
-## 1.193.0 (November 29, 2022)
+## 1.195.0 (Unreleased)
+## 1.194.0 (December 07, 2022)
 
 - **New Resource:** `alicloud_das_switch_das_pro` ([#5612](https://github.com/aliyun/terraform-provider-alicloud/issues/5612))
 - **New Resource:** `alicloud_rds_db_proxy` ([#5596](https://github.com/aliyun/terraform-provider-alicloud/issues/5596))
