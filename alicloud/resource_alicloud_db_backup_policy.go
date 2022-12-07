@@ -179,6 +179,12 @@ func resourceAlicloudDBBackupPolicy() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Flash", "Standard"}, false),
 			},
+			"backup_interval": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"-1", "15", "30", "60", "120", "180", "240", "360", "480", "720"}, false),
+			},
 		},
 	}
 }
@@ -229,6 +235,7 @@ func resourceAlicloudDBBackupPolicyRead(d *schema.ResourceData, meta interface{}
 		d.Set("high_space_usage_protection", "Enable")
 	} else {
 		d.Set("high_space_usage_protection", object["HighSpaceUsageProtection"])
+		d.Set("backup_interval", object["BackupInterval"])
 	}
 	d.Set("log_backup_frequency", object["LogBackupFrequency"])
 	d.Set("compress_type", object["CompressType"])
@@ -247,7 +254,7 @@ func resourceAlicloudDBBackupPolicyUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("backup_period") || d.HasChange("backup_time") || d.HasChange("retention_period") ||
 		d.HasChange("preferred_backup_period") || d.HasChange("preferred_backup_time") || d.HasChange("backup_retention_period") ||
 		d.HasChange("compress_type") || d.HasChange("log_backup_frequency") || d.HasChange("archive_backup_retention_period") ||
-		d.HasChange("archive_backup_keep_count") || d.HasChange("archive_backup_keep_policy") || d.HasChange("released_keep_policy") || d.HasChange("category") {
+		d.HasChange("archive_backup_keep_count") || d.HasChange("archive_backup_keep_policy") || d.HasChange("released_keep_policy") || d.HasChange("category") || d.HasChange("backup_interval") {
 		updateForData = true
 	}
 

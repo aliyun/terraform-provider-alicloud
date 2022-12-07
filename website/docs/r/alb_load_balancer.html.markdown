@@ -94,14 +94,14 @@ The following arguments are supported:
 * `deletion_protection_enabled` - (Optional) The deletion protection enabled. Valid values: `true` and `false`. Default value: `false`.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. Valid values: `true` and `false`.
 * `load_balancer_billing_config` - (Required, ForceNew) The configuration of the billing method. See the following `Block load_balancer_billing_config`.
-* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods. Valid values: `Basic`, `Standard` and `StandardWithWaf`(Available in v1.194.0+).
+* `load_balancer_edition` - (Required) The edition of the ALB instance. Different editions have different limits and billing methods. Valid values: `Basic`, `Standard` and `StandardWithWaf`(Available in v1.193.1+).
 * `load_balancer_name` - (Required) The name of the resource.
 * `modification_protection_config` - (Optional, Computed) Modify the Protection Configuration. See the following `Block modification_protection_config`.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
 * `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones. See the following `Block zone_mappings`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.194.0+) The IP version. Valid values: `Ipv4`, `DualStack`.
+* `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.193.1+) The IP version. Valid values: `Ipv4`, `DualStack`.
 
 #### Block load_balancer_billing_config
 
