@@ -81,7 +81,17 @@ The following arguments are supported:
   * **None**: No archived backup files are retained.
   * **Lastest**: Only the most recent archived backup file is retained.
   * **All**: All archived backup files are retained.
-* `category` - (Optional, available in 1.190.0+) Whether to enable second level backup.Valid values are `Flash`, `Standard`, Note:It only takes effect when the BackupPolicyMode parameter is DataBackupPolicy.
+* `category` - (Optional, available in 1.190.0+) Whether to enable second level backup.Valid values are `Flash`, `Standard`, Note:It only takes effect when the BackupPolicyMode parameter is DataBackupPolicy. 
+-> **NOTE:** You can configure a backup policy by using this parameter and the PreferredBackupPeriod parameter. For example, if you set the PreferredBackupPeriod parameter to Saturday,Sunday and the BackupInterval parameter to -1, a snapshot backup is performed on every Saturday and Sunday.If the instance runs PostgreSQL, the BackupInterval parameter is supported only when the instance is equipped with standard SSDs or enhanced SSDs (ESSDs).This parameter takes effect only when you set the BackupPolicyMode parameter to DataBackupPolicy.
+* `backup_interval` - (Optional, available in 1.194.0+) The frequency at which you want to perform a snapshot backup on the instance. Valid values:
+  - -1: No backup frequencies are specified.
+  - 30: A snapshot backup is performed once every 30 minutes.
+  - 60: A snapshot backup is performed once every 60 minutes.
+  - 120: A snapshot backup is performed once every 120 minutes.
+  - 240: A snapshot backup is performed once every 240 minutes.
+  - 360: A snapshot backup is performed once every 360 minutes.
+  - 480: A snapshot backup is performed once every 480 minutes.
+  - 720: A snapshot backup is performed once every 720 minutes.
 
 -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
 

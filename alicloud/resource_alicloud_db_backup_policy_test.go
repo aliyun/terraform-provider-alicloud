@@ -390,6 +390,16 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"backup_interval": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_interval": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"enable_backup_log": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -404,9 +414,12 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 					"preferred_backup_time":       "11:00Z-12:00Z",
 					"backup_retention_period":     "20",
 					"enable_backup_log":           "true",
-					"log_backup_retention_period": "15",
+					"log_backup_retention_period": "7",
 					"local_log_retention_hours":   "48",
 					"high_space_usage_protection": "Enable",
+					"local_log_retention_space":   "40",
+					"compress_type":               "1",
+					"backup_interval":             "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -414,9 +427,12 @@ func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 						"preferred_backup_time":       "11:00Z-12:00Z",
 						"backup_retention_period":     "20",
 						"enable_backup_log":           "true",
-						"log_backup_retention_period": "15",
+						"log_backup_retention_period": "7",
 						"local_log_retention_hours":   "48",
 						"high_space_usage_protection": "Enable",
+						"local_log_retention_space":   "40",
+						"compress_type":               "1",
+						"backup_interval":             "60",
 					}),
 				),
 			}},
@@ -437,7 +453,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
+    zone_id = data.alicloud_db_zones.default.zones.1.id
 	engine = "PostgreSQL"
 	engine_version = "10.0"
     category = "HighAvailability"
@@ -450,19 +466,19 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  zone_id = data.alicloud_db_zones.default.zones.1.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.1
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids.0
+  zone_id = data.alicloud_db_zones.default.ids.1
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
