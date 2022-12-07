@@ -68,6 +68,18 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   enable_nat_traversal = true
   vpn_attachment_name  = var.name
 }
+data "alicloud_vpn_gateway_vpn_attachments" "vpn_attachments" {
+  ids        = [alicloud_vpn_gateway_vpn_attachment.vpn_attachment1.id]
+  depends_on = [alicloud_cen_transit_router_vpn_attachment.tr_asso_vpn_attachment_1]
+}
+
+output "local_id" {
+  value = data.alicloud_vpn_gateway_vpn_attachments.vpn_attachments.attachments.0.ike_config.0.local_id
+}
+
+output "internet_ip" {
+  value = data.alicloud_vpn_gateway_vpn_attachments.vpn_attachments.attachments.0.internet_ip
+}
 ```
 
 ## Argument Reference

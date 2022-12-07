@@ -65,6 +65,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			"bandwidth": {
 				Type:         schema.TypeInt,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.IntInSlice([]int{5, 10, 20, 50, 100, 200, 500, 1000}),
 			},
 
@@ -77,6 +78,7 @@ func resourceAliyunVpnGateway() *schema.Resource {
 			"enable_ssl": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 				Default:  false,
 			},
 

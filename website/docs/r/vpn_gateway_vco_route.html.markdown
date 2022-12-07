@@ -102,7 +102,7 @@ The following arguments are supported:
 
 * `weight` - (Required, ForceNew) The weight value of the destination route. Valid values: `0`, `100`.
 * `next_hop` - (Required, ForceNew) The next hop of the destination route.
-* `vpn_connection_id` - (Required, ForceNew) The id of the vpn connection.
+* `vpn_connection_id` - (Required, ForceNew) The id of the vpn attachment.
 * `route_dest` - (Required, ForceNew) The destination network segment of the destination route.
 
 ## Attributes Reference

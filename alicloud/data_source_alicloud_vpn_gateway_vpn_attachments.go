@@ -42,9 +42,10 @@ func dataSourceAlicloudVpnGatewayVpnAttachments() *schema.Resource {
 				Computed: true,
 			},
 			"vpn_gateway_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Deprecated: "The parameter 'vpn_gateway_id' has been deprecated from 1.194.0.",
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -236,6 +237,10 @@ func dataSourceAlicloudVpnGatewayVpnAttachments() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"internet_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -338,6 +343,7 @@ func dataSourceAlicloudVpnGatewayVpnAttachmentsRead(d *schema.ResourceData, meta
 			"id":                  fmt.Sprint(object["VpnConnectionId"]),
 			"vpn_connection_id":   fmt.Sprint(object["VpnConnectionId"]),
 			"create_time":         object["CreateTime"],
+			"internet_ip":         object["InternetIp"],
 		}
 
 		if ipsecConfig, ok := object["VpnBgpConfig"]; ok {

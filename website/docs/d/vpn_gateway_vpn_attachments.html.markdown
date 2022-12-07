@@ -29,6 +29,12 @@ data "alicloud_vpn_gateway_vpn_attachments" "nameRegex" {
 output "vpn_gateway_vpn_attachment_id_2" {
   value = data.alicloud_vpn_gateway_vpn_attachments.nameRegex.attachments.0.id
 }
+output "local_id" {
+  value = data.alicloud_vpn_gateway_vpn_attachments.vpn_attachments.attachments.0.ike_config.0.local_id
+}
+output "internet_ip" {
+  value = data.alicloud_vpn_gateway_vpn_attachments.vpn_attachments.attachments.0.internet_ip
+}
 ```
 
 ## Argument Reference
@@ -39,7 +45,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Vpn Attachment name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `init`, `active`, `attaching`, `attached`, `detaching`, `financialLocked`, `provisioning`, `updating`, `upgrading`, `deleted`.
-* `vpn_gateway_id` - (Optional, ForceNew) The ID of the VPN gateway.
+* `vpn_gateway_id` - (Deprecated) The parameter 'vpn_gateway_id' has been deprecated from 1.194.0.
 
 ## Argument Reference
 
@@ -61,14 +67,14 @@ The following attributes are exported in addition to the arguments listed above:
 		* `interval` - The interval between two consecutive health checks. Unit: seconds.
 		* `retry` - The maximum number of health check retries.
 		* `sip` - The source IP address.
-		* `status` - Health check status.
+		* `enable` - Specifies whether to enable health checks.
 		* `policy` - (Optional) Whether to revoke the published route when the health check fails.
 	* `id` - The ID of the Vpn Attachment.
 	* `ike_config` - Configuration negotiated in the second stage.
 		* `remote_id` - The identifier of the peer. The default value is the IP address of the VPN gateway. The value can be a fully qualified domain name (FQDN) or an IP address.
 		* `ike_lifetime` - The IKE lifetime. Unit: seconds.
 		* `ike_pfs` - The DH group.
-		* `local_id` - The local ID, which supports the FQDN and IP formats. The current VPN gateway IP address is selected by default.
+		* `local_id` - The local ID, which supports the FQDN and IP formats. The current VPN gateway IP address is selected by default. The alicloud_cen_transit_router_vpn_attachment resource will not have a value until after it is created.
 		* `psk` - The pre-shared key.
 		* `ike_auth_alg` - The IKE authentication algorithm.
 		* `ike_enc_alg` - The IKE encryption algorithm.
@@ -86,3 +92,6 @@ The following attributes are exported in addition to the arguments listed above:
 	* `vpn_attachment_name` - The name of the IPsec-VPN connection.
 	* `vpn_connection_id` - The first ID of the resource.
 	* `connection_status` - The status of the IPsec-VPN connection. 
+  * `enable_nat_traversal` - Allow NAT penetration.
+  * `enable_dpd` - Whether to enable the DPD (peer survival detection) function.
+  * `internet_ip` - The internet ip of the resource. The alicloud_cen_transit_router_vpn_attachment resource will not have a value until after it is created.

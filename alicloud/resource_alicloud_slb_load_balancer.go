@@ -161,17 +161,22 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				ValidateFunc:     validation.Any(validation.IntBetween(1, 9), validation.IntInSlice([]int{12, 24, 36})),
 			},
 			"payment_type": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
-				ConflictsWith: []string{"instance_charge_type"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PayBySpec", "PayByCLCU"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && convertSlbLoadBalancerPaymentTypeRequest(v.(string)) == "PayOnDemand" {
+						return true
+					}
+					return false
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
