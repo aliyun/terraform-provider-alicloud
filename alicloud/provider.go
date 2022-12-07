@@ -782,6 +782,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_web_lock_configs":            dataSourceAlicloudThreatDetectionWebLockConfigs(),
 			"alicloud_threat_detection_backup_policies":             dataSourceAlicloudThreatDetectionBackupPolicies(),
 			"alicloud_dms_enterprise_proxy_accesses":                dataSourceAlicloudDmsEnterpriseProxyAccesses(),
+			"alicloud_threat_detection_vul_whitelists":              dataSourceAlicloudThreatDetectionVulWhitelists(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1463,6 +1464,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_web_lock_config":                     resourceAlicloudThreatDetectionWebLockConfig(),
 			"alicloud_threat_detection_backup_policy":                       resourceAlicloudThreatDetectionBackupPolicy(),
 			"alicloud_dms_enterprise_proxy_access":                          resourceAlicloudDmsEnterpriseProxyAccess(),
+			"alicloud_threat_detection_vul_whitelist":                       resourceAlicloudThreatDetectionVulWhitelist(),
 		},
 
 		ConfigureFunc: providerConfigure,
