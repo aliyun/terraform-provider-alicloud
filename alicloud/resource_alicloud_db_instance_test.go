@@ -1015,7 +1015,8 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tf-testaccdbinstanceconfig%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePostgreSQLSSLConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1041,7 +1042,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"db_time_zone":             "America/New_York",
-					"connection_string_prefix": "rm-dddddd",
+					"connection_string_prefix": "${var.name}",
 					"port":                     "5999",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1055,7 +1056,8 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"db_time_zone":             "America/New_York",
 						"deletion_protection":      "false",
 						"port":                     "5999",
-						"connection_string_prefix": "rm-dddddd",
+						"connection_string_prefix": CHECKSET,
+						"instance_name":            CHECKSET,
 					}),
 				),
 			},
@@ -1136,12 +1138,12 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -1154,6 +1156,17 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"ha_config":      "Manual",
 						"manual_ha_time": manualHATime,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ha_config": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ha_config":      "Auto",
+						"manual_ha_time": "",
 					}),
 				),
 			},
@@ -1224,7 +1237,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"engine_version":              "13.0",
 						"instance_type":               CHECKSET,
 						"instance_storage":            CHECKSET,
-						"instance_name":               "tf-testAccDBInstanceConfig",
+						"instance_name":               CHECKSET,
 						"monitoring_period":           "60",
 						"zone_id":                     CHECKSET,
 						"instance_charge_type":        "Postpaid",
