@@ -121,7 +121,6 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -132,7 +131,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":           "${var.name}",
-					"topic_quota":    "50",
+					"partition_num":  "50",
 					"disk_type":      "1",
 					"disk_size":      "500",
 					"deploy_type":    "5",
@@ -168,33 +167,22 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"topic_quota": "51",
+					"partition_num": "51",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"topic_quota": "51",
+						"partition_num": "51",
 					}),
 				),
 			},
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_type": "0",
+					"disk_size": "800",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_type": "0",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disk_size": "600",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disk_size": "600"}),
+						"disk_size": "800"}),
 				),
 			},
 
@@ -284,9 +272,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"topic_quota":     "50",
-					"disk_type":       "1",
-					"disk_size":       "500",
+					"partition_num":   "52",
+					"disk_size":       "1000",
 					"deploy_type":     "5",
 					"io_max":          "20",
 					"eip_max":         "0",
@@ -298,9 +285,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"topic_quota":     "50",
-						"disk_type":       "1",
-						"disk_size":       "500",
+						"partition_num":   "52",
+						"disk_size":       "1000",
 						"deploy_type":     "5",
 						"io_max":          "20",
 						"eip_max":         "0",
@@ -336,7 +322,6 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -347,7 +332,7 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"topic_quota":     "50",
+					"partition_num":   "50",
 					"disk_type":       "1",
 					"disk_size":       "500",
 					"deploy_type":     "4",
@@ -367,7 +352,7 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            name,
-						"topic_quota":     "50",
+						"partition_num":   "50",
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
@@ -420,7 +405,6 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -431,7 +415,7 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"topic_quota":     "50",
+					"partition_num":   "50",
 					"disk_type":       "1",
 					"disk_size":       "500",
 					"deploy_type":     "4",
@@ -451,7 +435,7 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            name,
-						"topic_quota":     "50",
+						"partition_num":   "50",
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
@@ -494,7 +478,6 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -505,7 +488,7 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"topic_quota":     "50",
+					"partition_num":   "50",
 					"disk_type":       "1",
 					"disk_size":       "500",
 					"deploy_type":     "4",
@@ -526,7 +509,7 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            name,
-						"topic_quota":     CHECKSET,
+						"partition_num":   "50",
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
@@ -585,6 +568,7 @@ resource "alicloud_kms_key" "key" {
 
 var alikafkaInstanceBasicMap = map[string]string{
 	"topic_quota":     CHECKSET,
+	"partition_num":   CHECKSET,
 	"disk_type":       CHECKSET,
 	"disk_size":       CHECKSET,
 	"deploy_type":     CHECKSET,

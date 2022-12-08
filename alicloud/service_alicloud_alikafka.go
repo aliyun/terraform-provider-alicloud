@@ -1148,6 +1148,45 @@ func (s *AlikafkaService) DescribeAliKafkaInstance(id string) (object map[string
 	return object, nil
 }
 
+func (s *AlikafkaService) GetQuotaTip(instanceId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewAlikafkaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetQuotaTip"
+	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
+		"InstanceId": instanceId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	v, err := jsonpath.Get("$.QuotaData", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, instanceId, "$.QuotaData", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
 func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, timeout int) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlikafkaClient()
@@ -1226,7 +1265,7 @@ func (s *AlikafkaService) WaitForAliKafkaInstanceUpdated(d *schema.ResourceData,
 		}
 
 		// Wait for all variables be equal.
-		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(object["TopicNumLimit"]) == fmt.Sprint(d.Get("topic_quota")) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
+		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
 			return nil
 		}
 

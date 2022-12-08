@@ -101,6 +101,10 @@ func dataSourceAlicloudAlikafkaInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"partition_num": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 						"paid_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -314,7 +318,6 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 			"eip_max":              object["EipMax"],
 			"disk_type":            object["DiskType"],
 			"disk_size":            object["DiskSize"],
-			"topic_quota":          object["TopicNumLimit"],
 			"paid_type":            paidType,
 			"service_version":      object["UpgradeServiceDetailInfo"].(map[string]interface{})["Current2OpenSourceVersion"],
 			"spec_type":            object["SpecType"],
@@ -356,6 +359,13 @@ func dataSourceAlicloudAlikafkaInstancesRead(d *schema.ResourceData, meta interf
 
 		AlikaService := AlikafkaService{client}
 		if d.Get("enable_details").(bool) {
+			quota, err := AlikaService.GetQuotaTip(id)
+			if err != nil {
+				return WrapError(err)
+			}
+			mapping["topic_quota"] = quota["TopicQuota"]
+			mapping["partition_num"] = quota["PartitionNumOfBuy"]
+
 			getResp, err := AlikaService.GetAllowedIpList(id)
 			if err != nil {
 				return WrapError(err)

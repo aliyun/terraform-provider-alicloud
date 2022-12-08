@@ -9,8 +9,8 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 		terraform plan 
 		    var.name
           		Enter a value: {var.name} 
-    		var.topic_quota
-  				Enter a value: {var.topic_quota} 
+    		var.partition_num
+  				Enter a value: {var.partition_num} 
 	    	var.disk_type
 	    		Enter a value: {var.disk_type} 
 			var.disk_size
@@ -34,8 +34,8 @@ The example launches ALIKAFKA Instance. The parameter in variables.tf can let yo
 		terraform apply 
 		    var.name
           		Enter a value: {var.name} 
-    		var.topic_quota
-  				Enter a value: {var.topic_quota} 
+    		var.partition_num
+  				Enter a value: {var.partition_num} 
 	    	var.disk_type
 	    		Enter a value: {var.disk_type} 
 			var.disk_size

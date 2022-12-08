@@ -1,6 +1,6 @@
 resource "alicloud_alikafka_instance" "default" {
   name        = var.name
-  topic_quota = var.topic_quota
+  partition_num = var.partition_num
   disk_type   = var.disk_type
   disk_size   = var.disk_size
   deploy_type = var.deploy_type

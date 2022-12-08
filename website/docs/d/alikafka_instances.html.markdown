@@ -15,41 +15,41 @@ This data source provides a list of ALIKAFKA Instances in an Alibaba Cloud accou
 
 ## Example Usage
 
-```
+```terraform
 variable "instance_name" {
- default = "alikafkaInstanceName"
+  default = "alikafkaInstanceName"
 }
 
 data "alicloud_zones" "default" {
-    available_resource_creation= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 resource "alicloud_vpc" "default" {
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id = "${alicloud_vpc.default.id}"
+  vpc_id     = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/24"
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name = "${var.instance_name}"
-  topic_quota = "50"
-  disk_type = "1"
-  disk_size = "500"
-  deploy_type = "4"
-  io_max = "20"
-  vswitch_id = "${alicloud_vswitch.default.id}"
+  name          = var.instance_name
+  partition_num = "50"
+  disk_type     = "1"
+  disk_size     = "500"
+  deploy_type   = "4"
+  io_max        = "20"
+  vswitch_id    = alicloud_vswitch.default.id
 }
 
 data "alicloud_alikafka_instances" "instances_ds" {
-  name_regex = "alikafkaInstanceName"
+  name_regex  = "alikafkaInstanceName"
   output_file = "instances.txt"
 }
 
 output "first_instance_name" {
-  value = "${data.alicloud_alikafka_instances.instances_ds.instances.0.name}"
+  value = data.alicloud_alikafka_instances.instances_ds.instances.0.name
 }
 ```
 
@@ -79,6 +79,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `eip_max` - The peak bandwidth of the instance.
   * `disk_type` - The disk type of the instance. 0: efficient cloud disk , 1: SSD.
   * `disk_size` - The disk size of the instance.
+  * `partition_num` - (Available in 1.194.0+) The number of partitions.
   * `topic_quota` - The max num of topic can be create of the instance.
   * `zone_id` - The ID of attaching zone to instance.
   * `end_point` - The endPoint to access the instance.

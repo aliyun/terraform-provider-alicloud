@@ -135,7 +135,6 @@ func TestAccAlicloudAlikafkaSaslUser_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithAlikafkaAclEnable(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -217,7 +216,6 @@ func TestAccAlicloudAlikafkaSaslUser_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithAlikafkaAclEnable(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -264,7 +262,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"
@@ -291,7 +289,6 @@ func TestAccAlicloudAlikafkaSaslUser_type(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-alikafkasasluserbasic%d", rand)
-	checkoutSupportedRegions(t, true, connectivity.AlikafkaSupportedRegions)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAlikafkaSaslUserTypeDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -355,7 +352,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"

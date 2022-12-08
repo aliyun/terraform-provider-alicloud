@@ -8,9 +8,9 @@ output "name" {
   value       = alicloud_alikafka_instance.default.name
 }
 
-output "topic_quota" {
+output "partition_num" {
   description = "The max num of topic can be create of the instance."
-  value       = alicloud_alikafka_instance.default.topic_quota
+  value       = alicloud_alikafka_instance.default.partition_num
 }
 
 output "disk_type" {
