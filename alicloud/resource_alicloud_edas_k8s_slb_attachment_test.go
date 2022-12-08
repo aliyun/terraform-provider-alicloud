@@ -2,6 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/agiledragon/gomonkey/v2"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -13,12 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/stretchr/testify/assert"
-	"log"
-	"os"
-	"reflect"
-	"strings"
-	"testing"
-	"time"
 )
 
 const ClusterTypeK8s = 5
