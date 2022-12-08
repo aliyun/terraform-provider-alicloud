@@ -774,6 +774,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_metric_rule_black_lists":                  dataSourceAlicloudCmsMetricRuleBlackLists(),
 			"alicloud_cloud_firewall_vpc_firewall_cens":             dataSourceAlicloudCloudFirewallVpcFirewallCens(),
 			"alicloud_cloud_firewall_vpc_firewalls":                 dataSourceAlicloudCloudFirewallVpcFirewalls(),
+			"alicloud_cloud_firewall_instance_members":              dataSourceAlicloudCloudFirewallInstanceMembers(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1446,6 +1447,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_ip_set":                                      resourceAlicloudGaBasicIpSet(),
 			"alicloud_cloud_firewall_vpc_firewall_cen":                      resourceAlicloudCloudFirewallVpcFirewallCen(),
 			"alicloud_cloud_firewall_vpc_firewall":                          resourceAlicloudCloudFirewallVpcFirewall(),
+			"alicloud_cloud_firewall_instance_member":                       resourceAlicloudCloudFirewallInstanceMember(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1679,6 +1681,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DmsenterpriseEndpoint = strings.TrimSpace(endpoints["dmsenterprise"].(string))
 		config.BpStudioEndpoint = strings.TrimSpace(endpoints["bpstudio"].(string))
 		config.DasEndpoint = strings.TrimSpace(endpoints["das"].(string))
+		config.CloudfirewallEndpoint = strings.TrimSpace(endpoints["cloudfirewall"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2020,6 +2023,8 @@ func init() {
 		"bpstudio_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom bpstudio endpoints.",
 
 		"das_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom das endpoints.",
+
+		"cloudfirewall_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfirewall endpoints.",
 	}
 }
 
@@ -2064,6 +2069,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"cloudfirewall": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["cloudfirewall_endpoint"],
+				},
+
 				"das": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -2999,6 +3011,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["dmsenterprise"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["bpstudio"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["das"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["cloudfirewall"].(string)))
 	return hashcode.String(buf.String())
 }
 

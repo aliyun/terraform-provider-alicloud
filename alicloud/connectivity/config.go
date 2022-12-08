@@ -177,6 +177,7 @@ type Config struct {
 	DmsenterpriseEndpoint       string
 	BpStudioEndpoint            string
 	DasEndpoint                 string
+	CloudfirewallEndpoint       string
 }
 
 func (c *Config) loadAndValidate() error {
