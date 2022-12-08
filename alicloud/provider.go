@@ -772,6 +772,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_cidrs":                     dataSourceAlicloudCenTransitRouterCidrs(),
 			"alicloud_ga_basic_accelerators":                        dataSourceAlicloudGaBasicAccelerators(),
 			"alicloud_cms_metric_rule_black_lists":                  dataSourceAlicloudCmsMetricRuleBlackLists(),
+			"alicloud_cloud_firewall_vpc_firewall_cens":             dataSourceAlicloudCloudFirewallVpcFirewallCens(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1442,6 +1443,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_endpoint_group":                              resourceAlicloudGaBasicEndpointGroup(),
 			"alicloud_cms_metric_rule_black_list":                           resourceAlicloudCmsMetricRuleBlackList(),
 			"alicloud_ga_basic_ip_set":                                      resourceAlicloudGaBasicIpSet(),
+			"alicloud_cloud_firewall_vpc_firewall_cen":                      resourceAlicloudCloudFirewallVpcFirewallCen(),
 		},
 
 		ConfigureFunc: providerConfigure,
