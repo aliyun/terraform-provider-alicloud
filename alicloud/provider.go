@@ -778,6 +778,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_accelerate_ips":                      dataSourceAlicloudGaBasicAccelerateIps(),
 			"alicloud_ga_basic_endpoints":                           dataSourceAlicloudGaBasicEndpoints(),
 			"alicloud_cloud_firewall_vpc_firewall_control_policies": dataSourceAlicloudCloudFirewallVpcFirewallControlPolicies(),
+			"alicloud_ga_basic_accelerate_ip_endpoint_relations":    dataSourceAlicloudGaBasicAccelerateIpEndpointRelations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1454,6 +1455,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_accelerate_ip":                               resourceAlicloudGaBasicAccelerateIp(),
 			"alicloud_ga_basic_endpoint":                                    resourceAlicloudGaBasicEndpoint(),
 			"alicloud_cloud_firewall_vpc_firewall_control_policy":           resourceAlicloudCloudFirewallVpcFirewallControlPolicy(),
+			"alicloud_ga_basic_accelerate_ip_endpoint_relation":             resourceAlicloudGaBasicAccelerateIpEndpointRelation(),
 		},
 
 		ConfigureFunc: providerConfigure,
