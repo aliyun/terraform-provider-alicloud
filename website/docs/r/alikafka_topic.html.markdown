@@ -36,13 +36,13 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name        = "tf-testacc-alikafkainstance"
-  topic_quota = "50"
-  disk_type   = "1"
-  disk_size   = "500"
-  deploy_type = "5"
-  io_max      = "20"
-  vswitch_id  = alicloud_vswitch.default.id
+  name          = "tf-testacc-alikafkainstance"
+  partition_num = "50"
+  disk_type     = "1"
+  disk_size     = "500"
+  deploy_type   = "5"
+  io_max        = "20"
+  vswitch_id    = alicloud_vswitch.default.id
 }
 
 variable "topic" {

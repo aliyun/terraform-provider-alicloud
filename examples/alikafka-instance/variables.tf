@@ -2,7 +2,7 @@ variable "name" {
   description = "Name of your Kafka instance. The length cannot exceed 64 characters."
 }
 
-variable "topic_quota" {
+variable "partition_num" {
   description = "The max num of topic can be create of the instance. When modify this value, it only adjust to a greater value."
 }
 

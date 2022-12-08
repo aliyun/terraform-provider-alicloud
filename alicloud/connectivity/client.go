@@ -1717,9 +1717,17 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 }
 
 func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the alikafka client if necessary
+	productCode := "alikafka"
+	endpoint := client.config.AlikafkaEndpoint
 	if client.alikafkaconn == nil {
-		endpoint := client.config.AlikafkaEndpoint
+		if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+			if err := client.loadEndpoint(productCode); err != nil {
+				return nil, err
+			}
+		}
+		if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+			endpoint = v.(string)
+		}
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, ALIKAFKACode)
 		}

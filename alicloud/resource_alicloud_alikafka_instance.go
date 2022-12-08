@@ -38,8 +38,16 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				ValidateFunc: validation.StringLenBetween(3, 64),
 			},
 			"topic_quota": {
-				Type:     schema.TypeInt,
-				Required: true,
+				Type:       schema.TypeInt,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Attribute 'topic_quota' has been deprecated from 1.194.0 and it will be removed in the next future. Using new attribute 'partition_num' instead.",
+			},
+			"partition_num": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				AtLeastOneOf:  []string{"partition_num", "topic_quota"},
+				ConflictsWith: []string{"topic_quota"},
 			},
 			"disk_type": {
 				Type:     schema.TypeInt,
@@ -145,7 +153,11 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	createOrderResponse := make(map[string]interface{})
 	createOrderReq := make(map[string]interface{})
 	createOrderReq["RegionId"] = client.RegionId
-	createOrderReq["TopicQuota"] = d.Get("topic_quota")
+	if v, ok := d.GetOk("partition_num"); ok {
+		createOrderReq["PartitionNum"] = v
+	} else if v, ok := d.GetOk("topic_quota"); ok {
+		createOrderReq["TopicQuota"] = v
+	}
 	createOrderReq["DiskType"] = d.Get("disk_type")
 	createOrderReq["DiskSize"] = d.Get("disk_size")
 	createOrderReq["DeployType"] = d.Get("deploy_type")
@@ -284,7 +296,6 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	}
 
 	d.Set("name", object["Name"])
-	d.Set("topic_quota", object["TopicNumLimit"])
 	d.Set("disk_type", object["DiskType"])
 	d.Set("disk_size", object["DiskSize"])
 	d.Set("deploy_type", object["DeployType"])
@@ -305,6 +316,13 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	if fmt.Sprint(object["PaidType"]) == "0" {
 		d.Set("paid_type", PrePaid)
 	}
+
+	quota, err := alikafkaService.GetQuotaTip(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("topic_quota", quota["TopicQuota"])
+	d.Set("partition_num", quota["PartitionNumOfBuy"])
 
 	tags, err := alikafkaService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
@@ -420,10 +438,14 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		"InstanceId": d.Id(),
 		"RegionId":   client.RegionId,
 	}
-	if d.HasChange("topic_quota") {
+	if d.HasChange("partition_num") {
 		update = true
 	}
-	request["TopicQuota"] = d.Get("topic_quota")
+	request["PartitionNum"] = d.Get("partition_num")
+	if d.HasChange("topic_quota") {
+		update = true
+		request["TopicQuota"] = d.Get("topic_quota")
+	}
 	if d.HasChange("disk_size") {
 		update = true
 	}
@@ -472,6 +494,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("partition_num")
 		d.SetPartial("topic_quota")
 		d.SetPartial("disk_size")
 		d.SetPartial("io_max")
@@ -605,6 +628,31 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	action = "DeleteInstance"
+	request = map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   client.RegionId,
+	}
+
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

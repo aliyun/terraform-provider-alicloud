@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -54,7 +52,8 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 			"ids.#":                                     "1",
 			"instances.#":                               "1",
 			"instances.0.name":                          fmt.Sprintf("tf-testacc-alikafkainstance%v", rand),
-			"instances.0.topic_quota":                   "50",
+			"instances.0.partition_num":                 "50",
+			"instances.0.topic_quota":                   CHECKSET,
 			"instances.0.disk_type":                     "1",
 			"instances.0.disk_size":                     "500",
 			"instances.0.deploy_type":                   "5",
@@ -96,10 +95,7 @@ func TestAccAlicloudAlikafkaInstancesDataSource(t *testing.T) {
 		existMapFunc: existAlikafkaInstancesMapFunc,
 		fakeMapFunc:  fakeAlikafkaInstancesMapFunc,
 	}
-	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
-	}
-	alikafkaInstancesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
+	alikafkaInstancesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
 
 }
 
@@ -123,7 +119,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"

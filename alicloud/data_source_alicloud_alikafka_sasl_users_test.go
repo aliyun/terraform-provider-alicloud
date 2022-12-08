@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -51,7 +49,6 @@ func TestAccAlicloudAlikafkaSaslUsersDataSource(t *testing.T) {
 	}
 	preCheck := func() {
 		testAccPreCheckWithAlikafkaAclEnable(t)
-		testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 	}
 	alikafkaSaslUsersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf)
 }
@@ -76,7 +73,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"

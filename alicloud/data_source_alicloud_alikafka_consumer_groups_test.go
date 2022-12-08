@@ -5,14 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAAlikafkaConsumerGroupsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 99999)
-	checkoutSupportedRegions(t, true, connectivity.AlikafkaSupportedRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAAlikafkaConsumerGroupsDataSourceName(rand, map[string]string{
 			"instance_id": `"${alicloud_alikafka_instance.default.id}"`,
@@ -90,7 +87,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"

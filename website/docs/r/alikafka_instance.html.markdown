@@ -49,7 +49,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name           = var.instance_name
-  topic_quota    = "50"
+  partition_num  = "50"
   disk_type      = "1"
   disk_size      = "500"
   deploy_type    = "4"
@@ -64,7 +64,9 @@ resource "alicloud_alikafka_instance" "default" {
 The following arguments are supported:
 
 * `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
-* `topic_quota` - (Required) The max num of topic can be creation of the instance. When modify this value, it only adjusts to a greater value.
+* `partition_num` - (Required, Available in 1.194.0+) The number of partitions.
+* `topic_quota` - (Deprecated from 1.194.0) The max num of topic can be creation of the instance. 
+  It has been deprecated from version 1.194.0 and using `partition_num` instead.
 * `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
 * `disk_size` - (Required) The disk size of the instance. When modify this value, it only supports adjust to a greater value.
 * `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:

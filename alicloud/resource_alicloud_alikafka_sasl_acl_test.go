@@ -209,7 +209,6 @@ func TestAccAlicloudAlikafkaSaslAcl_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithAlikafkaAclEnable(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -311,7 +310,6 @@ func TestAccAlicloudAlikafkaSaslAcl_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheckWithAlikafkaAclEnable(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -362,7 +360,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"
@@ -414,7 +412,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"

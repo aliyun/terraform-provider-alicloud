@@ -131,7 +131,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -226,7 +225,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic1(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaConsumerGroupConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -274,7 +272,6 @@ func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.AlikafkaSupportedRegions)
 			testAccPreCheck(t)
 		},
 		// module name
@@ -319,7 +316,7 @@ resource "alicloud_security_group" "default" {
 
 resource "alicloud_alikafka_instance" "default" {
   name = "${var.name}"
-  topic_quota = "50"
+  partition_num = "50"
   disk_type = "1"
   disk_size = "500"
   deploy_type = "5"
