@@ -76,7 +76,7 @@ func resourceEdasSLBAttachmentDependence(name string) string {
 			available_resource_creation = "VSwitch"
 		}
 		data "alicloud_vpcs" "default" {
-			name_regex = "default-NODELETING"
+			name_regex = "^default-NODELETING$"
 		}
 		data "alicloud_vswitches" "default" {
 			vpc_id = data.alicloud_vpcs.default.ids.0

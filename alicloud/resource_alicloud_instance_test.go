@@ -1633,7 +1633,7 @@ resource "alicloud_ecs_hpc_cluster" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2406,7 +2406,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2454,7 +2454,7 @@ data "alicloud_instance_types" "essd" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2507,7 +2507,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2534,7 +2534,7 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2608,7 +2608,7 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -2922,7 +2922,7 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -3032,7 +3032,7 @@ data "alicloud_instance_types" "essd" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -3251,7 +3251,7 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {

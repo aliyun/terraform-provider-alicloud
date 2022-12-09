@@ -115,7 +115,7 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
 
 		data "alicloud_polardb_zones" "default"{}
 		data "alicloud_vpcs" "default" {
-			name_regex = "default-NODELETING"
+			name_regex = "^default-NODELETING$"
 		}
 		data "alicloud_vswitches" "default" {
 			zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids) - 1]

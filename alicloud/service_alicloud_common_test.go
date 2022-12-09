@@ -760,7 +760,7 @@ data "alicloud_images" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -824,7 +824,7 @@ resource "alicloud_security_group_rule" "default" {
 const PolarDBCommonTestCase = `
 data "alicloud_polardb_zones" "default"{}
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = local.zone_id
@@ -846,7 +846,7 @@ locals {
 const AdbCommonTestCase = `
 data "alicloud_adb_zones" "default" {}
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
@@ -863,7 +863,7 @@ data "alicloud_kvstore_zones" "default"{
 	instance_charge_type = "PostPaid"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
 	zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
@@ -891,7 +891,7 @@ resource "alicloud_vswitch" "default" {
 const ElasticsearchInstanceCommonTestCase = `
 data "alicloud_elasticsearch_zones" "default" {}
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0

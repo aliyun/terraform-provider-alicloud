@@ -83,7 +83,7 @@ variable "name" {
   default = "%s"
 }
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
   ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]

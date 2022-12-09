@@ -81,7 +81,7 @@ variable "name" {
 	default = "tf-testAccName-%d"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {
@@ -176,7 +176,7 @@ variable "name" {
 	default = "tf-testAccName-%d"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {

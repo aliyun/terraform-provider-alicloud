@@ -217,12 +217,12 @@ provider "alicloud" {
 
 data "alicloud_vpcs" "default" {
 	provider = "alicloud.fra"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vpcs" "default1" {
 	provider = "alicloud.sh"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -289,12 +289,12 @@ provider "alicloud" {
 
 data "alicloud_vpcs" "default" {
 	provider = "alicloud.fra"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vpcs" "default1" {
 	provider = "alicloud.sh"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -367,12 +367,12 @@ provider "alicloud" {
 
 data "alicloud_vpcs" "default" {
 	provider = "alicloud.fra"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vpcs" "default1" {
 	provider = "alicloud.sh"
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vpcs" "default2" {

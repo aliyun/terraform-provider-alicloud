@@ -297,7 +297,7 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -492,7 +492,7 @@ func AlicloudServiceMeshServiceMeshBasicDependence1(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
@@ -660,7 +660,7 @@ func AlicloudServiceMeshServiceMeshBasicDependence3(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {

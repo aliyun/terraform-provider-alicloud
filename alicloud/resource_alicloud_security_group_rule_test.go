@@ -278,7 +278,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -306,7 +306,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 
@@ -345,7 +345,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -374,7 +374,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 resource "alicloud_security_group" "default" {
   count = 2
@@ -402,7 +402,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -435,7 +435,7 @@ variable "cidr_ip_list" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -463,7 +463,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
@@ -541,7 +541,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -568,7 +568,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {
@@ -595,7 +595,7 @@ variable "name" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "default" {

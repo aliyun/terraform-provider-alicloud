@@ -268,7 +268,7 @@ func CassandraClusterBasicdependence(name string) string {
 		}
 		
 		data "alicloud_vpcs" "default" {
-			name_regex = "default-NODELETING"
+			name_regex = "^default-NODELETING$"
 		}
 		
 		data "alicloud_vswitches" "default" {

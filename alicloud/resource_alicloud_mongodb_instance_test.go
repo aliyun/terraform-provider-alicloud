@@ -760,7 +760,7 @@ func resourceMongodbInstanceMultiAZConfig(name string) string {
 		multi = true
 	}
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 
 	locals {

@@ -88,7 +88,7 @@ func resourceAlicloudServiceMeshExtensionProviderBasicDependence(name string) st
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 
 	resource "alicloud_vpc" "default" {

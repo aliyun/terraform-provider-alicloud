@@ -206,7 +206,7 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig_1"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "group" {
@@ -242,7 +242,7 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig0"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "group" {
@@ -317,7 +317,7 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig2"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "group" {
@@ -355,7 +355,7 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfig3"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "group" {
@@ -394,7 +394,7 @@ variable "name" {
 	default = "tf-testAccCheckAlicloudSecurityGroupRulesDataSourceConfigEgress"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING"
+	name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_security_group" "group" {

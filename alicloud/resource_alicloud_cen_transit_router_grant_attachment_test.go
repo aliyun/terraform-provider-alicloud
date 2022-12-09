@@ -71,7 +71,7 @@ variable "cen_owner_id" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 resource "alicloud_cen_instance" "default" {

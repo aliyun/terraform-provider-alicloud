@@ -57,7 +57,7 @@ variable "name" {
 data "alicloud_mongodb_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+    name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
