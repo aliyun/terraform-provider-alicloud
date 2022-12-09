@@ -118,9 +118,11 @@ The following arguments are supported:
   - true: Enable deletion protection.
   - false: Disable deletion protection.
 * `network_type` - (Optional, Computed, Available in 1.136.0+) Indicates the type of the created NAT gateway. Valid values `internet` and `intranet`. `internet`: Internet NAT Gateway. `intranet`: VPC NAT Gateway.
-* `eip_bind_mode` - (Optional, ForceNew, Available in v1.184.0+) The EIP binding mode of the NAT gateway. Default value: `MULTI_BINDED`. Valid values:
+* `eip_bind_mode` - (Optional, Available in v1.184.0+) The EIP binding mode of the NAT gateway. Default value: `MULTI_BINDED`. Valid values:
   - `MULTI_BINDED`: Multi EIP network card visible mode.
   - `NAT`: EIP normal mode, compatible with IPv4 gateway.
+  
+-> **NOTE:** From version 1.194.0, `eip_bind_mode` can be modified. If the `eip_bind_mode` parameter is set to `MULTI_BINDED` when the NAT gateway is created, you can change the value of this parameter from `MULTI_BINDED` to `NAT`. If the `eip_bind_mode` parameter is set to `NAT` when the NAT gateway is created, you cannot change the value of this parameter from `NAT` to `MULTI_BINDED`.
 
 -> **NOTE:** The `Normal` Nat Gateway has been offline and please using `Enhanced` Nat Gateway to get the better performance. 
 
