@@ -808,6 +808,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_sources":      dataSourceAlicloudCenTransitRouterMulticastDomainSources(),
 			"alicloud_bss_open_api_products":                            dataSourceAlicloudBssOpenApiProducts(),
 			"alicloud_bss_open_api_pricing_modules":                     dataSourceAlicloudBssOpenApiPricingModules(),
+			"alicloud_ocean_base_databases":                             dataSourceAlicloudOceanBaseDatabases(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1510,6 +1511,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_child_instance_route_entry_to_attachment":         resourceAlicloudCenChildInstanceRouteEntryToAttachment(),
 			"alicloud_cen_transit_router_multicast_domain_association":      resourceAlicloudCenTransitRouterMulticastDomainAssociation(),
 			"alicloud_threat_detection_honeypot_preset":                     resourceAlicloudThreatDetectionHoneypotPreset(),
+			"alicloud_ocean_base_database":                                  resourceAlicloudOceanBaseDatabase(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1744,6 +1746,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.BpStudioEndpoint = strings.TrimSpace(endpoints["bpstudio"].(string))
 		config.DasEndpoint = strings.TrimSpace(endpoints["das"].(string))
 		config.CloudfirewallEndpoint = strings.TrimSpace(endpoints["cloudfirewall"].(string))
+		config.OceanbaseEndpoint = strings.TrimSpace(endpoints["oceanbase"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2087,6 +2090,8 @@ func init() {
 		"das_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom das endpoints.",
 
 		"cloudfirewall_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfirewall endpoints.",
+
+		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 	}
 }
 
@@ -2150,6 +2155,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["bpstudio_endpoint"],
+				},
+				"oceanbase": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["oceanbase_endpoint"],
 				},
 
 				"dmsenterprise": {
@@ -3074,6 +3085,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["bpstudio"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["das"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfirewall"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	return hashcode.String(buf.String())
 }
 
