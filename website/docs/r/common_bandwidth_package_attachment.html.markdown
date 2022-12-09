@@ -15,6 +15,8 @@ Provides an Alicloud Common Bandwidth Package Attachment resource for associatin
 
 For information about common bandwidth package and how to use it, see [What is Common Bandwidth Package](https://www.alibabacloud.com/help/product/55092.htm).
 
+-> **NOTE:** From version 1.194.0, the resource can set the maximum bandwidth of an EIP that is associated with an EIP bandwidth plan by `bandwidth_package_bandwidth`. see [how to use it](https://www.alibabacloud.com/help/en/eip-bandwidth-plan/latest/120327).
+
 ## Example Usage
 
 Basic Usage
@@ -42,12 +44,23 @@ The following arguments are supported:
 
 * `bandwidth_package_id` - (Required, ForceNew) The bandwidth_package_id of the common bandwidth package attachment, the field can't be changed.
 * `instance_id` - (Required, ForceNew) The instance_id of the common bandwidth package attachment, the field can't be changed.
+* `bandwidth_package_bandwidth` - (Optional, Computed, Available in v1.194.0+) The maximum bandwidth for the EIP. This value cannot be larger than the maximum bandwidth of the EIP bandwidth plan. Unit: Mbit/s.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the common bandwidth package attachment id and formates as `<bandwidth_package_id>:<instance_id>`.
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.194.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Common Bandwidth Package Attachment.
+* `update` - (Defaults to 5 mins) Used when update the Common Bandwidth Package Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Common Bandwidth Package Attachment.
 
 ## Import
 
