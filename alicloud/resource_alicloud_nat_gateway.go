@@ -25,8 +25,8 @@ func resourceAlicloudNatGateway() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
@@ -176,7 +176,6 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
 			},
 		},
@@ -388,6 +387,10 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
 		request["Name"] = d.Get("name")
+	}
+	if !d.IsNewResource() && d.HasChange("eip_bind_mode") {
+		update = true
+		request["EipBindMode"] = d.Get("eip_bind_mode")
 	}
 	if update {
 		action := "ModifyNatGatewayAttribute"

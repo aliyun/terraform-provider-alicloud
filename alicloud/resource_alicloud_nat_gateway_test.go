@@ -147,7 +147,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 					"nat_gateway_name": "${var.name}",
 					"nat_type":         "Enhanced",
 					"vswitch_id":       "${alicloud_vswitch.default.id}",
-					"eip_bind_mode":    "NAT",
+					"eip_bind_mode":    "MULTI_BINDED",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -155,7 +155,7 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 						"nat_gateway_name": name,
 						"nat_type":         "Enhanced",
 						"vswitch_id":       CHECKSET,
-						"eip_bind_mode":    "NAT",
+						"eip_bind_mode":    "MULTI_BINDED",
 					}),
 				),
 			},
@@ -211,6 +211,16 @@ func TestAccAlicloudNatGateway_basic(t *testing.T) {
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"eip_bind_mode": "NAT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"eip_bind_mode": "NAT",
 					}),
 				),
 			},
