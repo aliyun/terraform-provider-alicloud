@@ -201,6 +201,39 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"security_ips": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
+			},
+			"db_instance_ip_array_name": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"db_instance_ip_array_attribute": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"security_ip_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"whitelist_network_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Classic", "VPC", "MIX"}, false),
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
+			"modify_mode": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+				DiffSuppressFunc: securityIpsDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -373,6 +406,65 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 	}
 
+	if d.HasChanges("security_ips", "db_instance_ip_array_name", "db_instance_ip_array_attribute", "whitelist_network_type") {
+		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
+
+		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+		// default disable connect from outside
+		if ipstr == "" {
+			ipstr = LOCAL_HOST_IP
+		}
+		action := "ModifySecurityIps"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"SecurityIps":  ipstr,
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("db_instance_ip_array_name"); ok && v.(string) != "" {
+			request["DBInstanceIPArrayName"] = v
+		}
+		if v, ok := d.GetOk("db_instance_ip_array_attribute"); ok && v.(string) != "" {
+			request["DBInstanceIPArrayAttribute"] = v
+		}
+		if v, ok := d.GetOk("security_ip_type"); ok && v.(string) != "" {
+			request["SecurityIPType"] = v
+		}
+		if v, ok := d.GetOk("whitelist_network_type"); ok && v.(string) != "" {
+			request["WhitelistNetworkType"] = v
+		}
+		if v, ok := d.GetOk("modify_mode"); ok && v.(string) != "" {
+			request["ModifyMode"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("security_ips")
+		d.SetPartial("db_instance_ip_array_name")
+		d.SetPartial("db_instance_ip_array_attribute")
+		d.SetPartial("security_ip_type")
+		d.SetPartial("whitelist_network_type")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudDBReadonlyInstanceRead(d, meta)
@@ -533,6 +625,16 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
+	dbInstanceIpArrayName := "default"
+	if v, ok := d.GetOk("db_instance_ip_array_name"); ok {
+		dbInstanceIpArrayName = v.(string)
+	}
+
+	ips, err := rdsService.GetSecurityIps(d.Id(), dbInstanceIpArrayName)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	d.Set("engine", instance["Engine"])
 	d.Set("master_db_instance_id", instance["MasterInstanceId"])
 	d.Set("engine_version", instance["EngineVersion"])
@@ -546,6 +648,11 @@ func resourceAlicloudDBReadonlyInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("target_minor_version", instance["CurrentKernelVersion"])
 	d.Set("deletion_protection", instance["DeletionProtection"])
+	d.Set("security_ips", ips)
+	d.Set("db_instance_ip_array_name", d.Get("db_instance_ip_array_name"))
+	d.Set("db_instance_ip_array_attribute", d.Get("db_instance_ip_array_attribute"))
+	d.Set("security_ip_type", d.Get("security_ip_type"))
+	d.Set("whitelist_network_type", d.Get("whitelist_network_type"))
 
 	sslAction, err := rdsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil && !IsExpectedErrors(err, []string{"InvaildEngineInRegion.ValueNotSupported", "InstanceEngineType.NotSupport", "OperationDenied.DBInstanceType"}) {
@@ -675,6 +782,11 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 		}
 
 		request["VPCId"] = vsw.VpcId
+	}
+
+	request["SecurityIPList"] = LOCAL_HOST_IP
+	if len(d.Get("security_ips").(*schema.Set).List()) > 0 {
+		request["SecurityIPList"] = strings.Join(expandStringList(d.Get("security_ips").(*schema.Set).List())[:], COMMA_SEPARATED)
 	}
 
 	request["PayType"] = Postpaid
