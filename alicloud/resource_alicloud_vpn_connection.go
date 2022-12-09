@@ -349,7 +349,7 @@ func resourceAliyunVpnConnectionCreate(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "VpnTask.CONFLICT"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -585,7 +585,7 @@ func resourceAliyunVpnConnectionUpdate(d *schema.ResourceData, meta interface{})
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -622,7 +622,7 @@ func resourceAliyunVpnConnectionDelete(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"VpnGateway.Configuring"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"VpnGateway.Configuring", "TaskConflict", "Appliance.Configuring", "VpnTask.CONFLICT", "VpnConnection.Configuring"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
