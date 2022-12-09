@@ -64,7 +64,7 @@ func dataSourceEdasDeployGroupConfigDependence(name string) string {
 		}
 
 		data "alicloud_vpcs" "default" {
-			name_regex = "default-NODELETING"
+			name_regex = "^default-NODELETING$"
 		}
 
 		resource "alicloud_edas_cluster" "default" {

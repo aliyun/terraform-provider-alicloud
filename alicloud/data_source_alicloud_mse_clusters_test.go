@@ -110,7 +110,7 @@ func TestAccAlicloudMSEClustersDataSource(t *testing.T) {
 func dataSourceMseClustersDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	  name_regex = "default-NODELETING"
+	  name_regex = "^default-NODELETING$"
 	}
 	data "alicloud_vswitches" "default" {
 	  vpc_id = data.alicloud_vpcs.default.ids.0

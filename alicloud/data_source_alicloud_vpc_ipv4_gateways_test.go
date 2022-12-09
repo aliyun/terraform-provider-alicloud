@@ -116,7 +116,7 @@ variable "name" {
 	default = "tf-testAccIpv4Gateway-%d"
 }
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NoDeleting"
+  name_regex = "^default-NODELETING$"
 }
 resource "alicloud_vpc_ipv4_gateway" "default" {
 	ipv4_gateway_description = var.name

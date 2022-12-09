@@ -1264,8 +1264,13 @@ func (s *AlikafkaService) WaitForAliKafkaInstanceUpdated(d *schema.ResourceData,
 			return WrapError(err)
 		}
 
+		quota, err := s.GetQuotaTip(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
 		// Wait for all variables be equal.
-		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
+		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(quota["PartitionNumOfBuy"]) == fmt.Sprint(d.Get("partition_num")) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
 			return nil
 		}
 

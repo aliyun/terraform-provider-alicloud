@@ -67,7 +67,7 @@ var AlicloudPrivatelinkVpcEndpointServiceResourceMap = map[string]string{}
 func AlicloudPrivatelinkVpcEndpointServiceResourceBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	  name_regex = "default-NODELETING"
+	  name_regex = "^default-NODELETING$"
 	}
 	resource "alicloud_security_group" "default" {
 	  name        = "tf-testAcc-for-privatelink"

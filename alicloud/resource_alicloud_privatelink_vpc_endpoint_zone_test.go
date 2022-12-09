@@ -70,7 +70,7 @@ var AlicloudPrivatelinkVpcEndpointZoneMap = map[string]string{
 func AlicloudPrivatelinkVpcEndpointZoneBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_vpcs" "default" {
-	 name_regex = "default-NODELETING"
+	     name_regex = "^default-NODELETING$"
 	}
 	data "alicloud_vswitches" "default" {
 	 	 is_default = true

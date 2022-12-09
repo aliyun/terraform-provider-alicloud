@@ -118,7 +118,7 @@ func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 	data "alicloud_vswitches" "default" {
 		vpc_id = data.alicloud_vpcs.default.ids.0
@@ -156,7 +156,7 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	  available_resource_creation = "VSwitch"
 	}
 	data "alicloud_vpcs" "default" {
-		name_regex = "default-NODELETING"
+		name_regex = "^default-NODELETING$"
 	}
 	data "alicloud_vswitches" "default" {
 		vpc_id = data.alicloud_vpcs.default.ids.0
