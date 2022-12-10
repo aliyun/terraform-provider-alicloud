@@ -25,6 +25,10 @@ func init() {
 }
 
 func testSweepDdoscooInstances(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.DdoscooSupportedRegions) {
+		log.Printf("[INFO] Skipping ddoscoo unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		log.Printf("error getting Alicloud client: %s", err)

@@ -24,6 +24,10 @@ func init() {
 }
 
 func testSweepBpStudioApplication(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.BpStudioApplicationSupportRegions) {
+		log.Printf("[INFO] Skipping bpstudio unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)

@@ -26,6 +26,10 @@ func init() {
 }
 
 func testSweepEciContainerGroup(region string) error {
+	if testSweepPreCheckWithRegions(region, true, connectivity.EciContainerGroupRegions) {
+		log.Printf("[INFO] Skipping ECI unsupported region: %s", region)
+		return nil
+	}
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapErrorf(err, "error getting Alicloud client.")

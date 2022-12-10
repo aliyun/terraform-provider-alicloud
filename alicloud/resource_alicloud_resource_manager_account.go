@@ -48,7 +48,6 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 			"abandon_able_check_id": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tags": tagsSchema(),
@@ -232,6 +231,7 @@ func resourceAlicloudResourceManagerAccountUpdate(d *schema.ResourceData, meta i
 
 func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	resourcemanagerService := ResourcemanagerService{client}
 	action := "DeleteAccount"
 	var response map[string]interface{}
 	conn, err := client.NewResourcemanagerClient()
@@ -263,6 +263,11 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{"Checking", "Deleting"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil

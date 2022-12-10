@@ -29,5 +29,6 @@ for (( i=0;i<${#international_regions[@]};i++)) do
     -v alicloud_access_key_master=$ALICLOUD_ACCESS_KEY_MASTER \
     -v alicloud_secret_key_master=$ALICLOUD_SECRET_KEY_MASTER \
     -v alicloud_access_key_slave=$ALICLOUD_ACCESS_KEY_SLAVE \
-    -v alicloud_secret_key_slave=$ALICLOUD_SECRET_KEY_SLAVE
+    -v alicloud_secret_key_slave=$ALICLOUD_SECRET_KEY_SLAVE \
+    -v enterprise_account_enabled=true
 done
