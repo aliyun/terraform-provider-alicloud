@@ -38,7 +38,9 @@ The following arguments are supported:
 * `display_name` - (Required) Member name. The length is 2 ~ 50 characters or Chinese characters, which can include Chinese characters, English letters, numbers, underscores (_), dots (.) And dashes (-).
 * `folder_id` - (Optional) The ID of the parent folder.
 * `payer_account_id` - (Optional, ForceNew) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
-* `abandon_able_check_id` - (Optional, ForceNew, Available in v1.188.0+) The IDs of the check items that you can choose to ignore for the member deletion. You can obtain the IDs from the datasource `alicloud_resource_manager_account_deletion_check_task` operation.
+* `abandon_able_check_id` - (Optional, Available in v1.188.0+) The IDs of the check items that you can choose to ignore for the member deletion. 
+  If you want to delete the account, please use datasource `alicloud_resource_manager_account_deletion_check_task` 
+  to get check ids and set them.
 * `tags` - (Optional, Available in v1.181.0+) A mapping of tags to assign to the resource.
 
 -> **NOTE:** The member name must be unique within the resource directory.

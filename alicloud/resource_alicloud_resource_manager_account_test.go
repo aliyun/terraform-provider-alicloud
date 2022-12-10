@@ -37,8 +37,6 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
-			// The created account resource cannot be deleted, and the created dependent resource folder will also be deleted. Therefore, the existing folder is specified in the environment variable for testing. If it is not specified, skip the test.
-			testAccPreCheckWithResourceManagerFloderIdSetting(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -48,12 +46,12 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
-					"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+					"folder_id":    "${alicloud_resource_manager_folder.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"display_name": name,
-						"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+						"folder_id":    CHECKSET,
 					}),
 				),
 			},
@@ -69,11 +67,11 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"folder_id": os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2"),
+					"folder_id": "${alicloud_resource_manager_folder.update.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"folder_id": os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2"),
+						"folder_id": CHECKSET,
 					}),
 				),
 			},
@@ -103,8 +101,6 @@ func TestAccAlicloudResourceManagerAccount_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
-			// The created account resource cannot be deleted, and the created dependent resource folder will also be deleted. Therefore, the existing folder is specified in the environment variable for testing. If it is not specified, skip the test.
-			testAccPreCheckWithResourceManagerFloderIdSetting(t)
 		},
 
 		IDRefreshName: resourceId,
@@ -114,7 +110,7 @@ func TestAccAlicloudResourceManagerAccount_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
-					"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+					"folder_id":    "${alicloud_resource_manager_folder.default.id}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ACCOUNT",
@@ -123,7 +119,7 @@ func TestAccAlicloudResourceManagerAccount_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"display_name": name,
-						"folder_id":    os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1"),
+						"folder_id":    CHECKSET,
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "ACCOUNT",
@@ -164,7 +160,17 @@ var ResourceManagerAccountMap = map[string]string{
 }
 
 func ResourceManagerAccountBasicdependence(name string) string {
-	return ""
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+resource "alicloud_resource_manager_folder" "default"{
+	folder_name = var.name
+}
+resource "alicloud_resource_manager_folder" "update"{
+	folder_name = "${var.name}update"
+}
+`, name)
 }
 
 func TestUnitAlicloudResourceManagerAccount(t *testing.T) {

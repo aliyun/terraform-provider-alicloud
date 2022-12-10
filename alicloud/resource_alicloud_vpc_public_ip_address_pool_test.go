@@ -73,7 +73,8 @@ func testSweepVpcPublicIpAddressPool(region string) error {
 	}
 	resp, err := jsonpath.Get("$.PublicIpAddressPoolList", response)
 	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.PublicIpAddressPoolList", response)
+		log.Printf("[ERROR] Failed to parsing $.PublicIpAddressPoolList in response:%s. Error: %s", response, err)
+		return nil
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {

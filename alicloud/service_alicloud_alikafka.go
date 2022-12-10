@@ -1249,7 +1249,7 @@ func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id string, failStates
 		for _, failState := range failStates {
 
 			if fmt.Sprint(object["ServiceStatus"]) == failState {
-				return object, fmt.Sprint(object["ServiceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AclStatus"])))
+				return object, fmt.Sprint(object["ServiceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["ServiceStatus"])))
 			}
 		}
 		return object, fmt.Sprint(object["ServiceStatus"]), nil
