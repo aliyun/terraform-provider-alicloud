@@ -1,5 +1,5 @@
 ---
-subcategory: "Auto Scaling(ESS)"
+subcategory: "Auto Scaling"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_alb_server_group_attachment"
 sidebar_current: "docs-alicloud-resource-ess-alb-server-group-attachment"

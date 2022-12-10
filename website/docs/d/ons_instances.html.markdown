@@ -1,5 +1,5 @@
 ---
-subcategory: "RocketMQ"
+subcategory: "RocketMQ (Ons)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ons_instances"
 sidebar_current: "docs-alicloud-datasource-ons-instances"

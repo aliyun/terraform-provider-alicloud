@@ -1,5 +1,5 @@
 ---
-subcategory: "DNS"
+subcategory: "Alidns"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_address_pool"
 sidebar_current: "docs-alicloud-resource-alidns-address-pool"

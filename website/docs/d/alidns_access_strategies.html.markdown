@@ -1,5 +1,5 @@
 ---
-subcategory: "DNS"
+subcategory: "Alidns"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_access_strategies"
 sidebar_current: "docs-alicloud-datasource-alidns-access-strategies"

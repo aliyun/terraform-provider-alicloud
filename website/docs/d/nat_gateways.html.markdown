@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "NAT Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nat_gateways"
 sidebar_current: "docs-alicloud-datasource-nat-gateways"
@@ -15,7 +15,7 @@ This data source provides a list of Nat Gateways owned by an Alibaba Cloud accou
 
 ## Example Usage
 
-```
+```terraform
 variable "name" {
   default = "natGatewaysDatasource"
 }

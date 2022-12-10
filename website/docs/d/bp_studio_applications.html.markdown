@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Architect Design Tools"
+subcategory: "Cloud Architect Design Tools (BPStudio)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_bp_studio_applications"
 sidebar_current: "docs-alicloud-datasource-bp-studio-applications"
@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_bp\_studio\_applications
 
-This data source provides the Cloud Architect Design Tools Applications of the current Alibaba Cloud user.
+This data source provides the Cloud Architect Design Tools (BPStudio) Applications of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.192.0+.
 
@@ -54,7 +54,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Application names.
-* `applications` - A list of Cloud Architect Design Tools Applications. Each element contains the following attributes:
+* `applications` - A list of Cloud Architect Design Tools (BPStudio) Applications. Each element contains the following attributes:
   * `id` - The ID of the Application.
   * `application_id` - The ID of the Application.
   * `application_name` - The name of the Application.

@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "NAT Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_forward_entries"
 sidebar_current: "docs-alicloud-datasource-forward-entries"

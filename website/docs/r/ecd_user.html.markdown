@@ -1,17 +1,17 @@
 ---
-subcategory: "Elastic Desktop Service(EDS)"
+subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_user"
 sidebar_current: "docs-alicloud-resource-ecd-user"
 description: |-
-  Provides a Alicloud Elastic Desktop Service(EDS) User resource.
+  Provides a Alicloud Elastic Desktop Service (ECD) User resource.
 ---
 
 # alicloud\_ecd\_user
 
-Provides a Elastic Desktop Service(EDS) User resource.
+Provides a Elastic Desktop Service (ECD) User resource.
 
-For information about Elastic Desktop Service(EDS) User and how to use it, see [What is User](https://help.aliyun.com/document_detail/188382.html).
+For information about Elastic Desktop Service (ECD) User and how to use it, see [What is User](https://help.aliyun.com/document_detail/188382.html).
 
 -> **NOTE:** Available in v1.142.0+.
 

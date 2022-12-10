@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic Desktop Service(EDS)"
+subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_zones"
 sidebar_current: "docs-alicloud-datasource-ecd-zones"
@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_ecd\_zones
 
-This data source provides the available zones with the Elastic Desktop Service(EDS) of the current Alibaba Cloud user.
+This data source provides the available zones with the Elastic Desktop Service (ECD) of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.174.0+.
 

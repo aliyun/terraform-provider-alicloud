@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Config"
+subcategory: "Cloud Config (Config)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_config_aggregate_config_rule"
 sidebar_current: "docs-alicloud-resource-config-aggregate-config-rule"

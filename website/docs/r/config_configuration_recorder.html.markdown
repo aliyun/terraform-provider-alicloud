@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Config"
+subcategory: "Cloud Config (Config)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_config_configuration_recorder"
 sidebar_current: "docs-alicloud-resource-config-configuration-recorder"

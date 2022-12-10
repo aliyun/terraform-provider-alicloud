@@ -1,10 +1,10 @@
 ---
-subcategory: "Cloud Architect Design Tools"
+subcategory: "Cloud Architect Design Tools (BPStudio)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_bp_studio_application"
 sidebar_current: "docs-alicloud-resource-bp-studio-application"
 description: |-
-  Provides a Alicloud Cloud Architect Design Tools Application resource.
+  Provides a Alicloud Cloud Architect Design Tools (BPStudio) Application resource.
 ---
 
 # alicloud\_bp\_studio\_application

@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "NAT Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_nat_ips"
 sidebar_current: "docs-alicloud-datasource-vpc-nat-ips"
