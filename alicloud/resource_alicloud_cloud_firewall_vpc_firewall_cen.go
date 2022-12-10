@@ -176,6 +176,7 @@ func resourceAlicloudCloudFirewallVpcFirewallCen() *schema.Resource {
 			},
 			"vpc_region": {
 				Required: true,
+				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 		},

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"os"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 
 func TestAccAlicloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
