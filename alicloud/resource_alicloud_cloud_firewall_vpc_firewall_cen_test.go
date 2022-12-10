@@ -19,6 +19,7 @@ func TestAccAlicloudCloudFirewallVpcFirewallCen_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
 	name := fmt.Sprintf("tf-testacc%scfwCen%d", defaultRegionToTest, rand)
 	nameUpdate := fmt.Sprintf("tf-testacc%scfwCenup%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallVpcFirewallCenBasicDependence)
