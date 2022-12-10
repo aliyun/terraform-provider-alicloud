@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic Desktop Service(EDS)"
+subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_simple_office_sites"
 sidebar_current: "docs-alicloud-datasource-ecd-simple-office-sites"

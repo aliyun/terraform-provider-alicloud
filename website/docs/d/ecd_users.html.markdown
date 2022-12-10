@@ -1,15 +1,15 @@
 ---
-subcategory: "Elastic Desktop Service(EDS)"
+subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_users"
 sidebar_current: "docs-alicloud-datasource-ecd-users"
 description: |-
-  Provides a list of Elastic Desktop Service(EDS) Users to the user.
+  Provides a list of Elastic Desktop Service (ECD) Users to the user.
 ---
 
 # alicloud\_ecd\_users
 
-This data source provides the Elastic Desktop Service(EDS) Users of the current Alibaba Cloud user.
+This data source provides the Elastic Desktop Service (ECD) Users of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.142.0+.
 

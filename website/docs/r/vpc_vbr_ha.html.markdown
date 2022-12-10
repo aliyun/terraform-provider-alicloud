@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_vbr_ha"
 sidebar_current: "docs-alicloud-resource-vpc-vbr-ha"

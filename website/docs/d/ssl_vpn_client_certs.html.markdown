@@ -1,5 +1,5 @@
 ---
-subcategory: "VPN"
+subcategory: "VPN Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ssl_vpn_client_certs"
 sidebar_current: "docs-alicloud-datasource-ssl-vpn-client-certs"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Message Notification Service (MNS)"
+subcategory: "Message Service"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mns_topic_subscription"
 sidebar_current: "docs-alicloud-resource-mns-topic_subscription"

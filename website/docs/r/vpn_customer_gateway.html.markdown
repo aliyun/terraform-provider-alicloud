@@ -1,5 +1,5 @@
 ---
-subcategory: "VPN"
+subcategory: "VPN Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpn_customer_gateway"
 sidebar_current: "docs-alicloud-resource-vpn-customer-gateway"

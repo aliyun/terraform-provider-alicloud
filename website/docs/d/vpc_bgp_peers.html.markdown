@@ -1,5 +1,5 @@
 ---
-subcategory: "VPC"
+subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_bgp_peers"
 sidebar_current: "docs-alicloud-datasource-vpc-bgp-peers"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Auto Scaling(ESS)"
+subcategory: "Auto Scaling"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_scaling_groups"
 sidebar_current: "docs-alicloud_ess_scaling_groups"

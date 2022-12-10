@@ -1,5 +1,5 @@
 ---
-subcategory: "Auto Scaling(ESS)"
+subcategory: "Auto Scaling"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_suspend_process"
 sidebar_current: "docs-alicloud-resource-ess-suspend-process"

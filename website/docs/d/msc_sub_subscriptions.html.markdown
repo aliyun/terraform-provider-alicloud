@@ -1,5 +1,5 @@
 ---
-subcategory: "Message Center"
+subcategory: "Message Center (MscSub)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_msc_sub_subscriptions"
 sidebar_current: "docs-alicloud-datasource-msc-sub-subscriptions"

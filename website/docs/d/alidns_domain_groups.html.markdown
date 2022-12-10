@@ -1,5 +1,5 @@
 ---
-subcategory: "DNS"
+subcategory: "Alidns"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_domain_groups"
 sidebar_current: "docs-alicloud-datasource-alidns-domain-groups"

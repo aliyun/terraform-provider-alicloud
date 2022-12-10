@@ -1,17 +1,17 @@
 ---
-subcategory: "Elastic Desktop Service(EDS)"
+subcategory: "Elastic Desktop Service (ECD)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecd_policy_group"
 sidebar_current: "docs-alicloud-resource-ecd-policy-group"
 description: |-
-  Provides a Alicloud Elastic Desktop Service(EDS) Policy Group resource.
+  Provides a Alicloud Elastic Desktop Service (ECD) Policy Group resource.
 ---
 
 # alicloud\_ecd\_policy\_group
 
-Provides a Elastic Desktop Service(EDS) Policy Group resource.
+Provides a Elastic Desktop Service (ECD) Policy Group resource.
 
-For information about Elastic Desktop Service(EDS) Policy Group and how to use it, see [What is Policy Group](https://help.aliyun.com/document_detail/188382.html).
+For information about Elastic Desktop Service (ECD) Policy Group and how to use it, see [What is Policy Group](https://help.aliyun.com/document_detail/188382.html).
 
 -> **NOTE:** Available in v1.130.0+.
 
@@ -100,7 +100,7 @@ The following attributes are exported:
 
 ## Import
 
-Elastic Desktop Service(EDS) Policy Group can be imported using the id, e.g.
+Elastic Desktop Service (ECD) Policy Group can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ecd_policy_group.example <id>

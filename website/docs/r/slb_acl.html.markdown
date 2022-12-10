@@ -1,5 +1,5 @@
 ---
-subcategory: "Classic Load Balancer (CLB)"
+subcategory: "Classic Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_acl"
 sidebar_current: "docs-alicloud-resource-slb-acl"

@@ -1,5 +1,5 @@
 ---
-subcategory: "Classic Load Balancer (CLB)"
+subcategory: "Classic Load Balancer (SLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_tls_cipher_policy"
 sidebar_current: "docs-alicloud-resource-slb-tls-cipher-policy"

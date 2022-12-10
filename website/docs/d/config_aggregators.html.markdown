@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Config"
+subcategory: "Cloud Config (Config)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_config_aggregators"
 sidebar_current: "docs-alicloud-datasource-config-aggregators"

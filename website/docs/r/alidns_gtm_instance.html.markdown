@@ -1,5 +1,5 @@
 ---
-subcategory: "DNS"
+subcategory: "Alidns"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alidns_gtm_instance"
 sidebar_current: "docs-alicloud-resource-alidns-gtm-instance"

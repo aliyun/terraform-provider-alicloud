@@ -1,5 +1,5 @@
 ---
-subcategory: "VPN"
+subcategory: "VPN Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpn_pbr_route_entries"
 sidebar_current: "docs-alicloud-datasource-vpn-pbr-route-entries"
