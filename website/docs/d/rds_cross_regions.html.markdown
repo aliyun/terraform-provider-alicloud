@@ -17,13 +17,10 @@ This data source provides an available area for remote disaster recovery for RDS
 
 ```
 # Declare the data source
-data "alicloud_rds__cross_regions" "cross_regions" {}
+data "alicloud_rds_cross_regions" "cross_regions" {}
 
-# Set the remote disaster recovery region of the RDS instance
-resource "alicloud_db_instance" "db" {
-    cross_backup_region = ${data.alicloud_rds_cross_regions.cross_regions.ids.0.id}
-
-  # Other properties...
+output "first_rds_cross_regions" {
+  value = data.alicloud_rds_cross_regions.regions.ids.0
 }
 ```
 

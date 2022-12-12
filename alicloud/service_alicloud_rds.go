@@ -2457,3 +2457,30 @@ func (s *RdsService) GetDbProxyInstanceSsl(id string) (object map[string]interfa
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
+func (s *RdsService) DescribeInstanceCrossBackupPolicy(id string) (map[string]interface{}, error) {
+	action := "DescribeInstanceCrossBackupPolicy"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"SourceIp":     s.client.SourceIp,
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	if v, ok := response["BackupEnabled"]; ok && v.(string) == "Disabled" {
+		return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+	addDebug(action, response, request)
+	return response, nil
+}
