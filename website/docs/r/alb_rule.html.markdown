@@ -262,7 +262,7 @@ The forward_group_config supports the following:
 
 * `server_group_tuples` - (Optional, Array) The destination server group to which requests are forwarded.
   * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
-  * `weight` - (Optional, Computed, Available in 1.162.0+) The Weight of server group. **NOTE:** This attribute is required when the number of `server_group_tuples` is greater than 2.
+  * `weight` - (Optional, Computed, Available in 1.162.0+) The Weight of server group. Default value: `100`. **NOTE:** This attribute is required when the number of `server_group_tuples` is greater than 2.
 * `server_group_sticky_session` - (Optional, Computed, Available in 1.179.0+) The configuration of session persistence for server groups.
   * `enabled` - (Optional, Computed, Available in 1.179.0+) Whether to enable session persistence.
   * `timeout` - (Optional, Computed, Available in 1.179.0+) The timeout period. Unit: seconds. Valid values: `1` to `86400`. Default value: `1000`.

@@ -77,7 +77,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"server_group_tuples": {
-										Type:     schema.TypeList,
+										Type:     schema.TypeSet,
 										Optional: true,
 										Computed: true,
 										Elem: &schema.Resource{
@@ -90,7 +90,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 												"weight": {
 													Type:         schema.TypeInt,
 													Optional:     true,
-													Computed:     true,
+													Default:      100,
 													ValidateFunc: validation.IntBetween(1, 100),
 												},
 											},
@@ -459,7 +459,7 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
 			forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
 			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].([]interface{}) {
+			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
 				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 				serverGroupTuplesMap := map[string]interface{}{}
 				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
@@ -979,7 +979,7 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
 				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
 				serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].([]interface{}) {
+				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
 					serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 					serverGroupTuplesMap := map[string]interface{}{}
 					serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
