@@ -342,7 +342,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_network_interface" "default" {
 	name = "${var.name}"
     vswitch_id = local.vswitch_id
-	security_groups = [ "${alicloud_security_group.default.id}" ]
+	security_groups = ["${alicloud_security_group.default.id}"]
 	private_ip = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)
 }
 

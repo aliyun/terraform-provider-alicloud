@@ -96,6 +96,15 @@ The following attributes are exported:
 
 * `id` - The EIP Association ID and it formats as `<allocation_id>:<instance_id>`.
 
+#### Timeouts
+
+-> **NOTE:** Available in 1.195.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the Elastic IP address association.
+* `delete` - (Defaults to 10 mins) Used when delete the Elastic IP address association.
+
 ## Import
 
 -> **NOTE:** Available in 1.117.0+.

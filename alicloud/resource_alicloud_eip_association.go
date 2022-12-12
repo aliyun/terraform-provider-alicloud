@@ -22,33 +22,32 @@ func resourceAliyunEipAssociation() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"allocation_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"instance_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
 			},
-
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
 			},
-
 			"private_ip_address": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -83,12 +82,12 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
 		request.PrivateIpAddress = privateIPAddress.(string)
 	}
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "IncorrectEipStatus", "InvalidBindingStatus", "IncorrectInstanceStatus", "IncorrectStatus.NatGateway", "InvalidStatus.EcsStatusNotSupport", "InvalidStatus.InstanceHasBandWidth", "InvalidStatus.EniStatusNotSupport"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -161,13 +160,12 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 	if instanceType, ok := d.GetOk("instance_type"); ok {
 		request.InstanceType = instanceType.(string)
 	}
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateEipAddress(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "IncorrectHaVipStatus", "TaskConflict",
-				"InvalidIpStatus.HasBeenUsedBySnatTable", "InvalidIpStatus.HasBeenUsedByForwardEntry", "InvalidStatus.EniStatusNotSupport"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "IncorrectEipStatus", "InvalidBindingStatus", "IncorrectInstanceStatus", "IncorrectHaVipStatus", "TaskConflict", "InvalidIpStatus.HasBeenUsedBySnatTable", "InvalidIpStatus.HasBeenUsedByForwardEntry", "InvalidStatus.EniStatusNotSupport", "InvalidStatus.EcsStatusNotSupport", "InvalidStatus.NotAllow", "InvalidStatus.SnatOrDnat"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -175,8 +173,15 @@ func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForEipAssociation(d.Id(), Available, DefaultTimeoutMedium))
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.EipAssociationStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return nil
 }
