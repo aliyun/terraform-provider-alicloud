@@ -156,11 +156,6 @@ func TestAccAlicloudVPCHavip_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name + "1",
 				}),
@@ -191,6 +186,11 @@ func TestAccAlicloudVPCHavip_basic(t *testing.T) {
 						"havip_name":  name,
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

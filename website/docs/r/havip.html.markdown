@@ -46,6 +46,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when creating the HaVip instance.
+* `update` - (Defaults to 5 mins) Used when updating the HaVip instance.
+* `delete` - (Defaults to 5 mins) Used when deleting the HaVip instance.
 
 ## Import
 
