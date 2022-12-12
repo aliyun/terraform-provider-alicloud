@@ -923,6 +923,26 @@ func (s *VpcService) WaitForEipAssociation(id string, status Status, timeout int
 	}
 }
 
+func (s *VpcService) EipAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEipAssociation(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
+
 func (s *VpcService) DeactivateRouterInterface(interfaceId string) error {
 	request := vpc.CreateDeactivateRouterInterfaceRequest()
 	request.RegionId = s.client.RegionId
