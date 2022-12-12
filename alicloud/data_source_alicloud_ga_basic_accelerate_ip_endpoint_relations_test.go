@@ -2,12 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"strings"
-	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )

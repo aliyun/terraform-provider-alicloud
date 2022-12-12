@@ -646,6 +646,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("deletion_proection")
 	}
 
+	update = false
 	upgradeLindormLogReq := map[string]interface{}{}
 
 	if !d.IsNewResource() && d.HasChange("log_single_storage") {
@@ -662,7 +663,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormLogReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("log_single_storage")
 		d.SetPartial("core_single_storage")
@@ -683,7 +684,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceColdStorageReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -703,7 +704,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceFilestoreNumReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("file_engine_node_count")
 	}
@@ -724,7 +725,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceFilestoreSpecReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("file_engine_specification")
 	}
@@ -742,7 +743,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -753,7 +754,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -764,7 +765,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchNumReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchNumReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -785,7 +786,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceTableReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -796,7 +797,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceTableReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -808,7 +809,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 				upgradeLindormLogNumReq["LindormNum"] = d.Get("table_engine_node_count")
 				err := UpgradeLindormInstance(d, meta, upgradeLindormLogNumReq)
 				if err != nil {
-					return err
+					return WrapError(err)
 				}
 			} else {
 				upgradeLindormInstanceTableNumReq := map[string]interface{}{}
@@ -817,7 +818,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 				upgradeLindormInstanceTableNumReq["ClusterStorage"] = currentInstanceStorage
 				err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceTableNumReq)
 				if err != nil {
-					return err
+					return WrapError(err)
 				}
 			}
 		}
@@ -848,7 +849,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -859,7 +860,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -870,7 +871,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceSearchNumReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceSearchNumReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -892,7 +893,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceLtsReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -903,7 +904,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceLtsReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -914,7 +915,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			upgradeLindormInstanceLtsNumReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsNumReq)
 			if err != nil {
-				return err
+				return WrapError(err)
 			}
 		}
 
@@ -939,7 +940,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("phoenix_node_count")
 		d.SetPartial("phoenix_node_specification")
@@ -966,7 +967,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceClusterStorageReq)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 		d.SetPartial("instance_storage")
 	}
