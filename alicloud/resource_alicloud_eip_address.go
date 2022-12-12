@@ -26,6 +26,8 @@ func resourceAlicloudEipAddress() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(9 * time.Minute),
+			Update: schema.DefaultTimeout(9 * time.Minute),
 			Delete: schema.DefaultTimeout(9 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -209,7 +211,7 @@ func resourceAlicloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "FrequentPurchase.EIP"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -244,7 +246,13 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("address_name", object["Name"])
 	d.Set("name", object["Name"])
-	d.Set("bandwidth", object["Bandwidth"])
+
+	if eipBandwidth, ok := object["EipBandwidth"]; ok {
+		d.Set("bandwidth", eipBandwidth)
+	} else {
+		d.Set("bandwidth", object["Bandwidth"])
+	}
+
 	d.Set("deletion_protection", object["DeletionProtection"])
 	d.Set("description", object["Descritpion"])
 	d.Set("internet_charge_type", object["InternetChargeType"])
@@ -383,7 +391,7 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, modifyEipAddressAttributeReq, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "IncorrectEipStatus", "IncorrectStatus.ResourceStatus", "FrequentPurchase.EIP"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -426,7 +434,7 @@ func resourceAlicloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			} else if IsExpectedErrors(err, []string{"InvalidAllocationId.NotFound"}) {
@@ -456,6 +464,7 @@ func convertEipAddressPaymentTypeRequest(source interface{}) interface{} {
 	}
 	return source
 }
+
 func convertEipAddressPaymentTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PostPaid":

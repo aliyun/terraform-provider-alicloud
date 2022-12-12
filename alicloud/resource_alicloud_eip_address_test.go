@@ -151,13 +151,11 @@ func TestAccAlicloudEIPAddress_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"address_name":              "${var.name}",
-					"security_protection_types": []string{"AntiDDoS_Enhanced"},
+					"address_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"address_name":                name,
-						"security_protection_types.#": "1",
+						"address_name": name,
 					}),
 				),
 			},
