@@ -62,6 +62,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when create the bandwidth package.
+* `update` - (Defaults to 10 mins) Used when update the bandwidth package.
 * `delete` - (Defaults to 10 mins) Used when delete the bandwidth package.
 
 ## Import
@@ -71,5 +72,3 @@ The common bandwidth package can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_common_bandwidth_package.foo cbwp-abc123456
 ```
-
-
