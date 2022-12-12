@@ -955,8 +955,8 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 
-		currentInstanceStorage := formatInt(object["InstanceStorage"])
-		chanageInstanceStorage := formatInt(d.Get("instance_storage"))
+		currentInstanceStorage := fmt.Sprint(object["InstanceStorage"])
+		chanageInstanceStorage := fmt.Sprint(d.Get("instance_storage"))
 
 		if currentInstanceStorage != chanageInstanceStorage {
 			update = true
