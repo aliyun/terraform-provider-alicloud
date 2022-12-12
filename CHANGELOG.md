@@ -1,56 +1,59 @@
-## 1.194.0 (Unreleased)
+## 1.195.0 (Unreleased)
+## 1.194.0 (December 12, 2022)
 
-- **New Resource:** `alicloud_vpc_gateway_route_table_attachment` [GH-5646]
-- **New Resource:** `alicloud_ga_basic_endpoint_group` [GH-5609]
-- **New Resource:** `alicloud_cms_metric_rule_black_list` [GH-5670]
-- **New Resource:** `alicloud_ga_basic_ip_set` [GH-5626]
-- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_cen` [GH-5678]
-- **New Resource:** `alicloud_cloud_firewall_vpc_firewall` [GH-5668]
-- **New Resource:** `alicloud_cloud_firewall_instance_member` [GH-5677]
-- **New Resource:** `alicloud_ga_basic_accelerate_ip` [GH-5634]
-- **New Resource:** `alicloud_ga_basic_endpoint` [GH-5676]
-- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_control_policy` [GH-5683]
-- **New Resource:** `alicloud_ga_basic_accelerate_ip_endpoint_relation` [GH-5680]
-- **New Data Source:** `alicloud_ga_basic_accelerate_ip_endpoint_relationsENHANCEMENTS` [GH-5680]
-- **New Data Source:** `alicloud_cloud_firewall_vpc_firewall_control_policies` [GH-5683]
-- **New Data Source:** `alicloud_ga_basic_endpoints` [GH-5676]
-- **New Data Source:** `alicloud_ga_basic_accelerate_ips` [GH-5634]
-- **New Data Source:** `alicloud_cloud_firewall_instance_members` [GH-5677]
-- **New Data Source:** `alicloud_cloud_firewall_vpc_firewalls` [GH-5668]
-- **New Data Source:** `alicloud_cloud_firewall_vpc_firewall_cens` [GH-5678]
-- **New Data Source:** `alicloud_cms_metric_rule_black_lists` [GH-5670]
+- **New Resource:** `alicloud_vpc_gateway_route_table_attachment` ([#5646](https://github.com/aliyun/terraform-provider-alicloud/issues/5646))
+- **New Resource:** `alicloud_ga_basic_endpoint_group` ([#5609](https://github.com/aliyun/terraform-provider-alicloud/issues/5609))
+- **New Resource:** `alicloud_cms_metric_rule_black_list` ([#5670](https://github.com/aliyun/terraform-provider-alicloud/issues/5670))
+- **New Resource:** `alicloud_ga_basic_ip_set` ([#5626](https://github.com/aliyun/terraform-provider-alicloud/issues/5626))
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_cen` ([#5678](https://github.com/aliyun/terraform-provider-alicloud/issues/5678))
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall` ([#5668](https://github.com/aliyun/terraform-provider-alicloud/issues/5668))
+- **New Resource:** `alicloud_cloud_firewall_instance_member` ([#5677](https://github.com/aliyun/terraform-provider-alicloud/issues/5677))
+- **New Resource:** `alicloud_ga_basic_accelerate_ip` ([#5634](https://github.com/aliyun/terraform-provider-alicloud/issues/5634))
+- **New Resource:** `alicloud_ga_basic_endpoint` ([#5676](https://github.com/aliyun/terraform-provider-alicloud/issues/5676))
+- **New Resource:** `alicloud_cloud_firewall_vpc_firewall_control_policy` ([#5683](https://github.com/aliyun/terraform-provider-alicloud/issues/5683))
+- **New Resource:** `alicloud_ga_basic_accelerate_ip_endpoint_relation` ([#5680](https://github.com/aliyun/terraform-provider-alicloud/issues/5680))
+- **New Data Source:** `alicloud_ga_basic_accelerate_ip_endpoint_relationsENHANCEMENTS` ([#5680](https://github.com/aliyun/terraform-provider-alicloud/issues/5680))
+- **New Data Source:** `alicloud_cloud_firewall_vpc_firewall_control_policies` ([#5683](https://github.com/aliyun/terraform-provider-alicloud/issues/5683))
+- **New Data Source:** `alicloud_ga_basic_endpoints` ([#5676](https://github.com/aliyun/terraform-provider-alicloud/issues/5676))
+- **New Data Source:** `alicloud_ga_basic_accelerate_ips` ([#5634](https://github.com/aliyun/terraform-provider-alicloud/issues/5634))
+- **New Data Source:** `alicloud_cloud_firewall_instance_members` ([#5677](https://github.com/aliyun/terraform-provider-alicloud/issues/5677))
+- **New Data Source:** `alicloud_cloud_firewall_vpc_firewalls` ([#5668](https://github.com/aliyun/terraform-provider-alicloud/issues/5668))
+- **New Data Source:** `alicloud_cloud_firewall_vpc_firewall_cens` ([#5678](https://github.com/aliyun/terraform-provider-alicloud/issues/5678))
+- **New Data Source:** `alicloud_cms_metric_rule_black_lists` ([#5670](https://github.com/aliyun/terraform-provider-alicloud/issues/5670))
 
 ENHANCEMENTS:
 
-- resource/alicloud_slb_listener: Added retry strategy for error code OperationFailed.ListenerStatusNotSupport. [GH-5705]
-- resource/alicloud_lindorm_instance: Fixes the instance_storage parsing bug when upgrading its value [GH-5702]
-- resource/alicloud_alb_server_group: Support new attribute remote_ip_enabled; Add optional Ip and Fc for server_type [GH-5645]
-- resource/alicloud_vpc_traffic_mirror_filter_ingress_rule: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter, IncorrectStatus.TrafficMirrorRule [GH-5699]
-- resource/alicloud_vpc_traffic_mirror_filter_egress_rule: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter, IncorrectStatus.TrafficMirrorRule [GH-5698]
-- resource/alicloud_slb_load_balancer: Remove the ConflictsWith setting from attribute payment_type;resource/alicloud_vpn_gateway_vpn_attachment: Update document information;resource/alicloud_vpn_gateway: Update document information; [GH-5674]
-- resource/alicloud_vpc_traffic_mirror_filter: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy [GH-5697]
-- resource/alicloud_havip_attachment: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectHaVipStatus, IncorrectInstanceStatus [GH-5696]
-- resource/alicloud_havip: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, IncorrectStatus [GH-5695]
-- resource/alicloud_eip_address: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, IncorrectEipStatus, IncorrectStatus.ResourceStatus, FrequentPurchase.EIP [GH-5692]
-- resource/alicloud_common_bandwidth_package: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, BandwidthPackageOperation.conflict [GH-5690]
-- resource/alicloud_vpc_traffic_mirror_session: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter [GH-5653]
-- resource/alicloud_common_bandwidth_package_attachment: Added the field bandwidth_package_bandwidth; Supported for new action ModifyCommonBandwidthPackageIpBandwidth [GH-5691]
-- resource/alicloud_nat_gateway: Removed the ForceNew for field eip_bind_mode, supports modifying them online [GH-5693]
-- resource_alicloud_vpn_gateway_vco_route: Add retry error code. resource_alicloud_vpn_connection: Add retry error code. resource_alicloud_vpn_pbr_route_entry: Add retry error code. resource_alicloud_vpn_route_entry: Add retry error code. [GH-5689]
-- resource/alicloud_cloud_firewall_vpc_firewall_cen: Field vpc_region add ForceNew setting and add constraints to the test. [GH-5687]
-- resource_alicloud_security_group_rule: The 'ForceNew' attribute of input parameter 'prefix_list_id' is set 'True' [GH-5593]
-- resource/alicloud_reserved_instance: Support new attribute auto_renew, auto_renew_period, tags, reserved_instance_name. Supports new output allocation_status, create_time, expired_time, operation_locks, start_time, status. [GH-5618]
-- resource/alicloud_alikafka_instance: add double checking when deleting the resource; Improves the testcases [GH-5682]
-- resource/alicloud_db_backup_policy:support RDS configure backup frequency [GH-5672]
-- resource/alicloud_alikafka_instance: Adds new attribute parition_num and deprecate topic_quota; Adds API DeleteInstance to delete the resource [GH-5681]
-- docs: normalize the resource subcategory [GH-5688]
+- resource/alicloud_slb_listener: Added retry strategy for error code OperationFailed.ListenerStatusNotSupport. ([#5705](https://github.com/aliyun/terraform-provider-alicloud/issues/5705))
+- resource/alicloud_lindorm_instance: Fixes the instance_storage parsing bug when upgrading its value ([#5702](https://github.com/aliyun/terraform-provider-alicloud/issues/5702))
+- resource/alicloud_alb_server_group: Support new attribute remote_ip_enabled; Add optional Ip and Fc for server_type ([#5645](https://github.com/aliyun/terraform-provider-alicloud/issues/5645))
+- resource/alicloud_vpc_traffic_mirror_filter_ingress_rule: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter, IncorrectStatus.TrafficMirrorRule ([#5699](https://github.com/aliyun/terraform-provider-alicloud/issues/5699))
+- resource/alicloud_vpc_traffic_mirror_filter_egress_rule: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter, IncorrectStatus.TrafficMirrorRule ([#5698](https://github.com/aliyun/terraform-provider-alicloud/issues/5698))
+- resource/alicloud_slb_load_balancer: Remove the ConflictsWith setting from attribute payment_type;resource/alicloud_vpn_gateway_vpn_attachment: Update document information;resource/alicloud_vpn_gateway: Update document information; ([#5674](https://github.com/aliyun/terraform-provider-alicloud/issues/5674))
+- resource/alicloud_vpc_traffic_mirror_filter: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy ([#5697](https://github.com/aliyun/terraform-provider-alicloud/issues/5697))
+- resource/alicloud_havip_attachment: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectHaVipStatus, IncorrectInstanceStatus ([#5696](https://github.com/aliyun/terraform-provider-alicloud/issues/5696))
+- resource/alicloud_havip: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, IncorrectStatus ([#5695](https://github.com/aliyun/terraform-provider-alicloud/issues/5695))
+- resource/alicloud_eip_address: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, IncorrectEipStatus, IncorrectStatus.ResourceStatus, FrequentPurchase.EIP ([#5692](https://github.com/aliyun/terraform-provider-alicloud/issues/5692))
+- resource/alicloud_common_bandwidth_package: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, BandwidthPackageOperation.conflict ([#5690](https://github.com/aliyun/terraform-provider-alicloud/issues/5690))
+- resource/alicloud_vpc_traffic_mirror_session: Added retry stragety for error code OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, OperationFailed.LastTokenProcessing, IncorrectStatus.TrafficMirrorSession, IncorrectStatus.TrafficMirrorFilter ([#5653](https://github.com/aliyun/terraform-provider-alicloud/issues/5653))
+- resource/alicloud_common_bandwidth_package_attachment: Added the field bandwidth_package_bandwidth; Supported for new action ModifyCommonBandwidthPackageIpBandwidth ([#5691](https://github.com/aliyun/terraform-provider-alicloud/issues/5691))
+- resource/alicloud_nat_gateway: Removed the ForceNew for field eip_bind_mode, supports modifying them online ([#5693](https://github.com/aliyun/terraform-provider-alicloud/issues/5693))
+- resource_alicloud_vpn_gateway_vco_route: Add retry error code. resource_alicloud_vpn_connection: Add retry error code. resource_alicloud_vpn_pbr_route_entry: Add retry error code. resource_alicloud_vpn_route_entry: Add retry error code. ([#5689](https://github.com/aliyun/terraform-provider-alicloud/issues/5689))
+- resource/alicloud_cloud_firewall_vpc_firewall_cen: Field vpc_region add ForceNew setting and add constraints to the test. ([#5687](https://github.com/aliyun/terraform-provider-alicloud/issues/5687))
+- resource_alicloud_security_group_rule: The 'ForceNew' attribute of input parameter 'prefix_list_id' is set 'True' ([#5593](https://github.com/aliyun/terraform-provider-alicloud/issues/5593))
+- resource/alicloud_reserved_instance: Support new attribute auto_renew, auto_renew_period, tags, reserved_instance_name. Supports new output allocation_status, create_time, expired_time, operation_locks, start_time, status. ([#5618](https://github.com/aliyun/terraform-provider-alicloud/issues/5618))
+- resource/alicloud_alikafka_instance: add double checking when deleting the resource; Improves the testcases ([#5682](https://github.com/aliyun/terraform-provider-alicloud/issues/5682))
+- resource/alicloud_db_backup_policy:support RDS configure backup frequency ([#5672](https://github.com/aliyun/terraform-provider-alicloud/issues/5672))
+- resource/alicloud_alikafka_instance: Adds new attribute parition_num and deprecate topic_quota; Adds API DeleteInstance to delete the resource ([#5681](https://github.com/aliyun/terraform-provider-alicloud/issues/5681))
+- docs: normalize the resource subcategory ([#5688](https://github.com/aliyun/terraform-provider-alicloud/issues/5688))
 
 BUG FIXES:
 
-- resource/alicloud_resource_manager_account: Fixes the deleting account can not work bug [GH-5686]
-- resource/alicloud_alb_rule: Fix errors when the weight attribute is not configured. [GH-5644]
-- testcase: Fixes the resource alicloud_alikafka_instance testcase error [GH-5700]
-- testcase: fix resource alicloud_db_backup_policy testcase bug [GH-5679]
+- resource/alicloud_alb_rule: Fix errors when the weight attribute is not configured. ([#5706](https://github.com/aliyun/terraform-provider-alicloud/issues/5706))
+- resource/alicloud_lindorm_instance: Fixes the MissingUpgradeType error when updating the resource ([#5704](https://github.com/aliyun/terraform-provider-alicloud/issues/5704))
+- resource/alicloud_resource_manager_account: Fixes the deleting account can not work bug ([#5686](https://github.com/aliyun/terraform-provider-alicloud/issues/5686))
+- resource/alicloud_alb_rule: Fix errors when the weight attribute is not configured. ([#5644](https://github.com/aliyun/terraform-provider-alicloud/issues/5644))
+- testcase: Fixes the resource alicloud_alikafka_instance testcase error ([#5700](https://github.com/aliyun/terraform-provider-alicloud/issues/5700))
+- testcase: fix resource alicloud_db_backup_policy testcase bug ([#5679](https://github.com/aliyun/terraform-provider-alicloud/issues/5679))
 
 ## 1.193.1 (December 06, 2022)
 
