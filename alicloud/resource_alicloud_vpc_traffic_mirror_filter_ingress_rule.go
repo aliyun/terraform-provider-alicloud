@@ -25,6 +25,7 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRule() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"destination_cidr_block": {
@@ -129,11 +130,11 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(d *schema.ResourceD
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateTrafficMirrorFilterRules")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -160,6 +161,7 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(d *schema.ResourceD
 
 	return resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d, meta)
 }
+
 func resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -184,6 +186,7 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d *schema.ResourceDat
 	d.Set("traffic_mirror_filter_ingress_rule_id", fmt.Sprint(object["TrafficMirrorFilterRuleId"]))
 	return nil
 }
+
 func resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -251,11 +254,11 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(d *schema.ResourceD
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateTrafficMirrorFilterRuleAttribute")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -274,6 +277,7 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(d *schema.ResourceD
 	}
 	return resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d, meta)
 }
+
 func resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -298,11 +302,11 @@ func resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d *schema.ResourceD
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteTrafficMirrorFilterRules")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession", "IncorrectStatus.TrafficMirrorFilter", "IncorrectStatus.TrafficMirrorRule"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
