@@ -18,6 +18,10 @@ func resourceAliyunHaVipAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"havip_id": {
 				Type:     schema.TypeString,
@@ -42,13 +46,15 @@ func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.HaVipId = Trim(d.Get("havip_id").(string))
 	request.InstanceId = Trim(d.Get("instance_id").(string))
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		ar := request
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.AssociateHaVip(ar)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectHaVipStatus", "InvalidVip.Status"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectHaVipStatus", "InvalidVip.Status", "OperationConflict", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "SystemBusy", "ServiceUnavailable", "IncorrectInstanceStatus"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
 			}
 			return resource.NonRetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
@@ -102,13 +108,13 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 	request.HaVipId = haVipId
 	request.InstanceId = instanceId
 
-	return resource.Retry(5*time.Minute, func() *resource.RetryError {
+	return resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateHaVip(request)
 		})
 		//Waiting for unassociate the havip
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectHaVipStatus", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "SystemBusy", "ServiceUnavailable", "IncorrectInstanceStatus"}) || NeedRetry(err) {
 				return resource.RetryableError(fmt.Errorf("Unassociate HaVip timeout and got an error:%#v.", err))
 			}
 		}

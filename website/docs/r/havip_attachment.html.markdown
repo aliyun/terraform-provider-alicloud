@@ -94,6 +94,15 @@ The following attributes are exported:
 
 * `id` - The ID of the havip attachment id and formates as `<havip_id>:<instance_id>`.
 
+#### Timeouts
+
+-> **NOTE:** Available in 1.194.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the HaVip Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the HaVip Attachment.
+
 ## Import
 
 The havip attachment can be imported using the id, e.g.
