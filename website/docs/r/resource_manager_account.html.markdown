@@ -30,6 +30,13 @@ resource "alicloud_resource_manager_account" "example" {
 }
 ```
 
+### Deleting `alicloud_resource_manager_account` or removing it from your configuration
+
+Deleting the resource manager account or removing it from your configuration will remove it from your state file and management, 
+but may not destroy the account. If there are some dependent resource in the account, 
+the deleting account will enter a silence period of 45 days. After the silence period ends, 
+the system automatically starts to delete the member. [See More Details](https://www.alibabacloud.com/help/en/resource-management/latest/delete-resource-account).
+
 ## Argument Reference
 
 The following arguments are supported:
