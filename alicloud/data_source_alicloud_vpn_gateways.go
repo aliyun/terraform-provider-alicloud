@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -251,14 +252,10 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
-		createTime, _ := object["CreateTime"].(json.Number).Int64()
-		endTime, _ := object["EndTime"].(json.Number).Int64()
 		mapping := map[string]interface{}{
 			"id":                   object["VpnGatewayId"],
 			"vpc_id":               object["VpcId"],
 			"internet_ip":          object["InternetIp"],
-			"create_time":          TimestampToStr(createTime),
-			"end_time":             TimestampToStr(endTime),
 			"specification":        object["Spec"],
 			"name":                 object["Name"],
 			"description":          object["Description"],
@@ -269,6 +266,22 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 			"enable_ssl":           object["SslVpn"],
 			"ssl_connections":      object["SslMaxConnections"],
 			"network_type":         object["NetworkType"],
+		}
+		if v, ok := object["CreateTime"]; ok {
+			createTime, err := v.(json.Number).Int64()
+			if err != nil {
+				log.Println(WrapError(err))
+			} else {
+				mapping["create_time"] = TimestampToStr(createTime)
+			}
+		}
+		if v, ok := object["EndTime"]; ok {
+			endTime, err := v.(json.Number).Int64()
+			if err != nil {
+				log.Println(WrapError(err))
+			} else {
+				mapping["end_time"] = TimestampToStr(endTime)
+			}
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
