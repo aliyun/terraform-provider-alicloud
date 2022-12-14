@@ -25,8 +25,8 @@ func resourceAlicloudVpcPrefixList() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"entrys": {
@@ -253,7 +253,7 @@ func resourceAlicloudVpcPrefixListDelete(d *schema.ResourceData, meta interface{
 		request["ClientToken"] = buildClientToken("DeleteVpcPrefixList")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "SystemBusy", "IncorrectStatus.%s", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "DependencyViolation.ShareResource", "IncorrectStatus.PrefixList", "IncorrectStatus.SystemPrefixList"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
