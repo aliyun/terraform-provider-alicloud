@@ -1,5 +1,5 @@
 ---
-subcategory: "RAM"
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ram_role_attachment"
 sidebar_current: "docs-alicloud-resource-ram-role-attachment"
@@ -37,10 +37,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
@@ -93,7 +93,7 @@ resource "alicloud_ram_role" "role" {
     ],
     "Version": "1"
   }
-  
+
 EOF
 
 
