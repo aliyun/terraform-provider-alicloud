@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -72,6 +73,18 @@ func resourceAlicloudVswitch() *schema.Resource {
 				ConflictsWith: []string{"zone_id"},
 				Deprecated:    "Field 'availability_zone' has been deprecated from provider version 1.119.0. New field 'zone_id' instead.",
 			},
+			"enable_ipv6": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ipv6_cidr_block_mask": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"ipv6_cidr_block": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -105,6 +118,10 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 		request["ZoneId"] = v
 	} else {
 		return WrapError(Error(`[ERROR] Argument "availability_zone" or "zone_id" must be set one!`))
+	}
+
+	if v, ok := d.GetOk("ipv6_cidr_block_mask"); ok {
+		request["Ipv6CidrBlock"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -156,12 +173,18 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("availability_zone", object["ZoneId"])
+	d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
 
 	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "VSWITCH")
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+
+	Ipv6CidrBlock := strings.Split(object["Ipv6CidrBlock"].(string), "/")
+
+	d.Set("ipv6_cidr_block_mask", formatInt(Ipv6CidrBlock[1]))
+
 	return nil
 }
 
@@ -198,7 +221,14 @@ func resourceAlicloudVswitchUpdate(d *schema.ResourceData, meta interface{}) err
 		update = true
 		request["VSwitchName"] = d.Get("name")
 	}
+	if !d.IsNewResource() && d.HasChange("ipv6_cidr_block_mask") {
+		update = true
+		request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
+	}
 	if update {
+		if _, ok := d.GetOkExists("enable_ipv6"); ok {
+			request["EnableIPv6"] = d.Get("enable_ipv6")
+		}
 		action := "ModifyVSwitchAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
