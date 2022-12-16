@@ -41,6 +41,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"core_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"lindorm.i2.xlarge", "lindorm.i2.2xlarge", "lindorm.i2.4xlarge", "lindorm.i2.8xlarge", "lindorm.d1.2xlarge", "lindorm.d1.4xlarge", "lindorm.d1.6xlarge"}, false),
 			},
 			"deletion_proection": {
@@ -85,6 +86,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"instance_storage": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"ip_white_list": {
 				Type:     schema.TypeSet,
@@ -281,7 +283,6 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"arch_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"1.0", "2.0"}, false),
 			},
 			"primary_vswitch_id": {
