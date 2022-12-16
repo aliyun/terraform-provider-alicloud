@@ -32,6 +32,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"circuit_code": {
 				Type:     schema.TypeString,

@@ -68,6 +68,7 @@ The following arguments are supported:
 * `route_table_propagation_enabled` - (Optional,ForceNew) Whether to enabled route table propagation. The system default value is `true`.  
 * `dry_run` - (Optional) The dry run.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
+* `vbr_owner_id` - The owner id of the transit router vbr attachment.
 
 ->**NOTE:** Ensure that the vbr is not used in Express Connect.
 
@@ -79,7 +80,6 @@ The following attributes are exported:
 * `status` - The associating status of the network.
 * `resource_type` - The resource type of the transit router vbr attachment.  Valid values: `VPC`, `CCN`, `VBR`, `TR`.
 * `transit_router_attachment_id` - The id of the transit router vbr attachment.
-* `vbr_owner_id` - The owner id of the transit router vbr attachment.
 
 ### Timeouts
 
