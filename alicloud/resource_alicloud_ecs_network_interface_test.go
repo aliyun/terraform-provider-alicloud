@@ -140,7 +140,7 @@ func TestAccAlicloudECSNetworkInterface_basic(t *testing.T) {
 	}, "DescribeEcsNetworkInterface")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1, 9999)
+	rand := acctest.RandIntRange(1, 255)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
 	resource.Test(t, resource.TestCase{
@@ -276,7 +276,7 @@ func TestAccAlicloudECSNetworkInterface_primary_ip_address(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 9999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceIpv6Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -356,7 +356,7 @@ func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *te
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceIpv6Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -695,7 +695,36 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "default-NODELETING-Ipv6"
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = data.alicloud_vpcs.default.ids.0
+}
+data "alicloud_resource_manager_resource_groups" "default"{
+	status = "OK"
+}
+`, name)
+}
+
+func AlicloudEcsNetworkInterfaceIpv6Dependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+    available_resource_creation= "VSwitch"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING-Ipv6$"
 }
 
 data "alicloud_vswitches" "default" {
