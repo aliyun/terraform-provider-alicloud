@@ -53,10 +53,10 @@ func (s *EipanycastService) EipanycastAnycastEipAddressStateRefreshFunc(id strin
 
 		for _, failState := range failStates {
 			if object["Status"].(string) == failState {
-				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
-		return object, object["Status"].(string), nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 

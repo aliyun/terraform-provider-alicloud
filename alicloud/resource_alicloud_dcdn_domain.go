@@ -282,8 +282,8 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 	request["SSLProtocol"] = d.Get("ssl_protocol")
 	if d.HasChange("cert_name") {
 		update = true
-		request["CertName"] = d.Get("cert_name")
 	}
+	request["CertName"] = d.Get("cert_name")
 	request["Region"] = client.RegionId
 	if d.HasChange("ssl_pub") {
 		update = true

@@ -90,10 +90,19 @@ func testSweepHBaseInstances(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting HBase Instance: %s (%s)", name, id)
-		req := hbase.CreateDeleteInstanceRequest()
-		req.ClusterId = id
+		req1 := hbase.CreateModifyClusterDeletionProtectionRequest()
+		req1.ClusterId = id
+		req1.Protection = requests.NewBoolean(false)
 		_, err := client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
-			return hbaseClient.DeleteInstance(req)
+			return hbaseClient.ModifyClusterDeletionProtection(req1)
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to modify DeletionProtection for Hbase Instance (%s (%s)): %s", name, id, err)
+		}
+		req2 := hbase.CreateDeleteInstanceRequest()
+		req2.ClusterId = id
+		_, err = client.WithHbaseClient(func(hbaseClient *hbase.Client) (interface{}, error) {
+			return hbaseClient.DeleteInstance(req2)
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Hbase Instance (%s (%s)): %s", name, id, err)
