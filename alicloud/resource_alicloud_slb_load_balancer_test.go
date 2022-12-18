@@ -133,7 +133,7 @@ func testSweepSLBs(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic(t *testing.T) {
+func TestAccAlicloudSLBLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
 	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap0)
@@ -320,6 +320,7 @@ var AlicloudSlbLoadBalancerMap0 = map[string]string{
 	"resource_group_id":              CHECKSET,
 	"slave_zone_id":                  CHECKSET,
 	"load_balancer_spec":             "slb.s1.small",
+	"instance_charge_type":           "PayBySpec",
 	"status":                         "active",
 	"tags.#":                         "0",
 	"vswitch_id":                     "",
@@ -565,6 +566,61 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 						"payment_type":                   "PayAsYouGo",
 						"resource_group_id":              CHECKSET,
 						"slave_zone_id":                  CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudSLBLoadBalancer_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_slb_load_balancer.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlbLoadBalancer")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_name":   "${var.name}",
+					"load_balancer_spec":   "slb.s3.small",
+					"internet_charge_type": "PayByTraffic",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_name":   name,
+						"load_balancer_spec":   "slb.s3.small",
+						"internet_charge_type": "PayByTraffic",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PayByCLCU",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PayByCLCU",
+						"load_balancer_spec":   "slb.lcu.elastic",
 					}),
 				),
 			},
