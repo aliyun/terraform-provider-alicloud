@@ -139,7 +139,6 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 			"servers": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
