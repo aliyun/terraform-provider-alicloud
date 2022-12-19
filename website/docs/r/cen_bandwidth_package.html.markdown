@@ -45,7 +45,7 @@ The following arguments are supported:
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `geographic_region_a_id` - (Required, ForceNew, Available in 1.98.0+) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
 * `geographic_region_b_id` - (Required, ForceNew, Available in 1.98.0+) The area B to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.
-* `payment_type` - (Optional, Available in 1.98.0+) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PostPaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
+* `payment_type` - (Optional, Available in 1.98.0+) The billing method. Valid value: `PostPaid` | `PrePaid`. Default to `PrePaid`. If set to PrePaid, the bandwidth package can't be deleted before expired time.
 * `cen_bandwidth_package_name` - (Optional, Available in 1.98.0+) The name of the bandwidth package. Defaults to null.
 
 ->**NOTE:** PrePaid mode will deduct fees from the account directly and the bandwidth package can't be deleted before expired time. 
