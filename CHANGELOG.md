@@ -1,4 +1,28 @@
-## 1.195.0 (Unreleased)
+## 1.194.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_cen_bandwidth_package: Document adding attribute description [GH-5722]
+- resource/alicloud_resource_manager_shared_resource: The resource_type attribute supports the option of PublicIpAddressPool. [GH-5720]
+- resource/alicloud_cen_transit_router_vpn_attachment: Added retry stragety for error code OperationFailed.AllocateCidrFailed [GH-5713]
+- resource/alicloud_alb_server_group: Removes the attribute servers Computed setting [GH-5718]
+- resource/alicloud_express_connect_virtual_border_router: setting the attribute bandwidth to computed [GH-5715]
+- resource/alicloud_resource_manager_account: Improves the deleting action by setting deleting to success stauts [GH-5708]
+- resource/alicloud_eip_association: Added retry stragety for error code TaskConflict, OperationConflict, IncorrectStatus.%s, ServiceUnavailable, SystemBusy, LastTokenProcessing, IncorrectEipStatus, InvalidBindingStatus, IncorrectInstanceStatus, IncorrectHaVipStatus, IncorrectStatus.NatGateway, IncorrectStatus.ResourceStatus, InvalidStatus.EcsStatusNotSupport, InvalidStatus.InstanceHasBandWidth, InvalidStatus.EniStatusNotSupport, InvalidIpStatus.HasBeenUsedBySnatTable, InvalidIpStatus.HasBeenUsedByForwardEntry, InvalidStatus.EniStatusNotSupport, InvalidStatus.EcsStatusNotSupport, InvalidStatus.NotAllow, InvalidStatus.SnatOrDnat, FrequentPurchase.EIP [GH-5694]
+- data_source/alicloud_vpn_connections: Support new attribute vco_health_check, vpn_bgp_config [GH-5728]
+- data_source/alicloud_vpn_gateways: Support new attribute auto_propagate [GH-5728]
+- testcase: supports to set more args when invoking the Get method [GH-5726]
+
+BUG FIXES:
+
+- resource/alicloud_cloud_firewall_instance: Fixed the import error caused by ProductCode, ProductType incorrect value [GH-5725]
+- resource/alicloud_eci_container_group: Fixed word spelling bugs [GH-5719]
+- resource/alicloud_slb_load_balancer: Fixes the attribute instance_charge_type diff error [GH-5717]
+- resource/alicloud_dcdn_domain: Fixes the CertName.MissingParameter error when updating the certificate [GH-5716]
+- resource/alicloud_lindorm_instance: Fixes the instance_storage and core_spec diff error when using multi-zone; Removes the ForceNew tag for arch_version [GH-5712]
+- datasource/alicloud_vpn_gateways: Fixes the nil pointer error when setting end_time [GH-5707]
+- data_source/alicloud_vpn_gateways: Fixed word spelling bugs [GH-5728]
+
 ## 1.194.0 (December 12, 2022)
 
 - **New Resource:** `alicloud_vpc_gateway_route_table_attachment` ([#5646](https://github.com/aliyun/terraform-provider-alicloud/issues/5646))
