@@ -778,7 +778,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				HttpGetValueMap := HttpGetValues.(map[string]interface{})
 				HttpGetValue["Scheme"] = HttpGetValueMap["scheme"]
 				HttpGetValue["Port"] = HttpGetValueMap["port"]
-				HttpGetValue["Paht"] = HttpGetValueMap["path"]
+				HttpGetValue["Path"] = HttpGetValueMap["path"]
 			}
 			ExecsValue := map[string]interface{}{}
 			for _, ExecsValues := range LivenessProbesMap["exec"].([]interface{}) {
@@ -811,7 +811,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				HttpGetValueMap := HttpGetValues.(map[string]interface{})
 				HttpGetValue["Scheme"] = HttpGetValueMap["scheme"]
 				HttpGetValue["Port"] = HttpGetValueMap["port"]
-				HttpGetValue["Paht"] = HttpGetValueMap["path"]
+				HttpGetValue["Path"] = HttpGetValueMap["path"]
 
 			}
 			ExecsValue := map[string]interface{}{}
@@ -1175,6 +1175,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 						HttpGetsMap := map[string]interface{}{
 							"scheme": HttpGetList.(map[string]interface{})["Scheme"],
 							"port":   HttpGetList.(map[string]interface{})["Port"],
+							"path":   HttpGetList.(map[string]interface{})["Path"],
 						}
 						HttpGets = append(HttpGets, HttpGetsMap)
 						ReadinessProbesMap["http_get"] = HttpGets
@@ -1216,6 +1217,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 						HttpGetsMap := map[string]interface{}{
 							"scheme": HttpGetList.(map[string]interface{})["Scheme"],
 							"port":   HttpGetList.(map[string]interface{})["Port"],
+							"path":   HttpGetList.(map[string]interface{})["Path"],
 						}
 						HttpGets = append(HttpGets, HttpGetsMap)
 						LivenessProbesMap["http_get"] = HttpGets
@@ -1470,7 +1472,7 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 					HttpGetValueMap := HttpGetValues.(map[string]interface{})
 					HttpGetValue["Scheme"] = HttpGetValueMap["scheme"]
 					HttpGetValue["Port"] = HttpGetValueMap["port"]
-					HttpGetValue["Paht"] = HttpGetValueMap["path"]
+					HttpGetValue["Path"] = HttpGetValueMap["path"]
 
 				}
 				ExecsValue := map[string]interface{}{}
@@ -1504,7 +1506,7 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 					HttpGetValueMap := HttpGetValues.(map[string]interface{})
 					HttpGetValue["Scheme"] = HttpGetValueMap["scheme"]
 					HttpGetValue["Port"] = HttpGetValueMap["port"]
-					HttpGetValue["Paht"] = HttpGetValueMap["path"]
+					HttpGetValue["Path"] = HttpGetValueMap["path"]
 
 				}
 				ExecsValue := map[string]interface{}{}
