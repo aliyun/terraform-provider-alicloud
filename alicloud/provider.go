@@ -786,6 +786,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_logic_databases":               dataSourceAlicloudDmsEnterpriseLogicDatabases(),
 			"alicloud_dms_enterprise_databases":                     dataSourceAlicloudDmsEnterpriseDatabases(),
 			"alicloud_amqp_static_accounts":                         dataSourceAlicloudAmqpStaticAccounts(),
+			"alicloud_adb_resource_groups":                          dataSourceAlicloudAdbResourceGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1471,6 +1472,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_vul_whitelist":                       resourceAlicloudThreatDetectionVulWhitelist(),
 			"alicloud_dms_enterprise_logic_database":                        resourceAlicloudDmsEnterpriseLogicDatabase(),
 			"alicloud_amqp_static_account":                                  resourceAlicloudAmqpStaticAccount(),
+			"alicloud_adb_resource_group":                                   resourceAlicloudAdbResourceGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
