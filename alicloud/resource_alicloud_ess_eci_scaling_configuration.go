@@ -165,7 +165,7 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				},
 			},
 			"containers": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -619,8 +619,8 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		request["AcrRegistryInfo"] = acrRegistryInfoMaps
 	}
 
-	Containers := make([]map[string]interface{}, len(d.Get("containers").(*schema.Set).List()))
-	for i, v := range d.Get("containers").(*schema.Set).List() {
+	Containers := make([]map[string]interface{}, len(d.Get("containers").([]interface{})))
+	for i, v := range d.Get("containers").([]interface{}) {
 		ContainersMap := v.(map[string]interface{})
 		Containers[i] = make(map[string]interface{})
 		Ports := make([]map[string]interface{}, len(ContainersMap["ports"].(*schema.Set).List()))
@@ -649,26 +649,54 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["ImagePullPolicy"] = ContainersMap["image_pull_policy"]
 
 		Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
-		Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+		if ContainersMap["readiness_probe_period_seconds"] != 0 {
+			Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+		}
 		Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
-		Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
-		Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
-		Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+		if ContainersMap["readiness_probe_failure_threshold"] != 0 {
+			Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+		}
+		if ContainersMap["readiness_probe_initial_delay_seconds"] != 0 {
+			Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+		}
+		if ContainersMap["readiness_probe_http_get_port"] != 0 {
+			Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+		}
 		Containers[i]["ReadinessProbe.HttpGet.Scheme"] = ContainersMap["readiness_probe_http_get_scheme"]
-		Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
-		Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
-		Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+		if ContainersMap["readiness_probe_tcp_socket_port"] != 0 {
+			Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
+		}
+		if ContainersMap["readiness_probe_success_threshold"] != 0 {
+			Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+		}
+		if ContainersMap["readiness_probe_timeout_seconds"] != 0 {
+			Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+		}
 
 		Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
-		Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+		if ContainersMap["liveness_probe_period_seconds"] != 0 {
+			Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+		}
 		Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
-		Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
-		Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
-		Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+		if ContainersMap["liveness_probe_failure_threshold"] != 0 {
+			Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+		}
+		if ContainersMap["liveness_probe_initial_delay_seconds"] != 0 {
+			Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+		}
+		if ContainersMap["liveness_probe_http_get_port"] != 0 {
+			Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+		}
 		Containers[i]["LivenessProbe.HttpGet.Scheme"] = ContainersMap["liveness_probe_http_get_scheme"]
-		Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
-		Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
-		Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+		if ContainersMap["liveness_probe_tcp_socket_port"] != 0 {
+			Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
+		}
+		if ContainersMap["liveness_probe_success_threshold"] != 0 {
+			Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+		}
+		if ContainersMap["liveness_probe_timeout_seconds"] != 0 {
+			Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+		}
 
 		VolumeMounts := make([]map[string]interface{}, len(ContainersMap["volume_mounts"].(*schema.Set).List()))
 		for i, VolumeMountsValue := range ContainersMap["volume_mounts"].(*schema.Set).List() {
@@ -1218,8 +1246,8 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("containers") {
 		update = true
-		Containers := make([]map[string]interface{}, len(d.Get("containers").(*schema.Set).List()))
-		for i, ContainersValue := range d.Get("containers").(*schema.Set).List() {
+		Containers := make([]map[string]interface{}, len(d.Get("containers").([]interface{})))
+		for i, ContainersValue := range d.Get("containers").([]interface{}) {
 			ContainersMap := ContainersValue.(map[string]interface{})
 			Containers[i] = make(map[string]interface{})
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
@@ -1233,26 +1261,54 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i]["Command"] = ContainersMap["commands"]
 
 			Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
-			Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+			if ContainersMap["readiness_probe_period_seconds"] != 0 {
+				Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
+			}
 			Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
-			Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
-			Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
-			Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+			if ContainersMap["readiness_probe_failure_threshold"] != 0 {
+				Containers[i]["ReadinessProbe.FailureThreshold"] = ContainersMap["readiness_probe_failure_threshold"]
+			}
+			if ContainersMap["readiness_probe_initial_delay_seconds"] != 0 {
+				Containers[i]["ReadinessProbe.InitialDelaySeconds"] = ContainersMap["readiness_probe_initial_delay_seconds"]
+			}
+			if ContainersMap["readiness_probe_http_get_port"] != 0 {
+				Containers[i]["ReadinessProbe.HttpGet.Port"] = ContainersMap["readiness_probe_http_get_port"]
+			}
 			Containers[i]["ReadinessProbe.HttpGet.Scheme"] = ContainersMap["readiness_probe_http_get_scheme"]
-			Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
-			Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
-			Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+			if ContainersMap["readiness_probe_tcp_socket_port"] != 0 {
+				Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
+			}
+			if ContainersMap["readiness_probe_success_threshold"] != 0 {
+				Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
+			}
+			if ContainersMap["readiness_probe_timeout_seconds"] != 0 {
+				Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
+			}
 
 			Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
-			Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+			if ContainersMap["liveness_probe_period_seconds"] != 0 {
+				Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
+			}
 			Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
-			Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
-			Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
-			Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+			if ContainersMap["liveness_probe_failure_threshold"] != 0 {
+				Containers[i]["LivenessProbe.FailureThreshold"] = ContainersMap["liveness_probe_failure_threshold"]
+			}
+			if ContainersMap["liveness_probe_initial_delay_seconds"] != 0 {
+				Containers[i]["LivenessProbe.InitialDelaySeconds"] = ContainersMap["liveness_probe_initial_delay_seconds"]
+			}
+			if ContainersMap["liveness_probe_http_get_port"] != 0 {
+				Containers[i]["LivenessProbe.HttpGet.Port"] = ContainersMap["liveness_probe_http_get_port"]
+			}
 			Containers[i]["LivenessProbe.HttpGet.Scheme"] = ContainersMap["liveness_probe_http_get_scheme"]
-			Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
-			Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
-			Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+			if ContainersMap["liveness_probe_tcp_socket_port"] != 0 {
+				Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
+			}
+			if ContainersMap["liveness_probe_success_threshold"] != 0 {
+				Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
+			}
+			if ContainersMap["liveness_probe_timeout_seconds"] != 0 {
+				Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
+			}
 
 			EnvironmentVars := make([]map[string]interface{}, len(ContainersMap["environment_vars"].(*schema.Set).List()))
 			for i, EnvironmentVarsValue := range ContainersMap["environment_vars"].(*schema.Set).List() {
