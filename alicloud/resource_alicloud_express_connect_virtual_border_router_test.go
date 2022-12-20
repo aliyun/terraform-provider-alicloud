@@ -134,7 +134,7 @@ func TestAccAlicloudExpressConnectVirtualBorderRouter_basic0(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AlicloudExpressConnectVirtualBorderRouterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeExpressConnectVirtualBorderRouter")
+	}, "DescribeExpressConnectVirtualBorderRouter", []string{"include_cross_account_vbr"}...)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 2999)
