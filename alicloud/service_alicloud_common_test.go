@@ -62,22 +62,27 @@ type resourceCheck struct {
 
 	// service describe method name
 	describeMethod string
+
+	// additional attributes
+	additionalAttrs []string
 }
 
-func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}) *resourceCheck {
+func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, additionalAttrs ...string) *resourceCheck {
 	return &resourceCheck{
-		resourceId:     resourceId,
-		resourceObject: resourceObject,
-		serviceFunc:    serviceFunc,
+		resourceId:      resourceId,
+		resourceObject:  resourceObject,
+		serviceFunc:     serviceFunc,
+		additionalAttrs: additionalAttrs,
 	}
 }
 
-func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string) *resourceCheck {
+func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string, additionalAttrs ...string) *resourceCheck {
 	return &resourceCheck{
-		resourceId:     resourceId,
-		resourceObject: resourceObject,
-		serviceFunc:    serviceFunc,
-		describeMethod: describeMethod,
+		resourceId:      resourceId,
+		resourceObject:  resourceObject,
+		serviceFunc:     serviceFunc,
+		describeMethod:  describeMethod,
+		additionalAttrs: additionalAttrs,
 	}
 }
 
@@ -196,6 +201,11 @@ func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]refl
 		return nil, WrapError(Error("The service type %s does not have method %s", typeName, rc.describeMethod))
 	}
 	inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
+	for _, attr := range rc.additionalAttrs {
+		if v, ok := rs.Primary.Attributes[attr]; ok {
+			inValue = append(inValue, reflect.ValueOf(v))
+		}
+	}
 	return value.Call(inValue), nil
 }
 
