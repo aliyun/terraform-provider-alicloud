@@ -802,6 +802,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_inter_region_traffic_qos_queues":              dataSourceAlicloudCenInterRegionTrafficQosQueues(),
 			"alicloud_cen_transit_router_multicast_domain_peer_members": dataSourceAlicloudCenTransitRouterMulticastDomainPeerMembers(),
 			"alicloud_cen_transit_router_multicast_domain_members":      dataSourceAlicloudCenTransitRouterMulticastDomainMembers(),
+			"alicloud_cen_child_instance_route_entry_to_attachments":    dataSourceAlicloudCenChildInstanceRouteEntryToAttachments(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1500,6 +1501,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_inter_region_traffic_qos_queue":                   resourceAlicloudCenInterRegionTrafficQosQueue(),
 			"alicloud_cen_transit_router_multicast_domain_peer_member":      resourceAlicloudCenTransitRouterMulticastDomainPeerMember(),
 			"alicloud_cen_transit_router_multicast_domain_member":           resourceAlicloudCenTransitRouterMulticastDomainMember(),
+			"alicloud_cen_child_instance_route_entry_to_attachment":         resourceAlicloudCenChildInstanceRouteEntryToAttachment(),
 		},
 
 		ConfigureFunc: providerConfigure,
