@@ -793,6 +793,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_inter_region_traffic_qos_policies":        dataSourceAlicloudCenInterRegionTrafficQosPolicies(),
 			"alicloud_threat_detection_baseline_strategies":         dataSourceAlicloudThreatDetectionBaselineStrategies(),
 			"alicloud_threat_detection_assets":                      dataSourceAlicloudThreatDetectionAssets(),
+			"alicloud_threat_detection_log_shipper":                 dataSourceAlicloudThreatDetectionLogShipper(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
