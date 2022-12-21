@@ -145,6 +145,10 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"auto_propagate": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -266,6 +270,7 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 			"enable_ssl":           object["SslVpn"],
 			"ssl_connections":      object["SslMaxConnections"],
 			"network_type":         object["NetworkType"],
+			"auto_propagate":       object["AutoPropagate"],
 		}
 		if v, ok := object["CreateTime"]; ok {
 			createTime, err := v.(json.Number).Int64()

@@ -44,7 +44,7 @@ The following arguments are supported:
 * `cen_id`- (Required, ForceNew) The ID of the Cloud Enterprise Network (CEN) instance to which the transit router belongs.
 * `cen_owner_id` - (Required, ForceNew) The ID of the Alibaba Cloud account to which the CEN instance belongs.
 * `instance_id` - (Required, ForceNew) The ID of the network instance.
-* `instance_type` - (Required, ForceNew) The type of the network instance. Valid values: `VPC`, `ExpressConnect`, `VBR`.
+* `instance_type` - (Required, ForceNew) The type of the network instance. Valid values: `VPC`, `ExpressConnect`, `VPN`.
 * `order_type` - (Optional, Computed, ForceNew) The entity that pays the fees of the network instance. Valid values: `PayByResourceOwner`, `PayByCenOwner`.
 
 ## Attributes Reference

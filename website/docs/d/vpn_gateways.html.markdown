@@ -17,7 +17,7 @@ The VPNs data source lists a number of VPNs resource information owned by an Ali
 data "alicloud_vpn_gateways" "vpn_gateways" {
   vpc_id                   = "fake-vpc-id"
   ids                      = ["fake-vpn-id1", "fake-vpn-id2"]
-  status                   = "active"
+  status                   = "Active"
   business_status          = "Normal"
   name_regex               = "testAcc*"
   include_reservation_data = true
@@ -60,3 +60,4 @@ The following attributes are exported:
   * `enable_ssl` - Whether the ssl function is enabled.
   * `ssl_connections` - Total count of ssl vpn connections.
   * `network_type` - The network type of the VPN gateway.
+  * `auto_propagate` - Whether to automatically propagate BGP routes to the VPC. Valid values: `true`, `false`.

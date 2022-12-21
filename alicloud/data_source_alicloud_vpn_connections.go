@@ -169,6 +169,74 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 								},
 							},
 						},
+						"vco_health_check": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"dip": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"interval": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"retry": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"sip": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"vpn_bgp_config": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"peer_bgp_ip": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"peer_asn": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"local_asn": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"auth_key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"tunnel_cidr": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"local_bgp_ip": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -278,6 +346,8 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"status":              conn.Status,
 			"ike_config":          vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
 			"ipsec_config":        vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
+			"vco_health_check":    vpnGatewayService.VcoHealthCheck(conn.VcoHealthCheck),
+			"vpn_bgp_config":      vpnGatewayService.VpnBgpConfig(conn.VpnBgpConfig),
 		}
 		ids = append(ids, conn.VpnConnectionId)
 		names = append(names, conn.Name)
