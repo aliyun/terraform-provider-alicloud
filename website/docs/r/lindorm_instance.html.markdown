@@ -46,7 +46,7 @@ resource "alicloud_lindorm_instance" "default" {
   zone_id                    = data.alicloud_zones.default.zones.0.id
   vswitch_id                 = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
   instance_name              = var.name
-  table_engine_specification = "lindorm.c.xlarge"
+  table_engine_specification = "lindorm.c.2xlarge"
   table_engine_node_count    = "2"
   instance_storage           = "480"
 }
@@ -60,7 +60,8 @@ The following arguments are supported:
 * `core_num` - (Optional) The core num. **NOTE:** Field `core_num` has been deprecated from provider version 1.188.0 and it will be removed in the future version.
 * `core_spec` - (Optional) The core spec. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
    - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
-   - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
+   - When `disk_category` is `local_hdd_pro`, the valid values is `lindorm.d2c.6xlarge`, `lindorm.d2c.12xlarge`, `lindorm.d2c.24xlarge`, 
+     `lindorm.d2s.5xlarge`, `lindorm.d2s.10xlarge`, `lindorm.d1.2xlarge`, `lindorm.d1.4xlarge`, `lindorm.d1.6xlarge`.
 * `deletion_proection` - (Optional, Computed) The deletion protection of instance.
 * `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `capacity_cloud_storage`, `cloud_efficiency`, `cloud_essd`, `cloud_ssd`, `local_ssd_pro`, `local_hdd_pro`.
 * `duration` - (Optional) The duration of paid. Valid when the `payment_type` is `Subscription`.  When `pricing_cycle` set to `Month`, the valid value id `1` to `9`.  When `pricing_cycle` set to `Year`, the valid value id `1` to `3`.
@@ -79,11 +80,14 @@ The following arguments are supported:
 * `search_engine_node_count` - (Optional, Computed) The count of search engine.
 * `search_engine_specification` - (Optional, Computed) The specification of search engine. Valid values: `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
 * `table_engine_node_count` - (Optional, Computed) The count of table engine.
-* `table_engine_specification` - (Optional, Computed) The specification of  table engine. Valid values: `lindorm.c.2xlarge`, `lindorm.c.4xlarge`, `lindorm.c.8xlarge`, `lindorm.c.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
+* `table_engine_specification` - (Optional, Computed) The specification of  table engine. Valid values: 
+  `lindorm.c.2xlarge`, `lindorm.c.4xlarge`, `lindorm.c.8xlarge`, `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`.
 * `time_series_engine_node_count` - (Optional, Computed) The count of time series engine.
-* `time_serires_engine_specification` - (Optional, Computed, Deprecated in v1.182.0+) Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.
-* `time_series_engine_specification` - (Optional, Computed, Available in v1.182.0+) The specification of time series engine. Valid values: `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
-* `upgrade_type` - (Optional) The upgrade type. **NOTE:** Field 'upgrade_type' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Valid values:  `open-lindorm-engine`, `open-phoenix-engine`, `open-search-engine`, `open-tsdb-engine`,  `upgrade-cold-storage`, `upgrade-disk-size`,  `upgrade-lindorm-core-num`, `upgrade-lindorm-engine`,  `upgrade-search-core-num`, `upgrade-search-engine`, `upgrade-tsdb-core-num`, `upgrade-tsdb-engine`.
+* `time_serires_engine_specification` - (Deprecated in v1.182.0+) Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.
+* `time_series_engine_specification` - (Optional, Computed, Available in v1.182.0+) The specification of time series engine. 
+  Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.r.8xlarge`.
+* `upgrade_type` - (Optional) The upgrade type. **NOTE:** Field 'upgrade_type' has been deprecated from provider version 1.163.0,
+  and it will be removed in the future version. Valid values:  `open-lindorm-engine`, `open-phoenix-engine`, `open-search-engine`, `open-tsdb-engine`,  `upgrade-cold-storage`, `upgrade-disk-size`,  `upgrade-lindorm-core-num`, `upgrade-lindorm-engine`,  `upgrade-search-core-num`, `upgrade-search-engine`, `upgrade-tsdb-core-num`, `upgrade-tsdb-engine`.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `zone_id` - (Optional, Computed, ForceNew) The zone ID of the instance.
 * `resource_group_id` - (Optional, Computed, ForceNew, Available in v1.177.0+) The ID of the resource group.

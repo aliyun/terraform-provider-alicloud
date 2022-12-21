@@ -39,10 +39,9 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Deprecated: "Field 'core_num' has been deprecated from provider version 1.188.0 and it will be removed in the future version.",
 			},
 			"core_spec": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"lindorm.i2.xlarge", "lindorm.i2.2xlarge", "lindorm.i2.4xlarge", "lindorm.i2.8xlarge", "lindorm.d1.2xlarge", "lindorm.d1.4xlarge", "lindorm.d1.6xlarge"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"deletion_proection": {
 				Type:     schema.TypeBool,
@@ -116,10 +115,9 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Computed: true,
 			},
 			"phoenix_node_specification": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"lindorm.c.2xlarge", "lindorm.c.4xlarge", "lindorm.c.8xlarge", "lindorm.c.xlarge", "lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
@@ -152,10 +150,9 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				ValidateFunc: validation.IntAtLeast(2),
 			},
 			"table_engine_specification": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"lindorm.c.2xlarge", "lindorm.c.4xlarge", "lindorm.c.8xlarge", "lindorm.c.xlarge", "lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"time_series_engine_node_count": {
 				Type:         schema.TypeInt,
@@ -169,14 +166,12 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"time_series_engine_specification"},
 				Deprecated:    "Field 'time_serires_engine_specification' has been deprecated from provider version 1.182.0. New field 'time_series_engine_specification' instead.",
-				ValidateFunc:  validation.StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
 			},
 			"time_series_engine_specification": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"time_serires_engine_specification"},
-				ValidateFunc:  validation.StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
 			},
 			"upgrade_type": {
 				Type:         schema.TypeString,
