@@ -789,6 +789,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_resource_groups":                          dataSourceAlicloudAdbResourceGroups(),
 			"alicloud_alb_ascripts":                                 dataSourceAlicloudAlbAscripts(),
 			"alicloud_threat_detection_honeypot_nodes":              dataSourceAlicloudThreatDetectionHoneypotNodes(),
+			"alicloud_cen_transit_router_multicast_domains":         dataSourceAlicloudCenTransitRouterMulticastDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1477,6 +1478,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_ascript":                                          resourceAlicloudAlbAscript(),
 			"alicloud_threat_detection_honeypot_node":                       resourceAlicloudThreatDetectionHoneypotNode(),
 			"alicloud_rds_instance_cross_backup_policy":                     resourceAlicloudRdsInstanceCrossBackupPolicy(),
+			"alicloud_cen_transit_router_multicast_domain":                  resourceAlicloudCenTransitRouterMulticastDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
