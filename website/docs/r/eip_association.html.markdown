@@ -98,7 +98,7 @@ The following attributes are exported:
 
 #### Timeouts
 
--> **NOTE:** Available in 1.195.0+.
+-> **NOTE:** Available in 1.194.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

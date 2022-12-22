@@ -53,7 +53,7 @@ The following arguments are supported:
   - `VSwitch`. 
   - The following types are added after v1.173.0: `ROSTemplate` and `ServiceCatalogPortfolio`. 
   - The following types are added after v1.192.0: `PrefixList` and `Image`.  
-  - The following types are added after v1.195.0: `PublicIpAddressPool`.
+  - The following types are added after v1.194.1: `PublicIpAddressPool`.
 
 ## Attributes Reference
 
