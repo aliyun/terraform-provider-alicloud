@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -124,4 +125,68 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 	object = v.(map[string]interface{})
 
 	return object, nil
+}
+
+func (s *ThreatDetectionService) DescribeThreatDetectionHoneypotNode(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewThreatdetectionClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"NodeId": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetHoneypotNode"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NodeNotExist"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("HoneypotNode", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.HoneypotNode", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HoneypotNode", response)
+	}
+
+	if fmt.Sprint(v.(map[string]interface{})["TotalStatus"]) == "-1" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("HoneypotNode", id)), NotFoundWithResponse, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ThreatDetectionService) ThreatDetectionHoneypotNodeStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionHoneypotNode(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["TotalStatus"]) == failState {
+				return object, fmt.Sprint(object["TotalStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["TotalStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["TotalStatus"]), nil
+	}
 }

@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	_ "github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
+
+	_ "github.com/stretchr/testify/assert"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
