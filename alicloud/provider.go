@@ -795,6 +795,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_assets":                      dataSourceAlicloudThreatDetectionAssets(),
 			"alicloud_threat_detection_log_shipper":                 dataSourceAlicloudThreatDetectionLogShipper(),
 			"alicloud_threat_detection_anti_brute_force_rules":      dataSourceAlicloudThreatDetectionAntiBruteForceRules(),
+			"alicloud_threat_detection_honeypot_images":             dataSourceAlicloudThreatDetectionHoneypotImages(),
+			"alicloud_threat_detection_honey_pots":                  dataSourceAlicloudThreatDetectionHoneyPots(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1487,6 +1489,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_inter_region_traffic_qos_policy":                  resourceAlicloudCenInterRegionTrafficQosPolicy(),
 			"alicloud_threat_detection_baseline_strategy":                   resourceAlicloudThreatDetectionBaselineStrategy(),
 			"alicloud_threat_detection_anti_brute_force_rule":               resourceAlicloudThreatDetectionAntiBruteForceRule(),
+			"alicloud_threat_detection_honey_pot":                           resourceAlicloudThreatDetectionHoneyPot(),
 		},
 
 		ConfigureFunc: providerConfigure,
