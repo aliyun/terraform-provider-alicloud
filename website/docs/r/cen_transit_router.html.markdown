@@ -40,6 +40,7 @@ The following arguments are supported:
 * `cen_id` - (Required, ForceNew) The ID of the CEN.
 * `transit_router_name` - (Optional) The name of the transit router.
 * `transit_router_description` - (Optional) The description of the transit router.
+* `support_multicast` - (Optional, ForceNew, Available in v1.195.0+) Specifies whether to enable the multicast feature for the Enterprise Edition transit router. Valid values: `false`, `true`. Default Value: `false`. The multicast feature is supported only in specific regions. You can call [ListTransitRouterAvailableResource](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-listtransitrouteravailableresource) to query the regions that support multicast.
 * `dry_run` - (Optional) The dry run.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 

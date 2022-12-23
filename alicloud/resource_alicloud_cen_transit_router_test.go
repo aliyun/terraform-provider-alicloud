@@ -113,9 +113,8 @@ func TestAccAlicloudCenTransitRouter_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -125,6 +124,7 @@ func TestAccAlicloudCenTransitRouter_basic1(t *testing.T) {
 					"cen_id":                     "${alicloud_cen_instance.default.id}",
 					"transit_router_name":        "${var.name}",
 					"transit_router_description": "tf",
+					"support_multicast":          "true",
 					"dry_run":                    "false",
 					"tags": map[string]string{
 						"Created": "TF",
@@ -136,6 +136,7 @@ func TestAccAlicloudCenTransitRouter_basic1(t *testing.T) {
 						"cen_id":                     CHECKSET,
 						"transit_router_name":        name,
 						"transit_router_description": "tf",
+						"support_multicast":          "true",
 						"dry_run":                    "false",
 						"tags.%":                     "2",
 						"tags.Created":               "TF",
