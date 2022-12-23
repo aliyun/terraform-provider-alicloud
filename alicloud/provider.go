@@ -788,6 +788,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_static_accounts":                         dataSourceAlicloudAmqpStaticAccounts(),
 			"alicloud_adb_resource_groups":                          dataSourceAlicloudAdbResourceGroups(),
 			"alicloud_alb_ascripts":                                 dataSourceAlicloudAlbAscripts(),
+			"alicloud_threat_detection_honeypot_nodes":              dataSourceAlicloudThreatDetectionHoneypotNodes(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1474,6 +1475,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_amqp_static_account":                                  resourceAlicloudAmqpStaticAccount(),
 			"alicloud_adb_resource_group":                                   resourceAlicloudAdbResourceGroup(),
 			"alicloud_alb_ascript":                                          resourceAlicloudAlbAscript(),
+			"alicloud_threat_detection_honeypot_node":                       resourceAlicloudThreatDetectionHoneypotNode(),
+			"alicloud_rds_instance_cross_backup_policy":                     resourceAlicloudRdsInstanceCrossBackupPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
