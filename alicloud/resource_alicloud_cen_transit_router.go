@@ -43,6 +43,11 @@ func resourceAlicloudCenTransitRouter() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"support_multicast": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"tags": tagsSchema(),
 			"transit_router_id": {
 				Type:     schema.TypeString,
@@ -83,6 +88,10 @@ func resourceAlicloudCenTransitRouterCreate(d *schema.ResourceData, meta interfa
 
 	if v, ok := d.GetOk("transit_router_name"); ok {
 		request["TransitRouterName"] = v
+	}
+
+	if v, ok := d.GetOkExists("support_multicast"); ok {
+		request["SupportMulticast"] = v
 	}
 
 	request["ClientToken"] = buildClientToken("CreateTransitRouter")
@@ -138,6 +147,7 @@ func resourceAlicloudCenTransitRouterRead(d *schema.ResourceData, meta interface
 	d.Set("status", object["Status"])
 	d.Set("transit_router_description", object["TransitRouterDescription"])
 	d.Set("transit_router_name", object["TransitRouterName"])
+	d.Set("support_multicast", object["SupportMulticast"])
 	d.Set("type", object["Type"])
 	d.Set("transit_router_id", object["TransitRouterId"])
 
