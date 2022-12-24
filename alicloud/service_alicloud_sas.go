@@ -377,3 +377,66 @@ func (s *SasService) ThreatDetectionHoneyPotStateRefreshFunc(d *schema.ResourceD
 		return object, fmt.Sprint(state), nil
 	}
 }
+
+func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ProbeId": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetHoneypotProbe"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	success, err := jsonpath.Get("$.Success", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Success", response)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		if success.(bool) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionHoneypotProbe(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
