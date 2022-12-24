@@ -8,6 +8,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 type SasService struct {
@@ -155,4 +156,94 @@ func (s *SasService) DescribeThreatDetectionWebLockConfig(id string) (object map
 	object = v.([]interface{})[0].(map[string]interface{})
 
 	return object, nil
+}
+
+func (s *SasService) DescribeThreatDetectionBaselineStrategy(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Id": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeStrategyDetail"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"-100"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection:BaselineStrategy", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Strategy", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Strategy", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) DescribeStrategy(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"StrategyIds": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeStrategy"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ConsoleError"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection:BaselineStrategy", id)), NotFoundMsg, ProviderERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Strategies[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Strategies[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) ThreatDetectionBaselineStrategyStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionBaselineStrategy(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object[""]) == failState {
+				return object, fmt.Sprint(object[""]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[""])))
+			}
+		}
+		return object, fmt.Sprint(object[""]), nil
+	}
 }
