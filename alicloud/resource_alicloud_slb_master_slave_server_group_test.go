@@ -160,17 +160,17 @@ resource "alicloud_security_group" "default" {
     name = "${var.name}"
     vpc_id = "${alicloud_vpc.default.id}"
 }
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
     count = 1
     name = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
     security_groups = [ "${alicloud_security_group.default.id}" ]
 }
 
-resource "alicloud_network_interface_attachment" "default" {
+resource "alicloud_ecs_network_interface_attachment" "default" {
     count = 1
     instance_id = "${alicloud_instance.default.0.id}"
-    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
+    network_interface_id = "${element(alicloud_ecs_network_interface.default.*.id, count.index)}"
 }
 resource "alicloud_instance" "default" {
     image_id = "${data.alicloud_images.default.images.0.id}"

@@ -69,8 +69,8 @@ func TestAccAlicloudSLBAttachment_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"depends_on":   []string{"alicloud_network_interface_attachment.default"},
-					"instance_ids": []string{"${alicloud_network_interface.default.0.id}"},
+					"depends_on":   []string{"alicloud_ecs_network_interface_attachment.default"},
+					"instance_ids": []string{"${alicloud_ecs_network_interface.default.0.id}"},
 					"server_type":  "eni",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -191,8 +191,8 @@ func TestAccAlicloudSLBAttachment_classic_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"depends_on":   []string{"alicloud_network_interface_attachment.default"},
-					"instance_ids": []string{"${alicloud_network_interface.default.0.id}"},
+					"depends_on":   []string{"alicloud_ecs_network_interface_attachment.default"},
+					"instance_ids": []string{"${alicloud_ecs_network_interface.default.0.id}"},
 					"server_type":  "eni",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -259,7 +259,7 @@ resource "alicloud_security_group" "default" {
   name = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
     count = 1
     name = "${var.name}"
     vswitch_id = data.alicloud_vswitches.default.ids[0]
@@ -293,10 +293,10 @@ resource "alicloud_instance" "new" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
-resource "alicloud_network_interface_attachment" "default" {
+resource "alicloud_ecs_network_interface_attachment" "default" {
 	count = 1
     instance_id = "${alicloud_instance.new.0.id}"
-    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
+    network_interface_id = "${element(alicloud_ecs_network_interface.default.*.id, count.index)}"
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"
@@ -397,7 +397,7 @@ resource "alicloud_security_group" "default" {
   name = "${var.name}"
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
     count = 1
     name = "${var.name}"
     vswitch_id = data.alicloud_vswitches.default.ids[0]
@@ -431,10 +431,10 @@ resource "alicloud_instance" "new" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
-resource "alicloud_network_interface_attachment" "default" {
+resource "alicloud_ecs_network_interface_attachment" "default" {
 	count = 1
     instance_id = "${alicloud_instance.new.0.id}"
-    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
+    network_interface_id = "${element(alicloud_ecs_network_interface.default.*.id, count.index)}"
 }
 resource "alicloud_slb_load_balancer" "default" {
   load_balancer_name = "${var.name}"

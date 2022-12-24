@@ -83,10 +83,10 @@ func TestAccAlicloudSLBBackendServers_vpc(t *testing.T) {
 					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
 					"backend_servers": []map[string]interface{}{
 						{
-							"server_id": "${alicloud_network_interface.default.0.id}",
+							"server_id": "${alicloud_ecs_network_interface.default.0.id}",
 							"weight":    "80",
 							"type":      "eni",
-							"server_ip": "${alicloud_network_interface.default.0.private_ip}",
+							"server_ip": "${alicloud_ecs_network_interface.default.0.private_ip}",
 						},
 					},
 				}),
@@ -340,7 +340,7 @@ resource "alicloud_slb_load_balancer" "default" {
 }
 
 
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
     count = 1
     name = "${var.name}"
     vswitch_id = data.alicloud_vswitches.default.ids[0]
@@ -359,10 +359,10 @@ resource "alicloud_instance" "new" {
   system_disk_category = "cloud_efficiency"
   vswitch_id = data.alicloud_vswitches.default.ids[0]
 }
-resource "alicloud_network_interface_attachment" "default" {
+resource "alicloud_ecs_network_interface_attachment" "default" {
 	count = 1
     instance_id = "${alicloud_instance.new.0.id}"
-    network_interface_id = "${element(alicloud_network_interface.default.*.id, count.index)}"
+    network_interface_id = "${element(alicloud_ecs_network_interface.default.*.id, count.index)}"
 }
 `)
 }
