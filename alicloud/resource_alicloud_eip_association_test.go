@@ -339,7 +339,7 @@ resource "alicloud_security_group" "default" {
     vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
 	name = "${var.name}"
     vswitch_id = local.vswitch_id
 	security_groups = ["${alicloud_security_group.default.id}"]
@@ -352,7 +352,7 @@ resource "alicloud_eip_address" "default" {
 
 resource "alicloud_eip_association" "default" {
   allocation_id = "${alicloud_eip_address.default.id}"
-  instance_id = "${alicloud_network_interface.default.id}"
+  instance_id = "${alicloud_ecs_network_interface.default.id}"
   instance_type = "NetworkInterface"
   private_ip_address = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)
 }

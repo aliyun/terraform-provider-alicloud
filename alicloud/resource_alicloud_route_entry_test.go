@@ -382,7 +382,7 @@ resource "alicloud_security_group" "default" {
     vpc_id = "${alicloud_vpc.default.id}"
 }
 
-resource "alicloud_network_interface" "default" {
+resource "alicloud_ecs_network_interface" "default" {
     name = "${var.name}"
     vswitch_id = "${alicloud_vswitch.default.id}"
     security_groups = [ "${alicloud_security_group.default.id}" ]
@@ -393,7 +393,7 @@ resource "alicloud_route_entry" "default" {
 	route_table_id = "${alicloud_vpc.default.route_table_id}"
 	destination_cidrblock = "172.16.${count.index}.0/24"
 	nexthop_type = "NetworkInterface"
-	nexthop_id = "${alicloud_network_interface.default.id}"
+	nexthop_id = "${alicloud_ecs_network_interface.default.id}"
 	name = "${var.name}"
 }
 `, rand)

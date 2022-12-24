@@ -45,7 +45,7 @@ data "alicloud_images" "image" {
 }
 
 variable "name" {
-  default = "tf-testAccSlbMasterSlaveServerGroupVpc"
+  default = "SlbMasterSlaveServerGroupVpc"
 }
 
 variable "number" {
@@ -53,7 +53,7 @@ variable "number" {
 }
 
 resource "alicloud_vpc" "main" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -89,17 +89,17 @@ resource "alicloud_slb_load_balancer" "instance" {
   load_balancer_spec = "slb.s2.small"
 }
 
-resource "alicloud_network_interface" "default" {
-  count           = var.number
-  name            = var.name
-  vswitch_id      = alicloud_vswitch.main.id
-  security_groups = [alicloud_security_group.group.id]
+resource "alicloud_ecs_network_interface" "default" {
+  count                  = var.number
+  network_interface_name = var.name
+  vswitch_id             = alicloud_vswitch.main.id
+  security_group_ids     = [alicloud_security_group.group.id]
 }
 
-resource "alicloud_network_interface_attachment" "default" {
+resource "alicloud_ecs_network_interface_attachment" "default" {
   count                = var.number
   instance_id          = alicloud_instance.instance[0].id
-  network_interface_id = element(alicloud_network_interface.default.*.id, count.index)
+  network_interface_id = element(alicloud_ecs_network_interface.default.*.id, count.index)
 }
 
 resource "alicloud_slb_master_slave_server_group" "group" {

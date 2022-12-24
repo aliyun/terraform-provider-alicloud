@@ -100,7 +100,7 @@ func resourceAlicloudEcsNetworkInterfaceAttachmentRead(d *schema.ResourceData, m
 	object, err := ecsService.DescribeEcsNetworkInterfaceAttachment(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_netWork_interface_attachment ecsService.DescribeNetworkInterfaceAttachment Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_ecs_network_interface_attachment ecsService.DescribeNetworkInterfaceAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
