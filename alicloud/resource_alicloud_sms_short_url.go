@@ -96,11 +96,13 @@ func resourceAlicloudSmsShortUrlRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	n, err := GetDaysBetween2Date("2006-01-02 15:04:05", object["CreateDate"].(string), object["ExpireDate"].(string))
+	responseJsonString, _ := convertMaptoJsonString(object)
+	jsonDataExpressionWithEffectiveDays := "($toMillis($join([$substring(ExpireDate,0, 10),\"T00:00:00.000Z\"])) - $toMillis($join([$substring(CreateDate,0, 10),\"T00:00:00.000Z\"])))/86400000"
+	jsonDataWithEffectiveDays, err := getValWithJsonataExpression(responseJsonString, jsonDataExpressionWithEffectiveDays)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("effective_days", n)
+	d.Set("effective_days", jsonDataWithEffectiveDays)
 	d.Set("short_url_name", object["ShortUrlName"])
 	d.Set("source_url", object["SourceUrl"])
 	d.Set("status", object["ShortUrlStatus"])
