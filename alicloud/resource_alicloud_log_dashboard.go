@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -142,14 +143,17 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
-
-	for k, v := range dashboard["charts"].([]interface{}) {
+	charts := dashboard["charts"].([]interface{})
+	for k, v := range charts {
 		if action, actionOK := v.(map[string]interface{})["action"]; actionOK {
 			if action == nil {
-				delete((dashboard["charts"].([]interface{})[k]).(map[string]interface{}), "action")
+				delete(charts[k].(map[string]interface{}), "action")
 			}
 		}
 	}
+	sort.Slice(charts, func(i, j int) bool {
+		return charts[i].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64) < charts[j].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64)
+	})
 	charlist, err := json.Marshal(dashboard["charts"])
 	if err != nil {
 		return WrapError(err)
