@@ -1615,6 +1615,7 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 
 	return object, nil
 }
+
 func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -1665,6 +1666,7 @@ func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (o
 	}
 	return resp[0].(map[string]interface{}), nil
 }
+
 func (s *CbnService) CenTransitRouterMulticastDomainSourceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenTransitRouterMulticastDomainSource(d.Id())
@@ -1761,6 +1763,7 @@ func (s *CbnService) CenTransitRouterMulticastDomainStateRefreshFunc(id string, 
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
 func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
@@ -1802,6 +1805,7 @@ func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object ma
 	}
 	return resp[0].(map[string]interface{}), nil
 }
+
 func (s *CbnService) CenInterRegionTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCenInterRegionTrafficQosQueue(d.Id())
@@ -2192,6 +2196,92 @@ func (s *CbnService) CenTransitRouterMulticastDomainAssociationStateRefreshFunc(
 			}
 		}
 
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouteTableAggregation(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeTransitRouteTableAggregation"
+
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ClientToken":                      buildClientToken("DescribeTransitRouteTableAggregation"),
+		"TransitRouteTableId":              parts[0],
+		"TransitRouteTableAggregationCidr": parts[1],
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InstanceNotExist.AggregationRoute", "InstanceNotExist.TransitRouterRouteTable"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["TransitRouteTableAggregationCidr"]) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouteTableAggregation", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouteTableAggregationStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouteTableAggregation(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
