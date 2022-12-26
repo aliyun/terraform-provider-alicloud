@@ -787,6 +787,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_databases":                     dataSourceAlicloudDmsEnterpriseDatabases(),
 			"alicloud_amqp_static_accounts":                         dataSourceAlicloudAmqpStaticAccounts(),
 			"alicloud_adb_resource_groups":                          dataSourceAlicloudAdbResourceGroups(),
+			"alicloud_alb_ascripts":                                 dataSourceAlicloudAlbAscripts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -818,7 +819,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_db_proxy":                       resourceAlicloudRdsDBProxy(),
 			"alicloud_rds_clone_db_instance":              resourceAlicloudRdsCloneDbInstance(),
 			"alicloud_rds_upgrade_db_instance":            resourceAlicloudRdsUpgradeDbInstance(),
-			"alicloud_rds_instance_cross_backup_policy":   resourceAlicloudRdsInstanceCrossBackupPolicy(),
 			"alicloud_mongodb_instance":                   resourceAlicloudMongoDBInstance(),
 			"alicloud_mongodb_sharding_instance":          resourceAlicloudMongoDBShardingInstance(),
 			"alicloud_gpdb_instance":                      resourceAlicloudGpdbInstance(),
@@ -1473,6 +1473,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_logic_database":                        resourceAlicloudDmsEnterpriseLogicDatabase(),
 			"alicloud_amqp_static_account":                                  resourceAlicloudAmqpStaticAccount(),
 			"alicloud_adb_resource_group":                                   resourceAlicloudAdbResourceGroup(),
+			"alicloud_alb_ascript":                                          resourceAlicloudAlbAscript(),
 		},
 
 		ConfigureFunc: providerConfigure,

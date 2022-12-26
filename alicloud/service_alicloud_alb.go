@@ -1055,3 +1055,67 @@ func (s *AlbService) AlbAclEntryAttachmentStateRefreshFunc(id string, failStates
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *AlbService) DescribeAlbAscript(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewAlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"AScriptIds.1": id,
+	}
+
+	var response map[string]interface{}
+	action := "ListAScripts"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InternalError"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.AScripts", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AScripts", response)
+	}
+	resp := v.([]interface{})
+	if len(resp) < 1 {
+		return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	}
+
+	return resp[0].(map[string]interface{}), nil
+}
+
+func (s *AlbService) AlbAscriptStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbAscript(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["AScriptStatus"]) == failState {
+				return object, fmt.Sprint(object["AScriptStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["AScriptStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["AScriptStatus"]), nil
+	}
+}
