@@ -135,6 +135,11 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
+			"selected_zones": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -252,6 +257,9 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 	if v, ok := d.GetOk("kms_key_id"); ok {
 		startInstanceReq["KMSKeyId"] = v
+	}
+	if v, ok := d.GetOk("selected_zones"); ok {
+		startInstanceReq["SelectedZones"] = convertListToJsonString(v.([]interface{}))
 	}
 
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {

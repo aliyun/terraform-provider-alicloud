@@ -137,7 +137,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 					"deploy_type":    "5",
 					"io_max":         "20",
 					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
-					"security_group": "${alicloud_security_group.default.id}",
+					"security_group": "${data.alicloud_security_groups.default.ids.0}",
 					"kms_key_id":     "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -503,8 +503,9 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"security_group": "${alicloud_security_group.default.id}",
+					"security_group": "${data.alicloud_security_groups.default.ids.0}",
 					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
+					"selected_zones": []string{"eu-central-1a"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -527,9 +528,10 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"selected_zones"},
 			},
 		},
 	})
@@ -546,11 +548,6 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_security_group" "default" {
-	name   = var.name
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
