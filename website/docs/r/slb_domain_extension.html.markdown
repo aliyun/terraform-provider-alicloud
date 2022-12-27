@@ -20,11 +20,30 @@ Please refer to the [documentation](https://www.alibabacloud.com/help/doc-detail
 
 ```terraform
 # Create a new load balancer and domain extension
+variable "name" {
+  default = "tffTestDomainExtension"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name = var.name
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+}
 
 resource "alicloud_slb_load_balancer" "instance" {
-  load_balancer_name   = "tffTestDomainExtension"
-  internet_charge_type = "PayByTraffic"
-  internet             = "true"
+  load_balancer_name = var.name
+  address_type       = "intranet"
+  load_balancer_spec = "slb.s2.small"
+  vswitch_id         = alicloud_vswitch.default.id
 }
 
 resource "alicloud_slb_server_certificate" "foo" {
@@ -51,7 +70,7 @@ resource "alicloud_slb_listener" "https" {
   health_check_interval     = 5
   health_check_http_code    = "http_2xx,http_3xx"
   bandwidth                 = 10
-  ssl_certificate_id        = alicloud_slb_server_certificate.foo.id
+  server_certificate_id     = alicloud_slb_server_certificate.foo.id
 }
 
 resource "alicloud_slb_domain_extension" "example1" {
