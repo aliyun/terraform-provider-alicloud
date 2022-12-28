@@ -131,17 +131,6 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
-	proxy, proxyErr := rdsService.DescribeDBProxy(d.Id())
-	if proxyErr != nil {
-		if NotFoundError(proxyErr) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(proxyErr)
-	}
-	if proxy["DBProxyInstanceType"] == "2" {
-		return resourceAlicloudDBProxyEndpointRead(d, rdsService, proxy["DBProxyInstanceName"].(string))
-	}
 
 	err := rdsService.WaitForDBReadWriteSplitting(d.Id(), "", DefaultLongTimeout)
 	if err != nil {
@@ -158,13 +147,21 @@ func resourceAlicloudDBReadWriteSplittingConnectionRead(d *schema.ResourceData, 
 	}
 
 	d.Set("instance_id", d.Id())
-	d.Set("connection_string", object["ConnectionString"])
-	d.Set("distribution_type", object["DistributionType"])
-	if port, err := strconv.Atoi(object["Port"].(string)); err == nil {
-		d.Set("port", port)
+	if v, ok := object["ConnectionString"]; ok {
+		d.Set("connection_string", v)
 	}
-	if mdt, err := strconv.Atoi(object["MaxDelayTime"].(string)); err == nil {
-		d.Set("max_delay_time", mdt)
+	if v, ok := object["DistributionType"]; ok {
+		d.Set("distribution_type", v)
+	}
+	if object["Port"] != nil {
+		if port, err := strconv.Atoi(object["Port"].(string)); err == nil {
+			d.Set("port", port)
+		}
+	}
+	if object["MaxDelayTime"] != nil {
+		if mdt, err := strconv.Atoi(object["MaxDelayTime"].(string)); err == nil {
+			d.Set("max_delay_time", mdt)
+		}
 	}
 	if w, ok := d.GetOk("weight"); ok {
 		documented := w.(map[string]interface{})
@@ -208,6 +205,10 @@ func resourceAlicloudDBReadWriteSplittingConnectionUpdate(d *schema.ResourceData
 	}
 
 	if !update && d.IsNewResource() {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutRead), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		return resourceAlicloudDBReadWriteSplittingConnectionRead(d, meta)
 	}
 
