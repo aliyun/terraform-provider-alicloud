@@ -237,3 +237,4 @@ var VPCSupportRegions = []Region{APSouth1, Shanghai, APSouthEast5, APSouthEast2,
 var DMSEnterpriseProxyAccessSupportRegions = []Region{Hangzhou}
 var ADBResourceGroupSupportRegions = []Region{Hangzhou}
 var CENTransitRouterMulticastDomainPeerMemberSupportRegions = []Region{Hangzhou}
+var CENTransitRouterMulticastDomainMemberSupportRegions = []Region{Hangzhou}
