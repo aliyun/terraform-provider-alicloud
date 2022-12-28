@@ -444,7 +444,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging", "Not-applicable"}, false),
 			},
 			"maintenance_time": {
 				Type:     schema.TypeSet,
