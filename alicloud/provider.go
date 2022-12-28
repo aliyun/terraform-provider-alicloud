@@ -803,6 +803,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_peer_members": dataSourceAlicloudCenTransitRouterMulticastDomainPeerMembers(),
 			"alicloud_cen_transit_router_multicast_domain_members":      dataSourceAlicloudCenTransitRouterMulticastDomainMembers(),
 			"alicloud_cen_child_instance_route_entry_to_attachments":    dataSourceAlicloudCenChildInstanceRouteEntryToAttachments(),
+			"alicloud_cen_transit_router_multicast_domain_associations": dataSourceAlicloudCenTransitRouterMulticastDomainAssociations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1502,6 +1503,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_peer_member":      resourceAlicloudCenTransitRouterMulticastDomainPeerMember(),
 			"alicloud_cen_transit_router_multicast_domain_member":           resourceAlicloudCenTransitRouterMulticastDomainMember(),
 			"alicloud_cen_child_instance_route_entry_to_attachment":         resourceAlicloudCenChildInstanceRouteEntryToAttachment(),
+			"alicloud_cen_transit_router_multicast_domain_association":      resourceAlicloudCenTransitRouterMulticastDomainAssociation(),
 		},
 
 		ConfigureFunc: providerConfigure,
