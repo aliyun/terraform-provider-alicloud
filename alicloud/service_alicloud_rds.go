@@ -598,6 +598,43 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 	return nil
 }
 
+func (s *RdsService) DescribeDBInstanceRwNetInfoByMssql(id string) ([]interface{}, error) {
+	action := "DescribeDBInstanceNetInfo"
+	request := map[string]interface{}{
+		"RegionId":                 s.client.RegionId,
+		"DBInstanceId":             id,
+		"SourceIp":                 s.client.SourceIp,
+		"DBInstanceNetRWSplitType": "ReadWriteSplitting",
+	}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	var response map[string]interface{}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InternalError"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	return response["DBInstanceNetInfos"].(map[string]interface{})["DBInstanceNetInfo"].([]interface{}), nil
+}
+
 func (s *RdsService) DescribeDBInstanceNetInfo(id string) ([]interface{}, error) {
 	action := "DescribeDBInstanceNetInfo"
 	request := map[string]interface{}{
@@ -660,7 +697,7 @@ func (s *RdsService) DescribeDBConnection(id string) (map[string]interface{}, er
 	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
 }
 func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[string]interface{}, error) {
-	object, err := s.DescribeDBInstanceNetInfo(id)
+	object, err := s.DescribeDBInstanceRwNetInfoByMssql(id)
 	if err != nil && !NotFoundError(err) {
 		return nil, err
 	}
@@ -671,11 +708,13 @@ func (s *RdsService) DescribeDBReadWriteSplittingConnection(id string) (map[stri
 			if conn["ConnectionStringType"] != "ReadWriteSplitting" {
 				continue
 			}
-			if conn["MaxDelayTime"] == nil {
-				continue
-			}
-			if _, err := strconv.Atoi(conn["MaxDelayTime"].(string)); err != nil {
-				return nil, err
+			if _, ok := conn["MaxDelayTime"]; ok {
+				if conn["MaxDelayTime"] == nil {
+					continue
+				}
+				if _, err := strconv.Atoi(conn["MaxDelayTime"].(string)); err != nil {
+					return nil, err
+				}
 			}
 			return conn, nil
 		}
