@@ -41,7 +41,7 @@ resource "alicloud_security_group" "group" {
 resource "alicloud_kms_key" "key" {
   description            = "Hello KMS"
   pending_window_in_days = "7"
-  key_state              = "Enabled"
+  status                 = "Enabled"
 }
 
 data "alicloud_zones" "default" {
@@ -51,25 +51,20 @@ data "alicloud_zones" "default" {
 
 # Create a new ECS instance for VPC
 resource "alicloud_vpc" "vpc" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "vswitch" {
   vpc_id       = alicloud_vpc.vpc.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_zones.default.zones.0.id
   vswitch_name = var.name
-}
-
-resource "alicloud_slb_load_balancer" "slb" {
-  load_balancer_name = "test-slb-tf"
-  vswitch_id         = alicloud_vswitch.vswitch.id
 }
 
 resource "alicloud_instance" "instance" {
   # cn-beijing
-  availability_zone = "cn-beijing-b"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   security_groups   = alicloud_security_group.group.*.id
 
   # series III
@@ -219,9 +214,9 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `secondary_private_ip_address_count` - (Optional, Available in 1.145.0+) The number of private IP addresses to be automatically assigned from within the CIDR block of the vswitch. **NOTE:** To assign secondary private IP addresses, you must specify `secondary_private_ips` or `secondary_private_ip_address_count` but not both.
 * `deployment_set_id` - (Optional, Available in 1.176.0+) The ID of the deployment set to which to deploy the instance. **NOTE:** From version 1.176.0, instance's deploymentSetId can be removed when 'deployment_set_id' = "".
 * `operator_type` - (Optional, Available in 1.164.0+) The operation type. It is valid when `instance_charge_type` is `PrePaid`. Default value: `upgrade`. Valid values: `upgrade`, `downgrade`. **NOTE:**  When the new instance type specified by the `instance_type` parameter has lower specifications than the current instance type, you must set `operator_type` to `downgrade`.
-* `stopped_mode` - (Optional, Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
-    * `KeepCharging` : standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
-    * `StopCharging` : economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
+* `stopped_mode` - (Optional, Available in 1.170.0+ ) The stop mode of the pay-as-you-go instance. Valid values: `StopCharging`,`KeepCharging`, `Not-applicable`. Default value: If the prerequisites required for enabling the economical mode are met, and you have enabled this mode in the ECS console, the default value is `StopCharging`. For more information, see "Enable the economical mode" in [Economical mode](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/economical-mode). Otherwise, the default value is `KeepCharging`. **Note:** `Not-applicable`: Economical mode is not applicable to the instance.`
+    * `KeepCharging`: standard mode. Billing of the instance continues after the instance is stopped, and resources are retained for the instance.
+    * `StopCharging`: economical mode. Billing of some resources of the instance stops after the instance is stopped. When the instance is stopped, its resources such as vCPUs, memory, and public IP address are released. You may be unable to restart the instance if some types of resources are out of stock in the current region.
 * `maintenance_time` - (Optional, Available in 1.181.0+ ) The time of maintenance. See the following `Block maintenance_time`.
 * `maintenance_action` - (Optional, Computed, Available in 1.181.0+ ) The maintenance action. Valid values: `Stop`, `AutoRecover` and `AutoRedeploy`.
     * `Stop` : stops the instance.
