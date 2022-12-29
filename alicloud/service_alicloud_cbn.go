@@ -2006,6 +2006,10 @@ func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.TransitRouterAttachment"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("Cen", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	all, err := jsonpath.Get("$.RouteEntry", response)

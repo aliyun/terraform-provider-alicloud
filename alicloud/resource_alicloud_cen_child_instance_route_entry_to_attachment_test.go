@@ -73,20 +73,18 @@ resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_zones" "default" {}
-
 resource "alicloud_vswitch" "default_master" {
   vswitch_name = var.name
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "192.168.1.0/24"
-  zone_id      = data.alicloud_zones.default.zones.0.id
+  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]
 }
 
 resource "alicloud_vswitch" "default_slave" {
   vswitch_name = var.name
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "192.168.2.0/24"
-  zone_id      = data.alicloud_zones.default.zones.1.id
+  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[2]
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -113,6 +111,7 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   }
   transit_router_attachment_name        = var.name
   transit_router_attachment_description = var.name
+  depends_on = ["alicloud_route_table.foo"]
 }
 
 resource "alicloud_route_table" "foo" {
