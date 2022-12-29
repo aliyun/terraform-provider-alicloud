@@ -118,7 +118,7 @@ resource "alicloud_db_readonly_instance" "default" {
 	master_db_instance_id = alicloud_db_instance.default.id
 	engine_version        = alicloud_db_instance.default.engine_version
 	instance_storage      = alicloud_db_instance.default.instance_storage
-	instance_type         = "mssql.x8.large.ro"
+	instance_type         = "rds.mssql.s2.large"
 	instance_name         = "${var.name}_ro"
 	vswitch_id            = data.alicloud_vswitches.default.vswitches.0.vswitch_id
 }
