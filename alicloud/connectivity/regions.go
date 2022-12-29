@@ -242,3 +242,4 @@ var CENTransitRouterMulticastDomainMemberSupportRegions = []Region{Hangzhou}
 var CenChildInstanceRouteEntryToAttachmentSupportRegions = []Region{Hangzhou}
 var ServiceCatalogProvisionedProductSupportRegions = []Region{Hangzhou}
 var MaxComputeProjectSupportRegions = []Region{Hangzhou}
+var EbsDedicatedBlockStorageClusterRegions = []Region{HeYuan}
