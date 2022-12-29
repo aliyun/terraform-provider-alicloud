@@ -464,6 +464,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_accounts":                                     dataSourceAlicloudRdsAccounts(),
 			"alicloud_db_instance_class_infos":                          dataSourceAlicloudDBInstanceClassInfos(),
 			"alicloud_rds_cross_regions":                                dataSourceAlicloudRdsCrossRegions(),
+			"alicloud_rds_cross_region_backups":                         dataSourceAlicloudRdsCrossRegionBackups(),
 			"alicloud_havips":                                           dataSourceAlicloudHavips(),
 			"alicloud_ecs_snapshots":                                    dataSourceAlicloudEcsSnapshots(),
 			"alicloud_ecs_key_pairs":                                    dataSourceAlicloudEcsKeyPairs(),
