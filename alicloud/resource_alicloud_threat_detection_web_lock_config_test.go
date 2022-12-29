@@ -33,7 +33,7 @@ func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
-					"uuid":                "08ae7194-4c88-4d7c-a774-0839cbe63b7c",
+					"uuid":                "${data.alicloud_threat_detection_assets.default.ids.0}",
 					"mode":                "whitelist",
 					"local_backup_dir":    "/usr/local/aegis/bak",
 					"dir":                 "/tmp/",
@@ -42,7 +42,7 @@ func TestAccAlicloudThreatDetectionWebLockConfig_basic1875(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"inclusive_file_type": "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg",
-						"uuid":                "08ae7194-4c88-4d7c-a774-0839cbe63b7c",
+						"uuid":                CHECKSET,
 						"mode":                "whitelist",
 						"local_backup_dir":    "/usr/local/aegis/bak",
 						"dir":                 "/tmp/",
@@ -67,6 +67,9 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_threat_detection_assets" "default" {
+  machine_types = "ecs"
+}
 
 `, name)
 }

@@ -94,10 +94,13 @@ variable "name" {
 	default = "tf-testAccThreatDetectionWebLockConfig%d"
 }
 
+data "alicloud_threat_detection_assets" "default" {
+  machine_types = "ecs"
+}
 
 resource "alicloud_threat_detection_web_lock_config" "default" {
   inclusive_file_type = "php;jsp;asp;aspx;js;cgi;html;htm;xml;shtml;shtm;jpg"
-  uuid                = "08ae7194-4c88-4d7c-a774-0839cbe63b7c"
+  uuid                = data.alicloud_threat_detection_assets.default.ids.0
   mode                = "whitelist"
   local_backup_dir    = "/usr/local/aegis/bak"
   dir                 = "/tmp/"
