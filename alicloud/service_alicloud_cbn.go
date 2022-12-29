@@ -1694,6 +1694,64 @@ func (s *CbnService) CenTransitRouterMulticastDomainStateRefreshFunc(id string, 
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TrafficQosQueueId": id,
+	}
+
+	var response map[string]interface{}
+	action := "ListCenInterRegionTrafficQosQueues"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TrafficQosQueues", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficQosQueues", response)
+	}
+	resp := v.([]interface{})
+	if len(resp) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:InterRegionTrafficQosQueue", id)), NotFoundWithResponse, response)
+	}
+	return resp[0].(map[string]interface{}), nil
+}
+func (s *CbnService) CenInterRegionTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenInterRegionTrafficQosQueue(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
 
 func (s *CbnService) DescribeCenInterRegionTrafficQosPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
