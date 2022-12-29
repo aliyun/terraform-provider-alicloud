@@ -182,6 +182,7 @@ var FnFSupportRegions = []Region{Shenzhen, Beijing, Shanghai, APSouthEast1, USWe
 var GaSupportRegions = []Region{Hangzhou}
 var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
 var VPCVbrHaSupportRegions = []Region{Hangzhou}
+var CenSupportRegions = []Region{Hangzhou}
 var ROSSupportRegions = []Region{USWest1, HeYuan, Zhangjiakou, Hongkong, APSouthEast3, EUCentral1, Huhehaote, APSouthEast6, Shenzhen, APSouth1, Qingdao, GuangZhou, APSouthEast2, WuLanChaBu, EUWest1, MEEast1, ChengDu, Shanghai, APSouthEast1, APSouthEast5, USEast1, Beijing, APNorthEast1, Hangzhou}
 var VPCBgpGroupSupportRegions = []Region{Hangzhou}
 var NASSupportRegions = []Region{HeYuan, Huhehaote, APSouthEast5, WuLanChaBu, CnNorth2Gov1, Qingdao, ChengDu, Hangzhou, APSouth1, ShenZhenFinance1, EUCentral1, Shenzhen, APSouthEast2, Beijing, Shanghai, ShanghaiFinance, APSouthEast1, APSouthEast6, APNorthEast1, APSouthEast3, GuangZhou, USEast1, EUWest1, Hongkong, Zhangjiakou, USWest1}

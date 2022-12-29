@@ -1615,6 +1615,73 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 
 	return object, nil
 }
+func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TransitRouterMulticastDomainId": parts[0],
+		"GroupIpAddress":                 parts[1],
+		"NetworkInterfaceIds.1":          parts[2],
+	}
+
+	var response map[string]interface{}
+	action := "ListTransitRouterMulticastGroups"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.TransitRouterMulticastDomainId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterMulticastGroups", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastGroups", response)
+	}
+	resp := v.([]interface{})
+	if len(resp) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+	}
+	return resp[0].(map[string]interface{}), nil
+}
+func (s *CbnService) CenTransitRouterMulticastDomainSourceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterMulticastDomainSource(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
 
 func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
