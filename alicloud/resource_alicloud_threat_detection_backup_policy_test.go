@@ -34,7 +34,7 @@ func TestAccAlicloudThreatDetectionBackupPolicy_basic0(t *testing.T) {
 					"backup_policy_name": name,
 					"policy":             `{\"Exclude\":[\"/bin/\",\"/usr/bin/\",\"/sbin/\",\"/boot/\",\"/proc/\",\"/sys/\",\"/srv/\",\"/lib/\",\"/selinux/\",\"/usr/sbin/\",\"/run/\",\"/lib32/\",\"/lib64/\",\"/lost+found/\",\"/var/lib/kubelet/\",\"/var/lib/ntp/proc\",\"/var/lib/container\"],\"ExcludeSystemPath\":true,\"Include\":[],\"IsDefault\":1,\"Retention\":7,\"Schedule\":\"I|1668703620|PT24H\",\"Source\":[],\"SpeedLimiter\":\"\",\"UseVss\":true}`,
 					"policy_version":     "2.0.0",
-					"uuid_list":          []string{"0fcb3feb-e7fd-4a41-b9ae-69c56c6f402d"},
+					"uuid_list":          []string{"${data.alicloud_threat_detection_assets.default.ids.0}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -49,7 +49,7 @@ func TestAccAlicloudThreatDetectionBackupPolicy_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"backup_policy_name": name + "_update",
 					"policy":             `{\"Exclude\":[\"/bin/\",\"/usr/bin/\",\"/sbin/\",\"/boot/\",\"/proc/\",\"/sys/\",\"/srv/\",\"/lib/\",\"/selinux/\",\"/usr/sbin/\",\"/run/\",\"/lib32/\",\"/lib64/\",\"/lost+found/\",\"/var/lib/kubelet/\",\"/var/lib/ntp/proc\",\"/var/lib/container\"],\"ExcludeSystemPath\":true,\"Include\":[],\"IsDefault\":1,\"Retention\":6,\"Schedule\":\"I|1668703620|PT24H\",\"Source\":[],\"SpeedLimiter\":\"\",\"UseVss\":true}`,
-					"uuid_list":          []string{"26b4e5e1-37b7-4592-8c00-a9e7bccbe1d2"},
+					"uuid_list":          []string{"${data.alicloud_threat_detection_assets.default.ids.0}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -77,6 +77,9 @@ func resourceAlicloudThreatDetectionBackupPolicyBasicDependence(name string) str
 	return fmt.Sprintf(`
 	variable "name" {
     	default = "%s"
+	}
+	data "alicloud_threat_detection_assets" "default" {
+	  machine_types = "ecs"
 	}
 `, name)
 }

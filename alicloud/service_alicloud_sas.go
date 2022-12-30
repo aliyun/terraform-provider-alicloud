@@ -247,3 +247,196 @@ func (s *SasService) ThreatDetectionBaselineStrategyStateRefreshFunc(d *schema.R
 		return object, fmt.Sprint(object[""]), nil
 	}
 }
+
+func (s *SasService) DescribeThreatDetectionAntiBruteForceRule(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Id": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeAntiBruteForceRules"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	count, err := jsonpath.Get("$.PageInfo.Count", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count]", response)
+	}
+	if formatInt(count) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection.AntiBruteForceRule", id)), NotFoundWithResponse, response)
+	}
+	v, err := jsonpath.Get("$.Rules[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Rules[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) ThreatDetectionAntiBruteForceRuleStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionAntiBruteForceRule(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object[""]) == failState {
+				return object, fmt.Sprint(object[""]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[""])))
+			}
+		}
+		return object, fmt.Sprint(object[""]), nil
+	}
+}
+
+func (s *SasService) DescribeThreatDetectionHoneyPot(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"HoneypotIds.1": id,
+	}
+
+	var response map[string]interface{}
+	action := "ListHoneypot"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	count, err := jsonpath.Get("$.PageInfo.Count", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PageInfo.Count", response)
+	}
+	if formatInt(count) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection", id)), NotFoundWithResponse, response)
+	}
+	v, err := jsonpath.Get("$.List[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.List[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) ThreatDetectionHoneyPotStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionHoneyPot(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		state, err := jsonpath.Get("$.State[0]", object)
+		if err != nil {
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(state) == failState {
+				return object, fmt.Sprint(state), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(state)))
+			}
+		}
+		return object, fmt.Sprint(state), nil
+	}
+}
+
+func (s *SasService) DescribeThreatDetectionHoneypotProbe(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewSasClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ProbeId": id,
+	}
+
+	var response map[string]interface{}
+	action := "GetHoneypotProbe"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if IsExpectedErrors(err, []string{"HoneypotProbeNotReady"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	success, err := jsonpath.Get("$.Success", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Success", response)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		if success.(bool) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ThreatDetection", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *SasService) ThreatDetectionHoneypotProbeStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeThreatDetectionHoneypotProbe(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}

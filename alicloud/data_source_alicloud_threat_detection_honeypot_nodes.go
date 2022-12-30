@@ -236,5 +236,9 @@ func dataSourceAlicloudThreatDetectionHoneypotNodesRead(d *schema.ResourceData, 
 	if err := d.Set("nodes", s); err != nil {
 		return WrapError(err)
 	}
+
+	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
+		writeToFile(output.(string), s)
+	}
 	return nil
 }

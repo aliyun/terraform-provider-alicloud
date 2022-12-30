@@ -11,6 +11,8 @@ description: |-
 
 Provides an ALIKAFKA instance resource.
 
+For information about ALIKAFKA instance and how to use it, see [What is ALIKAFKA instance](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-startinstance).
+
 -> **NOTE:** Available in 1.59.0+
 
 -> **NOTE:** Creation or modification may took about 10-40 minutes.
@@ -64,7 +66,7 @@ resource "alicloud_alikafka_instance" "default" {
 The following arguments are supported:
 
 * `name` - (Optional) Name of your Kafka instance. The length should between 3 and 64 characters. If not set, will use instance id as instance name.
-* `partition_num` - (Required, Available in 1.194.0+) The number of partitions.
+* `partition_num` - (Optional, Available in 1.194.0+) The number of partitions.
 * `topic_quota` - (Deprecated from 1.194.0) The max num of topic can be creation of the instance. 
   It has been deprecated from version 1.194.0 and using `partition_num` instead.
 * `disk_type` - (Required, ForceNew) The disk type of the instance. 0: efficient cloud disk , 1: SSD.
@@ -84,6 +86,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.63.0+) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew, Available in v1.185.0+) The zone ID of the instance.
+* `selected_zones` - (Optional, Available in v1.195.0+) The zones among which you want to deploy the instance.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
 

@@ -1615,6 +1615,73 @@ func (s *CbnService) DescribeCenTransitRouterCidr(id string) (object map[string]
 
 	return object, nil
 }
+func (s *CbnService) DescribeCenTransitRouterMulticastDomainSource(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TransitRouterMulticastDomainId": parts[0],
+		"GroupIpAddress":                 parts[1],
+		"NetworkInterfaceIds.1":          parts[2],
+	}
+
+	var response map[string]interface{}
+	action := "ListTransitRouterMulticastGroups"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.TransitRouterMulticastDomainId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TransitRouterMulticastGroups", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastGroups", response)
+	}
+	resp := v.([]interface{})
+	if len(resp) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastGroups", id)), NotFoundWithResponse, response)
+	}
+	return resp[0].(map[string]interface{}), nil
+}
+func (s *CbnService) CenTransitRouterMulticastDomainSourceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterMulticastDomainSource(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
 
 func (s *CbnService) DescribeCenTransitRouterMulticastDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
@@ -1686,6 +1753,64 @@ func (s *CbnService) CenTransitRouterMulticastDomainStateRefreshFunc(id string, 
 			return nil, "", WrapError(err)
 		}
 
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+func (s *CbnService) DescribeCenInterRegionTrafficQosQueue(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TrafficQosQueueId": id,
+	}
+
+	var response map[string]interface{}
+	action := "ListCenInterRegionTrafficQosQueues"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.TrafficQosQueues", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficQosQueues", response)
+	}
+	resp := v.([]interface{})
+	if len(resp) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:InterRegionTrafficQosQueue", id)), NotFoundWithResponse, response)
+	}
+	return resp[0].(map[string]interface{}), nil
+}
+func (s *CbnService) CenInterRegionTrafficQosQueueStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenInterRegionTrafficQosQueue(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
@@ -1770,5 +1895,303 @@ func (s *CbnService) CenInterRegionTrafficQosPolicyStateRefreshFunc(id string, f
 		}
 
 		return object, fmt.Sprint(object["TrafficQosPolicyStatus"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouterMulticastDomainPeerMember(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TransitRouterMulticastDomainId":      parts[0],
+		"GroupIpAddress":                      parts[1],
+		"PeerTransitRouterMulticastDomains.1": parts[2],
+	}
+
+	var response map[string]interface{}
+	action := "ListTransitRouterMulticastGroups"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	count, err := jsonpath.Get("$.TotalCount", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+	}
+	if formatInt(count) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN.TransitRouterMulticastDomainPeerMember", id)), NotFoundWithResponse, response)
+	}
+	v, err := jsonpath.Get("$.TransitRouterMulticastGroups[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastGroups[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CbnService) CenTransitRouterMulticastDomainPeerMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterMulticastDomainPeerMember(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouterMulticastDomainMember(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"TransitRouterMulticastDomainId": parts[0],
+		"GroupIpAddress":                 parts[1],
+		"NetworkInterfaceIds.1":          parts[2],
+	}
+
+	var response map[string]interface{}
+	action := "ListTransitRouterMulticastGroups"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	count, err := jsonpath.Get("$.TotalCount", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TotalCount", response)
+	}
+	if formatInt(count) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN.TransitRouterMulticastDomainPeerMember", id)), NotFoundWithResponse, response)
+	}
+	v, err := jsonpath.Get("$.TransitRouterMulticastGroups[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastGroups[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CbnService) CenTransitRouterMulticastDomainMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterMulticastDomainMember(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenChildInstanceRouteEntryToAttachment(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"CenId":                     parts[0],
+		"ChildInstanceRouteTableId": parts[1],
+		"TransitRouterAttachmentId": parts[2],
+		"RouteFilter.1.Key":         "prefix-exact-match",
+		"RouteFilter.1.Value.1":     parts[3],
+	}
+
+	var response map[string]interface{}
+	action := "ListCenChildInstanceRouteEntriesToAttachment"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.TransitRouterAttachment"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("Cen", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	all, err := jsonpath.Get("$.RouteEntry", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouteEntry", response)
+	}
+	if len(all.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cen", id)), NotFoundWithResponse, response)
+	}
+	v, err := jsonpath.Get("$.RouteEntry[0]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouteEntry[0]", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *CbnService) CenChildInstanceRouteEntryToAttachmentStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenChildInstanceRouteEntryToAttachment(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *CbnService) DescribeCenTransitRouterMulticastDomainAssociation(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "ListTransitRouterMulticastDomainAssociations"
+
+	conn, err := s.client.NewCbnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"ClientToken":               buildClientToken("ListTransitRouterMulticastDomainAssociations"),
+		"TransitRouterAttachmentId": parts[1],
+		"VSwitchIds":                []string{parts[2]},
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.TransitRouterMulticastAssociations", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterMulticastAssociations", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomainAssociation", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["VSwitchId"]) == parts[2] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CEN:TransitRouterMulticastDomainAssociation", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+func (s *CbnService) CenTransitRouterMulticastDomainAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterMulticastDomainAssociation(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }

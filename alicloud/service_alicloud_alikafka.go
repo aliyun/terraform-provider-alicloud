@@ -21,16 +21,16 @@ type AlikafkaService struct {
 	client *connectivity.AliyunClient
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka.InstanceVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka.InstanceVO, error) {
 	alikafkaInstance := &alikafka.InstanceVO{}
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
-	instanceListReq.RegionId = alikafkaService.client.RegionId
+	instanceListReq.RegionId = s.client.RegionId
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
 	var err error
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.GetInstanceList(instanceListReq)
 		})
 		if err != nil {
@@ -61,17 +61,17 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstance(instanceId stri
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (*alikafka.StatusList, error) {
+func (s *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (*alikafka.StatusList, error) {
 	alikafkaStatusList := &alikafka.StatusList{}
 	describeNodeStatusReq := alikafka.CreateDescribeNodeStatusRequest()
-	describeNodeStatusReq.RegionId = alikafkaService.client.RegionId
+	describeNodeStatusReq.RegionId = s.client.RegionId
 	describeNodeStatusReq.InstanceId = instanceId
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
 	var err error
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.DescribeNodeStatus(describeNodeStatusReq)
 		})
 		if err != nil {
@@ -95,10 +95,10 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId st
 	return &describeNodeStatusResp.StatusList, nil
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
 	alikafkaInstance := &alikafka.InstanceVO{}
 	instanceListReq := alikafka.CreateGetInstanceListRequest()
-	instanceListReq.RegionId = alikafkaService.client.RegionId
+	instanceListReq.RegionId = s.client.RegionId
 	instanceListReq.OrderId = orderId
 
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
@@ -108,7 +108,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 		var raw interface{}
 		var err error
 		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-			raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+			raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 				return client.GetInstanceList(instanceListReq)
 			})
 			if err != nil {
@@ -138,7 +138,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderI
 	}
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.ConsumerVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaConsumerGroup(id string) (*alikafka.ConsumerVO, error) {
 	alikafkaConsumerGroup := &alikafka.ConsumerVO{}
 
 	parts, err := ParseResourceId(id, 2)
@@ -150,12 +150,12 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 
 	request := alikafka.CreateGetConsumerListRequest()
 	request.InstanceId = instanceId
-	request.RegionId = alikafkaService.client.RegionId
+	request.RegionId = s.client.RegionId
 
 	wait := incrementalWait(2*time.Second, 1*time.Second)
 	var raw interface{}
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
 			return client.GetConsumerList(request)
 		})
 		if err != nil {
@@ -184,7 +184,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaConsumerGroup(id string)
 	return alikafkaConsumerGroup, WrapErrorf(Error(GetNotFoundMessage("AlikafkaConsumerGroup", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.TopicStatus, error) {
+func (s *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (*alikafka.TopicStatus, error) {
 	alikafkaTopicStatus := &alikafka.TopicStatus{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -195,14 +195,14 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (
 
 	request := alikafka.CreateGetTopicStatusRequest()
 	request.InstanceId = instanceId
-	request.RegionId = alikafkaService.client.RegionId
+	request.RegionId = s.client.RegionId
 	request.Topic = topic
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicStatus(request)
 		})
 		if err != nil {
@@ -230,7 +230,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopicStatus(id string) (
 	return alikafkaTopicStatus, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopicStatus "+ResourceNotfound, id)), ResourceNotfound)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaTopic(id string) (*alikafka.TopicVO, error) {
 
 	alikafkaTopic := &alikafka.TopicVO{}
 	parts, err := ParseResourceId(id, 2)
@@ -242,13 +242,13 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alika
 
 	request := alikafka.CreateGetTopicListRequest()
 	request.InstanceId = instanceId
-	request.RegionId = alikafkaService.client.RegionId
+	request.RegionId = s.client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.GetTopicList(request)
 		})
 		if err != nil {
@@ -276,7 +276,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaTopic(id string) (*alika
 	return alikafkaTopic, WrapErrorf(Error(GetNotFoundMessage("AlikafkaTopic", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*alikafka.SaslUserVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*alikafka.SaslUserVO, error) {
 	alikafkaSaslUser := &alikafka.SaslUserVO{}
 
 	parts, err := ParseResourceId(id, 2)
@@ -288,13 +288,13 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*al
 
 	request := alikafka.CreateDescribeSaslUsersRequest()
 	request.InstanceId = instanceId
-	request.RegionId = alikafkaService.client.RegionId
+	request.RegionId = s.client.RegionId
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.DescribeSaslUsers(request)
 		})
 		if err != nil {
@@ -323,7 +323,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslUser(id string) (*al
 	return alikafkaSaslUser, WrapErrorf(Error(GetNotFoundMessage("AlikafkaSaslUser", id)), NotFoundMsg, ProviderERROR)
 }
 
-func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAclVO, error) {
+func (s *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*alikafka.KafkaAclVO, error) {
 	alikafkaSaslAcl := &alikafka.KafkaAclVO{}
 
 	parts, err := ParseResourceId(id, 6)
@@ -339,7 +339,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 
 	request := alikafka.CreateDescribeAclsRequest()
 	request.InstanceId = instanceId
-	request.RegionId = alikafkaService.client.RegionId
+	request.RegionId = s.client.RegionId
 	request.Username = username
 	request.AclResourceType = aclResourceType
 	request.AclResourceName = aclResourceName
@@ -347,7 +347,7 @@ func (alikafkaService *AlikafkaService) DescribeAlikafkaSaslAcl(id string) (*ali
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var raw interface{}
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err = alikafkaService.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
+		raw, err = s.client.WithAlikafkaClient(func(alikafkaClient *alikafka.Client) (interface{}, error) {
 			return alikafkaClient.DescribeAcls(request)
 		})
 		if err != nil {
