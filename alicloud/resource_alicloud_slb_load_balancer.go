@@ -181,7 +181,7 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PayBySpec", "PayByCLCU"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("payment_type"); ok && convertSlbLoadBalancerPaymentTypeRequest(v.(string)) == "PayOnDemand" {
+					if v, ok := d.GetOk("payment_type"); !ok || v.(string) == "PayAsYouGo" {
 						return false
 					}
 					return true
