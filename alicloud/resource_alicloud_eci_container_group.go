@@ -877,6 +877,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			request["DnsConfig"] = dnsConfigMap
 		}
 	}
+
 	if v, ok := d.GetOk("eci_security_context"); ok {
 		if v != nil {
 			eciSecurityContextMap := make(map[string]interface{})
@@ -897,6 +898,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			request["EciSecurityContext"] = eciSecurityContextMap
 		}
 	}
+
 	if v, ok := d.GetOk("host_aliases"); ok {
 		HostAliases := make([]map[string]interface{}, len(v.([]interface{})))
 		for i, HostAliasesValue := range v.([]interface{}) {
@@ -1063,16 +1065,30 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InsecureRegistry"] = v
 	}
 
+	request["ClientToken"] = buildClientToken("CreateContainerGroup")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateContainerGroup")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["ContainerGroupId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -1080,6 +1096,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	return resourceAlicloudEciContainerGroupRead(d, meta)
 }
+
 func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
@@ -1411,6 +1428,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("zone_id", object["ZoneId"])
 	return nil
 }
+
 func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
@@ -1669,7 +1687,7 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -1691,6 +1709,7 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 	}
 	return resourceAlicloudEciContainerGroupRead(d, meta)
 }
+
 func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteContainerGroup"
@@ -1705,7 +1724,7 @@ func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {

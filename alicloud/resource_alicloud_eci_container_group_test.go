@@ -128,7 +128,7 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -191,12 +191,6 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 						"image_registry_credential.#": "2",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -278,6 +272,12 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"image_registry_credential"},
+			},
 		},
 	})
 }
@@ -299,7 +299,6 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -308,7 +307,7 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -386,7 +385,6 @@ func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -395,7 +393,7 @@ func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -452,6 +450,7 @@ func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
 
 func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -461,12 +460,11 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -475,7 +473,7 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -543,12 +541,11 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence4)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -557,7 +554,7 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -701,12 +698,11 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence4)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -715,7 +711,7 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
 					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -863,76 +859,94 @@ var AlicloudEciContainerGroupMap = map[string]string{
 
 func AlicloudEciContainerGroupBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "172.16.0.0/12"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id     = alicloud_vpc.default.id
+  		cidr_block = "172.16.0.0/21"
+  		zone_id    = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "group" {
+  		name        = var.name
+  		description = "tf-eci-image-test"
+  		vpc_id      = alicloud_vpc.default.id
+	}
+`, name)
 }
 
-data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
-}
+func AlicloudEciContainerGroupBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_security_group" "group" {
-  name        = var.name
-  description = "tf-eci-image-test"
-  vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
-}
+	data "alicloud_zones" "default" {
+	}
+
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "172.16.0.0/12"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id     = alicloud_vpc.default.id
+  		cidr_block = "172.16.0.0/21"
+  		zone_id    = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "group" {
+  		name        = var.name
+  		description = "tf-eci-image-test"
+  		vpc_id      = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_eip_address" "default" {
+  		address_name = var.name
+	}
 `, name)
 }
 
 func AlicloudEciContainerGroupBasicDependence3(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
-}
+	data "alicloud_zones" "default" {
+	}
 
-resource "alicloud_security_group" "group" {
-  name        = var.name
-  description = "tf-eci-image-test"
-  vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
-}
+	resource "alicloud_vpc" "default" {
+  		cidr_block = "172.16.0.0/12"
+	}
 
-resource "alicloud_eip_address" "default" {
-  address_name = var.name
-}
-`, name)
-}
+	resource "alicloud_vswitch" "default" {
+  		vpc_id     = alicloud_vpc.default.id
+  		cidr_block = "172.16.0.0/21"
+  		zone_id    = data.alicloud_zones.default.zones.0.id
+	}
 
-func AlicloudEciContainerGroupBasicDependence4(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
+	resource "alicloud_security_group" "group" {
+  		name        = var.name
+  		description = "tf-eci-image-test"
+  		vpc_id      = alicloud_vpc.default.id
+	}
 
-data "alicloud_vswitches" "default" {
-  ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
-}
-
-resource "alicloud_security_group" "group" {
-  name        = var.name
-  description = "tf-eci-image-test"
-  vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
-}
-
-resource "alicloud_cr_ee_instance" "default" {
-  period         = 1
-  renew_period   = 0
-  payment_type   = "Subscription"
-  instance_type  = "Advanced"
-  renewal_status = "ManualRenewal"
-  instance_name  = var.name
-}
+	resource "alicloud_cr_ee_instance" "default" {
+  		period         = 1
+  		renew_period   = 0
+  		payment_type   = "Subscription"
+  		instance_type  = "Advanced"
+  		renewal_status = "ManualRenewal"
+  		instance_name  = var.name
+	}
 `, name)
 }
