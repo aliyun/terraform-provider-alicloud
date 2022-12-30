@@ -1,78 +1,79 @@
-## 1.195.0 (Unreleased)
+## 1.196.0 (Unreleased)
+## 1.195.0 (December 30, 2022)
 
-- **New Resource:** `alicloud_rds_cross_region_backup_policy` [GH-5701]
-- **New Resource:** `alicloud_threat_detection_web_lock_config` [GH-5709]
-- **New Resource:** `alicloud_dms_enterprise_proxy_access` [GH-5732]
-- **New Resource:** `alicloud_dms_enterprise_logic_database` [GH-5736]
-- **New Resource:** `alicloud_amqp_static_account` [GH-5721]
-- **New Resource:** `alicloud_adb_resource_group` [GH-5724]
-- **New Resource:** `alicloud_threat_detection_vul_whitelist` [GH-5711]
-- **New Resource:** `alicloud_threat_detection_backup_policy` [GH-5684]
-- **New Resource:** `alicloud_alb_ascript` [GH-5749]
-- **New Resource:** `alicloud_threat_detection_honeypot_node` [GH-5738]
-- **New Resource:** `alicloud_cen_transit_router_multicast_domain` [GH-5735]
-- **New Resource:** `alicloud_cen_inter_region_traffic_qos_policy` [GH-5750]
-- **New Resource:** `alicloud_threat_detection_baseline_strategy` [GH-5743]
-- **New Resource:** `alicloud_threat_detection_anti_brute_force_rule` [GH-5744]
-- **New Resource:** `alicloud_threat_detection_honey_pot` [GH-5739]
-- **New Resource:** `alicloud_threat_detection_honeypot_probe` [GH-5742]
-- **New Resource:** `alicloud_ecs_capacity_reservation` [GH-5667]
-- **New Resource:** `alicloud_cen_transit_router_multicast_domain_peer_member` [GH-5745]
-- **New Resource:** `alicloud_cen_transit_router_multicast_domain_member` [GH-5756]
-- **New Resource:** `alicloud_cen_inter_region_traffic_qos_queue` [GH-5761]
-- **New Resource:** `alicloud_cen_child_instance_route_entry_to_attachment` [GH-5731]
-- **New Resource:** `alicloud_cen_transit_router_multicast_domain_association` [GH-5759]
-- **New Resource:** `alicloud_threat_detection_honeypot_preset` [GH-5753]
-- **New Resource:** `alicloud_cen_transit_router_multicast_domain_source` [GH-5751]
-- **New Data Source:** `alicloud_bss_openapi_products` [GH-5769]
-- **New Data Source:** `alicloud_bss_openapi_pricing_modules` [GH-5769]
-- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_sources` [GH-5751]
-- **New Data Source:** `alicloud_threat_detection_honeypot_presets` [GH-5753]
-- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_associations` [GH-5759]
-- **New Data Source:** `alicloud_cen_child_instance_route_entry_to_attachments` [GH-5731]
-- **New Data Source:** `alicloud_cen_inter_region_traffic_qos_queues` [GH-5761]
-- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_members` [GH-5756]
-- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_peer_members` [GH-5745]
-- **New Data Source:** `alicloud_ecs_capacity_reservations` [GH-5667]
-- **New Data Source:** `alicloud_threat_detection_honeypot_probes` [GH-5742]
-- **New Data Source:** `alicloud_threat_detection_anti_brute_force_rules` [GH-5744]
-- **New Data Source:** `alicloud_threat_detection_honey_pots` [GH-5739]
-- **New Data Source:** `alicloud_threat_detection_baseline_strategies` [GH-5743]
-- **New Data Source:** `alicloud_cen_inter_region_traffic_qos_policies` [GH-5750]
-- **New Data Source:** `alicloud_cen_transit_router_multicast_domains` [GH-5735]
-- **New Data Source:** `alicloud_threat_detection_honeypot_nodes` [GH-5738]
-- **New Data Source:** `alicloud_alb_ascripts` [GH-5749]
-- **New Data Source:** `alicloud_threat_detection_backup_policies` [GH-5684]
-- **New Data Source:** `alicloud_threat_detection_vul_whitelists` [GH-5711]
-- **New Data Source:** `alicloud_adb_resource_groups` [GH-5724]
-- **New Data Source:** `alicloud_amqp_static_accounts` [GH-5721]
-- **New Data Source:** `alicloud_dms_enterprise_logic_databases` [GH-5736]
-- **New Data Source:** `alicloud_dms_enterprise_databases` [GH-5736]
-- **New Data Source:** `alicloud_dms_enterprise_proxy_accesses` [GH-5732]
-- **New Data Source:** `alicloud_threat_detection_web_lock_configs` [GH-5709]
-- **New Data Source:** `alicloud_threat_detection_assets` [GH-5757]
-- **New Data Source:** `alicloud_threat_detection_log_shipper` [GH-5730]
-- **New Data Source:** `alicloud_threat_detection_honeypot_images` [GH-5739]
+- **New Resource:** `alicloud_rds_cross_region_backup_policy` ([#5701](https://github.com/aliyun/terraform-provider-alicloud/issues/5701))
+- **New Resource:** `alicloud_threat_detection_web_lock_config` ([#5709](https://github.com/aliyun/terraform-provider-alicloud/issues/5709))
+- **New Resource:** `alicloud_dms_enterprise_proxy_access` ([#5732](https://github.com/aliyun/terraform-provider-alicloud/issues/5732))
+- **New Resource:** `alicloud_dms_enterprise_logic_database` ([#5736](https://github.com/aliyun/terraform-provider-alicloud/issues/5736))
+- **New Resource:** `alicloud_amqp_static_account` ([#5721](https://github.com/aliyun/terraform-provider-alicloud/issues/5721))
+- **New Resource:** `alicloud_adb_resource_group` ([#5724](https://github.com/aliyun/terraform-provider-alicloud/issues/5724))
+- **New Resource:** `alicloud_threat_detection_vul_whitelist` ([#5711](https://github.com/aliyun/terraform-provider-alicloud/issues/5711))
+- **New Resource:** `alicloud_threat_detection_backup_policy` ([#5684](https://github.com/aliyun/terraform-provider-alicloud/issues/5684))
+- **New Resource:** `alicloud_alb_ascript` ([#5749](https://github.com/aliyun/terraform-provider-alicloud/issues/5749))
+- **New Resource:** `alicloud_threat_detection_honeypot_node` ([#5738](https://github.com/aliyun/terraform-provider-alicloud/issues/5738))
+- **New Resource:** `alicloud_cen_transit_router_multicast_domain` ([#5735](https://github.com/aliyun/terraform-provider-alicloud/issues/5735))
+- **New Resource:** `alicloud_cen_inter_region_traffic_qos_policy` ([#5750](https://github.com/aliyun/terraform-provider-alicloud/issues/5750))
+- **New Resource:** `alicloud_threat_detection_baseline_strategy` ([#5743](https://github.com/aliyun/terraform-provider-alicloud/issues/5743))
+- **New Resource:** `alicloud_threat_detection_anti_brute_force_rule` ([#5744](https://github.com/aliyun/terraform-provider-alicloud/issues/5744))
+- **New Resource:** `alicloud_threat_detection_honey_pot` ([#5739](https://github.com/aliyun/terraform-provider-alicloud/issues/5739))
+- **New Resource:** `alicloud_threat_detection_honeypot_probe` ([#5742](https://github.com/aliyun/terraform-provider-alicloud/issues/5742))
+- **New Resource:** `alicloud_ecs_capacity_reservation` ([#5667](https://github.com/aliyun/terraform-provider-alicloud/issues/5667))
+- **New Resource:** `alicloud_cen_transit_router_multicast_domain_peer_member` ([#5745](https://github.com/aliyun/terraform-provider-alicloud/issues/5745))
+- **New Resource:** `alicloud_cen_transit_router_multicast_domain_member` ([#5756](https://github.com/aliyun/terraform-provider-alicloud/issues/5756))
+- **New Resource:** `alicloud_cen_inter_region_traffic_qos_queue` ([#5761](https://github.com/aliyun/terraform-provider-alicloud/issues/5761))
+- **New Resource:** `alicloud_cen_child_instance_route_entry_to_attachment` ([#5731](https://github.com/aliyun/terraform-provider-alicloud/issues/5731))
+- **New Resource:** `alicloud_cen_transit_router_multicast_domain_association` ([#5759](https://github.com/aliyun/terraform-provider-alicloud/issues/5759))
+- **New Resource:** `alicloud_threat_detection_honeypot_preset` ([#5753](https://github.com/aliyun/terraform-provider-alicloud/issues/5753))
+- **New Resource:** `alicloud_cen_transit_router_multicast_domain_source` ([#5751](https://github.com/aliyun/terraform-provider-alicloud/issues/5751))
+- **New Data Source:** `alicloud_bss_openapi_products` ([#5769](https://github.com/aliyun/terraform-provider-alicloud/issues/5769))
+- **New Data Source:** `alicloud_bss_openapi_pricing_modules` ([#5769](https://github.com/aliyun/terraform-provider-alicloud/issues/5769))
+- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_sources` ([#5751](https://github.com/aliyun/terraform-provider-alicloud/issues/5751))
+- **New Data Source:** `alicloud_threat_detection_honeypot_presets` ([#5753](https://github.com/aliyun/terraform-provider-alicloud/issues/5753))
+- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_associations` ([#5759](https://github.com/aliyun/terraform-provider-alicloud/issues/5759))
+- **New Data Source:** `alicloud_cen_child_instance_route_entry_to_attachments` ([#5731](https://github.com/aliyun/terraform-provider-alicloud/issues/5731))
+- **New Data Source:** `alicloud_cen_inter_region_traffic_qos_queues` ([#5761](https://github.com/aliyun/terraform-provider-alicloud/issues/5761))
+- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_members` ([#5756](https://github.com/aliyun/terraform-provider-alicloud/issues/5756))
+- **New Data Source:** `alicloud_cen_transit_router_multicast_domain_peer_members` ([#5745](https://github.com/aliyun/terraform-provider-alicloud/issues/5745))
+- **New Data Source:** `alicloud_ecs_capacity_reservations` ([#5667](https://github.com/aliyun/terraform-provider-alicloud/issues/5667))
+- **New Data Source:** `alicloud_threat_detection_honeypot_probes` ([#5742](https://github.com/aliyun/terraform-provider-alicloud/issues/5742))
+- **New Data Source:** `alicloud_threat_detection_anti_brute_force_rules` ([#5744](https://github.com/aliyun/terraform-provider-alicloud/issues/5744))
+- **New Data Source:** `alicloud_threat_detection_honey_pots` ([#5739](https://github.com/aliyun/terraform-provider-alicloud/issues/5739))
+- **New Data Source:** `alicloud_threat_detection_baseline_strategies` ([#5743](https://github.com/aliyun/terraform-provider-alicloud/issues/5743))
+- **New Data Source:** `alicloud_cen_inter_region_traffic_qos_policies` ([#5750](https://github.com/aliyun/terraform-provider-alicloud/issues/5750))
+- **New Data Source:** `alicloud_cen_transit_router_multicast_domains` ([#5735](https://github.com/aliyun/terraform-provider-alicloud/issues/5735))
+- **New Data Source:** `alicloud_threat_detection_honeypot_nodes` ([#5738](https://github.com/aliyun/terraform-provider-alicloud/issues/5738))
+- **New Data Source:** `alicloud_alb_ascripts` ([#5749](https://github.com/aliyun/terraform-provider-alicloud/issues/5749))
+- **New Data Source:** `alicloud_threat_detection_backup_policies` ([#5684](https://github.com/aliyun/terraform-provider-alicloud/issues/5684))
+- **New Data Source:** `alicloud_threat_detection_vul_whitelists` ([#5711](https://github.com/aliyun/terraform-provider-alicloud/issues/5711))
+- **New Data Source:** `alicloud_adb_resource_groups` ([#5724](https://github.com/aliyun/terraform-provider-alicloud/issues/5724))
+- **New Data Source:** `alicloud_amqp_static_accounts` ([#5721](https://github.com/aliyun/terraform-provider-alicloud/issues/5721))
+- **New Data Source:** `alicloud_dms_enterprise_logic_databases` ([#5736](https://github.com/aliyun/terraform-provider-alicloud/issues/5736))
+- **New Data Source:** `alicloud_dms_enterprise_databases` ([#5736](https://github.com/aliyun/terraform-provider-alicloud/issues/5736))
+- **New Data Source:** `alicloud_dms_enterprise_proxy_accesses` ([#5732](https://github.com/aliyun/terraform-provider-alicloud/issues/5732))
+- **New Data Source:** `alicloud_threat_detection_web_lock_configs` ([#5709](https://github.com/aliyun/terraform-provider-alicloud/issues/5709))
+- **New Data Source:** `alicloud_threat_detection_assets` ([#5757](https://github.com/aliyun/terraform-provider-alicloud/issues/5757))
+- **New Data Source:** `alicloud_threat_detection_log_shipper` ([#5730](https://github.com/aliyun/terraform-provider-alicloud/issues/5730))
+- **New Data Source:** `alicloud_threat_detection_honeypot_images` ([#5739](https://github.com/aliyun/terraform-provider-alicloud/issues/5739))
 
 ENHANCEMENTS:
 
-- resource/alicloud_cen_child_instance_route_entry_to_attachment: Repair the error reported by CI test [GH-5766]
-- resource/alicloud_db_readwrite_splitting_connection : Repair of automation test failure in Germany region [GH-5765]
-- resource/alicloud_instance: Adds new valid value Not-applicable for attribute stopped_mode [GH-5760]
-- resource/alicloud_db_readwrite_splitting_connection : Repair create SQL Server read write splitting connection fail bug [GH-5734]
-- resource/alicloud_alikafka_instance: Support new attribute selected_zones. [GH-5752]
-- resource/alicloud_cen_transit_router: Added the field support_multicast [GH-5737]
-- resource/alicloud_vpc_prefix_list: Added retry stragety for error code LastTokenProcessing, OperationFailed.LastTokenProcessing, DependencyViolation.ShareResource, IncorrectStatus.PrefixList, IncorrectStatus.SystemPrefixList, IncorrectStatus.%s [GH-5710]
-- ci: Upgrades the go version to 1.18.9 [GH-5741]
+- resource/alicloud_cen_child_instance_route_entry_to_attachment: Repair the error reported by CI test ([#5766](https://github.com/aliyun/terraform-provider-alicloud/issues/5766))
+- resource/alicloud_db_readwrite_splitting_connection : Repair of automation test failure in Germany region ([#5765](https://github.com/aliyun/terraform-provider-alicloud/issues/5765))
+- resource/alicloud_instance: Adds new valid value Not-applicable for attribute stopped_mode ([#5760](https://github.com/aliyun/terraform-provider-alicloud/issues/5760))
+- resource/alicloud_db_readwrite_splitting_connection : Repair create SQL Server read write splitting connection fail bug ([#5734](https://github.com/aliyun/terraform-provider-alicloud/issues/5734))
+- resource/alicloud_alikafka_instance: Support new attribute selected_zones. ([#5752](https://github.com/aliyun/terraform-provider-alicloud/issues/5752))
+- resource/alicloud_cen_transit_router: Added the field support_multicast ([#5737](https://github.com/aliyun/terraform-provider-alicloud/issues/5737))
+- resource/alicloud_vpc_prefix_list: Added retry stragety for error code LastTokenProcessing, OperationFailed.LastTokenProcessing, DependencyViolation.ShareResource, IncorrectStatus.PrefixList, IncorrectStatus.SystemPrefixList, IncorrectStatus.%s ([#5710](https://github.com/aliyun/terraform-provider-alicloud/issues/5710))
+- ci: Upgrades the go version to 1.18.9 ([#5741](https://github.com/aliyun/terraform-provider-alicloud/issues/5741))
 
 BUG FIXES:
 
-- resource/alicloud_slb_load_balancer: Fixes the ShareSlbHaltSales error when creating PayByCLUC balancer [GH-5770]
-- resource/alicloud_slb_server_group_server_attachment: Fixes the ServiceIsConfiguring error when creating the resource [GH-5755]
-- resource/alicloud_ess_eci_scaling_configuration: fix default integer value of livenessProbe and readinessProbe. [GH-5727]
-- resource/alicloud_slb_rule: Fixes the ServiceIsConfiguring error when creating the resource [GH-5740]
-- resource/alicloud_threat_detection_backup_policy: fix test case TestAccAlicloudThreatDetectionBackupPolicy_basic0 [GH-5764]
-- resource/alicloud_threat_detection_web_lock_config: fix test case TestAccAlicloudThreatDetectionWebLockConfig_basic1875 [GH-5764]
+- resource/alicloud_slb_load_balancer: Fixes the ShareSlbHaltSales error when creating PayByCLUC balancer ([#5770](https://github.com/aliyun/terraform-provider-alicloud/issues/5770))
+- resource/alicloud_slb_server_group_server_attachment: Fixes the ServiceIsConfiguring error when creating the resource ([#5755](https://github.com/aliyun/terraform-provider-alicloud/issues/5755))
+- resource/alicloud_ess_eci_scaling_configuration: fix default integer value of livenessProbe and readinessProbe. ([#5727](https://github.com/aliyun/terraform-provider-alicloud/issues/5727))
+- resource/alicloud_slb_rule: Fixes the ServiceIsConfiguring error when creating the resource ([#5740](https://github.com/aliyun/terraform-provider-alicloud/issues/5740))
+- resource/alicloud_threat_detection_backup_policy: fix test case TestAccAlicloudThreatDetectionBackupPolicy_basic0 ([#5764](https://github.com/aliyun/terraform-provider-alicloud/issues/5764))
+- resource/alicloud_threat_detection_web_lock_config: fix test case TestAccAlicloudThreatDetectionWebLockConfig_basic1875 ([#5764](https://github.com/aliyun/terraform-provider-alicloud/issues/5764))
 
 ## 1.194.1 (December 22, 2022)
 
