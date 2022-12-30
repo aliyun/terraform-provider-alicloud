@@ -61,6 +61,7 @@ func resourceAlicloudEdasK8sSlbAttachment() *schema.Resource {
 						"slb_id": {
 							Type:        schema.TypeString,
 							Computed:    true,
+							Optional:    true,
 							Description: "if field 'slb_id' is empty, EDAS will purchase a new slb for this config",
 						},
 						"port_mappings": {
