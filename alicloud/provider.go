@@ -806,6 +806,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_associations": dataSourceAlicloudCenTransitRouterMulticastDomainAssociations(),
 			"alicloud_threat_detection_honeypot_presets":                dataSourceAlicloudThreatDetectionHoneypotPresets(),
 			"alicloud_cen_transit_router_multicast_domain_sources":      dataSourceAlicloudCenTransitRouterMulticastDomainSources(),
+			"alicloud_bss_open_api_products":                            dataSourceAlicloudBssOpenApiProducts(),
+			"alicloud_bss_open_api_pricing_modules":                     dataSourceAlicloudBssOpenApiPricingModules(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
