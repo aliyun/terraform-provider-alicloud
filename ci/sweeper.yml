@@ -1,5 +1,5 @@
 groups:
-  - name: All
+  - name: all
     jobs:
       - cn-hangzhou-1
       - cn-hangzhou-2
@@ -38,7 +38,7 @@ shared:
     resource: aliyun-cli
 
   - &run
-    task: terraform ci
+    task: terraformci
     file: terraform-provider-alicloud/ci/tasks/run.yml
     params: &run-params
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
@@ -56,373 +56,423 @@ shared:
 jobs:
   - name: cn-hangzhou-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper1
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-hangzhou-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper2
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-hangzhou-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper3
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-hangzhou-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper4
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-hangzhou-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper5
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-beijing-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper1
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-beijing"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-beijing"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-beijing-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper2
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-beijing"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-beijing"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-beijing-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper3
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-beijing"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-beijing"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-beijing-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper4
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-beijing"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-beijing"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-beijing-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper5
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-beijing"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-beijing"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-shanghai-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper1
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-shanghai"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-shanghai"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-shanghai-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper2
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-shanghai"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-shanghai"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-shanghai-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper3
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-shanghai"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-shanghai"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-shanghai-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper4
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-shanghai"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-shanghai"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: cn-shanghai-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper5
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "cn-shanghai"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "cn-shanghai"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: eu-central-1-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper1
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "eu-central-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "eu-central-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: eu-central-1-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper2
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "eu-central-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "eu-central-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: eu-central-1-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper3
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "eu-central-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "eu-central-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: eu-central-1-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper4
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "eu-central-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "eu-central-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: eu-central-1-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper5
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "eu-central-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "eu-central-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: ap-southeast-1-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper1
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "ap-southeast-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "ap-southeast-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: ap-southeast-1-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper2
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "ap-southeast-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "ap-southeast-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: ap-southeast-1-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper3
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "ap-southeast-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "ap-southeast-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: ap-southeast-1-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper4
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "ap-southeast-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "ap-southeast-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
   - name: ap-southeast-1-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: sweeper5
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
-        params:
-          <<: *run-params
-          ALICLOUD_REGION: "ap-southeast-1"
-          SWEEPER: true
-          TEST_CASE_CODE: "-"
+      - get: aliyun-cli
+        resource: aliyun-cli
+    - <<: *run
+      params:
+        <<: *run-params
+        ALICLOUD_REGION: "ap-southeast-1"
+        SWEEPER: true
+        TEST_CASE_CODE: "-"
 
 resources:
   - name: terraform-provider-alicloud

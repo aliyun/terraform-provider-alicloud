@@ -348,12 +348,14 @@ shared:
 jobs:
   - name: Sweeper-1
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 2230
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -362,12 +364,14 @@ jobs:
 
   - name: Sweeper-2
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 2245
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -376,12 +380,14 @@ jobs:
 
   - name: Sweeper-3
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 23
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -390,12 +396,14 @@ jobs:
 
   - name: Sweeper-4
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 2315
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -404,12 +412,14 @@ jobs:
 
   - name: Sweeper-5
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 2330
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -418,12 +428,14 @@ jobs:
 
   - name: All
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 00Tue
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -431,12 +443,14 @@ jobs:
 
   - name: Apigateway
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 00Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -445,12 +459,14 @@ jobs:
 
   - name: Cdn
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 01Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -459,12 +475,14 @@ jobs:
 
   - name: Cen
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 02Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -473,12 +491,14 @@ jobs:
 
   - name: CommonBandwidth
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 03
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -487,12 +507,14 @@ jobs:
 
   - name: CS
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 04
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -501,12 +523,14 @@ jobs:
 
   - name: Datahub
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 05
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -515,12 +539,14 @@ jobs:
 
   - name: ALB
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 06Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -529,12 +555,14 @@ jobs:
 
   - name: Rds
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 06Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -543,12 +571,14 @@ jobs:
 
   - name: Amqp
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 08Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -556,12 +586,14 @@ jobs:
 
   - name: Msc
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 09Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -569,12 +601,14 @@ jobs:
 
   - name: DRDS
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 10Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -582,12 +616,14 @@ jobs:
 
   - name: EIP
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 11Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -597,12 +633,14 @@ jobs:
 
   - name: Ess
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 12Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -611,12 +649,14 @@ jobs:
   #
   - name: Hbr
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 13Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -625,12 +665,14 @@ jobs:
 
   - name: FC
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 14
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -639,12 +681,14 @@ jobs:
 
   - name: Dataworks
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 15
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -652,12 +696,14 @@ jobs:
 
   - name: Kms
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 17Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -665,12 +711,14 @@ jobs:
 
   - name: Log
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 18
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -679,12 +727,14 @@ jobs:
 
   - name: Zones
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 20Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -692,12 +742,14 @@ jobs:
 
   - name: KVStore
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0030Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -706,12 +758,14 @@ jobs:
 
   - name: Elasticsearch
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0130Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -719,12 +773,14 @@ jobs:
 
   - name: CR
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0330Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -732,7 +788,9 @@ jobs:
 
   #  - name: NetworkInterface
   #    plan:
-  #      - <<: *clone-provider
+  #    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
   #      - get: trigger
   #        trigger: false
   #        resource: 0430Thu
@@ -746,12 +804,14 @@ jobs:
 
   - name: Oss
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0530Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -760,12 +820,14 @@ jobs:
 
   - name: Ots
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -774,12 +836,14 @@ jobs:
 
   - name: Pvtz
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0930Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -788,12 +852,14 @@ jobs:
 
   - name: Ram
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0830Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -802,12 +868,14 @@ jobs:
 
   - name: Regions
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0930
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -815,12 +883,14 @@ jobs:
 
   - name: Arms
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1030Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -829,12 +899,14 @@ jobs:
 
   - name: Cddc
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1130Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -843,12 +915,14 @@ jobs:
 
   - name: Scdn
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1230Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -857,12 +931,14 @@ jobs:
 
   - name: Lindorm
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1330Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -870,12 +946,14 @@ jobs:
 
   - name: Slb
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1430Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -884,12 +962,14 @@ jobs:
 
   - name: SslVpn
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -897,12 +977,14 @@ jobs:
 
   - name: Vpc
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1730Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -911,12 +993,14 @@ jobs:
 
   - name: Vpn
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1830
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -924,12 +1008,14 @@ jobs:
 
   - name: Mns
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1930Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -937,12 +1023,14 @@ jobs:
 
   - name: Nas
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 2030Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -950,12 +1038,14 @@ jobs:
 
   - name: Actiontrail
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 00
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -963,12 +1053,14 @@ jobs:
 
   - name: SslCertificates
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 01
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -976,12 +1068,14 @@ jobs:
 
   - name: MongoDB
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 02Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -989,12 +1083,14 @@ jobs:
 
   - name: Ddoscoo
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 03
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1002,12 +1098,14 @@ jobs:
 
   - name: Sae
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 04
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1015,12 +1113,14 @@ jobs:
 
   - name: EventBridge
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 05
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1028,12 +1128,14 @@ jobs:
 
   - name: Cms
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 06Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1041,12 +1143,14 @@ jobs:
 
   - name: Gpdb
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0730Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1054,12 +1158,14 @@ jobs:
 
   - name: Ons
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 08Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1067,12 +1173,14 @@ jobs:
 
   - name: Alikafka
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 09Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1080,12 +1188,14 @@ jobs:
 
   - name: Ddosbgp
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 10
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1093,12 +1203,14 @@ jobs:
 
   - name: Provider
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 11
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1106,12 +1218,14 @@ jobs:
 
   - name: Emr
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 12Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1119,12 +1233,14 @@ jobs:
 
   - name: CloudConnectNetwork
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 13Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1132,12 +1248,14 @@ jobs:
 
   - name: Sag
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 14Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1145,24 +1263,28 @@ jobs:
 
   - name: YundunDbaudit
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 15
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
           TEST_CASE_CODE: "YundunDbaudit"
   - name: Bastionhost
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 16
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1170,12 +1292,14 @@ jobs:
 
   - name: Market
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 17Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1183,12 +1307,14 @@ jobs:
 
   - name: PolarDB
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 17Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1196,12 +1322,14 @@ jobs:
 
   - name: HBase
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0030Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1209,12 +1337,14 @@ jobs:
 
   - name: Adb
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0130Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1223,12 +1353,14 @@ jobs:
 
   - name: Maxcompute
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0230Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1236,12 +1368,14 @@ jobs:
 
   - name: Dms
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0330Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1249,12 +1383,14 @@ jobs:
 
   - name: Waf
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0430
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1262,12 +1398,14 @@ jobs:
 
   - name: Edas
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0530
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1275,12 +1413,14 @@ jobs:
 
   - name: ResourceManager
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1288,12 +1428,14 @@ jobs:
 
   - name: Ecs
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0730Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1301,12 +1443,14 @@ jobs:
 
   - name: Dcdn
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0830Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1314,12 +1458,14 @@ jobs:
 
   - name: Cassandra
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 0930
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1327,12 +1473,14 @@ jobs:
 
   - name: Config
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1030Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1340,12 +1488,14 @@ jobs:
 
   - name: Alidns
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1130
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1353,12 +1503,14 @@ jobs:
 
   - name: MSE
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1230Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1366,12 +1518,14 @@ jobs:
 
   - name: Fnf
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1330Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1379,12 +1533,14 @@ jobs:
 
   - name: Ros
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1430Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1392,12 +1548,14 @@ jobs:
 
   - name: Privatelink
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1530Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1405,12 +1563,14 @@ jobs:
 
   - name: CloudFirewall
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1418,12 +1578,14 @@ jobs:
 
   - name: Tsdb
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1431,12 +1593,14 @@ jobs:
 
   - name: Eci
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1444,12 +1608,14 @@ jobs:
 
   - name: Oos
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1457,12 +1623,14 @@ jobs:
 
   - name: Ecd
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1630Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1470,12 +1638,14 @@ jobs:
 
   - name: SDDP
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1730Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1483,12 +1653,14 @@ jobs:
 
   - name: DirectMail
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: false
         resource: 1830Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1496,12 +1668,14 @@ jobs:
 
   - name: SAS
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 01Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1509,12 +1683,14 @@ jobs:
 
   - name: DFS
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 02Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1522,12 +1698,14 @@ jobs:
 
   - name: Ehpc
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 0230Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1535,12 +1713,14 @@ jobs:
 
   - name: IMP
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
         resource: 0330Thu
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -1556,8 +1736,8 @@ jobs:
             Vpc, EIP, Cddc, Arms, Scdn, Amqp, CommonBandwidth,
             Slb, ALB, KVStore, DRDS, Apigateway, Ots, Elasticsearch, Vpn, SslVpn, MongoDB, Sae, EventBridge
         ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params

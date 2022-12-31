@@ -75,16 +75,18 @@ go version
 cd $GOPATH
 mkdir -p src/github.com/aliyun
 cd src/github.com/aliyun
-if [[ ${ALICLOUD_REGION} == "cn-"* ]]; then
-  echo -e "Downloading ${provider}.tgz ..."
-  aliyun oss cp oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
-  echo -e "Unpacking ${provider}.tgz ..."
-  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
-  tar -xzf ${provider}.tgz
-  rm -rf ${provider}.tgz
-else
-  cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
-fi
+#if [[ ${ALICLOUD_REGION} == "cn-"* ]]; then
+#  echo -e "Downloading ${provider}.tgz ..."
+#  aliyun oss cp oss://${BUCKET_NAME}/${provider}.tgz ${provider}.tgz -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+#  echo -e "Unpacking ${provider}.tgz ..."
+#  aliyun oss ls oss://${BUCKET_NAME}/${provider}.tgz --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${BUCKET_REGION}
+#  tar -xzf ${provider}.tgz
+#  rm -rf ${provider}.tgz
+#else
+#  cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
+#fi
+
+cp -rf $CURRENT_PATH/terraform-provider-alicloud ./
 
 cd terraform-provider-alicloud
 

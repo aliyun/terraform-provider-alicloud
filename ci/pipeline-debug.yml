@@ -28,7 +28,9 @@ shared:
 jobs:
   - name: Zones
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
       - aggregate:
           - *get-terraform-qa
           - *get-aliyun-cli

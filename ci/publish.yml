@@ -58,7 +58,9 @@ shared:
 jobs:
   - name: Start
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         trigger: false
       - task: simple-task
         config:
@@ -72,10 +74,12 @@ jobs:
 
   - name: AlikafkaInstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -83,10 +87,12 @@ jobs:
 
   - name: DBInstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -94,10 +100,12 @@ jobs:
 
   - name: EipsDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -105,10 +113,12 @@ jobs:
 
   - name: KeyPairsDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -116,10 +126,12 @@ jobs:
 
   - name: KmsKeysDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -127,10 +139,12 @@ jobs:
 
   - name: VSwitchesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -138,10 +152,12 @@ jobs:
 
   - name: KvstoreInstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -149,10 +165,12 @@ jobs:
 
   - name: NatGatewaysDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -160,10 +178,12 @@ jobs:
 
   - name: OtsInstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -171,10 +191,12 @@ jobs:
 
   - name: OnsInstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -182,10 +204,12 @@ jobs:
 
   - name: InstancesDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -193,10 +217,12 @@ jobs:
 
   - name: OssBucketsDataSource
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [ Start ]
-      - aggregate:
-          - *get-aliyun-cli
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
         params:
           <<: *run-params
@@ -204,7 +230,9 @@ jobs:
 
   - name: Publish
     plan:
-      - <<: *clone-provider
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
         passed: [
             DBInstancesDataSource, KeyPairsDataSource,KmsKeysDataSource,
             KvstoreInstancesDataSource, EipsDataSource, OnsInstancesDataSource,

@@ -1,21 +1,13 @@
 groups:
-  - name: All
+  - name: all
     jobs:
 #      - build-terraform-provider-package
       - point-to-point-ci-test
 
 shared:
-#  - &clone-provider
-#    get: terraform-provider-alicloud
-#    resource: terraform-provider-alicloud
-#    trigger: true
-
-  - &get-aliyun-cli
-    get: aliyun-cli
-    resource: aliyun-cli
 
   - &run
-    task: terraform ci
+    task: terraformci
     file: terraform-provider-alicloud/ci/tasks/ci-test.yml
     params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
@@ -36,20 +28,22 @@ jobs:
 #  - name: build-terraform-provider-package
 #    serial: true
 #    plan:
-#      - <<: *clone-provider
+#    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
 #      - aggregate:
 #          - *get-aliyun-cli
 #      - <<: *build
 
-  - name: point-to-point-ci-test
-    plan:
-      - get: terraform-provider-alicloud
-        resource: terraform-provider-alicloud
-        trigger: true
-#        passed: [build-terraform-provider-package]
-      - aggregate:
-          - *get-aliyun-cli
-      - <<: *run
+- name: point-to-point-ci-test
+  plan:
+  - in_parallel:
+    - get: terraform-provider-alicloud
+      resource: terraform-provider-alicloud
+      trigger: true
+    - get: aliyun-cli
+      resource: aliyun-cli
+  - <<: *run
 
 resources:
 - name: terraform-provider-alicloud
