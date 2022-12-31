@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"reflect"
 	"regexp"
 	"strings"
@@ -65,25 +66,56 @@ type resourceCheck struct {
 
 	// additional attributes
 	additionalAttrs []string
+
+	// additional attributes type
+	additionalAttrsType map[string]schema.ValueType
 }
 
 func resourceCheckInit(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, additionalAttrs ...string) *resourceCheck {
-	return &resourceCheck{
+	rc := &resourceCheck{
 		resourceId:      resourceId,
 		resourceObject:  resourceObject,
 		serviceFunc:     serviceFunc,
 		additionalAttrs: additionalAttrs,
 	}
+	if len(rc.additionalAttrs) > 0 {
+		rc.setAdditionalAttrsType()
+	}
+	return rc
 }
 
 func resourceCheckInitWithDescribeMethod(resourceId string, resourceObject interface{}, serviceFunc func() interface{}, describeMethod string, additionalAttrs ...string) *resourceCheck {
-	return &resourceCheck{
+	rc := &resourceCheck{
 		resourceId:      resourceId,
 		resourceObject:  resourceObject,
 		serviceFunc:     serviceFunc,
 		describeMethod:  describeMethod,
 		additionalAttrs: additionalAttrs,
 	}
+	if len(rc.additionalAttrs) > 0 {
+		rc.setAdditionalAttrsType()
+	}
+	return rc
+}
+
+// caching the additional attribute type used to convert the addition attribute value type before calling Get method
+func (rc *resourceCheck) setAdditionalAttrsType() {
+	provider := Provider().(*schema.Provider)
+	resourceType, ok := provider.ResourcesMap[strings.Split(rc.resourceId, ".")[0]]
+	if !ok {
+		log.Panicf("invalid resource type: %s", strings.Split(rc.resourceId, ".")[0])
+	}
+	if rc.additionalAttrsType == nil {
+		rc.additionalAttrsType = make(map[string]schema.ValueType)
+	}
+	for _, attr := range rc.additionalAttrs {
+		if s, ok := resourceType.Schema[attr]; !ok {
+			log.Panicf("invalid resource attribute: %s", attr)
+		} else {
+			rc.additionalAttrsType[attr] = s.Type
+		}
+	}
+	return
 }
 
 // check attribute only
@@ -202,8 +234,20 @@ func (rc *resourceCheck) callDescribeMethod(rs *terraform.ResourceState) ([]refl
 	}
 	inValue := []reflect.Value{reflect.ValueOf(rs.Primary.ID)}
 	for _, attr := range rc.additionalAttrs {
-		if v, ok := rs.Primary.Attributes[attr]; ok {
-			inValue = append(inValue, reflect.ValueOf(v))
+		if attrValue, ok := rs.Primary.Attributes[attr]; ok {
+			if attrType, o := rc.additionalAttrsType[attr]; o {
+				switch attrType {
+				case schema.TypeBool:
+					v, _ := strconv.ParseBool(attrValue)
+					inValue = append(inValue, reflect.ValueOf(v))
+					continue
+				case schema.TypeInt:
+					v, _ := strconv.ParseInt(attrValue, 10, 64)
+					inValue = append(inValue, reflect.ValueOf(v))
+					continue
+				}
+			}
+			inValue = append(inValue, reflect.ValueOf(attrValue))
 		}
 	}
 	return value.Call(inValue), nil
@@ -428,12 +472,12 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		} else {
 			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])
 		}
-		return assistantConfig + primaryConfig + valueConvert(0, reflect.ValueOf(b.attributeMap))
+		return assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
 	}
 }
 
 // deal with the parameter common method
-func valueConvert(indentation int, val reflect.Value) string {
+func valueConvert(indentation int, val reflect.Value) interface{} {
 	switch val.Kind() {
 	case reflect.Interface:
 		return valueConvert(indentation, reflect.ValueOf(val.Interface()))
@@ -443,8 +487,12 @@ func valueConvert(indentation int, val reflect.Value) string {
 		return listValue(indentation, val)
 	case reflect.Map:
 		return mapValue(indentation, val)
+	case reflect.Bool:
+		return val.Bool()
+	case reflect.Int:
+		return val.Int()
 	default:
-		log.Panicf("the map value must be string  map or slice type! %s", val)
+		log.Panicf("invalid attribute value type: %#v", val)
 	}
 	return ""
 }
@@ -454,7 +502,7 @@ func listValue(indentation int, val reflect.Value) string {
 	var valList []string
 	for i := 0; i < val.Len(); i++ {
 		valList = append(valList, addIndentation(indentation+CHILDINDEND)+
-			valueConvert(indentation+CHILDINDEND, val.Index(i)))
+			fmt.Sprint(valueConvert(indentation+CHILDINDEND, val.Index(i))))
 	}
 
 	return fmt.Sprintf("[\n%s\n%s]", strings.Join(valList, ",\n"), addIndentation(indentation))
@@ -475,8 +523,16 @@ func mapValue(indentation int, val reflect.Value) string {
 				continue
 			}
 		}
-		line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(),
-			valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV)))
+		value := valueConvert(indentation+len(keyV.String())+CHILDINDEND+3, val.MapIndex(keyV))
+		switch value.(type) {
+		case bool:
+			line = fmt.Sprintf(`%s%s = %t`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+		case int:
+			line = fmt.Sprintf(`%s%s = %d`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+		default:
+			line = fmt.Sprintf(`%s%s = %s`, addIndentation(indentation+CHILDINDEND), keyV.String(), value)
+		}
+
 		valList = append(valList, line)
 	}
 	return fmt.Sprintf("{\n%s\n%s}", strings.Join(valList, "\n"), addIndentation(indentation))

@@ -59,13 +59,15 @@ func testSweepDMSEnterpriseInstances(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-11-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dms_enterprise_instances", action, AlibabaCloudSdkGoERROR)
+			log.Printf("[ERROR] Failed to list DMS Enterprise Instance : %s", err)
+			return nil
 		}
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.InstanceList.Instance", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.InstanceList.Instance", response)
+			log.Printf("[ERROR] Failed to parse DMS Enterprise Instance response: %s", err)
+			return nil
 		}
 
 		result, _ := resp.([]interface{})
