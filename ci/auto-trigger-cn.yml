@@ -29,9 +29,11 @@ jobs:
   - name: point-to-point-ci-test
     serial: true
     plan:
-      - <<: *clone-provider
-      - aggregate:
-          - *get-aliyun-cli
+    - in_parallel:
+      - get: terraform-provider-alicloud
+        resource: terraform-provider-alicloud
+      - get: aliyun-cli
+        resource: aliyun-cli
       - <<: *run
 
 resources:
