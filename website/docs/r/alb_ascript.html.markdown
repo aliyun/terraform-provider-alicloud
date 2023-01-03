@@ -1,5 +1,5 @@
 ---
-subcategory: "Alb"
+subcategory: "Application Load Balancer (ALB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alb_ascript"
 sidebar_current: "docs-alicloud-resource-alb-ascript"
