@@ -178,6 +178,7 @@ type Config struct {
 	BpStudioEndpoint            string
 	DasEndpoint                 string
 	CloudfirewallEndpoint       string
+	SrvcatalogEndpoint          string
 }
 
 func (c *Config) loadAndValidate() error {

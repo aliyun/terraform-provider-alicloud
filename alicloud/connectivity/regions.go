@@ -240,3 +240,4 @@ var ADBResourceGroupSupportRegions = []Region{Hangzhou}
 var CENTransitRouterMulticastDomainPeerMemberSupportRegions = []Region{Hangzhou}
 var CENTransitRouterMulticastDomainMemberSupportRegions = []Region{Hangzhou}
 var CenChildInstanceRouteEntryToAttachmentSupportRegions = []Region{Hangzhou}
+var ServiceCatalogProvisionedProductSupportRegions = []Region{Hangzhou}
