@@ -808,6 +808,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_sources":      dataSourceAlicloudCenTransitRouterMulticastDomainSources(),
 			"alicloud_bss_open_api_products":                            dataSourceAlicloudBssOpenApiProducts(),
 			"alicloud_bss_open_api_pricing_modules":                     dataSourceAlicloudBssOpenApiPricingModules(),
+			"alicloud_service_catalog_provisioned_products":             dataSourceAlicloudServiceCatalogProvisionedProducts(),
+			"alicloud_service_catalog_product_as_end_users":             dataSourceAlicloudServiceCatalogProductAsEndUsers(),
+			"alicloud_service_catalog_product_versions":                 dataSourceAlicloudServiceCatalogProductVersions(),
+			"alicloud_service_catalog_launch_options":                   dataSourceAlicloudServiceCatalogLaunchOptions(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1510,6 +1514,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_child_instance_route_entry_to_attachment":         resourceAlicloudCenChildInstanceRouteEntryToAttachment(),
 			"alicloud_cen_transit_router_multicast_domain_association":      resourceAlicloudCenTransitRouterMulticastDomainAssociation(),
 			"alicloud_threat_detection_honeypot_preset":                     resourceAlicloudThreatDetectionHoneypotPreset(),
+			"alicloud_service_catalog_provisioned_product":                  resourceAlicloudServiceCatalogProvisionedProduct(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1744,6 +1749,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.BpStudioEndpoint = strings.TrimSpace(endpoints["bpstudio"].(string))
 		config.DasEndpoint = strings.TrimSpace(endpoints["das"].(string))
 		config.CloudfirewallEndpoint = strings.TrimSpace(endpoints["cloudfirewall"].(string))
+		config.SrvcatalogEndpoint = strings.TrimSpace(endpoints["srvcatalog"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2087,6 +2093,8 @@ func init() {
 		"das_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom das endpoints.",
 
 		"cloudfirewall_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfirewall endpoints.",
+
+		"srvcatalog_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom srvcatalog endpoints.",
 	}
 }
 
@@ -2131,6 +2139,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"srvcatalog": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["srvcatalog_endpoint"],
+				},
+
 				"cloudfirewall": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3074,6 +3089,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["bpstudio"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["das"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfirewall"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["srvcatalog"].(string)))
 	return hashcode.String(buf.String())
 }
 
