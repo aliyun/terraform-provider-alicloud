@@ -3729,6 +3729,27 @@ func (s *VpcService) DescribeVpcPrefixList(id string) (object map[string]interfa
 	return object, nil
 }
 
+func (s *VpcService) VpcPrefixListStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcPrefixList(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
 func (s *VpcService) DescribeVpnGatewayVcoRoute(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()

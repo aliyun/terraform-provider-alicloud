@@ -54,14 +54,15 @@ The entrys supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Prefix List.
+* `status` - (Available in v1.196.0+) The status of the Prefix List.
 
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when creating the Prefix List.
-* `update` - (Defaults to 1 mins) Used when updating the Prefix List.
-* `delete` - (Defaults to 1 mins) Used when deleting the Prefix List.
+* `create` - (Defaults to 3 mins) Used when creating the Prefix List.
+* `update` - (Defaults to 3 mins) Used when updating the Prefix List.
+* `delete` - (Defaults to 3 mins) Used when deleting the Prefix List.
 
 
 ## Import
