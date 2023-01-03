@@ -172,6 +172,7 @@ var AlicloudVPCPrefixListMap0 = map[string]string{
 	"ip_version":  CHECKSET,
 	"entrys.#":    CHECKSET,
 	"max_entries": CHECKSET,
+	"status":      CHECKSET,
 }
 
 func AlicloudVPCPrefixListBasicDependence0(name string) string {
@@ -308,6 +309,7 @@ var AlicloudVPCPrefixListMap1 = map[string]string{
 	"max_entries": CHECKSET,
 	"entrys.#":    CHECKSET,
 	"ip_version":  CHECKSET,
+	"status":      CHECKSET,
 }
 
 func AlicloudVPCPrefixListBasicDependence1(name string) string {

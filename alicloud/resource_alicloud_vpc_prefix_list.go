@@ -24,9 +24,9 @@ func resourceAlicloudVpcPrefixList() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"entrys": {
@@ -68,12 +68,17 @@ func resourceAlicloudVpcPrefixList() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_.-]{1,127}$`), "The name must be 2 to 128 characters in length, and must start with a letter. It can contain digits, periods (.), underscores (_), and hyphens (-)."),
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
 
 func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	var response map[string]interface{}
 	action := "CreateVpcPrefixList"
 	request := make(map[string]interface{})
@@ -81,6 +86,7 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := d.GetOk("entrys"); ok {
 		for entrysPtr, entrys := range v.(*schema.Set).List() {
 			entrysArg := entrys.(map[string]interface{})
@@ -88,18 +94,23 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 			request["PrefixListEntries."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
 		}
 	}
+
 	if v, ok := d.GetOk("ip_version"); ok {
 		request["IpVersion"] = v
 	}
+
 	if v, ok := d.GetOk("max_entries"); ok {
 		request["MaxEntries"] = v
 	}
+
 	if v, ok := d.GetOk("prefix_list_description"); ok {
 		request["PrefixListDescription"] = v
 	}
+
 	if v, ok := d.GetOk("prefix_list_name"); ok {
 		request["PrefixListName"] = v
 	}
+
 	request["RegionId"] = client.RegionId
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -117,11 +128,17 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_prefix_list", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["PrefixListId"]))
+
+	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcPrefixListStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 
 	return resourceAlicloudVpcPrefixListRead(d, meta)
 }
@@ -156,16 +173,20 @@ func resourceAlicloudVpcPrefixListRead(d *schema.ResourceData, meta interface{})
 		})
 	}
 	d.Set("entrys", entrysMaps)
+	d.Set("status", object["Status"])
+
 	return nil
 }
 
 func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	update := false
 	request := map[string]interface{}{}
 	request["PrefixListId"] = d.Id()
@@ -226,8 +247,14 @@ func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpcPrefixListStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 	return resourceAlicloudVpcPrefixListRead(d, meta)
@@ -235,6 +262,7 @@ func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudVpcPrefixListDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	action := "DeleteVpcPrefixList"
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
@@ -262,8 +290,15 @@ func resourceAlicloudVpcPrefixListDelete(d *schema.ResourceData, meta interface{
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcPrefixListStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }
