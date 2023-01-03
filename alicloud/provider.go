@@ -819,6 +819,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_elasticity_assurances":                        dataSourceAlicloudEcsElasticityAssurances(),
 			"alicloud_express_connect_grant_rule_to_cens":               dataSourceAlicloudExpressConnectGrantRuleToCens(),
 			"alicloud_express_connect_virtual_physical_connections":     dataSourceAlicloudExpressConnectVirtualPhysicalConnections(),
+			"alicloud_express_connect_vbr_pconn_associations":           dataSourceAlicloudExpressConnectVbrPconnAssociations(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1527,6 +1528,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_elasticity_assurance":                             resourceAlicloudEcsElasticityAssurance(),
 			"alicloud_express_connect_grant_rule_to_cen":                    resourceAlicloudExpressConnectGrantRuleToCen(),
 			"alicloud_express_connect_virtual_physical_connection":          resourceAlicloudExpressConnectVirtualPhysicalConnection(),
+			"alicloud_express_connect_vbr_pconn_association":                resourceAlicloudExpressConnectVbrPconnAssociation(),
 		},
 
 		ConfigureFunc: providerConfigure,
