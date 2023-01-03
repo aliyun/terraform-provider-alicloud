@@ -209,7 +209,7 @@ func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) e
 			return otsClient.DeleteInstance(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"AuthFailed", "InvalidStatus", "ValidationFailed"}) {
+			if IsExpectedErrors(err, []string{"AuthFailed", "InvalidStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
