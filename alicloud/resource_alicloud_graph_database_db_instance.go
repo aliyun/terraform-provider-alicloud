@@ -288,7 +288,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceAccessWhiteListReq, &util.RuntimeOptions{})
 					if err != nil {
-						if NeedRetry(err) {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
 							return resource.RetryableError(err)
 						}
