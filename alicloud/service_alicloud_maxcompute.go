@@ -2,48 +2,72 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-type MaxcomputeService struct {
+type MaxComputeService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *MaxcomputeService) DescribeMaxcomputeProject(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
+func (s *MaxComputeService) DescribeMaxcomputeProject(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewOdpsClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "GetProject"
-	request := map[string]interface{}{
-		"RegionName":  s.client.RegionId,
-		"ProjectName": id,
-	}
+
+	var response map[string]interface{}
+	action := "/api/v1/projects/" + id
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-06-12"), StringPointer("AK"), nil, request, &runtime)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer("2022-01-04"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), nil, nil, nil, &util.RuntimeOptions{})
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response)
+		return nil
+	})
 	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return
+		if IsExpectedErrors(err, []string{"INTERNAL_SERVER_ERROR", "OBJECT_NOT_EXIST"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("MaxCompute", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
-	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"102", "403"}) {
-		err = WrapErrorf(Error(GetNotFoundMessage("MaxcomputeProject", id)), NotFoundMsg, ProviderERROR)
-		return object, err
-	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		err = Error("GetProject failed for " + response["Message"].(string))
-		return object, err
-	}
-	v, err := jsonpath.Get("$", response)
+	v, err := jsonpath.Get("$.body.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
 	}
-	object = v.(map[string]interface{})
-	return object, nil
+	status, err := jsonpath.Get("$.status", v)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.status", response)
+	}
+	if status == "DELETING" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MaxCompute:Project", id)), NotFoundWithResponse, response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *MaxComputeService) MaxcomputeProjectStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMaxcomputeProject(d.Id())
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["status"]) == failState {
+				return object, fmt.Sprint(object["status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["status"])))
+			}
+		}
+		return object, fmt.Sprint(object["status"]), nil
+	}
 }

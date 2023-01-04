@@ -812,6 +812,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_product_as_end_users":             dataSourceAlicloudServiceCatalogProductAsEndUsers(),
 			"alicloud_service_catalog_product_versions":                 dataSourceAlicloudServiceCatalogProductVersions(),
 			"alicloud_service_catalog_launch_options":                   dataSourceAlicloudServiceCatalogLaunchOptions(),
+			"alicloud_maxcompute_projects":                              dataSourceAlicloudMaxcomputeProjects(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
