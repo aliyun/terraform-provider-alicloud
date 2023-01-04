@@ -179,6 +179,7 @@ type Config struct {
 	DasEndpoint                 string
 	CloudfirewallEndpoint       string
 	SrvcatalogEndpoint          string
+	VpcPeerEndpoint             string
 }
 
 func (c *Config) loadAndValidate() error {

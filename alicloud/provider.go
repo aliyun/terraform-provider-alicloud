@@ -1516,6 +1516,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_association":      resourceAlicloudCenTransitRouterMulticastDomainAssociation(),
 			"alicloud_threat_detection_honeypot_preset":                     resourceAlicloudThreatDetectionHoneypotPreset(),
 			"alicloud_service_catalog_provisioned_product":                  resourceAlicloudServiceCatalogProvisionedProduct(),
+			"alicloud_vpc_peer_connection_accepter":                         resourceAlicloudVpcPeerConnectionAccepter(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1751,6 +1752,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.DasEndpoint = strings.TrimSpace(endpoints["das"].(string))
 		config.CloudfirewallEndpoint = strings.TrimSpace(endpoints["cloudfirewall"].(string))
 		config.SrvcatalogEndpoint = strings.TrimSpace(endpoints["srvcatalog"].(string))
+		config.VpcPeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -3091,6 +3093,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["das"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfirewall"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["srvcatalog"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
 	return hashcode.String(buf.String())
 }
 
