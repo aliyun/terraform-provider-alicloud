@@ -2403,7 +2403,7 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
-func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
+func (client *AliyunClient) NewOdpsClient() (*roa.Client, error) {
 	productCode := "odps"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
@@ -2417,9 +2417,9 @@ func (client *AliyunClient) NewOdpsClient() (*rpc.Client, error) {
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 	}
-	sdkConfig := client.teaSdkConfig
+	sdkConfig := client.teaRoaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
+	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
