@@ -131,6 +131,7 @@ func resourceAlicloudCenTransitRouterRouteEntryCreate(d *schema.ResourceData, me
 
 	return resourceAlicloudCenTransitRouterRouteEntryRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterRouteEntryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -157,6 +158,7 @@ func resourceAlicloudCenTransitRouterRouteEntryRead(d *schema.ResourceData, meta
 	d.Set("transit_router_route_table_id", parts[0])
 	return nil
 }
+
 func resourceAlicloudCenTransitRouterRouteEntryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -212,6 +214,7 @@ func resourceAlicloudCenTransitRouterRouteEntryUpdate(d *schema.ResourceData, me
 	}
 	return resourceAlicloudCenTransitRouterRouteEntryRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTransitRouterRouteEntry"
@@ -242,7 +245,7 @@ func resourceAlicloudCenTransitRouterRouteEntryDelete(d *schema.ResourceData, me
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "InstanceStatus.NotSupport"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
