@@ -36,7 +36,7 @@ The following arguments are supported:
 * `auto_snapshot_policy_id` - (Optional, ForceNew) Query cloud disks based on the automatic snapshot policy ID.
 * `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs.
 * `availability_zone` - (Optional, ForceNew, Deprecated in v1.122.0+) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
-* `category` - (Optional, ForceNew) Disk category. Valid values: `cloud`, `cloud_efficiency`, `cloud_essd`, `cloud_ssd`, `ephemeral_ssd`.
+* `category` - (Optional, ForceNew) Disk category. Valid values: `cloud`, `cloud_efficiency`, `cloud_essd`, `cloud_ssd`, `ephemeral_ssd`, `cloud_auto`.
 * `delete_auto_snapshot` - (Optional, ForceNew) Indicates whether the automatic snapshot is deleted when the disk is released.
 * `delete_with_instance` - (Optional, ForceNew) Indicates whether the disk is released together with the instance.
 * `disk_name` - (Optional, ForceNew) The disk name.

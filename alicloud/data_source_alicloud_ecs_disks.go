@@ -32,7 +32,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "ephemeral_ssd"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "ephemeral_ssd", "cloud_auto"}, false),
 			},
 			"delete_auto_snapshot": {
 				Type:     schema.TypeBool,
