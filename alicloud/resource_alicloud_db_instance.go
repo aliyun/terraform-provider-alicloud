@@ -141,10 +141,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"connection_string_prefix": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(8, 64),
-				Computed:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+				//ValidateFunc: validation.StringLenBetween(8, 64),
+				Computed: true,
 			},
 
 			"port": {
