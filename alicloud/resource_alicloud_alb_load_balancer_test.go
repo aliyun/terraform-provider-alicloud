@@ -143,7 +143,8 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 							"zone_id":    "${local.zone_id_2}",
 						},
 					},
-					"address_ip_version": "Ipv4",
+					"address_ip_version":   "Ipv4",
+					"bandwidth_package_id": "${alicloud_common_bandwidth_package.default.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -155,6 +156,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
 						"dns_name":                       CHECKSET,
+						"bandwidth_package_id":           CHECKSET,
 						"address_ip_version":             "Ipv4",
 					}),
 				),
@@ -276,6 +278,26 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 						"tags.%":                           "2",
 						"tags.Created":                     "TF2",
 						"tags.For":                         "Test2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_package_id": "${alicloud_common_bandwidth_package.default.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_package_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_package_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_package_id": "",
 					}),
 				),
 			},
@@ -434,6 +456,14 @@ locals {
  vswitch_id_2 =  length(data.alicloud_vswitches.default_2.ids) > 0 ? data.alicloud_vswitches.default_2.ids[0] : concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
  log_project = alicloud_log_project.default.name
  log_store =   alicloud_log_store.default.name
+}
+
+resource "alicloud_common_bandwidth_package" "default" {
+	count = 2
+	bandwidth = 2
+	internet_charge_type = "PayByBandwidth"
+	name = "${var.name}"
+	description = "${var.name}_description"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}

@@ -392,7 +392,7 @@ func resourceAlicloudCommonBandwidthPackageDelete(d *schema.ResourceData, meta i
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "BandwidthPackageOperation.conflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "BandwidthPackageOperation.conflict", "DependencyViolation.Ips"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

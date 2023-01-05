@@ -102,6 +102,7 @@ The following arguments are supported:
 * `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones. See the following `Block zone_mappings`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.193.1+) The IP version. Valid values: `Ipv4`, `DualStack`.
+* `bandwidth_package_id` - (Optional,Available in v1.196.0+) The ID of the EIP bandwidth plan that is associated with the ALB instance if the ALB instance uses a public IP address.
 
 #### Block load_balancer_billing_config
 
