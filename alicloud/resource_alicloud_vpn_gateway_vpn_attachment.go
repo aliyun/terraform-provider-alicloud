@@ -31,7 +31,6 @@ func resourceAlicloudVpnGatewayVpnAttachment() *schema.Resource {
 			"customer_gateway_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"bgp_config": {
 				Type:     schema.TypeList,
@@ -535,6 +534,13 @@ func resourceAlicloudVpnGatewayVpnAttachmentUpdate(d *schema.ResourceData, meta 
 			}
 			bgpMapsString, _ := convertMaptoJsonString(bgpMap)
 			request["BgpConfig"] = bgpMapsString
+		}
+	}
+
+	if d.HasChange("customer_gateway_id") {
+		update = true
+		if v, ok := d.GetOk("customer_gateway_id"); ok {
+			request["CustomerGatewayId"] = v
 		}
 	}
 
