@@ -194,6 +194,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
         - `cloud_ssd`: The SSD cloud disk.
         - `cloud_essd`: The ESSD cloud disk.
         - `ephemeral_ssd`: The local SSD disk.
+        - `cloud_auto`: The AutoPL cloud disk.
         Default to `cloud_efficiency`.
     * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
         - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.

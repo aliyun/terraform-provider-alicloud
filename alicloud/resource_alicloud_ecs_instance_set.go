@@ -153,7 +153,7 @@ func resourceAlicloudEcsInstanceSet() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ForceNew:     true,
-							ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud", "cloud_auto"}, false),
 						},
 						"disk_description": {
 							Type:         schema.TypeString,
