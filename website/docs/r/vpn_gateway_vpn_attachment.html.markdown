@@ -87,7 +87,7 @@ output "internet_ip" {
 The following arguments are supported:
 
 * `bgp_config` - (Optional, Computed) Bgp configuration information. See the following `Block bgp_config`.
-* `customer_gateway_id` - (Required, ForceNew) The ID of the customer gateway.
+* `customer_gateway_id` - (Required,  Available in v1.196.0+) The ID of the customer gateway. From version 1.196.0, `customer_gateway_id` can be modified.
 * `effect_immediately` - (Optional) Indicates whether IPsec-VPN negotiations are initiated immediately. Valid values.
 * `enable_dpd` - (Optional, Computed) Whether to enable the DPD (peer survival detection) function.
 * `enable_nat_traversal` - (Optional, Computed) Allow NAT penetration.

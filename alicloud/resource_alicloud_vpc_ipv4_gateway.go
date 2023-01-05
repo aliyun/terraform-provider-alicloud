@@ -187,7 +187,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 		}
 		target := d.Get("enabled")
 		if object["Enabled"].(bool) != true {
-			if target == "true" {
+			if target.(bool) == true {
 				request = map[string]interface{}{
 					"Ipv4GatewayId": d.Id(),
 				}

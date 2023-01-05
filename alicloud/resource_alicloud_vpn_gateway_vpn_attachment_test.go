@@ -231,6 +231,16 @@ func TestAccAlicloudVPNGatewayVpnAttachment_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"customer_gateway_id": "${alicloud_vpn_customer_gateway.defaultone.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customer_gateway_id": CHECKSET,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -255,6 +265,14 @@ resource "alicloud_vpn_customer_gateway" "default" {
 	asn = "45014"
 	description = "testAccVpnConnectionDesc"
 }
+
+resource "alicloud_vpn_customer_gateway" "defaultone" {
+  name        = "${var.name}"
+  ip_address  = "41.104.22.229"
+  asn = "45014"
+  description = "${var.name}"
+}
+
 `, name)
 }
 

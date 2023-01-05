@@ -290,6 +290,10 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"service_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -549,6 +553,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
+	d.Set("service_type", object["ServiceType"])
 	return nil
 }
 func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
