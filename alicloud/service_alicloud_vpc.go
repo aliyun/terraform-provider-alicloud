@@ -4114,6 +4114,7 @@ func (s *VpcService) VpcNetworkAclAttachmentStateRefreshFunc(id string, failStat
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
 func (s *VpcService) DescribeVpcGatewayRouteTableAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -4177,4 +4178,69 @@ func (s *VpcService) VpcGatewayRouteTableAttachmentStateRefreshFunc(id string, f
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *VpcService) DescribeExpressConnectGrantRuleToCen(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeGrantRulesToCen"
+
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"ClientToken":  buildClientToken("DescribeGrantRulesToCen"),
+		"InstanceId":   parts[2],
+		"InstanceType": "VBR",
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.CenGrantRules.CbnGrantRule", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CenGrantRules.CbnGrantRule", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect:GrantRuleToCen", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["CenInstanceId"]) == parts[0] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect:GrantRuleToCen", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
 }

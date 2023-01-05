@@ -816,6 +816,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_maxcompute_projects":                              dataSourceAlicloudMaxcomputeProjects(),
 			"alicloud_ebs_dedicated_block_storage_clusters":             dataSourceAlicloudEbsDedicatedBlockStorageClusters(),
 			"alicloud_ecs_elasticity_assurances":                        dataSourceAlicloudEcsElasticityAssurances(),
+			"alicloud_express_connect_grant_rule_to_cens":               dataSourceAlicloudExpressConnectGrantRuleToCens(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1522,6 +1523,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_peer_connection_accepter":                         resourceAlicloudVpcPeerConnectionAccepter(),
 			"alicloud_ebs_dedicated_block_storage_cluster":                  resourceAlicloudEbsDedicatedBlockStorageCluster(),
 			"alicloud_ecs_elasticity_assurance":                             resourceAlicloudEcsElasticityAssurance(),
+			"alicloud_express_connect_grant_rule_to_cen":                    resourceAlicloudExpressConnectGrantRuleToCen(),
 		},
 
 		ConfigureFunc: providerConfigure,
