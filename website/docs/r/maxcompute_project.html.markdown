@@ -37,7 +37,6 @@ The following arguments are supported:
 * `ip_white_list` - (Computed,Optional) IP whitelistSee the following `Block IpWhiteList`.
 * `properties` - (Computed,Optional) Project base attributesSee the following `Block Properties`.
 * `security_properties` - (Computed,Optional) Security-related attributesSee the following `Block SecurityProperties`.
-* `trusted_projects` - (Optional) List of trusted items
 * `product_type` - (Optional) Quota payment type, support `PayAsYouGo`, `Subscription`, `Dev`.
 * `name` - (Optional, Remove from v1.196.0+) It has been deprecated from provider version 1.110.0 and `project_name` instead.
 * `specification_type` - (Optional, Remove from v1.196.0+)  The type of resource Specification, only `OdpsStandard` supported currently.

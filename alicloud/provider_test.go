@@ -292,6 +292,13 @@ func testAccPreCheckWithSmartAccessGatewayAppSetting(t *testing.T) {
 	}
 }
 
+func testAccPreCheckWithExpressConnectUidSetting(t *testing.T) {
+	if v := strings.TrimSpace(os.Getenv("ALICLOUD_EXPRESS_CONNECT_UID")); v == "" {
+		t.Skipf("Skipping the test case with no express connect uid  id setting")
+		t.Skipped()
+	}
+}
+
 func testAccPreCheckWithTime(t *testing.T, days []int) {
 	skipped := true
 	for _, d := range days {
