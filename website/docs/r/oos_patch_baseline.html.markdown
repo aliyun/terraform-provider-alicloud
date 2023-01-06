@@ -34,7 +34,7 @@ The following arguments are supported:
 
 * `approval_rules` - (Required) Accept the rules. This value follows the json format. For more details, see the [description of ApprovalRules in the Request parameters table for details](https://www.alibabacloud.com/help/zh/doc-detail/311002.html).
 * `description` - (Optional) Patches baseline description information.
-* `operation_system` - (Required, ForceNew) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `Centos`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
+* `operation_system` - (Required, ForceNew) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `CentOS`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
 * `patch_baseline_name` - (Required, ForceNew) The name of the patch baseline.
 
 ## Attributes Reference

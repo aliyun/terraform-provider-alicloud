@@ -57,7 +57,7 @@ The following arguments are supported:
 * `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `ids` - (Optional, ForceNew, Computed)  A list of Patch Baseline IDs. Its element value is same as Patch Baseline Name.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Patch Baseline name.
-* `operation_system` - (Optional, ForceNew) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `Centos`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
+* `operation_system` - (Optional, ForceNew) Operating system type. Valid values: `AliyunLinux`, `Anolis`, `CentOS`, `Debian`, `RedhatEnterpriseLinux`, `Ubuntu`, `Windows`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `share_type` - (Optional, ForceNew) Patch baseline sharing type. Valid values: `Private`, `Public`.
 
