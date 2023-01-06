@@ -23,22 +23,19 @@ For information about listener and how to use it, to see the following:
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "testcreatehttplistener"
+variable "slb_listener_name" {
+  default = "forSlbListener"
 }
 
-variable "ip_version" {
-  default = "ipv4"
-}
-
-resource "alicloud_slb_load_balancer" "default" {
+resource "alicloud_slb_load_balancer" "listener" {
   load_balancer_name   = "tf-testAccSlbListenerHttp"
   internet_charge_type = "PayByTraffic"
-  internet             = true
+  address_type         = "internet"
+  instance_charge_type = "PayByCLCU"
 }
 
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id          = alicloud_slb_load_balancer.default.id
+resource "alicloud_slb_listener" "listener" {
+  load_balancer_id          = alicloud_slb_load_balancer.listener.id
   backend_port              = 80
   frontend_port             = 80
   protocol                  = "http"
@@ -62,22 +59,26 @@ resource "alicloud_slb_listener" "default" {
   }
   acl_status      = "on"
   acl_type        = "white"
-  acl_id          = alicloud_slb_acl.default.id
+  acl_id          = alicloud_slb_acl.listener.id
   request_timeout = 80
   idle_timeout    = 30
 }
 
-resource "alicloud_slb_acl" "default" {
-  name       = var.name
-  ip_version = var.ip_version
-  entry_list {
-    entry   = "10.10.10.0/24"
-    comment = "first"
-  }
-  entry_list {
-    entry   = "168.10.10.0/24"
-    comment = "second"
-  }
+resource "alicloud_slb_acl" "listener" {
+  name       = var.slb_listener_name
+  ip_version = "ipv4"
+}
+
+resource "alicloud_slb_acl_entry_attachment" "first" {
+  acl_id  = alicloud_slb_acl.listener.id
+  entry   = "10.10.10.0/24"
+  comment = "first"
+}
+
+resource "alicloud_slb_acl_entry_attachment" "second" {
+  acl_id  = alicloud_slb_acl.listener.id
+  entry   = "168.10.10.0/24"
+  comment = "second"
 }
 ```
 

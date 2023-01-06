@@ -37,26 +37,11 @@ For information about acl and how to use it, see [Configure an access control li
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "terraformslbaclconfig"
+resource "alicloud_slb_acl" "acl" {
+  name       = "terraformslbaclconfig"
+  ip_version = "ipv4"
 }
 
-variable "ip_version" {
-  default = "ipv4"
-}
-
-resource "alicloud_slb_acl" "default" {
-  name       = var.name
-  ip_version = var.ip_version
-  entry_list {
-    entry   = "10.10.10.0/24"
-    comment = "first"
-  }
-  entry_list {
-    entry   = "168.10.10.0/24"
-    comment = "second"
-  }
-}
 ```
 
 ## Argument Reference
@@ -65,7 +50,7 @@ The following arguments are supported:
 
 * `name` - (Required) Name of the access control list.
 * `ip_version` - (Optional, ForceNew) The IP Version of access control list is the type of its entry (IP addresses or CIDR blocks). It values ipv4/ipv6. Our plugin provides a default ip_version: "ipv4".
-* `entry_list` - (Optional, Computed) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
+* `entry_list` - (Deprecated from v1.162.0 ) A list of entry (CIDR blocks) to be added. It contains two sub-fields as `Entry Block` follows. **NOTE:** "Field 'entry_list' has been deprecated from provider version 1.162.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_acl_entry_attachment'.",
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 * `resource_group_id` - (Optional, ForceNew, Available in v1.67.0+) Resource group ID.
 

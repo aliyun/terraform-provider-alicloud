@@ -85,6 +85,7 @@ func resourceAliCloudImage() *schema.Resource {
 					"Windows Server 2003",
 					"Windows Server 2008",
 					"Windows Server 2012",
+					"Windows Server 2022",
 					"Windows 7",
 					"Customized Linux",
 					"Others Linux",
