@@ -21,7 +21,7 @@ func dataSourceAlicloudOosPatchBaselines() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Anolis", "Centos", "Debian", "RedhatEnterpriseLinux", "Ubuntu", "Windows"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Anolis", "Centos", "CentOS", "Debian", "RedhatEnterpriseLinux", "Ubuntu", "Windows"}, false),
 			},
 			"name_regex": {
 				Type:         schema.TypeString,

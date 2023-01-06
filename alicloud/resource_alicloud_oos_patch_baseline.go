@@ -39,7 +39,7 @@ func resourceAlicloudOosPatchBaseline() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Anolis", "Centos", "Debian", "RedhatEnterpriseLinux", "Ubuntu", "Windows"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Anolis", "Centos", "CentOS", "Debian", "RedhatEnterpriseLinux", "Ubuntu", "Windows"}, false),
 			},
 			"patch_baseline_name": {
 				Type:     schema.TypeString,
