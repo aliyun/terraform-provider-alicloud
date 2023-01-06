@@ -2523,3 +2523,37 @@ func (s *RdsService) DescribeInstanceCrossBackupPolicy(id string) (map[string]in
 	addDebug(action, response, request)
 	return response, nil
 }
+
+func (s *RdsService) FindKmsRoleArnDdr(k string) (string, error) {
+	action := "DescribeKey"
+	var response map[string]interface{}
+
+	request := make(map[string]interface{})
+	request["KeyId"] = k
+
+	conn, err := s.client.NewKmsClient()
+	if err != nil {
+		return "", WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", WrapErrorf(err, DataDefaultErrorMsg, k, action, AlibabaCloudSdkGoERROR)
+	}
+	resp, err := jsonpath.Get("$.KeyMetadata.Creator", response)
+	if err != nil {
+		return "", WrapErrorf(err, FailedGetAttributeMsg, action, "$.VersionIds.VersionId", response)
+	}
+	return strings.Join([]string{"acs:ram::", fmt.Sprint(resp), ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
+}
