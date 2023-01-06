@@ -251,7 +251,10 @@ func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 }
 
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if strings.ToLower(d.Get("instance_charge_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+		return false
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.Get("auto_renew").(bool) {
 		return false
 	}
 	return true
