@@ -19,88 +19,88 @@ and the `alicloud_slb_listener` block should use `depends_on = [alicloud_slb_ser
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "slbservergroupvpc"
+variable "slb_server_group_server_attachment" {
+  default = "forSlbServerGroupServerAttachment"
 }
 
-variable "num" {
+variable "slb_server_group_server_attachment_count" {
   default = 5
 }
 
-data "alicloud_zones" "default" {
+data "alicloud_zones" "server_attachment" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+data "alicloud_instance_types" "server_attachment" {
+  availability_zone = data.alicloud_zones.server_attachment.zones[0].id
   cpu_core_count    = 1
   memory_size       = 2
 }
 
-data "alicloud_images" "default" {
+data "alicloud_images" "server_attachment" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
   owners      = "system"
 }
 
-data "alicloud_vpcs" "default" {
+data "alicloud_vpcs" "server_attachment" {
   name_regex = "default-NODELETING"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones[0].id
+data "alicloud_vswitches" "server_attachment" {
+  vpc_id  = data.alicloud_vpcs.server_attachment.ids.0
+  zone_id = data.alicloud_zones.server_attachment.zones[0].id
 }
 
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "alicloud_security_group" "server_attachment" {
+  name   = var.slb_server_group_server_attachment
+  vpc_id = data.alicloud_vpcs.server_attachment.ids.0
 }
 
-resource "alicloud_instance" "default" {
-  count                      = var.num
-  image_id                   = data.alicloud_images.default.images[0].id
-  instance_type              = data.alicloud_instance_types.default.instance_types[0].id
-  instance_name              = var.name
-  security_groups            = alicloud_security_group.default.*.id
+resource "alicloud_instance" "server_attachment" {
+  count                      = var.slb_server_group_server_attachment_count
+  image_id                   = data.alicloud_images.server_attachment.images[0].id
+  instance_type              = data.alicloud_instance_types.server_attachment.instance_types[0].id
+  instance_name              = var.slb_server_group_server_attachment
+  security_groups            = alicloud_security_group.server_attachment.*.id
   internet_charge_type       = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone          = data.alicloud_zones.default.zones[0].id
+  availability_zone          = data.alicloud_zones.server_attachment.zones[0].id
   instance_charge_type       = "PostPaid"
   system_disk_category       = "cloud_efficiency"
-  vswitch_id                 = data.alicloud_vswitches.default.ids[0]
+  vswitch_id                 = data.alicloud_vswitches.server_attachment.ids[0]
 }
 
-resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = var.name
-  vswitch_id         = data.alicloud_vswitches.default.vswitches.0.id
+resource "alicloud_slb_load_balancer" "server_attachment" {
+  load_balancer_name = var.slb_server_group_server_attachment
+  vswitch_id         = data.alicloud_vswitches.server_attachment.vswitches.0.id
   load_balancer_spec = "slb.s2.small"
   address_type       = "intranet"
 }
 
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  name             = var.name
+resource "alicloud_slb_server_group" "server_attachment" {
+  load_balancer_id = alicloud_slb_load_balancer.server_attachment.id
+  name             = var.slb_server_group_server_attachment
 }
 
-resource "alicloud_slb_server_group_server_attachment" "default" {
-  count           = var.num
-  server_group_id = alicloud_slb_server_group.default.id
-  server_id       = alicloud_instance.default[count.index].id
+resource "alicloud_slb_server_group_server_attachment" "server_attachment" {
+  count           = var.slb_server_group_server_attachment_count
+  server_group_id = alicloud_slb_server_group.server_attachment.id
+  server_id       = alicloud_instance.server_attachment[count.index].id
   port            = 8080
   weight          = 0
 }
 
-resource "alicloud_slb_listener" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
+resource "alicloud_slb_listener" "server_attachment" {
+  load_balancer_id = alicloud_slb_load_balancer.server_attachment.id
   backend_port     = "80"
   frontend_port    = "80"
   protocol         = "tcp"
   bandwidth        = 10
   scheduler        = "rr"
-  server_group_id  = alicloud_slb_server_group.default.id
-  depends_on       = [alicloud_slb_server_group_server_attachment.default]
+  server_group_id  = alicloud_slb_server_group.server_attachment.id
+  depends_on       = [alicloud_slb_server_group_server_attachment.server_attachment]
 }
 ```
 
