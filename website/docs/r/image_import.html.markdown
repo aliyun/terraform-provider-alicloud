@@ -45,7 +45,7 @@ The following arguments are supported:
 * `license_type` - (Optional, ForceNew) The type of the license used to activate the operating system after the image is imported. Default value: `Auto`. Valid values: `Auto`,`Aliyun`,`BYOL`.
 * `platform` - (Optional, ForceNew) Specifies the operating system platform of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `CentOS`, `Ubuntu`, `SUSE`, `OpenSUSE`, `Debian`, `CoreOS`, `Windows Server 2003`, `Windows Server 2008`, `Windows Server 2012`, `Windows 7`, Default is `Others Linux`, `Customized Linux`.
 * `os_type` - (Optional, ForceNew) Operating system platform type. Valid values: `windows`, Default is `linux`.
-* `disk_device_mapping` - (Optional, ForceNew) Description of the system with disks and snapshots under the image.
+* `disk_device_mapping` - (Required, ForceNew) Description of the system with disks and snapshots under the image.
   * `device` - (Optional, ForceNew) The name of disk N in the custom image.
   * `disk_image_size` - (Optional, ForceNew) Resolution size. You must ensure that the system disk space ≥ file system space. Ranges: When n = 1, the system disk: 5 ~ 500GiB, When n = 2 ~ 17, that is, data disk: 5 ~ 1000GiB, When temporary is introduced, the system automatically detects the size, which is subject to the detection result.
   * `format` - (Optional, ForceNew) Image format. Value range: When the `RAW`, `VHD`, `qcow2` is imported into the image, the system automatically detects the image format, whichever comes first.
