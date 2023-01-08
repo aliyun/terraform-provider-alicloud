@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -41,8 +43,8 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		"ProductCode":      "eventbridge",
 		"SubscriptionType": "PayAsYouGo",
 	}
-
-	conn, err := meta.(*connectivity.AliyunClient).NewBssopenapiClient()
+	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -71,6 +73,51 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 		}
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_service", action, AlibabaCloudSdkGoERROR)
 	}
+	action = "GetEventBridgeStatus"
+	conn, err = client.NewEventbridgeClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	timeout := time.Now().Add(10 * time.Minute)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-04-01"), StringPointer("AK"), nil, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_rules", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Data.Components", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Components", response)
+		}
+		result, _ := resp.([]interface{})
+		down := true
+		for _, v := range result {
+			if v, ok := v.(map[string]interface{})["Status"]; !ok || fmt.Sprint(v) != "DOWN" {
+				down = false
+				break
+			}
+		}
+		if down {
+			break
+		}
+		if time.Now().After(timeout) {
+			return WrapError(fmt.Errorf("waiting for EventBridge status to be down timeout. Last response:%s", response))
+		}
+	}
+
 	d.SetId("EventBridgeServiceHasBeenOpened")
 	d.Set("status", "Opened")
 
