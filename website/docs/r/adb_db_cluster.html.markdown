@@ -107,6 +107,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of DBCluster.
 * `connection_string` - The endpoint of the cluster.
+* `port` - (Available in 1.196.0+) The connection port of the ADB cluster.
 * `status` - The status of the resource.
 
 ### Timeouts

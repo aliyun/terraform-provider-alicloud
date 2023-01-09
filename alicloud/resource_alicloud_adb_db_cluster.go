@@ -51,6 +51,10 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"db_cluster_category": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -312,6 +316,7 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("compute_resource", object["ComputeResource"])
 	d.Set("connection_string", object["ConnectionString"])
+	d.Set("port", object["Port"])
 	d.Set("db_cluster_category", convertAdbDBClusterCategoryResponse(object["Category"].(string)))
 	d.Set("db_node_class", object["DBNodeClass"])
 	d.Set("db_node_count", object["DBNodeCount"])

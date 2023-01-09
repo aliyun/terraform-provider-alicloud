@@ -93,6 +93,7 @@ The following attributes are exported:
 
 * `id` - The ADB cluster ID.
 * `connection_string` - (Available in 1.93.0+) The connection string of the ADB cluster.
+* `port` - (Available in 1.196.0+) The connection port of the ADB cluster.
 
 ### Timeouts
 
