@@ -134,7 +134,8 @@ The alicloud_polardb_cluster resource allows you to manage your polardb cluster,
 The following attributes are exported:
 
 * `id` - The PolarDB cluster ID.
-* `connection_string` - (Available in 1.81.0+) PolarDB cluster connection string. When security_ips is configured, the address of cluster type endpoint will be returned, and if only "127.0.0.1" is configured, it will also be an empty string.
+* `connection_string` - (Available in 1.81.0+) PolarDB cluster connection string. 
+* `port` - (Available in 1.196.0+) PolarDB cluster connection port. 
 
 ### Timeouts
 

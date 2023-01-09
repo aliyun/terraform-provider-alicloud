@@ -123,6 +123,14 @@ func dataSourceAlicloudPolarDBClusters() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"connection_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"storage_used": {
 							Type:     schema.TypeInt,
 							Computed: true,
