@@ -1378,6 +1378,7 @@ func (s *GaService) GaBasicAccelerateIpEndpointRelationStateRefreshFunc(id strin
 		return object, fmt.Sprint(object["State"]), nil
 	}
 }
+
 func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
@@ -1423,4 +1424,73 @@ func (s *GaService) DescribeGaDomain(id string) (object map[string]interface{}, 
 		return object, WrapErrorf(Error(GetNotFoundMessage("Ga", id)), NotFoundWithResponse, response)
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *GaService) DescribeGaCustomRoutingEndpointGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeCustomRoutingEndpointGroup"
+
+	conn, err := s.client.NewGaplusClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":        s.client.RegionId,
+		"EndpointGroupId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	if object["State"] == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroup", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return object, nil
+}
+
+func (s *GaService) GaCustomRoutingEndpointGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGaCustomRoutingEndpointGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["State"]) == failState {
+				return object, fmt.Sprint(object["State"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["State"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["State"]), nil
+	}
 }

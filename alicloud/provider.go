@@ -823,6 +823,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_vbr_pconn_associations":           dataSourceAlicloudExpressConnectVbrPconnAssociations(),
 			"alicloud_ebs_disk_replica_pairs":                           dataSourceAlicloudEbsDiskReplicaPairs(),
 			"alicloud_ga_domains":                                       dataSourceAlicloudGaDomains(),
+			"alicloud_ga_custom_routing_endpoint_groups":                dataSourceAlicloudGaCustomRoutingEndpointGroups(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1534,6 +1535,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_vbr_pconn_association":                resourceAlicloudExpressConnectVbrPconnAssociation(),
 			"alicloud_ebs_disk_replica_pair":                                resourceAlicloudEbsDiskReplicaPair(),
 			"alicloud_ga_domain":                                            resourceAlicloudGaDomain(),
+			"alicloud_ga_custom_routing_endpoint_group":                     resourceAlicloudGaCustomRoutingEndpointGroup(),
 		},
 
 		ConfigureFunc: providerConfigure,
