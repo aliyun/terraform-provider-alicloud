@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudRdsDBInstanceClassInfosDatasource(t *testing.T) {
+func TestAccAlicloudRdsDBInstanceClassInfosDatasource_main(t *testing.T) {
 	rand := acctest.RandInt()
 	resourceId := "data.alicloud_db_instance_class_infos.default"
 	name := "tf-testAccAlicloudRdsDBInstanceClassInfos"
@@ -25,20 +25,6 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource(t *testing.T) {
 			"order_type":     "CONVERT",
 		}),
 	}
-	RordsInstanceClassesConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"commodity_code": "rords",
-			"order_type":     "UPGRADE",
-			"db_instance_id": "${alicloud_db_instance.default.id}",
-		}),
-	}
-	RdsRordspreInstanceClassesConf := dataSourceTestAccConfig{
-		existConfig: testAccConfig(map[string]interface{}{
-			"commodity_code": "rds_rordspre_public_cn",
-			"order_type":     "RENEW",
-			"db_instance_id": "${alicloud_db_instance.default.id}",
-		}),
-	}
 
 	var existDBInstanceMainMapFunc = func(rand int) map[string]string {
 		return map[string]string{
@@ -53,6 +39,43 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource(t *testing.T) {
 			"infos.0.memory_class":    CHECKSET,
 			"infos.0.reference_price": CHECKSET,
 		}
+	}
+
+	var fakeDBInstanceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"infos.#": "0",
+			"ids.#":   "0",
+		}
+	}
+
+	var DBInstanceMainCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_db_instance_class_infos.default",
+		existMapFunc: existDBInstanceMainMapFunc,
+		fakeMapFunc:  fakeDBInstanceMapFunc,
+	}
+
+	DBInstanceMainCheckInfo.dataSourceTestCheck(t, rand, BardsInstanceClassesConf, RdsInstanceClassesConf)
+}
+
+func TestAccAlicloudRdsDBInstanceClassInfosDatasource_readOnly(t *testing.T) {
+	rand := acctest.RandInt()
+	resourceId := "data.alicloud_db_instance_class_infos.default"
+	name := "tf-testAccAlicloudRdsDBInstanceClassInfos"
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, testAccCheckAlicloudDBInstanceClassInfosDataSourceConfig)
+
+	RordsInstanceClassesConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"commodity_code": "rords",
+			"order_type":     "UPGRADE",
+			"db_instance_id": "${alicloud_db_instance.default.id}",
+		}),
+	}
+	RdsRordspreInstanceClassesConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"commodity_code": "rds_rordspre_public_cn",
+			"order_type":     "RENEW",
+			"db_instance_id": "${alicloud_db_instance.default.id}",
+		}),
 	}
 
 	var existDBInstanceReadOnlyMapFunc = func(rand int) map[string]string {
@@ -77,19 +100,12 @@ func TestAccAlicloudRdsDBInstanceClassInfosDatasource(t *testing.T) {
 		}
 	}
 
-	var DBInstanceMainCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_db_instance_class_infos.default",
-		existMapFunc: existDBInstanceMainMapFunc,
-		fakeMapFunc:  fakeDBInstanceMapFunc,
-	}
-
 	var DBInstanceReadOnlyCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_db_instance_class_infos.default",
 		existMapFunc: existDBInstanceReadOnlyMapFunc,
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceMainCheckInfo.dataSourceTestCheck(t, rand, BardsInstanceClassesConf, RdsInstanceClassesConf)
 	DBInstanceReadOnlyCheckInfo.dataSourceTestCheck(t, rand, RordsInstanceClassesConf, RdsRordspreInstanceClassesConf)
 }
 
