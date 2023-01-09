@@ -169,6 +169,7 @@ shared:
       ALICLOUD_ACCESS_KEY_SLAVE:  {{alicloud_access_key_slave}}
       ALICLOUD_SECRET_KEY_SLAVE:  {{alicloud_secret_key_slave}}
       ENTERPRISE_ACCOUNT_ENABLED: {{enterprise_account_enabled}}
+      ALICLOUD_EXPRESS_CONNECT_UID: {{alicloud_express_connect_uid}}
 
 
 

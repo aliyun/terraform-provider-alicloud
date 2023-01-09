@@ -128,6 +128,10 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -573,14 +577,24 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
 				return WrapError(err)
 			}
-
-			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-				return polarDBClient.ModifyDBNodeClass(request)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBNodeClass(request)
+				})
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
 			})
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			// wait cluster status change from Creating to running
 			stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 			if _, err := stateConf.WaitForState(); err != nil {
@@ -684,19 +698,24 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("security_ips", defaultSecurityIps)
 
 	//describe endpoints
-	if len(defaultSecurityIps) == 1 && strings.HasPrefix(defaultSecurityIps[0], LOCAL_HOST_IP) {
-		d.Set("connection_string", "")
-	} else {
-		endpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		for _, endpoint := range endpoints {
-			if endpoint.EndpointType == "Cluster" {
-				d.Set("connection_string", endpoint.AddressItems[0].ConnectionString)
+	var connectionString, port string
+	endpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	for _, endpoint := range endpoints {
+		if endpoint.EndpointType == "Cluster" {
+			for _, item := range endpoint.AddressItems {
+				if item.NetType == "Private" {
+					connectionString = item.ConnectionString
+					port = item.Port
+					break
+				}
 			}
 		}
 	}
+	d.Set("connection_string", connectionString)
+	d.Set("port", port)
 
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))

@@ -67,6 +67,8 @@ The following attributes are exported in addition to the arguments listed above:
   * `db_node_number` - The DBNodeNumber of the PolarDB cluster.
   * `db_node_class` - The DBNodeClass of the PolarDB cluster.
   * `storage_used` - The StorageUsed of the PolarDB cluster.
+  * `connection_string` - PolarDB cluster connection string. 
+  * `port` - PolarDB cluster connection port. 
   * `db_nodes` - The DBNodes of the PolarDB cluster.
     * `db_node_class` - The db_node_class of the db_nodes.
     * `max_iops` - The max_iops of the db_nodes.
