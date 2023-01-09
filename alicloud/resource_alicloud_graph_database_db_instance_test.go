@@ -369,7 +369,10 @@ func TestAccAlicloudGraphDatabaseDbInstance_single(t *testing.T) {
 	})
 }
 
-var AlicloudGraphDatabaseDbInstanceMap0 = map[string]string{}
+var AlicloudGraphDatabaseDbInstanceMap0 = map[string]string{
+	"connection_string": CHECKSET,
+	"port":              CHECKSET,
+}
 
 func AlicloudGraphDatabaseDbInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 

@@ -115,6 +115,14 @@ func resourceAlicloudGraphDatabaseDbInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -201,6 +209,8 @@ func resourceAlicloudGraphDatabaseDbInstanceRead(d *schema.ResourceData, meta in
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("connection_string", object["ConnectionString"])
+	d.Set("port", object["Port"])
 	if DBInstanceIPArray, ok := object["DBInstanceIPArray"]; ok {
 		DBInstanceIPArrayAry, ok := DBInstanceIPArray.([]interface{})
 		if ok && len(DBInstanceIPArrayAry) > 0 {
