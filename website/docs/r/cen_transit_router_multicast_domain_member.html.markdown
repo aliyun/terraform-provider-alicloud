@@ -1,5 +1,5 @@
 ---
-subcategory: "Cen"
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_multicast_domain_member"
 sidebar_current: "docs-alicloud-resource-cen-transit-router-multicast-domain-member"

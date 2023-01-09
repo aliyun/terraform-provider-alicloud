@@ -1,5 +1,5 @@
 ---
-subcategory: "Cen"
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_inter_region_traffic_qos_queues"
 sidebar_current: "docs-alicloud-datasource-cen-inter-region-traffic-qos-queues"
