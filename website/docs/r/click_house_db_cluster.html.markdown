@@ -87,6 +87,8 @@ The db_cluster_access_white_list supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of DBCluster.
+* `connection_string` (Available in 1.196.0+) - The connection string of the cluster.
+* `port` - (Available in 1.196.0+) The connection port of the cluster.
 
 ### Timeouts
 
