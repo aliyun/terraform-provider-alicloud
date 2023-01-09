@@ -16,7 +16,7 @@ Provides an Application Load Balancer resource.
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
 
 -> **NOTE:** The supported specifications vary by region. Currently, not all regions support guaranteed-performance instances.
-For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/doc-detail/27657.htm).
+For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createloadbalancer-2#t4182.html).
 
 ## Example Usage
 
@@ -98,7 +98,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 
 -> **NOTE:** Currently, the alibaba cloud international account does not support creating a `Subscription` SLB instance.
 
--> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the PayType value is PayOnDemand.
+-> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the `payment_type` value is `PayAsYouGo`.
 
 ## Attributes Reference
 
