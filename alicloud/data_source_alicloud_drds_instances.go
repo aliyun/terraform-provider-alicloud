@@ -78,6 +78,14 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"connection_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -152,6 +160,13 @@ func drdsInstancesDescription(d *schema.ResourceData, dbi []drds.Instance) error
 			"network_type": item.NetworkType,
 			"zone_id":      item.ZoneId,
 			"version":      item.Version,
+		}
+		for _, vip := range item.Vips.Vip {
+			if vip.Type == "intranet" {
+				mapping["connection_string"] = vip.Dns
+				mapping["port"] = vip.Port
+				break
+			}
 		}
 		ids = append(ids, item.DrdsInstanceId)
 		descriptions = append(descriptions, item.Description)

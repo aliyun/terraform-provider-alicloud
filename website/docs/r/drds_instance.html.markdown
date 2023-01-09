@@ -70,6 +70,9 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 The following attributes are exported:
 
 * `id` - The DRDS instance ID.
+* `connection_string` - (Available in 1.196.0+) The connection string of the DRDS instance.
+* `port` - (Available in 1.196.0+) The connection port of the DRDS instance.
+
 
 ## Import
 
