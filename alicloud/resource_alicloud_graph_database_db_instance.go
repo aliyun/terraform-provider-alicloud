@@ -295,7 +295,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = "Empty"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceAccessWhiteListReq, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
@@ -322,10 +322,10 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				modifyDBInstanceAccessWhiteListReq["DBInstanceIPArrayName"] = dBInstanceIPArrayArg["db_instance_ip_array_name"]
 				modifyDBInstanceAccessWhiteListReq["SecurityIps"] = dBInstanceIPArrayArg["security_ips"]
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceAccessWhiteListReq, &util.RuntimeOptions{})
 					if err != nil {
-						if NeedRetry(err) {
+						if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -339,7 +339,10 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 				}
 			}
 		}
-
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gdbService.GraphDatabaseDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("db_instance_ip_array")
 	}
 
@@ -366,7 +369,7 @@ func resourceAlicloudGraphDatabaseDbInstanceUpdate(d *schema.ResourceData, meta 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-03"), StringPointer("AK"), nil, modifyDBInstanceSpecReq, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
