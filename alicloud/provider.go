@@ -461,6 +461,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_launch_templates":                             dataSourceAlicloudEcsLaunchTemplates(),
 			"alicloud_resource_manager_control_policies":                dataSourceAlicloudResourceManagerControlPolicies(),
 			"alicloud_resource_manager_control_policy_attachments":      dataSourceAlicloudResourceManagerControlPolicyAttachments(),
+			"alicloud_instance_keywords":                                dataSourceAlicloudInstanceKeywords(),
 			"alicloud_rds_accounts":                                     dataSourceAlicloudRdsAccounts(),
 			"alicloud_db_instance_class_infos":                          dataSourceAlicloudDBInstanceClassInfos(),
 			"alicloud_rds_cross_regions":                                dataSourceAlicloudRdsCrossRegions(),
