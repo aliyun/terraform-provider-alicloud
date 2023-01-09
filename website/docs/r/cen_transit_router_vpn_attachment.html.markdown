@@ -104,7 +104,7 @@ The following arguments are supported:
 * `transit_router_attachment_name` - (Optional) The name of the VPN connection. The name must be `2` to `128` characters in length, and can contain digits, underscores (_), and hyphens (-). It must start with a letter.
 * `transit_router_id` - (Required, ForceNew) The ID of the forwarding router instance.
 * `vpn_id` - (Required, ForceNew) The id of the vpn.
-* `vpn_owner_id` - (Optional, Computed, ForceNew) The owner id of vpn.
+* `vpn_owner_id` - (Optional, Computed, ForceNew) The owner id of vpn. **NOTE:** You must set `vpn_owner_id`, if you want to connect the transit router to an IPsec-VPN connection that belongs to another Alibaba Cloud account.
 * `zone` - (Required, ForceNew) The list of zone mapping. See the following `Block zone`.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
