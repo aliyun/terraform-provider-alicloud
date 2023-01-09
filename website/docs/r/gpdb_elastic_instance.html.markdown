@@ -96,6 +96,7 @@ The following attributes are exported:
 
 * `id` - The ID of the Instance.
 * `connection_string` - ADB PG instance connection string.
+* `port` - (Available in 1.196.0+) The connection port of the instance.
 * `status` - Instance status.
 
 ## Import

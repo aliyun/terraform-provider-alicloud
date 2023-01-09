@@ -509,7 +509,9 @@ func TestAccAlicloudGPDBDBInstancePrepaid(t *testing.T) {
 }
 
 var AlicloudGPDBDBInstanceMap0 = map[string]string{
-	"status": CHECKSET,
+	"status":            CHECKSET,
+	"connection_string": CHECKSET,
+	"port":              CHECKSET,
 }
 
 func AlicloudGPDBDBInstanceBasicDependence0(name string) string {

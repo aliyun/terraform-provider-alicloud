@@ -143,6 +143,10 @@ func resourceAlicloudGpdbElasticInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"security_ip_list": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -255,6 +259,7 @@ func resourceAlicloudGpdbElasticInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("vswitch_id", instance["VSwitchId"])
 	d.Set("zone_id", instance["ZoneId"])
 	d.Set("connection_string", instance["ConnectionString"])
+	d.Set("port", instance["Port"])
 	d.Set("db_instance_category", instance["DBInstanceCategory"])
 	d.Set("encryption_key", instance["EncryptionKey"])
 	d.Set("encryption_type", instance["EncryptionType"])
