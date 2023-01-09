@@ -150,6 +150,14 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -267,6 +275,8 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("connection_string", object["ConnectionString"])
+	d.Set("port", object["Port"])
 	describeDBClusterAccessWhiteListObject, err := clickhouseService.DescribeDBClusterAccessWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)

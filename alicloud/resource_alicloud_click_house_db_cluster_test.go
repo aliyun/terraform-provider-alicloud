@@ -384,7 +384,6 @@ func TestAccAlicloudClickHouseDBCluster_basic3(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -497,6 +496,8 @@ var AlicloudClickHouseDBClusterMap0 = map[string]string{
 	"payment_type":            CHECKSET,
 	"db_node_storage":         CHECKSET,
 	"storage_type":            CHECKSET,
+	"connection_string":       CHECKSET,
+	"port":                    CHECKSET,
 }
 
 func AlicloudClickHouseDBClusterBasicDependence0(name string) string {
