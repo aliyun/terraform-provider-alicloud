@@ -1,7 +1,7 @@
 ## 1.196.0 (Unreleased)
 ## 1.195.0 (December 30, 2022)
 
-- **New Resource:** `alicloud_rds_cross_region_backup_policy` ([#5701](https://github.com/aliyun/terraform-provider-alicloud/issues/5701))
+- **New Resource:** `alicloud_rds_instance_cross_backup_policy` ([#5701](https://github.com/aliyun/terraform-provider-alicloud/issues/5701))
 - **New Resource:** `alicloud_threat_detection_web_lock_config` ([#5709](https://github.com/aliyun/terraform-provider-alicloud/issues/5709))
 - **New Resource:** `alicloud_dms_enterprise_proxy_access` ([#5732](https://github.com/aliyun/terraform-provider-alicloud/issues/5732))
 - **New Resource:** `alicloud_dms_enterprise_logic_database` ([#5736](https://github.com/aliyun/terraform-provider-alicloud/issues/5736))

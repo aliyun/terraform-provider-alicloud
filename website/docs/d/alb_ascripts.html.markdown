@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_alb_ascripts
 
-This data source provides Alb Ascript available to the user.[What is AScript](https://www.alibabacloud.com/help/en/)
+This data source provides Alb Ascript available to the user.
 
 -> **NOTE:** Available in 1.195.0+
 

@@ -11,7 +11,7 @@ description: |-
 
 Provides a Alb Ascript resource.
 
-For information about Alb Ascript and how to use it, see [What is AScript](https://www.alibabacloud.com/help/en/).
+For information about Alb Ascript and how to use it, see [What is AScript](https://www.alibabacloud.com/help/en/server-load-balancer/latest/what-is-application-load-balancer).
 
 -> **NOTE:** Available in v1.195.0+.
 

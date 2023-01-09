@@ -11,7 +11,7 @@ description: |-
 
 Provides a Adb Resource Group resource.
 
-For information about Adb Resource Group and how to use it, see [https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/create-db-resource-group).
+For information about Adb Resource Group and how to use it, see [What is Adb Resource Group](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/create-db-resource-group).
 
 -> **NOTE:** Available in v1.195.0+.
 

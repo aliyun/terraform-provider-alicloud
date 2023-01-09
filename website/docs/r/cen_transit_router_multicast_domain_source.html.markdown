@@ -1,5 +1,5 @@
 ---
-subcategory: "Cen"
+subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_multicast_domain_source"
 sidebar_current: "docs-alicloud-resource-cen-transit-router-multicast-domain-source"
@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cen Transit Router Multicast Domain Source resource.
 
-For information about Cen Transit Router Multicast Domain Source and how to use it, see [What is Transit Router Multicast Domain Source](https://www.alibabacloud.com/help/en/).
+For information about Cen Transit Router Multicast Domain Source and how to use it, see [What is Transit Router Multicast Domain Source](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-registertransitroutermulticastgroupsources).
 
 -> **NOTE:** Available in v1.195.0+.
 
