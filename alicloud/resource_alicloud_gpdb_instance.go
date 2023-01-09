@@ -213,6 +213,14 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -376,6 +384,8 @@ func resourceAlicloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("maintain_end_time", object["MaintainEndTime"])
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("master_node_num", formatInt(object["MasterNodeNum"]))
+	d.Set("connection_string", object["ConnectionString"])
+	d.Set("port", object["Port"])
 	if v, ok := object["SegmentCounts"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("node_num", formatInt(v))
 	}
@@ -712,7 +722,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 					wait()
 					return resource.RetryableError(err)
 				}

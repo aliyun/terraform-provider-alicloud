@@ -304,7 +304,10 @@ func TestAccAlicloudGPDBElasticInstance_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudGpdbElasticInstanceMap0 = map[string]string{}
+var AlicloudGpdbElasticInstanceMap0 = map[string]string{
+	"connection_string": CHECKSET,
+	"port":              CHECKSET,
+}
 
 func AlicloudGpdbElasticInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 

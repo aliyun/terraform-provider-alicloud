@@ -52,8 +52,8 @@ The following attributes are exported in addition to the arguments listed above:
 	* `connection_string` - The endpoint of the instance.
 	* `cpu_cores` - The number of CPU cores of the computing node. Unit: Core.
 	* `create_time` - The time when the instance was created. The time is in the YYYY-MM-DDThh:mm:ssZ format, such as 2011-05-30T12:11:4Z.
-  * `db_instance_category` - The db instance category. Valid values: `HighAvailability`, `Basic`.
-  * `db_instance_class` - The db instance class.
+  	* `db_instance_category` - The db instance category. Valid values: `HighAvailability`, `Basic`.
+  	* `db_instance_class` - The db instance class.
 	* `db_instance_id` - The db instance id.
 	* `db_instance_mode` - The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`.
 	* `description` - The description of the instance.
@@ -75,10 +75,10 @@ The following attributes are exported in addition to the arguments listed above:
 	* `storage_size` - The storage capacity. Unit: GB. Value: `50` to `4000`.
 	* `storage_type` - The type of disks. Valid values: `cloud_essd`, `cloud_efficiency`.
 	* `tags` - The tags of the instance.
-		* `tag_key` - The key of the tag.
-		* `tag_value` - The value of the tag.
 	* `vpc_id` - The ID of the VPC。.
 	* `vswitch_id` - The vswitch id.
 	* `zone_id` - The zone ID of the instance.
-  * `region_id` - Region ID the instance belongs to.
+  	* `region_id` - Region ID the instance belongs to.
+	* `connection_string` - (Available in 1.196.0+) The connection string of the instance.
+	* `port` - (Available in 1.196.0+) The connection port of the instance.
 
