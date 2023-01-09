@@ -64,6 +64,8 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Db Instance.
 * `status` - Instance status. Value range: `Creating`, `Running`, `Deleting`, `Rebooting`, `DBInstanceClassChanging`, `NetAddressCreating` and `NetAddressDeleting`.
+* `connection_string` - (Available in 1.196.0+)  The connection string of the instance.
+* `port` - (Available in 1.196.0+) The connection port of the instance.
 
 ### Timeouts
 
