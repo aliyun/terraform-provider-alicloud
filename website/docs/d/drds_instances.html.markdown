@@ -50,4 +50,5 @@ The following attributes are exported in addition to the arguments listed above:
    * `network_type` - `Classic` for public classic network or `VPC` for private network.
    * `zone_id` - Zone ID the instance belongs to.
    * `version` - The DRDS Instance version.
-   * `ids` - A list of DRDS instance IDs.
+   * `connection_string` - (Available in 1.196.0+) The connection string of the DRDS instance.
+   * `port` - (Available in 1.196.0+) The connection port of the DRDS instance.

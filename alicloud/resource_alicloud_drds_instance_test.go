@@ -298,4 +298,6 @@ var drdsInstancebasicMap = map[string]string{
 	"instance_series":      "drds.sn1.4c8g",
 	"instance_charge_type": "PostPaid",
 	"specification":        "drds.sn1.4c8g.8C16G",
+	"connection_string":    CHECKSET,
+	"port":                 CHECKSET,
 }

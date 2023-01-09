@@ -68,6 +68,14 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"connection_string": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"port": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -198,6 +206,16 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("zone_id", data.ZoneId)
 	d.Set("description", data.Description)
 	d.Set("vpc_id", data.Vips.Vip[0].VpcId)
+	var connectionString, port string
+	for _, vip := range data.Vips.Vip {
+		if vip.Type == "intranet" {
+			connectionString = vip.Dns
+			port = vip.Port
+			break
+		}
+	}
+	d.Set("connection_string", connectionString)
+	d.Set("port", port)
 	return nil
 }
 

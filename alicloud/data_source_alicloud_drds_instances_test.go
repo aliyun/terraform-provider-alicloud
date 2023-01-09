@@ -57,16 +57,18 @@ func TestAccAlicloudDRDSInstancesDataSource(t *testing.T) {
 
 	var existDRDSInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                    "1",
-			"descriptions.#":           "1",
-			"ids.0":                    CHECKSET,
-			"instances.#":              "1",
-			"instances.0.description":  name,
-			"instances.0.type":         "PRIVATE",
-			"instances.0.zone_id":      CHECKSET,
-			"instances.0.id":           CHECKSET,
-			"instances.0.network_type": "VPC",
-			"instances.0.create_time":  CHECKSET,
+			"ids.#":                         "1",
+			"descriptions.#":                "1",
+			"ids.0":                         CHECKSET,
+			"instances.#":                   "1",
+			"instances.0.description":       name,
+			"instances.0.type":              "PRIVATE",
+			"instances.0.zone_id":           CHECKSET,
+			"instances.0.id":                CHECKSET,
+			"instances.0.network_type":      "VPC",
+			"instances.0.create_time":       CHECKSET,
+			"instances.0.connection_string": CHECKSET,
+			"instances.0.port":              CHECKSET,
 		}
 	}
 
