@@ -89,6 +89,9 @@ The following arguments are supported:
     - `tls_cipher_policy_1_2_strict_with_1_3`:
       - Supported TLS versions: TLS 1.2 and TLS 1.3.
       - Supported cipher suites: TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256, TLS_AES_128_CCM_SHA256, TLS_AES_128_CCM_8_SHA256, ECDHE-ECDSA-AES128-GCM-SHA256, ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-ECDSA-AES128-SHA256, ECDHE-ECDSA-AES256-SHA384, ECDHE-RSA-AES128-GCM-SHA256, ECDHE-RSA-AES256-GCM-SHA384, ECDHE-RSA-AES128-SHA256, ECDHE-RSA-AES256-SHA384, ECDHE-ECDSA-AES128-SHA, ECDHE-ECDSA-AES256-SHA, ECDHE-RSA-AES128-SHA, and ECDHE-RSA-AES256-SHA.
+* `listener_type` - (Optional, ForceNew, Computed, Available in v1.196.0+) The routing type of the listener. Default Value: `Standard`. Valid values:
+    - `Standard`: intelligent routing.
+    - `CustomRouting`: custom routing.
 
 #### Block port_ranges
 
