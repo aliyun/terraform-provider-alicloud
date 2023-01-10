@@ -104,14 +104,14 @@ func dataSourceAlicloudEventBridgeServiceRead(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Components", response)
 		}
 		result, _ := resp.([]interface{})
-		down := true
+		up := true
 		for _, v := range result {
-			if v, ok := v.(map[string]interface{})["Status"]; !ok || fmt.Sprint(v) != "DOWN" {
-				down = false
+			if v, ok := v.(map[string]interface{})["Status"]; !ok || fmt.Sprint(v) != "UP" {
+				up = false
 				break
 			}
 		}
-		if down {
+		if up {
 			break
 		}
 		if time.Now().After(timeout) {
