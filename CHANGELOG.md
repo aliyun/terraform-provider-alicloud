@@ -1,4 +1,68 @@
 ## 1.196.0 (Unreleased)
+
+- **New Resource:** `alicloud_vpc_peer_connection_accepter` [GH-5786]
+- **New Resource:** `alicloud_ebs_dedicated_block_storage_cluster` [GH-5768]
+- **New Resource:** `alicloud_ecs_elasticity_assurance` [GH-5733]
+- **New Resource:** `alicloud_service_catalog_provisioned_product` [GH-5779]
+- **New Resource:** `alicloud_express_connect_grant_rule_to_cen` [GH-5792]
+- **New Resource:** `alicloud_express_connect_virtual_physical_connection` [GH-5793]
+- **New Resource:** `alicloud_express_connect_vbr_pconn_association` [GH-5784]
+- **New Resource:** `alicloud_ebs_disk_replica_pair` [GH-5758]
+- **New Data Source:** `alicloud_ebs_disk_replica_pairs` [GH-5758]
+- **New Data Source:** `alicloud_express_connect_vbr_pconn_associations` [GH-5784]
+- **New Data Source:** `alicloud_express_connect_virtual_physical_connections` [GH-5793]
+- **New Data Source:** `alicloud_express_connect_grant_rule_to_cens` [GH-5792]
+- **New Data Source:** `alicloud_ecs_elasticity_assurances` [GH-5733]
+- **New Data Source:** `alicloud_ebs_dedicated_block_storage_clusters` [GH-5768]
+- **New Data Source:** `alicloud_service_catalog_provisioned_products` [GH-5779]
+- **New Data Source:** `alicloud_service_catalog_product_as_end_users` [GH-5779]
+- **New Data Source:** `alicloud_service_catalog_product_versions` [GH-5779]
+- **New Data Source:** `alicloud_service_catalog_launch_options` [GH-5779]
+- **New Data Source:** `alicloud_maxcompute_projects` [GH-5783]
+- **New Data Source:** `alicloud_db_instance_class_infos` [GH-5774]
+- **New Data Source:** `alicloud_rds_cross_region_backups` [GH-5762]
+- **New Data Source:** `alicloud_instance_keywords` [GH-5785]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ga_listener: Added the field listener_type [GH-5815]
+- resource/alicloud_db_readonly_instance: supports new attributes security_ips, db_instance_ip_array_name, db_instance_ip_array_attribute, security_ip_type and whitelist_network_type [GH-5772]
+- resource/alicloud_gpdb_instance: Add new attributes connection_string and port [GH-5812]
+- resource/alicloud_graph_database_db_instance: Adds retry for IncorrectDBInstanceState error when updating [GH-5810]
+- resource/alicloud_polardb_cluster: Add new attributes connection_string and port  size/L [GH-5808]
+- resource/alicloud_graph_database_db_instance: Add new attributes connection_string and port [GH-5807]
+- resource/alicloud_drds_instance: Add new attributes connection_string and port [GH-5806]
+- resource/alicloud_click_house_db_cluster: Add new attributes connection_string and port [GH-5805]
+- resource/alicloud_adb_db_cluster：Add new attribute port [GH-5802]
+- resource/alicloud_slb_load_balancer: Supports valid value locked for attribute status [GH-5798]
+- resource/alicloud_oos_patch_baseline: Update attribute operation_system valid value Centos to CentOS [GH-5797]
+- resource/alicloud_image: Supports image platform 'Windows Server 2022' [GH-5796]
+- resource/alicloud_lindorm_instance: Adds new attribute service_type [GH-5790]
+- resource/alicloud_maxcompute_project: Upgrade to a new version of OpenAPI [GH-5783]
+- resource/alicloud_cen_transit_router_route_entry: Added retry stragety for error code InstanceStatus.NotSupport [GH-5787]
+- resource/alicloud_instance,alicloud_ecs_instance_set,alicloud_ecs_disk: Supports valid value cloud_auto for attribute category [GH-5789]
+- resource/alicloud_db_instance: Removes the validateFunc for attribute connection_string_prefix [GH-5788]
+- resource/alicloud_edas_k8s_slb_attachment: allowes user to specify attribute slb_id [GH-5771]
+- datasource/alicloud_event_bridge_service: Adds double checking for status by GetEventBridgeStatus [GH-5799]
+- datasource/alicloud_db_instance_class_infos: Repair of automation test failure in Germany region [GH-5811]
+- test: Improves the testing framework to support setting non-string value and additional attributes [GH-5777]
+- docs/cen_transit_router_vpn_attachment: Improves the content [GH-5814]
+- ci: update ci pipeline [GH-5776]
+
+BUG FIXES:
+
+- resource/alicloud_db_instance: Fixes the InvalidStorage.Malformed error when updating the db_instance_storage_type [GH-5817]
+- resource/alicloud_image_import: Fixes the Creating broken error when waiting the resource is available [GH-5800]
+- resource/alicloud_vpc_ipv4_gateway: Fixes the EnableVpcIpv4Gateway error when creating the resource[GH-5790]
+- resource/alicloud_vpc_prefix_list: Added the field status; Fixed the create error caused by state refresh [GH-5780]
+- resource/alicloud_ots_instance: Fixes the 10min slow return of ValidationFailed for ots instance delete. [GH-5782]
+- resource/alicloud_graph_database_db_instance: Fixes the IncorrectDBInstanceState when ModifyDBInstanceAccessWhiteList [GH-5778]
+- datasource/alicloud_event_bridge_service: Fixes the waiting status [GH-5819]
+- docs/alicloud_alb_ascript: fix subcategory [GH-5781]
+- docs: fix link; changeLog: Optimize content. [GH-5809]
+- doc/slb_load_balancer: fix content. [GH-5813]
+- testcase: Improves the resource oos_patch_baseline testcases [GH-5801]
+
 ## 1.195.0 (December 30, 2022)
 
 - **New Resource:** `alicloud_rds_instance_cross_backup_policy` ([#5701](https://github.com/aliyun/terraform-provider-alicloud/issues/5701))
