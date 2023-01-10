@@ -410,7 +410,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "InstanceStatus.NotSupport", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "InstanceStatus.NotSupport", "IncorrectStatus.Status", "IncorrectStatus.VpcOrVswitch", "IncorrectStatus.VpcRouteEntry", "IncorrectStatus.Attachment"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
