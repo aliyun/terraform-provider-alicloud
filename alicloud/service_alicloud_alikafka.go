@@ -905,6 +905,7 @@ func (s *AlikafkaService) SetResourceTags(d *schema.ResourceData, resourceType s
 	}
 	return nil
 }
+
 func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlikafkaClient()
@@ -1017,6 +1018,7 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 	}
 	return object, nil
 }
+
 func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlikafkaClient()

@@ -123,7 +123,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 120 mins) Used when create the resource.
-* `update` - (Defaults to 30 mins) Used when update the resource.
+* `update` - (Defaults to 120 mins) Used when update the resource.
 * `delete` - (Defaults to 30 mins) Used when delete the resource.
 
 ## Import
