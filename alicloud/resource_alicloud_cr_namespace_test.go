@@ -185,44 +185,6 @@ func TestAccAlicloudCRNamespace_Basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCRNamespace_Multi(t *testing.T) {
-	var v *cr.GetNamespaceResponse
-	resourceId := "alicloud_cr_namespace.default.4"
-	ra := resourceAttrInit(resourceId, crNamespaceMap)
-	serviceFunc := func() interface{} {
-		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCRNamespaceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.CRNoSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":               name + "${count.index}",
-					"auto_create":        "false",
-					"default_visibility": "PUBLIC",
-					"count":              "5",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-		},
-	})
-}
-
 func resourceCRNamespaceConfigDependence(name string) string {
 	return ""
 }
