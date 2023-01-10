@@ -145,6 +145,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 						"name":           fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
 						"security_group": CHECKSET,
 						"kms_key_id":     CHECKSET,
+						"partition_num":  "50",
 					}),
 				),
 			},
@@ -323,6 +324,7 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -406,6 +408,7 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -450,6 +453,15 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 						"tags.For":       "acceptance test",
 						"security_group": CHECKSET,
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_size": "600",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_size": "600"}),
 				),
 			},
 			{
