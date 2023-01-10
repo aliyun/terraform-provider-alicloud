@@ -96,6 +96,13 @@ func resourceAlicloudGaListener() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
 			},
+			"listener_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Standard", "CustomRouting"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -157,6 +164,10 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("security_policy_id"); ok {
 		request["SecurityPolicyId"] = v
+	}
+
+	if v, ok := d.GetOk("listener_type"); ok {
+		request["Type"] = v
 	}
 
 	request["RegionId"] = client.RegionId
@@ -241,8 +252,9 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("protocol", object["Protocol"])
-	d.Set("status", object["State"])
 	d.Set("security_policy_id", object["SecurityPolicyId"])
+	d.Set("listener_type", object["Type"])
+	d.Set("status", object["State"])
 
 	return nil
 }
