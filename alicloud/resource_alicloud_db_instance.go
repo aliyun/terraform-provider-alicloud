@@ -1237,18 +1237,20 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		"SourceIp":     client.SourceIp,
 	}
 	if d.HasChange("instance_type") {
-		request["DBInstanceClass"] = d.Get("instance_type")
 		update = true
 	}
+	request["DBInstanceClass"] = d.Get("instance_type")
 
 	if d.HasChange("instance_storage") {
-		request["DBInstanceStorage"] = d.Get("instance_storage")
 		update = true
 	}
+	request["DBInstanceStorage"] = d.Get("instance_storage")
+
 	if d.HasChange("db_instance_storage_type") {
-		request["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
 		update = true
 	}
+	request["DBInstanceStorageType"] = d.Get("db_instance_storage_type")
+
 	if update {
 		// wait instance status is running before modifying
 		if _, err := stateConf.WaitForState(); err != nil {
