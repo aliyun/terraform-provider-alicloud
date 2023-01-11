@@ -822,6 +822,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_virtual_physical_connections":     dataSourceAlicloudExpressConnectVirtualPhysicalConnections(),
 			"alicloud_express_connect_vbr_pconn_associations":           dataSourceAlicloudExpressConnectVbrPconnAssociations(),
 			"alicloud_ebs_disk_replica_pairs":                           dataSourceAlicloudEbsDiskReplicaPairs(),
+			"alicloud_ga_domains":                                       dataSourceAlicloudGaDomains(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1532,6 +1533,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_virtual_physical_connection":          resourceAlicloudExpressConnectVirtualPhysicalConnection(),
 			"alicloud_express_connect_vbr_pconn_association":                resourceAlicloudExpressConnectVbrPconnAssociation(),
 			"alicloud_ebs_disk_replica_pair":                                resourceAlicloudEbsDiskReplicaPair(),
+			"alicloud_ga_domain":                                            resourceAlicloudGaDomain(),
 		},
 
 		ConfigureFunc: providerConfigure,
