@@ -27,7 +27,7 @@ resource "alicloud_log_project" "example" {
 Project With Policy Usage
 
 ```terraform
-resource "alicloud_log_project" "example_policy" {
+resource "alicloud_log_project" "example_project_policy" {
   name        = "tf-log"
   description = "created by terraform"
   policy      = <<EOF
