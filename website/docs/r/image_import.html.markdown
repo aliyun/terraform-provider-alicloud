@@ -43,7 +43,9 @@ The following arguments are supported:
 * `description` - (Optional) Description of the image. The length is 2 to 256 English or Chinese characters, and cannot begin with http: // and https: //.
 * `image_name` - (Optional) The image name. The length is 2 ~ 128 English or Chinese characters. Must start with a english letter or Chinese, and cannot start with http: // and https: //. Can contain numbers, colons (:), underscores (_), or hyphens (-).
 * `license_type` - (Optional, ForceNew) The type of the license used to activate the operating system after the image is imported. Default value: `Auto`. Valid values: `Auto`,`Aliyun`,`BYOL`.
-* `platform` - (Optional, ForceNew) Specifies the operating system platform of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `CentOS`, `Ubuntu`, `SUSE`, `OpenSUSE`, `Debian`, `CoreOS`, `Windows Server 2003`, `Windows Server 2008`, `Windows Server 2012`, `Windows 7`, Default is `Others Linux`, `Customized Linux`.
+* `platform` - (Optional, ForceNew) The operating system distribution. Default value: Others Linux. 
+  More valid values refer to [ImportImage OpenAPI](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/importimage).
+  **NOTE**: It's default value is Ubuntu before version 1.197.0.
 * `os_type` - (Optional, ForceNew) Operating system platform type. Valid values: `windows`, Default is `linux`.
 * `disk_device_mapping` - (Required, ForceNew) Description of the system with disks and snapshots under the image.
   * `device` - (Optional, ForceNew) The name of disk N in the custom image.
