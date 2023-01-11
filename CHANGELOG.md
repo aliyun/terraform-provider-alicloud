@@ -1,5 +1,5 @@
 ## 1.197.0 (Unreleased)
-# 1.196.0 (January 10, 2023)
+# 1.196.0 (January 11, 2023)
 
 - **New Resource:** `alicloud_vpc_peer_connection_accepter` ([#5786](https://github.com/aliyun/terraform-provider-alicloud/issues/5786))
 - **New Resource:** `alicloud_ebs_dedicated_block_storage_cluster` ([#5768](https://github.com/aliyun/terraform-provider-alicloud/issues/5768))
