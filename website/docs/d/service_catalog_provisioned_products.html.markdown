@@ -22,7 +22,7 @@ data "alicloud_service_catalog_provisioned_products" "default" {
 }
 
 output "alicloud_service_catalog_provisioned_product_example_id" {
-  value = data.alicloud_service_catalog_provisioned_products.default.products.0.id
+  value = data.alicloud_service_catalog_provisioned_products.default.provisioned_products.0.id
 }
 ```
 
@@ -40,7 +40,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Provisioned Product IDs.
 * `names` - A list of name of Provisioned Products.
-* `products` - A list of Provisioned Product Entries. Each element contains the following attributes:
+* `provisioned_products` - A list of Provisioned Product Entries. Each element contains the following attributes:
     * `create_time` - The creation time of the product instance
     * `last_provisioning_task_id` - The ID of the last instance operation task
     * `last_successful_provisioning_task_id` - The ID of the last successful instance operation task

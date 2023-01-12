@@ -15,13 +15,16 @@ This data source provides Service Catalog Launch Option available to the user.[W
 
 ## Example Usage
 
-```
+```terraform
+data "alicloud_service_catalog_end_user_products" "default" {
+  name_regex = "ram模板创建"
+}
 data "alicloud_service_catalog_launch_options" "default" {
-  product_id = "prod-bp125x4k29wb7q"
+  product_id = "data.alicloud_service_catalog_end_user_products.default.end_user_products.0.id"
 }
 
 output "alicloud_service_catalog_launch_option_example_id" {
-  value = data.alicloud_service_catalog_launch_options.default.options.0.id
+  value = data.alicloud_service_catalog_launch_options.default.launch_options.0.id
 }
 ```
 
@@ -35,7 +38,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-* `options` - A list of Launch Option Entries. Each element contains the following attributes:
+* `launch_options` - A list of Launch Option Entries. Each element contains the following attributes:
     * `id` - ID of Service Catalog Launch Option.
     * `constraint_summaries` - List of constraints.
         * `constraint_type` - Constraint type.The value is Launch, which indicates that the constraint is started.

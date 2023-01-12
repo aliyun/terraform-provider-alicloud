@@ -22,7 +22,7 @@ data "alicloud_service_catalog_product_versions" "default" {
 }
 
 output "alicloud_service_catalog_product_version_example_id" {
-  value = data.alicloud_service_catalog_product_versions.default.versions.0.id
+  value = data.alicloud_service_catalog_product_versions.default.product_versions.0.id
 }
 ```
 
@@ -41,7 +41,7 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Product Version IDs.
 * `names` - A list of name of Product Versions.
-* `versions` - A list of Product Version Entries. Each element contains the following attributes:
+* `product_versions` - A list of Product Version Entries. Each element contains the following attributes:
     * `id` - ID of product version.
     * `active` - Whether the version is activated
     * `create_time` - The creation time of the resource

@@ -42,6 +42,43 @@ func dataSourceAlicloudServiceCatalogLaunchOptions() *schema.Resource {
 				ForceNew:     true,
 			},
 			"options": {
+				Deprecated: "Field 'options' has been deprecated from provider version 1.197.0.",
+				Computed:   true,
+				Type:       schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"constraint_summaries": {
+							Computed: true,
+							Type:     schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"constraint_type": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+									"description": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+								},
+							},
+						},
+						"portfolio_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"portfolio_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+					},
+				},
+			},
+			"launch_options": {
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
@@ -185,6 +222,9 @@ func dataSourceAlicloudServiceCatalogLaunchOptionsRead(d *schema.ResourceData, m
 	}
 
 	if err := d.Set("options", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("launch_options", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
