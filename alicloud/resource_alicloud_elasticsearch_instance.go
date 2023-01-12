@@ -180,6 +180,16 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Computed: true,
 			},
 
+			"public_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+
+			"public_port": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -322,7 +332,8 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("domain", object["domain"])
 	d.Set("port", object["port"])
-
+	d.Set("public_domain", object["publicDomain"])
+	d.Set("public_port", object["publicPort"])
 	// Kibana configuration
 	d.Set("enable_kibana_public_network", object["enableKibanaPublicNetwork"])
 	kibanaIPWhitelist := object["kibanaIPWhitelist"].([]interface{})
