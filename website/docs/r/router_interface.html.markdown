@@ -11,6 +11,8 @@ description: |-
 
 Provides a VPC router interface resource aim to build a connection between two VPCs.
 
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.199.0`. Please use new resource [alicloud_express_connect_router_interface](https://www.terraform.io/docs/providers/alicloud/r/alicloud_express_connect_router_interface).
+
 -> **NOTE:** Only one pair of connected router interfaces can exist between two routers. Up to 5 router interfaces can be created for each router and each account.
 
 -> **NOTE:** The router interface is not connected when it is created. It can be connected by means of resource [alicloud_router_interface_connection](https://www.terraform.io/docs/providers/alicloud/r/router_interface_connection).
