@@ -52,6 +52,55 @@ func dataSourceAlicloudServiceCatalogProductVersions() *schema.Resource {
 				Type:     schema.TypeString,
 			},
 			"versions": {
+				Deprecated: "Field 'versions' has been deprecated from provider version 1.197.0.",
+				Computed:   true,
+				Type:       schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"active": {
+							Computed: true,
+							Type:     schema.TypeBool,
+						},
+						"create_time": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"description": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"guidance": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_version_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_version_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"template_type": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"template_url": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+					},
+				},
+			},
+			"product_versions": {
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
@@ -210,6 +259,9 @@ func dataSourceAlicloudServiceCatalogProductVersionsRead(d *schema.ResourceData,
 	}
 
 	if err := d.Set("versions", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("product_versions", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

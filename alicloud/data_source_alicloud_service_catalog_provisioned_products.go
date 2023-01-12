@@ -71,6 +71,132 @@ func dataSourceAlicloudServiceCatalogProvisionedProducts() *schema.Resource {
 				Default:  10,
 			},
 			"products": {
+				Deprecated: "Field 'products' has been deprecated from provider version 1.197.0.",
+				Computed:   true,
+				Type:       schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"create_time": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"last_provisioning_task_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"last_successful_provisioning_task_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"last_task_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"outputs": {
+							Computed: true,
+							Type:     schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"description": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+									"output_key": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+									"output_value": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+								},
+							},
+						},
+						"owner_principal_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"owner_principal_type": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"parameters": {
+							Computed: true,
+							Type:     schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"parameter_key": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+									"parameter_value": {
+										Computed: true,
+										Type:     schema.TypeString,
+									},
+								},
+							},
+						},
+						"portfolio_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_version_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"product_version_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"provisioned_product_arn": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"provisioned_product_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"provisioned_product_name": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"provisioned_product_type": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"stack_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"stack_region_id": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"status": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"status_message": {
+							Computed: true,
+							Type:     schema.TypeString,
+						},
+						"tags": tagsSchema(),
+					},
+				},
+			},
+			"provisioned_products": {
 				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
@@ -396,6 +522,9 @@ func dataSourceAlicloudServiceCatalogProvisionedProductsRead(d *schema.ResourceD
 	}
 
 	if err := d.Set("products", s); err != nil {
+		return WrapError(err)
+	}
+	if err := d.Set("provisioned_products", s); err != nil {
 		return WrapError(err)
 	}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {

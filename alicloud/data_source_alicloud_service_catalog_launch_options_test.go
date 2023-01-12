@@ -17,11 +17,9 @@ func TestAccAlicloudServiceCatalogLaunchOptionDataSource(t *testing.T) {
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudServiceCatalogLaunchOptionSourceConfig(rand, map[string]string{
 			"name_regex": `"ram模板创建"`,
-			"product_id": `"${data.alicloud_service_catalog_product_as_end_users.default.users.0.id}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudServiceCatalogLaunchOptionSourceConfig(rand, map[string]string{
 			"name_regex": `"ram模板创建_fake"`,
-			"product_id": `"${data.alicloud_service_catalog_product_as_end_users.default.users.0.id}"`,
 		}),
 	}
 
@@ -30,16 +28,21 @@ func TestAccAlicloudServiceCatalogLaunchOptionDataSource(t *testing.T) {
 
 var existServiceCatalogLaunchOptionMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"options.#":                "1",
-		"options.0.id":             CHECKSET,
-		"options.0.portfolio_id":   CHECKSET,
-		"options.0.portfolio_name": CHECKSET,
+		"options.#":                       "1",
+		"options.0.id":                    CHECKSET,
+		"options.0.portfolio_id":          CHECKSET,
+		"options.0.portfolio_name":        CHECKSET,
+		"launch_options.#":                "1",
+		"launch_options.0.id":             CHECKSET,
+		"launch_options.0.portfolio_id":   CHECKSET,
+		"launch_options.0.portfolio_name": CHECKSET,
 	}
 }
 
 var fakeServiceCatalogLaunchOptionMapFunc = func(rand int) map[string]string {
 	return map[string]string{
-		"options.#": "0",
+		"options.#":        "0",
+		"launch_options.#": "0",
 	}
 }
 
@@ -59,11 +62,12 @@ variable "name" {
 	default = "tf-testAccServiceCatalogLaunchOption%d"
 }
 
-data "alicloud_service_catalog_product_as_end_users" "default" {
+data "alicloud_service_catalog_end_user_products" "default" {
   name_regex = "ram模板创建"
 }
 
 data "alicloud_service_catalog_launch_options" "default" {
+	product_id = data.alicloud_service_catalog_end_user_products.default.end_user_products.0.id
 %s
 }
 `, rand, strings.Join(pairs, "\n   "))
