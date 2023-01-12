@@ -95,6 +95,8 @@ The following attributes are exported:
 * `id` - The ID of the Elasticsearch instance.
 * `domain` - Instance connection domain (only VPC network access supported).
 * `port` - Instance connection port.
+* `public_domain` - (Available in 1.197.0+) Instance connection public domain.
+* `public_port` - (Available in 1.197.0+) Instance connection public port.
 * `kibana_domain` - Kibana console domain (Internet access supported).
 * `kibana_port` - Kibana console port.
 * `status` - The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.

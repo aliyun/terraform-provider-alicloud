@@ -270,6 +270,8 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_public": "true",
+						"public_domain": CHECKSET,
+						"public_port":   CHECKSET,
 					}),
 				),
 			},
@@ -877,6 +879,8 @@ var elasticsearchMap = map[string]string{
 	"id":                            CHECKSET,
 	"domain":                        CHECKSET,
 	"port":                          CHECKSET,
+	"public_domain":                 "",
+	"public_port":                   "0",
 	"kibana_domain":                 CHECKSET,
 	"kibana_port":                   CHECKSET,
 	"vswitch_id":                    CHECKSET,
