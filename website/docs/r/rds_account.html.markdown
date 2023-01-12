@@ -79,6 +79,9 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead.
 * `type` - (Optional, Computed, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
+-> **NOTE**: Password modification and permission reset of the privileged account can be performed simultaneously.
+* `reset_permission_flag` - (Optional, Available in 1.197.0+) Resets permissions flag of the privileged account. Set it to `true` can resets permissions of the privileged account.
+
 ## Attributes Reference
 
 The following attributes are exported:

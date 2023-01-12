@@ -122,6 +122,10 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
+			"reset_permission_flag": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -309,6 +313,14 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if update {
 		action := "ResetAccountPassword"
+		// ResetAccount interface can also reset the database account password
+		if accountType, ok := d.GetOk("account_type"); ok {
+			if resetPermissionFlag, ok := d.GetOk("reset_permission_flag"); ok && !d.IsNewResource() {
+				if accountType.(string) == "Super" && resetPermissionFlag.(bool) {
+					action = "ResetAccount"
+				}
+			}
+		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, resetAccountPasswordReq, &util.RuntimeOptions{})
@@ -333,6 +345,7 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("kms_encrypted_password")
 		d.SetPartial("kms_encryption_context")
 		d.SetPartial("account_password")
+		d.SetPartial("reset_permission_flag")
 	}
 	d.Partial(false)
 	return resourceAlicloudRdsAccountRead(d, meta)
