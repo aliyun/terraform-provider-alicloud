@@ -23,7 +23,7 @@ data "alicloud_ga_custom_routing_endpoint_groups" "ids" {
   accelerator_id = "your_accelerator_id"
 }
 
-output "ga_basic_endpoints_id_1" {
+output "ga_custom_routing_endpoint_groups_id_1" {
   value = data.alicloud_ga_custom_routing_endpoint_groups.ids.groups.0.id
 }
 
@@ -32,7 +32,7 @@ data "alicloud_ga_custom_routing_endpoint_groups" "nameRegex" {
   accelerator_id = "your_accelerator_id"
 }
 
-output "ga_basic_endpoints_id_2" {
+output "ga_custom_routing_endpoint_groups_id_2" {
   value = data.alicloud_ga_custom_routing_endpoint_groups.nameRegex.groups.0.id
 }
 ```

@@ -825,6 +825,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_domains":                                       dataSourceAlicloudGaDomains(),
 			"alicloud_ga_custom_routing_endpoint_groups":                dataSourceAlicloudGaCustomRoutingEndpointGroups(),
 			"alicloud_ga_custom_routing_endpoint_group_destinations":    dataSourceAlicloudGaCustomRoutingEndpointGroupDestinations(),
+			"alicloud_ga_custom_routing_endpoints":                      dataSourceAlicloudGaCustomRoutingEndpoints(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1538,6 +1539,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_domain":                                            resourceAlicloudGaDomain(),
 			"alicloud_ga_custom_routing_endpoint_group":                     resourceAlicloudGaCustomRoutingEndpointGroup(),
 			"alicloud_ga_custom_routing_endpoint_group_destination":         resourceAlicloudGaCustomRoutingEndpointGroupDestination(),
+			"alicloud_ga_custom_routing_endpoint":                           resourceAlicloudGaCustomRoutingEndpoint(),
 		},
 
 		ConfigureFunc: providerConfigure,
