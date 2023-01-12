@@ -4244,3 +4244,62 @@ func (s *VpcService) DescribeExpressConnectGrantRuleToCen(id string) (object map
 
 	return object, nil
 }
+
+func (s *VpcService) DescribeExpressConnectRouterInterface(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Filter.1.Value": id,
+		"RegionId":       s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeRouterInterfaces"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.RouterInterfaceSet.RouterInterfaceType", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterInterfaceSet.RouterInterfaceType", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RouterInterface", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *VpcService) ExpressConnectRouterInterfaceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeExpressConnectRouterInterface(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
