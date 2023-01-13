@@ -28,6 +28,26 @@ resource "alicloud_vswitch" "vsw" {
 }
 ```
 
+Create a switch associated with the additional network segment
+
+```terraform
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = "tf_test_foo"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vpc_ipv4_cidr_block" "example" {
+  vpc_id               = alicloud_vpc.default.id
+  secondary_cidr_block = "192.163.0.0/16"
+}
+
+resource "alicloud_vswitch" "vsw" {
+  vpc_id     = alicloud_vpc_ipv4_cidr_block.example.vpc_id
+  cidr_block = "192.163.0.0/24"
+  zone_id    = "cn-beijing-b"
+}
+```
+
 ## Module Support
 
 You can use to the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
