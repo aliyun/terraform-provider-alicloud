@@ -74,9 +74,6 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Dhcp Options Set names.
 * `sets` - A list of Vpc Dhcp Options Sets. Each element contains the following attributes:
-    * `associate_vpcs` - AssociateVpcs.
-        * `associate_status` - The status of the VPC network that is associated with the DHCP options set. Valid values:`InUse` or `Pending`. `InUse`: The VPC network is in use. `Pending`: The VPC network is being configured.
-        * `vpc_id` - The ID of the VPC network that is associated with the DHCP options set.
     * `dhcp_options_set_description` - The description of the DHCP options set. The description must be 2 to 256
       characters in length and cannot start with `http://` or `https://`.
     * `dhcp_options_set_id` - The resource ID in terraform of Dhcp Options Set.
@@ -91,3 +88,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `id` - The resource ID in terraform of Dhcp Options Set.
     * `owner_id` - The ID of the account to which the DHCP options set belongs.
     * `status` - The status of the DHCP options set. Valid values: `Available`, `InUse` or `Pending`. `Available`: The DHCP options set is available for use. `InUse`: The DHCP options set is in use. `Pending`: The DHCP options set is being configured.
+    * `associate_vpc_count` - The Number of VPCs bound by the DHCP option set.

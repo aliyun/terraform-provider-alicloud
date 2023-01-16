@@ -60,22 +60,6 @@ func dataSourceAlicloudVpcDhcpOptionsSets() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"associate_vpcs": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"associate_status": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-									"vpc_id": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
-								},
-							},
-						},
 						"dhcp_options_set_description": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -106,6 +90,10 @@ func dataSourceAlicloudVpcDhcpOptionsSets() *schema.Resource {
 						},
 						"status": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"associate_vpc_count": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 					},
@@ -211,6 +199,7 @@ func dataSourceAlicloudVpcDhcpOptionsSetsRead(d *schema.ResourceData, meta inter
 			"domain_name_servers":          object["DhcpOptions"].(map[string]interface{})["DomainNameServers"],
 			"owner_id":                     fmt.Sprint(object["OwnerId"]),
 			"status":                       object["Status"],
+			"associate_vpc_count":          formatInt(object["AssociateVpcCount"]),
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["DhcpOptionsSetName"])
