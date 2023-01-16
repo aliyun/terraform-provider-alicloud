@@ -793,7 +793,7 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["IoOptimized"] = "none"
 	}
 
-	if v, ok := d.GetOk("spot_duration"); ok {
+	if v, ok := d.GetOkExists("spot_duration"); ok {
 		request["SpotDuration"] = v
 	}
 	if v, ok := d.GetOk("ipv6_addresses"); ok {

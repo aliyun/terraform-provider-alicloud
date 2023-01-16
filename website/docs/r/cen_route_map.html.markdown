@@ -116,7 +116,7 @@ The following arguments are supported:
 * `source_route_table_ids` - (Optional) A match statement that indicates the list of IDs of the source route tables. You can enter a maximum of 32 route table IDs. 
 * `destination_route_table_ids` - (Optional) A match statement that indicates the list of IDs of the destination route tables. You can enter a maximum of 32 route table IDs. 
 * `source_child_instance_types` - (Optional) A match statement that indicates the list of source instance types. Valid values: ["VPC", "VBR", "CCN"].
-* `destination_child_instance_types` - (Optional) A match statement that indicates the list of destination instance types. Valid values: ["VPC", "VBR", "CCN"].
+* `destination_child_instance_types` - (Optional) A match statement that indicates the list of destination instance types. Valid values: ["VPC", "VBR", "CCN", "VPN"].
 * `destination_cidr_blocks` - (Optional) A match statement that indicates the prefix list. The prefix is in the CIDR format. You can enter a maximum of 32 CIDR blocks. 
 * `cidr_match_mode` - (Optional) A match statement. It indicates the mode in which the prefix attribute is matched. Valid values: ["Include", "Complete"].
 * `route_types` - (Optional) A match statement that indicates the list of route types. Valid values: ["System", "Custom", "BGP"].
