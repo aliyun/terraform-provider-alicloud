@@ -833,6 +833,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_end_user_products":                dataSourceAlicloudServiceCatalogEndUserProducts(),
 			"alicloud_dcdn_kv_account":                                  dataSourceAlicloudDcdnKvAccount(),
 			"alicloud_hbr_hana_backup_clients":                          dataSourceAlicloudHbrHanaBackupClients(),
+			"alicloud_dts_instances":                                    dataSourceAlicloudDtsInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1553,6 +1554,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_kv_namespace":                                    resourceAlicloudDcdnKvNamespace(),
 			"alicloud_dcdn_kv":                                              resourceAlicloudDcdnKv(),
 			"alicloud_hbr_hana_backup_client":                               resourceAlicloudHbrHanaBackupClient(),
+			"alicloud_dts_instance":                                         resourceAlicloudDtsInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
