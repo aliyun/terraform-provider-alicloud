@@ -232,7 +232,7 @@ func (s *DtsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
-				"ResourceId.1": d.Get("dts_instance_id"),
+				"ResourceId.1": d.Id(),
 			}
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
@@ -260,7 +260,7 @@ func (s *DtsService) SetResourceTags(d *schema.ResourceData, resourceType string
 			request := map[string]interface{}{
 				"RegionId":     s.client.RegionId,
 				"ResourceType": resourceType,
-				"ResourceId.1": d.Get("dts_instance_id"),
+				"ResourceId.1": d.Id(),
 			}
 			count := 1
 			for key, value := range added {
@@ -678,4 +678,45 @@ func (s *DtsService) DtsSyncJobStateRefreshFunc(id string, failStates []string) 
 		}
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+func (s *DtsService) DescribeDtsInstance(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewDtsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"DtsInstanceId": id,
+		"RegionId":      s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeDtsInstanceDetail"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.DtsInstanceStatus", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DtsInstanceStatus", response)
+	}
+	if status, ok := v.(map[string]interface{})["Status"]; ok && status == "finished" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DTS", id)), NotFoundWithResponse, response)
+	}
+	return v.(map[string]interface{}), nil
 }
