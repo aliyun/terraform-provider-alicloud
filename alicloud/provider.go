@@ -845,6 +845,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_auto_snap_shot_policies":                     dataSourceAlicloudDbfsAutoSnapShotPolicies(),
 			"alicloud_cen_transit_route_table_aggregations":             dataSourceAlicloudCenTransitRouteTableAggregations(),
 			"alicloud_arms_prometheis":                                  dataSourceAlicloudArmsPrometheis(),
+			"alicloud_ocean_base_instances":                             dataSourceAlicloudOceanBaseInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1583,6 +1584,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_route_table_aggregation":                   resourceAlicloudCenTransitRouteTableAggregation(),
 			"alicloud_arms_prometheus":                                       resourceAlicloudArmsPrometheus(),
 			"alicloud_oos_default_patch_baseline":                            resourceAlicloudOosDefaultPatchBaseline(),
+			"alicloud_ocean_base_instance":                                   resourceAlicloudOceanBaseInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1820,6 +1822,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.SrvcatalogEndpoint = strings.TrimSpace(endpoints["srvcatalog"].(string))
 		config.VpcPeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
 		config.EfloEndpoint = strings.TrimSpace(endpoints["eflo"].(string))
+		config.OceanbaseEndpoint = strings.TrimSpace(endpoints["oceanbase"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2167,6 +2170,8 @@ func init() {
 		"srvcatalog_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom srvcatalog endpoints.",
 
 		"eflo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eflo endpoints.",
+
+		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 	}
 }
 
@@ -2328,6 +2333,13 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["smartag_endpoint"],
+				},
+
+				"oceanbase": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["oceanbase_endpoint"],
 				},
 
 				"gaplus": {
@@ -3171,6 +3183,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["srvcatalog"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["eflo"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	return hashcode.String(buf.String())
 }
 

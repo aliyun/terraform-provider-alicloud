@@ -181,6 +181,7 @@ type Config struct {
 	SrvcatalogEndpoint          string
 	VpcPeerEndpoint             string
 	EfloEndpoint                string
+	OceanbaseEndpoint           string
 }
 
 func (c *Config) loadAndValidate() error {
