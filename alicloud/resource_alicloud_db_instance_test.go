@@ -2106,6 +2106,7 @@ var instanceBasicMap = map[string]string{
 	"engine":               "MySQL",
 	"engine_version":       "5.6",
 	"instance_type":        CHECKSET,
+	"db_instance_type":     "Primary",
 	"instance_storage":     "5",
 	"instance_name":        "tf-testAccDBInstanceConfig",
 	"monitoring_period":    "60",

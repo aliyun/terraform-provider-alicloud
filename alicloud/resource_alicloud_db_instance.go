@@ -169,6 +169,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: securityIpsDiffSuppressFunc,
 			},
+			"db_instance_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"security_ip_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -1458,6 +1462,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("security_ips", ips)
 	d.Set("db_instance_ip_array_name", d.Get("db_instance_ip_array_name"))
 	d.Set("db_instance_ip_array_attribute", d.Get("db_instance_ip_array_attribute"))
+	d.Set("db_instance_type", instance["DBInstanceType"])
 	d.Set("security_ip_type", d.Get("security_ip_type"))
 	d.Set("whitelist_network_type", d.Get("whitelist_network_type"))
 	d.Set("security_ip_mode", instance["SecurityIPMode"])
