@@ -71,7 +71,6 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MaxItems:      10,
 				ConflictsWith: []string{"private_ips", "secondary_private_ip_address_count", "private_ips_count"},
 			},
 			"private_ips": {
@@ -81,7 +80,6 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MaxItems:      10,
 				Deprecated:    "Field 'private_ips' has been deprecated from provider version 1.123.1. New field 'private_ip_addresses' instead",
 				ConflictsWith: []string{"private_ip_addresses", "secondary_private_ip_address_count", "private_ips_count"},
 			},
@@ -99,14 +97,12 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.IntBetween(0, 10),
 				ConflictsWith: []string{"private_ips_count", "private_ip_addresses", "private_ips"},
 			},
 			"private_ips_count": {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.IntBetween(0, 10),
 				Deprecated:    "Field 'private_ips_count' has been deprecated from provider version 1.123.1. New field 'secondary_private_ip_address_count' instead",
 				ConflictsWith: []string{"secondary_private_ip_address_count", "private_ip_addresses", "private_ips"},
 			},
