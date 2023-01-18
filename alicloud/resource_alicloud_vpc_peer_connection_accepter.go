@@ -172,7 +172,7 @@ func resourceAlicloudVpcPeerConnectionAccepterDelete(d *schema.ResourceData, met
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.RouteEntryExist"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
