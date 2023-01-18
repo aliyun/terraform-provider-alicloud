@@ -35,7 +35,7 @@ The following arguments are supported:
 * `accelerator_id` - (Required,ForceNew) The ID of the GA instance.
 * `listener_id` - (Optional, ForceNew) The ID of the listener.
 * `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group.
-* `protocols` - (Optional, ForceNew) The backend service protocol of the endpoint group. Valid values: `tcp`, `udp`, `tcp, udp`.
+* `protocols` - (Optional, ForceNew) The backend service protocol of the endpoint group. Valid values: `TCP`, `UDP`, `TCP, UDP`.
 * `from_port` - (Optional, ForceNew) The start port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
 * `to_port` - (Optional, ForceNew) The end port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).

@@ -33,7 +33,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T)
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_group_id": "${alicloud_ga_custom_routing_endpoint_group.default.id}",
-					"protocols":         []string{"tcp"},
+					"protocols":         []string{"TCP"},
 					"from_port":         "1",
 					"to_port":           "2",
 				}),
@@ -41,7 +41,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T)
 					testAccCheck(map[string]string{
 						"endpoint_group_id": CHECKSET,
 						"protocols.#":       "1",
-						"protocols.0":       "tcp",
+						"protocols.0":       "TCP",
 						"from_port":         "1",
 						"to_port":           "2",
 					}),
@@ -49,24 +49,24 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T)
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocols": []string{"udp"},
+					"protocols": []string{"UDP"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocols.#": "1",
-						"protocols.0": "udp",
+						"protocols.0": "UDP",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocols": []string{"tcp", "udp"},
+					"protocols": []string{"TCP", "UDP"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"protocols.#": "2",
-						"protocols.0": "tcp",
-						"protocols.1": "udp",
+						"protocols.0": "TCP",
+						"protocols.1": "UDP",
 					}),
 				),
 			},

@@ -39,10 +39,10 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestinationsDataSource(t *testin
 	}
 	protocolsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointGroupDestinationsDataSourceName(rand, map[string]string{
-			"protocols": `["tcp"]`,
+			"protocols": `["TCP"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointGroupDestinationsDataSourceName(rand, map[string]string{
-			"protocols": `["udp"]`,
+			"protocols": `["UDP"]`,
 		}),
 	}
 	fromPortConf := dataSourceTestAccConfig{
@@ -66,7 +66,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestinationsDataSource(t *testin
 			"ids":               `["${alicloud_ga_custom_routing_endpoint_group_destination.default.id}"]`,
 			"listener_id":       `"${alicloud_ga_custom_routing_endpoint_group_destination.default.listener_id}"`,
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_group_destination.default.endpoint_group_id}"`,
-			"protocols":         `["tcp"]`,
+			"protocols":         `["TCP"]`,
 			"from_port":         `1`,
 			"to_port":           `2`,
 		}),
@@ -74,7 +74,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestinationsDataSource(t *testin
 			"ids":               `["${alicloud_ga_custom_routing_endpoint_group_destination.default.id}_fake"]`,
 			"listener_id":       `"${alicloud_ga_custom_routing_endpoint_group_destination.default.listener_id}_fake"`,
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_group_destination.default.endpoint_group_id}_fake"`,
-			"protocols":         `["udp"]`,
+			"protocols":         `["UDP"]`,
 			"from_port":         `2`,
 			"to_port":           `1`,
 		}),
@@ -89,7 +89,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestinationsDataSource(t *testin
 			"custom_routing_endpoint_group_destinations.0.accelerator_id":                               CHECKSET,
 			"custom_routing_endpoint_group_destinations.0.listener_id":                                  CHECKSET,
 			"custom_routing_endpoint_group_destinations.0.protocols.#":                                  "1",
-			"custom_routing_endpoint_group_destinations.0.protocols.0":                                  "tcp",
+			"custom_routing_endpoint_group_destinations.0.protocols.0":                                  "TCP",
 			"custom_routing_endpoint_group_destinations.0.from_port":                                    "1",
 			"custom_routing_endpoint_group_destinations.0.to_port":                                      "2",
 		}
@@ -158,7 +158,7 @@ func testAccCheckAlicloudGaCustomRoutingEndpointGroupDestinationsDataSourceName(
 
 	resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
   		endpoint_group_id = alicloud_ga_custom_routing_endpoint_group.default.id
-  		protocols         = ["tcp"]
+  		protocols         = ["TCP"]
   		from_port         = 1
   		to_port           = 2
 	}

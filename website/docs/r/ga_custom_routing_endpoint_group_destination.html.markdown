@@ -22,7 +22,7 @@ Basic Usage
 ```terraform
 resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
   endpoint_group_id = "your_custom_routing_endpoint_group_id"
-  protocols         = ["tcp", "udp"]
+  protocols         = ["TCP", "UDP"]
   from_port         = 1
   to_port           = 2
 }
@@ -33,7 +33,7 @@ resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
 The following arguments are supported:
 
 * `endpoint_group_id` - (Required, ForceNew) The ID of the endpoint group.
-* `protocols` - (Required) The backend service protocol of the endpoint group. Valid values: `tcp`, `udp`, `tcp, udp`.
+* `protocols` - (Required) The backend service protocol of the endpoint group. Valid values: `TCP`, `UDP`, `TCP, UDP`.
 * `from_port` - (Required) The start port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
 * `to_port` - (Required) The end port of the backend service port range of the endpoint group. The `from_port` value must be smaller than or equal to the `to_port` value. Valid values: `1` to `65499`.
 
