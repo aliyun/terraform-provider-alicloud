@@ -827,6 +827,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_custom_routing_endpoint_group_destinations":    dataSourceAlicloudGaCustomRoutingEndpointGroupDestinations(),
 			"alicloud_ga_custom_routing_endpoints":                      dataSourceAlicloudGaCustomRoutingEndpoints(),
 			"alicloud_ga_custom_routing_endpoint_traffic_policies":      dataSourceAlicloudGaCustomRoutingEndpointTrafficPolicies(),
+			"alicloud_ga_custom_routing_port_mappings":                  dataSourceAlicloudGaCustomRoutingPortMappings(),
 			"alicloud_service_catalog_end_user_products":                dataSourceAlicloudServiceCatalogEndUserProducts(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
