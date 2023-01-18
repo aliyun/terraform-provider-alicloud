@@ -147,7 +147,7 @@ func AlicloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0(name string) s
 
 	resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
   		endpoint_group_id = alicloud_ga_custom_routing_endpoint_group.default.id
-  		protocols         = ["tcp"]
+  		protocols         = ["TCP"]
   		from_port         = 1
   		to_port           = 10
 	}
