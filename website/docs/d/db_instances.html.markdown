@@ -119,6 +119,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `server_key` - (Available in 1.124.1+) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `creator` - (Available in 1.124.3+) The creator of the encryption key.
   * `delete_date` - (Available in 1.124.3+) The estimated time when the encryption key will be deleted. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+  * `db_instance_type` - (Available in 1.197.0+) The type of instance.
   * `description` - (Available in 1.124.3+) The description of the encryption key.
   * `encryption_key` - (Available in 1.124.3+) The ID of the encryption key.
   * `encryption_key_status` - (Available in 1.124.3+) The status of the encryption key. Valid values:
