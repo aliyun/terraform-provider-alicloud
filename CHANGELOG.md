@@ -1,47 +1,48 @@
-## 1.197.0 (Unreleased)
+## 1.198.0 (Unreleased)
+## 1.197.0 (January 19, 2023)
 
-- **New Resource:** `alicloud_ga_custom_routing_endpoint_group` [GH-5803]
-- **New Resource:** `alicloud_ga_custom_routing_endpoint_group_destination` [GH-5827]
-- **New Resource:** `alicloud_ga_domain` [GH-5830]
-- **New Resource:** `alicloud_ga_custom_routing_endpoint` [GH-5834]
-- **New Resource:** `alicloud_ga_custom_routing_endpoint_traffic_policy` [GH-5840]
-- **New Data Source:** `alicloud_ga_custom_routing_endpoint_groups` [GH-5803]
-- **New Data Source:** `alicloud_ga_custom_routing_endpoint_group_destinations` [GH-5827]
-- **New Data Source:** `alicloud_ga_domains` [GH-5830]
-- **New Data Source:** `alicloud_service_catalog_end_user_products` [GH-5833]
-- **New Data Source:** `alicloud_ga_custom_routing_endpoints` [GH-5834]
-- **New Data Source:** `alicloud_ga_custom_routing_endpoint_traffic_policies` [GH-5840]
-- **New Data Source:** `alicloud_ga_custom_routing_port_mappings` [GH-5842]
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_group` ([#5803](https://github.com/aliyun/terraform-provider-alicloud/issues/5803))
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_group_destination` ([#5827](https://github.com/aliyun/terraform-provider-alicloud/issues/5827))
+- **New Resource:** `alicloud_ga_domain` ([#5830](https://github.com/aliyun/terraform-provider-alicloud/issues/5830))
+- **New Resource:** `alicloud_ga_custom_routing_endpoint` ([#5834](https://github.com/aliyun/terraform-provider-alicloud/issues/5834))
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_traffic_policy` ([#5840](https://github.com/aliyun/terraform-provider-alicloud/issues/5840))
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_groups` ([#5803](https://github.com/aliyun/terraform-provider-alicloud/issues/5803))
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_group_destinations` ([#5827](https://github.com/aliyun/terraform-provider-alicloud/issues/5827))
+- **New Data Source:** `alicloud_ga_domains` ([#5830](https://github.com/aliyun/terraform-provider-alicloud/issues/5830))
+- **New Data Source:** `alicloud_service_catalog_end_user_products` ([#5833](https://github.com/aliyun/terraform-provider-alicloud/issues/5833))
+- **New Data Source:** `alicloud_ga_custom_routing_endpoints` ([#5834](https://github.com/aliyun/terraform-provider-alicloud/issues/5834))
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_traffic_policies` ([#5840](https://github.com/aliyun/terraform-provider-alicloud/issues/5840))
+- **New Data Source:** `alicloud_ga_custom_routing_port_mappings` ([#5842](https://github.com/aliyun/terraform-provider-alicloud/issues/5842))
 
 ENHANCEMENTS:
 
-- resource/alicloud_alikafka_instance: Support to upgrade prepaid instances. [GH-5344]
-- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteEntry [GH-5820]
-- resource/alicloud_log_project: Support new attribute policy [GH-5826]
-- resource/alicloud_image: Removes the ValidateFunc for attribute platform to support more valid values [GH-5828]
-- resource/alicloud_image_import: Removes the ValidateFunc for attribute platform to support more valid values [GH-5828]
-- resource/alicloud_elasticsearch_instance: Supports two attribute public_domain and public_port [GH-5829]
-- datasource/alicloud_eventbridge_service: Adds retry policy when checking status is UP [GH-5832]
-- data_source/alicloud_service_catalog_launch_options: Adjust the export root attribute name; [GH-5833]
-- data_source/alicloud_service_catalog_product_as_end_users: Add DEPRECATED identity; [GH-5833]
-- data_source/alicloud_service_catalog_product_versions: Adjust the export root attribute name; [GH-5833]
-- data_source/alicloud_service_catalog_provisioned_products: Adjust the export root attribute name. [GH-5833]
-- resource/alicloud_route_entry: Adds retry for IncorrectStatus.VpcPeer error when creating.  [GH-5835]
-- doc/vswitch: Add an example of creating a cidr switch. [GH-5835]
-- resource/alicloud_route_entry: Added retry strategy for error code IncorrectStatus.VpcPeer,UnknownError [GH-5839]
-- resource/alicloud_ecs_network_interface: Added retry strategy for error code IncorrectVSwitchStatus [GH-5839]
-- resource/alicloud_vpc_peer_connection_accepter: Add retry error code. [GH-5843]
-- resource/alicloud_db_instance: Supports new attribute db_instance_type [GH-5846]
-- resource/alicloud_vpc_peer_connection: Added error code ResourceNotFound.InstanceId [GH-5850]
-- resource/alicloud_nat_gateway: Checking the status to be Available after invoking ModifyNatGatewayAttribute [GH-5848]
+- resource/alicloud_alikafka_instance: Support to upgrade prepaid instances. ([#5344](https://github.com/aliyun/terraform-provider-alicloud/issues/5344))
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteEntry ([#5820](https://github.com/aliyun/terraform-provider-alicloud/issues/5820))
+- resource/alicloud_log_project: Support new attribute policy ([#5826](https://github.com/aliyun/terraform-provider-alicloud/issues/5826))
+- resource/alicloud_image: Removes the ValidateFunc for attribute platform to support more valid values ([#5828](https://github.com/aliyun/terraform-provider-alicloud/issues/5828))
+- resource/alicloud_image_import: Removes the ValidateFunc for attribute platform to support more valid values ([#5828](https://github.com/aliyun/terraform-provider-alicloud/issues/5828))
+- resource/alicloud_elasticsearch_instance: Supports two attribute public_domain and public_port ([#5829](https://github.com/aliyun/terraform-provider-alicloud/issues/5829))
+- datasource/alicloud_eventbridge_service: Adds retry policy when checking status is UP ([#5832](https://github.com/aliyun/terraform-provider-alicloud/issues/5832))
+- data_source/alicloud_service_catalog_launch_options: Adjust the export root attribute name; ([#5833](https://github.com/aliyun/terraform-provider-alicloud/issues/5833))
+- data_source/alicloud_service_catalog_product_as_end_users: Add DEPRECATED identity; ([#5833](https://github.com/aliyun/terraform-provider-alicloud/issues/5833))
+- data_source/alicloud_service_catalog_product_versions: Adjust the export root attribute name; ([#5833](https://github.com/aliyun/terraform-provider-alicloud/issues/5833))
+- data_source/alicloud_service_catalog_provisioned_products: Adjust the export root attribute name. ([#5833](https://github.com/aliyun/terraform-provider-alicloud/issues/5833))
+- resource/alicloud_route_entry: Adds retry for IncorrectStatus.VpcPeer error when creating.  ([#5835](https://github.com/aliyun/terraform-provider-alicloud/issues/5835))
+- doc/vswitch: Add an example of creating a cidr switch. ([#5835](https://github.com/aliyun/terraform-provider-alicloud/issues/5835))
+- resource/alicloud_route_entry: Added retry strategy for error code IncorrectStatus.VpcPeer,UnknownError ([#5839](https://github.com/aliyun/terraform-provider-alicloud/issues/5839))
+- resource/alicloud_ecs_network_interface: Added retry strategy for error code IncorrectVSwitchStatus ([#5839](https://github.com/aliyun/terraform-provider-alicloud/issues/5839))
+- resource/alicloud_vpc_peer_connection_accepter: Add retry error code. ([#5843](https://github.com/aliyun/terraform-provider-alicloud/issues/5843))
+- resource/alicloud_db_instance: Supports new attribute db_instance_type ([#5846](https://github.com/aliyun/terraform-provider-alicloud/issues/5846))
+- resource/alicloud_vpc_peer_connection: Added error code ResourceNotFound.InstanceId ([#5850](https://github.com/aliyun/terraform-provider-alicloud/issues/5850))
+- resource/alicloud_nat_gateway: Checking the status to be Available after invoking ModifyNatGatewayAttribute ([#5848](https://github.com/aliyun/terraform-provider-alicloud/issues/5848))
 
 BUG FIXES:
 
-- resource/alicloud_instance: Fixed attribute spot_duration the bug [GH-5839]
-- resource/alicloud_ecs_network_interface: Removes the limitation for private ip count [GH-5844]
-- datasource/alicloud_service_catalog_end_user_products_test: fix test case TestAccAlicloudServiceCatalogEndUserProductDataSource; [GH-5845]
-- resource/alicloud_route_entry_test: fix test case TestAccAlicloudVPCRouteEntryInstance. [GH-5845]
-- docs/ga_custom_routing_endpoint_group_destination: Fixed values of protocols from tcp, udp, tcp, udp to TCP, UDP, TCP, UDP [GH-5847]
+- resource/alicloud_instance: Fixed attribute spot_duration the bug ([#5839](https://github.com/aliyun/terraform-provider-alicloud/issues/5839))
+- resource/alicloud_ecs_network_interface: Removes the limitation for private ip count ([#5844](https://github.com/aliyun/terraform-provider-alicloud/issues/5844))
+- datasource/alicloud_service_catalog_end_user_products_test: fix test case TestAccAlicloudServiceCatalogEndUserProductDataSource; ([#5845](https://github.com/aliyun/terraform-provider-alicloud/issues/5845))
+- resource/alicloud_route_entry_test: fix test case TestAccAlicloudVPCRouteEntryInstance. ([#5845](https://github.com/aliyun/terraform-provider-alicloud/issues/5845))
+- docs/ga_custom_routing_endpoint_group_destination: Fixed values of protocols from tcp, udp, tcp, udp to TCP, UDP, TCP, UDP ([#5847](https://github.com/aliyun/terraform-provider-alicloud/issues/5847))
 
 ## 1.196.0 (January 11, 2023)
 
