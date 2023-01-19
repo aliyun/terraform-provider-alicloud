@@ -96,6 +96,10 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `network_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
 * `vpc_id` - (Optional, ForceNew, Computed, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
 * `resource_group_id` - (Optional, Computed, Available in v1.161.0+) The ID of the Resource Group.
+* `readonly_replicas` - (Optional, Computed, Available in v1.199.0+) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
+* `storage_type` - (Optional, Computed, ForceNew, Available in v1.199.0+) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `local_ssd`.
+* `hidden_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
+* `secondary_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
 
 ## Attributes Reference
 

@@ -90,6 +90,26 @@ func (s *MongoDBService) RdsMongodbDBInstanceStateRefreshFunc(id string, failSta
 	}
 }
 
+func (s *MongoDBService) RdsMongodbDBInstanceOrderStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeMongoDBInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["DBInstanceOrderStatus"]) == failState {
+				return object, fmt.Sprint(object["DBInstanceOrderStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DBInstanceOrderStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["DBInstanceOrderStatus"]), nil
+	}
+}
+
 func (s *MongoDBService) DescribeMongoDBSecurityIps(instanceId string) (ips []string, err error) {
 	request := dds.CreateDescribeSecurityIpsRequest()
 	request.RegionId = s.client.RegionId
