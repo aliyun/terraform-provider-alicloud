@@ -116,6 +116,7 @@ func testSweepVpcPeerConnection(region string) error {
 }
 
 func TestAccAlicloudVPCPeerConnection_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPeerConnectionMap0)
 	var providers []*schema.Provider
@@ -241,6 +242,7 @@ func testAccCheckVPCPeerConnectionDestroyWithProvider(s *terraform.State, provid
 }
 
 func TestAccAlicloudVPCPeerConnection_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPeerConnectionMap0)
 	var providers []*schema.Provider
