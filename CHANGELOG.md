@@ -1,5 +1,49 @@
 ## 1.197.0 (Unreleased)
-# 1.196.0 (January 11, 2023)
+
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_group` [GH-5803]
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_group_destination` [GH-5827]
+- **New Resource:** `alicloud_ga_domain` [GH-5830]
+- **New Resource:** `alicloud_ga_custom_routing_endpoint` [GH-5834]
+- **New Resource:** `alicloud_ga_custom_routing_endpoint_traffic_policy` [GH-5840]
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_groups` [GH-5803]
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_group_destinations` [GH-5827]
+- **New Data Source:** `alicloud_ga_domains` [GH-5830]
+- **New Data Source:** `alicloud_service_catalog_end_user_products` [GH-5833]
+- **New Data Source:** `alicloud_ga_custom_routing_endpoints` [GH-5834]
+- **New Data Source:** `alicloud_ga_custom_routing_endpoint_traffic_policies` [GH-5840]
+- **New Data Source:** `alicloud_ga_custom_routing_port_mappings` [GH-5842]
+
+ENHANCEMENTS:
+
+- resource/alicloud_alikafka_instance: Support to upgrade prepaid instances. [GH-5344]
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteEntry [GH-5820]
+- resource/alicloud_log_project: Support new attribute policy [GH-5826]
+- resource/alicloud_image: Removes the ValidateFunc for attribute platform to support more valid values [GH-5828]
+- resource/alicloud_image_import: Removes the ValidateFunc for attribute platform to support more valid values [GH-5828]
+- resource/alicloud_elasticsearch_instance: Supports two attribute public_domain and public_port [GH-5829]
+- datasource/alicloud_eventbridge_service: Adds retry policy when checking status is UP [GH-5832]
+- data_source/alicloud_service_catalog_launch_options: Adjust the export root attribute name; [GH-5833]
+- data_source/alicloud_service_catalog_product_as_end_users: Add DEPRECATED identity; [GH-5833]
+- data_source/alicloud_service_catalog_product_versions: Adjust the export root attribute name; [GH-5833]
+- data_source/alicloud_service_catalog_provisioned_products: Adjust the export root attribute name. [GH-5833]
+- resource/alicloud_route_entry: Adds retry for IncorrectStatus.VpcPeer error when creating.  [GH-5835]
+- doc/vswitch: Add an example of creating a cidr switch. [GH-5835]
+- resource/alicloud_route_entry: Added retry strategy for error code IncorrectStatus.VpcPeer,UnknownError [GH-5839]
+- resource/alicloud_ecs_network_interface: Added retry strategy for error code IncorrectVSwitchStatus [GH-5839]
+- resource/alicloud_vpc_peer_connection_accepter: Add retry error code. [GH-5843]
+- resource/alicloud_db_instance: Supports new attribute db_instance_type [GH-5846]
+- resource/alicloud_vpc_peer_connection: Added error code ResourceNotFound.InstanceId [GH-5850]
+- resource/alicloud_nat_gateway: Checking the status to be Available after invoking ModifyNatGatewayAttribute [GH-5848]
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixed attribute spot_duration the bug [GH-5839]
+- resource/alicloud_ecs_network_interface: Removes the limitation for private ip count [GH-5844]
+- datasource/alicloud_service_catalog_end_user_products_test: fix test case TestAccAlicloudServiceCatalogEndUserProductDataSource; [GH-5845]
+- resource/alicloud_route_entry_test: fix test case TestAccAlicloudVPCRouteEntryInstance. [GH-5845]
+- docs/ga_custom_routing_endpoint_group_destination: Fixed values of protocols from tcp, udp, tcp, udp to TCP, UDP, TCP, UDP [GH-5847]
+
+## 1.196.0 (January 11, 2023)
 
 - **New Resource:** `alicloud_vpc_peer_connection_accepter` ([#5786](https://github.com/aliyun/terraform-provider-alicloud/issues/5786))
 - **New Resource:** `alicloud_ebs_dedicated_block_storage_cluster` ([#5768](https://github.com/aliyun/terraform-provider-alicloud/issues/5768))
