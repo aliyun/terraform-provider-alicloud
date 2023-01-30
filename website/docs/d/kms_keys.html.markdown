@@ -32,6 +32,8 @@ The following arguments are supported:
 * `ids` - (Optional) A list of KMS key IDs.
 * `description_regex` - (Optional) A regex string to filter the results by the KMS key description.
 * `status` - (Optional) Filter the results by status of the KMS keys. Valid values: `Enabled`, `Disabled`, `PendingDeletion`.
+* `filters` - (Optional) The CMK filter. The filter consists of one or more key-value pairs. 
+  You can specify a maximum of 10 key-value pairs. More details see API [ListKeys](https://www.alibabacloud.com/help/en/key-management-service/latest/listkeys).
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

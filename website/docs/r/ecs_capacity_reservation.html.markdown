@@ -1,5 +1,5 @@
 ---
-subcategory: "Ecs"
+subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecs_capacity_reservation"
 sidebar_current: "docs-alicloud-resource-ecs-capacity-reservation"

@@ -40,7 +40,8 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter the results by the KMS secret_name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `filters` - (Optional, Available in 1.124.0+) Credential filter. It is composed of Key-Values ​​key-value pairs, the length is 0~1. When using a tag key to filter resources, the number of resources queried cannot exceed 4000.
+* `filters` - (Optional, Available in 1.124.0+) The secret filter. The filter consists of one or more key-value pairs. 
+  More details see API [ListSecrets](https://www.alibabacloud.com/help/en/key-management-service/latest/listsecrets). 
 * `enable_details` - (Optional, Available in 1.124.0+) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
