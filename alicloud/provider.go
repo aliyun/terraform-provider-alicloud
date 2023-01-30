@@ -458,6 +458,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_quota_applications":                        dataSourceAlicloudQuotasQuotaApplications(),
 			"alicloud_ecs_auto_snapshot_policies":                       dataSourceAlicloudEcsAutoSnapshotPolicies(),
 			"alicloud_rds_parameter_groups":                             dataSourceAlicloudRdsParameterGroups(),
+			"alicloud_rds_collation_time_zones":                         dataSourceAlicloudRdsCollationTimeZones(),
 			"alicloud_ecs_launch_templates":                             dataSourceAlicloudEcsLaunchTemplates(),
 			"alicloud_resource_manager_control_policies":                dataSourceAlicloudResourceManagerControlPolicies(),
 			"alicloud_resource_manager_control_policy_attachments":      dataSourceAlicloudResourceManagerControlPolicyAttachments(),
