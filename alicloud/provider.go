@@ -1547,6 +1547,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_custom_routing_endpoint":                           resourceAlicloudGaCustomRoutingEndpoint(),
 			"alicloud_ga_custom_routing_endpoint_traffic_policy":            resourceAlicloudGaCustomRoutingEndpointTrafficPolicy(),
 			"alicloud_nlb_load_balancer_security_group_attachment":          resourceAlicloudNlbLoadBalancerSecurityGroupAttachment(),
+			"alicloud_dcdn_kv_namespace":                                    resourceAlicloudDcdnKvNamespace(),
 		},
 
 		ConfigureFunc: providerConfigure,
