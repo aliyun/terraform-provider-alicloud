@@ -314,17 +314,17 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
    
    See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
-* `upgrade_db_instance_kernel_version` - (Optional, Available in 1.126.0+) Whether to upgrade a minor version of the kernel. Valid values:
+* `upgrade_db_instance_kernel_version` - (Deprecated in v1.198.0+)  Whether to upgrade a minor version of the kernel. Valid values:
     - true: upgrade
     - false: not to upgrade
-* `upgrade_time` - (Optional, Available in 1.126.0+) The method to update the minor engine version. Default value: Immediate. It is valid only when `upgrade_db_instance_kernel_version = true`. Valid values:
+* `upgrade_time` - (Optional, Available in 1.126.0+) The method to update the minor engine version. Default value: Immediate. It is valid only when `target_minor_version` is changed. Valid values:
     - Immediate: The minor engine version is immediately updated.
     - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
     - SpecifyTime: The minor engine version is updated at the point in time you specify.
-* `switch_time` - (Optional, Available in 1.126.0+) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `upgrade_db_instance_kernel_version = true`. The time must be in UTC.
+* `switch_time` - (Optional, Available in 1.126.0+) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `target_minor_version` is changed. The time must be in UTC.
 
 -> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
-* `target_minor_version` - (Optional, Available in 1.126.0+) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. It is valid only when `upgrade_db_instance_kernel_version = true`. You must specify the minor engine version in one of the following formats:
+* `target_minor_version` - (Optional, Available in 1.126.0+) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. You must specify the minor engine version in one of the following formats:
     - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
     - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
       - rds: The instance runs RDS Basic or High-availability Edition.
@@ -336,6 +336,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `zone_id_slave_a` - (Optional, ForceNew, Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `zone_id_slave_b`- (Optional, ForceNew, Available in 1.101.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
+* `ssl_connection_string` - (Optional, Available in v1.198.0+) The internal or public endpoint for which the server certificate needs to be created or updated.
 * `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 * `encryption_key` - (Optional, Available in 1.109.0+) The key id of the KMS. Used for encrypting a disk if not null. Only for PostgreSQL, MySQL and SQLServer.
 * `ca_type` - (Optional, Available in 1.124.1+) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. Value range:

@@ -839,6 +839,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"category":                 "HighAvailability",
+					"target_minor_version":     "rds_postgres_1200_20221030",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -848,6 +849,19 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"instance_type":            CHECKSET,
 						"db_instance_storage_type": "cloud_ssd",
 						"category":                 "HighAvailability",
+						"target_minor_version":     "rds_postgres_1200_20221030",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_minor_version": "rds_postgres_1200_20221230",
+					"upgrade_time":         "Immediate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_minor_version": "rds_postgres_1200_20221230",
+						"upgrade_time":         "Immediate",
 					}),
 				),
 			},
@@ -964,7 +978,7 @@ data "alicloud_db_zones" "default"{
   	engine               = "PostgreSQL"
   	engine_version       = "12.0"
 	instance_charge_type = "PostPaid"
-	category = "Basic"
+	category = "HighAvailability"
  	db_instance_storage_type = "cloud_ssd"
 }
 
@@ -974,7 +988,7 @@ data "alicloud_db_instance_classes" "default" {
   	engine_version       = "12.0"
  	db_instance_storage_type = "cloud_ssd"
 	instance_charge_type = "PostPaid"
-	category = "Basic"
+	category = "HighAvailability"
 }
 
 data "alicloud_vpcs" "default" {
