@@ -423,6 +423,51 @@ func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object m
 	}
 	return object, nil
 }
+func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Namespace": parts[0],
+		"Key":       parts[1],
+	}
+
+	var response map[string]interface{}
+	action := "GetDcdnKv"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-01-15"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidKey.Malformed", "InvalidKey.NotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	return v.(map[string]interface{}), nil
+}
 
 func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewDcdnClient()
