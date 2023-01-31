@@ -831,6 +831,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_custom_routing_port_mappings":                  dataSourceAlicloudGaCustomRoutingPortMappings(),
 			"alicloud_service_catalog_end_user_products":                dataSourceAlicloudServiceCatalogEndUserProducts(),
 			"alicloud_dcdn_kv_account":                                  dataSourceAlicloudDcdnKvAccount(),
+			"alicloud_hbr_hana_backup_clients":                          dataSourceAlicloudHbrHanaBackupClients(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1550,6 +1551,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nlb_load_balancer_security_group_attachment":          resourceAlicloudNlbLoadBalancerSecurityGroupAttachment(),
 			"alicloud_dcdn_kv_namespace":                                    resourceAlicloudDcdnKvNamespace(),
 			"alicloud_dcdn_kv":                                              resourceAlicloudDcdnKv(),
+			"alicloud_hbr_hana_backup_client":                               resourceAlicloudHbrHanaBackupClient(),
 		},
 
 		ConfigureFunc: providerConfigure,
