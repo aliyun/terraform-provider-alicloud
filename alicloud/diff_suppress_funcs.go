@@ -606,6 +606,13 @@ func sslEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool
 	return true
 }
 
+func sslActionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("ssl_action"); ok && (v.(string) == "Open" || v.(string) == "Update") {
+		return false
+	}
+	return true
+}
+
 func securityIpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("security_ips"); ok && len(v.(*schema.Set).List()) > 0 {
 		return false
@@ -616,6 +623,15 @@ func securityIpsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 func kernelVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("upgrade_db_instance_kernel_version"); ok && v.(bool) == true {
 		return false
+	}
+	return true
+}
+
+func kernelSmallVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.HasChange("target_minor_version") {
+		if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+			return false
+		}
 	}
 	return true
 }
