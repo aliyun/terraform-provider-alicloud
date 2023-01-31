@@ -257,6 +257,7 @@ var DcdnDomainMap = map[string]string{
 	"ssl_protocol":      "off",
 	"scope":             "overseas",
 	"status":            "online",
+	"cname":             CHECKSET,
 }
 
 func DcdnDomainBasicdependence(name string) string {

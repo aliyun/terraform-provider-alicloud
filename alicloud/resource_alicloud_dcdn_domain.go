@@ -126,6 +126,10 @@ func resourceAlicloudDcdnDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"cname": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -225,6 +229,7 @@ func resourceAlicloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	d.Set("status", object["DomainStatus"])
+	d.Set("cname", object["Cname"])
 
 	describeDcdnDomainCertificateInfoObject, err := dcdnService.DescribeDcdnDomainCertificateInfo(d.Id())
 	if err != nil {
