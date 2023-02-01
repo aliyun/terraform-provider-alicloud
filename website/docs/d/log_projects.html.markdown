@@ -49,3 +49,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `owner` - The owner of project.
 	* `region` - The region of project.
 	* `status` - The status of project.
+	* `policy` - (Available in 1.198.0+) The policy of project.
