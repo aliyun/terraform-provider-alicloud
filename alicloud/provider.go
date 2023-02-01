@@ -830,6 +830,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_custom_routing_endpoint_traffic_policies":      dataSourceAlicloudGaCustomRoutingEndpointTrafficPolicies(),
 			"alicloud_ga_custom_routing_port_mappings":                  dataSourceAlicloudGaCustomRoutingPortMappings(),
 			"alicloud_service_catalog_end_user_products":                dataSourceAlicloudServiceCatalogEndUserProducts(),
+			"alicloud_dcdn_kv_account":                                  dataSourceAlicloudDcdnKvAccount(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
