@@ -806,3 +806,59 @@ func (s *HbrService) DescribeHbrHanaBackupPlan(id string) (object map[string]int
 	}
 	return
 }
+
+func (s *HbrService) DescribeHbrHanaRestoreJob(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewHbrClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RestoreId": id,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeHanaRestores"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *HbrService) HbrHanaRestoreJobStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeHbrHanaRestoreJob(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if fmt.Sprint(object["HanaRestore.HanaRestores[*].Status"]) == failState {
+				return object, fmt.Sprint(object["HanaRestore.HanaRestores[*].Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["HanaRestore.HanaRestores[*].Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["HanaRestore.HanaRestores[*].Status"]), nil
+	}
+}
