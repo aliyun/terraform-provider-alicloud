@@ -122,6 +122,11 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
+			"reset_permission_flag": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -333,6 +338,55 @@ func resourceAlicloudRdsAccountUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("kms_encrypted_password")
 		d.SetPartial("kms_encryption_context")
 		d.SetPartial("account_password")
+	}
+
+	resetPermission := false
+	resetAccountReq := map[string]interface{}{
+		"AccountName":  parts[1],
+		"DBInstanceId": parts[0],
+		"SourceIp":     client.SourceIp,
+	}
+	if v, _ := d.GetOkExists("reset_permission_flag"); v.(bool) && !d.IsNewResource() && d.HasChange("reset_permission_flag") {
+		if accountType, ok := d.GetOk("account_type"); ok {
+			if accountType.(string) == "Super" {
+				resetPermission = true
+			}
+		}
+		if accountType, ok := d.GetOk("type"); ok {
+			if accountType.(string) == "Super" {
+				resetPermission = true
+			}
+		}
+	}
+	if resetPermission {
+		if v, ok := d.GetOk("account_password"); ok {
+			resetAccountReq["AccountPassword"] = v.(string)
+		}
+		if v, ok := d.GetOk("password"); ok {
+			resetAccountReq["AccountPassword"] = v.(string)
+		}
+		// ResetAccount interface can also reset the database account password
+		action := "ResetAccount"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, resetAccountReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, resetAccountReq)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsAccountStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 	d.Partial(false)
 	return resourceAlicloudRdsAccountRead(d, meta)
