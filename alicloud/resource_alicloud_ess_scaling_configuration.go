@@ -3,12 +3,12 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -48,6 +48,10 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			},
 			"image_name": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"system_disk_encrypted": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"instance_type": {
@@ -341,37 +345,236 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 }
 
 func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta interface{}) error {
-
-	// Ensure instance_type is generation three
 	client := meta.(*connectivity.AliyunClient)
-	request, err := buildAlicloudEssScalingConfigurationArgs(d, meta)
+	var response map[string]interface{}
+	action := "CreateScalingConfiguration"
+	request := make(map[string]interface{})
+	conn, err := client.NewEssClient()
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request.IoOptimized = string(IOOptimized)
-	if d.Get("is_outdated").(bool) == true {
-		request.IoOptimized = string(NoneOptimized)
+	securityGroupId := d.Get("security_group_id").(string)
+	securityGroupIds := d.Get("security_group_ids").([]interface{})
+	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
+		return WrapError(Error("security_group_id or security_group_ids must be assigned"))
+	}
+	instanceType := d.Get("instance_type").(string)
+	instanceTypes := d.Get("instance_types").([]interface{})
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
+		return WrapError(Error("instance_type or instance_types must be assigned"))
+	}
+	request["ImageId"] = d.Get("image_id")
+	request["ScalingGroupId"] = d.Get("scaling_group_id")
+	request["PasswordInherit"] = d.Get("password_inherit")
+	request["SystemDisk.Encrypted"] = d.Get("system_disk_encrypted")
+	if securityGroupId != "" {
+		request["SecurityGroupId"] = d.Get("security_group_id")
+	}
+	password := d.Get("password").(string)
+	kmsPassword := d.Get("kms_encrypted_password").(string)
+	if password != "" {
+		request["Password"] = d.Get("password")
+	} else if kmsPassword != "" {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Password"] = decryptResp
+	}
+	if securityGroupIds != nil && len(securityGroupIds) > 0 {
+		request["SecurityGroupIds"] = securityGroupIds
 	}
 
-	if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-			return essClient.CreateScalingConfiguration(request)
-		})
+	types := make([]string, 0, int(MaxScalingConfigurationInstanceTypes))
+	if instanceTypes != nil && len(instanceTypes) > 0 {
+		types = expandStringList(instanceTypes)
+	}
+
+	if instanceType != "" {
+		types = append(types, instanceType)
+	}
+	request["InstanceTypes"] = types
+
+	if v := d.Get("scaling_configuration_name").(string); v != "" {
+		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
+	}
+
+	if v := d.Get("image_name").(string); v != "" {
+		request["ImageName"] = d.Get("image_name")
+	}
+
+	if v := d.Get("internet_charge_type").(string); v != "" {
+		request["InternetChargeType"] = d.Get("internet_charge_type")
+	}
+
+	if v := d.Get("system_disk_category").(string); v != "" {
+		request["SystemDisk.Category"] = d.Get("system_disk_category")
+	}
+
+	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
+		request["InternetMaxBandwidthIn"] = d.Get("internet_max_bandwidth_in")
+	}
+
+	request["InternetMaxBandwidthOut"] = d.Get("internet_max_bandwidth_out")
+
+	if v := d.Get("credit_specification").(string); v != "" {
+		request["CreditSpecification"] = d.Get("credit_specification")
+	}
+
+	if v := d.Get("system_disk_size").(int); v != 0 {
+		request["SystemDisk.Size"] = d.Get("system_disk_size")
+	}
+
+	if v := d.Get("system_disk_name").(string); v != "" {
+		request["SystemDisk.DiskName"] = d.Get("system_disk_name")
+	}
+
+	if v := d.Get("system_disk_description").(string); v != "" {
+		request["SystemDisk.Description"] = d.Get("system_disk_description")
+	}
+
+	if v := d.Get("system_disk_auto_snapshot_policy_id").(string); v != "" {
+		request["SystemDisk.AutoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+	}
+
+	if v := d.Get("system_disk_performance_level").(string); v != "" {
+		request["SystemDisk.PerformanceLevel"] = d.Get("system_disk_performance_level")
+	}
+
+	if v := d.Get("resource_group_id").(string); v != "" {
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	if v, ok := d.GetOk("role_name"); ok && v.(string) != "" {
+		request["RamRoleName"] = v
+	}
+
+	if v, ok := d.GetOk("key_name"); ok && v.(string) != "" {
+		request["KeyPairName"] = v
+	}
+
+	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
+		request["InstanceName"] = v
+	}
+
+	if v, ok := d.GetOk("host_name"); ok && v.(string) != "" {
+		request["HostName"] = v
+	}
+
+	if v, ok := d.GetOk("spot_strategy"); ok && v.(string) != "" {
+		request["SpotStrategy"] = v
+	}
+
+	if v, ok := d.GetOk("user_data"); ok {
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+		if base64DecodeError == nil {
+			request["UserData"] = v
+		} else {
+			request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
+		}
+	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		vv, okk := convertMaptoJsonString(v.(map[string]interface{}))
+		if okk == nil {
+			request["Tags"] = vv
+		}
+	}
+
+	if v, ok := d.GetOk("data_disk"); ok {
+		disksMaps := make([]map[string]interface{}, 0)
+		disks := v.([]interface{})
+
+		for _, rew := range disks {
+			disksMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+			disksMap["Size"] = item["size"].(int)
+			if category, ok := item["category"].(string); ok && category != "" {
+				disksMap["Category"] = category
+			}
+			if snapshotId, ok := item["snapshot_id"].(string); ok && snapshotId != "" {
+				disksMap["SnapshotId"] = snapshotId
+			}
+			disksMap["DeleteWithInstance"] = item["delete_with_instance"].(bool)
+			if device, ok := item["device"].(string); ok && device != "" {
+				disksMap["Device"] = device
+			}
+			disksMap["Encrypted"] = item["encrypted"].(bool)
+			if kmsKeyId, ok := item["kms_key_id"].(string); ok && kmsKeyId != "" {
+				disksMap["KMSKeyId"] = kmsKeyId
+			}
+			if name, ok := item["name"].(string); ok && name != "" {
+				disksMap["DiskName"] = name
+			}
+			if description, ok := item["description"].(string); ok && description != "" {
+				disksMap["Description"] = description
+			}
+			if autoSnapshotPolicyId, ok := item["auto_snapshot_policy_id"].(string); ok && autoSnapshotPolicyId != "" {
+				disksMap["AutoSnapshotPolicyId"] = autoSnapshotPolicyId
+			}
+			if performanceLevel, ok := item["performance_level"].(string); ok && performanceLevel != "" {
+				disksMap["PerformanceLevel"] = performanceLevel
+			}
+			disksMaps = append(disksMaps, disksMap)
+		}
+		request["DataDisk"] = disksMaps
+	}
+	if v, ok := d.GetOk("spot_price_limit"); ok {
+		spotPriceLimitsMaps := make([]map[string]interface{}, 0)
+		spotPriceLimits := v.(*schema.Set).List()
+		for _, rew := range spotPriceLimits {
+			spotPriceLimitsMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				spotPriceLimitsMap["InstanceType"] = instanceType
+			}
+			spotPriceLimitsMap["PriceLimit"] = strconv.FormatFloat(item["price_limit"].(float64), 'f', 2, 64)
+			spotPriceLimitsMaps = append(spotPriceLimitsMaps, spotPriceLimitsMap)
+		}
+		request["SpotPriceLimit"] = spotPriceLimitsMaps
+	}
+	if v, ok := d.GetOk("instance_pattern_info"); ok {
+		instancePatternInfosMaps := make([]map[string]interface{}, 0)
+		instancePatternInfos := v.(*schema.Set).List()
+		for _, rew := range instancePatternInfos {
+			instancePatternInfosMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+
+			if instanceFamilyLevel, ok := item["instance_family_level"].(string); ok && instanceFamilyLevel != "" {
+				instancePatternInfosMap["InstanceFamilyLevel"] = instanceFamilyLevel
+			}
+			instancePatternInfosMap["Memory"] = strconv.FormatFloat(item["memory"].(float64), 'f', 2, 64)
+			instancePatternInfosMap["MaxPrice"] = strconv.FormatFloat(item["max_price"].(float64), 'f', 2, 64)
+			instancePatternInfosMap["Cores"] = item["cores"].(int)
+
+			instancePatternInfosMaps = append(instancePatternInfosMaps, instancePatternInfosMap)
+		}
+		request["InstancePatternInfo"] = instancePatternInfosMaps
+	}
+	request["IoOptimized"] = string(IOOptimized)
+
+	if d.Get("is_outdated").(bool) == true {
+		request["IoOptimized"] = string(NoneOptimized)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{Throttling, "IncorrectScalingGroupStatus"}) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		response, _ := raw.(*ess.CreateScalingConfigurationResponse)
-		d.SetId(response.ScalingConfigurationId)
 		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scalingconfiguration", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_configuration", action, AlibabaCloudSdkGoERROR)
 	}
 
+	d.SetId(fmt.Sprint(response["ScalingConfigurationId"]))
 	return resourceAliyunEssScalingConfigurationUpdate(d, meta)
 }
 
@@ -415,7 +618,6 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 	if err := enableEssScalingConfiguration(d, meta); err != nil {
 		return WrapError(err)
 	}
-
 	if err := modifyEssScalingConfiguration(d, meta); err != nil {
 		return WrapError(err)
 	}
@@ -427,26 +629,105 @@ func resourceAliyunEssScalingConfigurationUpdate(d *schema.ResourceData, meta in
 
 func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	request := ess.CreateModifyScalingConfigurationRequest()
-	request.ScalingConfigurationId = d.Id()
+	conn, err := client.NewEssClient()
+	action := "ModifyScalingConfiguration"
+	request := map[string]interface{}{
+		"ScalingConfigurationId": d.Id(),
+	}
+	update := false
 
 	if d.HasChange("override") {
-		request.Override = requests.NewBoolean(d.Get("override").(bool))
-		d.SetPartial("override")
+		request["Override"] = d.Get("override")
+		update = true
 	}
-
 	if d.HasChange("password_inherit") {
-		request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
-		d.SetPartial("password_inherit")
+		request["PasswordInherit"] = d.Get("password_inherit")
+		update = true
 	}
 	if d.HasChange("image_id") || d.Get("override").(bool) {
-		request.ImageId = d.Get("image_id").(string)
-		d.SetPartial("image_id")
+		request["ImageId"] = d.Get("image_id")
+		update = true
+	}
+	if d.HasChange("image_name") || d.Get("override").(bool) {
+		request["ImageName"] = d.Get("image_name")
+		update = true
+	}
+	if d.HasChange("scaling_configuration_name") {
+		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
+		update = true
 	}
 
-	if d.HasChange("image_name") || d.Get("override").(bool) {
-		request.ImageName = d.Get("image_name").(string)
-		d.SetPartial("image_name")
+	if d.HasChange("internet_charge_type") {
+		request["InternetChargeType"] = d.Get("internet_charge_type")
+		update = true
+	}
+
+	if d.HasChange("system_disk_category") {
+		request["SystemDisk.Category"] = d.Get("system_disk_category")
+		update = true
+	}
+
+	if d.HasChange("internet_max_bandwidth_out") {
+		request["InternetMaxBandwidthOut"] = d.Get("internet_max_bandwidth_out")
+		update = true
+	}
+
+	if d.HasChange("credit_specification") {
+		request["CreditSpecification"] = d.Get("credit_specification")
+		update = true
+	}
+
+	if d.HasChange("system_disk_size") {
+		request["SystemDisk.Size"] = d.Get("system_disk_size")
+		update = true
+	}
+
+	if d.HasChange("system_disk_name") {
+		request["SystemDisk.DiskName"] = d.Get("system_disk_name")
+		update = true
+	}
+
+	if d.HasChange("system_disk_description") {
+		request["SystemDisk.Description"] = d.Get("system_disk_description")
+		update = true
+	}
+
+	if d.HasChange("system_disk_auto_snapshot_policy_id") {
+		request["SystemDisk.AutoSnapshotPolicyId"] = d.Get("system_disk_auto_snapshot_policy_id")
+		update = true
+	}
+
+	if d.HasChange("system_disk_performance_level") {
+		request["SystemDisk.PerformanceLevel"] = d.Get("system_disk_performance_level")
+		update = true
+	}
+	if d.HasChange("resource_group_id") {
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+		update = true
+	}
+	if d.HasChange("role_name") {
+		request["RamRoleName"] = d.Get("role_name")
+		update = true
+	}
+
+	if d.HasChange("key_name") {
+		request["KeyPairName"] = d.Get("key_name")
+		update = true
+	}
+
+	if d.HasChange("instance_name") {
+		request["InstanceName"] = d.Get("instance_name")
+		update = true
+	}
+
+	if d.HasChange("host_name") {
+		request["HostName"] = d.Get("host_name")
+		update = true
+	}
+
+	if d.HasChange("spot_strategy") {
+		request["SpotStrategy"] = d.Get("spot_strategy")
+		update = true
 	}
 
 	hasChangeInstanceType := d.HasChange("instance_type")
@@ -464,7 +745,8 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		if instanceType != "" {
 			types = append(types, instanceType)
 		}
-		request.InstanceTypes = &types
+		request["InstanceTypes"] = types
+		update = true
 	}
 
 	hasChangeSecurityGroupId := d.HasChange("security_group_id")
@@ -477,106 +759,25 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		}
 		if securityGroupIds != nil && len(securityGroupIds) > 0 {
 			sgs := expandStringList(securityGroupIds)
-			request.SecurityGroupIds = &sgs
+			request["SecurityGroupIds"] = sgs
 		}
-
 		if securityGroupId != "" {
-			request.SecurityGroupId = securityGroupId
+			request["SecurityGroupId"] = securityGroupId
 		}
-	}
-
-	if d.HasChange("scaling_configuration_name") {
-		request.ScalingConfigurationName = d.Get("scaling_configuration_name").(string)
-		d.SetPartial("scaling_configuration_name")
-	}
-
-	if d.HasChange("internet_charge_type") {
-		request.InternetChargeType = d.Get("internet_charge_type").(string)
-		d.SetPartial("internet_charge_type")
-	}
-
-	if d.HasChange("internet_max_bandwidth_out") {
-		request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
-		d.SetPartial("internet_max_bandwidth_out")
-	}
-
-	if d.HasChange("credit_specification") {
-		request.CreditSpecification = d.Get("credit_specification").(string)
-		d.SetPartial("credit_specification")
-	}
-
-	if d.HasChange("system_disk_category") {
-		request.SystemDiskCategory = d.Get("system_disk_category").(string)
-		d.SetPartial("system_disk_category")
-	}
-
-	if d.HasChange("system_disk_size") {
-		request.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
-		d.SetPartial("system_disk_size")
-	}
-
-	if d.HasChange("system_disk_name") {
-		request.SystemDiskDiskName = d.Get("system_disk_name").(string)
-		d.SetPartial("system_disk_name")
-	}
-
-	if d.HasChange("system_disk_description") {
-		request.SystemDiskDescription = d.Get("system_disk_description").(string)
-		d.SetPartial("system_disk_description")
-	}
-
-	if d.HasChange("system_disk_auto_snapshot_policy_id") {
-		request.SystemDiskAutoSnapshotPolicyId = d.Get("system_disk_auto_snapshot_policy_id").(string)
-		d.SetPartial("system_disk_auto_snapshot_policy_id")
-	}
-
-	if d.HasChange("system_disk_performance_level") {
-		request.SystemDiskPerformanceLevel = d.Get("system_disk_performance_level").(string)
-		d.SetPartial("system_disk_performance_level")
-	}
-
-	if d.HasChange("resource_group_id") {
-		request.ResourceGroupId = d.Get("resource_group_id").(string)
-		d.SetPartial("resource_group_id")
+		update = true
 	}
 
 	if d.HasChange("user_data") {
 		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
 			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 			if base64DecodeError == nil {
-				request.UserData = v.(string)
+				request["UserData"] = v
 			} else {
-				request.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
+				request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 			}
 		}
-		d.SetPartial("user_data")
+		update = true
 	}
-
-	if d.HasChange("role_name") {
-		request.RamRoleName = d.Get("role_name").(string)
-		d.SetPartial("role_name")
-	}
-
-	if d.HasChange("key_name") {
-		request.KeyPairName = d.Get("key_name").(string)
-		d.SetPartial("key_name")
-	}
-
-	if d.HasChange("instance_name") {
-		request.InstanceName = d.Get("instance_name").(string)
-		d.SetPartial("instance_name")
-	}
-
-	if d.HasChange("host_name") {
-		request.HostName = d.Get("host_name").(string)
-		d.SetPartial("host_name")
-	}
-
-	if d.HasChange("spot_strategy") {
-		request.SpotStrategy = d.Get("spot_strategy").(string)
-		d.SetPartial("spot_strategy")
-	}
-
 	if d.HasChange("spot_price_limit") {
 		v, ok := d.GetOk("spot_price_limit")
 		if ok {
@@ -589,9 +790,9 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}
 				spotPriceLimits = append(spotPriceLimits, l)
 			}
-			request.SpotPriceLimit = &spotPriceLimits
+			request["SpotPriceLimit"] = spotPriceLimits
 		}
-		d.SetPartial("spot_price_limit")
+		update = true
 	}
 
 	if d.HasChange("instance_pattern_info") {
@@ -608,20 +809,19 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}
 				instancePatternInfos = append(instancePatternInfos, l)
 			}
-			request.InstancePatternInfo = &instancePatternInfos
+			request["InstancePatternInfo"] = instancePatternInfos
 		}
-		d.SetPartial("instance_pattern_info")
+		update = true
 	}
-
 	if d.HasChange("tags") {
 		if v, ok := d.GetOk("tags"); ok {
 			tags := "{"
 			for key, value := range v.(map[string]interface{}) {
 				tags += "\"" + key + "\"" + ":" + "\"" + value.(string) + "\"" + ","
 			}
-			request.Tags = strings.TrimSuffix(tags, ",") + "}"
+			request["Tags"] = strings.TrimSuffix(tags, ",") + "}"
 		}
-		d.SetPartial("tags")
+		update = true
 	}
 
 	if d.HasChange("data_disk") {
@@ -646,17 +846,37 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				}
 				createDataDisks = append(createDataDisks, dataDisk)
 			}
-			request.DataDisk = &createDataDisks
+			request["DataDisk"] = createDataDisks
 		}
-		d.SetPartial("data_disk")
+		update = true
 	}
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.ModifyScalingConfiguration(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+	if d.HasChange("system_disk_encrypted") {
+		request["SystemDisk.Encrypted"] = d.Get("system_disk_encrypted")
+		update = true
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	if update {
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, resp, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_configuration", "ModifyScalingConfiguration", AlibabaCloudSdkGoERROR)
+		}
+	}
 	return nil
 }
 
@@ -735,13 +955,12 @@ func enableEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta interface{}) error {
-
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 	if strings.Contains(d.Id(), COLON_SEPARATED) {
 		d.SetId(strings.Split(d.Id(), COLON_SEPARATED)[1])
 	}
-	object, err := essService.DescribeEssScalingConfiguration(d.Id())
+	response, err := essService.DescribeEssScalingConfigurationByCommonApi(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -750,56 +969,76 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
-	d.Set("scaling_group_id", object.ScalingGroupId)
-	d.Set("active", object.LifecycleState == string(Active))
-	d.Set("image_id", object.ImageId)
-	d.Set("image_name", object.ImageName)
-	d.Set("scaling_configuration_name", object.ScalingConfigurationName)
-	d.Set("internet_charge_type", object.InternetChargeType)
-	d.Set("internet_max_bandwidth_in", object.InternetMaxBandwidthIn)
-	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
-	d.Set("credit_specification", object.CreditSpecification)
-	d.Set("system_disk_category", object.SystemDiskCategory)
-	d.Set("system_disk_size", object.SystemDiskSize)
-	d.Set("system_disk_name", object.SystemDiskName)
-	d.Set("system_disk_description", object.SystemDiskDescription)
-	d.Set("system_disk_auto_snapshot_policy_id", object.SystemDiskAutoSnapshotPolicyId)
-	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
-	d.Set("data_disk", essService.flattenDataDiskMappings(object.DataDisks.DataDisk))
-	d.Set("role_name", object.RamRoleName)
-	d.Set("key_name", object.KeyPairName)
+	d.Set("scaling_group_id", response["ScalingGroupId"])
+	d.Set("image_id", response["ImageId"])
+	d.Set("image_name", response["ImageName"])
+	d.Set("scaling_configuration_name", response["ScalingConfigurationName"])
+	d.Set("internet_charge_type", response["InternetChargeType"])
+	d.Set("system_disk_category", response["SystemDiskCategory"])
+	d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
+	d.Set("internet_max_bandwidth_out", response["InternetMaxBandwidthOut"])
+
+	d.Set("credit_specification", response["CreditSpecification"])
+	d.Set("system_disk_size", response["SystemDiskSize"])
+	d.Set("system_disk_name", response["SystemDiskName"])
+	d.Set("system_disk_description", response["SystemDiskDescription"])
+	d.Set("system_disk_auto_snapshot_policy_id", response["SystemDiskAutoSnapshotPolicyId"])
+	d.Set("system_disk_performance_level", response["SystemDiskPerformanceLevel"])
+	d.Set("system_disk_encrypted", response["SystemDisk.Encrypted"])
+
+	d.Set("role_name", response["RamRoleName"])
+	d.Set("key_name", response["KeyPairName"])
 	d.Set("force_delete", d.Get("force_delete").(bool))
-	d.Set("tags", essTagsToMap(object.Tags.Tag))
-	d.Set("instance_name", object.InstanceName)
+
+	d.Set("instance_name", response["InstanceName"])
 	d.Set("override", d.Get("override").(bool))
-	d.Set("password_inherit", object.PasswordInherit)
-	d.Set("resource_group_id", object.ResourceGroupId)
-	d.Set("host_name", object.HostName)
-	d.Set("spot_strategy", object.SpotStrategy)
-	d.Set("spot_price_limit", essService.flattenSpotPriceLimitMappings(object.SpotPriceLimit.SpotPriceModel))
-	d.Set("instance_pattern_info", essService.flattenInstancePatternInfoMappings(object.InstancePatternInfos.InstancePatternInfo))
+
+	d.Set("password_inherit", response["PasswordInherit"])
+	d.Set("resource_group_id", response["ResourceGroupId"])
+
+	d.Set("host_name", response["HostName"])
+	d.Set("spot_strategy", response["SpotStrategy"])
+
 	if sg, ok := d.GetOk("security_group_id"); ok && sg.(string) != "" {
-		d.Set("security_group_id", object.SecurityGroupId)
-	}
-	if sgs, ok := d.GetOk("security_group_ids"); ok && len(sgs.([]interface{})) > 0 {
-		d.Set("security_group_ids", object.SecurityGroupIds.SecurityGroupId)
+		d.Set("security_group_id", response["SecurityGroupId"])
 	}
 	if instanceType, ok := d.GetOk("instance_type"); ok && instanceType.(string) != "" {
-		d.Set("instance_type", object.InstanceType)
-	}
-	if instanceTypes, ok := d.GetOk("instance_types"); ok && len(instanceTypes.([]interface{})) > 0 {
-		d.Set("instance_types", object.InstanceTypes.InstanceType)
+		d.Set("instance_type", response["InstanceType"])
 	}
 	userData := d.Get("user_data")
 	if userData.(string) != "" {
 		_, base64DecodeError := base64.StdEncoding.DecodeString(userData.(string))
 		if base64DecodeError == nil {
-			d.Set("user_data", object.UserData)
+			d.Set("user_data", response["UserData"])
 		} else {
-			d.Set("user_data", userDataHashSum(object.UserData))
+			d.Set("user_data", userDataHashSum(response["UserData"].(string)))
 		}
 	} else {
-		d.Set("user_data", userDataHashSum(object.UserData))
+		if response["UserData"] != nil {
+			d.Set("user_data", userDataHashSum(response["UserData"].(string)))
+		}
+	}
+	d.Set("active", response["LifecycleState"].(string) == string(Active))
+
+	if instanceTypes, ok := d.GetOk("instance_types"); ok && len(instanceTypes.([]interface{})) > 0 {
+		v := response["InstanceTypes"].(map[string]interface{})
+		d.Set("instance_types", v["InstanceType"].([]interface{}))
+	}
+	if sgs, ok := d.GetOk("security_group_ids"); ok && len(sgs.([]interface{})) > 0 {
+		v := response["SecurityGroupIds"].(map[string]interface{})
+		d.Set("security_group_ids", v["SecurityGroupId"].([]interface{}))
+	}
+
+	if response["DataDisk"] != nil {
+		d.Set("data_disk", essService.flattenDataDiskMappings(response["DataDisk"].([]ess.DataDisk)))
+	}
+	d.Set("tags", response["Tags"])
+	if response["SpotPriceModel"] != nil {
+		d.Set("spot_price_limit", essService.flattenSpotPriceLimitMappings(response["SpotPriceModel"].([]ess.SpotPriceModel)))
+	}
+
+	if response["InstancePatternInfo"] != nil {
+		d.Set("instance_pattern_info", essService.flattenInstancePatternInfoMappings(response["InstancePatternInfo"].([]ess.InstancePatternInfo)))
 	}
 	return nil
 }
@@ -873,216 +1112,6 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	addDebug(request.GetActionName(), rawDeleteScalingConfiguration, request.RpcRequest, request)
 
 	return WrapError(essService.WaitForScalingConfiguration(d.Id(), Deleted, DefaultTimeout))
-}
-
-func buildAlicloudEssScalingConfigurationArgs(d *schema.ResourceData, meta interface{}) (*ess.CreateScalingConfigurationRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-	//ecsService := EcsService{client}
-	//zoneId, validZones, _, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	//if err != nil {
-	//	return nil, WrapError(err)
-	//}
-
-	request := ess.CreateCreateScalingConfigurationRequest()
-	request.RegionId = client.RegionId
-	request.ScalingGroupId = d.Get("scaling_group_id").(string)
-	request.ImageId = d.Get("image_id").(string)
-	request.SecurityGroupId = d.Get("security_group_id").(string)
-	request.PasswordInherit = requests.NewBoolean(d.Get("password_inherit").(bool))
-
-	securityGroupId := d.Get("security_group_id").(string)
-	securityGroupIds := d.Get("security_group_ids").([]interface{})
-
-	password := d.Get("password").(string)
-	kmsPassword := d.Get("kms_encrypted_password").(string)
-
-	if password != "" {
-		request.Password = password
-	} else if kmsPassword != "" {
-		kmsService := KmsService{client}
-		decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
-		if err != nil {
-			return nil, WrapError(err)
-		}
-		request.Password = decryptResp
-	}
-
-	if securityGroupId == "" && (securityGroupIds == nil || len(securityGroupIds) == 0) {
-		return nil, WrapError(Error("security_group_id or security_group_ids must be assigned"))
-	}
-
-	if securityGroupIds != nil && len(securityGroupIds) > 0 {
-		sgs := expandStringList(securityGroupIds)
-		request.SecurityGroupIds = &sgs
-	}
-
-	if securityGroupId != "" {
-		request.SecurityGroupId = securityGroupId
-	}
-
-	types := make([]string, 0, int(MaxScalingConfigurationInstanceTypes))
-	instanceType := d.Get("instance_type").(string)
-	instanceTypes := d.Get("instance_types").([]interface{})
-	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
-		return nil, WrapError(Error("instance_type or instance_types must be assigned"))
-	}
-
-	if instanceTypes != nil && len(instanceTypes) > 0 {
-		types = expandStringList(instanceTypes)
-	}
-
-	if instanceType != "" {
-		types = append(types, instanceType)
-	}
-	//for _, v := range types {
-	//	if err := ecsService.InstanceTypeValidation(v, zoneId, validZones); err != nil {
-	//		return nil, WrapError(err)
-	//	}
-	//}
-	request.InstanceTypes = &types
-
-	if v := d.Get("scaling_configuration_name").(string); v != "" {
-		request.ScalingConfigurationName = v
-	}
-
-	if v := d.Get("image_name").(string); v != "" {
-		request.ImageName = v
-	}
-
-	if v := d.Get("internet_charge_type").(string); v != "" {
-		request.InternetChargeType = v
-	}
-
-	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
-		request.InternetMaxBandwidthIn = requests.NewInteger(v)
-	}
-
-	request.InternetMaxBandwidthOut = requests.NewInteger(d.Get("internet_max_bandwidth_out").(int))
-
-	if v := d.Get("credit_specification").(string); v != "" {
-		request.CreditSpecification = v
-	}
-
-	if v := d.Get("system_disk_category").(string); v != "" {
-		request.SystemDiskCategory = v
-	}
-
-	if v := d.Get("system_disk_size").(int); v != 0 {
-		request.SystemDiskSize = requests.NewInteger(v)
-	}
-
-	if v := d.Get("system_disk_name").(string); v != "" {
-		request.SystemDiskDiskName = v
-	}
-
-	if v := d.Get("system_disk_description").(string); v != "" {
-		request.SystemDiskDescription = v
-	}
-
-	if v := d.Get("system_disk_auto_snapshot_policy_id").(string); v != "" {
-		request.SystemDiskAutoSnapshotPolicyId = v
-	}
-
-	if v := d.Get("system_disk_performance_level").(string); v != "" {
-		request.SystemDiskPerformanceLevel = v
-	}
-
-	if v := d.Get("resource_group_id").(string); v != "" {
-		request.ResourceGroupId = v
-	}
-
-	dds, ok := d.GetOk("data_disk")
-	if ok {
-		disks := dds.([]interface{})
-		createDataDisks := make([]ess.CreateScalingConfigurationDataDisk, 0, len(disks))
-		for _, e := range disks {
-			pack := e.(map[string]interface{})
-			dataDisk := ess.CreateScalingConfigurationDataDisk{
-				Size:                 strconv.Itoa(pack["size"].(int)),
-				Category:             pack["category"].(string),
-				SnapshotId:           pack["snapshot_id"].(string),
-				DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
-				Device:               pack["device"].(string),
-				Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
-				KMSKeyId:             pack["kms_key_id"].(string),
-				DiskName:             pack["name"].(string),
-				Description:          pack["description"].(string),
-				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-				PerformanceLevel:     pack["performance_level"].(string),
-			}
-			createDataDisks = append(createDataDisks, dataDisk)
-		}
-		request.DataDisk = &createDataDisks
-	}
-
-	if v, ok := d.GetOk("role_name"); ok && v.(string) != "" {
-		request.RamRoleName = v.(string)
-	}
-
-	if v, ok := d.GetOk("key_name"); ok && v.(string) != "" {
-		request.KeyPairName = v.(string)
-	}
-
-	if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
-		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
-		if base64DecodeError == nil {
-			request.UserData = v.(string)
-		} else {
-			request.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
-		}
-	}
-
-	if v, ok := d.GetOk("tags"); ok {
-		tags := "{"
-		for key, value := range v.(map[string]interface{}) {
-			tags += "\"" + key + "\"" + ":" + "\"" + value.(string) + "\"" + ","
-		}
-		request.Tags = strings.TrimSuffix(tags, ",") + "}"
-	}
-
-	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
-		request.InstanceName = v.(string)
-	}
-
-	if v, ok := d.GetOk("host_name"); ok && v.(string) != "" {
-		request.HostName = v.(string)
-	}
-
-	if v, ok := d.GetOk("spot_strategy"); ok && v.(string) != "" {
-		request.SpotStrategy = v.(string)
-	}
-
-	v, ok := d.GetOk("spot_price_limit")
-	if ok {
-		spotPriceLimits := make([]ess.CreateScalingConfigurationSpotPriceLimit, 0)
-		for _, e := range v.(*schema.Set).List() {
-			pack := e.(map[string]interface{})
-			l := ess.CreateScalingConfigurationSpotPriceLimit{
-				InstanceType: pack["instance_type"].(string),
-				PriceLimit:   strconv.FormatFloat(pack["price_limit"].(float64), 'f', 2, 64),
-			}
-			spotPriceLimits = append(spotPriceLimits, l)
-		}
-		request.SpotPriceLimit = &spotPriceLimits
-	}
-
-	getOk, b := d.GetOk("instance_pattern_info")
-	if b {
-		instancePatternInfos := make([]ess.CreateScalingConfigurationInstancePatternInfo, 0)
-		for _, e := range getOk.(*schema.Set).List() {
-			pack := e.(map[string]interface{})
-			l := ess.CreateScalingConfigurationInstancePatternInfo{
-				InstanceFamilyLevel: pack["instance_family_level"].(string),
-				Memory:              strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
-				MaxPrice:            strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
-				Cores:               strconv.Itoa(pack["cores"].(int)),
-			}
-			instancePatternInfos = append(instancePatternInfos, l)
-		}
-		request.InstancePatternInfo = &instancePatternInfos
-	}
-
-	return request, nil
 }
 
 func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) (configures []ess.ScalingConfiguration, err error) {

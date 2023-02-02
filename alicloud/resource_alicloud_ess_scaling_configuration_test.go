@@ -75,6 +75,16 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"system_disk_encrypted": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_encrypted": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"scaling_configuration_name": fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(

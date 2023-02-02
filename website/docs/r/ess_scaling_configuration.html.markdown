@@ -113,6 +113,7 @@ The following arguments are supported:
 * `system_disk_description` - (Optional, Available in 1.92.0+) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for system disk.
 * `system_disk_performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as the system disk.
+* `system_disk_encrypted` - (Optional, Available in 1.199.0+) Whether to encrypt the system disk.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.

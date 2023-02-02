@@ -339,6 +339,46 @@ func (s *EssService) DescribeEssEciScalingConfiguration(id string) (object map[s
 	return object, nil
 }
 
+//********
+
+func (s *EssService) DescribeEssScalingConfigurationByCommonApi(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewEssClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	request := map[string]interface{}{
+		"ScalingConfigurationId.1": id,
+		"RegionId":                 s.client.RegionId,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("DescribeScalingConfigurations"), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, "DescribeScalingConfigurations", AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.ScalingConfigurations", response)
+
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingConfigurations", response)
+	}
+
+	vv, err := jsonpath.Get("$.ScalingConfiguration", v)
+
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ScalingConfigurations", response)
+	}
+
+	if len(vv.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ScalingConfiguration", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	object = vv.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
 func (s *EssService) ActiveEssScalingConfiguration(sgId, id string) error {
 	request := ess.CreateModifyScalingGroupRequest()
 	request.ScalingGroupId = sgId
