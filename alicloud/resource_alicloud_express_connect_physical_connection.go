@@ -49,7 +49,7 @@ func resourceAlicloudExpressConnectPhysicalConnection() *schema.Resource {
 			},
 			"peer_location": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"physical_connection_name": {
 				Type:     schema.TypeString,
