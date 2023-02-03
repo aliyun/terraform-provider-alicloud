@@ -146,8 +146,8 @@ func resourceAlicloudEventBridgeRuleCreate(d *schema.ResourceData, meta interfac
 			targetsMap["endpoint"] = targetsArg["endpoint"]
 			targetsMap["id"] = targetsArg["target_id"]
 			targetsMap["type"] = targetsArg["type"]
-			if pushRetryStrategy, ok := targetsMap["pushRetryStrategy"]; ok && pushRetryStrategy != "" {
-				targetsMap["pushRetryStrategy"] = targetsArg["push_retry_strategy"]
+			if v, ok := targetsArg["push_retry_strategy"]; ok && fmt.Sprint(v) != "" {
+				targetsMap["pushRetryStrategy"] = v
 			}
 			if v, ok := targetsArg["dead_letter_queue"]; ok {
 				deadLetterQueueMap := map[string]interface{}{}
