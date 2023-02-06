@@ -123,23 +123,27 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
-					"compute_resource":   "16ACU",
-					"storage_resource":   "0ACU",
-					"db_cluster_version": "5.0",
-					"payment_type":       "PayAsYouGo",
-					"zone_id":            "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]}",
+					"vpc_id":                 "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
+					"compute_resource":       "16ACU",
+					"storage_resource":       "0ACU",
+					"db_cluster_version":     "5.0",
+					"payment_type":           "PayAsYouGo",
+					"zone_id":                "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]}",
+					"security_ips":           "10.23.1.0",
+					"db_cluster_description": "tf-description",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":             CHECKSET,
-						"vswitch_id":         CHECKSET,
-						"compute_resource":   "16ACU",
-						"storage_resource":   "0ACU",
-						"db_cluster_version": "5.0",
-						"payment_type":       "PayAsYouGo",
-						"zone_id":            CHECKSET,
+						"vpc_id":                 CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"compute_resource":       "16ACU",
+						"storage_resource":       "0ACU",
+						"db_cluster_version":     "5.0",
+						"payment_type":           "PayAsYouGo",
+						"zone_id":                CHECKSET,
+						"security_ips":           "10.23.1.0",
+						"db_cluster_description": "tf-description",
 					}),
 				),
 			},
@@ -172,6 +176,38 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"compute_resource": "48ACU",
 						"storage_resource": "48ACU",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": "10.23.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips": "10.23.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_description": "tf-db-cluster-description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_description": "tf-db-cluster-description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips":           "10.23.1.2",
+					"db_cluster_description": "update-tf-db-cluster-description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips":           "10.23.1.2",
+						"db_cluster_description": "update-tf-db-cluster-description",
 					}),
 				),
 			},

@@ -892,6 +892,57 @@ func (s *AdbService) AdbDbClusterLakeVersionStateRefreshFunc(d *schema.ResourceD
 		return object, fmt.Sprint(object["DBClusterStatus"]), nil
 	}
 }
+
+func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeClusterAccessWhiteList"
+
+	conn, err := s.client.NewAdsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"DBClusterId": id,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DBClusterLakeVersion", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.Items.IPArray", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.IPArray", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("DBClusterLakeVersion", id)), NotFoundWithResponse, response)
+	}
+
+	object = resp.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
 func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewAdsClient()
 	if err != nil {
