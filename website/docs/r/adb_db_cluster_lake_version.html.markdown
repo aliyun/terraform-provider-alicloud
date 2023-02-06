@@ -54,7 +54,10 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
 * `enable_default_resource_group` - (Optional) Whether to enable default allocation of resources to user_default resource groups.
-
+* `security_ips` - (Optional, Computed, Available in v1.198.0+) The IP addresses in an IP address whitelist of a cluster. Separate multiple IP addresses with commas (,). You can add a maximum of 500 different IP addresses to a whitelist. The entries in the IP address whitelist must be in one of the following formats:
+  - IP addresses, such as 10.23.XX.XX.
+  - CIDR blocks, such as 10.23.xx.xx/24. In this example, 24 indicates that the prefix of each IP address in the IP whitelist is 24 bits in length. You can replace 24 with a value within the range of 1 to 32.
+* `db_cluster_description` - (Optional, Computed, Available in v1.198.0+) The description of the cluster.
 
 ## Attributes Reference
 
@@ -79,8 +82,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 50 mins) Used when create the DB Cluster Lake Version.
-* `delete` - (Defaults to 5 mins) Used when delete the DB Cluster Lake Version.
 * `update` - (Defaults to 72 mins) Used when update the DB Cluster Lake Version.
+* `delete` - (Defaults to 5 mins) Used when delete the DB Cluster Lake Version.
 
 ## Import
 
