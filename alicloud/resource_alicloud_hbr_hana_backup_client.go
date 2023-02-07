@@ -2,18 +2,21 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"time"
 )
 
 func resourceAlicloudHbrHanaBackupClient() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudHbrHanaBackupClientCreate,
 		Read:   resourceAlicloudHbrHanaBackupClientRead,
+		Update: resourceAlicloudHbrHanaBackupClientUpdate,
 		Delete: resourceAlicloudHbrHanaBackupClientDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -156,6 +159,11 @@ func resourceAlicloudHbrHanaBackupClientRead(d *schema.ResourceData, meta interf
 	d.Set("status", object["Status"])
 
 	return nil
+}
+
+func resourceAlicloudHbrHanaBackupClientUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	return resourceAlicloudHbrHanaBackupClientRead(d, meta)
 }
 
 func resourceAlicloudHbrHanaBackupClientDelete(d *schema.ResourceData, meta interface{}) error {
