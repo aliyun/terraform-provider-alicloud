@@ -64,7 +64,7 @@ var ValidRegions = []Region{
 	APNorthEast1, APNorthEast2, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APSouthEast6, APSouthEast7,
 	APSouth1,
 	MEEast1, MECentral1,
-	EUCentral1, EUWest1,
+	EUCentral1, EUWest1, RusWest1,
 	CnNorth2Gov1,
 	ShenZhenFinance1, ShenzhenFinance2, ShenzhenFinance,
 	ShanghaiFinance1Pub, ShanghaiFinance,
