@@ -58,7 +58,7 @@ func TestAccAlicloudRdsAccount_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "reset_permission_flag"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -149,7 +149,7 @@ func TestAccAlicloudRdsAccount_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
+				ImportStateVerifyIgnore: []string{"password", "reset_permission_flag"},
 			},
 		},
 	})
@@ -200,7 +200,7 @@ func TestAccAlicloudRdsAccount_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context"},
+				ImportStateVerifyIgnore: []string{"password", "kms_encrypted_password", "kms_encryption_context", "reset_permission_flag"},
 			},
 		},
 	})
