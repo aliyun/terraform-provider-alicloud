@@ -121,6 +121,7 @@ The following arguments are supported:
 * `renewal_period_unit` - (Optional, Computed, Available from 1.193.0+) The unit of the auto-renewal period. Valid values:  **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
   - `M`: months.
   - `Y`: years.
+* `public_white_list` - (Optional, Available from 1.199.0+) The public IP address that you want to add to the whitelist.
 
   -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
 ```
