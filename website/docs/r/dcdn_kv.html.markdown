@@ -1,5 +1,5 @@
 ---
-subcategory: "Dcdn"
+subcategory: "DCDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dcdn_kv"
 sidebar_current: "docs-alicloud-resource-dcdn-kv"
