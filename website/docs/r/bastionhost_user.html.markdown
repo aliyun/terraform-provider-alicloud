@@ -69,12 +69,13 @@ The following arguments are supported:
   * PH: philippines (+63) 
   * CH: Switzerland (+41) 
   * SE: Sweden (+46)
-  
 * `password` - (Optional, Sensitive) Specify the New User's Password. Supports up to 128 Characters. Description of the New User as the Source of the Local User (That Is, Source Value for Local, this Parameter Is Required.
-* `source` - (Required, ForceNew) Specify the New of the User That Created the Source. Valid Values: 
+* `source` - (Required, ForceNew) Specify the New of the User That Created the Source. Valid Values:
   * Local: Local User
-  * RAM: Ram User
-  
+  * Ram: Ram User
+  * AD: AD-authenticated User
+  * LDAP: LDAP-authenticated User
+-> **NOTE:** From version 1.199.0, `source` can be set to `AD`, `LDAP`.
 * `source_user_id` - (Optional, ForceNew) Specify the Newly Created User Is Uniquely Identified. Indicates That the Parameter Is a Bastion Host Corresponding to the User with the Ram User's Unique Identifier. The Newly Created User Source Grant Permission to a RAM User (That Is, Source Used as a Ram), this Parameter Is Required. You Can Call Access Control of Listusers Interface from the Return Data Userid to Obtain the Parameters.
 * `status` - (Optional, Computed) The status of the resource. Valid values: `Frozen`, `Normal`.
 * `user_name` - (Required, ForceNew) Specify the New User Name. This Parameter Is Only by Letters, Lowercase Letters, Numbers, and Underscores (_), Supports up to 128 Characters.
@@ -85,6 +86,16 @@ The following attributes are exported:
 
 * `id` - The resource ID of User. The value formats as `<instance_id>:<user_id>`.
 * `user_id` - The User ID.
+
+### Timeouts
+
+-> **NOTE:** Available in 1.199.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the User.
+* `update` - (Defaults to 5 mins) Used when update the User.
+* `delete` - (Defaults to 5 mins) Used when delete the User.
 
 ## Import
 
