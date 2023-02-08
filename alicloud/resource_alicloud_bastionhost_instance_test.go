@@ -290,14 +290,17 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
 					"enable_public_access": "true",
+					"public_white_list":    []string{"192.168.0.0/16"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":          name,
 						"period":               "1",
+						"plan_code":            "cloudbastion",
 						"security_group_ids.#": "1",
 						"enable_public_access": "true",
-						"plan_code":            "cloudbastion",
+						"public_white_list.#":  "1",
+						"public_white_list.0":  "192.168.0.0/16",
 					}),
 				),
 			},
@@ -308,6 +311,17 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"enable_public_access": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_white_list": []string{"192.168.0.0/18"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_white_list.#": "1",
+						"public_white_list.0": "192.168.0.0/18",
 					}),
 				),
 			},

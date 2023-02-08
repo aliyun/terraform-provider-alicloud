@@ -55,6 +55,11 @@ func resourceAlicloudBastionhostInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"public_white_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -364,12 +369,18 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
+
 	d.Set("description", instance["Description"])
 	d.Set("license_code", instance["LicenseCode"])
 	d.Set("vswitch_id", instance["VswitchId"])
 	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
 	d.Set("enable_public_access", instance["PublicNetworkAccess"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
+
+	if fmt.Sprint(instance["PublicNetworkAccess"]) == "true" {
+		d.Set("public_white_list", instance["PublicWhiteList"])
+	}
+
 	instance, err = BastionhostService.DescribeBastionhostInstances(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -515,6 +526,12 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 				}
 			}
 		}
+
+		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("enable_public_access")
 	}
 
@@ -671,6 +688,48 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("renewal_status")
 		d.SetPartial("renew_period")
 		d.SetPartial("renewal_period_unit")
+	}
+
+	update = false
+	configInstanceWhiteListReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+		"RegionId":   client.RegionId,
+	}
+
+	if d.HasChange("public_white_list") {
+		update = true
+	}
+	if v, ok := d.GetOk("public_white_list"); ok {
+		configInstanceWhiteListReq["WhiteList"] = v
+	}
+
+	if update {
+		action := "ConfigInstanceWhiteList"
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, configInstanceWhiteListReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, resp, configInstanceWhiteListReq)
+			return nil
+		})
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, bastionhostService.BastionhostInstanceRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("public_white_list")
 	}
 
 	d.Partial(false)
