@@ -1,42 +1,40 @@
-## 1.198.0 (Unreleased)
+## 1.199.0 (Unreleased)
+## 1.198.0 (February 8, 2023)
 
-- **New Resource:** `alicloud_rds_ddr_db_instance` [GH-5794]
-- **New Resource:** `alicloud_dts_instance` [GH-5841]
-- **New Resource:** `alicloud_nlb_load_balancer_security_group_attachment` [GH-5858]
-- **New Resource:** `alicloud_dcdn_kv_namespace` [GH-5859]
-- **New Resource:** `alicloud_hbr_hana_backup_client` [GH-5864]
-- **New Resource:** `alicloud_dcdn_kv` [GH-5865]
-- **New Resource:** `alicloud_dcdn_kv_account` [GH-5867]
-- **New Data Source:** `data_source_alicloud_rds_collation_time_zones` [GH-5837]
-- **New Data Source:** `alicloud_rds_character_set_names` [GH-5838]
-- **New Data Source:** `alicloud_dts_instances` [GH-5841]
-- **New Data Source:** `alicloud_hbr_hana_backup_clients ` [GH-5864]
+- **New Resource:** `alicloud_rds_ddr_db_instance` ([#5794](https://github.com/aliyun/terraform-provider-alicloud/issues/5794))
+- **New Resource:** `alicloud_dts_instance` ([#5841](https://github.com/aliyun/terraform-provider-alicloud/issues/5841))
+- **New Resource:** `alicloud_nlb_load_balancer_security_group_attachment` ([#5858](https://github.com/aliyun/terraform-provider-alicloud/issues/5858))
+- **New Resource:** `alicloud_dcdn_kv_namespace` ([#5859](https://github.com/aliyun/terraform-provider-alicloud/issues/5859))
+- **New Resource:** `alicloud_hbr_hana_backup_client` ([#5864](https://github.com/aliyun/terraform-provider-alicloud/issues/5864))
+- **New Resource:** `alicloud_dcdn_kv` ([#5865](https://github.com/aliyun/terraform-provider-alicloud/issues/5865))
+- **New Resource:** `alicloud_dcdn_kv_account` ([#5867](https://github.com/aliyun/terraform-provider-alicloud/issues/5867))
+- **New Data Source:** `data_source_alicloud_rds_collation_time_zones` ([#5837](https://github.com/aliyun/terraform-provider-alicloud/issues/5837))
+- **New Data Source:** `alicloud_rds_character_set_names` ([#5838](https://github.com/aliyun/terraform-provider-alicloud/issues/5838))
+- **New Data Source:** `alicloud_dts_instances` ([#5841](https://github.com/aliyun/terraform-provider-alicloud/issues/5841))
+- **New Data Source:** `alicloud_hbr_hana_backup_clients ` ([#5864](https://github.com/aliyun/terraform-provider-alicloud/issues/5864))
 
 ENHANCEMENTS:
 
-- resource/alicloud_sae_application: Support new attribute micro_registration. [GH-5594]
-- resource/alicloud_rds_account : Resets permissions of the privileged account. [GH-5836]
-- resource/alicloud_cen_transit_router_prefix_list_association: Added retry stragety for error code `ResourceNotFound.PrefixList`, `IncorrectStatus.RouteTable`, `IncorrectStatus.TransitRouter`, `InvalidStatus.Prefixlist`, `InvalidStatus.PrefixlistAssociation` [GH-5851]
-- docs/cen_transit_router_vpn_attachment: Add an example of creating a Transit Router Vpn Attachment with Transit Router Cidr. [GH-5853]
-- docs: Improves the docs missing parameters and incorrect referance. [GH-5861]
-- resource/alicloud_dcdn_domain: Supports new attribute cname. [GH-5863]
-- datasource/alicloud_log_projects add attribute policy. [GH-5872]
-- resource/alicloud_gpdb_elastic_instance: Adds new document description;resource/alicloud_express_connect_physical_connection: Adds new change of attribute peer_location; [GH-5877]
-- resource/alicloud_adb_db_cluster_lake_version: Added the field security_ips and db_cluster_description; Supported for new action ModifyClusterAccessWhiteList and ModifyDBClusterDescription. [GH-5879]
-- supports new region rus-west-1. [GH-5881]
-- resource/alicloud_hbr_hana_backup_client: Added null Update Func. [GH-5882]
+- resource/alicloud_sae_application: Support new attribute micro_registration. ([#5594](https://github.com/aliyun/terraform-provider-alicloud/issues/5594))
+- resource/alicloud_rds_account : Resets permissions of the privileged account. ([#5836](https://github.com/aliyun/terraform-provider-alicloud/issues/5836))
+- resource/alicloud_cen_transit_router_prefix_list_association: Added retry stragety for error code `ResourceNotFound.PrefixList`, `IncorrectStatus.RouteTable`, `IncorrectStatus.TransitRouter`, `InvalidStatus.Prefixlist`, `InvalidStatus.PrefixlistAssociation` ([#5851](https://github.com/aliyun/terraform-provider-alicloud/issues/5851))
+- docs/cen_transit_router_vpn_attachment: Add an example of creating a Transit Router Vpn Attachment with Transit Router Cidr. ([#5853](https://github.com/aliyun/terraform-provider-alicloud/issues/5853))
+- docs: Improves the docs missing parameters and incorrect referance. ([#5861](https://github.com/aliyun/terraform-provider-alicloud/issues/5861))
+- resource/alicloud_dcdn_domain: Supports new attribute cname. ([#5863](https://github.com/aliyun/terraform-provider-alicloud/issues/5863))
+- datasource/alicloud_log_projects add attribute policy. ([#5872](https://github.com/aliyun/terraform-provider-alicloud/issues/5872))
+- resource/alicloud_gpdb_elastic_instance: Adds new document description;resource/alicloud_express_connect_physical_connection: Adds new change of attribute peer_location; ([#5877](https://github.com/aliyun/terraform-provider-alicloud/issues/5877))
+- resource/alicloud_adb_db_cluster_lake_version: Added the field security_ips and db_cluster_description; Supported for new action ModifyClusterAccessWhiteList and ModifyDBClusterDescription. ([#5879](https://github.com/aliyun/terraform-provider-alicloud/issues/5879))
+- supports new region rus-west-1. ([#5881](https://github.com/aliyun/terraform-provider-alicloud/issues/5881))
+- resource/alicloud_hbr_hana_backup_client: Added null Update Func. ([#5882](https://github.com/aliyun/terraform-provider-alicloud/issues/5882))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance:fix rds bugs. [GH-5862]
-- resource/alicloud_ecs_launch_template: Fix VersionNumber attribute type error [GH-5868]
-- resource/alicloud_vpc_dhcp_options_set: Fix UpdateDhcpOptionsSetAttribute operation status value verification. [GH-5869]
-- docs: Fixed the title error of alb_listener_acl_attachment and api_gateway_vpc_access [GH-5874]
-- resource/alicloud_event_bridge_rule: Fix the problem that push_retry_strategy does not take effect when creating. [GH-5878]
-- testcase/alicloud_rds_account : Repair of automation test failure in Germany region. [GH-5883]
-
-
-
+- resource/alicloud_db_instance:fix rds bugs. ([#5862](https://github.com/aliyun/terraform-provider-alicloud/issues/5862))
+- resource/alicloud_ecs_launch_template: Fix VersionNumber attribute type error ([#5868](https://github.com/aliyun/terraform-provider-alicloud/issues/5868))
+- resource/alicloud_vpc_dhcp_options_set: Fix UpdateDhcpOptionsSetAttribute operation status value verification. ([#5869](https://github.com/aliyun/terraform-provider-alicloud/issues/5869))
+- docs: Fixed the title error of alb_listener_acl_attachment and api_gateway_vpc_access ([#5874](https://github.com/aliyun/terraform-provider-alicloud/issues/5874))
+- resource/alicloud_event_bridge_rule: Fix the problem that push_retry_strategy does not take effect when creating. ([#5878](https://github.com/aliyun/terraform-provider-alicloud/issues/5878))
+- testcase/alicloud_rds_account : Repair of automation test failure in Germany region. ([#5883](https://github.com/aliyun/terraform-provider-alicloud/issues/5883))
 
 ## 1.197.0 (January 19, 2023)
 
