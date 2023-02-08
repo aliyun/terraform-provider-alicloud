@@ -21,6 +21,11 @@ func resourceAlicloudBastionhostUser() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"comment": {
 				Type:     schema.TypeString,
@@ -59,7 +64,7 @@ func resourceAlicloudBastionhostUser() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Local", "Ram"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Local", "Ram", "AD", "LDAP"}, false),
 			},
 			"source_user_id": {
 				Type:     schema.TypeString,
@@ -126,7 +131,7 @@ func resourceAlicloudBastionhostUserCreate(d *schema.ResourceData, meta interfac
 	}
 	request["UserName"] = d.Get("user_name")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -146,6 +151,7 @@ func resourceAlicloudBastionhostUserCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudBastionhostUserUpdate(d, meta)
 }
+
 func resourceAlicloudBastionhostUserRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	yundunBastionhostService := YundunBastionhostService{client}
@@ -175,6 +181,7 @@ func resourceAlicloudBastionhostUserRead(d *schema.ResourceData, meta interface{
 	d.Set("user_name", object["UserName"])
 	return nil
 }
+
 func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	yundunBastionhostService := YundunBastionhostService{client}
@@ -239,7 +246,7 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		action := "ModifyUser"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -276,7 +283,7 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 				request["RegionId"] = client.RegionId
 				action := "LockUsers"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
@@ -300,7 +307,7 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 				request["RegionId"] = client.RegionId
 				action := "UnlockUsers"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
@@ -322,6 +329,7 @@ func resourceAlicloudBastionhostUserUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(false)
 	return resourceAlicloudBastionhostUserRead(d, meta)
 }
+
 func resourceAlicloudBastionhostUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -341,7 +349,7 @@ func resourceAlicloudBastionhostUserDelete(d *schema.ResourceData, meta interfac
 
 	request["RegionId"] = client.RegionId
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
