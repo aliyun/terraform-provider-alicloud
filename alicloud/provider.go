@@ -851,6 +851,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_integration_exporters":                       dataSourceAlicloudArmsIntegrationExporters(),
 			"alicloud_service_catalog_portfolios":                       dataSourceAlicloudServiceCatalogPortfolios(),
 			"alicloud_arms_remote_writes":                               dataSourceAlicloudArmsRemoteWrites(),
+			"alicloud_ebs_enterprise_snapshot_policies":                 dataSourceAlicloudEbsEnterpriseSnapshotPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1597,6 +1598,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_integration_exporter":                             resourceAlicloudArmsIntegrationExporter(),
 			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
 			"alicloud_arms_remote_write":                                     resourceAlicloudArmsRemoteWrite(),
+			"alicloud_ebs_enterprise_snapshot_policy":                        resourceAlicloudEbsEnterpriseSnapshotPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
