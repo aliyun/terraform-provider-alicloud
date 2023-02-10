@@ -390,6 +390,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Get("engine").(string) == "MySQL" && d.Get("category").(string) == "cluster" {
+						return true
+					}
+					return false
+				},
 			},
 			"ca_type": {
 				Type:     schema.TypeString,
@@ -522,7 +528,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "category"}, false),
 			},
 			"effective_time": {
 				Type:         schema.TypeString,
