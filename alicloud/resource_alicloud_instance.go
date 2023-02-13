@@ -1766,6 +1766,8 @@ func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) erro
 	if _, err = stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	// private ip is not released even after ecs been destroyed, so sleep to wait for ip release
+	time.Sleep(3 * time.Second)
 	return nil
 }
 
