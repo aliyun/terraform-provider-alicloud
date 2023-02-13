@@ -835,6 +835,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_hana_backup_clients":                          dataSourceAlicloudHbrHanaBackupClients(),
 			"alicloud_dts_instances":                                    dataSourceAlicloudDtsInstances(),
 			"alicloud_threat_detection_instances":                       dataSourceAlicloudThreatDetectionInstances(),
+			"alicloud_cr_vpc_endpoint_linked_vpcs":                      dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1557,6 +1558,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_hana_backup_client":                               resourceAlicloudHbrHanaBackupClient(),
 			"alicloud_dts_instance":                                         resourceAlicloudDtsInstance(),
 			"alicloud_threat_detection_instance":                            resourceAlicloudThreatDetectionInstance(),
+			"alicloud_cr_vpc_endpoint_linked_vpc":                           resourceAlicloudCrVpcEndpointLinkedVpc(),
 		},
 
 		ConfigureFunc: providerConfigure,
