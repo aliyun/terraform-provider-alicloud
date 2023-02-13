@@ -54,8 +54,9 @@ resource "alicloud_polardb_global_database_network" "default" {
 
 The following arguments are supported:
 
-* `db_cluster_id` - (Required, ForceNew) The ID of the primary cluster.
+* `db_cluster_id` - (Required) The ID of the primary cluster.
 * `description` - (Optional, Computed) The description of the Global Database Network.
+* `forced` - (Optional, Available in v1.199.0+) Specifies whether to forcibly switch over the primary and secondary clusters in the GDN.
 
 ## Attributes Reference
 

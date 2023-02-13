@@ -28,7 +28,6 @@ func resourceAlicloudPolarDBGlobalDatabaseNetwork() *schema.Resource {
 			"db_cluster_id": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -38,6 +37,10 @@ func resourceAlicloudPolarDBGlobalDatabaseNetwork() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"forced": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 		},
 	}
@@ -109,6 +112,7 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 
+	d.Partial(true)
 	update := false
 	request := map[string]interface{}{
 		"GDNId": d.Id(),
@@ -143,6 +147,47 @@ func resourceAlicloudPolarDBGlobalDatabaseNetworkUpdate(d *schema.ResourceData, 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("description")
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"GDNId": d.Id(),
+	}
+
+	if d.HasChange("db_cluster_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("db_cluster_id"); ok {
+		request["DBClusterId"] = v
+	}
+	if v, ok := d.GetOkExists("forced"); ok {
+		request["Forced"] = v
+	}
+
+	if update {
+		action := "SwitchOverGlobalDatabaseNetwork"
+		conn, err := client.NewPolarDBClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("db_cluster_id")
 	}
 
 	return resourceAlicloudPolarDBGlobalDatabaseNetworkRead(d, meta)

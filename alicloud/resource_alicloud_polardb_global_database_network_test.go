@@ -20,7 +20,6 @@ import (
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -135,9 +134,9 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 	}, "DescribePolarDBGlobalDatabaseNetwork")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sPolarDBGlobalDatabaseNetwork-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence)
+	//rand := acctest.RandIntRange(10000, 99999)
+	//name := fmt.Sprintf("tf-testAcc%sPolarDBGlobalDatabaseNetwork-name%d", defaultRegionToTest, rand)
+	//testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -147,9 +146,7 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id": "${alicloud_polardb_cluster.default.id}",
-				}),
+				Config: testAccPolarDBGlobalDatabaseNetwork,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_cluster_id": CHECKSET,
@@ -157,9 +154,7 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "tf-testAcc",
-				}),
+				Config: testAccPolarDBGlobalDatabaseNetworkDescription,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": "tf-testAcc",
@@ -167,12 +162,11 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "update-tf-testAcc",
-				}),
+				Config: testAccPolarDBGlobalDatabaseNetworkDbClusterId,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "update-tf-testAcc",
+						"db_cluster_id": CHECKSET,
+						"description":   "tf-testAcc",
 					}),
 				),
 			},
@@ -188,6 +182,134 @@ func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 var resourceAlicloudPolarDBGlobalDatabaseNetworkMap = map[string]string{
 	"status": CHECKSET,
 }
+
+const testAccPolarDBGlobalDatabaseNetwork = `
+variable "name" {
+  default = "tf-testAccPolarDBGlobalDatabaseNetworkBasic"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_polardb_node_classes" "default" {
+	zone_id    = data.alicloud_vswitches.default.vswitches.0.zone_id
+	pay_type   = "PostPaid"
+	db_type    = "MySQL"
+	db_version = "8.0"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+	db_type       = "MySQL"
+	db_version    = "8.0"
+	pay_type      = "PostPaid"
+	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+	vswitch_id    = data.alicloud_vswitches.default.ids.0
+	description   = "${var.name}"
+}
+
+resource "alicloud_polardb_global_database_network" "default" {
+	db_cluster_id = alicloud_polardb_cluster.default.id
+}
+
+`
+const testAccPolarDBGlobalDatabaseNetworkDescription = `
+variable "name" {
+  default = "tf-testAccPolarDBGlobalDatabaseNetworkBasic"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_polardb_node_classes" "default" {
+	zone_id    = data.alicloud_vswitches.default.vswitches.0.zone_id
+	pay_type   = "PostPaid"
+	db_type    = "MySQL"
+	db_version = "8.0"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+	db_type       = "MySQL"
+	db_version    = "8.0"
+	pay_type      = "PostPaid"
+	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+	vswitch_id    = data.alicloud_vswitches.default.ids.0
+	description   = var.name
+}
+
+resource "alicloud_polardb_global_database_network" "default" {
+	db_cluster_id = alicloud_polardb_cluster.default.id
+	description = "tf-testAcc"
+}
+
+resource "alicloud_polardb_cluster" "GdnStandby" {
+	db_type       = "MySQL"
+	db_version    = "8.0"
+	gdn_id        = alicloud_polardb_global_database_network.default.id
+	creation_option    = "CreateGdnStandby"
+	pay_type      = "PostPaid"
+	db_node_class = "polar.mysql.g2.large"
+	vswitch_id    = data.alicloud_vswitches.default.ids.0
+	description   = "${var.name}"
+}
+
+`
+const testAccPolarDBGlobalDatabaseNetworkDbClusterId = `
+variable "name" {
+  default = "tf-testAccPolarDBGlobalDatabaseNetworkBasic"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_polardb_node_classes" "default" {
+	zone_id    = data.alicloud_vswitches.default.vswitches.0.zone_id
+	pay_type   = "PostPaid"
+	db_type    = "MySQL"
+	db_version = "8.0"
+}
+
+resource "alicloud_polardb_cluster" "default" {
+	db_type       = "MySQL"
+	db_version    = "8.0"
+	pay_type      = "PostPaid"
+	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+	vswitch_id    = data.alicloud_vswitches.default.ids.0
+	description   = var.name
+}
+
+resource "alicloud_polardb_cluster" "GdnStandby" {
+	db_type       = "MySQL"
+	db_version    = "8.0"
+	gdn_id        = alicloud_polardb_global_database_network.default.id
+	creation_option    = "CreateGdnStandby"
+	pay_type      = "PostPaid"
+	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+	vswitch_id    = data.alicloud_vswitches.default.ids.0
+	description   = "${var.name}"
+}
+
+resource "alicloud_polardb_global_database_network" "default" {
+	db_cluster_id = alicloud_polardb_cluster.GdnStandby.id
+	description = "tf-testAcc"
+	depends_on = [alicloud_polardb_cluster.default]
+}
+
+`
 
 func resourceAlicloudPolarDBGlobalDatabaseNetworkBasicDependence(name string) string {
 	return fmt.Sprintf(`
