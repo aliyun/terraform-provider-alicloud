@@ -422,6 +422,7 @@ func (s *CrService) DescribeCrChartNamespace(id string) (object map[string]inter
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
 func (s *CrService) DescribeCrChartRepository(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAcrClient()
@@ -554,4 +555,92 @@ func (s *CrService) GetChain(id string) (object map[string]interface{}, err erro
 	}
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+func (s *CrService) DescribeCrVpcEndpointLinkedVpc(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "GetInstanceVpcEndpoint"
+
+	conn, err := s.client.NewAcrClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"InstanceId": parts[0],
+		"ModuleName": parts[3],
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if fmt.Sprint(response["IsSuccess"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	resp, err := jsonpath.Get("$.LinkedVpcs", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.LinkedVpcs", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CR:VpcEndpointLinkedVpc", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["VpcId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["VswitchId"]) == parts[2] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CR:VpcEndpointLinkedVpc", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+func (s *CrService) CrVpcEndpointLinkedVpcStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCrVpcEndpointLinkedVpc(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["Status"]), nil
+	}
 }
