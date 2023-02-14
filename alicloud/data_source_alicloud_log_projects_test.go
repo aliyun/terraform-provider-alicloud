@@ -59,6 +59,7 @@ func TestAccAlicloudLogProjectsDataSource(t *testing.T) {
 			"projects.0.region":           CHECKSET,
 			"projects.0.owner":            CHECKSET,
 			"projects.0.last_modify_time": CHECKSET,
+			"projects.0.policy":           "{\"Version\":\"1\",\"Statement\":[{\"Resource\":\"acs:log:*:*:project/exampleproject/*\",\"Effect\":\"Deny\",\"Action\":[\"log:PostLogStoreLogs\"],\"Condition\":{\"StringNotLike\":{\"acs:SourceVpc\":[\"vpc-*\"]}}}]}",
 			"projects.0.status":           "Normal",
 		}
 	}
@@ -88,6 +89,7 @@ func testAccCheckAlicloudLogProjectsDataSourceName(rand int, attrMap map[string]
 resource "alicloud_log_project" "default" {
   name        = "tf-testacc-%d"
   description = "created by terraform"
+  policy      = "{\"Version\":\"1\",\"Statement\":[{\"Resource\":\"acs:log:*:*:project/exampleproject/*\",\"Effect\":\"Deny\",\"Action\":[\"log:PostLogStoreLogs\"],\"Condition\":{\"StringNotLike\":{\"acs:SourceVpc\":[\"vpc-*\"]}}}]}"
 }
 data "alicloud_log_projects" "default" {
 	%s	

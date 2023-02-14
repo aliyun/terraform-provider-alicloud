@@ -583,6 +583,85 @@ func TestAccAlicloudMongoDBInstance_vpc1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_vpc2(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "6.0",
+					"network_type":        "VPC",
+					"storage_type":        "cloud_essd1",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"zone_id":             "${local.zone_id}",
+					"db_instance_storage": "470",
+					"db_instance_class":   "mdb.shard.2x.xlarge.d",
+					"name":                name,
+					"readonly_replicas":   "1",
+					"hidden_zone_id":      "${data.alicloud_mongodb_zones.default.ids.1}",
+					"secondary_zone_id":   "${data.alicloud_mongodb_zones.default.ids.2}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "6.0",
+						"network_type":         "VPC",
+						"storage_type":         "cloud_essd1",
+						"db_instance_storage":  "470",
+						"db_instance_class":    "mdb.shard.2x.xlarge.d",
+						"name":                 name,
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"zone_id":              CHECKSET,
+						"readonly_replicas":    "1",
+						"hidden_zone_id":       CHECKSET,
+						"secondary_zone_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"readonly_replicas": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"readonly_replicas": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
+			},
+		},
+	})
+}
+
 func resourceMongodbInstanceVpcConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {

@@ -130,6 +130,13 @@ func resourceAlicloudResourceManagerResourceShareUpdate(d *schema.ResourceData, 
 func resourceAlicloudResourceManagerResourceShareDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcesharingService := ResourcesharingService{client}
+	object, err := resourcesharingService.DescribeResourceManagerResourceShare(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if object["ResourceShareStatus"] == "Deleted" {
+		return nil
+	}
 	action := "DeleteResourceShare"
 	var response map[string]interface{}
 	conn, err := client.NewRessharingClient()

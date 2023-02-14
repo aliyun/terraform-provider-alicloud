@@ -70,6 +70,7 @@ The following arguments are supported:
 ## Attributes Reference
 
 * `id` -The id of the DCDN Domain. It is the same as its domain name.
+* `cname` (Available in 1.198.0+)- The canonical name (CNAME) of the accelerated domain.
 
 ### Timeouts
 

@@ -59,7 +59,7 @@ The following arguments are supported:
   * Equinix: Equinix
   * Other: Other Overseas.
 
-* `peer_location` - (Required) and an on-Premises Data Center Location.
+* `peer_location` - (Optional) and an on-Premises Data Center Location.
 * `physical_connection_name` - (Optional) on Behalf of the Resource Name of the Resources-Attribute Field.
 * `port_type` - (Optional) The Physical Leased Line Access Port Type. Valid value:
   * 100Base-T: Fast Electrical Ports

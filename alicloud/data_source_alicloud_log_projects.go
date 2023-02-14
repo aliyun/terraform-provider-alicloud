@@ -79,6 +79,10 @@ func dataSourceAlicloudLogProjects() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"policy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -129,7 +133,7 @@ func dataSourceAlicloudLogProjectsRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_projects", "ListProject", AliyunLogGoSdkERROR)
 	}
-
+	policyMap := make(map[string]string)
 	for _, projectName := range response {
 		if logProjectNameRegex != nil {
 			if !logProjectNameRegex.MatchString(projectName) {
@@ -152,6 +156,13 @@ func dataSourceAlicloudLogProjectsRead(d *schema.ResourceData, meta interface{})
 		if statusOk && status.(string) != "" && status.(string) != project.Status {
 			continue
 		}
+
+		if policy, err := logService.DescribeLogProjectPolicy(projectName); err != nil {
+			return WrapError(err)
+		} else {
+			policyMap[projectName] = policy
+		}
+
 		objects = append(objects, project)
 	}
 
@@ -167,6 +178,9 @@ func dataSourceAlicloudLogProjectsRead(d *schema.ResourceData, meta interface{})
 			"project_name":     object.Name,
 			"region":           object.Region,
 			"status":           object.Status,
+		}
+		if policy, ok := policyMap[object.Name]; ok {
+			mapping["policy"] = policy
 		}
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object.Name)

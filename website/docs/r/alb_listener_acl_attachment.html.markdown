@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Application Load Balancer (ALB) Listener Acl Attachment resource.
 ---
 
-# alicloud\_alb\_listener\_acl\_attachment"
+# alicloud\_alb\_listener\_acl\_attachment
 
 Provides a Application Load Balancer (ALB) Listener Acl Attachment resource.
 

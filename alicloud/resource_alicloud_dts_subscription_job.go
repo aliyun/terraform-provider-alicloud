@@ -113,7 +113,7 @@ func resourceAlicloudDtsSubscriptionJob() *schema.Resource {
 			},
 			"source_endpoint_engine_name": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validation.StringInSlice([]string{"MySQL", "Oracle"}, false),
 			},
 			"source_endpoint_ip": {
@@ -126,7 +126,7 @@ func resourceAlicloudDtsSubscriptionJob() *schema.Resource {
 			},
 			"source_endpoint_instance_type": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validation.StringInSlice([]string{"CEN", "DRDS", "ECS", "Express", "LocalInstance", "PolarDB", "RDS", "dg"}, false),
 			},
 			"source_endpoint_oracle_sid": {
@@ -147,7 +147,7 @@ func resourceAlicloudDtsSubscriptionJob() *schema.Resource {
 			},
 			"source_endpoint_region": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"source_endpoint_role": {
 				Type:     schema.TypeString,
@@ -777,9 +777,9 @@ func resourceAlicloudDtsSubscriptionJobStatusFlow(d *schema.ResourceData, meta i
 
 func convertDtsPaymentTypeResponse(source interface{}) interface{} {
 	switch source {
-	case "PostPaid":
+	case "POSTPAY":
 		return "PayAsYouGo"
-	case "PrePaid":
+	case "PREPAY":
 		return "Subscription"
 	}
 	return source

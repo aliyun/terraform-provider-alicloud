@@ -804,14 +804,14 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 	}
 	// Remove one of the oldest and non-default version when the total number reach 30
 	if len(versions) > 29 {
-		var oldestVersion int64
+		var oldestVersion int
 		for _, version := range versions {
-			if !version.(map[string]interface{})["DefaultVersion"].(bool) && (oldestVersion == 0 || version.(map[string]interface{})["VersionNumber"].(int64) < oldestVersion) {
-				oldestVersion = version.(map[string]interface{})["VersionNumber"].(int64)
+			if !version.(map[string]interface{})["DefaultVersion"].(bool) && (oldestVersion == 0 || formatInt(version.(map[string]interface{})["VersionNumber"]) < oldestVersion) {
+				oldestVersion = formatInt(version.(map[string]interface{})["VersionNumber"])
 			}
 		}
 
-		err = deleteLaunchTemplateVersion(d.Id(), int(oldestVersion), meta)
+		err = deleteLaunchTemplateVersion(d.Id(), oldestVersion, meta)
 		if err != nil {
 			return WrapError(err)
 		}

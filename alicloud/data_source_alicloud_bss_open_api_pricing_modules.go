@@ -172,6 +172,11 @@ func dataSourceAlicloudBssOpenApiPricingModulesRead(d *schema.ResourceData, meta
 				wait()
 				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				request["ProductType"] = ""
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(err)
 		}
 		response = resp

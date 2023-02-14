@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Api Gateway vpc authorization Resource.
 ---
 
-# alicloud_api_gateway_app
+# alicloud\_api\_gateway\_vpc\_access
 
 Provides an vpc authorization resource.This authorizes the API gateway to access your VPC instances.
 

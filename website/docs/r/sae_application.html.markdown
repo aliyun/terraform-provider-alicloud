@@ -122,6 +122,7 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.167.0+) A mapping of tags to assign to the resource.
 * `acr_assume_role_arn` - (Optional, Available in v1.189.0+) The ARN of the RAM role required when pulling images across accounts. Only necessary if the image_url is pointing to an ACR EE instance.
 * `acr_instance_id` - (Optional, Available in v1.189.0+) The ID of the ACR EE instance. Only necessary if the image_url is pointing to an ACR EE instance.
+* `micro_registration` - (Optional, Available in v1.198.0+) Select the Nacos registry. Valid values: `0`, `1`, `2`.
 
 ## Attributes Reference
 

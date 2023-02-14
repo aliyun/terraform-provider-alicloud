@@ -230,6 +230,29 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"readonly_replicas": {
+				Type:         schema.TypeInt,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(0, 5),
+			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"cloud_essd1", "cloud_essd2", "cloud_essd3", "local_ssd"}, false),
+			},
+			"hidden_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"secondary_zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -280,6 +303,18 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
+	}
+	if v, ok := d.GetOk("storage_type"); ok {
+		request["StorageType"] = v
+	}
+	if v, ok := d.GetOkExists("readonly_replicas"); ok {
+		request["ReadonlyReplicas"] = v
+	}
+	if v, ok := d.GetOkExists("hidden_zone_id"); ok {
+		request["HiddenZoneId"] = v
+	}
+	if v, ok := d.GetOkExists("secondary_zone_id"); ok {
+		request["SecondaryZoneId"] = v
 	}
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
 		// check vswitchId in zone
@@ -408,6 +443,10 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("name", instance["DBInstanceDescription"])
+	d.Set("storage_type", instance["StorageType"])
+	d.Set("readonly_replicas", formatInt(instance["ReadonlyReplicas"]))
+	d.Set("hidden_zone_id", instance["HiddenZoneId"])
+	d.Set("secondary_zone_id", instance["SecondaryZoneId"])
 	d.Set("engine_version", instance["EngineVersion"])
 	d.Set("db_instance_class", instance["DBInstanceClass"])
 	d.Set("db_instance_storage", instance["DBInstanceStorage"])
@@ -716,7 +755,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.HasChange("db_instance_storage") ||
 		d.HasChange("db_instance_class") ||
-		d.HasChange("replication_factor") {
+		d.HasChange("replication_factor") || d.HasChange("readonly_replicas") {
 
 		var response map[string]interface{}
 		action := "ModifyDBInstanceSpec"
@@ -725,6 +764,10 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		request["DBInstanceId"] = d.Id()
 		if v, ok := d.GetOk("name"); ok {
 			request["DBInstanceDescription"] = v
+		}
+
+		if v, ok := d.GetOk("readonly_replicas"); ok {
+			request["ReadonlyReplicas"] = v
 		}
 
 		if d.Get("instance_charge_type").(string) == "PrePaid" {
@@ -736,15 +779,11 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		request["DBInstanceStorage"] = strconv.Itoa(d.Get("db_instance_storage").(int))
 		request["ReplicationFactor"] = strconv.Itoa(d.Get("replication_factor").(int))
 
-		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"Task.Conflict", "OperationDenied.DBInstanceStatus"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -760,7 +799,14 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("db_instance_class")
 		d.SetPartial("db_instance_storage")
 		d.SetPartial("replication_factor")
+		d.SetPartial("readonly_replicas")
 
+		stateConf := BuildStateConf([]string{"order_wait_for_produce"}, []string{"all_completed"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 1*time.Minute, ddsService.RdsMongodbDBInstanceOrderStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		stateConf = BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "NodeCreating"}, []string{"Running"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}

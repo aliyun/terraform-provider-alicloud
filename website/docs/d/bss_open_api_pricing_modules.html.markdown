@@ -1,7 +1,7 @@
 ---
 subcategory: "Bss Open Api"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_bss_openapi_pricing_modules"
+page_title: "Alicloud: alicloud_bss_open_api_pricing_modules"
 sidebar_current: "docs-alicloud-datasource-bss-openapi-pricing-modules"
 description: |-
   Provides a list of Bss Open Api Pricing Module owned by an Alibaba Cloud account.
@@ -16,7 +16,7 @@ This data source provides Bss Open Api Pricing Module available to the user.[Wha
 ## Example Usage
 
 ```
-data "alicloud_bss_openapi_pricing_modules" "default" {
+data "alicloud_bss_open_api_pricing_modules" "default" {
   name_regex        = "国内月均日峰值带宽"
   product_code      = "cdn"
   product_type      = "CDN"
@@ -24,7 +24,7 @@ data "alicloud_bss_openapi_pricing_modules" "default" {
 }
 
 output "alicloud_bss_openapi_pricing_module_example_id" {
-  value = data.alicloud_bss_openapi_pricing_modules.default.modules.0.code
+  value = data.alicloud_bss_open_api_pricing_modules.default.modules.0.code
 }
 ```
 

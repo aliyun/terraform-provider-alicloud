@@ -357,6 +357,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 			},
+			"ssl_connection_string": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: sslActionDiffSuppressFunc,
+			},
 			"tde_status": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"Enabled"}, false),
@@ -428,25 +434,25 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 
 			"upgrade_db_instance_kernel_version": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Attribute `upgrade_db_instance_kernel_version` has been deprecated from 1.198.0 and use `target_minor_version` instead.",
 			},
 			"upgrade_time": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Immediate", "MaintainTime", "SpecifyTime"}, false),
-				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+				DiffSuppressFunc: kernelSmallVersionDiffSuppressFunc,
 			},
 			"switch_time": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
+				DiffSuppressFunc: kernelSmallVersionDiffSuppressFunc,
 			},
 			"target_minor_version": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				DiffSuppressFunc: kernelVersionDiffSuppressFunc,
-				Computed:         true,
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"storage_auto_scale": {
 				Type:         schema.TypeString,
@@ -895,7 +901,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("sql_collector_config_value")
 	}
 
-	if d.HasChange("ssl_action") {
+	if d.HasChanges("ssl_action", "ssl_connection_string") {
 		action := "ModifyDBInstanceSSL"
 		request := map[string]interface{}{
 			"DBInstanceId": d.Id(),
@@ -927,40 +933,59 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		if d.Get("engine").(string) == "PostgreSQL" {
-			if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
-				request["CAType"] = v.(string)
+			if d.HasChange("ca_type") {
+				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
+					request["CAType"] = v.(string)
+				}
 			}
-			if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
-				request["ServerCert"] = v.(string)
+			if d.HasChange("server_cert") {
+				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
+					request["ServerCert"] = v.(string)
+				}
 			}
-			if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
-				request["ServerKey"] = v.(string)
+			if d.HasChange("server_key") {
+				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
+					request["ServerKey"] = v.(string)
+				}
 			}
-			if v, ok := d.GetOk("client_ca_enabled"); ok {
-				request["ClientCAEnabled"] = v.(int)
+			if d.HasChange("client_ca_enabled") {
+				if v, ok := d.GetOk("client_ca_enabled"); ok {
+					request["ClientCAEnabled"] = v.(int)
+				}
 			}
-
-			if v, ok := d.GetOk("client_ca_cert"); ok && v.(string) != "" {
-				request["ClientCACert"] = v.(string)
+			if d.HasChange("client_ca_cert") {
+				if v, ok := d.GetOk("client_ca_cert"); ok && v.(string) != "" {
+					request["ClientCACert"] = v.(string)
+				}
 			}
-
-			if v, ok := d.GetOk("client_crl_enabled"); ok {
-				request["ClientCrlEnabled"] = v.(int)
+			if d.HasChange("client_crl_enabled") {
+				if v, ok := d.GetOk("client_crl_enabled"); ok {
+					request["ClientCrlEnabled"] = v.(int)
+				}
 			}
-
-			if v, ok := d.GetOk("client_cert_revocation_list"); ok && v.(string) != "" {
-				request["ClientCertRevocationList"] = v.(string)
+			if d.HasChange("client_cert_revocation_list") {
+				if v, ok := d.GetOk("client_cert_revocation_list"); ok && v.(string) != "" {
+					request["ClientCertRevocationList"] = v.(string)
+				}
 			}
-
-			if v, ok := d.GetOk("acl"); ok && v.(string) != "" {
-				request["ACL"] = v.(string)
+			if d.HasChange("acl") {
+				if v, ok := d.GetOk("acl"); ok && v.(string) != "" {
+					request["ACL"] = v.(string)
+				}
 			}
-
-			if v, ok := d.GetOk("replication_acl"); ok && v.(string) != "" {
-				request["ReplicationACL"] = v.(string)
+			if d.HasChange("replication_acl") {
+				if v, ok := d.GetOk("replication_acl"); ok && v.(string) != "" {
+					request["ReplicationACL"] = v.(string)
+				}
 			}
 		}
 		request["ConnectionString"] = instance["ConnectionString"]
+		if d.HasChange("ssl_connection_string") {
+			if v, ok := d.GetOk("ssl_connection_string"); ok && v.(string) != "" {
+				request["ConnectionString"] = v.(string)
+			}
+		}
+
 		var response map[string]interface{}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -984,7 +1009,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("ssl_action")
-
+		d.SetPartial("ssl_connection_string")
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -1342,7 +1367,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("upgrade_db_instance_kernel_version") {
+	if !d.IsNewResource() && (d.HasChange("target_minor_version") || d.HasChange("upgrade_db_instance_kernel_version")) {
 		action := "UpgradeDBInstanceKernelVersion"
 		request := map[string]interface{}{
 			"RegionId":     client.RegionId,
@@ -1591,6 +1616,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("client_cert_revocation_list", sslAction["ClientCertRevocationList"])
 	d.Set("acl", sslAction["ACL"])
 	d.Set("replication_acl", sslAction["ReplicationACL"])
+	d.Set("ssl_connection_string", sslAction["ConnectionString"])
 	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
 	if err != nil && !IsExpectedErrors(err, DBInstanceTDEErrors) {
 		return WrapError(err)
@@ -1683,6 +1709,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
+		request["TargetMinorVersion"] = v
 	}
 
 	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {

@@ -79,6 +79,9 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead.
 * `type` - (Optional, Computed, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
+-> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
+* `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
+
 ## Attributes Reference
 
 The following attributes are exported:
