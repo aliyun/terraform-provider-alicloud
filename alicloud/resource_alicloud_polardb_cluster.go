@@ -189,6 +189,16 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
 			},
+			"encryption_key": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"tde_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"security_group_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -510,6 +520,16 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
 					request["EncryptNewTables"] = s.(string)
 				}
+
+				if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+					request["EncryptionKey"] = v.(string)
+					roleArn, err := getKmsRoleArn(client, d)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+					request["RoleArn"] = roleArn
+				}
+
 				//retry
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -535,6 +555,8 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 				d.SetPartial("tde_status")
 				d.SetPartial("encrypt_new_tables")
+				d.SetPartial("encryption_key")
+				d.SetPartial("tde_region")
 			}
 		}
 	}
@@ -778,6 +800,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("tde_status", clusterTDEStatus["TDEStatus"])
 	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
+	d.Set("encryption_key", clusterTDEStatus["EncryptionKey"])
+	d.Set("tde_region", clusterTDEStatus["TDERegion"])
 
 	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
 	if err != nil {
@@ -982,4 +1006,44 @@ func convertPolarDBSubCategoryUpdateRequest(source string) string {
 		return "normal_exclusive"
 	}
 	return "normal_general"
+}
+
+func getKmsRoleArn(client *connectivity.AliyunClient, d *schema.ResourceData) (string, error) {
+	action := "CheckKMSAuthorized"
+	var response map[string]interface{}
+
+	request := make(map[string]interface{})
+	if w, ok := d.GetOk("tde_region"); ok && w.(string) != "" {
+		request["RegionId"] = w.(string)
+	} else {
+		request["RegionId"] = client.RegionId
+	}
+	request["DBClusterId"] = d.Id()
+
+	conn, err := client.NewPolarDBClient()
+	if err != nil {
+		return "", WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return "", WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	if response["AuthorizationState"] == "0" {
+		return "", WrapError(Error("The user KMS is not open. Please open it first and then try again."))
+	}
+
+	return response["RoleArn"].(string), nil
 }

@@ -160,7 +160,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
+				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category", "tde_region"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -307,11 +307,13 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tde_status":         "Enabled",
 					"encrypt_new_tables": "ON",
+					"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tde_status":         "Enabled",
 						"encrypt_new_tables": "ON",
+						"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
 					}),
 				),
 			},
