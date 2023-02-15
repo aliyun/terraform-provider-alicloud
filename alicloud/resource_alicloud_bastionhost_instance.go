@@ -370,6 +370,12 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("security_group_ids", instance["AuthorizedSecurityGroups"])
 	d.Set("enable_public_access", instance["PublicNetworkAccess"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
+	instance, err = BastionhostService.DescribeBastionhostInstances(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("plan_code", instance["PlanCode"])
+
 	tags, err := BastionhostService.DescribeTags(d.Id(), nil, TagResourceInstance)
 	if err != nil {
 		return WrapError(err)

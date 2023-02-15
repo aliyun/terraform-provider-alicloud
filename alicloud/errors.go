@@ -279,7 +279,6 @@ const (
 	AlibabaCloudSdkGoERROR = ErrorSource("[SDK alibaba-cloud-sdk-go ERROR]")
 	AliyunLogGoSdkERROR    = ErrorSource("[SDK aliyun-log-go-sdk ERROR]")
 	AliyunDatahubSdkGo     = ErrorSource("[SDK aliyun-datahub-sdk-go ERROR]")
-	AliyunMaxComputeSdkGo  = ErrorSource("[SDK aliyun-maxcompute-sdk-go ERROR]")
 	AliyunOssGoSdk         = ErrorSource("[SDK aliyun-oss-go-sdk ERROR]")
 	FcGoSdk                = ErrorSource("[SDK fc-go-sdk ERROR]")
 	DenverdinoAliyungo     = ErrorSource("[SDK denverdino/aliyungo ERROR]")
