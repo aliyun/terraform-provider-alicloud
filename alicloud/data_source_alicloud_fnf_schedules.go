@@ -100,7 +100,6 @@ func dataSourceAlicloudFnfSchedulesRead(d *schema.ResourceData, meta interface{}
 	if v, ok := d.GetOk("limit"); ok {
 		request["Limit"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
 	var scheduleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
