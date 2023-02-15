@@ -296,9 +296,28 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			"PolicyType": "Custom",
 		}
 		listAction := "ListEntitiesForPolicy"
-		response, err = conn.DoRequest(StringPointer(listAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listRequest, &util.RuntimeOptions{})
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(listAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(listAction, response, listRequest)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
 		userResp, err := jsonpath.Get("$.Users.User", response)
-		if len(userResp.([]interface{})) > 0 {
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Users.User", response)
+		}
+		if userResp != nil && len(userResp.([]interface{})) > 0 {
 			for _, v := range userResp.([]interface{}) {
 				userAction := "DetachPolicyFromUser"
 				userRequest := map[string]interface{}{
@@ -328,7 +347,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 		groupResp, err := jsonpath.Get("$.Groups.Group", response)
-		if len(groupResp.([]interface{})) > 0 {
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups.Group", response)
+		}
+		if groupResp != nil && len(groupResp.([]interface{})) > 0 {
 			for _, v := range groupResp.([]interface{}) {
 				groupAction := "DetachPolicyFromGroup"
 				groupRequest := map[string]interface{}{
@@ -358,7 +380,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 		roleResp, err := jsonpath.Get("$.Roles.Role", response)
-		if len(roleResp.([]interface{})) > 0 {
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
+		}
+		if roleResp != nil && len(roleResp.([]interface{})) > 0 {
 			for _, v := range roleResp.([]interface{}) {
 				roleAction := "DetachPolicyFromRole"
 				roleRequest := map[string]interface{}{
