@@ -20,10 +20,16 @@ For information about NLB Security Policy and how to use it, see [What is Securi
 Basic Usage
 
 ```terraform
-resource "alicloud_nlb_security_policy" "example" {
-  ciphers              = ["example_value"]
-  security_policy_name = "example_value"
-  tls_versions         = ["example_value"]
+data "alicloud_resource_manager_resource_groups" "default" {}
+resource "alicloud_nlb_security_policy" "default" {
+  resource_group_id    = data.alicloud_resource_manager_resource_groups.default.ids.0
+  security_policy_name = var.name
+  ciphers              = ["ECDHE-RSA-AES128-SHA", "ECDHE-ECDSA-AES128-SHA"]
+  tls_versions         = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
+  tags = {
+    Created = "TF"
+    For     = "Acceptance-test"
+  }
 }
 ```
 
