@@ -58,7 +58,16 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<instance_id>:<child_instance_id>:<child_instance_type>:<child_instance_region_id>`. Before version 1.97.0, the value is `<instance_id>:<child_instance_id>`.
-* `status` - The associating status of the network. 
+* `status` - The associating status of the network.
+
+#### Timeouts
+
+-> **NOTE:** Available in 1.199.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when create the child instance attachment.
+* `delete` - (Defaults to 10 mins) Used when delete the child instance attachment.
 
 ## Import
 
