@@ -572,7 +572,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
-	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "CONFIG_ENCRYPTING", "SSL_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "CONFIG_ENCRYPTING", "SSL_MODIFYING", "TDE_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 
 	if d.HasChange("parameters") {
 		if err := rdsService.ModifyParameters(d, "parameters"); err != nil {
