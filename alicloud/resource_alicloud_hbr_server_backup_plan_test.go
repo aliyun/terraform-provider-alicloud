@@ -166,6 +166,9 @@ func TestAccAlicloudHBRServerBackupPlan_basic0(t *testing.T) {
 					"schedule":                    "I|1602673264|PT2H",
 					"ecs_server_backup_plan_name": "tf-testAcc-hbr-backup-plan",
 					"retention":                   "1",
+					"cross_account_type":          "SELF_ACCOUNT",
+					"cross_account_user_id":       "${data.alicloud_account.default.id}",
+					"cross_account_role_name":     "${alicloud_ram_role.default.id}",
 					"detail": []map[string]interface{}{
 						{
 							"app_consistent": "false",
@@ -178,6 +181,9 @@ func TestAccAlicloudHBRServerBackupPlan_basic0(t *testing.T) {
 						"schedule":                    "I|1602673264|PT2H",
 						"ecs_server_backup_plan_name": "tf-testAcc-hbr-backup-plan",
 						"retention":                   "1",
+						"cross_account_type":          "SELF_ACCOUNT",
+						"cross_account_user_id":       CHECKSET,
+						"cross_account_role_name":     CHECKSET,
 						"detail.#":                    "1",
 					}),
 				),
@@ -563,14 +569,37 @@ var AlicloudHBRServerBackupPlanMap0 = map[string]string{
 
 func AlicloudHBRServerBackupPlanBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_instances" "default" {
-  name_regex = "no-deleteing-hbr-ecs-server-backup-plan"
-  status = "Running"
-}
+	data "alicloud_account" "default" {
+	}
+
+	data "alicloud_instances" "default" {
+  		status = "Running"
+	}
+
+	resource "alicloud_ram_role" "default" {
+  		name     = var.name
+  		document = <<EOF
+		{
+			"Statement": [
+			{
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": [
+						"crossbackup.hbr.aliyuncs.com"
+					]
+				}
+			}
+			],
+  			"Version": "1"
+		}
+  		EOF
+  		force    = true
+	}
 `, name)
 }
 
