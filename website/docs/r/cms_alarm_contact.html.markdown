@@ -22,7 +22,7 @@ Basic Usage
 resource "alicloud_cms_alarm_contact" "example" {
   alarm_contact_name = "zhangsan"
   describe           = "For Test"
-  channels_mail      = "terraform.test.com"
+  channels_mail      = "terraform@test.com"
 }
 ```
 
@@ -31,7 +31,7 @@ resource "alicloud_cms_alarm_contact" "example" {
 resource "alicloud_cms_alarm_contact" "example" {
   alarm_contact_name = "zhangsan"
   describe           = "For Test"
-  channels_mail      = "terraform.test.com"
+  channels_mail      = "terraform@test.com"
   lifecycle {
     ignore_changes = [channels_mail]
   }

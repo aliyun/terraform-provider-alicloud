@@ -134,11 +134,12 @@ func resourceAlicloudCmsSlsGroupRead(d *schema.ResourceData, meta interface{}) e
 	if sLSGroupConfigList, ok := object["SLSGroupConfig"]; ok && sLSGroupConfigList != nil {
 		slsGroupConfigMaps := make([]map[string]interface{}, 0)
 		for _, sLSGroupConfigListItem := range sLSGroupConfigList.([]interface{}) {
-			if sLSGroupConfigListItemMap, ok := sLSGroupConfigListItem.(map[string]interface{}); ok {
-				sLSGroupConfigListItemMap["sls_logstore"] = sLSGroupConfigListItemMap["SLSLogstore"]
-				sLSGroupConfigListItemMap["sls_project"] = sLSGroupConfigListItemMap["SLSProject"]
-				sLSGroupConfigListItemMap["sls_region"] = sLSGroupConfigListItemMap["SLSRegion"]
-				sLSGroupConfigListItemMap["sls_user_id"] = sLSGroupConfigListItemMap["SLSUserId"]
+			if sLSGroupConfigListItemObj, ok := sLSGroupConfigListItem.(map[string]interface{}); ok {
+				sLSGroupConfigListItemMap := make(map[string]interface{}, 0)
+				sLSGroupConfigListItemMap["sls_logstore"] = sLSGroupConfigListItemObj["SLSLogstore"]
+				sLSGroupConfigListItemMap["sls_project"] = sLSGroupConfigListItemObj["SLSProject"]
+				sLSGroupConfigListItemMap["sls_region"] = sLSGroupConfigListItemObj["SLSRegion"]
+				sLSGroupConfigListItemMap["sls_user_id"] = sLSGroupConfigListItemObj["SLSUserId"]
 				slsGroupConfigMaps = append(slsGroupConfigMaps, sLSGroupConfigListItemMap)
 			}
 			d.Set("sls_group_config", slsGroupConfigMaps)

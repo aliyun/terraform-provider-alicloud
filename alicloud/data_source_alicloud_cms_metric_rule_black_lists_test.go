@@ -73,12 +73,12 @@ data "alicloud_slb_zones" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
+	vpc_id  = data.alicloud_vpcs.default.ids.1
 	zone_id = data.alicloud_slb_zones.default.zones.0.id
 }
 resource "alicloud_security_group" "default" {
   	name = "${var.name}"
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	vpc_id = data.alicloud_vpcs.default.ids.1
 }
 resource "alicloud_instance" "instance" {
   	image_id = "${data.alicloud_images.default.images.0.id}"
