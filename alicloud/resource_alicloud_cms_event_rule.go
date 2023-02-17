@@ -187,9 +187,15 @@ func resourceAlicloudCmsEventRuleRead(d *schema.ResourceData, meta interface{}) 
 		eventPattern := v.(map[string]interface{})
 		eventPatternMap := make(map[string]interface{})
 		eventPatternMap["product"] = eventPattern["Product"]
-		eventPatternMap["event_type_list"] = eventPattern["EventTypeList"].(map[string]interface{})["EventTypeList"]
-		eventPatternMap["level_list"] = eventPattern["LevelList"].(map[string]interface{})["LevelList"]
-		eventPatternMap["name_list"] = eventPattern["NameList"].(map[string]interface{})["NameList"]
+		if v, ok := eventPattern["EventTypeList"]; ok {
+			eventPatternMap["event_type_list"] = v.(map[string]interface{})["EventTypeList"]
+		}
+		if v, ok := eventPattern["LevelList"]; ok {
+			eventPatternMap["level_list"] = v.(map[string]interface{})["LevelList"]
+		}
+		if v, ok := eventPattern["NameList"]; ok {
+			eventPatternMap["name_list"] = v.(map[string]interface{})["NameList"]
+		}
 		eventPatternMap["sql_filter"] = eventPattern["SQLFilter"]
 		eventPatternMaps = append(eventPatternMaps, eventPatternMap)
 		d.Set("event_pattern", eventPatternMaps)

@@ -181,6 +181,12 @@ func dataSourceAlicloudCmsMetricRuleBlackListsRead(d *schema.ResourceData, meta 
 		request["PageSize"] = PageSizeSmall
 	}
 
+	if v, ok := d.GetOk("page_number"); ok && v.(int) > 0 {
+		request["PageNumber"] = v.(int)
+	} else {
+		request["PageNumber"] = 1
+	}
+
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -253,7 +259,7 @@ func dataSourceAlicloudCmsMetricRuleBlackListsRead(d *schema.ResourceData, meta 
 		if len(result) < request["PageSize"].(int) {
 			break
 		}
-		request["PageSize"] = request["PageSize"].(int) + 1
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	ids := make([]string, 0)

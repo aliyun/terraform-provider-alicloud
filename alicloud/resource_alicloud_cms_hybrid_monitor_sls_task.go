@@ -325,28 +325,28 @@ func resourceAlicloudCmsHybridMonitorSlsTaskRead(d *schema.ResourceData, meta in
 
 	slsProcessConfigSli := make([]map[string]interface{}, 0)
 	if len(object["SLSProcessConfig"].(map[string]interface{})) > 0 {
-		slsProcessConfig := object["SLSProcessConfig"]
+		slsProcessConfig := object["SLSProcessConfig"].(map[string]interface{})
 		slsProcessConfigMap := make(map[string]interface{})
 
-		expressSli := make([]map[string]interface{}, 0)
-		if len(slsProcessConfig.(map[string]interface{})["Express"].([]interface{})) > 0 {
-			for _, express := range slsProcessConfig.(map[string]interface{})["Express"].([]interface{}) {
+		if len(slsProcessConfig["Express"].([]interface{})) > 0 {
+			expressSli := make([]map[string]interface{}, 0)
+			for _, express := range slsProcessConfig["Express"].([]interface{}) {
 				expressMap := make(map[string]interface{})
 				expressMap["alias"] = express.(map[string]interface{})["Alias"]
 				expressMap["express"] = express.(map[string]interface{})["Express"]
 				expressSli = append(expressSli, expressMap)
 			}
+			slsProcessConfigMap["express"] = expressSli
 		}
-		slsProcessConfigMap["express"] = expressSli
 
-		filterSli := make([]map[string]interface{}, 0)
-		if len(slsProcessConfig.(map[string]interface{})["Filter"].(map[string]interface{})) > 0 {
-			filter := slsProcessConfig.(map[string]interface{})["Filter"]
+		if len(slsProcessConfig["Filter"].(map[string]interface{})) > 0 {
+			filterSli := make([]map[string]interface{}, 0)
+			filter := slsProcessConfig["Filter"].(map[string]interface{})
 			filterMap := make(map[string]interface{})
 
 			filtersSli := make([]map[string]interface{}, 0)
-			if len(filter.(map[string]interface{})["Filters"].([]interface{})) > 0 {
-				for _, filters := range filter.(map[string]interface{})["Filters"].([]interface{}) {
+			if len(filter["Filters"].([]interface{})) > 0 {
+				for _, filters := range filter["Filters"].([]interface{}) {
 					filtersMap := make(map[string]interface{})
 					filtersMap["operator"] = filters.(map[string]interface{})["Operator"]
 					filtersMap["sls_key_name"] = filters.(map[string]interface{})["SLSKeyName"]
@@ -355,25 +355,25 @@ func resourceAlicloudCmsHybridMonitorSlsTaskRead(d *schema.ResourceData, meta in
 				}
 			}
 			filterMap["filters"] = filtersSli
-			filterMap["relation"] = filter.(map[string]interface{})["Relation"]
+			filterMap["relation"] = filter["Relation"]
 			filterSli = append(filterSli, filterMap)
+			slsProcessConfigMap["filter"] = filterSli
 		}
-		slsProcessConfigMap["filter"] = filterSli
 
-		groupBySli := make([]map[string]interface{}, 0)
-		if len(slsProcessConfig.(map[string]interface{})["GroupBy"].([]interface{})) > 0 {
-			for _, groupBy := range slsProcessConfig.(map[string]interface{})["GroupBy"].([]interface{}) {
+		if len(slsProcessConfig["GroupBy"].([]interface{})) > 0 {
+			groupBySli := make([]map[string]interface{}, 0)
+			for _, groupBy := range slsProcessConfig["GroupBy"].([]interface{}) {
 				groupByMap := make(map[string]interface{})
 				groupByMap["alias"] = groupBy.(map[string]interface{})["Alias"]
 				groupByMap["sls_key_name"] = groupBy.(map[string]interface{})["SLSKeyName"]
 				groupBySli = append(groupBySli, groupByMap)
 			}
+			slsProcessConfigMap["group_by"] = groupBySli
 		}
-		slsProcessConfigMap["group_by"] = groupBySli
 
-		statisticsSli := make([]map[string]interface{}, 0)
-		if len(slsProcessConfig.(map[string]interface{})["Statistics"].([]interface{})) > 0 {
-			for _, statistics := range slsProcessConfig.(map[string]interface{})["Statistics"].([]interface{}) {
+		if len(slsProcessConfig["Statistics"].([]interface{})) > 0 {
+			statisticsSli := make([]map[string]interface{}, 0)
+			for _, statistics := range slsProcessConfig["Statistics"].([]interface{}) {
 				statisticsMap := make(map[string]interface{})
 				statisticsMap["alias"] = statistics.(map[string]interface{})["Alias"]
 				statisticsMap["function"] = statistics.(map[string]interface{})["Function"]
@@ -382,8 +382,9 @@ func resourceAlicloudCmsHybridMonitorSlsTaskRead(d *schema.ResourceData, meta in
 				statisticsMap["sls_key_name"] = statistics.(map[string]interface{})["SLSKeyName"]
 				statisticsSli = append(statisticsSli, statisticsMap)
 			}
+			slsProcessConfigMap["statistics"] = statisticsSli
 		}
-		slsProcessConfigMap["statistics"] = statisticsSli
+
 		slsProcessConfigSli = append(slsProcessConfigSli, slsProcessConfigMap)
 	}
 	d.Set("sls_process_config", slsProcessConfigSli)
