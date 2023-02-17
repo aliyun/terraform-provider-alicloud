@@ -50,6 +50,9 @@ The following arguments are supported:
   * `interval` **ISO8601 time interval**. E.g: `PT1H` means one hour apart. `P1D` means one day apart. It means to execute a backup task every `{interval}` starting from `{startTime}`. The backup task for the elapsed time will not be compensated. If the last backup task is not completed, the next backup task will not be triggered.
 * `detail` - (Required) ECS server backup plan details.
 * `disabled` - (Optional) Whether to disable the backup task. Valid values: `true`, `false`.
+* `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.199.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
+* `cross_account_user_id` - (Optional, ForceNew, Available in v1.199.0+) The original account ID of the cross account backup managed by the current account.
+* `cross_account_role_name` - (Optional, ForceNew, Available in v1.199.0+) The role name created in the original account RAM backup by the cross account managed by the current account.
 
 #### Block detail
 
