@@ -251,7 +251,7 @@ func resourceAliCloudReservedInstanceCreate(d *schema.ResourceData, meta interfa
 	} else {
 		d.SetId(fmt.Sprint(v))
 	}
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -348,7 +348,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("renewal_status")
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

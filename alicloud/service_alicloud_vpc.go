@@ -1583,7 +1583,7 @@ func (s *VpcService) DescribeVswitch(id string) (object map[string]interface{}, 
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVSwitchId.NotFound", "InvalidVswitchID.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundMsg, ProviderERROR)
+			err = WrapErrorf(Error(GetNotFoundMessage("Vswitch", id)), NotFoundWithError, err)
 			return object, err
 		}
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -1596,7 +1596,7 @@ func (s *VpcService) DescribeVswitch(id string) (object map[string]interface{}, 
 	}
 	object = v.(map[string]interface{})
 	if fmt.Sprint(object["VSwitchId"]) != id {
-		return object, WrapErrorf(Error(GetNotFoundMessage("vswitch", id)), NotFoundMsg, ProviderERROR)
+		return object, WrapErrorf(Error(GetNotFoundMessage("vswitch", id)), NotFoundWithResponse, response)
 	}
 	return object, nil
 }
