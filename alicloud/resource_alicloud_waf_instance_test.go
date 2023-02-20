@@ -25,7 +25,7 @@ func TestAccAlicloudWAFInstance_basic(t *testing.T) {
 	resourceId := "alicloud_waf_instance.default"
 	ra := resourceAttrInit(resourceId, WafInstanceMap)
 	serviceFunc := func() interface{} {
-		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeWafInstance")
 	rac := resourceAttrCheckInit(rc, ra)

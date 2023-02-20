@@ -3,12 +3,13 @@ package alicloud
 import (
 	"encoding/base64"
 	"fmt"
-	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"

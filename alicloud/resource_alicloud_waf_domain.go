@@ -147,7 +147,7 @@ func resourceAlicloudWafDomain() *schema.Resource {
 
 func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := Waf_openapiService{client}
+	waf_openapiService := WafOpenapiService{client}
 	var response map[string]interface{}
 	action := "CreateDomain"
 	request := make(map[string]interface{})
@@ -246,7 +246,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := Waf_openapiService{client}
+	waf_openapiService := WafOpenapiService{client}
 	object, err := waf_openapiService.DescribeWafDomain(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -294,7 +294,7 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := Waf_openapiService{client}
+	waf_openapiService := WafOpenapiService{client}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {

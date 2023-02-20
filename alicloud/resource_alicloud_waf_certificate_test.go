@@ -23,7 +23,7 @@ func TestAccAlicloudWAFCertificate_basic0(t *testing.T) {
 	resourceId := "alicloud_waf_certificate.default"
 	ra := resourceAttrInit(resourceId, AlicloudWAFCertificateMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeWafCertificate")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -68,7 +68,7 @@ func TestAccAlicloudWAFCertificate_basic1(t *testing.T) {
 	resourceId := "alicloud_waf_certificate.default"
 	ra := resourceAttrInit(resourceId, AlicloudWAFCertificateMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeWafCertificate")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

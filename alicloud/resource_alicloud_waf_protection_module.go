@@ -89,7 +89,7 @@ func resourceAlicloudWafProtectionModuleCreate(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudWafProtectionModuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := Waf_openapiService{client}
+	wafOpenapiService := WafOpenapiService{client}
 	object, err := wafOpenapiService.DescribeWafProtectionModule(d.Id())
 	if err != nil {
 		if NotFoundError(err) {

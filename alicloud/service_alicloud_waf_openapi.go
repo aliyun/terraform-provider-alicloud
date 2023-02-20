@@ -12,11 +12,11 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
 
-type Waf_openapiService struct {
+type WafOpenapiService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *Waf_openapiService) convertLogHeadersToString(v []interface{}) (string, error) {
+func (s *WafOpenapiService) convertLogHeadersToString(v []interface{}) (string, error) {
 	arrayMaps := make([]interface{}, len(v))
 	for i, vv := range v {
 		item := vv.(map[string]interface{})
@@ -32,7 +32,7 @@ func (s *Waf_openapiService) convertLogHeadersToString(v []interface{}) (string,
 	return string(maps), nil
 }
 
-func (s *Waf_openapiService) DescribeWafDomain(id string) (object map[string]interface{}, err error) {
+func (s *WafOpenapiService) DescribeWafDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewWafClient()
 	if err != nil {
@@ -80,7 +80,7 @@ func (s *Waf_openapiService) DescribeWafDomain(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *Waf_openapiService) DescribeWafInstance(id string) (object map[string]interface{}, err error) {
+func (s *WafOpenapiService) DescribeWafInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewWafClient()
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Waf_openapiService) DescribeWafInstance(id string) (object map[string]i
 	return object, nil
 }
 
-func (s *Waf_openapiService) DescribeWafCertificate(id string) (object map[string]interface{}, err error) {
+func (s *WafOpenapiService) DescribeWafCertificate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewWafClient()
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *Waf_openapiService) DescribeWafCertificate(id string) (object map[strin
 	return object, nil
 }
 
-func (s *Waf_openapiService) DescribeProtectionModuleStatus(id string) (object map[string]interface{}, err error) {
+func (s *WafOpenapiService) DescribeProtectionModuleStatus(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewWafClient()
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *Waf_openapiService) DescribeProtectionModuleStatus(id string) (object m
 	return object, nil
 }
 
-func (s *Waf_openapiService) DescribeWafProtectionModule(id string) (object map[string]interface{}, err error) {
+func (s *WafOpenapiService) DescribeWafProtectionModule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewWafClient()
 	if err != nil {
@@ -247,4 +247,67 @@ func (s *Waf_openapiService) DescribeWafProtectionModule(id string) (object map[
 	}
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+func (s *WafOpenapiService) DescribeWafv3Instance(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewWafClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeInstance"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	if _, ok := v.(map[string]interface{})["InstanceId"]; !ok {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Wafv3Instance", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *WafOpenapiService) Wafv3InstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeWafv3Instance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		status84 := object["Status"]
+		for _, failState := range failStates {
+			if fmt.Sprint(status84) == failState {
+				return object, fmt.Sprint(status84), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(status84)))
+			}
+		}
+		return object, fmt.Sprint(status84), nil
+	}
 }

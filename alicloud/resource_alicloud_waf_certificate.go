@@ -15,7 +15,6 @@ func resourceAlicloudWafCertificate() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudWafCertificateCreate,
 		Read:   resourceAlicloudWafCertificateRead,
-		Update: resourceAlicloudWafCertificateUpdate,
 		Delete: resourceAlicloudWafCertificateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -47,6 +46,7 @@ func resourceAlicloudWafCertificate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
+				ForceNew:      true,
 				ConflictsWith: []string{"certificate", "private_key", "certificate_name"},
 			},
 			"certificate_name": {
@@ -138,7 +138,7 @@ func resourceAlicloudWafCertificateCreate(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudWafCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	wafOpenapiService := Waf_openapiService{client}
+	wafOpenapiService := WafOpenapiService{client}
 	object, err := wafOpenapiService.DescribeWafCertificate(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -157,10 +157,6 @@ func resourceAlicloudWafCertificateRead(d *schema.ResourceData, meta interface{}
 	d.Set("instance_id", parts[0])
 	d.Set("certificate_name", object["CertificateName"])
 	return nil
-}
-func resourceAlicloudWafCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudWafCertificateRead(d, meta)
 }
 func resourceAlicloudWafCertificateDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudWafCertificate. Terraform will remove this resource from the state file, however resources may remain.")

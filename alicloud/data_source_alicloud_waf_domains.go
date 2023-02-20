@@ -221,7 +221,7 @@ func dataSourceAlicloudWafDomainsRead(d *schema.ResourceData, meta interface{}) 
 			continue
 		}
 
-		waf_openapiService := Waf_openapiService{client}
+		waf_openapiService := WafOpenapiService{client}
 		id := fmt.Sprint(request["InstanceId"], ":", object.(string))
 		getResp, err := waf_openapiService.DescribeWafDomain(id)
 		if err != nil {

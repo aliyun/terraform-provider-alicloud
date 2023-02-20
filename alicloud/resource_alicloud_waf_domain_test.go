@@ -112,7 +112,7 @@ func TestAccAlicloudWAFDomain(t *testing.T) {
 	ra := resourceAttrInit(resourceId, wafDomainBasicMap)
 
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeWafDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
