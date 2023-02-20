@@ -282,7 +282,7 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	}
 
 	// 3. wait until running
-	stateConf := BuildStateConf([]string{}, []string{"5"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -521,7 +521,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			return WrapError(err)
 		}
 
-		stateConf := BuildStateConf([]string{}, []string{"5"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -565,7 +565,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		// wait for upgrade task be invoke
 		time.Sleep(60 * time.Second)
 		// upgrade service may be last a long time
-		stateConf := BuildStateConf([]string{}, []string{"5"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -604,7 +604,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 
 		// wait for upgrade task be invoke
-		stateConf := BuildStateConf([]string{}, []string{"5"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"5"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -655,7 +655,7 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	stateConf := BuildStateConf([]string{}, []string{"15"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"15"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -684,7 +684,7 @@ func resourceAlicloudAlikafkaInstanceDelete(d *schema.ResourceData, meta interfa
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	stateConf = BuildStateConf([]string{}, []string{}, client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf = BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

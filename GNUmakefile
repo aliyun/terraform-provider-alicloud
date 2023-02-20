@@ -65,7 +65,7 @@ endif
 
 all: mac windows linux
 
-dev: clean fmt mac copy
+dev: clean mac copy
 
 devlinux: clean fmt linux linuxcopy
 

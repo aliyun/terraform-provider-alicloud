@@ -801,12 +801,12 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("replication_factor")
 		d.SetPartial("readonly_replicas")
 
-		stateConf := BuildStateConf([]string{"order_wait_for_produce"}, []string{"all_completed"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 1*time.Minute, ddsService.RdsMongodbDBInstanceOrderStateRefreshFunc(d.Id(), []string{""}))
+		stateConf := BuildStateConf([]string{"order_wait_for_produce"}, []string{"all_completed"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceOrderStateRefreshFunc(d.Id(), []string{""}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
 
-		stateConf = BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "NodeCreating"}, []string{"Running"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf = BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "NodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}

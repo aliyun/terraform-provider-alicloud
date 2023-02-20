@@ -104,7 +104,7 @@ func resourceAlicloudNlbSecurityPolicyCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprint(response["SecurityPolicyId"]))
 	nlbService := NlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -191,7 +191,7 @@ func resourceAlicloudNlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -238,7 +238,7 @@ func resourceAlicloudNlbSecurityPolicyDelete(d *schema.ResourceData, meta interf
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nlbService.NlbSecurityPolicyStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

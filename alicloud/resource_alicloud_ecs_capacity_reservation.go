@@ -377,7 +377,7 @@ func resourceAlicloudEcsCapacityReservationDelete(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{}, []string{}, client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), 5*time.Second, ecsService.EcsCapacityReservationStateRefreshFunc(d, []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, ecsService.EcsCapacityReservationStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
