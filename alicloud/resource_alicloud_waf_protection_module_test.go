@@ -25,7 +25,7 @@ func TestAccAlicloudWAFProtectionModule_basic0(t *testing.T) {
 	resourceId := "alicloud_waf_protection_module.default"
 	ra := resourceAttrInit(resourceId, AlicloudWAFProtectionModuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Waf_openapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &WafOpenapiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeWafProtectionModule")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()

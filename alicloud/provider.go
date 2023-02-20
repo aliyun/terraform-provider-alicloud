@@ -837,6 +837,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_instances":                       dataSourceAlicloudThreatDetectionInstances(),
 			"alicloud_cr_vpc_endpoint_linked_vpcs":                      dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 			"alicloud_express_connect_router_interfaces":                dataSourceAlicloudExpressConnectRouterInterfaces(),
+			"alicloud_wafv3_instances":                                  dataSourceAlicloudWafv3Instances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1562,6 +1563,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_threat_detection_instance":                            resourceAlicloudThreatDetectionInstance(),
 			"alicloud_cr_vpc_endpoint_linked_vpc":                           resourceAlicloudCrVpcEndpointLinkedVpc(),
 			"alicloud_express_connect_router_interface":                     resourceAlicloudExpressConnectRouterInterface(),
+			"alicloud_wafv3_instance":                                       resourceAlicloudWafv3Instance(),
 		},
 
 		ConfigureFunc: providerConfigure,

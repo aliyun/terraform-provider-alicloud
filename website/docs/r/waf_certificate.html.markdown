@@ -40,7 +40,8 @@ The following arguments are supported:
 
 * `certificate` - (Optional, ForceNew, Conflicts with `certificate_id`) Certificate file content.
 * `certificate_name` - (Optional, ForceNew, Conflicts with `certificate_id`) Certificate file name.
-* `instance_id` - (Optional, ForceNew) The ID of the WAF instance.
+* `instance_id` - (Required, ForceNew) The ID of the WAF instance.
+* `domain` - (Required, ForceNew) The domain that you want to add to WAF.
 * `private_key` - (Optional, ForceNew, Conflicts with `certificate_id`) The private key.
 * `certificate_id` - (Optional, ForceNew, Conflicts with `certificate`, `certificate_name`,`private_key`) The certificate id is automatically generated when you upload your certificate content.**NOTE:** you can also use Certificate ID saved in SSL.
 
@@ -49,8 +50,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Certificate. The value formats as `<instance_id>:<domain>:<certificate_id>`.
-* `certificate_id` - Certificate recording ID.
-* `domain` - The domain that you want to add to WAF.
 
 ## Import
 

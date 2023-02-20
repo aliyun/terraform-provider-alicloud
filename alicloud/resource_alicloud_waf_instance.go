@@ -197,7 +197,7 @@ func resourceAlicloudWafInstanceCreate(d *schema.ResourceData, meta interface{})
 }
 func resourceAlicloudWafInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := Waf_openapiService{client}
+	waf_openapiService := WafOpenapiService{client}
 	object, err := waf_openapiService.DescribeWafInstance(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
