@@ -1,40 +1,42 @@
-## 1.199.0 (Unreleased)
+## 1.200.0 (Unreleased)
+## 1.199.0 (February 21, 2023)
 
-- **New Resource:** `alicloud_threat_detection_instance` [GH-5767]
-- **New Resource:** `alicloud_cr_vpc_endpoint_linked_vpc` [GH-5894]
-- **New Resource:** `alicloud_router_interface` [GH-5831]
-- **New Resource:** `alicloud_emrv2_cluster` [GH-5892]
-- **New Data Source:** `alicloud_emrv2_clusters` [GH-5892]
-- **New Data Source:** `alicloud_router_interfaces` [GH-5831]
-- **New Data Source:** `alicloud_threat_detection_instances` [GH-5767]
-- **New Data Source:** `alicloud_cr_vpc_endpoint_linked_vpcs` [GH-5894]
+- **New Resource:** `alicloud_threat_detection_instance` ([#5767](https://github.com/aliyun/terraform-provider-alicloud/issues/5767))
+- **New Resource:** `alicloud_cr_vpc_endpoint_linked_vpc` ([#5894](https://github.com/aliyun/terraform-provider-alicloud/issues/5894))
+- **New Resource:** `alicloud_router_interface` ([#5831](https://github.com/aliyun/terraform-provider-alicloud/issues/5831))
+- **New Resource:** `alicloud_emrv2_cluster` ([#5892](https://github.com/aliyun/terraform-provider-alicloud/issues/5892))
+- **New Data Source:** `alicloud_emrv2_clusters` ([#5892](https://github.com/aliyun/terraform-provider-alicloud/issues/5892))
+- **New Data Source:** `alicloud_router_interfaces` ([#5831](https://github.com/aliyun/terraform-provider-alicloud/issues/5831))
+- **New Data Source:** `alicloud_threat_detection_instances` ([#5767](https://github.com/aliyun/terraform-provider-alicloud/issues/5767))
+- **New Data Source:** `alicloud_cr_vpc_endpoint_linked_vpcs` ([#5894](https://github.com/aliyun/terraform-provider-alicloud/issues/5894))
 
 ENHANCEMENTS:
 
-- esource/alicloud_emr_cluster_new: Added new resource alicloud_emr_cluster_new which based on EMR's new version openAPI [GH-5892]
-- resource/alicloud_click_house: Removes the validation for attribute db_cluster_class [GH-5918]
-- resource/alicloud_nat_gateway: Added retry stragety for error code IncorrectStatus.NATGW, IncorrectStatus.NatGateway, DependencyViolation.EIPS [GH-5916]
-- resource/alicloud_hbr_server_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name [GH-5910]
-- resource/alicloud_cms_event_rule: Optimization type assertion. [GH-5908]
-- resource/alicloud_cen_instance_attachment: Added retry stragety for error code IncorrectStatus.VpcSwitch [GH-5903]
-- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcResource [GH-5902]
-- resource/alicloud_bastionhost_instance: Added the field public_white_list; Supported for new action ConfigInstanceWhiteList [GH-5890]
-- resource/alicloud_bastionhost_instance: Support output attribute plan_code [GH-5901]
-- resource/alicloud_mongodb_instance: Support new attribute readonly_replicas, storage_type, hidden_zone_id, secondary_zone_id. [GH-5860]
-- resource/alicloud_ess_scaling_configuration:update by common api & support system_disk_encrypted [GH-5873]
-- resource/alicloud_bastionhost_user: Supported source set to AD and LDAP [GH-5888]
-- doc/dcdn_kv: Optimize content. doc/dcdn_kv_namespace: Optimize content. [GH-5886]
-- doc/nlb_security_policy: Optimize content. [GH-5904]
-- doc/cms_alarm_contact: Optimize content. [GH-5908]
-- doc/cms_metric_rule_black_list: Optimize content. [GH-5908]
-- timeout: Improves the setting timeout when waiting for the resource is ready [GH-5913]
+- provider: Enlarges the session_expiration max value to 43200 ([#5920](https://github.com/aliyun/terraform-provider-alicloud/issues/5920))
+- resource/alicloud_emr_cluster_new: Added new resource alicloud_emr_cluster_new which based on EMR's new version openAPI ([#5892](https://github.com/aliyun/terraform-provider-alicloud/issues/5892))
+- resource/alicloud_click_house: Removes the validation for attribute db_cluster_class ([#5918](https://github.com/aliyun/terraform-provider-alicloud/issues/5918))
+- resource/alicloud_nat_gateway: Added retry stragety for error code IncorrectStatus.NATGW, IncorrectStatus.NatGateway, DependencyViolation.EIPS ([#5916](https://github.com/aliyun/terraform-provider-alicloud/issues/5916))
+- resource/alicloud_hbr_server_backup_plan: Added the field cross_account_type, cross_account_user_id and cross_account_role_name ([#5910](https://github.com/aliyun/terraform-provider-alicloud/issues/5910))
+- resource/alicloud_cms_event_rule: Optimization type assertion. ([#5908](https://github.com/aliyun/terraform-provider-alicloud/issues/5908))
+- resource/alicloud_cen_instance_attachment: Added retry stragety for error code IncorrectStatus.VpcSwitch ([#5903](https://github.com/aliyun/terraform-provider-alicloud/issues/5903))
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code IncorrectStatus.VpcResource ([#5902](https://github.com/aliyun/terraform-provider-alicloud/issues/5902))
+- resource/alicloud_bastionhost_instance: Added the field public_white_list; Supported for new action ConfigInstanceWhiteList ([#5890](https://github.com/aliyun/terraform-provider-alicloud/issues/5890))
+- resource/alicloud_bastionhost_instance: Support output attribute plan_code ([#5901](https://github.com/aliyun/terraform-provider-alicloud/issues/5901))
+- resource/alicloud_mongodb_instance: Support new attribute readonly_replicas, storage_type, hidden_zone_id, secondary_zone_id. ([#5860](https://github.com/aliyun/terraform-provider-alicloud/issues/5860))
+- resource/alicloud_ess_scaling_configuration:update by common api & support system_disk_encrypted ([#5873](https://github.com/aliyun/terraform-provider-alicloud/issues/5873))
+- resource/alicloud_bastionhost_user: Supported source set to AD and LDAP ([#5888](https://github.com/aliyun/terraform-provider-alicloud/issues/5888))
+- doc/dcdn_kv: Optimize content. doc/dcdn_kv_namespace: Optimize content. ([#5886](https://github.com/aliyun/terraform-provider-alicloud/issues/5886))
+- doc/nlb_security_policy: Optimize content. ([#5904](https://github.com/aliyun/terraform-provider-alicloud/issues/5904))
+- doc/cms_alarm_contact: Optimize content. ([#5908](https://github.com/aliyun/terraform-provider-alicloud/issues/5908))
+- doc/cms_metric_rule_black_list: Optimize content. ([#5908](https://github.com/aliyun/terraform-provider-alicloud/issues/5908))
+- timeout: Improves the setting timeout when waiting for the resource is ready ([#5913](https://github.com/aliyun/terraform-provider-alicloud/issues/5913))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: fix rds bug when waiting for the resource is running [GH-5909]
-- resource/alicloud_ram_policy: Fix errors that failed assertions. [GH-5898]
-- resource/alicloud_cms_sls_group: Fix sls_group_config Attribute Reading Defect. [GH-5908]
-- datasource/alicloud_cms_metric_rule_black_lists: Fix paging logic; Fix TestAccAlicloudCmsMetricRuleBlackListsDataSource. [GH-5908]
+- resource/alicloud_db_instance: fix rds bug when waiting for the resource is running ([#5909](https://github.com/aliyun/terraform-provider-alicloud/issues/5909))
+- resource/alicloud_ram_policy: Fix errors that failed assertions. ([#5898](https://github.com/aliyun/terraform-provider-alicloud/issues/5898))
+- resource/alicloud_cms_sls_group: Fix sls_group_config Attribute Reading Defect. ([#5908](https://github.com/aliyun/terraform-provider-alicloud/issues/5908))
+- datasource/alicloud_cms_metric_rule_black_lists: Fix paging logic; Fix TestAccAlicloudCmsMetricRuleBlackListsDataSource. ([#5908](https://github.com/aliyun/terraform-provider-alicloud/issues/5908))
 
 ## 1.198.0 (February 8, 2023)
 
