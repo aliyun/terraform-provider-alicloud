@@ -54,8 +54,8 @@ The following arguments are supported:
 
 * `category` - (Required, ForceNew) The Category of DBCluster. Valid values: `Basic`,`HighAvailability`.
 * `db_cluster_class` - (Required) The DBCluster class. According to the category, db_cluster_class has two value ranges:
-  * Under the condition that the category is the `Basic`, Valid values: `S4-NEW`, `S8`, `S16`, `S32`, `S64`, `S104`.
-  * Under the condition that the category is the `HighAvailability`, Valid values: `C4-NEW`, `C8`, `C16`, `C32`, `C64`, `C104`.
+  * Under the condition that the category is the `Basic`, Valid values: `LS20`, `LS40`, `LS80`,`S8`, `S16`, `S32`, `S64`,`S80`, `S104`.
+  * Under the condition that the category is the `HighAvailability`, Valid values: `LC20`, `LC40`, `LC80`,`C8`, `C16`, `C32`, `C64`, `C80`, `C104`.
 * `db_cluster_network_type` - (Required, ForceNew) The DBCluster network type. Valid values: `vpc`.
 * `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`. **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
 * `db_node_storage` - (Required, ForceNew) The db node storage.
