@@ -1061,6 +1061,60 @@ resource "alicloud_ram_role" "default" {
 }
 `
 
+const EmrV2CommonTestCase = `
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+data "alicloud_zones" "default" {
+	available_instance_type = "ecs.g7.xlarge"
+}
+
+resource "alicloud_vpc" "default" {
+	vpc_name = "${var.name}"
+	cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  zone_id = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name = "${var.name}"
+}
+
+resource "alicloud_ecs_key_pair" "default" {
+  key_pair_name = "${var.name}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_ram_role" "default" {
+  name        = var.name
+  document    = <<EOF
+    {
+        "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Effect": "Allow",
+            "Principal": {
+            "Service": [
+                "emr.aliyuncs.com",
+                "ecs.aliyuncs.com"
+            ]
+            }
+        }
+        ],
+        "Version": "1"
+    }
+    EOF
+  description = "this is a role test."
+  force       = true
+}
+`
+
 const EmrHadoopClusterTestCase = `
 data "alicloud_emr_main_versions" "default" {
 	cluster_type = ["HADOOP"]
