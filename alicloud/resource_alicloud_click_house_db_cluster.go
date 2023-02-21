@@ -54,10 +54,9 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				},
 			},
 			"db_cluster_class": {
-				Type:         schema.TypeString,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"S4-NEW", "S8", "S16", "S32", "S64", "S104", "C4-NEW", "C8", "C16", "C32", "C64", "C104"}, false),
-				Required:     true,
+				Type:     schema.TypeString,
+				ForceNew: true,
+				Required: true,
 			},
 			"db_cluster_network_type": {
 				Type:         schema.TypeString,
