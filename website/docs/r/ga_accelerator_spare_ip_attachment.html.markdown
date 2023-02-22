@@ -27,6 +27,7 @@ resource "alicloud_ga_accelerator" "default" {
   auto_use_coupon  = true
   description      = var.name
 }
+
 resource "alicloud_ga_bandwidth_package" "default" {
   bandwidth              = 100
   type                   = "Basic"
@@ -38,6 +39,7 @@ resource "alicloud_ga_bandwidth_package" "default" {
   auto_pay               = true
   auto_use_coupon        = true
 }
+
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
   accelerator_id       = alicloud_ga_accelerator.default.id
   bandwidth_package_id = alicloud_ga_bandwidth_package.default.id

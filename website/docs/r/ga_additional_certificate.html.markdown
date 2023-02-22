@@ -29,12 +29,12 @@ resource "alicloud_ga_accelerator" "default" {
   auto_use_coupon = true
   spec            = "1"
 }
+
 resource "alicloud_ga_bandwidth_package" "default" {
   bandwidth       = 20
   type            = "Basic"
   bandwidth_type  = "Basic"
   duration        = 1
-  ratio           = 30
   auto_pay        = true
   auto_use_coupon = true
 }
@@ -46,7 +46,7 @@ resource "alicloud_ga_bandwidth_package_attachment" "default" {
 
 resource "alicloud_ssl_certificates_service_certificate" "default" {
   count            = 2
-  certificate_name = var.name
+  certificate_name = join("-", [var.name, count.index])
   cert             = file("${path}/test.crt")
   key              = file("${path}/test.key")
 }
