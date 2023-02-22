@@ -20,6 +20,10 @@ var RetryOnServerErrorEnabled = true
 
 var GlobalDebugLevel = 0
 
+var MaxCompletedRetryCount = 20
+
+var MaxCompletedRetryLatency = 5 * time.Minute
+
 // compress type
 const (
 	Compress_LZ4  = iota // 0
@@ -30,6 +34,16 @@ const (
 var InvalidCompressError = errors.New("Invalid Compress Type")
 
 const DefaultLogUserAgent = "golang-sdk-v0.1.0"
+
+// AuthVersionType the version of auth
+type AuthVersionType string
+
+const (
+	// AuthV1 v1
+	AuthV1 AuthVersionType = "v1"
+	// AuthV4 v4
+	AuthV4 AuthVersionType = "v4"
+)
 
 // Error defines sls error
 type Error struct {
@@ -89,6 +103,8 @@ type Client struct {
 	RequestTimeOut  time.Duration
 	RetryTimeOut    time.Duration
 	HTTPClient      *http.Client
+	Region          string
+	AuthVersion     AuthVersionType //  v1 or v4 signature,default is v1
 
 	accessKeyLock sync.RWMutex
 }
@@ -103,6 +119,8 @@ func convertLocked(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
+	p.AuthVersion = c.AuthVersion
+	p.Region = c.Region
 	if c.HTTPClient != nil {
 		p.httpClient = c.HTTPClient
 	}
@@ -124,6 +142,20 @@ func (c *Client) SetUserAgent(userAgent string) {
 // SetHTTPClient set a custom http client, all request will send to sls by this client
 func (c *Client) SetHTTPClient(client *http.Client) {
 	c.HTTPClient = client
+}
+
+// SetAuthVersion set signature version that the client used
+func (c *Client) SetAuthVersion(version AuthVersionType) {
+	c.accessKeyLock.Lock()
+	c.AuthVersion = version
+	c.accessKeyLock.Unlock()
+}
+
+// SetRegion set a region, must be set if using signature version v4
+func (c *Client) SetRegion(region string) {
+	c.accessKeyLock.Lock()
+	c.Region = region
+	c.accessKeyLock.Unlock()
 }
 
 // ResetAccessKeyToken reset client's access key token

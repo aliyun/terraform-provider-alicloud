@@ -68,10 +68,12 @@ The following arguments are supported:
 
 * `project` - (Required, ForceNew) The project name to the log store belongs.
 * `name` - (Required, ForceNew) The log store, which is unique in the same project.
-* `retention_period` - (Optional) The data retention time (in days). Valid values: [1-3650]. Default to `30`. Log store data will be stored permanently when the value is `3650`.
+* `retention_period` - (Optional) The data retention time (in days). Valid values: [1-3000]. Default to `30`. Log store data will be stored permanently when the value is `3000`.
 * `shard_count` - (Optional) The number of shards in this log store. Default to 2. You can modify it by "Split" or "Merge" operations. [Refer to details](https://www.alibabacloud.com/help/doc-detail/28976.htm)
 * `auto_split` - (Optional) Determines whether to automatically split a shard. Default to `false`.
 * `telemetry_type` - (Optional, Available in 1.179.0+) Determines whether store type is metric. `Metrics` means metric store, empty means log store.
+* `hot_ttl` - (Optional, Available in 1.202.0+) The ttl of hot storage. Default to `30`, at least `30`, hot storage ttl must be less than ttl.
+* `mode` - (Optional, Available in 1.202.0+) The mode of storage. Default to `standard`, must be `standard` or `query`, `mode` is only valid when creating, can't be changed after created.
 * `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
 * `append_meta` - (Optional) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to `true`.
 * `enable_web_tracking` - (Optional) Determines whether to enable Web Tracking. Default `false`.
@@ -104,6 +106,8 @@ The following attributes are exported:
 * `telemetry_type` - Store type.
 * `retention_period` - The data retention time.
 * `shard_count` - The number of shards.
+* `hot_ttl` - The ttl of hot storage.
+* `mode` - The mode of storage, `mode` can not be changed after created.
 * `shards` - The shard attribute.
   * `id` - The ID of the shard.
   * `status` - Shard status, only two status of `readwrite` and `readonly`.

@@ -490,6 +490,6 @@ type LogConfig struct {
 	OutputType   string               `json:"outputType"`
 	OutputDetail OutputDetail         `json:"outputDetail"`
 
-	CreateTime     uint32 `json:"createTime,omitempty`
+	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`
 }

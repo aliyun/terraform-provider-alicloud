@@ -48,6 +48,10 @@ type ClientInterface interface {
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)
+	// SetRegion Set region for signature v4
+	SetRegion(region string)
+	// SetAuthVersion Set signature version
+	SetAuthVersion(version AuthVersionType)
 	// Close the client
 	Close() error
 
@@ -218,6 +222,13 @@ type ClientInterface interface {
 	GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
 	GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error)
 
+	// GetHistogramsToCompleted query logs with [from, to) time range to completed
+	GetHistogramsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error)
+	// GetLogsToCompleted query logs with [from, to) time range to completed
+	GetLogsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string, maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
+	// GetLogsToCompletedV2 query logs with [from, to) time range to completed
+	GetLogsToCompletedV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
+
 	// #################### Index Operations #####################
 	// CreateIndex ...
 	CreateIndex(project, logstore string, index Index) error
@@ -337,4 +348,7 @@ type ClientInterface interface {
 	DeleteProjectPolicy(project string) error
 	// GetProjectPolicy return project's policy.
 	GetProjectPolicy(project string) (string, error)
+
+	// #################### AlertPub Msg  #####################
+	PublishAlertEvent(project string, alertResult []byte) error
 }

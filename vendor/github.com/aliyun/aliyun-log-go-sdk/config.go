@@ -22,7 +22,7 @@ const (
 
 	GetLogsQueryInfo = "X-Log-Query-Info"
 	HasSQLHeader     = "x-log-has-sql"
-	ETLVersion       =  2
+	ETLVersion       = 2
 	ETLType          = "ETL"
 	ETLSinksType     = "AliyunLOG"
 )

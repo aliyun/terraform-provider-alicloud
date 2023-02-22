@@ -2,6 +2,7 @@ package sls
 
 import (
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -58,6 +59,7 @@ type GetLogsResponse struct {
 	Logs     []map[string]string `json:"logs"`
 	Contents string              `json:"contents"`
 	HasSQL   bool                `json:"hasSQL"`
+	Header   http.Header         `json:"header"`
 }
 
 // GetLogLinesResponse defines response from GetLogLines call
