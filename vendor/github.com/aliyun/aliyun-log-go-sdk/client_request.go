@@ -3,7 +3,6 @@ package sls
 // request sends a request to SLS.
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 
@@ -19,7 +18,7 @@ import (
 // @note if error is nil, you must call http.Response.Body.Close() to finalize reader
 func (c *Client) request(project, method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
 	// The caller should provide 'x-log-bodyrawsize' header
-	if _, ok := headers["x-log-bodyrawsize"]; !ok {
+	if _, ok := headers[HTTPHeaderBodyRawSize]; !ok {
 		return nil, fmt.Errorf("Can't find 'x-log-bodyrawsize' header")
 	}
 
@@ -41,44 +40,44 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	} else {
 		hostStr = project + "." + endpoint
 	}
-	headers["Host"] = hostStr
-	headers["Date"] = nowRFC1123()
-	headers["x-log-apiversion"] = version
-	headers["x-log-signaturemethod"] = signatureMethod
+	headers[HTTPHeaderHost] = hostStr
+	headers[HTTPHeaderAPIVersion] = version
 
 	if len(c.UserAgent) > 0 {
-		headers["User-Agent"] = c.UserAgent
+		headers[HTTPHeaderUserAgent] = c.UserAgent
 	} else {
-		headers["User-Agent"] = DefaultLogUserAgent
+		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
 	}
 
 	c.accessKeyLock.RLock()
 	stsToken := c.SecurityToken
 	accessKeyID := c.AccessKeyID
 	accessKeySecret := c.AccessKeySecret
+	region := c.Region
+	authVersion := c.AuthVersion
 	c.accessKeyLock.RUnlock()
 
 	// Access with token
 	if stsToken != "" {
-		headers["x-acs-security-token"] = stsToken
+		headers[HTTPHeaderAcsSecurityToken] = stsToken
 	}
 
 	if body != nil {
-		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
-		headers["Content-MD5"] = bodyMD5
-		if _, ok := headers["Content-Type"]; !ok {
+		if _, ok := headers[HTTPHeaderContentType]; !ok {
 			return nil, fmt.Errorf("Can't find 'Content-Type' header")
 		}
 	}
-
-	// Calc Authorization
-	// Authorization = "SLS <AccessKeyId>:<Signature>"
-	digest, err := signature(accessKeySecret, method, uri, headers)
-	if err != nil {
+	var signer Signer
+	if authVersion == AuthV4 {
+		headers[HTTPHeaderLogDate] = dateTimeISO8601()
+		signer = NewSignerV4(accessKeyID, accessKeySecret, region)
+	} else {
+		headers[HTTPHeaderDate] = nowRFC1123()
+		signer = NewSignerV1(accessKeyID, accessKeySecret)
+	}
+	if err := signer.Sign(method, uri, headers, body); err != nil {
 		return nil, err
 	}
-	auth := fmt.Sprintf("SLS %v:%v", accessKeyID, digest)
-	headers["Authorization"] = auth
 
 	// Initialize http request
 	reader := bytes.NewReader(body)

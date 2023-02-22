@@ -192,12 +192,13 @@ totalLogCount := 0
 
    参考 [machine_group_sample.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/machine_group/machine_group_sample.go) 
 
+机器组分为IP型机器组和标识型机器组，二选一
+
+创建标识型机器组
 ```go
 attribute := sls.MachinGroupAttribute{
-   ExternalName: "",
-   TopicName:    "",
 }
-machineList := []string{"mac-user-defined-id-value"}
+machineList := []string{"mac-user-defined-id-value_XX"}
 var machineGroup = &sls.MachineGroup{
    Name:          groupName,
    MachineIDType: "userdefined",
@@ -209,6 +210,24 @@ if err != nil {
    fmt.Println(err)
 }
 ```
+
+创建IP型机器组
+```go
+attribute := sls.MachinGroupAttribute{
+}
+machineList := []string{"192.168.XX.XX"}
+var machineGroup = &sls.MachineGroup{
+   Name:          groupName,
+   MachineIDType: "ip",
+   MachineIDList: machineList,
+   Attribute:     attribute,
+}
+err = util.Client.CreateMachineGroup(ProjectName, machineGroup)
+if err != nil {
+   fmt.Println(err)
+}
+```
+
 
 8. **创建logtail 采集配置**
 
