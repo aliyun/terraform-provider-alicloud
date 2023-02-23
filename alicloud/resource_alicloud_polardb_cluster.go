@@ -189,6 +189,20 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
 			},
+			"encryption_key": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: polardbTDEAndEnabledDiffSuppressFunc,
+			},
+			"role_arn": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: polardbTDEAndEnabledDiffSuppressFunc,
+			},
+			"tde_region": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"security_group_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -510,6 +524,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				if s, ok := d.GetOk("encrypt_new_tables"); ok && s.(string) != "" {
 					request["EncryptNewTables"] = s.(string)
 				}
+				if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+					request["EncryptionKey"] = v.(string)
+				}
+				if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+					request["RoleArn"] = v.(string)
+				}
 				//retry
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -535,6 +555,8 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 				d.SetPartial("tde_status")
 				d.SetPartial("encrypt_new_tables")
+				d.SetPartial("encryption_key")
+				d.SetPartial("role_arn")
 			}
 		}
 	}
@@ -778,7 +800,13 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("tde_status", clusterTDEStatus["TDEStatus"])
 	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
-
+	d.Set("encryption_key", clusterTDEStatus["EncryptionKey"])
+	d.Set("tde_region", clusterTDEStatus["TDERegion"])
+	roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("role_arn", roleArnObj["RoleArn"])
 	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
 	if err != nil {
 		return WrapError(err)
