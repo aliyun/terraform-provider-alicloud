@@ -307,11 +307,15 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tde_status":         "Enabled",
 					"encrypt_new_tables": "ON",
+					"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
+					"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tde_status":         "Enabled",
 						"encrypt_new_tables": "ON",
+						"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
+						"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
 					}),
 				),
 			},

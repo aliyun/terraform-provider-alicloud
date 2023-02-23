@@ -330,6 +330,13 @@ func polardbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.Resou
 	return true
 }
 
+func polardbTDEAndEnabledDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("tde_status"); ok && v.(string) == "Enabled" && old != "" && new != "" && old != new {
+		return true
+	}
+	return false
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false
