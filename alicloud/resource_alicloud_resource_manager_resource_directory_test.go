@@ -17,7 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
+// Skip this test because each account can only create one resource directory
+func SkipTestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_directory.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerResourceDirectoryMap)
