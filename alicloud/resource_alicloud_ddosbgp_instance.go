@@ -68,7 +68,6 @@ func resourceAlicloudDdosbgpInstance() *schema.Resource {
 				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:     true,
 				Default:      12,
-				ForceNew:     true,
 			},
 			"normal_bandwidth": {
 				Type:     schema.TypeInt,

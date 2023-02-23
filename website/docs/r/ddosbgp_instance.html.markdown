@@ -46,7 +46,7 @@ The following arguments are supported:
 * `bandwidth` - (Required, ForceNew) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: 51,91,101,201,301. The unit is Gbps.
 * `ip_count` - (Required, ForceNew) IP count of the instance. Valid values: 100.
 * `ip_type` - (Required, ForceNew) IP version of the instance. Valid values: IPv4,IPv6.
-* `period` - (Optional, ForceNew) The duration that you will buy Ddosbgp instance (in month). Valid values: [1~9], 12, 24, 36. Default to 12. At present, the provider does not support modify "period".
+* `period` - (Optional) The duration that you will buy Ddosbgp instance (in month). Valid values: [1~9], 12, 24, 36. Default to 12. At present, the provider does not support modify "period".
 * `normal_bandwidth` - (Required, ForceNew) Normal defend bandwidth of the instance. The unit is Gbps.
 
 ## Attributes Reference
