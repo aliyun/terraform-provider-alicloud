@@ -87,6 +87,7 @@ The following arguments are supported:
 
 * `havip_id` - (Required, ForceNew) The havip_id of the havip attachment, the field can't be changed.
 * `instance_id` - (Required, ForceNew) The instance_id of the havip attachment, the field can't be changed.
+* `force` - (Optional, Available in v1.200.0+) Specifies whether to forcefully disassociate the HAVIP from the ECS instance or ENI. Default value: `False`. Valid values: `True` and `False`.
 
 ## Attributes Reference
 

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -14,6 +15,7 @@ func resourceAliyunHaVipAttachment() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliyunHaVipAttachmentCreate,
 		Read:   resourceAliyunHaVipAttachmentRead,
+		Update: resourceAliyunHaVipAttachmentUpdate,
 		Delete: resourceAliyunHaVipAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -28,11 +30,14 @@ func resourceAliyunHaVipAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-
 			"instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"force": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
@@ -94,6 +99,11 @@ func resourceAliyunHaVipAttachmentRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
+func resourceAliyunHaVipAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	return resourceAliyunHaVipAttachmentRead(d, meta)
+}
+
 func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	haVipService := HaVipService{client}
@@ -107,6 +117,10 @@ func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.HaVipId = haVipId
 	request.InstanceId = instanceId
+
+	if v, ok := d.GetOk("force"); ok {
+		request.Force = v.(string)
+	}
 
 	return resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
