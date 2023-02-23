@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"strconv"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 

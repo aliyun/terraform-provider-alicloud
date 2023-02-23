@@ -126,3 +126,28 @@ func (s *ActiontrailService) ActiontrailHistoryDeliveryJobStateRefreshFunc(id st
 		return object, fmt.Sprint(object["JobStatus"]), nil
 	}
 }
+
+func (s *ActiontrailService) DescribeActiontrailGlobalEventsStorageRegion(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewActiontrailClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetGlobalEventsStorageRegion"
+	request := map[string]interface{}{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-07-06"), StringPointer("AK"), request, nil, &runtime)
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+	return object, nil
+}
