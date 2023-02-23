@@ -180,6 +180,7 @@ type Config struct {
 	CloudfirewallEndpoint       string
 	SrvcatalogEndpoint          string
 	VpcPeerEndpoint             string
+	EfloEndpoint                string
 }
 
 func (c *Config) loadAndValidate() error {

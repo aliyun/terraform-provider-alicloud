@@ -839,6 +839,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_router_interfaces":                dataSourceAlicloudExpressConnectRouterInterfaces(),
 			"alicloud_wafv3_instances":                                  dataSourceAlicloudWafv3Instances(),
 			"alicloud_wafv3_domains":                                    dataSourceAlicloudWafv3Domains(),
+			"alicloud_eflo_vpds":                                        dataSourceAlicloudEfloVpds(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1567,6 +1568,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_wafv3_instance":                                        resourceAlicloudWafv3Instance(),
 			"alicloud_alb_load_balancer_common_bandwidth_package_attachment": resourceAlicloudAlbLoadBalancerCommonBandwidthPackageAttachment(),
 			"alicloud_wafv3_domain":                                          resourceAlicloudWafv3Domain(),
+			"alicloud_eflo_vpd":                                              resourceAlicloudEfloVpd(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1803,6 +1805,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.CloudfirewallEndpoint = strings.TrimSpace(endpoints["cloudfirewall"].(string))
 		config.SrvcatalogEndpoint = strings.TrimSpace(endpoints["srvcatalog"].(string))
 		config.VpcPeerEndpoint = strings.TrimSpace(endpoints["vpcpeer"].(string))
+		config.EfloEndpoint = strings.TrimSpace(endpoints["eflo"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2148,6 +2151,8 @@ func init() {
 		"cloudfirewall_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom cloudfirewall endpoints.",
 
 		"srvcatalog_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom srvcatalog endpoints.",
+
+		"eflo_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom eflo endpoints.",
 	}
 }
 
@@ -2192,6 +2197,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"eflo": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["eflo_endpoint"],
+				},
+
 				"srvcatalog": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3144,6 +3156,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudfirewall"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["srvcatalog"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["vpcpeer"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["eflo"].(string)))
 	return hashcode.String(buf.String())
 }
 

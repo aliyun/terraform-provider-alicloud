@@ -245,3 +245,4 @@ var ServiceCatalogProvisionedProductSupportRegions = []Region{Hangzhou}
 var MaxComputeProjectSupportRegions = []Region{Hangzhou}
 var EbsDedicatedBlockStorageClusterRegions = []Region{HeYuan}
 var WAFV3SupportRegions = []Region{APSouth1, EUCentral1}
+var EfloSupportRegions = []Region{WuLanChaBu}
