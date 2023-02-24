@@ -1571,6 +1571,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_wafv3_domain":                                          resourceAlicloudWafv3Domain(),
 			"alicloud_eflo_vpd":                                              resourceAlicloudEfloVpd(),
 			"alicloud_dcdn_waf_rule":                                         resourceAlicloudDcdnWafRule(),
+			"alicloud_dcdn_er":                                               resourceAlicloudDcdnEr(),
 		},
 
 		ConfigureFunc: providerConfigure,
