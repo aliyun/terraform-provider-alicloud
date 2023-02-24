@@ -490,3 +490,120 @@ func TestUnitAlicloudRdsParameterGroup(t *testing.T) {
 	}
 
 }
+
+func TestAccAlicloudRdsParameterGroupPostgreSQL(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rds_parameter_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudRdsParameterGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRdsParameterGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf_testAccAlicloudRdsParameterGroup%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRdsParameterGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":         "PostgreSQL",
+					"engine_version": "11.0",
+					"param_detail": []map[string]interface{}{
+						{
+							"param_name":  "enable_sort",
+							"param_value": "off",
+						},
+						{
+							"param_name":  "geqo_seed",
+							"param_value": "0.1",
+						},
+					},
+					"parameter_group_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":               "PostgreSQL",
+						"engine_version":       "11.0",
+						"param_detail.#":       "2",
+						"parameter_group_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"param_detail": []map[string]interface{}{
+						{
+							"param_name":  "enable_sort",
+							"param_value": "on",
+						},
+						{
+							"param_name":  "geqo_seed",
+							"param_value": "0.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"param_detail.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_group_desc": "update_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameter_group_desc": "update_test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameter_group_name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameter_group_name": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"param_detail": []map[string]interface{}{
+						{
+							"param_name":  "enable_sort",
+							"param_value": "off",
+						},
+						{
+							"param_name":  "geqo_seed",
+							"param_value": "0.1",
+						},
+					},
+					"parameter_group_desc": "test",
+					"parameter_group_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"param_detail.#":       "2",
+						"parameter_group_desc": "test",
+						"parameter_group_name": name,
+					}),
+				),
+			},
+		},
+	})
+}
