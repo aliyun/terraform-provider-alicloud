@@ -40,8 +40,8 @@ resource "alicloud_rds_parameter_group" "default" {
 
 The following arguments are supported:
 
-* `engine` - (Required, ForceNew) The database engine. Valid values: `mysql`, `mariadb`.
-* `engine_version` - (Required, ForceNew) The version of the database engine. Valid values: mysql: `5.1`, `5.5`, `5.6`, `5.7`, `8.0`; mariadb: `10.3`.
+* `engine` - (Required, ForceNew) The database engine. Valid values: `mysql`, `mariadb`, `PostgreSQL`.
+* `engine_version` - (Required, ForceNew) The version of the database engine. Valid values: mysql: `5.1`, `5.5`, `5.6`, `5.7`, `8.0`; mariadb: `10.3`; PostgreSQL: `10.0`, `11.0`, `12.0`, `13.0`, `14.0`, `15.0`.
 * `param_detail` - (Required) Parameter list.
 * `parameter_group_desc` - (Optional) The description of the parameter template.
 * `parameter_group_name` - (Required) The name of the parameter template.

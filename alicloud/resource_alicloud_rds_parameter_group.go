@@ -26,13 +26,13 @@ func resourceAlicloudRdsParameterGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mariadb", "mysql"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"mariadb", "mysql", "PostgreSQL"}, false),
 			},
 			"engine_version": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"10.3", "5.1", "5.5", "5.6", "5.7", "8.0"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"10.3", "5.1", "5.5", "5.6", "5.7", "8.0", "10.0", "11.0", "12.0", "13.0", "14.0", "15.0"}, false),
 			},
 			"param_detail": {
 				Type:     schema.TypeSet,
