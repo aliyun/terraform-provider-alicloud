@@ -60,7 +60,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Enable" {
+					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Enable" && old != "" && new != "" && old != new {
 						return true
 					}
 					return false
