@@ -261,6 +261,11 @@ The following attributes are exported:
 
 * `id` - The instance ID.
 * `public_ip` - The instance public ip.
+* `cpu` - The number of vCPUs.
+* `memory` - The memory size of the instance. Unit: MiB.
+* `os_type` - The type of the operating system of the instance.
+* `os_name` - The name of the operating system of the instance.
+* `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - (Optional, Available in 1.149.0+) The group number of the instance in a deployment set when the deployment set is use.
 
 ### Timeouts
