@@ -515,6 +515,26 @@ func resourceAliyunInstance() *schema.Resource {
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ipv6_address_count"},
 			},
+			"cpu": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"memory": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"os_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"os_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"primary_ip_address": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -904,6 +924,10 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("http_tokens", instance.MetadataOptions.HttpTokens)
 	d.Set("http_endpoint", instance.MetadataOptions.HttpEndpoint)
 	d.Set("http_put_response_hop_limit", instance.MetadataOptions.HttpPutResponseHopLimit)
+	d.Set("cpu", instance.Cpu)
+	d.Set("memory", instance.Memory)
+	d.Set("os_name", instance.OSName)
+	d.Set("os_type", instance.OSType)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
@@ -996,6 +1020,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
 		if obj.Type == "Primary" {
 			networkInterfaceId = obj.NetworkInterfaceId
+			d.Set("primary_ip_address", obj.PrimaryIpAddress)
 			break
 		}
 	}
