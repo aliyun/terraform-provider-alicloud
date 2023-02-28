@@ -74,12 +74,12 @@ The following arguments are supported:
   * **cloud_essd**: enhanced SSDs (ESSDs) of performance level 1 (PL1)
   * **cloud_essd2**: ESSDs of PL2
   * **cloud_essd3**: ESSDs of PL3
-* `payment_type` - (Required) The billing method of the new instance. Valid values: `PayAsYouGo` and `Subscription`.
+* `payment_type` - (Required) The billing method of the new instance. Valid values: `PayAsYouGo` and `Subscription` and `Serverless`.
 * `db_instance_class` - (Optional, Computed) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
 * `restore_time` - (Optional) The point in time to which you want to restore the data of the original instance. The point in time must fall within the specified log backup retention period. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `backup_id` - (Optional) The ID of the data backup file you want to use. You can call the DescribeBackups operation to query the most recent data backup file list.
 
--> **NOTE:** You must specify at least one of the BackupId and RestoreTime parameters.
+-> **NOTE:** You must specify at least one of the BackupId and RestoreTime parameters. When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
 * `db_instance_storage` - (Optional, Computed) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
 
 -> **NOTE:** The default value of this parameter is the storage capacity of the original instance.
@@ -119,6 +119,7 @@ The following arguments are supported:
   * **HighAvailability**: High availability
   * **AlwaysOn**: Cluster Edition
   * **Finance**: Three-node Enterprise Edition.
+  * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
 * `certificate` - (Optional) The file that contains the certificate used for TDE.
 * `client_ca_cert` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the public key of the client certification authority. If the value of client_ca_enabled is 1, this parameter must be configured.
 * `client_ca_enabled` - (Optional) The client ca enabled.
@@ -192,6 +193,8 @@ The following arguments are supported:
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
 
+* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.
+
 #### Block pg_hba_conf
 
 The pg_hba_conf mapping supports the following:
@@ -209,6 +212,21 @@ The pg_hba_conf mapping supports the following:
 * `user` - (Required) The user that is allowed to access the instance. If you specify multiple users, separate the usernames with commas (,).
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
+
+#### Block serverless_config
+
+The serverless_config mapping supports the following:
+
+* `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). Valid values: 0.5 to 8. The value of this parameter must be greater than or equal to the value of the `min_capacity` parameter.
+* `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. Valid values: 0.5 to 8. The value of this parameter must be less than or equal to the value of the `max_capacity` parameter.
+
+* `auto_pause` - (Required, Available in 1.200.0+) Specifies whether to enable the smart startup and stop feature for the serverless instance. After the smart startup and stop feature is enabled, if no connections to the instance are established within 10 minutes, the instance is stopped. After a connection is established to the instance, the instance is automatically woken up. Valid values:
+  - true: enables the feature.
+  - false: disables the feature. This is the default value.
+
+* `switch_force` - (Required, Available in 1.200.0+) Specifies whether to enable the forced scaling feature for the serverless instance. If you set this parameter to true, a transient connection that lasts approximately 1 minute occurs during the forced scaling process. Process with caution. The RCU scaling for a serverless instance immediately takes effect. In some cases, such as the execution of large transactions, the scaling does not immediately take effect. In this case, you can enable this feature to forcefully scale the RCUs of the instance. Valid values:
+  - true: enables the feature.
+  - false: disables the feature. This is the default value.
 
 ## Attributes Reference
 

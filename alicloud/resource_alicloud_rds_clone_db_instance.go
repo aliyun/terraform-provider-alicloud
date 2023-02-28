@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -63,7 +64,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability", "serverless_basic"}, false),
 			},
 			"certificate": {
 				Type:     schema.TypeString,
@@ -108,6 +109,12 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Serverless" && old != "" && new != "" && old != new {
+						return true
+					}
+					return false
+				},
 			},
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
@@ -227,7 +234,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription", "Serverless"}, false),
 			},
 			"period": {
 				Type:         schema.TypeString,
@@ -381,6 +388,36 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
 			},
+			"serverless_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_capacity": {
+							Type:     schema.TypeFloat,
+							Required: true,
+						},
+						"min_capacity": {
+							Type:     schema.TypeFloat,
+							Required: true,
+						},
+						"auto_pause": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"switch_force": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+					},
+				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) != "Serverless" {
+						return true
+					}
+					return false
+				},
+			},
 		},
 	}
 }
@@ -451,6 +488,28 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+
+	if request["PayType"] == string(Serverless) {
+		if v, ok := d.GetOk("serverless_config"); ok {
+			v := v.([]interface{})[0].(map[string]interface{})
+			serverlessConfig, err := json.Marshal(struct {
+				MaxCapacity float64 `json:"MaxCapacity"`
+				MinCapacity float64 `json:"MinCapacity"`
+				AutoPause   bool    `json:"AutoPause"`
+				SwitchForce bool    `json:"SwitchForce"`
+			}{
+				v["max_capacity"].(float64),
+				v["min_capacity"].(float64),
+				v["auto_pause"].(bool),
+				v["switch_force"].(bool),
+			})
+			if err != nil {
+				return WrapError(err)
+			}
+			request["ServerlessConfig"] = string(serverlessConfig)
+		}
+	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -505,6 +564,18 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("payment_type", convertRdsInstancePaymentTypeResponse(object["PayType"]))
+
+	serverlessConfig := make([]map[string]interface{}, 0)
+	slc := object["ServerlessConfig"].(map[string]interface{})
+	slcMaps := map[string]interface{}{
+		"max_capacity": slc["ScaleMax"],
+		"min_capacity": slc["ScaleMin"],
+		"auto_pause":   slc["AutoPause"],
+		"switch_force": slc["SwitchForce"],
+	}
+	serverlessConfig = append(serverlessConfig, slcMaps)
+	d.Set("serverless_config", serverlessConfig)
+
 	d.Set("port", object["Port"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("deletion_protection", object["DeletionProtection"])
@@ -1093,6 +1164,31 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 			modifyDBInstanceSpecReq["ZoneId"] = v
 		}
 	}
+
+	if d.HasChange("serverless_config") {
+		update = true
+		if v, ok := d.GetOk("serverless_config"); ok {
+			v := v.([]interface{})[0].(map[string]interface{})
+			serverlessConfig, err := json.Marshal(struct {
+				MaxCapacity float64 `json:"MaxCapacity"`
+				MinCapacity float64 `json:"MinCapacity"`
+				AutoPause   bool    `json:"AutoPause"`
+				SwitchForce bool    `json:"SwitchForce"`
+			}{
+				v["max_capacity"].(float64),
+				v["min_capacity"].(float64),
+				v["auto_pause"].(bool),
+				v["switch_force"].(bool),
+			})
+			if err != nil {
+				return WrapError(err)
+			}
+			modifyDBInstanceSpecReq["Category"] = "Serverless"
+			modifyDBInstanceSpecReq["Direction"] = "Serverless"
+			modifyDBInstanceSpecReq["ServerlessConfiguration"] = string(serverlessConfig)
+		}
+	}
+
 	if update {
 		if v, ok := d.GetOk("direction"); ok {
 			modifyDBInstanceSpecReq["Direction"] = v
@@ -1189,6 +1285,8 @@ func convertRdsInstancePaymentTypeRequest(source interface{}) interface{} {
 		return "Postpaid"
 	case "Subscription":
 		return "Prepaid"
+	case "Serverless":
+		return "Serverless"
 	}
 	return source
 }
@@ -1198,6 +1296,8 @@ func convertRdsInstancePaymentTypeResponse(source interface{}) interface{} {
 		return "PayAsYouGo"
 	case "Prepaid":
 		return "Subscription"
+	case "SERVERLESS":
+		return "Serverless"
 	}
 	return source
 }

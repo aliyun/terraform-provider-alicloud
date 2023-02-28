@@ -35,7 +35,7 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"PrePaid", "PostPaid", "Serverless"}, false),
 			},
 			"engine": {
 				Type:         schema.TypeString,
@@ -55,7 +55,7 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic"}, false),
 			},
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
@@ -115,6 +115,8 @@ func dataSourceAlicloudDBZonesRead(d *schema.ResourceData, meta interface{}) err
 	instanceChargeType := d.Get("instance_charge_type").(string)
 	if instanceChargeType == string(PostPaid) {
 		request["CommodityCode"] = "bards"
+	} else if instanceChargeType == string(Serverless) {
+		request["CommodityCode"] = "rds_serverless_public_cn"
 	} else {
 		request["CommodityCode"] = "rds"
 	}

@@ -33,9 +33,9 @@ output "first_db_instance_class" {
 The following arguments are supported:
 
 * `zone_id` - (Optional) The Zone to launch the DB instance.
-* `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid` and `Serverless`. Default to `PostPaid`.
 * `engine` - (Optional) Database type. Valid values:"MySQL", "SQLServer", "PostgreSQL", "PPAS", "MariaDB". If not set, it will match all of engines.
-* `category` - (Optional) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
+* `category` - (Optional) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`, `serverless_basic`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
 * `engine_version` - (Optional) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
 * `db_instance_class` - (Optional, Available in 1.51.0+) The DB instance class type by the user.
 * `storage_type` - (Optional) It has been deprecated from version 1.134.0+ and using `db_instance_storage_type` instead.
@@ -49,6 +49,8 @@ The following arguments are supported:
   * **rds_intl**: The instance is a subscription primary instance. This value is available on the International site (alibabacloud.com).
   * **rords_intl**: The instance is a pay-as-you-go read-only instance. This value is available on the International site (alibabacloud.com).
   * **rds_rordspre_public_intl**: The instance is a subscription read-only instance. This value is available on the International site (alibabacloud.com).
+  * **rds_serverless_public_cn**: The instance is a subscription serverless instance. This value is available on the China site (aliyun.com).
+  * **rds_serverless_public_intl**: The instance is a subscription serverless instance. This value is available on the International site (alibabacloud.com).
 
 -> **NOTE**: The field `db_instance_id` will be ignored when `commodity_code` is not a read-only type.
 * `db_instance_id` - (Optional, Available in v1.166.0+) The ID of the instance.

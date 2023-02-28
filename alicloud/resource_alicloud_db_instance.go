@@ -63,13 +63,16 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					if v, ok := d.GetOk("storage_auto_scale"); ok && v.(string) == "Enable" && old != "" && new != "" && old != new {
 						return true
 					}
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "Serverless" && old != "" && new != "" && old != new {
+						return true
+					}
 					return false
 				},
 			},
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{string(Postpaid), string(Prepaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{string(Postpaid), string(Prepaid), string(Serverless)}, false),
 				Optional:     true,
 				Default:      Postpaid,
 			},
@@ -522,12 +525,42 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic"}, false),
 			},
 			"effective_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Immediate", "MaintainTime"}, false),
+			},
+			"serverless_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_capacity": {
+							Type:     schema.TypeFloat,
+							Required: true,
+						},
+						"min_capacity": {
+							Type:     schema.TypeFloat,
+							Required: true,
+						},
+						"auto_pause": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+						"switch_force": {
+							Type:     schema.TypeBool,
+							Required: true,
+						},
+					},
+				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) != "Serverless" {
+						return true
+					}
+					return false
+				},
 			},
 		},
 	}
@@ -1275,6 +1308,30 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	request["DBInstanceStorage"] = d.Get("instance_storage")
 
+	if d.HasChange("serverless_config") {
+		update = true
+	}
+	if v, ok := d.GetOk("serverless_config"); ok {
+		v := v.([]interface{})[0].(map[string]interface{})
+		serverlessConfig, err := json.Marshal(struct {
+			MaxCapacity float64 `json:"MaxCapacity"`
+			MinCapacity float64 `json:"MinCapacity"`
+			AutoPause   bool    `json:"AutoPause"`
+			SwitchForce bool    `json:"SwitchForce"`
+		}{
+			v["max_capacity"].(float64),
+			v["min_capacity"].(float64),
+			v["auto_pause"].(bool),
+			v["switch_force"].(bool),
+		})
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Category"] = "Serverless"
+		request["Direction"] = "Serverless"
+		request["ServerlessConfiguration"] = string(serverlessConfig)
+	}
+
 	if d.HasChange("db_instance_storage_type") {
 		update = true
 	}
@@ -1298,6 +1355,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
 			d.SetPartial("db_instance_storage_type")
+			d.SetPartial("serverless_config")
 			return nil
 		})
 
@@ -1498,7 +1556,25 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_storage", instance["DBInstanceStorage"])
 	d.Set("db_instance_storage_type", instance["DBInstanceStorageType"])
 	d.Set("zone_id", instance["ZoneId"])
-	d.Set("instance_charge_type", instance["PayType"])
+
+	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
+	payType := instance["PayType"]
+	if instance["PayType"] == "SERVERLESS" {
+		payType = "Serverless"
+	}
+	d.Set("instance_charge_type", payType)
+
+	serverlessConfig := make([]map[string]interface{}, 0)
+	slc := instance["ServerlessConfig"].(map[string]interface{})
+	slcMaps := map[string]interface{}{
+		"max_capacity": slc["ScaleMax"],
+		"min_capacity": slc["ScaleMin"],
+		"auto_pause":   slc["AutoPause"],
+		"switch_force": slc["SwitchForce"],
+	}
+	serverlessConfig = append(serverlessConfig, slcMaps)
+	d.Set("serverless_config", serverlessConfig)
+
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance["VSwitchId"])
 	// some instance class without connection string
@@ -1828,6 +1904,27 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 
 	if v, ok := d.GetOk("category"); ok {
 		request["Category"] = v
+	}
+
+	if request["Engine"] == string(MySQL) && request["PayType"] == string(Serverless) {
+		if v, ok := d.GetOk("serverless_config"); ok {
+			v := v.([]interface{})[0].(map[string]interface{})
+			serverlessConfig, err := json.Marshal(struct {
+				MaxCapacity float64 `json:"MaxCapacity"`
+				MinCapacity float64 `json:"MinCapacity"`
+				AutoPause   bool    `json:"AutoPause"`
+				SwitchForce bool    `json:"SwitchForce"`
+			}{
+				v["max_capacity"].(float64),
+				v["min_capacity"].(float64),
+				v["auto_pause"].(bool),
+				v["switch_force"].(bool),
+			})
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			request["ServerlessConfig"] = string(serverlessConfig)
+		}
 	}
 
 	uuid, err := uuid.GenerateUUID()

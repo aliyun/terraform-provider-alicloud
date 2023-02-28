@@ -191,6 +191,7 @@ var NASCPFSSupportRegions = []Region{Hangzhou, Shenzhen, Beijing, Shanghai, HeYu
 var WAFSupportRegions = []Region{Hangzhou, APSouth1}
 var MSCSupportRegions = []Region{Hangzhou}
 var VPCPublicIpAddressPoolCidrBlockSupportRegions = []Region{Hangzhou}
+var MySQLServerlessSupportRegions = []Region{Hangzhou}
 
 // Other regions requires the custom should have icp
 var FCCustomDomainSupportRegions = []Region{EUCentral1, APSouthEast1}
