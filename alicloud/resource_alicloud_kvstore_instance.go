@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strconv"
 	"strings"
@@ -375,6 +376,26 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Deprecated:    "Field 'parameters' has been deprecated from version 1.101.0. Use 'config' instead.",
 				ConflictsWith: []string{"config"},
 			},
+			"tde_status": {
+				Optional:     true,
+				Type:         schema.TypeString,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+			},
+			"encryption_name": {
+				Optional: true,
+				Computed: true,
+				Type:     schema.TypeString,
+			},
+			"encryption_key": {
+				Optional: true,
+				Computed: true,
+				Type:     schema.TypeString,
+			},
+			"role_arn": {
+				Optional: true,
+				Type:     schema.TypeString,
+			},
 		},
 	}
 }
@@ -654,11 +675,33 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	if err = refreshParameters(d, meta); err != nil {
 		return WrapError(err)
 	}
+
+	rKvstoreService := RKvstoreService{client}
+
+	describeTDEStatusObject, err := rKvstoreService.DescribeInstanceTDEStatus(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("tde_status", convertModifyInstanceTDERequest(describeTDEStatusObject["TDEStatus"]))
+
+	encryptionKeyObject, err := rKvstoreService.DescribeEncryptionKey(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("encryption_key", encryptionKeyObject["EncryptionKey"])
+	d.Set("encryption_name", encryptionKeyObject["EncryptionName"])
+	d.Set("role_arn", encryptionKeyObject["RoleArn"])
+
 	return nil
 }
 func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
+	conn, err := client.NewRedisaClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	var response map[string]interface{}
 	d.Partial(true)
 
 	if d.HasChange("payment_type") {
@@ -1164,6 +1207,61 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("enable_public")
 	}
+	update = false
+	modifyInstanceTDERequest := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	if d.HasChange("tde_status") {
+		update = true
+		if v, ok := d.GetOk("tde_status"); ok {
+			modifyInstanceTDERequest["TDEStatus"] = v
+		}
+	}
+	if d.HasChange("encryption_name") {
+		update = true
+		if v, ok := d.GetOk("encryption_name"); ok {
+			modifyInstanceTDERequest["EncryptionName"] = v
+		}
+	}
+	if d.HasChange("encryption_key") {
+		update = true
+		if v, ok := d.GetOk("encryption_key"); ok {
+			modifyInstanceTDERequest["EncryptionKey"] = v
+		}
+	}
+	if d.HasChange("role_arn") {
+		update = true
+		if v, ok := d.GetOk("role_arn"); ok {
+			modifyInstanceTDERequest["RoleArn"] = v
+		}
+	}
+	if update {
+		action := "ModifyInstanceTDE"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyInstanceTDERequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("tde_status")
+		d.SetPartial("encryption_name")
+		d.SetPartial("encryption_key")
+		d.SetPartial("role_arn")
+	}
 	d.Partial(false)
 	return resourceAlicloudKvstoreInstanceRead(d, meta)
 }
@@ -1231,4 +1329,14 @@ func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("parameters", param)
 	return nil
+}
+
+func convertModifyInstanceTDERequest(source interface{}) interface{} {
+	switch source {
+	case "enabled":
+		return "Enabled"
+	case "disabled":
+		return "Disabled"
+	}
+	return source
 }

@@ -699,6 +699,70 @@ func TestAccAlicloudKVStoreRedisInstance_vpcmulti(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default.1"
+	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceVpcMultiTest%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceVpcTestdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":            "2",
+					"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "5.0",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":    "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+						"db_instance_name":  name,
+						"instance_type":     "Redis",
+						"engine_version":    "5.0",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var RedisDbInstanceMap = map[string]string{
 	"connection_domain": CHECKSET,
 }
