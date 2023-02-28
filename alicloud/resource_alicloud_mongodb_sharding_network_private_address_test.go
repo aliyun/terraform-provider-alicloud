@@ -116,39 +116,42 @@ var AlicloudMongoDBShardingNetworkPrivateAddressMap0 = map[string]string{
 
 func AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
+	data "alicloud_mongodb_zones" "default" {
+	}
 
-resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id     = data.alicloud_vswitches.default.ids[0]
-  engine_version = "3.4"
-  name           = var.name
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-}
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	}
+
+	resource "alicloud_mongodb_sharding_instance" "default" {
+  		zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
+  		vswitch_id     = data.alicloud_vswitches.default.ids[0]
+  		engine_version = "4.2"
+  		name           = var.name
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		mongo_list {
+    		node_class = "dds.mongos.mid"
+  		}
+  		shard_list {
+    		node_class   = "dds.shard.mid"
+    		node_storage = 10
+  		}
+  		shard_list {
+    		node_class   = "dds.shard.mid"
+    		node_storage = 10
+  		}
+	}
 `, name)
 }
 

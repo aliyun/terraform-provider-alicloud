@@ -20,10 +20,17 @@ For information about MongoDB Sharding Network Private Address and how to use it
 Basic Usage
 
 ```terraform
-data "alicloud_mongodb_zones" "default" {}
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_mongodb_zones" "default" {
+}
+
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_mongodb_zones.default.zones.0.id
@@ -32,7 +39,7 @@ data "alicloud_vswitches" "default" {
 resource "alicloud_mongodb_sharding_instance" "default" {
   zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
   vswitch_id     = data.alicloud_vswitches.default.ids[0]
-  engine_version = "3.4"
+  engine_version = "4.2"
   name           = var.name
   mongo_list {
     node_class = "dds.mongos.mid"

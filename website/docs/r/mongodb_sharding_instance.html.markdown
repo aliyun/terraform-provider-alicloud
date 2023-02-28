@@ -24,7 +24,7 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 ### Create a Mongodb Sharding instance
 
-```tf
+```terraform
 variable "name" {
   default = "tf-example"
 }
@@ -61,7 +61,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_mongodb_sharding_instance" "foo" {
   zone_id        = data.alicloud_zones.default.zones[0].id
   vswitch_id     = alicloud_vswitch.default.id
-  engine_version = "3.4"
+  engine_version = "4.2"
   name           = var.name
   dynamic "shard_list" {
     for_each = [var.shard]

@@ -167,7 +167,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"vswitch_id":     "${local.vswitch_id}",
 					"zone_id":        "${local.zone_id}",
-					"engine_version": "3.4",
+					"engine_version": "4.2",
 					"name":           name,
 					"shard_list": []map[string]interface{}{
 						{
@@ -192,7 +192,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
+						"engine_version":                 "4.2",
 						"shard_list.#":                   "2",
 						"shard_list.0.node_class":        "dds.shard.mid",
 						"shard_list.0.node_storage":      "10",
@@ -703,7 +703,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
 					"name":              "${var.name}",
 					"zone_id":           "${data.alicloud_mongodb_zones.default.zones.0.id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"engine_version":    "3.4",
+					"engine_version":    "4.2",
 					"protocol_type":     "mongodb",
 					"network_type":      "VPC",
 					"shard_list": []map[string]interface{}{
@@ -732,7 +732,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
+						"engine_version":                 "4.2",
 						"shard_list.#":                   "2",
 						"shard_list.0.node_class":        "dds.shard.mid",
 						"shard_list.0.node_storage":      "10",
@@ -800,7 +800,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic2(t *testing.T) {
 					"name":              "${var.name}",
 					"zone_id":           "${data.alicloud_mongodb_zones.default.zones.0.id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"engine_version":    "3.4",
+					"engine_version":    "4.2",
 					"protocol_type":     "mongodb",
 					"network_type":      "VPC",
 					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
@@ -831,7 +831,7 @@ func TestAccAlicloudMongoDBShardingInstance_basic2(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"zone_id":                        CHECKSET,
-						"engine_version":                 "3.4",
+						"engine_version":                 "4.2",
 						"shard_list.#":                   "2",
 						"shard_list.0.node_class":        "dds.shard.mid",
 						"shard_list.0.node_storage":      "10",
