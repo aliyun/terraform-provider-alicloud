@@ -775,6 +775,60 @@ func TestAccAlicloudEIPAddress_basic7(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudEIPAddress_basic8(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eip_address.default"
+	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEipAddress")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seipaddress%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEIPAddressBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_name": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"high_definition_monitor_log_status": "ON",
+					"log_project":                        "hdmonitor-cn-shenzhen",
+					"log_store":                          "hdmonitor",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"high_definition_monitor_log_status": "ON",
+						"log_project":                        "hdmonitor-cn-shenzhen",
+						"log_store":                          "hdmonitor",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"activity_id", "netmode", "period", "auto_pay"},
+			},
+		},
+	})
+}
+
 var AlicloudEIPAddressMap4 = map[string]string{}
 
 func AlicloudEIPAddressBasicDependence4(name string) string {

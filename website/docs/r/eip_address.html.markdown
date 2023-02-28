@@ -56,6 +56,9 @@ The following arguments are supported:
 * `instance_charge_type` - (Optional, ForceNew, Deprecated in v1.126.0+) Field `instance_charge_type` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `payment_type` instead.
 * `name` - (Optional, Computed, Deprecated in v1.126.0+) Field `name` has been deprecated from provider version 1.126.0, and it will be removed in the future version. Please use the new attribute `address_name` instead.
 * `public_ip_address_pool_id` - (Optional, ForceNew, Available in v1.189.0+) The ID of the IP address pool. The EIP is allocated from the IP address pool. **NOTE:** The feature is available only to users whose accounts are included in the whitelist. If you want to use the feature,[submit a ticket](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/429100).
+* `high_definition_monitor_log_status` - (Optional, Available in v1.200.0+) The status of the EIP. configuring high precision second-by-second monitoring for EIP. Valid values: `ON` and `OFF`.
+* `log_project` - (Optional, Available in v1.200.0+) The Name of the logging service LogProject. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
+* `log_store` - (Optional, Available in v1.200.0+) The Name of the logging service LogStore. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
 
 ## Attributes Reference
 
