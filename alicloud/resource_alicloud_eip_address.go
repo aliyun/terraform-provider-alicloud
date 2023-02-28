@@ -135,7 +135,21 @@ func resourceAlicloudEipAddress() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"high_definition_monitor_log_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+			},
 			"tags": tagsSchema(),
+			"log_project": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"log_store": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -282,6 +296,18 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	if len(tagsMap) > 0 {
 		d.Set("tags", tagsMap)
 	}
+
+	d.Set("high_definition_monitor_log_status", object["HDMonitorStatus"])
+
+	if object["HDMonitorStatus"] == "ON" {
+		res, err := vpcService.DescribeHighDefinitionMonitorLogAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("log_project", res["LogProject"])
+		d.Set("log_store", res["LogStore"])
+
+	}
 	return nil
 }
 
@@ -407,6 +433,40 @@ func resourceAlicloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("address_name")
 		d.SetPartial("bandwidth")
 		d.SetPartial("description")
+	}
+	update = false
+	setHighDefinitionReq := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+	setHighDefinitionReq["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("high_definition_monitor_log_status") {
+		update = true
+		setHighDefinitionReq["Status"] = d.Get("high_definition_monitor_log_status")
+	}
+	setHighDefinitionReq["LogProject"] = d.Get("log_project")
+	setHighDefinitionReq["LogStore"] = d.Get("log_store")
+	setHighDefinitionReq["InstanceType"] = "EIP"
+	if update {
+		action := "SetHighDefinitionMonitorLogStatus"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, setHighDefinitionReq, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, setHighDefinitionReq)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("status")
+		d.SetPartial("log_project")
+		d.SetPartial("log_store")
 	}
 	d.Partial(false)
 	return resourceAlicloudEipAddressRead(d, meta)
