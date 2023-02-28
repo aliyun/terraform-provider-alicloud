@@ -19,7 +19,6 @@ func resourceAliyunRouteEntry() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"router_id": {
 				Type:       schema.TypeString,
@@ -93,7 +92,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 			// Route Entry does not support concurrence when creating or deleting it;
 			// Route Entry does not support creating or deleting within 5 seconds frequently
 			// It must ensure all the route entries, vpc, vswitches' status must be available before creating or deleting route entry.
-			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectRouteEntryStatus", Throttling, "IncorrectVpcStatus", "IncorrectStatus.VpcPeer", "UnknownError"}) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectRouteEntryStatus", "IncorrectVpcStatus", "IncorrectVSwitchStatus", "IncorrectHaVipStatus", "IncorrectInstanceStatus", "InvalidVBRStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.Ipv6Address", "LastTokenProcessing", "IncorrectStatus.VpcPeer", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectStatus.RouteTableStatus", "OperationFailed.DistibuteLock", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -167,10 +166,9 @@ func resourceAliyunRouteEntryDelete(d *schema.ResourceData, meta interface{}) er
 			return vpcClient.DeleteRouteEntry(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "IncorrectRouteEntryStatus", "Forbbiden", "UnknownError", "OperationFailed.DistibuteLock"}) {
+			if IsExpectedErrors(err, []string{"IncorrectVpcStatus", "TaskConflict", "OperationConflict", "SystemBusy", "IncorrectRouteEntryStatus", "IncorrectInstanceStatus", "Forbbiden", "UnknownError", "InvalidVBRStatus", "LastTokenProcessing", "IncorrectStatus.Ipv6Address", "OperationFailed.DistibuteLock", "ServiceUnavailable", "IncorrectStatus.RouteTableStatus", "IncorrectStatus.MultiScopeRiRouteEntry", "IncorrectHaVipStatus", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.VpcPeer"}) || NeedRetry(err) {
 				// Route Entry does not support creating or deleting within 5 seconds frequently
 				time.Sleep(time.Duration(retryTimes) * time.Second)
-				retryTimes += 7
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
