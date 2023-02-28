@@ -1958,6 +1958,95 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRdsDBInstanceMySQL_Serverless(t *testing.T) {
+	var instance map[string]interface{}
+
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceServerlessMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstance_MysqlServerless"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceMysqlServerlessConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.MySQLServerlessSupportRegions)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
+					"zone_id":                  "${data.alicloud_db_zones.default.ids.1}",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "cloud_essd",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"instance_charge_type":     "Serverless",
+					"category":                 "serverless_basic",
+					"serverless_config": []interface{}{
+						map[string]interface{}{
+							"max_capacity": "8",
+							"min_capacity": "0.5",
+							"auto_pause":   false,
+							"switch_force": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                           "MySQL",
+						"engine_version":                   "8.0",
+						"db_instance_storage_type":         "cloud_essd",
+						"zone_id":                          CHECKSET,
+						"instance_name":                    "tf-testAccDBInstance_MysqlServerless",
+						"instance_charge_type":             CHECKSET,
+						"category":                         CHECKSET,
+						"serverless_config.#":              "1",
+						"serverless_config.0.max_capacity": "8",
+						"serverless_config.0.min_capacity": "0.5",
+						"serverless_config.0.auto_pause":   "false",
+						"serverless_config.0.switch_force": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_config": []interface{}{
+						map[string]interface{}{
+							"max_capacity": "7",
+							"min_capacity": "1.5",
+							"auto_pause":   false,
+							"switch_force": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_config.#":              "1",
+						"serverless_config.0.max_capacity": "7",
+						"serverless_config.0.min_capacity": "1.5",
+						"serverless_config.0.auto_pause":   "false",
+						"serverless_config.0.switch_force": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceDBInstanceHighAvailabilityConfigDependence1(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -2076,6 +2165,41 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
+func resourceDBInstanceMysqlServerlessConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_db_zones" "default"{
+    engine = "MySQL"
+    engine_version = "8.0"
+    instance_charge_type = "Serverless"
+    category = "serverless_basic"
+    db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.ids.1
+    engine = "MySQL"
+    engine_version = "8.0"
+    category = "serverless_basic"
+    db_instance_storage_type = "cloud_essd"
+    instance_charge_type = "Serverless"
+    commodity_code = "rds_serverless_public_cn"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.ids.1
+}
+
+`, name)
+}
+
 func testAccCheckSecurityIpExists(n string, ips []map[string]interface{}) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
@@ -2154,3 +2278,5 @@ var instanceBasicMap3 = map[string]string{
 	"connection_string": CHECKSET,
 	"port":              CHECKSET,
 }
+
+var instanceServerlessMap = map[string]string{}

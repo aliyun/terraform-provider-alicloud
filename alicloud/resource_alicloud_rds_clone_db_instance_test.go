@@ -15,6 +15,11 @@ func init() {
 	})
 }
 
+/*
+Because the backup will be automatically distributed when the instance is created,
+and manually distributed backup will check whether there are currently running backup tasks,
+so the instance created in advance will be used for automatic testing.
+*/
 func resourceCloneDBInstanceConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -59,18 +64,12 @@ locals {
   zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
 }
 
-resource "alicloud_db_instance" "default" {
-  engine                   = "PostgreSQL"
-  engine_version           = "13.0"
-  db_instance_storage_type = "cloud_essd"
-  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = local.vswitch_id
-  instance_name            = var.name
+data "alicloud_db_instances" "default" {
+  name_regex = "^default-PostgreSQL-NODELETING$"
 }
 
 resource "alicloud_rds_backup" "default" {
-  db_instance_id    = alicloud_db_instance.default.id
+  db_instance_id    = data.alicloud_db_instances.default.instances.0.id
   remove_from_state = "true"
 }
 `, name)
@@ -101,7 +100,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
@@ -288,7 +287,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
@@ -399,4 +398,144 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAlicloudRdsCloneDBInstanceMySQL_Serverless(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_rds_clone_db_instance.default"
+	ra := resourceAttrInit(resourceId, cloneInstanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfig-CloneMySQLServerless"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence_MySQLServerless)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.MySQLServerlessSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
+					"db_instance_class":        "${data.alicloud_db_instances.default.instances.0.instance_type}",
+					"zone_id":                  "${data.alicloud_db_instances.default.instances.0.availability_zone}",
+					"instance_network_type":    "VPC",
+					"vpc_id":                   "${data.alicloud_db_instances.default.instances.0.vpc_id}",
+					"vswitch_id":               "${data.alicloud_db_instances.default.instances.0.vswitch_id}",
+					"category":                 "serverless_basic",
+					"db_instance_storage_type": "cloud_essd",
+					"payment_type":             "Serverless",
+					"db_instance_storage":      "${data.alicloud_db_instances.default.instances.0.instance_storage}",
+					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
+					"serverless_config": []interface{}{
+						map[string]interface{}{
+							"max_capacity": "8",
+							"min_capacity": "0.5",
+							"auto_pause":   false,
+							"switch_force": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_db_instance_id":            CHECKSET,
+						"db_instance_class":                CHECKSET,
+						"zone_id":                          CHECKSET,
+						"instance_network_type":            "VPC",
+						"vpc_id":                           CHECKSET,
+						"vswitch_id":                       CHECKSET,
+						"category":                         "serverless_basic",
+						"db_instance_storage_type":         "cloud_essd",
+						"payment_type":                     "Serverless",
+						"db_instance_storage":              CHECKSET,
+						"backup_id":                        CHECKSET,
+						"serverless_config.#":              "1",
+						"serverless_config.0.max_capacity": "8",
+						"serverless_config.0.min_capacity": "0.5",
+						"serverless_config.0.auto_pause":   "false",
+						"serverless_config.0.switch_force": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"serverless_config": []interface{}{
+						map[string]interface{}{
+							"max_capacity": "7",
+							"min_capacity": "1.5",
+							"auto_pause":   false,
+							"switch_force": false,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"serverless_config.#":              "1",
+						"serverless_config.0.max_capacity": "7",
+						"serverless_config.0.min_capacity": "1.5",
+						"serverless_config.0.auto_pause":   "false",
+						"serverless_config.0.switch_force": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
+/*
+Because the backup will be automatically distributed when the instance is created,
+and manually distributed backup will check whether there are currently running backup tasks,
+so the instance created in advance will be used for automatic testing.
+*/
+func resourceCloneDBInstanceConfigDependence_MySQLServerless(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_db_zones" "default"{
+    engine = "MySQL"
+    engine_version = "8.0"
+    instance_charge_type = "Serverless"
+    category = "serverless_basic"
+    db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.ids.1
+    engine = "MySQL"
+    engine_version = "8.0"
+    category = "serverless_basic"
+    db_instance_storage_type = "cloud_essd"
+    instance_charge_type = "Serverless"
+    commodity_code = "rds_serverless_public_cn"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.ids.1
+}
+
+data "alicloud_db_instances" "default" {
+  name_regex = "^default-Serverless-NODELETING$"
+}
+
+resource "alicloud_rds_backup" "default" {
+  db_instance_id    = data.alicloud_db_instances.default.instances.0.id
+  remove_from_state = "true"
+}
+
+`, name)
 }

@@ -68,6 +68,18 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 		}),
 	}
 
+	ServerlessConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"zone_id":                  "${data.alicloud_db_zones.serverless_zones.ids.1}",
+			"engine":                   "MySQL",
+			"engine_version":           "8.0",
+			"category":                 "serverless_basic",
+			"db_instance_storage_type": "cloud_essd",
+			"instance_charge_type":     "Serverless",
+			"commodity_code":           "rds_serverless_public_cn",
+		}),
+	}
+
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"zone_id":              "${data.alicloud_db_zones.default.zones.0.id}",
@@ -110,7 +122,7 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 	}
 
 	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, EngineVersionConf, ChargeTypeConfPrepaid,
-		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, allConf)
+		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, ServerlessConf, allConf)
 }
 
 func testAccCheckAlicloudDBInstanceClassesDataSourceConfig(name string) string {
@@ -125,6 +137,13 @@ data "alicloud_db_zones" "true" {
   engine = "MySQL"
   db_instance_storage_type = "local_ssd"
   multi = true
+}
+data "alicloud_db_zones" "serverless_zones"{
+    engine = "MySQL"
+    engine_version = "8.0"
+    instance_charge_type = "Serverless"
+    category = "serverless_basic"
+    db_instance_storage_type = "cloud_essd"
 }
 `)
 }

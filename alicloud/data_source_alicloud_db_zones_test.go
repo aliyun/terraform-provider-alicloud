@@ -56,6 +56,16 @@ func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
 		}),
 	}
 
+	ServerlessConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"engine":                   "MySQL",
+			"engine_version":           "8.0",
+			"instance_charge_type":     "Serverless",
+			"category":                 "serverless_basic",
+			"db_instance_storage_type": "cloud_essd",
+		}),
+	}
+
 	allConfig := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"multi_zone":               "true",
@@ -98,7 +108,8 @@ func TestAccAlicloudRdsDBZonesDataSource(t *testing.T) {
 		fakeMapFunc:  fakeDBZonesMapFunc,
 	}
 
-	DBZonesCheckInfo.dataSourceTestCheck(t, rand, multiZoneTrueConfig, multiZoneFalseConfig, chargeTypePostPaidConfig, chargeTypePrePaidConfig, engineVersionConfig, CategoryConf, StorageTypeConf, allConfig)
+	DBZonesCheckInfo.dataSourceTestCheck(t, rand, multiZoneTrueConfig, multiZoneFalseConfig, chargeTypePostPaidConfig,
+		chargeTypePrePaidConfig, engineVersionConfig, CategoryConf, StorageTypeConf, ServerlessConf, allConfig)
 }
 
 func dataSourceDBZonesConfigDependence(name string) string {

@@ -45,7 +45,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      PostPaid,
-				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
+				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid), string(Serverless)}, false),
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -54,7 +54,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic"}, false),
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
@@ -69,7 +69,7 @@ func dataSourceAlicloudDBInstanceClasses() *schema.Resource {
 			"commodity_code": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"bards", "rds", "rords", "rds_rordspre_public_cn", "bards_intl", "rds_intl", "rords_intl", "rds_rordspre_public_intl", "rds_serverless_public_cn", "rds_serverless_public_intl"}, false),
 			},
 			"db_instance_id": {
 				Type:     schema.TypeString,

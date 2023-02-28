@@ -209,6 +209,63 @@ resource "alicloud_db_instance" "example" {
 }
 ```
 
+### Create a Serverless RDS MySQL Instance
+
+```terraform
+variable "name" {
+  default = "tf-testaccdbinstance"
+}
+
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "Serverless"
+  category                 = "serverless_basic"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.ids.1
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "serverless_basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "Serverless"
+  commodity_code           = "rds_serverless_public_cn"
+}
+
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.example.ids.1
+  vswitch_name = var.name
+}
+
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_charge_type     = "Serverless"
+  instance_name            = var.name
+  zone_id                  = data.alicloud_db_zones.example.ids.1
+  vswitch_id               = alicloud_vswitch.example.id
+  db_instance_storage_type = "cloud_essd"
+  serverless_config {
+    max_capacity = 8
+    min_capacity = 0.5
+    auto_pause   = false
+    switch_force = false
+  }
+}
+
+```
+
 ### Deleting `alicloud_db_instance` or removing it from your configuration
 
 The `alicloud_db_instance` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
@@ -219,15 +276,17 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
+* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS. Create a serverless instance, you must set this parameter to MySQL.
 
 -> **NOTE:**
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
+- Available in 1.200.0+. Create a serverless instance, you must set this parameter to 8.0.
 * `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
-* `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
+* `instance_type` - (Required) DB Instance type. Create a serverless instance, you must set this parameter to mysql.n2.serverless.1c. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 
 -> **NOTE:**
 - When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value.
+- When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
     - [5, 2000] for MySQL/PostgreSQL/PPAS HA dual node edition;
     - [20,1000] for MySQL 5.7 basic single node edition;
@@ -236,7 +295,7 @@ The following arguments are supported:
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
     Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
 
-* `db_instance_storage_type` - (Optional, Available in 1.68.0+) The storage type of the instance. Valid values:
+* `db_instance_storage_type` - (Optional, Available in 1.68.0+) The storage type of the instance. Serverless instance, only `cloud_essd` can be selected. Valid values:
     - local_ssd: specifies to use local SSDs. This value is recommended.
     - cloud_ssd: specifies to use standard SSDs.
     - cloud_essd: specifies to use enhanced SSDs (ESSDs).
@@ -261,7 +320,7 @@ The following arguments are supported:
 * `connection_string_prefix` - (Optional, Available in 1.126.0+) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix). 
 -> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
 * `port` - (Optional, Available in 1.126.0+) The private port of the database service. If you want to update public port, please use resource alicloud_db_connection [port](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#port).
-* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid.
+* `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, `Serverless`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid. `Serverless` This value is supported only for instances that run MySQL. For more information, see [Overview](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/what-is-serverless?spm=a2c63.p38356.0.0.772a28cfTAGqIv).
 * `resource_group_id` (Optional, Computed, Available in 1.86.0+, Modifiable in 1.115.0+) The ID of resource group which the DB instance belongs.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
@@ -406,6 +465,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   * **HighAvailability**: High-availability Edition.
   * **AlwaysOn**: Cluster Edition.
   * **Finance**: Enterprise Edition.
+  * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
 
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
@@ -427,6 +487,8 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `effective_time` - (Optional, Available in 1.191.0+) The method to update the engine version.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
+
+* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.
 
 #### Block pg_hba_conf
 
@@ -454,6 +516,21 @@ The babelfish_config mapping supports the following:
 * `migration_mode` - (Required) The migration mode of the instance. Valid values: **single-db** and **multi-db**.
 * `master_username` - (Required) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
 * `master_user_password` - (Required) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
+
+#### Block serverless_config
+
+The serverless_config mapping supports the following:
+
+* `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). Valid values: 0.5 to 8. The value of this parameter must be greater than or equal to the value of the `min_capacity` parameter.
+* `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. Valid values: 0.5 to 8. The value of this parameter must be less than or equal to the value of the `max_capacity` parameter.
+
+* `auto_pause` - (Required, Available in 1.200.0+) Specifies whether to enable the smart startup and stop feature for the serverless instance. After the smart startup and stop feature is enabled, if no connections to the instance are established within 10 minutes, the instance is stopped. After a connection is established to the instance, the instance is automatically woken up. Valid values:
+  - true: enables the feature.
+  - false: disables the feature. This is the default value.
+
+* `switch_force` - (Required, Available in 1.200.0+) Specifies whether to enable the forced scaling feature for the serverless instance. If you set this parameter to true, a transient connection that lasts approximately 1 minute occurs during the forced scaling process. Process with caution. The RCU scaling for a serverless instance immediately takes effect. In some cases, such as the execution of large transactions, the scaling does not immediately take effect. In this case, you can enable this feature to forcefully scale the RCUs of the instance. Valid values:
+  - true: enables the feature.
+  - false: disables the feature. This is the default value.
 
 ## Attributes Reference
 

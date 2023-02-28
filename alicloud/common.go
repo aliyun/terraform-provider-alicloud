@@ -51,10 +51,11 @@ const (
 type PayType string
 
 const (
-	PrePaid  = PayType("PrePaid")
-	PostPaid = PayType("PostPaid")
-	Prepaid  = PayType("Prepaid")
-	Postpaid = PayType("Postpaid")
+	PrePaid    = PayType("PrePaid")
+	PostPaid   = PayType("PostPaid")
+	Prepaid    = PayType("Prepaid")
+	Postpaid   = PayType("Postpaid")
+	Serverless = PayType("Serverless")
 )
 
 const (
