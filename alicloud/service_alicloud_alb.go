@@ -1119,3 +1119,64 @@ func (s *AlbService) AlbAscriptStateRefreshFunc(d *schema.ResourceData, failStat
 		return object, fmt.Sprint(object["AScriptStatus"]), nil
 	}
 }
+func (s *AlbService) DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewAlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"LoadBalancerId": parts[0],
+	}
+
+	var response map[string]interface{}
+	action := "GetLoadBalancerAttribute"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+	return v.(map[string]interface{}), nil
+}
+
+func (s *AlbService) AlbLoadBalancerCommonBandwidthPackageAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbLoadBalancerCommonBandwidthPackageAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		loadBalancerStatus82 := object["LoadBalancerStatus"]
+		for _, failState := range failStates {
+			if fmt.Sprint(loadBalancerStatus82) == failState {
+				return object, fmt.Sprint(loadBalancerStatus82), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(loadBalancerStatus82)))
+			}
+		}
+		return object, fmt.Sprint(loadBalancerStatus82), nil
+	}
+}
