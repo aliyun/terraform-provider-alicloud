@@ -84,11 +84,11 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("CreateIpv4Gateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.Vpc", "IncorrectStatus.%s", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -110,6 +110,7 @@ func resourceAlicloudVpcIpv4GatewayCreate(d *schema.ResourceData, meta interface
 
 	return resourceAlicloudVpcIpv4GatewayUpdate(d, meta)
 }
+
 func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -129,6 +130,7 @@ func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}
 	d.Set("enabled", object["Enabled"])
 	return nil
 }
+
 func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
@@ -162,7 +164,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			request["ClientToken"] = buildClientToken("UpdateIpv4GatewayAttribute")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
@@ -200,7 +202,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 					if err != nil {
-						if NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"OperationConflict", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -222,6 +224,7 @@ func resourceAlicloudVpcIpv4GatewayUpdate(d *schema.ResourceData, meta interface
 
 	return resourceAlicloudVpcIpv4GatewayRead(d, meta)
 }
+
 func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteIpv4Gateway"
@@ -242,11 +245,11 @@ func resourceAlicloudVpcIpv4GatewayDelete(d *schema.ResourceData, meta interface
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		request["ClientToken"] = buildClientToken("DeleteIpv4Gateway")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.Ipv4Gateway"}) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.Ipv4Gateway", "IncorrectStatus.%s", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
