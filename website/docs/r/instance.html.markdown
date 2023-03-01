@@ -143,6 +143,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 * `auto_renew_period` - (Optional) Auto renewal period of an instance, in the unit of month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid value:
     - [1, 2, 3, 6, 12] when `period_unit` in "Month"
     - [1, 2, 3] when `period_unit` in "Week"
+
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

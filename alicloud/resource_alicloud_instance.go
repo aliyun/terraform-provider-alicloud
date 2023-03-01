@@ -1982,6 +1982,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if d.Get("vswitch_id").(string) == "" {
 			return update, WrapError(Error("Field 'vswitch_id' is required when modifying the instance VPC attribute."))
 		}
+		d.SetPartial("vswitch_id")
 	}
 
 	if d.HasChange("subnet_id") {
@@ -1990,11 +1991,13 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 			return update, WrapError(Error("Field 'subnet_id' is required when modifying the instance VPC attribute."))
 		}
 		request.VSwitchId = d.Get("subnet_id").(string)
+		d.SetPartial("subnet_id")
 	}
 
 	if request.VSwitchId != "" && d.HasChange("private_ip") {
 		request.PrivateIpAddress = d.Get("private_ip").(string)
 		update = true
+		d.SetPartial("private_ip")
 	}
 
 	if !run {
@@ -2025,9 +2028,6 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), request.VSwitchId, request.PrivateIpAddress); err != nil {
 			return update, WrapError(err)
 		}
-		d.SetPartial("vswitch_id")
-		d.SetPartial("subnet_id")
-		d.SetPartial("private_ip")
 	}
 	return update, nil
 }
