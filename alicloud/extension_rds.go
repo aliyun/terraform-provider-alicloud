@@ -7,6 +7,7 @@ const (
 	SQLServer  = Engine("SQLServer")
 	PPAS       = Engine("PPAS")
 	PostgreSQL = Engine("PostgreSQL")
+	MariaDB    = Engine("MariaDB")
 )
 
 var WEEK_ENUM = []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}

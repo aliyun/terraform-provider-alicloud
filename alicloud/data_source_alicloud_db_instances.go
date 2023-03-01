@@ -38,6 +38,7 @@ func dataSourceAlicloudDBInstances() *schema.Resource {
 					string(SQLServer),
 					string(PPAS),
 					string(PostgreSQL),
+					string(MariaDB),
 				}, false),
 			},
 			"status": {

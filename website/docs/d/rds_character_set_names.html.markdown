@@ -30,7 +30,7 @@ output "first_rds_character_set_names" {
 
 The following arguments are supported:
 
-* `engine` - (Required, ForceNew) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`.
+* `engine` - (Required, ForceNew) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`.
 
 ## Argument Reference
 

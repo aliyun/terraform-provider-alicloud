@@ -36,7 +36,7 @@ The following arguments are supported:
 * `enable_details` - (Optional, Available in 1.135.0+) Default to `false`. Set it to `true` can output parameter template about resource attributes.
 * `name_regex` - (Optional) A regex string to filter results by instance name.
 * `ids` - (Optional, Available 1.52.0+) A list of RDS instance IDs. 
-* `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL` and `PPAS`. If no value is specified, all types are returned.
+* `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB` and `PPAS`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `db_type` - (Optional) `Primary` for primary instance, `Readonly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.

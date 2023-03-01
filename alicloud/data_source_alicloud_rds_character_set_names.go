@@ -24,7 +24,7 @@ func dataSourceAlicloudRdsCharacterSetNames() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(MySQL), string(SQLServer), string(PostgreSQL)}, false),
+				ValidateFunc: validation.StringInSlice([]string{string(MySQL), string(SQLServer), string(PostgreSQL), string(MariaDB)}, false),
 			},
 			"names": {
 				Type:     schema.TypeList,
