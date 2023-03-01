@@ -2520,13 +2520,11 @@ data "alicloud_vswitches" "default" {
 func resourceInstanceVpcConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+	instance_type_family = "ecs.sn1ne"
 }
 
 data "alicloud_instance_types" "essd" {
- 	cpu_core_count    = 2
-	memory_size       = 4
+	instance_type_family = "ecs.sn1ne"
  	system_disk_category = "cloud_essd"
 }
 data "alicloud_images" "default" {
@@ -2599,8 +2597,7 @@ resource "alicloud_kms_key" "key" {
 func resourceInstancePrePaidConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
-  cpu_core_count    = 2
-  memory_size       = 4
+  instance_type_family = "ecs.sn1ne"
   instance_charge_type = "PrePaid"
 }
 data "alicloud_images" "default" {
@@ -3242,6 +3239,139 @@ func TestAccAlicloudECSInstanceMaintenance(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAlicloudECSInstanceDedicatedHostId(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceDedicatedHostId%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceDedicatedHostIdConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"role_name":                     "${alicloud_ram_role.default.name}",
+					"dedicated_host_id":             "${alicloud_ecs_dedicated_host.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"key_name":          name,
+						"role_name":         name,
+						"dedicated_host_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
+	return fmt.Sprintf(`
+data "alicloud_instance_types" "default" {
+ 	cpu_core_count    = 2
+	instance_type_family = "ecs.g6"
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
+}
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = alicloud_security_group.default.id
+  	cidr_ip = "172.16.0.0/24"
+}
+
+variable "name" {
+	default = "%s"
+}
+
+resource "alicloud_ram_role" "default" {
+		  name = "${var.name}"
+		  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+		  force = "true"
+}
+
+resource "alicloud_key_pair" "default" {
+	key_pair_name = "${var.name}"
+}
+
+resource "alicloud_ecs_dedicated_host" "default" {
+  dedicated_host_type = "ddh.g6"
+  description = "From_Terraform"
+  dedicated_host_name = var.name
+  action_on_maintenance = "Migrate"
+  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+
+`, name)
 }
 
 func resourceInstanceSystemDiskDependence(name string) string {
