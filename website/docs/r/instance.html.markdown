@@ -161,7 +161,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
     - false: A request is sent. If the validation succeeds, the instance is created.
 * `private_ip` - (Optional) Instance private IP address can be specified when you creating new instance. It is valid when `vswitch_id` is specified. When it is changed, the instance will reboot to make the change take effect.
 * `credit_specification` - (Optional, Available in 1.57.1+) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
-* `spot_strategy` - (Optional, ForceNew) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
+* `spot_strategy` - (Optional, ForceNew, Computed) The spot strategy of a Pay-As-You-Go instance, and it takes effect only when parameter `instance_charge_type` is 'PostPaid'. Value range:
     - NoSpot: A regular Pay-As-You-Go instance.
     - SpotWithPriceLimit: A price threshold for a spot instance
     - SpotAsPriceGo: A price that is based on the highest Pay-As-You-Go instance
@@ -234,6 +234,7 @@ Set it to null can cancel automatic release attribute and the ECS instance will 
 * `http_put_response_hop_limit` - (Optional, Computed, ForceNew, Available in 1.192.0+) The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
 * `ipv6_address_count` - (Optional, ForceNew, Computed, Available in 1.193.0+) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, ForceNew, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
+* `dedicated_host_id` - (Optional, ForceNew, Available in 1.201.0+) The ID of the dedicated host on which to create the instance. If you set the DedicatedHostId parameter, the `spot_strategy` and `spot_price_limit` parameters cannot be set. This is because preemptible instances cannot be created on dedicated hosts.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 

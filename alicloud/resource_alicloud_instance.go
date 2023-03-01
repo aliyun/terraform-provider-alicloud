@@ -359,8 +359,8 @@ func resourceAliyunInstance() *schema.Resource {
 			"spot_strategy": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				Computed:         true,
 				ForceNew:         true,
-				Default:          NoSpot,
 				ValidateFunc:     validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 				DiffSuppressFunc: ecsSpotStrategyDiffSuppressFunc,
 			},
@@ -534,6 +534,12 @@ func resourceAliyunInstance() *schema.Resource {
 			"primary_ip_address": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"dedicated_host_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"spot_strategy", "spot_price_limit"},
 			},
 		},
 	}
@@ -823,6 +829,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		request["Ipv6AddressCount"] = v
 	}
 
+	if v, ok := d.GetOk("dedicated_host_id"); ok {
+		request["DedicatedHostId"] = v
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -856,7 +866,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 
 	instance, err := ecsService.DescribeInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_instance ecsService.DescribeInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -928,6 +938,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("memory", instance.Memory)
 	d.Set("os_name", instance.OSName)
 	d.Set("os_type", instance.OSType)
+	d.Set("dedicated_host_id", instance.DedicatedHostAttribute.DedicatedHostId)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
