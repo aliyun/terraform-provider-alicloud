@@ -212,8 +212,7 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
+  instance_type_family = "ecs.sn1ne"
 }
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
