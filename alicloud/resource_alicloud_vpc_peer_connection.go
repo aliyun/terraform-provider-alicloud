@@ -30,8 +30,7 @@ func resourceAlicloudVpcPeerConnection() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"accepting_ali_uid": {
 				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Required: true,
 				ForceNew: true,
 			},
 			"accepting_region_id": {

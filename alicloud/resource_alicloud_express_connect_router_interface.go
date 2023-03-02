@@ -632,6 +632,9 @@ func resourceAlicloudExpressConnectRouterInterfaceDelete(d *schema.ResourceData,
 			return nil
 		})
 		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidRouterInterfaceId.NotFound"}) {
+				return nil
+			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
