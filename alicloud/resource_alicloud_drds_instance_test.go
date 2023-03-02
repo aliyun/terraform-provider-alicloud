@@ -134,7 +134,8 @@ func TestAccAlicloudDRDSInstance_Vpc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name,
+						"description":   name,
+						"mysql_version": "5",
 					}),
 				),
 			},
@@ -205,6 +206,7 @@ func TestAccAlicloudDRDSInstance_Multi(t *testing.T) {
 					"specification":        "drds.sn1.4c8g.8C16G",
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"count":                "3",
+					"mysql_version":        "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -253,11 +255,66 @@ func TestAccAlicloudDRDSInstance_VpcId(t *testing.T) {
 					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"specification":        "drds.sn1.4c8g.8C16G",
 					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"mysql_version":        "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
 						"vpc_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudDRDSInstance_MySQLVersion(t *testing.T) {
+	var v *drds.DescribeDrdsInstanceResponse
+
+	resourceId := "alicloud_drds_instance.default"
+	ra := resourceAttrInit(resourceId, drdsInstancebasicMap)
+
+	serviceFunc := func() interface{} {
+		return &DrdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sDrdsdatabase-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDRDSInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DrdsSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "${var.name}",
+					"zone_id":              "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"instance_series":      "${var.instance_series}",
+					"instance_charge_type": "PostPaid",
+					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"specification":        "drds.sn1.4c8g.8C16G",
+					"mysql_version":        "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":   name,
+						"mysql_version": "5",
 					}),
 				),
 			},
