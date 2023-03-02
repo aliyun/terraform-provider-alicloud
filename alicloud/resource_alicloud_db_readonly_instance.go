@@ -770,7 +770,7 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 			return nil, WrapError(err)
 		}
 
-		if request["ZoneId"] == "" {
+		if request["ZoneId"] == nil || request["ZoneId"].(string) == "" {
 			request["ZoneId"] = vsw.ZoneId
 		} else if strings.Contains(request["ZoneId"].(string), MULTI_IZ_SYMBOL) {
 			zonestr := strings.Split(strings.SplitAfter(request["ZoneId"].(string), "(")[1], ")")[0]
