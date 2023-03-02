@@ -23,9 +23,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_common_bandwidth_package" "foo" {
-  bandwidth   = "2"
-  name        = "test_common_bandwidth_package"
-  description = "test_common_bandwidth_package"
+  bandwidth              = "2"
+  bandwidth_package_name = "test_common_bandwidth_package"
+  description            = "test_common_bandwidth_package"
 }
 
 resource "alicloud_eip_address" "foo" {
@@ -45,6 +45,7 @@ The following arguments are supported:
 * `bandwidth_package_id` - (Required, ForceNew) The bandwidth_package_id of the common bandwidth package attachment, the field can't be changed.
 * `instance_id` - (Required, ForceNew) The instance_id of the common bandwidth package attachment, the field can't be changed.
 * `bandwidth_package_bandwidth` - (Optional, Computed, Available in v1.194.0+) The maximum bandwidth for the EIP. This value cannot be larger than the maximum bandwidth of the EIP bandwidth plan. Unit: Mbit/s.
+* `cancel_common_bandwidth_package_ip_bandwidth` - (Optional, Available in v1.200.0+) Whether to cancel the maximum bandwidth configuration for the EIP. Default: false.
 
 ## Attributes Reference
 
@@ -67,5 +68,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 The common bandwidth package attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_common_bandwidth_package_attachment.foo cbwp-abc123456:eip-abc123456
+$ terraform import alicloud_common_bandwidth_package_attachment.foo <bandwidth_package_id>:<instance_id>
 ```

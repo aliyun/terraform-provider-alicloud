@@ -203,7 +203,17 @@ func TestAccAlicloudCommonBandwidthPackageAttachment_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_package_bandwidth": "3",
+					"bandwidth_package_bandwidth": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_package_bandwidth": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cancel_common_bandwidth_package_ip_bandwidth": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -212,9 +222,21 @@ func TestAccAlicloudCommonBandwidthPackageAttachment_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"cancel_common_bandwidth_package_ip_bandwidth": "false",
+					"bandwidth_package_bandwidth":                  "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_package_bandwidth": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cancel_common_bandwidth_package_ip_bandwidth"},
 			},
 		},
 	})
