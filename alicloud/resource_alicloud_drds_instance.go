@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -76,6 +78,12 @@ func resourceAlicloudDRDSInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"mysql_version": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -97,6 +105,10 @@ func resourceAliCloudDRDSInstanceCreate(d *schema.ResourceData, meta interface{}
 
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request.VpcId = v.(string)
+	}
+
+	if v, ok := d.GetOk("mysql_version"); ok {
+		request.MySQLVersion = requests.Integer(strconv.Itoa(v.(int)))
 	}
 
 	if (request.ZoneId == "" || request.VpcId == "") && request.VswitchId != "" {
@@ -216,6 +228,7 @@ func resourceAliCloudDRDSInstanceRead(d *schema.ResourceData, meta interface{}) 
 	}
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
+	d.Set("mysql_version", data.MysqlVersion)
 	return nil
 }
 
