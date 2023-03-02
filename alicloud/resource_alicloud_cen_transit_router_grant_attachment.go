@@ -89,7 +89,7 @@ func resourceAlicloudCenTransitRouterGrantAttachmentCreate(d *schema.ResourceDat
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.TaskConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
