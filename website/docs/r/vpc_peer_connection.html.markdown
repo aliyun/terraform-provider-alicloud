@@ -38,7 +38,7 @@ resource "alicloud_vpc_peer_connection" "default" {
 
 The following arguments are supported:
 
-* `accepting_ali_uid` - (Optional, Computed, ForceNew) The ID of the Alibaba Cloud account (primary account) of the receiving end of the VPC peering connection to be created.
+* `accepting_ali_uid` - (Required, ForceNew) The ID of the Alibaba Cloud account (primary account) of the receiving end of the VPC peering connection to be created.
   - Enter the ID of your Alibaba Cloud account to create a peer-to-peer connection to the VPC account.
   - Enter the ID of another Alibaba Cloud account to create a cross-account VPC peer-to-peer connection.
   - If the recipient account is a RAM user (sub-account), enter the ID of the Alibaba Cloud account corresponding to the RAM user.

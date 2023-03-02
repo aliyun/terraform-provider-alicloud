@@ -4252,7 +4252,8 @@ func (s *VpcService) DescribeExpressConnectRouterInterface(id string) (object ma
 	}
 
 	request := map[string]interface{}{
-		"Filter.1.Value": id,
+		"Filter.1.Key":   "RouterInterfaceId",
+		"Filter.1.Value": []string{id},
 		"RegionId":       s.client.RegionId,
 	}
 
