@@ -38,7 +38,6 @@ var existCenChildInstanceRouteEntryToAttachmentMapFunc = func(rand int) map[stri
 		"attachments.0.cen_id":                        CHECKSET,
 		"attachments.0.child_instance_route_table_id": CHECKSET,
 		"attachments.0.destination_cidr_block":        CHECKSET,
-		"attachments.0.service_type":                  CHECKSET,
 		"attachments.0.status":                        CHECKSET,
 		"attachments.0.transit_router_attachment_id":  CHECKSET,
 	}

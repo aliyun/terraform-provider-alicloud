@@ -143,7 +143,12 @@ resource "alicloud_cen_instance" "default" {
   name = "${var.name}"
 }
 
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
+}
+
 resource "alicloud_cen_route_map" "default" {
+  depends_on = [alicloud_cen_transit_router.default]
   cen_id = "${alicloud_cen_instance.default.id}"
   cen_region_id = "${var.child_region}"
   map_result = "Permit"
