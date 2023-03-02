@@ -228,7 +228,6 @@ func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"master_db_instance_id": "${alicloud_db_instance.default.id}",
-					"zone_id":               "${alicloud_db_instance.default.zone_id}",
 					"engine_version":        "${alicloud_db_instance.default.engine_version}",
 					"instance_type":         "${data.alicloud_db_instance_classes.ro.instance_classes.0.instance_class}",
 					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
