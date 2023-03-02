@@ -4341,3 +4341,74 @@ func (s *VpcService) DescribeHighDefinitionMonitorLogAttribute(id string) (objec
 	object = v.(map[string]interface{})
 	return object, nil
 }
+func (s *VpcService) DescribeVpcHaVipAttachment(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"Filter.1.Key":     "HaVipId",
+		"Filter.1.Value.1": parts[0],
+		"RegionId":         s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "DescribeHaVips"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.HaVips.HaVip", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HaVips.HaVip", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["HaVipId"]) != parts[0] {
+			return object, WrapErrorf(Error(GetNotFoundMessage("VPC", id)), NotFoundWithResponse, response)
+		}
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *VpcService) VpcHaVipAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcHaVipAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		status84 := object["Status"]
+		for _, failState := range failStates {
+			if fmt.Sprint(status84) == failState {
+				return object, fmt.Sprint(status84), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(status84)))
+			}
+		}
+		return object, fmt.Sprint(status84), nil
+	}
+}
