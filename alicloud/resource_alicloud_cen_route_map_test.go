@@ -37,8 +37,9 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":         []string{"alicloud_cen_instance_attachment.default00", "alicloud_cen_instance_attachment.default01"},
 					"cen_id":             "${alicloud_cen_instance.default.id}",
-					"cen_region_id":      defaultRegionToTest,
+					"cen_region_id":      "${var.child_region}",
 					"map_result":         "Permit",
 					"priority":           "3",
 					"transmit_direction": "RegionIn",
@@ -46,7 +47,7 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_same_region(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":             CHECKSET,
-						"cen_region_id":      defaultRegionToTest,
+						"cen_region_id":      CHECKSET,
 						"map_result":         "Permit",
 						"priority":           "3",
 						"transmit_direction": "RegionIn",
@@ -170,6 +171,7 @@ func TestAccAlicloudCenRouteMap_basic_transit_router_route_table_id(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":                    []string{"alicloud_cen_transit_router.default"},
 					"cen_id":                        "${alicloud_cen_instance.default.id}",
 					"cen_region_id":                 defaultRegionToTest,
 					"map_result":                    "Permit",
@@ -226,8 +228,9 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":         []string{"alicloud_cen_instance_attachment.default00", "alicloud_cen_instance_attachment.default01"},
 					"cen_id":             "${alicloud_cen_instance.default.id}",
-					"cen_region_id":      defaultRegionToTest,
+					"cen_region_id":      "${var.vpc_region_00}",
 					"map_result":         "Permit",
 					"priority":           "3",
 					"transmit_direction": "RegionIn",
@@ -235,7 +238,7 @@ func TestAccAlicloudCenRouteMap_basic_child_instance_different_region(t *testing
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":             CHECKSET,
-						"cen_region_id":      defaultRegionToTest,
+						"cen_region_id":      CHECKSET,
 						"map_result":         "Permit",
 						"priority":           "3",
 						"transmit_direction": "RegionIn",
@@ -393,6 +396,7 @@ func TestAccAlicloudCenRouteMap_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"depends_on":         []string{"alicloud_cen_transit_router.default"},
 					"cen_id":             "${alicloud_cen_instance.default.id}",
 					"cen_region_id":      defaultRegionToTest,
 					"count":              "5",
@@ -541,6 +545,10 @@ variable "name" {
 
 resource "alicloud_cen_instance" "default" {
 	name = "${var.name}"
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  cen_id = alicloud_cen_instance.default.id
 }
 `, name)
 }
