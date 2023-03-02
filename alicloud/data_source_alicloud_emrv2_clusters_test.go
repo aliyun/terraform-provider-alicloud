@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/json"
 	"strings"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )

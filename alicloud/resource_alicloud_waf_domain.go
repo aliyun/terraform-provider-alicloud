@@ -147,7 +147,7 @@ func resourceAlicloudWafDomain() *schema.Resource {
 
 func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := WafOpenapiService{client}
+	wafOpenapiService := WafOpenapiService{client}
 	var response map[string]interface{}
 	action := "CreateDomain"
 	request := make(map[string]interface{})
@@ -199,7 +199,7 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if v, ok := d.GetOk("log_headers"); ok {
-		logHeaders, err := waf_openapiService.convertLogHeadersToString(v.(*schema.Set).List())
+		logHeaders, err := wafOpenapiService.convertLogHeadersToString(v.(*schema.Set).List())
 		if err != nil {
 			return WrapError(err)
 		}
@@ -246,11 +246,11 @@ func resourceAlicloudWafDomainCreate(d *schema.ResourceData, meta interface{}) e
 }
 func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := WafOpenapiService{client}
-	object, err := waf_openapiService.DescribeWafDomain(d.Id())
+	wafOpenapiService := WafOpenapiService{client}
+	object, err := wafOpenapiService.DescribeWafDomain(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_waf_domain waf_openapiService.DescribeWafDomain Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_waf_domain wafOpenapiService.DescribeWafDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -294,7 +294,7 @@ func resourceAlicloudWafDomainRead(d *schema.ResourceData, meta interface{}) err
 }
 func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	waf_openapiService := WafOpenapiService{client}
+	wafOpenapiService := WafOpenapiService{client}
 	var response map[string]interface{}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -371,7 +371,7 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("log_headers") {
 		update = true
 	}
-	logHeaders, err := waf_openapiService.convertLogHeadersToString(d.Get("log_headers").(*schema.Set).List())
+	logHeaders, err := wafOpenapiService.convertLogHeadersToString(d.Get("log_headers").(*schema.Set).List())
 	if err != nil {
 		return WrapError(err)
 	}
