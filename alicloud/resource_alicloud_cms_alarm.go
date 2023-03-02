@@ -32,7 +32,6 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 			Update: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -74,10 +73,9 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"statistics": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Average,
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -107,10 +105,9 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"statistics": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Average,
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -140,10 +137,9 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"statistics": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      Average,
-							ValidateFunc: validation.StringInSlice([]string{Availability, Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  Average,
 						},
 						"comparison_operator": {
 							Type:     schema.TypeString,
@@ -168,11 +164,10 @@ func resourceAlicloudCmsAlarm() *schema.Resource {
 				MaxItems:         1,
 			},
 			"statistics": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{Average, Minimum, Maximum, ErrorCodeMaximum, Value, Sum, Count}, false),
-				Deprecated:   "Field 'statistics' has been deprecated from provider version 1.94.0. New field 'escalations_critical.statistics' instead.",
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'statistics' has been deprecated from provider version 1.94.0. New field 'escalations_critical.statistics' instead.",
 			},
 			"operator": {
 				Type:     schema.TypeString,
