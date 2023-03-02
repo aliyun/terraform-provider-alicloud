@@ -88,12 +88,14 @@ The following arguments are supported:
 * `havip_id` - (Required, ForceNew) The havip_id of the havip attachment, the field can't be changed.
 * `instance_id` - (Required, ForceNew) The instance_id of the havip attachment, the field can't be changed.
 * `force` - (Optional, Available in v1.200.0+) Specifies whether to forcefully disassociate the HAVIP from the ECS instance or ENI. Default value: `False`. Valid values: `True` and `False`.
+* `instance_type` - (Optional, Available in v1.201.0+) The Type of instance to bind HaVip to. Valid values: `EcsInstance` and `NetworkInterface`. When the HaVip instance is bound to a resilient NIC, the resilient NIC instance must be filled in.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the havip attachment id and formates as `<havip_id>:<instance_id>`.
+* `status` - (Available in v1.201.0+) The status of the HaVip instance.
 
 #### Timeouts
 
