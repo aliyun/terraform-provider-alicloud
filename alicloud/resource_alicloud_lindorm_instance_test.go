@@ -772,6 +772,26 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"core_single_storage": "440",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"core_single_storage": "440",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_single_storage": "440",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_single_storage": "440",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"table_engine_node_count": "48",
 					"log_num":                 "48",
 				}),
@@ -779,6 +799,16 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 					testAccCheck(map[string]string{
 						"table_engine_node_count": "48",
 						"log_num":                 "48",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_spec": "lindorm.sn1.2xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_spec": "lindorm.sn1.2xlarge",
 					}),
 				),
 			},
