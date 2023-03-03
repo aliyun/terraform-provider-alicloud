@@ -58,7 +58,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional) VPC ID. This value must be passed when the value of InstanceSource is VPC dedicated line IDC.
 * `ecs_region` - (Optional) The region where the instance is located. This value must be passed when the value of InstanceSource is RDS, ECS self-built library, and VPC dedicated line IDC.
 * `sid` - (Optional) The SID. This value must be passed when InstanceType is PostgreSQL or Oracle.
-* `data_link_name` - (Optional) Cross-database query datalink name.
+* `data_link_name` - (Optional, Computed) Cross-database query datalink name.
 * `ddl_online` - (Optional) Whether to use online services, currently only supports MySQL and PolarDB. Valid values: `0` Not used, `1` Native online DDL priority, `2` DMS lock-free table structure change priority.
 * `use_dsql` - (Optional) Whether to enable cross-instance query. Valid values: `0` not open, `1` open.
 * `instance_id` - (Optional, Computed) The instance id of the database instance. 

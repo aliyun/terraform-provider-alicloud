@@ -120,45 +120,52 @@ func dataSourceAlicloudVpcTrafficMirrorFilterEgressRulesRead(d *schema.ResourceD
 		return WrapError(err)
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_traffic_mirror_filter_egress_rules", action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_vpc_traffic_mirror_filter_egress_rules", action, AlibabaCloudSdkGoERROR)
-	}
-	resp, err := jsonpath.Get("$.TrafficMirrorFilters", response)
-	if err != nil {
-		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrafficMirrorFilters", response)
-	}
-	result, _ := resp.([]interface{})
+		resp, err := jsonpath.Get("$.TrafficMirrorFilters", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TrafficMirrorFilters", response)
+		}
+		result, _ := resp.([]interface{})
 
-	for _, v := range result {
-		EgressRules := v.(map[string]interface{})["EgressRules"]
-		if EgressRulesMap, ok := EgressRules.([]interface{}); ok {
-			for _, v := range EgressRulesMap {
-				item := v.(map[string]interface{})
-				if len(idsMap) > 0 {
-					if _, ok := idsMap[fmt.Sprint(item["TrafficMirrorFilterId"], ":", item["TrafficMirrorFilterRuleId"])]; !ok {
+		for _, v := range result {
+			EgressRules := v.(map[string]interface{})["EgressRules"]
+			if EgressRulesMap, ok := EgressRules.([]interface{}); ok {
+				for _, v := range EgressRulesMap {
+					item := v.(map[string]interface{})
+					if len(idsMap) > 0 {
+						if _, ok := idsMap[fmt.Sprint(item["TrafficMirrorFilterId"], ":", item["TrafficMirrorFilterRuleId"])]; !ok {
+							continue
+						}
+					}
+					if statusOk && status.(string) != "" && status.(string) != item["TrafficMirrorFilterRuleStatus"].(string) {
 						continue
 					}
+					objects = append(objects, item)
 				}
-				if statusOk && status.(string) != "" && status.(string) != item["TrafficMirrorFilterRuleStatus"].(string) {
-					continue
-				}
-				objects = append(objects, item)
 			}
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
 		}
 	}
 	ids := make([]string, 0)

@@ -40,12 +40,12 @@ func resourceAlicloudVpcTrafficMirrorFilter() *schema.Resource {
 			"traffic_mirror_filter_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][\w\-]{1,255}$`), "The description must be `2` to `256` characters in length. It must start with a letter and cannot start with `http://` or `https://`"),
+				ValidateFunc: validation.All(validation.StringLenBetween(1, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "The description cannot start with `http://` or `https://`")),
 			},
 			"traffic_mirror_filter_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][\w\-.]{1,127}$`), "The name must be `2` to `128` characters in length, and can contain digits, periods (.), underscores (_), and hyphens (-). It must start with a letter and cannot start with `http://` or `https://`."),
+				ValidateFunc: validation.All(validation.StringLenBetween(1, 128), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "The name cannot start with `http://` or `https://`.")),
 			},
 		},
 	}
