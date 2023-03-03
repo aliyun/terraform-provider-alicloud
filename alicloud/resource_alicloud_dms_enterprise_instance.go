@@ -28,6 +28,7 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 			"data_link_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"database_password": {
 				Type:      schema.TypeString,

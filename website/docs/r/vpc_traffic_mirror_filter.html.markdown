@@ -31,8 +31,8 @@ resource "alicloud_vpc_traffic_mirror_filter" "example" {
 The following arguments are supported:
 
 * `dry_run` - (Optional) The dry run.
-* `traffic_mirror_filter_description` - (Optional) The description of the filter. The description must be `2` to `256` characters in length. It must start with a letter and cannot start with `http://` or `https://`.
-* `traffic_mirror_filter_name` - (Optional) The name of the filter. The name must be `2` to `128` characters in length, and can contain digits, periods (.), underscores (_), and hyphens (-). It must start with a letter and cannot start with `http://` or `https://`.
+* `traffic_mirror_filter_description` - (Optional) The description of the filter. The description must be 1 to 256 characters in length and cannot start with `http://` or `https://`.
+* `traffic_mirror_filter_name` - (Optional) The name of the filter. The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
 
 ## Attributes Reference
 
