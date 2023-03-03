@@ -125,7 +125,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when create the Instance.
-* `update` - (Defaults to 60 mins) Used when update the Instance.
+* `update` - (Defaults to 180 mins) Used when update the Instance.
 * `delete` - (Defaults to 30 mins) Used when delete the Instance.
 
 ## Import

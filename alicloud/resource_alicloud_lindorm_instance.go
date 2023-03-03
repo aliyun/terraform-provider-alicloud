@@ -23,7 +23,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(90 * time.Minute),
-			Update: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(180 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -660,6 +660,11 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 		upgradeLindormLogReq["UpgradeType"] = "upgrade-lindorm-engine"
 		upgradeLindormLogReq["LogSpec"] = d.Get("log_spec")
+	}
+	if !d.IsNewResource() && d.HasChange("core_single_storage") {
+		update = true
+		upgradeLindormLogReq["UpgradeType"] = "upgrade-disk-size"
+		upgradeLindormLogReq["CoreSingleStorage"] = d.Get("core_single_storage")
 	}
 	if update {
 		err := UpgradeLindormInstance(d, meta, upgradeLindormLogReq)
