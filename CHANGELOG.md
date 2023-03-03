@@ -1,4 +1,40 @@
 ## 1.200.0 (Unreleased)
+
+- **New Resource:** `alicloud_wafv3_instance` [GH-5919]
+- **New Resource:** `alicloud_wafv3_domains` [GH-5933]
+- **New Resource:** `alicloud_alb_load_balancer_common_bandwidth_package_attachment` [GH-5937]
+- **New Data Source:** `alicloud_wafv3_domain` [GH-5933]
+- **New Data Source:** `alicloud_wafv3_instances` [GH-5919]
+
+ENHANCEMENTS:
+
+- resource/alicloud_cms_alarm: Removeed the statistics enums limitation [GH-5950]
+- resource/alicloud_common_bandwidth_package_attachment: Support new attribute cancel_common_bandwidth_package_ip_bandwidth [GH-5952]
+- datasource/alicloud_db_instances : Add query instance detailed information by engine as MariaDB. datasource/alicloud_rds_character_set_names : Add query RDS character set names by engine as MariaDB. [GH-5943]
+- resource/alicloud_db_instance : Create serverless instance and update serverlessConfig params. resource/alicloud_rds_clone_db_instance : Clone serverless instance and update serverlessConfig params. datasource/alicloud_db_zones : Query serverless zones. datasource/alicloud_db_instance_classes : Query serverless instance classes. [GH-5911]
+- resource/alicloud_route_entry: Added retry stragety for error code [GH-5939]
+- resource/alicloud_cen_transit_router_grant_attachment: Added retry stragety for error code [GH-5948]
+- resource/alicloud_kvstore_instance: Adds new attribute tde_status,encryption_name,encryption_key,role_arn [GH-5870]
+- resource/alicloud_vpc_ipv4_gateway: Added retry stragety for error code [GH-5938]
+- resource/alicloud_instance: Support output attribute os_type, os_name, memory, primary_ip_address, cpu. [GH-5933]
+- resource/alicloud_havip_attachment: Added the field force [GH-5925]
+- resource/alicloud_eip_address: Adds new attribute log_project,log_store [GH-5917]
+- resource/alicloud_rds_db_instance_endpoint_address:add engine PostgreSQL [GH-5928]
+- resource/alicloud_ddosbgp_instance: Removed the ForceNew for field period [GH-5926]
+- resource/alicloud_polardb_cluster: polardb support encryption with CMK [GH-5924]
+- docs: Improves the docs example [GH-5921]
+- docs: Improves the docs example and Improves the resource testcases [GH-5935]
+- docs/mhub_app: Improves the docs example [GH-5941]
+- testcase: Modify the ECS instance specifications to support new VPC features [GH-5942]
+
+BUG FIXES:
+
+- resource/alicloud_lindorm_instance: Fixes the upgrading core_single_storage does not work bug; Enlarges the update default timeout to 180 mins [GH-5956]
+- resource/alicloud_express_connect_router_interface: Fix a bug where the read function filter was not working [GH-5954]
+- resource/alicloud_db_readonly_instance: Fixes the nil pointer error [GH-5955]
+- resource/alicloud_db_instance:Fix the conflict between opening expansion and storage [GH-5931]
+- testcase: Fix test cases for cen. [GH-5946]
+
 ## 1.199.0 (February 21, 2023)
 
 - **New Resource:** `alicloud_threat_detection_instance` ([#5767](https://github.com/aliyun/terraform-provider-alicloud/issues/5767))
