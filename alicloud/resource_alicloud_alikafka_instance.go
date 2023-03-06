@@ -65,7 +65,8 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 			},
 			"io_max": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"paid_type": {
 				Type:         schema.TypeString,
@@ -140,6 +141,12 @@ func resourceAlicloudAlikafkaInstance() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"io_max_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"io_max", "io_max_spec"},
+			},
 		},
 	}
 }
@@ -166,7 +173,12 @@ func resourceAlicloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	createOrderReq["DiskType"] = d.Get("disk_type")
 	createOrderReq["DiskSize"] = d.Get("disk_size")
 	createOrderReq["DeployType"] = d.Get("deploy_type")
-	createOrderReq["IoMax"] = d.Get("io_max")
+	if v, ok := d.GetOk("io_max"); ok {
+		createOrderReq["IoMax"] = v
+	}
+	if v, ok := d.GetOk("io_max_spec"); ok {
+		createOrderReq["IoMaxSpec"] = v
+	}
 	if v, ok := d.GetOk("spec_type"); ok {
 		createOrderReq["SpecType"] = v
 	}
@@ -337,6 +349,7 @@ func resourceAlicloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 	d.Set("tags", alikafkaService.tagsToMap(tags))
+	d.Set("io_max_spec", object["IoMaxSpec"])
 
 	return nil
 }
@@ -461,7 +474,15 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("io_max") {
 		update = true
 	}
-	request["IoMax"] = d.Get("io_max")
+	if v, ok := d.GetOk("io_max"); ok {
+		request["IoMax"] = v
+	}
+	if d.HasChange("io_max_spec") {
+		update = true
+	}
+	if v, ok := d.GetOk("io_max_spec"); ok {
+		request["IoMaxSpec"] = v
+	}
 	if d.HasChange("spec_type") {
 		update = true
 	}
@@ -509,6 +530,7 @@ func resourceAlicloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("topic_quota")
 		d.SetPartial("disk_size")
 		d.SetPartial("io_max")
+		d.SetPartial("io_max_spec")
 		d.SetPartial("spec_type")
 		d.SetPartial("eip_max")
 

@@ -74,7 +74,10 @@ The following arguments are supported:
 * `deploy_type` - (Required) The deployment type of the instance. **NOTE:** From version 1.161.0, this attribute supports to be updated. Valid values:
   - 4: eip/vpc instance
   - 5: vpc instance.
-* `io_max` - (Required) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
+* `io_max` - (Optional, Computed) The max value of io of the instance. When modify this value, it only support adjust to a greater value.
+* `io_max_spec` - (Optional, Computed, Available in v1.201.0+) The traffic specification of the instance. We recommend that you configure this parameter.
+  - You should specify one of the `io_max` and `io_max_spec` parameters, and `io_max_spec` is recommended.
+  - For more information about the valid values, see [Billing](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/billing-overview).
 * `eip_max` - (Optional) The max bandwidth of the instance. It will be ignored when `deploy_type = 5`. When modify this value, it only supports adjust to a greater value.
 * `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
