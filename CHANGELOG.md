@@ -2,9 +2,9 @@
 ## 1.200.0 (March 03, 2023)
 
 - **New Resource:** `alicloud_wafv3_instance` ([#5919](https://github.com/aliyun/terraform-provider-alicloud/issues/5919))
-- **New Resource:** `alicloud_wafv3_domains` ([#5933](https://github.com/aliyun/terraform-provider-alicloud/issues/5933))
+- **New Resource:** `alicloud_wafv3_domain` ([#5947](https://github.com/aliyun/terraform-provider-alicloud/issues/5947))
 - **New Resource:** `alicloud_alb_load_balancer_common_bandwidth_package_attachment` ([#5937](https://github.com/aliyun/terraform-provider-alicloud/issues/5937))
-- **New Data Source:** `alicloud_wafv3_domain` ([#5933](https://github.com/aliyun/terraform-provider-alicloud/issues/5933))
+- **New Data Source:** `alicloud_wafv3_domains` ([#5947](https://github.com/aliyun/terraform-provider-alicloud/issues/5947))
 - **New Data Source:** `alicloud_wafv3_instances` ([#5919](https://github.com/aliyun/terraform-provider-alicloud/issues/5919))
 
 ENHANCEMENTS:
@@ -40,7 +40,7 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_threat_detection_instance` ([#5767](https://github.com/aliyun/terraform-provider-alicloud/issues/5767))
 - **New Resource:** `alicloud_cr_vpc_endpoint_linked_vpc` ([#5894](https://github.com/aliyun/terraform-provider-alicloud/issues/5894))
-- **New Resource:** `alicloud_router_interface` ([#5831](https://github.com/aliyun/terraform-provider-alicloud/issues/5831))
+- **New Resource:** `alicloud_express_connect_router_interface` ([#5831](https://github.com/aliyun/terraform-provider-alicloud/issues/5831))
 - **New Resource:** `alicloud_emrv2_cluster` ([#5892](https://github.com/aliyun/terraform-provider-alicloud/issues/5892))
 - **New Data Source:** `alicloud_emrv2_clusters` ([#5892](https://github.com/aliyun/terraform-provider-alicloud/issues/5892))
 - **New Data Source:** `alicloud_router_interfaces` ([#5831](https://github.com/aliyun/terraform-provider-alicloud/issues/5831))
