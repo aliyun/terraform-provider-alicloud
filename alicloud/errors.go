@@ -273,6 +273,10 @@ func GetTimeoutMessage(product, status string) string {
 	return fmt.Sprintf("Waitting for %s %s is timeout.", product, status)
 }
 
+func GetCreateFailedMessage(product string) string {
+	return fmt.Sprintf("The specified %s is create failed.", product)
+}
+
 type ErrorSource string
 
 const (
