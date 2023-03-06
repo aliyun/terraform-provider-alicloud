@@ -502,10 +502,10 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 					"name":            "${var.name}",
 					"partition_num":   "50",
 					"disk_type":       "1",
-					"disk_size":       "500",
+					"disk_size":       "800",
 					"deploy_type":     "4",
 					"eip_max":         "3",
-					"io_max":          "20",
+					"io_max_spec":     "alikafka.hw.2xlarge",
 					"vswitch_id":      "${data.alicloud_vswitches.default.ids.0}",
 					"paid_type":       "PostPaid",
 					"spec_type":       "normal",
@@ -524,10 +524,10 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 						"name":            name,
 						"partition_num":   "50",
 						"disk_type":       "1",
-						"disk_size":       "500",
+						"disk_size":       "800",
 						"deploy_type":     "4",
 						"eip_max":         "3",
-						"io_max":          "20",
+						"io_max_spec":     "alikafka.hw.2xlarge",
 						"paid_type":       "PostPaid",
 						"spec_type":       "normal",
 						"service_version": "0.10.2",
@@ -536,6 +536,17 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 						"tags.Created":   "TF",
 						"tags.For":       "acceptance test",
 						"security_group": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+
+					"io_max_spec": "alikafka.hw.3xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"io_max_spec": "alikafka.hw.3xlarge",
 					}),
 				),
 			},
