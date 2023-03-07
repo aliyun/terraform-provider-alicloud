@@ -54,8 +54,8 @@ resource "alicloud_fc_trigger" "foo" {
             "c": "d"
         },
         "logConfig": {
-            "project": "project-for-fc",
-            "logstore": "project-for-fc"
+            "project": "project-for-fc-log",
+            "logstore": "project-for-fc-log"
         },
         "enable": true
     }
