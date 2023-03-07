@@ -377,6 +377,11 @@ func (s *PolarDBService) WaitPolardbEndpointConfigEffect(id string, item map[str
 				effected = false
 			}
 		}
+		if value, ok := item["DBEndpointDescription"]; ok {
+			if endpoint.DBEndpointDescription != value {
+				effected = false
+			}
+		}
 		if value, ok := item["AutoAddNewNodes"]; ok {
 			if endpoint.AutoAddNewNodes != value {
 				effected = false

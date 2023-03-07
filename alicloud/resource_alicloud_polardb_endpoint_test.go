@@ -103,6 +103,16 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_endpoint_description": "polar_db_endpoint_test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_endpoint_description": "polar_db_endpoint_test",
+					}),
+				),
+			},
 		},
 	})
 }

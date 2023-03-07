@@ -90,6 +90,10 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"db_endpoint_description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -99,10 +103,12 @@ func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interfac
 	polarDBService := PolarDBService{client}
 	clusterId := d.Get("db_cluster_id").(string)
 	endpointType := d.Get("endpoint_type").(string)
+	dbEndpointDescription := d.Get("db_endpoint_description").(string)
 	request := polardb.CreateCreateDBClusterEndpointRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = clusterId
 	request.EndpointType = endpointType
+	request.DBEndpointDescription = dbEndpointDescription
 	if nodes, ok := d.GetOk("nodes"); ok {
 		nodes := expandStringList(nodes.(*schema.Set).List())
 		dbNodes := strings.Join(nodes, ",")
@@ -183,6 +189,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	d.Set("db_cluster_id", dbClusterId)
 	d.Set("db_endpoint_id", dbEndpointId)
 	d.Set("endpoint_type", object.EndpointType)
+	d.Set("db_endpoint_description", object.DBEndpointDescription)
 	nodes := strings.Split(object.Nodes, ",")
 	d.Set("nodes", nodes)
 
@@ -253,7 +260,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 	}
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
-	if d.HasChange("nodes") || d.HasChange("read_write_mode") || d.HasChange("auto_add_new_nodes") || d.HasChange("endpoint_config") {
+	if d.HasChange("nodes") || d.HasChange("read_write_mode") || d.HasChange("auto_add_new_nodes") || d.HasChange("endpoint_config") || d.HasChange("db_endpoint_description") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
@@ -282,7 +289,10 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 			modifyEndpointRequest.EndpointConfig = string(endpointConfig)
 			configItem["EndpointConfig"] = string(endpointConfig)
 		}
-
+		if d.HasChange("db_endpoint_description") {
+			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)
+			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
+		}
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBClusterEndpoint(modifyEndpointRequest)
