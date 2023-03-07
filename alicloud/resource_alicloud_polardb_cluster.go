@@ -198,6 +198,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: polardbTDEAndEnabledDiffSuppressFunc,
+				Computed:         true,
 			},
 			"tde_region": {
 				Type:     schema.TypeString,
