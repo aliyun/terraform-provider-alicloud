@@ -857,7 +857,7 @@ data "alicloud_account" "default" {
 }
 
 resource "alicloud_cdn_domain_new" "default" {
-  domain_name = "${var.name}.xiaozhu.com"
+  domain_name = "${var.name}.alicloud-provider.cn"
   cdn_type    = "web"
   scope       = "overseas"
   sources {
@@ -941,7 +941,7 @@ data "alicloud_account" "default" {
 }
 
 resource "alicloud_cdn_domain_new" "default" {
-  domain_name = "${var.name}.xiaozhu.com"
+  domain_name = "${var.name}.alicloud-provider.cn"
   cdn_type    = "web"
   scope       = "overseas"
   sources {

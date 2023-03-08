@@ -5,10 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudWafv3InstanceDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	allConf := dataSourceTestAccConfig{

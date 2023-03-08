@@ -105,7 +105,7 @@ func SkipTestAccAlicloudCDNDomain_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"alicloud_cdn_domain.domain",
 						"domain_name",
-						fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)),
+						fmt.Sprintf("tf-testacc%d.alicloud-provider.cn", rand)),
 				),
 			},
 		},
@@ -133,7 +133,7 @@ func SkipTestAccAlicloudCDNDomain_https(t *testing.T) {
 				Config: testAccCdnDomainHttpsConfig(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCdnDomainExists("alicloud_cdn_domain.domain", &v),
-					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "domain_name", fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)),
+					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "domain_name", fmt.Sprintf("tf-testacc%d.alicloud-provider.cn", rand)),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.0.server_certificate_status", "on"),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.0.server_certificate", strings.Replace(testServerCertificate, `\n`, "\n", -1)),
@@ -163,7 +163,7 @@ func SkipTestAccAlicloudCDNDomain_domestic(t *testing.T) {
 				Config: testAccCdnDomainDomestic(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCdnDomainExists("alicloud_cdn_domain.domain", &v),
-					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "domain_name", fmt.Sprintf("tf-testacc%d.xiaozhu.com", rand)),
+					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "domain_name", fmt.Sprintf("tf-testacc%d.alicloud-provider.cn", rand)),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.#", "1"),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.0.server_certificate_status", "on"),
 					resource.TestCheckResourceAttr("alicloud_cdn_domain.domain", "certificate_config.0.server_certificate", strings.Replace(testServerCertificate, `\n`, "\n", -1)),
@@ -235,7 +235,7 @@ func testAccCheckCdnDomainDestroy(s *terraform.State) error {
 func testAccCdnDomainConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_cdn_domain" "domain" {
-	  domain_name = "tf-testacc%d.xiaozhu.com"
+	  domain_name = "tf-testacc%d.alicloud-provider.cn"
 	  cdn_type = "web"
 	  source_type = "oss"
 	  sources = ["terraformtest.aliyuncs.com"]
@@ -249,7 +249,7 @@ func testAccCdnDomainConfig(rand int) string {
 func testAccCdnDomainHttpsConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_cdn_domain" "domain" {
-	  domain_name = "tf-testacc%d.xiaozhu.com"
+	  domain_name = "tf-testacc%d.alicloud-provider.cn"
 	  cdn_type = "web"
 	  source_type = "oss"
 	  scope="overseas"
@@ -264,7 +264,7 @@ func testAccCdnDomainHttpsConfig(rand int) string {
 func testAccCdnDomainDomestic(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_cdn_domain" "domain" {
-	  domain_name = "tf-testacc%d.xiaozhu.com"
+	  domain_name = "tf-testacc%d.alicloud-provider.cn"
 	  cdn_type = "web"
 	  source_type = "oss"
 	  scope="domestic"

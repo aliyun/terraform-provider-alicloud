@@ -57,7 +57,7 @@ func TestAccAlicloudDCDNIpaDomainsDataSource(t *testing.T) {
 			"ids.#":                        "1",
 			"names.#":                      "1",
 			"domains.#":                    "1",
-			"domains.0.domain_name":        fmt.Sprintf("tf-testacccn-%d.xiaozhu.com", rand),
+			"domains.0.domain_name":        fmt.Sprintf("tf-testacccn-%d.alicloud-provider.cn", rand),
 			"domains.0.cert_name":          "",
 			"domains.0.cname":              CHECKSET,
 			"domains.0.create_time":        CHECKSET,
@@ -66,7 +66,7 @@ func TestAccAlicloudDCDNIpaDomainsDataSource(t *testing.T) {
 			"domains.0.resource_group_id":  CHECKSET,
 			"domains.0.scope":              "domestic",
 			"domains.0.sources.#":          "1",
-			"domains.0.sources.0.content":  "www.xiaozhu.com",
+			"domains.0.sources.0.content":  "www.alicloud-provider.cn",
 			"domains.0.sources.0.port":     "8898",
 			"domains.0.sources.0.priority": "20",
 			"domains.0.sources.0.type":     "domain",
@@ -103,14 +103,14 @@ func testAccCheckAlicloudDcdnIpaDomainsDataSourceName(rand int, attrMap map[stri
 	config := fmt.Sprintf(`
 
 variable "domain_name" {	
-	default = "tf-testacccn-%d.xiaozhu.com"
+	default = "tf-testacccn-%d.alicloud-provider.cn"
 }
 
 resource "alicloud_dcdn_ipa_domain" "default" {
 	domain_name = "${var.domain_name}"
 	scope = "domestic"
     sources {
-		content =  "www.xiaozhu.com"
+		content =  "www.alicloud-provider.cn"
 		port =     8898
 		priority = "20"
 		type =     "domain"

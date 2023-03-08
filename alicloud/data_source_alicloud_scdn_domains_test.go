@@ -62,14 +62,14 @@ func TestAccAlicloudScdnDomainDataSource(t *testing.T) {
 			"ids.#":     "1",
 			"ids.0":     CHECKSET,
 			"names.#":   "1",
-			"names.0":   fmt.Sprintf("tf-testacccn-hangzhou%d.xiaozhu.com", rand),
+			"names.0":   fmt.Sprintf("tf-testacccn-hangzhou%d.alicloud-provider.cn", rand),
 			"domains.#": "1",
 			//"domains.0.cert_infos.#":      "1",
 			"domains.0.cname":             CHECKSET,
 			"domains.0.create_time":       CHECKSET,
 			"domains.0.description":       "",
-			"domains.0.id":                fmt.Sprintf("tf-testacccn-hangzhou%d.xiaozhu.com", rand),
-			"domains.0.domain_name":       fmt.Sprintf("tf-testacccn-hangzhou%d.xiaozhu.com", rand),
+			"domains.0.id":                fmt.Sprintf("tf-testacccn-hangzhou%d.alicloud-provider.cn", rand),
+			"domains.0.domain_name":       fmt.Sprintf("tf-testacccn-hangzhou%d.alicloud-provider.cn", rand),
 			"domains.0.gmt_modified":      CHECKSET,
 			"domains.0.resource_group_id": CHECKSET,
 			"domains.0.sources.#":         "1",
@@ -96,7 +96,7 @@ func TestAccAlicloudScdnDomainDataSource(t *testing.T) {
 func dataSourceScdnDomainsConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-  default = "tf-testacccn-hangzhou%s.xiaozhu.com"
+  default = "tf-testacccn-hangzhou%s.alicloud-provider.cn"
 }
 resource "alicloud_scdn_domain" "default" {
   domain_name = var.name

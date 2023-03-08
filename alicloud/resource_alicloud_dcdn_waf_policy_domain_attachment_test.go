@@ -73,7 +73,7 @@ variable "name" {
 }
 
 variable "domain_name" {	
-	default = "tf-testacc%d.xiaozhu.com"
+	default = "tf-testacc%d.alicloud-provider.cn"
 }
 resource "alicloud_dcdn_domain" "default" {
   domain_name = var.domain_name

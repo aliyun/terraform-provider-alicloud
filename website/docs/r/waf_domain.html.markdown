@@ -19,7 +19,7 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 
 ```terraform
 resource "alicloud_waf_domain" "domain" {
-  domain            = "www.aliyun.com"
+  domain_name       = "alicloud-provider.cn"
   instance_id       = "waf-123455"
   is_access_product = "On"
   source_ips        = ["1.1.1.1"]

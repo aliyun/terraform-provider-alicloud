@@ -1,9 +1,10 @@
 package alicloud
 
 import (
-	"os"
 	"strings"
 	"testing"
+
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
@@ -11,6 +12,7 @@ import (
 )
 
 func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	rand := acctest.RandIntRange(1000000, 99999999)
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccAlicloudWafDomainDataSourceConfig(rand, map[string]string{
@@ -51,9 +53,9 @@ func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
 			"names.#":                     "1",
 			"ids.#":                       "1",
 			"domains.#":                   "1",
-			"domains.0.id":                fmt.Sprintf("tf-testacc%s%d.wafqa3.com", defaultRegionToTest, rand),
-			"domains.0.domain":            fmt.Sprintf("tf-testacc%s%d.wafqa3.com", defaultRegionToTest, rand),
-			"domains.0.domain_name":       fmt.Sprintf("tf-testacc%s%d.wafqa3.com", defaultRegionToTest, rand),
+			"domains.0.id":                fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand),
+			"domains.0.domain":            fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand),
+			"domains.0.domain_name":       fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand),
 			"domains.0.cluster_type":      "PhysicalCluster",
 			"domains.0.cname":             CHECKSET,
 			"domains.0.connection_time":   CHECKSET,
@@ -89,7 +91,6 @@ func TestAccAlicloudWAFDomainsDataSource(t *testing.T) {
 
 	preCheck := func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 	WafDomainsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, allConf)
 }
@@ -102,12 +103,14 @@ func testAccAlicloudWafDomainDataSourceConfig(rand int, attrMap map[string]strin
 
 	config := fmt.Sprintf(`
 		variable "name" {
-      		default = "tf-testacc%s%d.wafqa3.com"
+      		default = "tf-testacc%s%d.alicloud-provider.cn"
 		}
+
+		data "alicloud_waf_instances" "default" {}
 
 		resource "alicloud_waf_domain" "default" {
 			domain_name = "${var.name}"
-			instance_id = "%s"
+			instance_id = data.alicloud_waf_instances.default.ids.0
 			is_access_product = "Off"
 			source_ips = ["1.1.1.1"]
 			cluster_type = "PhysicalCluster"
@@ -131,6 +134,6 @@ func testAccAlicloudWafDomainDataSourceConfig(rand int, attrMap map[string]strin
 			%s
 			  enable_details = true
 		}
-`, defaultRegionToTest, rand, os.Getenv("ALICLOUD_WAF_INSTANCE_ID"), strings.Join(pairs, "\n  "))
+`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
 	return config
 }

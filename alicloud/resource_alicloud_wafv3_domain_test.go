@@ -11,6 +11,7 @@ import (
 
 // Case 1
 func TestAccAlicloudWafv3Domain_basic2308(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.WAFV3SupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafv3DomainMap2308)
