@@ -25,35 +25,37 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = "${var.name}"
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id       = "${alicloud_vpc.default.id}"
+  vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/21"
-  zone_id      = "${data.alicloud_zones.default.zones.0.id}"
-  vswitch_name = "${var.name}"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id        = "${alicloud_vpc.default.id}"
-  specification = "Small"
-  name          = "${var.name}"
+  vpc_id               = alicloud_vpc.default.id
+  internet_charge_type = "PayByLcu"
+  nat_gateway_name     = var.name
+  nat_type             = "Enhanced"
+  vswitch_id           = alicloud_vswitch.default.id
 }
 
 resource "alicloud_eip_address" "default" {
-  address_name = "${var.name}"
+  address_name = var.name
 }
 
 resource "alicloud_eip_association" "default" {
-  allocation_id = "${alicloud_eip_address.default.id}"
-  instance_id   = "${alicloud_nat_gateway.default.id}"
+  allocation_id = alicloud_eip_address.default.id
+  instance_id   = alicloud_nat_gateway.default.id
 }
 
 resource "alicloud_forward_entry" "default" {
-  forward_table_id = "${alicloud_nat_gateway.default.forward_table_ids}"
-  external_ip      = "${alicloud_eip_address.default.ip_address}"
+  forward_table_id = alicloud_nat_gateway.default.forward_table_ids
+  external_ip      = alicloud_eip_address.default.ip_address
   external_port    = "80"
   ip_protocol      = "tcp"
   internal_ip      = "172.16.0.3"
@@ -61,7 +63,7 @@ resource "alicloud_forward_entry" "default" {
 }
 
 data "alicloud_forward_entries" "default" {
-  forward_table_id = "${alicloud_forward_entry.default.forward_table_id}"
+  forward_table_id = alicloud_forward_entry.default.forward_table_id
 }
 ```
 
