@@ -256,6 +256,7 @@ resource "alicloud_db_instance" "example" {
   zone_id                  = data.alicloud_db_zones.example.ids.1
   vswitch_id               = alicloud_vswitch.example.id
   db_instance_storage_type = "cloud_essd"
+  category                 = "serverless_basic"
   serverless_config {
     max_capacity = 8
     min_capacity = 0.5
@@ -460,7 +461,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
 
-* `category` - (Optional, Available in 1.187.0+) The RDS edition of the instance. Valid values:
+* `category` - (Optional, Available in 1.187.0+) The RDS edition of the instance. If you want to create a serverless instance, you must use this value. Valid values:
   * **Basic**: Basic Edition.
   * **HighAvailability**: High-availability Edition.
   * **AlwaysOn**: Cluster Edition.
