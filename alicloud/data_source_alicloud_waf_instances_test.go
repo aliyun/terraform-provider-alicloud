@@ -6,10 +6,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudWAFInstancesDataSource(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	rand := acctest.RandInt()
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudWafInstanceDataSourceConfig(rand, map[string]string{
@@ -94,7 +97,6 @@ func TestAccAlicloudWAFInstancesDataSource(t *testing.T) {
 
 	var perCheck = func() {
 		testAccPreCheck(t)
-		testAccPreCheckWithEnvVariable(t, "ALICLOUD_WAF_INSTANCE_ID")
 	}
 
 	wafInstancesRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, perCheck, idsConf, statusConf, instanceSourceConf, resourceGroupIdConf, allConf)

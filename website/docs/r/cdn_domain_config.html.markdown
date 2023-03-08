@@ -22,7 +22,7 @@ Basic Usage
 ```terraform
 # Create a new Domain config.
 resource "alicloud_cdn_domain_new" "domain" {
-  domain_name = "mycdndomain.xiaozhu.com"
+  domain_name = "mycdndomain.alicloud-provider.cn"
   cdn_type    = "web"
   scope       = "overseas"
   sources {

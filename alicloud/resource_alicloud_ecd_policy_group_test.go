@@ -281,11 +281,11 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_list": "[white:],baidu.com,sina.com",
+					"domain_list": "[white:],alicloud-provider.cn,sina.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_list": "[white:],baidu.com,sina.com",
+						"domain_list": "[white:],alicloud-provider.cn,sina.com",
 					}),
 				),
 			},
@@ -327,7 +327,7 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 						},
 					},
 					"watermark_type":         "EndUserId",
-					"domain_list":            "[white:],baidu.com",
+					"domain_list":            "[white:],alicloud-provider.cn",
 					"watermark_transparency": "LIGHT",
 					"visual_quality":         "medium",
 				}),
@@ -341,7 +341,7 @@ func TestAccAlicloudECDPolicyGroup_basic0(t *testing.T) {
 						"authorize_security_policy_rules.#": "2",
 						"authorize_access_policy_rules.#":   "2",
 						"watermark_type":                    "EndUserId",
-						"domain_list":                       "[white:],baidu.com",
+						"domain_list":                       "[white:],alicloud-provider.cn",
 						"watermark_transparency":            "LIGHT",
 						"visual_quality":                    "medium",
 					}),

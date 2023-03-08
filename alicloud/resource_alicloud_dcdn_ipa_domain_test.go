@@ -127,7 +127,7 @@ func TestAccAlicloudDCDNIpaDomain_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacccn-%d.xiaozhu.com", rand)
+	name := fmt.Sprintf("tf-testacccn-%d.alicloud-provider.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNIpaDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -143,7 +143,7 @@ func TestAccAlicloudDCDNIpaDomain_basic0(t *testing.T) {
 					"domain_name": "${var.domain_name}",
 					"sources": []map[string]interface{}{
 						{
-							"content":  "www.xiaozhu.com",
+							"content":  "www.alicloud-provider.cn",
 							"port":     "8898",
 							"priority": "20",
 							"type":     "domain",
@@ -233,7 +233,7 @@ func TestAccAlicloudDCDNIpaDomain_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacccn-%d.xiaozhu.com", rand)
+	name := fmt.Sprintf("tf-testacccn-%d.alicloud-provider.cn", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDCDNIpaDomainBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -249,7 +249,7 @@ func TestAccAlicloudDCDNIpaDomain_basic1(t *testing.T) {
 					"domain_name": "${var.domain_name}",
 					"sources": []map[string]interface{}{
 						{
-							"content":  "www.xiaozhu.com",
+							"content":  "www.alicloud-provider.cn",
 							"port":     "8898",
 							"priority": "20",
 							"type":     "domain",
