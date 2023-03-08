@@ -37,9 +37,11 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_nat_gateway" "default" {
-  vpc_id        = alicloud_vpc.default.id
-  specification = "Small"
-  name          = var.name
+  vpc_id               = alicloud_vpc.default.id
+  internet_charge_type = "PayByLcu"
+  nat_gateway_name     = var.name
+  nat_type             = "Enhanced"
+  vswitch_id           = alicloud_vswitch.default.id
 }
 
 resource "alicloud_eip_address" "default" {
@@ -60,6 +62,7 @@ resource "alicloud_forward_entry" "default" {
   internal_port    = "8080"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
