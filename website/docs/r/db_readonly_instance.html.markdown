@@ -144,6 +144,16 @@ The following arguments are supported:
   - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
   - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
   - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
+* `instance_charge_type` - (Optional, Available in 1.201.0+) Valid values are `Prepaid`, `Postpaid`, Default to `Postpaid`. The interval between the two conversion operations must be greater than 15 minutes. Only when this parameter is `Postpaid`, the instance can be released. 
+* `period` - (Optional, Available in 1.201.0+) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
+* `auto_renew` - (Optional, Available in 1.201.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
+* `auto_renew_period` - (Optional, Available in 1.201.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
+* `db_instance_storage_type` - (Optional, Available in 1.201.0+) The storage type of the instance. Valid values:
+  - local_ssd: specifies to use local SSDs. This value is recommended.
+  - cloud_ssd: specifies to use standard SSDs.
+  - cloud_essd: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
 ## Attributes Reference
 
