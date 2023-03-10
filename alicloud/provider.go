@@ -847,6 +847,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheis":                                  dataSourceAlicloudArmsPrometheis(),
 			"alicloud_ocean_base_instances":                             dataSourceAlicloudOceanBaseInstances(),
 			"alicloud_chatbot_agents":                                   dataSourceAlicloudChatbotAgents(),
+			"alicloud_arms_integration_exporters":                       dataSourceAlicloudArmsIntegrationExporters(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1588,6 +1589,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oos_default_patch_baseline":                            resourceAlicloudOosDefaultPatchBaseline(),
 			"alicloud_ocean_base_instance":                                   resourceAlicloudOceanBaseInstance(),
 			"alicloud_chatbot_publish_task":                                  resourceAlicloudChatbotPublishTask(),
+			"alicloud_arms_integration_exporter":                             resourceAlicloudArmsIntegrationExporter(),
 		},
 
 		ConfigureFunc: providerConfigure,
