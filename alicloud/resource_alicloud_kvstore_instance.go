@@ -556,7 +556,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	r_kvstoreService := R_kvstoreService{client}
 	object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_kvstore_instance r_kvstoreService.DescribeKvstoreInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -576,52 +576,56 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	d.Set("bandwidth", object.Bandwidth)
-	d.Set("capacity", object.Capacity)
+	d.Set("bandwidth", object["Bandwidth"])
+	d.Set("capacity", object["Capacity"])
 
-	if object.Config != "" {
+	gotConfigs := make(map[string]interface{})
+	if v, ok := d.GetOk("config"); ok && v != nil {
+		gotConfigs = v.(map[string]interface{})
+	}
+	if object["Config"] != "" {
 		configMap := make(map[string]string)
-		config, err := convertJsonStringToMap(object.Config)
+		config, err := convertJsonStringToMap(fmt.Sprint(object["Config"]))
 		if err != nil {
 			return WrapError(err)
 		}
 		for k, v := range config {
+			// There is an openapi bug that it will return all of configs even through the config does not specified by user.
+			// This workaround is not prefect when user set the configs
+			if _, ok := gotConfigs[k]; !ok && len(gotConfigs) > 0 {
+				continue
+			}
 			configMap[k] = fmt.Sprint(v)
 		}
 		d.Set("config", configMap)
 	}
 
-	d.Set("connection_domain", object.ConnectionDomain)
-	d.Set("db_instance_name", object.InstanceName)
-	d.Set("instance_name", object.InstanceName)
-	d.Set("end_time", object.EndTime)
-	d.Set("engine_version", object.EngineVersion)
-	d.Set("instance_class", object.InstanceClass)
-	d.Set("instance_release_protection", object.InstanceReleaseProtection)
-	d.Set("instance_type", object.InstanceType)
-	d.Set("maintain_end_time", object.MaintainEndTime)
-	d.Set("maintain_start_time", object.MaintainStartTime)
-	d.Set("node_type", object.NodeType)
-	d.Set("payment_type", object.ChargeType)
-	d.Set("instance_charge_type", object.ChargeType)
+	d.Set("connection_domain", object["ConnectionDomain"])
+	d.Set("db_instance_name", object["InstanceName"])
+	d.Set("instance_name", object["InstanceName"])
+	d.Set("end_time", object["EndTime"])
+	d.Set("engine_version", object["EngineVersion"])
+	d.Set("instance_class", object["InstanceClass"])
+	d.Set("instance_release_protection", object["InstanceReleaseProtection"])
+	d.Set("instance_type", object["InstanceType"])
+	d.Set("maintain_end_time", object["MaintainEndTime"])
+	d.Set("maintain_start_time", object["MaintainStartTime"])
+	d.Set("node_type", object["NodeType"])
+	d.Set("payment_type", object["ChargeType"])
+	d.Set("instance_charge_type", object["ChargeType"])
 
-	d.Set("private_ip", object.PrivateIp)
-	d.Set("qps", object.QPS)
-	d.Set("resource_group_id", object.ResourceGroupId)
-	d.Set("status", object.InstanceStatus)
-
-	tags := make(map[string]string)
-	for _, t := range object.Tags.Tag {
-		if !ignoredTags(t.Key, t.Value) {
-			tags[t.Key] = t.Value
-		}
+	d.Set("private_ip", object["PrivateIp"])
+	d.Set("qps", object["QPS"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("status", object["InstanceStatus"])
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
 	}
-	d.Set("tags", tags)
-	d.Set("vswitch_id", object.VSwitchId)
-	d.Set("vpc_auth_mode", object.VpcAuthMode)
-	d.Set("zone_id", object.ZoneId)
-	d.Set("availability_zone", object.ZoneId)
-	d.Set("secondary_zone_id", object.SecondaryZoneId)
+	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("vpc_auth_mode", object["VpcAuthMode"])
+	d.Set("zone_id", object["ZoneId"])
+	d.Set("availability_zone", object["ZoneId"])
+	d.Set("secondary_zone_id", object["SecondaryZoneId"])
 	describeBackupPolicyObject, err := r_kvstoreService.DescribeBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -658,7 +662,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("security_ip_group_name", describeSecurityIpsObject.SecurityIpGroupName)
 	d.Set("security_ips", strings.Split(describeSecurityIpsObject.SecurityIpList, ","))
 
-	if object.ChargeType == string(PrePaid) {
+	if fmt.Sprint(object["ChargeType"]) == string(PrePaid) {
 
 		describeInstanceAutoRenewalAttributeObject, err := r_kvstoreService.DescribeInstanceAutoRenewalAttribute(d.Id())
 		if err != nil {
@@ -677,21 +681,23 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	rKvstoreService := RKvstoreService{client}
+	if object["IsSupportTDE"].(bool) {
+		rKvstoreService := RKvstoreService{client}
 
-	describeTDEStatusObject, err := rKvstoreService.DescribeInstanceTDEStatus(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("tde_status", convertModifyInstanceTDERequest(describeTDEStatusObject["TDEStatus"]))
+		describeTDEStatusObject, err := rKvstoreService.DescribeInstanceTDEStatus(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("tde_status", convertModifyInstanceTDERequest(describeTDEStatusObject["TDEStatus"]))
 
-	encryptionKeyObject, err := rKvstoreService.DescribeEncryptionKey(d.Id())
-	if err != nil {
-		return WrapError(err)
+		encryptionKeyObject, err := rKvstoreService.DescribeEncryptionKey(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("encryption_key", encryptionKeyObject["EncryptionKey"])
+		d.Set("encryption_name", encryptionKeyObject["EncryptionName"])
+		d.Set("role_arn", encryptionKeyObject["RoleArn"])
 	}
-	d.Set("encryption_key", encryptionKeyObject["EncryptionKey"])
-	d.Set("encryption_name", encryptionKeyObject["EncryptionName"])
-	d.Set("role_arn", encryptionKeyObject["RoleArn"])
 
 	return nil
 }
@@ -711,7 +717,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 		target := d.Get("payment_type").(string)
-		if object.ChargeType != target {
+		if fmt.Sprint(object["ChargeType"]) != target {
 			if target == "PrePaid" {
 				request := r_kvstore.CreateTransformToPrePaidRequest()
 				request.InstanceId = d.Id()
@@ -806,12 +812,13 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	request.DBInstanceId = d.Id()
 	if !d.IsNewResource() && d.HasChange("auto_renew") {
 		update = true
-		request.AutoRenew = convertBoolToString(d.Get("auto_renew").(bool))
 	}
+	request.AutoRenew = convertBoolToString(d.Get("auto_renew").(bool))
 	if !d.IsNewResource() && d.HasChange("auto_renew_period") {
 		update = true
-		request.Duration = convertIntergerToString(d.Get("auto_renew_period").(int))
 	}
+	request.Duration = convertIntergerToString(d.Get("auto_renew_period").(int))
+
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyInstanceAutoRenewalAttribute(request)
@@ -1035,7 +1042,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	modifyDBInstanceConnectionStringReq.IPType = "Private"
 	if update {
 		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
-		modifyDBInstanceConnectionStringReq.CurrentConnectionString = object.ConnectionDomain
+		modifyDBInstanceConnectionStringReq.CurrentConnectionString = fmt.Sprint(object["ConnectionDomain"])
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyDBInstanceConnectionString(modifyDBInstanceConnectionStringReq)
 		})
@@ -1268,6 +1275,21 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudKvstoreInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+
+	r_kvstoreService := R_kvstoreService{client}
+	instance, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	if fmt.Sprint(instance["ChargeType"]) == string(PrePaid) {
+		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_kvstore_instance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	request := r_kvstore.CreateDeleteInstanceRequest()
 	request.InstanceId = d.Id()
 	request.RegionId = client.RegionId
@@ -1316,7 +1338,7 @@ func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	m := make(map[string]interface{})
-	err = json.Unmarshal([]byte(object.Config), &m)
+	err = json.Unmarshal([]byte(fmt.Sprint(object["Config"])), &m)
 	if err != nil {
 		return WrapError(err)
 	}

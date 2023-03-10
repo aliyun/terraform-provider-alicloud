@@ -86,6 +86,13 @@ resource "alicloud_kvstore_instance" "example" {
 }
 ```
 
+### Deleting `alicloud_kvstore_instance` or removing it from your configuration
+
+The `alicloud_kvstore_instance` resource allows you to manage `payment_type = "Prepaid"` db instance, but Terraform cannot destroy it.
+From version 1.201.0+, deleting the subscription resource or removing it from your configuration will remove it 
+from your state file and management, but will not destroy the DB Instance.
+You can resume managing the subscription db instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:

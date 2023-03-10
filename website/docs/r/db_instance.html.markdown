@@ -270,7 +270,7 @@ resource "alicloud_db_instance" "example" {
 ### Deleting `alicloud_db_instance` or removing it from your configuration
 
 The `alicloud_db_instance` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your statefile and management, but will not destroy the DB Instance.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the DB Instance.
 You can resume managing the subscription db instance via the AlibabaCloud Console.
 
 ## Argument Reference
