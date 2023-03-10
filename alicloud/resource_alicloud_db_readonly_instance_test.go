@@ -745,7 +745,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
@@ -757,14 +757,14 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.2.id
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.zones.2.id
+ zone_id = data.alicloud_db_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
@@ -789,7 +789,7 @@ resource "alicloud_db_instance" "default" {
 
 data "alicloud_db_instance_classes" "read" {
     db_instance_id = alicloud_db_instance.default.id 
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
@@ -884,7 +884,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
@@ -896,14 +896,14 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.2.id
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.zones.2.id
+ zone_id = data.alicloud_db_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
@@ -948,7 +948,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
 	engine_version = "10.0"
     category = "HighAvailability"
@@ -960,14 +960,14 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.2.id
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.zones.2.id
+ zone_id = data.alicloud_db_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
@@ -987,7 +987,7 @@ resource "alicloud_db_instance" "default" {
 
 data "alicloud_db_instance_classes" "read" {
     db_instance_id = alicloud_db_instance.default.id 
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
 	engine_version = "10.0"
     category = "HighAvailability"
@@ -1012,7 +1012,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "SQLServer"
 	engine_version = "2019_ent"
     category = "AlwaysOn"
@@ -1024,14 +1024,14 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.2.id
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.zones.2.id
+ zone_id = data.alicloud_db_zones.default.ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
@@ -1052,7 +1052,7 @@ resource "alicloud_db_instance" "default" {
 
 data "alicloud_db_instance_classes" "read" {
     db_instance_id = alicloud_db_instance.default.id 
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "SQLServer"
 	engine_version = "2019_ent"
  	db_instance_storage_type = "cloud_essd"
