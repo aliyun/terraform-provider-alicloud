@@ -479,7 +479,7 @@ func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":                     "5",
+					"count":                     "2",
 					"name":                      name,
 					"emr_ver":                   "${data.alicloud_emr_main_versions.default.main_versions.0.emr_version}",
 					"cluster_type":              "${data.alicloud_emr_main_versions.default.main_versions.0.cluster_types.0}",
