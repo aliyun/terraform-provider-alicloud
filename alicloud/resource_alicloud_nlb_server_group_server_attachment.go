@@ -111,7 +111,7 @@ func resourceAlicloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Conflict.Lock"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
