@@ -954,20 +954,27 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
-	if !d.IsNewResource() || d.HasChange("user_data") {
-		dataRequest := ecs.CreateDescribeUserDataRequest()
-		dataRequest.RegionId = client.RegionId
-		dataRequest.InstanceId = d.Id()
-		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-			return ecsClient.DescribeUserData(dataRequest)
-		})
+	dataRequest := ecs.CreateDescribeUserDataRequest()
+	dataRequest.RegionId = client.RegionId
+	dataRequest.InstanceId = d.Id()
+	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+		return ecsClient.DescribeUserData(dataRequest)
+	})
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), dataRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(dataRequest.GetActionName(), raw, dataRequest.RpcRequest, dataRequest)
+	userDataResponse, _ := raw.(*ecs.DescribeUserDataResponse)
+	if userDataResponse.UserData != "" {
+		if v, ok := d.GetOk("user_data"); ok {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+			if base64DecodeError == nil {
+				d.Set("user_data", userDataResponse.UserData)
+			} else {
+				d.Set("user_data", userDataHashSum(userDataResponse.UserData))
+			}
 		}
-		addDebug(dataRequest.GetActionName(), raw, dataRequest.RpcRequest, dataRequest)
-		response, _ := raw.(*ecs.DescribeUserDataResponse)
-		d.Set("user_data", userDataHashSum(response.UserData))
 	}
 
 	if len(instance.VpcAttributes.VSwitchId) > 0 && (!d.IsNewResource() || d.HasChange("role_name")) {
