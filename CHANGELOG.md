@@ -1,4 +1,48 @@
 ## 1.201.0 (Unreleased)
+
+- **New Resource:** `alicloud_dcdn_er` [GH-5934]
+- **New Resource:** `alicloud_eflo_vpd` [GH-5963]
+- **New Resource:** `alicloud_dcdn_waf_rule` [GH-5969]
+- **New Resource:** `alicloud_actiontrail_global_events_storage_region` [GH-5969]
+- **New Data Source:** `alicloud_actiontrail_global_events_storage_region` [GH-5969]
+- **New Data Source:** `alicloud_dcdn_waf_rules` [GH-5969]
+- **New Data Source:** `alicloud_eflo_vpds` [GH-5963]
+
+ENHANCEMENTS:
+
+- resource/alicloud_vswitch: Adds new attribute enable_ipv6,ipv6_cidr_block_mask,ipv6_cidr_block [GH-5714]
+- resource/alicloud_havip_attachment: Adds new attribute instance_type [GH-5951]
+- resource/alicloud_resource_manager_resource_directory: Support new attribute member_deletion_status. [GH-5985]
+- resource/alicloud_cen_transit_router_route_table: Added the field tags [GH-5982]
+- resource/alicloud_rds_account:Add error code [GH-5979]
+- resource/alicloud_db_readonly_instance : Read-only instance adaptation pay as you go. [GH-5936]
+- resource/alicloud_drds_instance: Adds new attribute mysql_version [GH-5953]
+- resource/alicloud_instance: Support new attribute dedicated_host_id. [GH-5968]
+- resource/alicloud_db_instance : Update Document. [GH-5970]
+- resource/alicloud_polardb_endpoint: polardb support endpoint db_endpoint_description [GH-5964]
+- resource/alicloud_oos_patch_baseline: Adds the new attribute enumeration value AlmaLinux [GH-5959]
+- resource/alicloud_alikafka_instance: Support new attribute io_max_spec. [GH-5966]
+- docs: Improves the docs example [GH-5967]
+- docs/forward_entry: Improves the docs example [GH-5972]
+- testcase/alicloud_db_readonly_instance : Repair of automation test failure in Germany region [GH-5987]
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixes the user data diff error when using base64 encoding [GH-5989]
+- resource/alicloud_cms_site_monitor: Fix English lower case bug. [GH-5984]
+- resource/alicloud_nlb_server_group_server_attachment: fix test case TestAccAlicloudNLBServerGroupServerAttachment_basic0. Add retry error code Conflict.Lock when creating. [GH-5980]
+- resource/alicloud_kvstore_instance: Fixes the InstanceType.NotSupport error when running terraform plan; Fixes the setting auto_renew does not work bug [GH-5976]
+- resource/alicloud_waf_certificate: Fix Test Cases. resource_alicloud_waf_domain: Fix Test Cases. [GH-5971]
+- resource_alicloud_waf_certificate_test: Fix Test Cases. [GH-5971]
+- resource/alicloud_vpc_traffic_mirror_filter: Fix the verification error of traffic_mirror_filter_description and traffic_mirror_filter_name attribute. [GH-5958]
+- resource/alicloud_dms_enterprise_instance: fixed the data_link_name to Computed. [GH-5958]
+- datasource/alicloud_vpc_traffic_mirror_filter_egress_rules: Fix paging query errors. [GH-5958]
+- datasource/alicloud_vpc_traffic_mirror_filter_ingress_rules: Fix paging query errors. [GH-5958]
+- data_source_alicloud_waf_domains: Fix Test Cases. [GH-5971]
+- data_source_alicloud_waf_certificates: Fix Test Cases. [GH-5971]
+- data_source_alicloud_waf_instances: Fix Test Cases. [GH-5971]
+
+
 ## 1.200.0 (March 03, 2023)
 
 - **New Resource:** `alicloud_wafv3_instance` ([#5919](https://github.com/aliyun/terraform-provider-alicloud/issues/5919))
