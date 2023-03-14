@@ -59,5 +59,5 @@ The following attributes are exported:
 RDS record can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_dns_record.example abc123456
+$ terraform import alicloud_dns_record.example <id>
 ```
