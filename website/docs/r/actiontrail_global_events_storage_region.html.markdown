@@ -38,4 +38,4 @@ The following attributes are exported:
 ## Import
 
 Global events storage region not can be imported.
-```
+
