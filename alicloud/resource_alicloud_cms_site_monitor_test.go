@@ -140,6 +140,36 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCmsSiteMonitor_basic1(t *testing.T) {
+	resourceName := "alicloud_cms_site_monitor.basic"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceName,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckCmsSiteMonitorDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccCmsSiteMonitor_basic1(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "task_name", "tf-testAccCmsSiteMonitor_basic"),
+					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "interval", "5"),
+					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.basic", "address", "http://www.alibabacloud.com"),
+				),
+			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"interval"},
+			},
+		},
+	})
+}
+
 func testAccCheckCmsSiteMonitorDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 
@@ -219,6 +249,21 @@ func testAccCmsSiteMonitor_updateAfter() string {
 			city = "572"
 			isp = "465"
 		}
+	}
+	`)
+}
+
+func testAccCmsSiteMonitor_basic1() string {
+	return fmt.Sprintf(`
+	resource "alicloud_cms_site_monitor" "basic" {
+	  address = "http://www.alibabacloud.com"
+	  task_name = "tf-testAccCmsSiteMonitor_basic"
+	  task_type = "PING"
+	  interval = 5
+	  isp_cities {
+		  city = "546"
+		  isp = "465"
+	  }
 	}
 	`)
 }
