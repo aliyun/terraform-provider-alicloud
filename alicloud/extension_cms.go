@@ -22,7 +22,7 @@ const (
 
 const (
 	SiteMonitorHTTP = "HTTP"
-	SiteMonitorPing = "Ping"
+	SiteMonitorPing = "PING"
 	SiteMonitorTCP  = "TCP"
 	SiteMonitorUDP  = "UDP"
 	SiteMonitorDNS  = "DNS"
