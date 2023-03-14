@@ -26,18 +26,24 @@ func resourceAlicloudCenTransitRouterRouteTable() *schema.Resource {
 			Update: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"dry_run": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"transit_router_route_table_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"transit_router_route_table_description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"tags": tagsSchema(),
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"transit_router_route_table_id": {
 				Type:     schema.TypeString,
@@ -47,14 +53,9 @@ func resourceAlicloudCenTransitRouterRouteTable() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"transit_router_route_table_description": {
+			"status": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
-			},
-			"transit_router_route_table_name": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 		},
 	}
@@ -106,8 +107,9 @@ func resourceAlicloudCenTransitRouterRouteTableCreate(d *schema.ResourceData, me
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterRouteTableRead(d, meta)
+	return resourceAlicloudCenTransitRouterRouteTableUpdate(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterRouteTableRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -120,18 +122,29 @@ func resourceAlicloudCenTransitRouterRouteTableRead(d *schema.ResourceData, meta
 		}
 		return WrapError(err)
 	}
+
 	parts, err1 := ParseResourceId(d.Id(), 2)
 	if err1 != nil {
 		return WrapError(err1)
 	}
+
 	d.Set("transit_router_id", parts[0])
 	d.Set("status", object["TransitRouterRouteTableStatus"])
 	d.Set("transit_router_route_table_description", object["TransitRouterRouteTableDescription"])
 	d.Set("transit_router_route_table_name", object["TransitRouterRouteTableName"])
 	d.Set("transit_router_route_table_id", object["TransitRouterRouteTableId"])
 	d.Set("transit_router_route_table_type", object["TransitRouterRouteTableType"])
+
+	listTagResourcesObject, err := cbnService.ListTagResources(d.Id(), "TransitRouterRouteTable")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
+
 func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
@@ -140,22 +153,34 @@ func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, me
 		return WrapError(err)
 	}
 	var response map[string]interface{}
+
 	parts, err1 := ParseResourceId(d.Id(), 2)
 	if err1 != nil {
 		return WrapError(err1)
 	}
+
 	update := false
 	request := map[string]interface{}{
 		"TransitRouterRouteTableId": parts[1],
 	}
-	if d.HasChange("transit_router_route_table_description") {
+
+	if d.HasChange("tags") {
+		if err := cbnService.SetResourceTags(d, "TransitRouterRouteTable"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
+	if !d.IsNewResource() && d.HasChange("transit_router_route_table_description") {
 		update = true
 		request["TransitRouterRouteTableDescription"] = d.Get("transit_router_route_table_description")
 	}
-	if d.HasChange("transit_router_route_table_name") {
+
+	if !d.IsNewResource() && d.HasChange("transit_router_route_table_name") {
 		update = true
 		request["TransitRouterRouteTableName"] = d.Get("transit_router_route_table_name")
 	}
+
 	if update {
 		if _, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = d.Get("dry_run")
@@ -184,6 +209,7 @@ func resourceAlicloudCenTransitRouterRouteTableUpdate(d *schema.ResourceData, me
 	}
 	return resourceAlicloudCenTransitRouterRouteTableRead(d, meta)
 }
+
 func resourceAlicloudCenTransitRouterRouteTableDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
