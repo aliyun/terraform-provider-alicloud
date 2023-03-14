@@ -225,7 +225,7 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["ClientToken"] = buildClientToken("CreateEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"GA_NOT_STEADY", "StateError.Accelerator", "StateError.EndPointGroup"}) {
+			if IsExpectedErrors(err, []string{"GA_NOT_STEADY", "StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
