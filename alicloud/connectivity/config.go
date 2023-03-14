@@ -182,6 +182,7 @@ type Config struct {
 	VpcPeerEndpoint             string
 	EfloEndpoint                string
 	OceanbaseEndpoint           string
+	BeebotEndpoint              string
 }
 
 func (c *Config) loadAndValidate() error {

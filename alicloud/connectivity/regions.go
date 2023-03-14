@@ -249,3 +249,4 @@ var WAFV3SupportRegions = []Region{APSouth1, EUCentral1}
 var EfloSupportRegions = []Region{WuLanChaBu}
 var ActiontrailGlobalEventsStorageRegionSupportRegions = []Region{Hangzhou, APSouthEast1}
 var OceanBaseSupportRegions = []Region{Hangzhou}
+var ChatbotSupportRegions = []Region{Shanghai}
