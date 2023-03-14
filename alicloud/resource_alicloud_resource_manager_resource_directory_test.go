@@ -68,6 +68,26 @@ func TestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"member_deletion_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"member_deletion_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"member_deletion_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"member_deletion_status": "Disabled",
+					}),
+				),
+			},
 		},
 	})
 }
