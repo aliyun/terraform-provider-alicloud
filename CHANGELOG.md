@@ -4,6 +4,7 @@
 BUG FIXES:
 
 - resource/alicloud_vswitch: Repair the panic caused by the ipv6_cidr_block_mask value. ([#5993](https://github.com/aliyun/terraform-provider-alicloud/issues/5993))
+- resource/alicloud_emrv2_cluster: Fixes the emr paymentType subscription cluster ([#5978](https://github.com/aliyun/terraform-provider-alicloud/issues/5978))
 
 
 ## 1.201.0 (March 15, 2023)
