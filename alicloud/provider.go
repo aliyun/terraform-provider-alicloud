@@ -1129,6 +1129,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_policy_attachment":                    resourceAlicloudResourceManagerPolicyAttachment(),
 			"alicloud_dcdn_domain":                                           resourceAlicloudDcdnDomain(),
 			"alicloud_mse_cluster":                                           resourceAlicloudMseCluster(),
+			"alicloud_mse_nacos_config":                                      resourceAlicloudMSENacosConfig(),
 			"alicloud_actiontrail_trail":                                     resourceAlicloudActiontrailTrail(),
 			"alicloud_actiontrail":                                           resourceAlicloudActiontrailTrail(),
 			"alicloud_alidns_domain":                                         resourceAlicloudAlidnsDomain(),
