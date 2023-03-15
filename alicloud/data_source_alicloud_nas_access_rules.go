@@ -37,7 +37,6 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
-				Default:      "standard",
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -87,10 +86,12 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	action := "DescribeAccessRules"
 	request := make(map[string]interface{})
 	request["AccessGroupName"] = d.Get("access_group_name")
-	request["FileSystemType"] = d.Get("file_system_type")
 	request["RegionId"] = client.Region
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	if v, ok := d.GetOk("file_system_type"); ok && v.(string) != "" {
+		request["FileSystemType"] = v
+	}
 	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {

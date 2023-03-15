@@ -48,7 +48,7 @@ The following arguments are supported:
 * `rw_access_type` - (Optional) Read-write permission type: `RDWR` (default), `RDONLY`.
 * `user_access_type` - (Optional) User permission type: `no_squash` (default), `root_squash`, `all_squash`.
 * `priority` - (Optional) Priority level. Range: 1-100. Default value: `1`.
-* `file_system_type` - (Optional, Available in v1.199.0+) the type of the file system. 
+* `file_system_type` - (Optional, Available in v1.202.0+) the type of the file system. 
                                     Valid values:
                                     `standard` (Default),
                                     `extreme`.
@@ -65,6 +65,6 @@ The following attributes are exported:
 Nas Access Rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nas_access_rule.foo tf-testAccNasConfigName:1
+$ terraform import alicloud_nas_access_rule.foo tf-testAccNasConfigName:1:extreme
 ```
 

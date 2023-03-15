@@ -39,9 +39,9 @@ The following arguments are supported:
 * `user_access` - (Optional) Filter results by a specific UserAccess. 
 * `rw_access` - (Optional) Filter results by a specific RWAccess. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `file_system_type` - (Optional, Available in v1.199.0+) the type of the file system. 
+* `file_system_type` - (Optional, Available in v1.202.0+) the type of the file system. 
                                     Valid values:
-                                    `standard` (Default),
+                                    `standard`,
                                     `extreme`.
 
 ## Attributes Reference

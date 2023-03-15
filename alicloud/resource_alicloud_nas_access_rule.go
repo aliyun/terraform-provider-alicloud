@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -76,10 +77,12 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	}
 	request["RegionId"] = client.Region
 	request["AccessGroupName"] = d.Get("access_group_name")
-	request["FileSystemType"] = d.Get("file_system_type")
 	request["SourceCidrIp"] = d.Get("source_cidr_ip")
 	if v, ok := d.GetOk("rw_access_type"); ok && v.(string) != "" {
 		request["RWAccessType"] = v
+	}
+	if v, ok := d.GetOk("file_system_type"); ok && v.(string) != "" {
+		request["FileSystemType"] = v
 	}
 	if v, ok := d.GetOk("user_access_type"); ok && v.(string) != "" {
 		request["UserAccessType"] = v
@@ -112,6 +115,9 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	var response map[string]interface{}
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
+	}
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		err = WrapError(err)
@@ -170,6 +176,9 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
+	}
 	object, err := nasService.DescribeNasAccessRule(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
@@ -201,6 +210,9 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
+	}
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
 	}
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {

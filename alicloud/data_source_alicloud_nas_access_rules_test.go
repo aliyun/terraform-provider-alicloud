@@ -75,43 +75,36 @@ func TestAccAlicloudNASAccessRuleExtremeDataSource(t *testing.T) {
 		existConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 	}
 	RWAccessConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 	}
 	UserAccessConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"user_access":       `"${alicloud_nas_access_rule.default.user_access_type}_fake"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
@@ -126,7 +119,6 @@ func TestAccAlicloudNASAccessRuleExtremeDataSource(t *testing.T) {
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
@@ -134,7 +126,6 @@ func TestAccAlicloudNASAccessRuleExtremeDataSource(t *testing.T) {
 			"rw_access":         `"${alicloud_nas_access_rule.default.rw_access_type}_fake"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}"]`,
 			"source_cidr_ip":    `"${alicloud_nas_access_rule.default.source_cidr_ip}_fake"`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 	}
 	accessRuleCheckInfo.dataSourceTestCheck(t, rand, ipConf, RWAccessConf, UserAccessConf, idsConf, allConf)
@@ -153,6 +144,7 @@ resource "alicloud_nas_access_group" "default" {
         	access_group_name = "${var.name}"
 	        access_group_type = "Vpc"
 	        description = "tf-testAccAccessGroupsdatasource"
+			file_system_type = "standard"
 }
 resource "alicloud_nas_access_rule" "default" {
         	access_group_name = "${alicloud_nas_access_group.default.access_group_name}"
@@ -191,6 +183,7 @@ resource "alicloud_nas_access_rule" "default" {
 	        file_system_type = "extreme"
 }
 data "alicloud_nas_access_rules" "default" {
+		file_system_type = "${alicloud_nas_access_group.default.file_system_type}"
 		%s
 }`, rand, strings.Join(pairs, "\n  "))
 	return config
