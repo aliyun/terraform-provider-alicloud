@@ -181,9 +181,12 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 	}
 	d.Set("tags", tagsToMap(listTagResourcesObject))
 
-	Ipv6CidrBlock := strings.Split(object["Ipv6CidrBlock"].(string), "/")
-
-	d.Set("ipv6_cidr_block_mask", formatInt(Ipv6CidrBlock[1]))
+	if v, ok := object["Ipv6CidrBlock"]; ok && fmt.Sprint(v) != "" {
+		Ipv6CidrBlock := strings.Split(v.(string), "/")
+		if len(Ipv6CidrBlock) == 2 {
+			d.Set("ipv6_cidr_block_mask", formatInt(Ipv6CidrBlock[1]))
+		}
+	}
 
 	return nil
 }
