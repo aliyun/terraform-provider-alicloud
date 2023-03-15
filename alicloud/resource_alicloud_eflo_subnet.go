@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -12,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudEfloVpd() *schema.Resource {
+func resourceAlicloudEfloSubnet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEfloVpdCreate,
-		Read:   resourceAlicloudEfloVpdRead,
-		Update: resourceAlicloudEfloVpdUpdate,
-		Delete: resourceAlicloudEfloVpdDelete,
+		Create: resourceAlicloudEfloSubnetCreate,
+		Read:   resourceAlicloudEfloSubnetRead,
+		Update: resourceAlicloudEfloSubnetUpdate,
+		Delete: resourceAlicloudEfloSubnetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,24 +42,47 @@ func resourceAlicloudEfloVpd() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
+			"message": {
+				Computed: true,
+				Type:     schema.TypeString,
+			},
 			"resource_group_id": {
-				Optional: true,
-				ForceNew: true,
+				Computed: true,
 				Type:     schema.TypeString,
 			},
 			"status": {
 				Computed: true,
 				Type:     schema.TypeString,
 			},
-			"vpd_name": {
+			"subnet_id": {
+				Computed: true,
+				Type:     schema.TypeString,
+			},
+			"subnet_name": {
 				Required: true,
+				Type:     schema.TypeString,
+			},
+			"type": {
+				Optional:     true,
+				ForceNew:     true,
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice([]string{"OOB", "LB"}, false),
+			},
+			"vpd_id": {
+				Required: true,
+				ForceNew: true,
+				Type:     schema.TypeString,
+			},
+			"zone_id": {
+				Required: true,
+				ForceNew: true,
 				Type:     schema.TypeString,
 			},
 		},
 	}
 }
 
-func resourceAlicloudEfloVpdCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEfloSubnetCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	request := make(map[string]interface{})
@@ -66,19 +91,24 @@ func resourceAlicloudEfloVpdCreate(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	request["ClientToken"] = buildClientToken("CreateVpd")
-	request["VpdName"] = d.Get("vpd_name")
-	request["Cidr"] = d.Get("cidr")
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		request["ResourceGroupId"] = v
+	if v, ok := d.GetOk("vpd_id"); ok {
+		request["VpdId"] = v
 	}
+	request["SubnetName"] = d.Get("subnet_name")
+	request["ZoneId"] = d.Get("zone_id")
+	if v, ok := d.GetOk("cidr"); ok {
+		request["Cidr"] = v
+	}
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+
+	request["ClientToken"] = buildClientToken("CreateSubnet")
 	var response map[string]interface{}
-	action := "CreateVpd"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
+	action := "CreateSubnet"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &runtime)
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -91,72 +121,82 @@ func resourceAlicloudEfloVpdCreate(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eflo_vpd", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eflo_subnet", action, AlibabaCloudSdkGoERROR)
+	}
+	subnetIdValue, err := jsonpath.Get("$.Content.SubnetId", response)
+	if err != nil || subnetIdValue == nil {
+		return WrapErrorf(err, IdMsg, "alicloud_eflo_subnet")
 	}
 
-	if v, err := jsonpath.Get("$.Content.VpdId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_eflo_vpd")
-	} else {
-		d.SetId(fmt.Sprint(v))
-	}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, efloService.EfloVpdStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprint(request["VpdId"], ":", subnetIdValue))
+	stateConf := BuildStateConf([]string{}, []string{"Available", "Waiting4AssignPort"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, efloService.EfloSubnetStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudEfloVpdRead(d, meta)
+	return resourceAlicloudEfloSubnetRead(d, meta)
 }
 
-func resourceAlicloudEfloVpdRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEfloSubnetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 
-	object, err := efloService.DescribeEfloVpd(d.Id())
+	object, err := efloService.DescribeEfloSubnet(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_eflo_vpd efloService.DescribeEfloVpd Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_eflo_subnet efloService.DescribeEfloSubnet Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("vpd_id", parts[0])
+	d.Set("subnet_id", parts[1])
 	d.Set("cidr", object["Cidr"])
 	d.Set("create_time", object["CreateTime"])
 	d.Set("gmt_modified", object["GmtModified"])
+	d.Set("message", object["Message"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["Status"])
-	d.Set("vpd_name", object["VpdName"])
+	d.Set("subnet_name", object["SubnetName"])
+	d.Set("type", object["Type"])
+	d.Set("zone_id", object["ZoneId"])
 
 	return nil
 }
 
-func resourceAlicloudEfloVpdUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEfloSubnetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	conn, err := client.NewEfloClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	update := false
 	request := map[string]interface{}{
-		"VpdId":    d.Id(),
+		"VpdId":    parts[0],
+		"SubnetId": parts[1],
 		"RegionId": client.RegionId,
 	}
 
-	if d.HasChange("vpd_name") {
+	if d.HasChange("subnet_name") {
 		update = true
-		if v, ok := d.GetOk("vpd_name"); ok {
-			request["VpdName"] = v
-		}
+		request["SubnetName"] = d.Get("subnet_name")
 	}
+	request["ZoneId"] = d.Get("zone_id")
 
 	if update {
-		action := "UpdateVpd"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		action := "UpdateSubnet"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &runtime)
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,10 +212,10 @@ func resourceAlicloudEfloVpdUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
-	return resourceAlicloudEfloVpdRead(d, meta)
+	return resourceAlicloudEfloSubnetRead(d, meta)
 }
 
-func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudEfloSubnetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	efloService := EfloService{client}
 	var response map[string]interface{}
@@ -183,13 +223,18 @@ func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request := map[string]interface{}{
-
-		"VpdId": d.Id(),
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
 	}
 
-	action := "DeleteVpd"
+	request := map[string]interface{}{
+		"VpdId":    parts[0],
+		"SubnetId": parts[1],
+		"ZoneId":   d.Get("zone_id"),
+	}
+
+	action := "DeleteSubnet"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-05-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -212,7 +257,7 @@ func resourceAlicloudEfloVpdDelete(d *schema.ResourceData, meta interface{}) err
 	if fmt.Sprint(response["Code"]) == "1003" {
 		return nil
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloService.EfloVpdStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, efloService.EfloSubnetStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
