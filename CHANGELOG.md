@@ -1,4 +1,11 @@
 ## 1.202.0 (Unreleased)
+## 1.201.1 (March 15, 2023)
+
+BUG FIXES:
+
+- resource/alicloud_vswitch: Repair the panic caused by the ipv6_cidr_block_mask value. ([#5993](https://github.com/aliyun/terraform-provider-alicloud/issues/5993))
+
+
 ## 1.201.0 (March 15, 2023)
 
 - **New Resource:** `alicloud_dcdn_er` ([#5934](https://github.com/aliyun/terraform-provider-alicloud/issues/5934))
