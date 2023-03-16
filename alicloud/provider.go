@@ -849,6 +849,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ocean_base_instances":                             dataSourceAlicloudOceanBaseInstances(),
 			"alicloud_chatbot_agents":                                   dataSourceAlicloudChatbotAgents(),
 			"alicloud_arms_integration_exporters":                       dataSourceAlicloudArmsIntegrationExporters(),
+			"alicloud_service_catalog_portfolios":                       dataSourceAlicloudServiceCatalogPortfolios(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1591,6 +1592,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ocean_base_instance":                                   resourceAlicloudOceanBaseInstance(),
 			"alicloud_chatbot_publish_task":                                  resourceAlicloudChatbotPublishTask(),
 			"alicloud_arms_integration_exporter":                             resourceAlicloudArmsIntegrationExporter(),
+			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
 		},
 
 		ConfigureFunc: providerConfigure,
