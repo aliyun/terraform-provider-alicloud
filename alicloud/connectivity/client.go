@@ -1200,7 +1200,13 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		}
 
 		config := client.getSdkConfig()
-		clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(config.HttpTransport),
+		transport := config.HttpTransport
+		// Receiving proxy config from environment
+		transport.Proxy = http.ProxyFromEnvironment
+		// NOTE: FC server has a keepalive timeout of 90s, the
+		// idle timeout on client side must be less than this value.
+		transport.IdleConnTimeout = 50 * time.Second
+		clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
 			fc.WithTimeout(30), fc.WithRetryCount(DefaultClientRetryCountSmall)}
 		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
 		if err != nil {

@@ -29,6 +29,8 @@ func NewConnection() *Connection {
 	}
 
 	resty.SetTransport(&http.Transport{
+		// Receiving proxy config from environment
+		Proxy: http.ProxyFromEnvironment,
 		// NOTE: FC server has a keepalive timeout of 90s, the
 		// idle timeout on client side must be less than this
 		// value.

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/resty.v1"
 	"github.com/gorilla/websocket"
+	"gopkg.in/resty.v1"
 )
 
 // Client defines fc client
@@ -1168,3 +1168,15 @@ func (c *Client) openWebSocketConn(input ServiceInput) (*websocket.Conn, error) 
 	return ws, nil
 }
 
+// GetTempBucketToken ...
+func (c *Client) GetTempBucketToken() (*GetTempBucketTokenOutput, error) {
+	var output = new(GetTempBucketTokenOutput)
+	httpResponse, err := c.sendRequest(GetTempBucketTokenInput{}, http.MethodGet)
+	if err != nil {
+		return nil, err
+	}
+
+	output.Header = httpResponse.Header()
+	json.Unmarshal(httpResponse.Body(), output)
+	return output, nil
+}
