@@ -41,7 +41,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `file_system_type` - (Optional, Available in v1.202.0+) the type of the file system. 
                                     Valid values:
-                                    `standard`,
+                                    `standard` (Default),
                                     `extreme`.
 
 ## Attributes Reference
