@@ -109,7 +109,6 @@ func TestAccAlicloudNASAccessRuleExtremeDataSource(t *testing.T) {
 		fakeConfig: testAccCheckAlicloudAccessRuleExtremeDataSourceConfig(rand, map[string]string{
 			"access_group_name": `"${alicloud_nas_access_group.default.access_group_name}"`,
 			"ids":               `["${alicloud_nas_access_rule.default.access_rule_id}_fake"]`,
-			"file_system_type":  `"${alicloud_nas_access_rule.default.file_system_type}"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
