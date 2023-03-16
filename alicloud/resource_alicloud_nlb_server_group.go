@@ -107,6 +107,7 @@ func resourceAlicloudNlbServerGroup() *schema.Resource {
 						"http_check_method": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"HEAD", "GET"}, false),
 						},
 						"health_check_http_code": {
@@ -221,7 +222,9 @@ func resourceAlicloudNlbServerGroupCreate(d *schema.ResourceData, meta interface
 				if v, ok := healthCheckConfigArg["health_check_url"]; ok && fmt.Sprint(v) != "" {
 					healthCheckConfig["HealthCheckUrl"] = v
 				}
-				healthCheckConfig["HttpCheckMethod"] = healthCheckConfigArg["http_check_method"]
+				if v, ok := healthCheckConfigArg["http_check_method"]; ok && fmt.Sprint(v) != "" {
+					healthCheckConfig["HttpCheckMethod"] = v
+				}
 				healthCheckConfig["HealthCheckHttpCode"] = healthCheckConfigArg["health_check_http_code"]
 			}
 		}
