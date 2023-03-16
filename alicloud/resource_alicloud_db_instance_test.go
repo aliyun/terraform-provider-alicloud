@@ -2,11 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"log"
 	"strings"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -677,6 +676,16 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_storage": "50",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_storage": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -719,13 +728,13 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 					"engine":                   "SQLServer",
 					"engine_version":           "2012_std_ha",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+					"instance_storage":         "50",
 					"db_instance_storage_type": "cloud_essd",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
 					"vswitch_id":               "${local.vswitch_id}",
 					"security_group_ids":       []string{"${alicloud_security_group.default.0.id}"},
-					"monitoring_period":        "60",
+					"monitoring_period":        "300",
 					"category":                 "HighAvailability",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -733,10 +742,10 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 						"engine":                   "SQLServer",
 						"engine_version":           "2012_std_ha",
 						"instance_type":            CHECKSET,
-						"instance_storage":         "25",
+						"instance_storage":         "50",
 						"db_instance_storage_type": "cloud_essd",
 						"instance_name":            "tf-testAccDBInstanceConfig",
-						"monitoring_period":        "60",
+						"monitoring_period":        "300",
 						"zone_id":                  CHECKSET,
 						"instance_charge_type":     "Postpaid",
 						"connection_string":        CHECKSET,
@@ -757,20 +766,20 @@ variable "name" {
 	default = "%s"
 }
 data "alicloud_db_zones" "default"{
-	engine = "SQLServer"
-	engine_version = "2012"
-	instance_charge_type = "PostPaid"
-	category = "Basic"
- 	db_instance_storage_type = "cloud_essd"
+  engine = "SQLServer"
+  engine_version = "2012_std_ha"
+  instance_charge_type = "PostPaid"
+  category = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "SQLServer"
-	engine_version = "2012_std_ha"
- 	db_instance_storage_type = "cloud_essd"
-	instance_charge_type = "PostPaid"
-	category = "Basic"
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+  engine = "SQLServer"
+  engine_version = "2012_std_ha"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type = "PostPaid"
+  category = "HighAvailability"
 }
 
 data "alicloud_vpcs" "default" {
@@ -832,7 +841,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"engine_version":           "12.0",
 					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
-					"db_instance_storage_type": "cloud_ssd",
+					"db_instance_storage_type": "cloud_essd",
 					"zone_id":                  "${data.alicloud_db_instance_classes.default.instance_classes.0.zone_ids.0.id}",
 					"instance_charge_type":     "Postpaid",
 					"instance_name":            "${var.name}",
@@ -847,7 +856,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"engine_version":           "12.0",
 						"instance_storage":         CHECKSET,
 						"instance_type":            CHECKSET,
-						"db_instance_storage_type": "cloud_ssd",
+						"db_instance_storage_type": "cloud_essd",
 						"category":                 "HighAvailability",
 						"target_minor_version":     "rds_postgres_1200_20221030",
 					}),
@@ -862,6 +871,28 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					testAccCheck(map[string]string{
 						"target_minor_version": "rds_postgres_1200_20221230",
 						"upgrade_time":         "Immediate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage_type": "cloud_essd2",
+					"instance_storage":         "500",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage_type": "cloud_essd2",
+						"instance_storage":         "500",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": CHECKSET,
 					}),
 				),
 			},
@@ -896,16 +927,6 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"monitoring_period": "300",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -935,33 +956,35 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":               "PostgreSQL",
-					"engine_version":       "12.0",
-					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"instance_charge_type": "Postpaid",
-					"instance_name":        "${var.name}",
-					"vswitch_id":           "${local.vswitch_id}",
-					"security_group_ids":   []string{},
-					"monitoring_period":    "60",
-					"encryption_key":       "${alicloud_kms_key.default.id}",
-					"category":             "HighAvailability",
+					"engine":                   "PostgreSQL",
+					"engine_version":           "12.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "500",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"security_group_ids":       []string{},
+					"monitoring_period":        "60",
+					"encryption_key":           "${alicloud_kms_key.default.id}",
+					"category":                 "HighAvailability",
+					"db_instance_storage_type": "cloud_essd2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":               "PostgreSQL",
-						"engine_version":       "12.0",
-						"instance_type":        CHECKSET,
-						"instance_storage":     CHECKSET,
-						"instance_name":        "tf-testAccDBInstanceConfig",
-						"monitoring_period":    "60",
-						"zone_id":              CHECKSET,
-						"instance_charge_type": "Postpaid",
-						"connection_string":    CHECKSET,
-						"port":                 CHECKSET,
-						"security_group_id":    CHECKSET,
-						"security_group_ids.#": "0",
-						"category":             "HighAvailability",
+						"engine":                   "PostgreSQL",
+						"engine_version":           "12.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_name":            "tf-testAccDBInstanceConfig",
+						"monitoring_period":        "60",
+						"zone_id":                  CHECKSET,
+						"instance_charge_type":     "Postpaid",
+						"connection_string":        CHECKSET,
+						"port":                     CHECKSET,
+						"security_group_id":        CHECKSET,
+						"security_group_ids.#":     "0",
+						"category":                 "HighAvailability",
+						"db_instance_storage_type": "cloud_essd2",
 					}),
 				),
 			},

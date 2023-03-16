@@ -1310,26 +1310,26 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.HasChange("serverless_config") {
 		update = true
-	}
-	if v, ok := d.GetOk("serverless_config"); ok {
-		v := v.([]interface{})[0].(map[string]interface{})
-		serverlessConfig, err := json.Marshal(struct {
-			MaxCapacity float64 `json:"MaxCapacity"`
-			MinCapacity float64 `json:"MinCapacity"`
-			AutoPause   bool    `json:"AutoPause"`
-			SwitchForce bool    `json:"SwitchForce"`
-		}{
-			v["max_capacity"].(float64),
-			v["min_capacity"].(float64),
-			v["auto_pause"].(bool),
-			v["switch_force"].(bool),
-		})
-		if err != nil {
-			return WrapError(err)
+		if v, ok := d.GetOk("serverless_config"); ok {
+			v := v.([]interface{})[0].(map[string]interface{})
+			serverlessConfig, err := json.Marshal(struct {
+				MaxCapacity float64 `json:"MaxCapacity"`
+				MinCapacity float64 `json:"MinCapacity"`
+				AutoPause   bool    `json:"AutoPause"`
+				SwitchForce bool    `json:"SwitchForce"`
+			}{
+				v["max_capacity"].(float64),
+				v["min_capacity"].(float64),
+				v["auto_pause"].(bool),
+				v["switch_force"].(bool),
+			})
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Category"] = "Serverless"
+			request["Direction"] = "Serverless"
+			request["ServerlessConfiguration"] = string(serverlessConfig)
 		}
-		request["Category"] = "Serverless"
-		request["Direction"] = "Serverless"
-		request["ServerlessConfiguration"] = string(serverlessConfig)
 	}
 
 	if d.HasChange("db_instance_storage_type") {
@@ -1364,6 +1364,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
