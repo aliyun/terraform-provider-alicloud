@@ -375,7 +375,7 @@ func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "BindExist.BandwidthPackage"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
