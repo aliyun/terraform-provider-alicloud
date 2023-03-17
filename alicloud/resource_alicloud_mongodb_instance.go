@@ -631,6 +631,38 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	if d.HasChange("ssl_action") {
+		var response map[string]interface{}
+		action := "ModifyDBInstanceSSL"
+		request := make(map[string]interface{})
+		request["RegionId"] = client.RegionId
+		request["DBInstanceId"] = d.Id()
+		request["SSLAction"] = d.Get("ssl_action")
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+		d.SetPartial("ssl_action")
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudMongoDBInstanceRead(d, meta)
@@ -721,38 +753,6 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("ssl_action") {
-		var response map[string]interface{}
-		action := "ModifyDBInstanceSSL"
-		request := make(map[string]interface{})
-		request["RegionId"] = client.RegionId
-		request["DBInstanceId"] = d.Id()
-		request["SSLAction"] = d.Get("ssl_action")
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		d.SetPartial("ssl_action")
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
-	}
-
 	if d.HasChange("db_instance_storage") ||
 		d.HasChange("db_instance_class") ||
 		d.HasChange("replication_factor") || d.HasChange("readonly_replicas") {
@@ -811,7 +811,9 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 	}
+
 	d.Partial(false)
+
 	return resourceAlicloudMongoDBInstanceRead(d, meta)
 }
 
@@ -855,7 +857,9 @@ func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{"Creating", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
 	_, err = stateConf.WaitForState()
+
 	return nil
 }
