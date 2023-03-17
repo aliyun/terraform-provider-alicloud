@@ -277,7 +277,7 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS. Create a serverless instance, you must set this parameter to MySQL.
+* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB, and PPAS. Create a serverless instance, you must set this parameter to MySQL.
 
 -> **NOTE:**
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
