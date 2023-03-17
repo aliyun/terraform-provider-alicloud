@@ -1,4 +1,14 @@
 ## 1.202.0 (Unreleased)
+## 1.201.2 (March 17, 2023)
+
+BUG FIXES:
+
+- resource/alicloud_nlb_server_group_server_attachment: Add retry error code IncorrectStatus.serverGroup when deleting. ([#5996](https://github.com/aliyun/terraform-provider-alicloud/issues/5996))
+- resource/alicloud_db_instance:Fix RDS configuration change error. ([#6001](https://github.com/aliyun/terraform-provider-alicloud/issues/6001))
+- resource/alicloud_nlb_server_group: setting the attribute http_check_method to computed, Fix an error with empty http_check_method attribute. ([#6003](https://github.com/aliyun/terraform-provider-alicloud/issues/6003))
+- resource/alicloud_ga_bandwidth_package: Added retry stragety for error code BindExist.BandwidthPackage. ([#6006](https://github.com/aliyun/terraform-provider-alicloud/issues/6006))
+- docs/db_database, db_instance, db_instances, rds_clone_db_instance : Update documents. ([#6009](https://github.com/aliyun/terraform-provider-alicloud/issues/6009))
+
 ## 1.201.1 (March 15, 2023)
 
 BUG FIXES:
