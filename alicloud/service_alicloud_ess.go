@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+
 	"strconv"
 	"strings"
 	"time"
@@ -612,6 +613,27 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 		err = WrapErrorf(Error(GetNotFoundMessage("EssAttachment", id)), NotFoundMsg, ProviderERROR)
 		return
 	}
+	return response.ScalingInstances.ScalingInstance, nil
+}
+
+func (srv *EssService) DescribeInstanceByStatus(id string, status string) (instances []ess.ScalingInstance, err error) {
+	request := ess.CreateDescribeScalingInstancesRequest()
+	request.RegionId = srv.client.RegionId
+	request.ScalingGroupId = id
+	request.LifecycleState = status
+	raw, err := srv.client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+		return essClient.DescribeScalingInstances(request)
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
+			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		} else {
+			err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		return
+	}
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	response, _ := raw.(*ess.DescribeScalingInstancesResponse)
 	return response.ScalingInstances.ScalingInstance, nil
 }
 
