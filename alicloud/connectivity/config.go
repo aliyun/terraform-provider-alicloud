@@ -183,6 +183,7 @@ type Config struct {
 	EfloEndpoint                string
 	OceanbaseEndpoint           string
 	BeebotEndpoint              string
+	ComputeNestEndpoint         string
 }
 
 func (c *Config) loadAndValidate() error {
