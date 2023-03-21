@@ -842,6 +842,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_vpds":                                        dataSourceAlicloudEfloVpds(),
 			"alicloud_dcdn_waf_rules":                                   dataSourceAlicloudDcdnWafRules(),
 			"alicloud_actiontrail_global_events_storage_region":         dataSourceAlicloudActiontrailGlobalEventsStorageRegion(),
+			"alicloud_dbfs_auto_snap_shot_policies":                     dataSourceAlicloudDbfsAutoSnapShotPolicies(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_instance":                           resourceAliyunInstance(),
@@ -1574,6 +1575,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_waf_rule":                                         resourceAlicloudDcdnWafRule(),
 			"alicloud_dcdn_er":                                               resourceAlicloudDcdnEr(),
 			"alicloud_actiontrail_global_events_storage_region":              resourceAlicloudActiontrailGlobalEventsStorageRegion(),
+			"alicloud_dbfs_auto_snap_shot_policy":                            resourceAlicloudDbfsAutoSnapShotPolicy(),
 		},
 
 		ConfigureFunc: providerConfigure,
