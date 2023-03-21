@@ -1535,7 +1535,7 @@ func TestAccAlicloudECSInstanceMulti(t *testing.T) {
 					"spot_strategy":                 "NoSpot",
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
-					"user_data":                     "I_am_user_data",
+					"user_data":                     "${base64encode(\"I am the user data\")}",
 
 					"vswitch_id": "${data.alicloud_vswitches.default.ids.0}",
 					"role_name":  "${alicloud_ram_role.default.name}",
@@ -1545,6 +1545,7 @@ func TestAccAlicloudECSInstanceMulti(t *testing.T) {
 						"instance_name": name,
 						"key_name":      name,
 						"role_name":     name,
+						"user_data":     "SSBhbSB0aGUgdXNlciBkYXRh",
 					}),
 				),
 			},

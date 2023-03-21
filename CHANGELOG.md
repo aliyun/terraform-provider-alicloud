@@ -1,4 +1,66 @@
-## 1.201.0 (Unreleased)
+## 1.202.0 (Unreleased)
+## 1.201.2 (March 17, 2023)
+
+BUG FIXES:
+
+- resource/alicloud_nlb_server_group_server_attachment: Add retry error code IncorrectStatus.serverGroup when deleting. ([#5996](https://github.com/aliyun/terraform-provider-alicloud/issues/5996))
+- resource/alicloud_db_instance:Fix RDS configuration change error. ([#6001](https://github.com/aliyun/terraform-provider-alicloud/issues/6001))
+- resource/alicloud_nlb_server_group: setting the attribute http_check_method to computed, Fix an error with empty http_check_method attribute. ([#6003](https://github.com/aliyun/terraform-provider-alicloud/issues/6003))
+- resource/alicloud_ga_bandwidth_package: Added retry stragety for error code BindExist.BandwidthPackage. ([#6006](https://github.com/aliyun/terraform-provider-alicloud/issues/6006))
+- docs/db_database, db_instance, db_instances, rds_clone_db_instance : Update documents. ([#6009](https://github.com/aliyun/terraform-provider-alicloud/issues/6009))
+
+## 1.201.1 (March 15, 2023)
+
+BUG FIXES:
+
+- resource/alicloud_vswitch: Repair the panic caused by the ipv6_cidr_block_mask value. ([#5993](https://github.com/aliyun/terraform-provider-alicloud/issues/5993))
+- resource/alicloud_emrv2_cluster: Fixes the emr paymentType subscription cluster ([#5978](https://github.com/aliyun/terraform-provider-alicloud/issues/5978))
+
+## 1.201.0 (March 15, 2023)
+
+- **New Resource:** `alicloud_dcdn_er` ([#5934](https://github.com/aliyun/terraform-provider-alicloud/issues/5934))
+- **New Resource:** `alicloud_eflo_vpd` ([#5963](https://github.com/aliyun/terraform-provider-alicloud/issues/5963))
+- **New Resource:** `alicloud_dcdn_waf_rule` ([#5969](https://github.com/aliyun/terraform-provider-alicloud/issues/5969))
+- **New Resource:** `alicloud_actiontrail_global_events_storage_region` ([#5969](https://github.com/aliyun/terraform-provider-alicloud/issues/5969))
+- **New Data Source:** `alicloud_actiontrail_global_events_storage_region` ([#5969](https://github.com/aliyun/terraform-provider-alicloud/issues/5969))
+- **New Data Source:** `alicloud_dcdn_waf_rules` ([#5969](https://github.com/aliyun/terraform-provider-alicloud/issues/5969))
+- **New Data Source:** `alicloud_eflo_vpds` ([#5963](https://github.com/aliyun/terraform-provider-alicloud/issues/5963))
+
+ENHANCEMENTS:
+
+- resource/alicloud_vswitch: Adds new attribute enable_ipv6,ipv6_cidr_block_mask,ipv6_cidr_block ([#5714](https://github.com/aliyun/terraform-provider-alicloud/issues/5714))
+- resource/alicloud_havip_attachment: Adds new attribute instance_type ([#5951](https://github.com/aliyun/terraform-provider-alicloud/issues/5951))
+- resource/alicloud_resource_manager_resource_directory: Support new attribute member_deletion_status. ([#5985](https://github.com/aliyun/terraform-provider-alicloud/issues/5985))
+- resource/alicloud_cen_transit_router_route_table: Added the field tags ([#5982](https://github.com/aliyun/terraform-provider-alicloud/issues/5982))
+- resource/alicloud_rds_account:Add error code ([#5979](https://github.com/aliyun/terraform-provider-alicloud/issues/5979))
+- resource/alicloud_db_readonly_instance : Read-only instance adaptation pay as you go. ([#5936](https://github.com/aliyun/terraform-provider-alicloud/issues/5936))
+- resource/alicloud_drds_instance: Adds new attribute mysql_version ([#5953](https://github.com/aliyun/terraform-provider-alicloud/issues/5953))
+- resource/alicloud_instance: Support new attribute dedicated_host_id. ([#5968](https://github.com/aliyun/terraform-provider-alicloud/issues/5968))
+- resource/alicloud_db_instance : Update Document. ([#5970](https://github.com/aliyun/terraform-provider-alicloud/issues/5970))
+- resource/alicloud_polardb_endpoint: polardb support endpoint db_endpoint_description ([#5964](https://github.com/aliyun/terraform-provider-alicloud/issues/5964))
+- resource/alicloud_oos_patch_baseline: Adds the new attribute enumeration value AlmaLinux ([#5959](https://github.com/aliyun/terraform-provider-alicloud/issues/5959))
+- resource/alicloud_alikafka_instance: Support new attribute io_max_spec. ([#5966](https://github.com/aliyun/terraform-provider-alicloud/issues/5966))
+- docs: Improves the docs example ([#5967](https://github.com/aliyun/terraform-provider-alicloud/issues/5967))
+- docs/forward_entry: Improves the docs example ([#5972](https://github.com/aliyun/terraform-provider-alicloud/issues/5972))
+- testcase/alicloud_db_readonly_instance : Repair of automation test failure in Germany region ([#5987](https://github.com/aliyun/terraform-provider-alicloud/issues/5987))
+
+BUG FIXES:
+
+- resource/alicloud_instance: Fixes the user data diff error when using base64 encoding ([#5989](https://github.com/aliyun/terraform-provider-alicloud/issues/5989))
+- resource/alicloud_cms_site_monitor: Fix English lower case bug. ([#5984](https://github.com/aliyun/terraform-provider-alicloud/issues/5984))
+- resource/alicloud_nlb_server_group_server_attachment: fix test case TestAccAlicloudNLBServerGroupServerAttachment_basic0. Add retry error code Conflict.Lock when creating. ([#5980](https://github.com/aliyun/terraform-provider-alicloud/issues/5980))
+- resource/alicloud_kvstore_instance: Fixes the InstanceType.NotSupport error when running terraform plan; Fixes the setting auto_renew does not work bug ([#5976](https://github.com/aliyun/terraform-provider-alicloud/issues/5976))
+- resource/alicloud_waf_certificate: Fix Test Cases. resource_alicloud_waf_domain: Fix Test Cases. ([#5971](https://github.com/aliyun/terraform-provider-alicloud/issues/5971))
+- resource_alicloud_waf_certificate_test: Fix Test Cases. ([#5971](https://github.com/aliyun/terraform-provider-alicloud/issues/5971))
+- resource/alicloud_vpc_traffic_mirror_filter: Fix the verification error of traffic_mirror_filter_description and traffic_mirror_filter_name attribute. ([#5958](https://github.com/aliyun/terraform-provider-alicloud/issues/5958))
+- resource/alicloud_dms_enterprise_instance: fixed the data_link_name to Computed. ([#5958](https://github.com/aliyun/terraform-provider-alicloud/issues/5958))
+- datasource/alicloud_vpc_traffic_mirror_filter_egress_rules: Fix paging query errors. ([#5958](https://github.com/aliyun/terraform-provider-alicloud/issues/5958))
+- datasource/alicloud_vpc_traffic_mirror_filter_ingress_rules: Fix paging query errors. ([#5958](https://github.com/aliyun/terraform-provider-alicloud/issues/5958))
+- data_source_alicloud_waf_domains: Fix Test Cases. ([#5971](https://github.com/aliyun/terraform-provider-alicloud/issues/5971))
+- data_source_alicloud_waf_certificates: Fix Test Cases. ([#5971](https://github.com/aliyun/terraform-provider-alicloud/issues/5971))
+- data_source_alicloud_waf_instances: Fix Test Cases. ([#5971](https://github.com/aliyun/terraform-provider-alicloud/issues/5971))
+
+
 ## 1.200.0 (March 03, 2023)
 
 - **New Resource:** `alicloud_wafv3_instance` ([#5919](https://github.com/aliyun/terraform-provider-alicloud/issues/5919))

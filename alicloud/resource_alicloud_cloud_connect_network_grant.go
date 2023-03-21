@@ -2,9 +2,8 @@ package alicloud
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -48,7 +47,8 @@ func resourceAlicloudCloudConnectNetworkGrantCreate(d *schema.ResourceData, meta
 	request.RegionId = client.RegionId
 	request.CcnInstanceId = d.Get("ccn_id").(string)
 	request.CenInstanceId = d.Get("cen_id").(string)
-	request.CenUid = d.Get("cen_uid").(requests.Integer)
+	request.CenUid = requests.Integer(d.Get("cen_uid").(string))
+
 	var err error
 	var raw interface{}
 	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
@@ -88,7 +88,7 @@ func resourceAlicloudCloudConnectNetworkGrantRead(d *schema.ResourceData, meta i
 
 	d.Set("ccn_id", object.CcnInstanceId)
 	d.Set("cen_id", object.CenInstanceId)
-	d.Set("cen_uid", object.CenUid)
+	d.Set("cen_uid", fmt.Sprint(object.CenUid))
 
 	return nil
 }

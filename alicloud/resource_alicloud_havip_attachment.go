@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -13,10 +13,10 @@ import (
 
 func resourceAliyunHaVipAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunHaVipAttachmentCreate,
-		Read:   resourceAliyunHaVipAttachmentRead,
-		Update: resourceAliyunHaVipAttachmentUpdate,
-		Delete: resourceAliyunHaVipAttachmentDelete,
+		Create: resourceAlicloudVpcHaVipAttachmentCreate,
+		Read:   resourceAlicloudVpcHaVipAttachmentRead,
+		Update: resourceAlicloudVpcHaVipAttachmentUpdate,
+		Delete: resourceAlicloudVpcHaVipAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,121 +26,165 @@ func resourceAliyunHaVipAttachment() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"havip_id": {
-				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				Type:     schema.TypeString,
 			},
 			"instance_id": {
-				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				Type:     schema.TypeString,
 			},
 			"force": {
-				Type:     schema.TypeString,
 				Optional: true,
+				Type:     schema.TypeString,
+			},
+			"instance_type": {
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+				Type:     schema.TypeString,
+			},
+			"status": {
+				Computed: true,
+				Type:     schema.TypeString,
 			},
 		},
 	}
 }
 
-func resourceAliyunHaVipAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudVpcHaVipAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
+	vpcService := VpcService{client}
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+	}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
 
-	request := vpc.CreateAssociateHaVipRequest()
-	request.RegionId = client.RegionId
-	request.HaVipId = Trim(d.Get("havip_id").(string))
-	request.InstanceId = Trim(d.Get("instance_id").(string))
+	if v, ok := d.GetOk("havip_id"); ok {
+		request["HaVipId"] = v
+	}
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+
+	var response map[string]interface{}
+	action := "AssociateHaVip"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		ar := request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.AssociateHaVip(ar)
-		})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("AssociateHaVip")
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"TaskConflict", "IncorrectHaVipStatus", "InvalidVip.Status", "OperationConflict", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "SystemBusy", "ServiceUnavailable", "IncorrectInstanceStatus"}) || NeedRetry(err) {
 				wait()
-				return resource.RetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
-			}
-			return resource.NonRetryableError(fmt.Errorf("AssociateHaVip got an error: %#v", err))
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	}); err != nil {
-		return err
-	}
-	//check the havip attachment
-	if err := haVipService.WaitForHaVipAttachment(request.HaVipId, request.InstanceId, 5*DefaultTimeout); err != nil {
-		return fmt.Errorf("Wait for havip attachment got error: %#v", err)
-	}
-
-	d.SetId(request.HaVipId + COLON_SEPARATED + request.InstanceId)
-
-	return resourceAliyunHaVipAttachmentRead(d, meta)
-}
-
-func resourceAliyunHaVipAttachmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
-
-	haVipId, instanceId, err := getHaVipIdAndInstanceId(d, meta)
-	err = haVipService.DescribeHaVipAttachment(haVipId, instanceId)
-
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return fmt.Errorf("Error Describe HaVip Attribute: %#v", err)
-	}
-
-	d.Set("havip_id", haVipId)
-	d.Set("instance_id", instanceId)
-	return nil
-}
-
-func resourceAliyunHaVipAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAliyunHaVipAttachmentRead(d, meta)
-}
-
-func resourceAliyunHaVipAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	haVipService := HaVipService{client}
-
-	haVipId, instanceId, err := getHaVipIdAndInstanceId(d, meta)
-	if err != nil {
-		return err
-	}
-
-	request := vpc.CreateUnassociateHaVipRequest()
-	request.RegionId = client.RegionId
-	request.HaVipId = haVipId
-	request.InstanceId = instanceId
-
-	if v, ok := d.GetOk("force"); ok {
-		request.Force = v.(string)
-	}
-
-	return resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UnassociateHaVip(request)
-		})
-		//Waiting for unassociate the havip
-		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectHaVipStatus", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "SystemBusy", "ServiceUnavailable", "IncorrectInstanceStatus"}) || NeedRetry(err) {
-				return resource.RetryableError(fmt.Errorf("Unassociate HaVip timeout and got an error:%#v.", err))
-			}
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		//Eusure the instance has been unassociated truly.
-		err = haVipService.DescribeHaVipAttachment(haVipId, instanceId)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
+				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		return resource.RetryableError(fmt.Errorf("Unassociate HaVip timeout."))
+		response = resp
+		addDebug(action, response, request)
+		return nil
 	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_havip_attachment", action, AlibabaCloudSdkGoERROR)
+	}
+
+	d.SetId(fmt.Sprint(request["HaVipId"], ":", request["InstanceId"]))
+	stateConf := BuildStateConf([]string{}, []string{"InUse"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcHaVipAttachmentStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return resourceAlicloudVpcHaVipAttachmentRead(d, meta)
+}
+
+func resourceAlicloudVpcHaVipAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
+
+	object, err := vpcService.DescribeVpcHaVipAttachment(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_ha_vip_attachment vpcService.DescribeVpcHaVipAttachment Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("havip_id", parts[0])
+	d.Set("instance_id", parts[1])
+
+	associatedInstanceType := object["AssociatedInstanceType"]
+	d.Set("instance_type", associatedInstanceType)
+
+	status := object["Status"]
+	d.Set("status", status)
+
+	return nil
+}
+
+func resourceAlicloudVpcHaVipAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	return resourceAlicloudVpcHaVipAttachmentRead(d, meta)
+}
+
+func resourceAlicloudVpcHaVipAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"HaVipId":    parts[0],
+		"InstanceId": parts[1],
+		"RegionId":   client.RegionId,
+	}
+
+	if v, ok := d.GetOk("force"); ok {
+		request["Force"] = v
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+
+	action := "UnassociateHaVip"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		request["ClientToken"] = buildClientToken("UnassociateHaVip")
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict", "IncorrectHaVipStatus", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.%s", "SystemBusy", "ServiceUnavailable", "IncorrectInstanceStatus"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, resp, request)
+		return nil
+	})
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
 }

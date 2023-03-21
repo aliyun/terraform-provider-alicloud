@@ -198,7 +198,6 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"payment_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ForceNew:     true,
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 						},
@@ -292,14 +291,12 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 									"performance_level": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ForceNew:     true,
 										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 									},
 									"count": {
 										Type:     schema.TypeInt,
 										Optional: true,
-										ForceNew: true,
 										Computed: true,
 									},
 								},
@@ -323,14 +320,12 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 									"performance_level": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ForceNew:     true,
 										Computed:     true,
 										ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 									},
 									"count": {
 										Type:     schema.TypeInt,
 										Optional: true,
-										ForceNew: true,
 										Computed: true,
 									},
 								},
@@ -344,6 +339,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"spot_instance_remedy": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"cost_optimized_config": {
 							Type:     schema.TypeSet,
@@ -1230,7 +1226,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					subscriptionConfig["PaymentDurationUnit"] = subscriptionMap["payment_duration_unit"]
 					subscriptionConfig["PaymentDuration"] = subscriptionMap["payment_duration"]
 					subscriptionConfig["AutoRenew"] = subscriptionMap["auto_renew"]
-					subscriptionConfig["AutoRenewDurationUnit"] = subscriptionMap["auto_renew_duration_init"]
+					subscriptionConfig["AutoRenewDurationUnit"] = subscriptionMap["auto_renew_duration_unit"]
 					subscriptionConfig["AutoRenewDuration"] = subscriptionMap["auto_renew_duration"]
 				}
 				var spotBidPrices []map[string]interface{}
@@ -1259,7 +1255,6 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"SubscriptionConfig": subscriptionConfig,
 					"SpotBidPrices":      spotBidPrices,
 					"WithPublicIp":       newNodeGroup["with_public_ip"],
-					"InstanceTypes":      newNodeGroup["instance_types"],
 					"NodeCount":          newNodeGroup["node_count"],
 					"SystemDisk": map[string]interface{}{
 						"Category":         systemDiskMap["category"],
@@ -1270,12 +1265,6 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"DataDisks":          dataDisks,
 					"GracefulShutdown":   newNodeGroup["graceful_shutdown"],
 					"SpotInstanceRemedy": newNodeGroup["spot_instance_remedy"],
-					"":                   newNodeGroup[""],
-				}
-				createNodeGroupRequest := map[string]interface{}{
-					"ClusterId": d.Id(),
-					"RegionId":  client.RegionId,
-					"NodeGroup": nodeGroupParam,
 				}
 				vSwitchIDList := newNodeGroup["vswitch_ids"].(*schema.Set).List()
 				if len(vSwitchIDList) > 0 {
@@ -1283,7 +1272,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					for _, vSwitchID := range vSwitchIDList {
 						vSwitchIDs = append(vSwitchIDs, vSwitchID.(string))
 					}
-					createNodeGroupRequest["VSwitchIds"] = vSwitchIDs
+					nodeGroupParam["VSwitchIds"] = vSwitchIDs
 				}
 
 				instanceTypeList := newNodeGroup["instance_types"].(*schema.Set).List()
@@ -1292,7 +1281,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					for _, instanceType := range instanceTypeList {
 						instanceTypes = append(instanceTypes, instanceType.(string))
 					}
-					createNodeGroupRequest["InstanceTypes"] = instanceTypes
+					nodeGroupParam["InstanceTypes"] = instanceTypes
 				}
 
 				addSecurityGroupIDList := newNodeGroup["additional_security_group_ids"].(*schema.Set).List()
@@ -1301,17 +1290,22 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					for _, addSecurityGroupID := range addSecurityGroupIDList {
 						addSecurityGroupIDs = append(addSecurityGroupIDs, addSecurityGroupID.(string))
 					}
-					createNodeGroupRequest["AdditionalSecurityGroupIds"] = addSecurityGroupIDs
+					nodeGroupParam["AdditionalSecurityGroupIds"] = addSecurityGroupIDs
 				}
 
 				costOptimizedConfigList := newNodeGroup["cost_optimized_config"].(*schema.Set).List()
 				if len(costOptimizedConfigList) > 0 {
 					costOptimizedConfig := costOptimizedConfigList[0].(map[string]interface{})
-					createNodeGroupRequest["CostOptimizedConfig"] = map[string]interface{}{
+					nodeGroupParam["CostOptimizedConfig"] = map[string]interface{}{
 						"OnDemandBaseCapacity":                costOptimizedConfig["on_demand_base_capacity"],
 						"OnDemandPercentageAboveBaseCapacity": costOptimizedConfig["on_demand_percentage_above_base_capacity"],
 						"SpotInstancePools":                   costOptimizedConfig["spot_instance_pools"],
 					}
+				}
+				createNodeGroupRequest := map[string]interface{}{
+					"ClusterId": d.Id(),
+					"RegionId":  client.RegionId,
+					"NodeGroup": nodeGroupParam,
 				}
 
 				action = "CreateNodeGroup"

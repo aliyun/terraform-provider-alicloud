@@ -36,6 +36,7 @@ resource "alicloud_resource_manager_resource_directory" "example" {
 The following arguments are supported:
 
 * `status` - (Optional, Available in v1.120.0+) The status of control policy. Valid values:`Enabled` and `Disabled`. 
+* `member_deletion_status` - (Optional, Available in v1.201.0+) Specifies whether to enable the member deletion feature. Valid values:`Enabled` and `Disabled`. 
 
 ## Attributes Reference
 

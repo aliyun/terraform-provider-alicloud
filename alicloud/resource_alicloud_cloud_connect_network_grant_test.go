@@ -126,29 +126,29 @@ func resourceCcnGrantBasicDependence(name string) string {
 
 	return fmt.Sprintf(`
 	provider "alicloud" {
-		alias = "ccn_account"
+  		alias = "ccn_account"
 	}
 
 	provider "alicloud" {
-		region = "cn-hangzhou"
-		access_key = "%s"
-		secret_key = "%s"
-		alias = "cen_account"
+  		region     = "cn-hangzhou"
+  		access_key = "%s"
+  		secret_key = "%s"
+  		alias      = "cen_account"
 	}
 
 	variable "name" {
-		default = "%s"
+  		default = "%s"
 	}
 
 	resource "alicloud_cen_instance" "cen" {
-		provider = "alicloud.cen_account"
-	  	name = "${var.name}"
+  		provider = "alicloud.cen_account"
+  		name     = "${var.name}"
 	}
 
 	resource "alicloud_cloud_connect_network" "ccn" {
-		provider = "alicloud.ccn_account"
-	  	name = "${var.name}"
-	  	is_default = "true"
+  		provider   = "alicloud.ccn_account"
+  		name       = "${var.name}"
+  		is_default = "true"
 	}
 `, access2, secret2, name)
 }

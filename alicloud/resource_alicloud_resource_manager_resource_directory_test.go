@@ -17,7 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
+// Skip this test because each account can only create one resource directory
+func SkipTestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_directory.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerResourceDirectoryMap)
@@ -65,6 +66,26 @@ func TestAccAlicloudResourceManagerResourceDirectory_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"member_deletion_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"member_deletion_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"member_deletion_status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"member_deletion_status": "Disabled",
 					}),
 				),
 			},
