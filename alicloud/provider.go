@@ -852,6 +852,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_portfolios":                       dataSourceAlicloudServiceCatalogPortfolios(),
 			"alicloud_arms_remote_writes":                               dataSourceAlicloudArmsRemoteWrites(),
 			"alicloud_eflo_subnets":                                     dataSourceAlicloudEfloSubnets(),
+			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_vpc_vswitch_cidr_reservation":       resourceAliCloudVpcVswitchCidrReservation(),
@@ -1602,6 +1603,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
 			"alicloud_arms_remote_write":                                     resourceAlicloudArmsRemoteWrite(),
 			"alicloud_eflo_subnet":                                           resourceAlicloudEfloSubnet(),
+			"alicloud_compute_nest_service_instance":                         resourceAlicloudComputeNestServiceInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1841,6 +1843,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EfloEndpoint = strings.TrimSpace(endpoints["eflo"].(string))
 		config.OceanbaseEndpoint = strings.TrimSpace(endpoints["oceanbase"].(string))
 		config.BeebotEndpoint = strings.TrimSpace(endpoints["beebot"].(string))
+		config.ComputeNestEndpoint = strings.TrimSpace(endpoints["computenest"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2192,6 +2195,8 @@ func init() {
 		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 
 		"beebot_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom beebot endpoints.",
+
+		"computenest_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom computenest endpoints.",
 	}
 }
 
@@ -2236,6 +2241,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"computenest": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["computenest_endpoint"],
+				},
+
 				"beebot": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3123,7 +3135,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
-
 	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
@@ -3212,6 +3223,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["eflo"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["beebot"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["computenest"].(string)))
 	return hashcode.String(buf.String())
 }
 
