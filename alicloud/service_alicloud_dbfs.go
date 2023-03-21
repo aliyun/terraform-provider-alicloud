@@ -231,3 +231,45 @@ func (s *DbfsService) DbfsServiceLinkedRoleStateRefreshFunc(id string, failState
 		return object, fmt.Sprint(object["DbfsLinkedRole"]), nil
 	}
 }
+
+func (s *DbfsService) DescribeDbfsAutoSnapShotPolicy(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewDbfsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"PolicyId": id,
+		"RegionId": s.client.RegionId,
+	}
+
+	var response map[string]interface{}
+	action := "GetAutoSnapshotPolicy"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response = resp
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"AutoSnapshotPolicyNotFound"}) {
+			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+	return v.(map[string]interface{}), nil
+}
