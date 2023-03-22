@@ -657,6 +657,147 @@ func TestAccAlicloudLogAlert_basic_new(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudLogAlert_basic_tpl(t *testing.T) {
+	var alert *sls.Alert
+	resourceId := "alicloud_log_alert.default"
+	ra := resourceAttrInit(resourceId, logAlertMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &alert, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacclogalert-%d", rand)
+	displayname := fmt.Sprintf("alert_displayname-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogAlertDependence)
+
+	resource.Test(t, resource.TestCase{
+
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version":           "2.0",
+					"type":              "tpl",
+					"mute_until":        "1632486684",
+					"project_name":      "${alicloud_log_project.default.name}",
+					"alert_name":        "alert_name",
+					"alert_displayname": displayname,
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "5m",
+						},
+					},
+					"template_configuration": []map[string]interface{}{
+						{
+							"id":          "sls.app.sls_ack.node.down",
+							"type":        "sys",
+							"lang":        "cn",
+							"annotations": map[string]interface{}{},
+							"tokens": map[string]interface{}{
+								"\"default.project\"":        "${alicloud_log_project.default.name}",
+								"\"default.logstore\"":       "k8s-event",
+								"\"interval_minute\"":        "5",
+								"\"default.action_policy\"":  "sls.app.ack.builtin",
+								"\"default.repeatInterval\"": "2h",
+								"\"default.severity\"":       "6",
+								"\"sendResolved\"":           "false",
+								"\"trigger_threshold\"":      "1",
+								"\"default.clusterId\"":      "test-cluster-id",
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version":                  "2.0",
+						"type":                     "tpl",
+						"mute_until":               "1632486684",
+						"schedule.#":               "1",
+						"template_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"schedule": []map[string]interface{}{
+						{
+							"type":     "FixedRate",
+							"interval": "1m",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"schedule.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mute_until": "1632488888",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mute_until": "1632488888",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alert_displayname": "update_alert_name_new",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alert_displayname": "update_alert_name_new",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"template_configuration": []map[string]interface{}{
+						{
+							"id":          "sls.app.sls_ack.node.down",
+							"type":        "sys",
+							"lang":        "cn",
+							"annotations": map[string]interface{}{},
+							"tokens": map[string]interface{}{
+								"\"default.project\"":        "${alicloud_log_project.default.name}",
+								"\"default.logstore\"":       "k8s-event",
+								"\"interval_minute\"":        "5",
+								"\"default.action_policy\"":  "sls.app.ack.builtin",
+								"\"default.repeatInterval\"": "3h",
+								"\"default.severity\"":       "4",
+								"\"sendResolved\"":           "false",
+								"\"trigger_threshold\"":      "1",
+								"\"default.clusterId\"":      "test-cluster-id",
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"template_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var logAlertMap = map[string]string{
 	"project_name": CHECKSET,
 	"alert_name":   CHECKSET,
@@ -675,7 +816,7 @@ resource "alicloud_log_project" "default"{
 resource "alicloud_log_store" "default"{
   	project = "${alicloud_log_project.default.name}"
   	name = "${var.name}"
-  	retention_period = 3650
+  	retention_period = 3000
   	shard_count = 3
   	auto_split = true
   	max_split_shard_count = 60
