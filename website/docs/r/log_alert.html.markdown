@@ -187,12 +187,66 @@ resource "alicloud_log_alert" "example-2" {
   }
 }
 ```
+
+Basic Usage for alert template
+
+```terraform
+resource "alicloud_log_project" "example" {
+  name        = "test-tf"
+  description = "create by terraform"
+}
+
+resource "alicloud_log_store" "example" {
+  project               = alicloud_log_project.example.name
+  name                  = "tf-test-logstore"
+  retention_period      = 3650
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
+resource "alicloud_log_alert" "example-3" {
+  version           = "2.0"
+  type              = "tpl"
+  project_name      = alicloud_log_project.example.name
+  alert_name        = "tf-test-alert-3"
+  alert_displayname = "tf-test-alert-displayname-3"
+  mute_until        = "1632486684"
+  schedule {
+    type            = "FixedRate"
+    interval        = "5m"
+    hour            = 0
+    day_of_week     = 0
+    delay           = 0
+    run_immediately = false
+  }
+  template_configuration {
+    id          = "sls.app.sls_ack.node.down"
+    type        = "sys"
+    lang        = "cn"
+    annotations = {}
+    tokens = {
+      "interval_minute"        = "5"
+      "default.action_policy"  = "sls.app.ack.builtin"
+      "default.severity"       = "6"
+      "sendResolved"           = "false"
+      "default.project"        = "${alicloud_log_project.example.name}"
+      "default.logstore"       = "k8s-event"
+      "default.repeatInterval" = "4h"
+      "trigger_threshold"      = "1"
+      "default.clusterId"      = "test-cluster-id"
+    }
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `version` - (Optional, Available in 1.161.0+) The version of alert, new alert is 2.0.
-* `type` - (Optional, Available in 1.161.0+) The type of new alert, new alert is default.
+* `type` - (Optional, Available in 1.161.0+) The type of new alert, `default` for custom alert, `tpl` for template alert.
 * `project_name` - (Required, ForceNew) The project name.
 * `alert_name` - (Required, ForceNew) Name of logstore for configuring alarm service.
 * `alert_displayname` - (Required) Alert displayname.
@@ -207,7 +261,7 @@ The following arguments are supported:
 * `no_data_severity` - (Optional, Available in 1.161.0+) when no data happens, the severity of new alert.
 * `send_resolved` - (Optional, Available in 1.161.0+) when new alert is resolved, whether to notify, default is false.
 * `auto_annotation` - (Optional, Available in 1.164.0+) whether to add automatic annotation, default is false.
-* `query_list` - (Required) Multiple conditions for configured alarm query.
+* `query_list` - (Optinal, Required before 1.203.0) Multiple conditions for configured alarm query.
     * `project` - (Optional, Available in 1.161.0+) Query project.
     * `region` - (Optional, Available in 1.161.0+) Query project region.
     * `role_arn` - (Optional) Query project store's ARN.
@@ -248,6 +302,12 @@ The following arguments are supported:
 * `join_configurations` - (Optional, Available in 1.161.0+) Join configuration for different queries.
     * `type` - (Required) Join type, including cross_join, inner_join, left_join, right_join, full_join, left_exclude, right_exclude, concat, no_join.
     * `condition` - (Required) Join condition.
+* `template_configuration` - (Optional, Available in 1.203.0+) Template configuration for alert, when `type` is `tpl`.
+    * `id` - (Required) Alert template id.
+    * `type` - (Required) Alert template type including `sys`, `user`.
+    * `lang` - (Optional) Alert template language including `cn`, `en`.
+    * `tokens` - (Optional) Alert template tokens.
+    * `annotations` - (Optional) Alert template annotations.
 * `schedule_interval` - (Optional, Deprecated) Execution interval. 60 seconds minimum, such as 60s, 1h. Deprecated from 1.176.0+. use interval in schedule.
 * `schedule_type` - (Optional, Deprecated)  Default FixedRate. No need to configure this parameter. Deprecated from 1.176.0+. use type in schedule.
 * `schedule` - (Optional, Available in 1.176.0+) schedule for alert.

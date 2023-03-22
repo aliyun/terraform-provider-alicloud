@@ -97,7 +97,7 @@ func resourceAlicloudLogAlert() *schema.Resource {
 			},
 			"query_list": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"chart_title": {
@@ -298,6 +298,38 @@ func resourceAlicloudLogAlert() *schema.Resource {
 						},
 						"fields": {
 							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
+			"template_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"lang": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"sys", "user"}, false),
+						},
+						"tokens": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"annotations": {
+							Type:     schema.TypeMap,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
@@ -539,22 +571,39 @@ func resourceAlicloudLogAlertRead(d *schema.ResourceData, meta interface{}) erro
 	}
 	d.Set("join_configurations", joinConfigurations)
 
-	var groupConfigurations []map[string]interface{}
-	groupConf := map[string]interface{}{
-		"type":   object.Configuration.GroupConfiguration.Type,
-		"fields": object.Configuration.GroupConfiguration.Fields,
+	if object.Configuration.GroupConfiguration.Type != "" {
+		var groupConfigurations []map[string]interface{}
+		groupConf := map[string]interface{}{
+			"type":   object.Configuration.GroupConfiguration.Type,
+			"fields": object.Configuration.GroupConfiguration.Fields,
+		}
+		groupConfigurations = append(groupConfigurations, groupConf)
+		d.Set("group_configuration", groupConfigurations)
 	}
-	groupConfigurations = append(groupConfigurations, groupConf)
-	d.Set("group_configuration", groupConfigurations)
 
-	var policyConfigurations []map[string]interface{}
-	policyConf := map[string]interface{}{
-		"alert_policy_id":  object.Configuration.PolicyConfiguration.AlertPolicyId,
-		"action_policy_id": object.Configuration.PolicyConfiguration.ActionPolicyId,
-		"repeat_interval":  object.Configuration.PolicyConfiguration.RepeatInterval,
+	if object.Configuration.PolicyConfiguration.AlertPolicyId != "" {
+		var policyConfigurations []map[string]interface{}
+		policyConf := map[string]interface{}{
+			"alert_policy_id":  object.Configuration.PolicyConfiguration.AlertPolicyId,
+			"action_policy_id": object.Configuration.PolicyConfiguration.ActionPolicyId,
+			"repeat_interval":  object.Configuration.PolicyConfiguration.RepeatInterval,
+		}
+		policyConfigurations = append(policyConfigurations, policyConf)
+		d.Set("policy_configuration", policyConfigurations)
 	}
-	policyConfigurations = append(policyConfigurations, policyConf)
-	d.Set("policy_configuration", policyConfigurations)
+
+	if object.Configuration.TemplateConfiguration != nil && object.Configuration.TemplateConfiguration.Id != "" {
+		var templateConfigurations []map[string]interface{}
+		templateConfiguration := map[string]interface{}{
+			"id":          object.Configuration.TemplateConfiguration.Id,
+			"type":        object.Configuration.TemplateConfiguration.Type,
+			"lang":        object.Configuration.TemplateConfiguration.Lang,
+			"tokens":      object.Configuration.TemplateConfiguration.Tokens,
+			"annotations": object.Configuration.TemplateConfiguration.Annotations,
+		}
+		templateConfigurations = append(templateConfigurations, templateConfiguration)
+		d.Set("template_configuration", templateConfigurations)
+	}
 
 	for _, v := range object.Configuration.QueryList {
 		mapping := map[string]interface{}{
@@ -863,6 +912,31 @@ func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
 		}
 	}
 
+	var templateConfiguration *sls.TemplateConfiguration
+	if v, ok := d.GetOk("template_configuration"); ok {
+		for _, e := range v.([]interface{}) {
+			templateConfiguration = &sls.TemplateConfiguration{}
+			templateConfigurationMap := e.(map[string]interface{})
+			templateConfiguration.Id, _ = templateConfigurationMap["id"].(string)
+			templateConfiguration.Type, _ = templateConfigurationMap["type"].(string)
+			templateConfiguration.Lang, _ = templateConfigurationMap["lang"].(string)
+			templateConfiguration.Tokens = map[string]string{}
+			templateConfiguration.Annotations = map[string]string{}
+			templateConfiguration.Version = "1"
+
+			if tokensMap, ok := templateConfigurationMap["tokens"].(map[string]interface{}); ok {
+				for tokenK, tokenV := range tokensMap {
+					templateConfiguration.Tokens[tokenK], _ = tokenV.(string)
+				}
+			}
+			if annotationsMap, ok := templateConfigurationMap["annotations"].(map[string]interface{}); ok {
+				for annotationK, annotationV := range annotationsMap {
+					templateConfiguration.Annotations[annotationK], _ = annotationV.(string)
+				}
+			}
+		}
+	}
+
 	queryList := []*sls.AlertQuery{}
 
 	if v, ok := d.GetOk("query_list"); ok {
@@ -916,6 +990,9 @@ func createAlert2Config(d *schema.ResourceData) *sls.AlertConfiguration {
 		SendResolved:           d.Get("send_resolved").(bool),
 		MuteUntil:              int64(d.Get("mute_until").(int)),
 		AutoAnnotation:         autoAnnotation,
+	}
+	if templateConfiguration != nil {
+		config.TemplateConfiguration = templateConfiguration
 	}
 	return config
 }
