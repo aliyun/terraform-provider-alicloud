@@ -76,8 +76,8 @@ The following arguments are supported:
 * `ike_config` - (Optional) The configurations of phase-one negotiation. See the following `Block ike_config`.
 * `ipsec_config` - (Optional) The configurations of phase-two negotiation. See the following `Block ipsec_config`.
 * `health_check_config` - (Optional, Computed, Available in 1.161.0+.) The health check configurations. See the following `Block health_check_config`.
-* `enable_dpd` - (Optional, Computed, Available in 1.161.0+.)  Whether to enable NAT traversal.
-* `enable_nat_traversal` - (Optional, Computed, Available in 1.161.0+.)  Whether to enable NAT traversal.
+* `enable_dpd` - (Optional, Computed, Available in 1.161.0+.) Specifies whether to enable the dead peer detection (DPD) feature. Valid values: `true`(default), `false`.
+* `enable_nat_traversal` - (Optional, Computed, Available in 1.161.0+.) Specifies whether to enable NAT traversal. Valid values: `true`(default), `false`.
 * `bgp_config` - (Optional, Computed, Available in 1.161.0+.) The configurations of the BGP routing protocol. See the following `Block bgp_config`.
 
 ### Block ike_config

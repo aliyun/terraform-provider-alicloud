@@ -13,14 +13,13 @@ The VPN connections data source lists lots of VPN connections resource informati
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_vpn_connections" "foo" {
   ids                 = ["fake-conn-id"]
   vpn_gateway_id      = "fake-vpn-id"
   customer_gateway_id = "fake-cgw-id"
   output_file         = "/tmp/vpnconn"
 }
-
 ```
 
 ## Argument Reference
@@ -51,6 +50,8 @@ The following attributes are exported:
   * `ipsec_config` - The configurations of phase-two negotiation.
   * `health_check_config` - The health check configuration information.
   * `vpn_bgp_config` - The configuration information for BGP.
+  * `enable_dpd` - Specifies whether to enable the dead peer detection (DPD) feature.
+  * `enable_nat_traversal` - Specifies whether to enable NAT traversal.
 
   ### Block ike_config
 

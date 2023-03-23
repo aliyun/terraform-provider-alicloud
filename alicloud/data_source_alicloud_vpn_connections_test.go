@@ -80,6 +80,8 @@ func TestAccAlicloudVPNConnectionsDataSourceBasic(t *testing.T) {
 			"connections.0.customer_gateway_id":            CHECKSET,
 			"connections.0.status":                         "ike_sa_not_established",
 			"connections.0.local_subnet":                   "172.16.1.0/24",
+			"connections.0.enable_dpd":                     "true",
+			"connections.0.enable_nat_traversal":           "true",
 			"connections.0.remote_subnet":                  "10.4.0.0/24",
 			"connections.0.ike_config.0.ike_auth_alg":      "sha1",
 			"connections.0.ike_config.0.ike_enc_alg":       "3des",
