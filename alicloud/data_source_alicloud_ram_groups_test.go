@@ -11,19 +11,6 @@ import (
 
 func TestAccAlicloudRAMGroupsDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 99999999)
-	userConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"user_name": `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
-		}),
-	}
-
-	policyConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
-			"policy_type": `"Custom"`,
-		}),
-	}
-
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_ram_group.default.name}"`,
@@ -33,22 +20,34 @@ func TestAccAlicloudRAMGroupsDataSource(t *testing.T) {
 		}),
 	}
 
+	userConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name": `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name": `"${alicloud_ram_user.fake.name}"`,
+		}),
+	}
+
+	policyConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+	}
+
 	userAndNameRegexconf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
 			"user_name":  `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
 			"name_regex": `"${alicloud_ram_group.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"user_name":  `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
+			"user_name":  `"${alicloud_ram_user.fake.name}"`,
 			"name_regex": `"${alicloud_ram_group.default.name}_fake"`,
-		}),
-	}
-
-	userAndPolicyConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"user_name":   `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
-			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
-			"policy_type": `"Custom"`,
 		}),
 	}
 
@@ -59,9 +58,48 @@ func TestAccAlicloudRAMGroupsDataSource(t *testing.T) {
 			"name_regex":  `"${alicloud_ram_group.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
 			"policy_type": `"Custom"`,
 			"name_regex":  `"${alicloud_ram_group.default.name}_fake"`,
+		}),
+	}
+
+	emptyUserFullPolicyConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${alicloud_ram_user.fake.name}"`,
+			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${alicloud_ram_user.fake.name}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+	}
+
+	emptyPolicyFullUserConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${alicloud_ram_user.fake.name}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+	}
+
+	userAndPolicyConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
+			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
+			"policy_type": `"Custom"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
+			"user_name":   `"${alicloud_ram_user.fake.name}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
+			"policy_type": `"Custom"`,
 		}),
 	}
 
@@ -73,14 +111,14 @@ func TestAccAlicloudRAMGroupsDataSource(t *testing.T) {
 			"name_regex":  `"${alicloud_ram_group.default.name}"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRamGroupsDataSourceConfig(rand, map[string]string{
-			"user_name":   `"${element(split(",",join(",",alicloud_ram_group_membership.default.user_names)), 0)}"`,
-			"policy_name": `"${alicloud_ram_group_policy_attachment.default.policy_name}"`,
+			"user_name":   `"${alicloud_ram_user.fake.name}"`,
+			"policy_name": `"${alicloud_ram_policy.fake.policy_name}"`,
 			"policy_type": `"Custom"`,
 			"name_regex":  `"${alicloud_ram_group.default.name}_fake"`,
 		}),
 	}
 
-	RamGroupsCheckInfo.dataSourceTestCheck(t, rand, userConf, policyConf, nameRegexConf, userAndNameRegexconf, userAndPolicyConf, policyAndNameRegexConf, allConf)
+	RamGroupsCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, userConf, policyConf, userAndNameRegexconf, policyAndNameRegexConf, emptyUserFullPolicyConf, emptyPolicyFullUserConf, userAndPolicyConf, allConf)
 }
 
 func testAccCheckAlicloudRamGroupsDataSourceConfig(rand int, attrMap map[string]string) string {
@@ -91,52 +129,90 @@ func testAccCheckAlicloudRamGroupsDataSourceConfig(rand int, attrMap map[string]
 
 	config := fmt.Sprintf(`
 	variable "name" {
-	  default = "tf-testAcc%sRamGroupsDataSource-%d"
+  		default = "tf-testAcc%sRamGroupsDataSource-%d"
 	}
-	resource "alicloud_ram_policy" "default" {
-	  name = "${var.name}"
-	  document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
-	}
-	resource "alicloud_ram_user" "default" {
-	  name = "${var.name}"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
+
 	resource "alicloud_ram_group" "default" {
-	  name = "${var.name}"
-	  comments = "group comments"
-	  force=true
+  		name     = "${var.name}"
+  		comments = "group comments"
+  		force    = true
 	}
+
+	resource "alicloud_ram_user" "default" {
+  		name         = "${var.name}"
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+  		email        = "hello.uuu@aaa.com"
+  		comments     = "yoyoyo"
+	}
+
+	resource "alicloud_ram_user" "fake" {
+  		name         = "${var.name}-fake"
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+  		email        = "hello.uuu@aaa.com"
+  		comments     = "yoyoyo"
+	}
+
 	resource "alicloud_ram_group_membership" "default" {
-	  group_name = "${alicloud_ram_group.default.name}"
-	  user_names = ["${alicloud_ram_user.default.name}"]
+  		group_name = "${alicloud_ram_group.default.name}"
+  		user_names = ["${alicloud_ram_user.default.name}"]
 	}
+
+	resource "alicloud_ram_policy" "default" {
+  		name        = "${var.name}"
+  		document    = <<EOF
+			{
+				"Statement": [
+				 {
+					"Action": [
+					"oss:ListObjects",
+					"oss:ListObjects"
+			  		],
+			  		"Effect": "Deny",
+			  		"Resource": [
+						"acs:oss:*:*:mybucket",
+						"acs:oss:*:*:mybucket/*"
+			  		]
+				 }
+		  		],
+				"Version": "1"
+			}
+	  		EOF
+  		description = "this is a policy test"
+  		force       = true
+	}
+
+	resource "alicloud_ram_policy" "fake" {
+  		name        = "${var.name}-fake"
+  		document    = <<EOF
+			{
+				"Statement": [
+				 {
+					"Action": [
+					"oss:ListObjects",
+					"oss:ListObjects"
+			  		],
+			  		"Effect": "Deny",
+			  		"Resource": [
+						"acs:oss:*:*:mybucket",
+						"acs:oss:*:*:mybucket/*"
+			  		]
+				 }
+		  		],
+				"Version": "1"
+			}
+	  		EOF
+  		description = "this is a fake policy test"
+  		force       = true
+	}
+
 	resource "alicloud_ram_group_policy_attachment" "default" {
-	  policy_name = "${alicloud_ram_policy.default.name}"
-	  group_name = "${alicloud_ram_group.default.name}"
-	  policy_type = "${alicloud_ram_policy.default.type}"
+  		policy_name = "${alicloud_ram_policy.default.name}"
+  		group_name  = "${alicloud_ram_group.default.name}"
+  		policy_type = "${alicloud_ram_policy.default.type}"
 	}
+
 	data "alicloud_ram_groups" "default" {
 	  %s
 	}`, defaultRegionToTest, rand, strings.Join(pairs, "\n  "))
