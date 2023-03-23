@@ -15,7 +15,6 @@ import (
 func dataSourceAlicloudRamUsers() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudRamUsersRead,
-
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:     schema.TypeString,
@@ -160,11 +159,16 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListUsersForGroupResponse)
+
 		for _, v := range response.Users.User {
 			groupFilterUsersMap[v.UserName] = v
 		}
-		dataMap = append(dataMap, groupFilterUsersMap)
+
+		if len(groupFilterUsersMap) > 0 {
+			dataMap = append(dataMap, groupFilterUsersMap)
+		}
 	}
 
 	// users which attach with this policy
@@ -183,15 +187,20 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
+
 		for _, v := range response.Users.User {
 			policyFilterUsersMap[v.UserName] = v
 		}
-		dataMap = append(dataMap, policyFilterUsersMap)
+
+		if len(policyFilterUsersMap) > 0 {
+			dataMap = append(dataMap, policyFilterUsersMap)
+		}
 	}
 
 	// GetIntersection of each map
-	allUsers = ramService.GetIntersection(dataMap, allUsersMap)
+	allUsers = ramService.GetIntersection(dataMap, allUsersMap, groupNameOk, policyNameOk)
 
 	return ramUsersDescriptionAttributes(d, allUsers)
 }
@@ -217,12 +226,15 @@ func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) 
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("users", s); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
+
 	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
@@ -231,5 +243,6 @@ func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) 
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }

@@ -14,7 +14,6 @@ import (
 func dataSourceAlicloudRamGroups() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudRamGroupsRead,
-
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
 				Type:     schema.TypeString,
@@ -73,13 +72,13 @@ func dataSourceAlicloudRamGroups() *schema.Resource {
 func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
-	allGroups := []interface{}{}
+	var allGroups []interface{}
 
 	allGroupsMap := make(map[string]interface{})
 	userFilterGroupsMap := make(map[string]interface{})
 	policyFilterGroupsMap := make(map[string]interface{})
 
-	dataMap := []map[string]interface{}{}
+	var dataMap []map[string]interface{}
 
 	userName, userNameOk := d.GetOk("user_name")
 	policyName, policyNameOk := d.GetOk("policy_name")
@@ -132,11 +131,16 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListGroupsForUserResponse)
+
 		for _, v := range response.Groups.Group {
 			userFilterGroupsMap[v.GroupName] = v
 		}
-		dataMap = append(dataMap, userFilterGroupsMap)
+
+		if len(userFilterGroupsMap) > 0 {
+			dataMap = append(dataMap, userFilterGroupsMap)
+		}
 	}
 
 	// groups which attach with this policy
@@ -155,15 +159,20 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
+
 		for _, v := range response.Groups.Group {
 			policyFilterGroupsMap[v.GroupName] = v
 		}
-		dataMap = append(dataMap, policyFilterGroupsMap)
+
+		if len(policyFilterGroupsMap) > 0 {
+			dataMap = append(dataMap, policyFilterGroupsMap)
+		}
 	}
 
 	// GetIntersection of each map
-	allGroups = ramService.GetIntersection(dataMap, allGroupsMap)
+	allGroups = ramService.GetIntersection(dataMap, allGroupsMap, userNameOk, policyNameOk)
 
 	return ramGroupsDescriptionAttributes(d, allGroups)
 }
@@ -182,15 +191,19 @@ func ramGroupsDescriptionAttributes(d *schema.ResourceData, groups []interface{}
 	}
 
 	d.SetId(dataResourceIdHash(ids))
-	if err := d.Set("groups", s); err != nil {
-		return WrapError(err)
-	}
+
 	if err := d.Set("names", ids); err != nil {
 		return WrapError(err)
 	}
+
+	if err := d.Set("groups", s); err != nil {
+		return WrapError(err)
+	}
+
 	// create a json file in current directory and write data source to it.
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }
