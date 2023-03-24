@@ -259,6 +259,8 @@ The nested `assume_role` block supports the following:
   
 Nested `endpoints` block supports the following:
 
+**NOTE:** Due to certain API restrictions, the endpoints pointing to the area should be consistent with the `region_id`.
+
 * `ecs` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom ECS endpoints.
 
 * `rds` - (Optional) Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom RDS endpoints.
