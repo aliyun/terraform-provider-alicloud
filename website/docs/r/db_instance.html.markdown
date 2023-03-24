@@ -467,6 +467,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   * **AlwaysOn**: Cluster Edition.
   * **Finance**: Enterprise Edition.
   * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
+  * **category**: MySQL Cluster Edition. (Available in 1.202.0+)
 
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.

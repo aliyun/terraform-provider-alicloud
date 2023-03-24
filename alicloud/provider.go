@@ -1191,6 +1191,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_control_policy":                       resourceAlicloudResourceManagerControlPolicy(),
 			"alicloud_resource_manager_control_policy_attachment":            resourceAlicloudResourceManagerControlPolicyAttachment(),
 			"alicloud_rds_account":                                           resourceAlicloudRdsAccount(),
+			"alicloud_rds_db_node":                                           resourceAlicloudRdsDBNode(),
 			"alicloud_ecs_snapshot":                                          resourceAlicloudEcsSnapshot(),
 			"alicloud_ecs_key_pair":                                          resourceAlicloudEcsKeyPair(),
 			"alicloud_ecs_key_pair_attachment":                               resourceAlicloudEcsKeyPairAttachment(),
