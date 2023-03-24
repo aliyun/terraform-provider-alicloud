@@ -392,6 +392,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"zone_id_slave_b": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"ca_type": {
@@ -525,7 +526,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "cluster"}, false),
 			},
 			"effective_time": {
 				Type:         schema.TypeString,

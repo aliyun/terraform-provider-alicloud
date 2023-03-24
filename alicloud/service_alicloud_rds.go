@@ -2557,3 +2557,67 @@ func (s *RdsService) FindKmsRoleArnDdr(k string) (string, error) {
 	}
 	return strings.Join([]string{"acs:ram::", fmt.Sprint(resp), ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
 }
+
+func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, err error) {
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceAttribute"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": parts[0],
+		"SourceIp":     s.client.SourceIp,
+	}
+	var response map[string]interface{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Items.DBInstanceAttribute", response)
+	if err != nil {
+		return nil, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstanceAttribute", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	dbNodeList := v.([]interface{})[0].(map[string]interface{})
+	if dbNodesList, ok := dbNodeList["DBClusterNodes"]; ok && dbNodesList != nil {
+		if nodeList, ok := dbNodesList.(map[string]interface{})["DBClusterNode"].([]interface{}); ok {
+			if len(nodeList) < 3 {
+				return nil, WrapErrorf(Error(GetNotFoundMessage("DBAccount", id)), NotFoundMsg, ProviderERROR)
+			}
+			for _, node := range nodeList {
+				nodeId := node.(map[string]interface{})["NodeId"]
+				if nodeId.(string) == parts[1] {
+					object = node.(map[string]interface{})
+					object["DBInstanceId"] = dbNodeList["DBInstanceId"]
+					break
+				}
+			}
+		}
+	}
+	return object, nil
+}
