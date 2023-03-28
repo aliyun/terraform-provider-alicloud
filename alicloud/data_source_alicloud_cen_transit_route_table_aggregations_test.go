@@ -5,14 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCenTransitRouteTableAggregationsDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.CenTransitRouteTableAggregationSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouteTableAggregationsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_route_table_aggregation.default.id}"]`,

@@ -11,7 +11,6 @@ import (
 
 func TestAccAlicloudCenTransitRouteTableAggregation_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.CenTransitRouteTableAggregationSupportRegions)
 	resourceId := "alicloud_cen_transit_route_table_aggregation.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudCenTransitRouteTableAggregationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
