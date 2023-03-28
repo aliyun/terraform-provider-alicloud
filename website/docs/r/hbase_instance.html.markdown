@@ -64,7 +64,7 @@ The following arguments are supported:
 * `duration` - (Optional) 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, valid when pay_type = PrePaid,  unit: month. 12, 24, 36 mean 1, 2, 3 years.
 * `auto_renew` - (Optional, ForceNew) Valid values are `true`, `false`, system default to `false`, valid when pay_type = PrePaid.
 * `vswitch_id` - (Optional, ForceNew) If vswitch_id is not empty, that mean net_type = vpc and has a same region. If vswitch_id is empty, net_type=classic. Intl site not support classic network.
-* `cold_storage_size` - (Optional) 0 or [800, 1000000], step:10-GB increments. 0 means is_cold_storage = false. [800, 1000000] means is_cold_storage = true.
+* `cold_storage_size` - (Optional) 0 or [800, 100000000], step:10-GB increments. 0 means is_cold_storage = false. [800, 100000000] means is_cold_storage = true.
 * `maintain_start_time` - (Optional, Available in 1.73.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional, Available in 1.73.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time), for example 04:00Z.
 * `deletion_protection` - (Optional, Available in 1.73.0) The switch of delete protection. True: delete protect, False: no delete protect. You must set false when you want to delete cluster.
