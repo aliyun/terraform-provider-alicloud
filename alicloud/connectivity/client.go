@@ -1200,8 +1200,12 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 		}
 
 		config := client.getSdkConfig()
-		clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(config.HttpTransport),
+		transport := config.HttpTransport
+		// Receiving proxy config from environment
+		transport.Proxy = http.ProxyFromEnvironment
+		clientOptions := []fc.ClientOption{fc.WithSecurityToken(client.config.SecurityToken), fc.WithTransport(transport),
 			fc.WithTimeout(30), fc.WithRetryCount(DefaultClientRetryCountSmall)}
+
 		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
