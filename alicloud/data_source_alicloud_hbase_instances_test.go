@@ -119,13 +119,14 @@ resource "alicloud_hbase_instance" "default" {
   name = var.name
   engine = "hbaseue"
   engine_version = "2.0"
-  master_instance_type = "hbase.sn1.large"
-  core_instance_type = "hbase.sn1.large"
+  master_instance_type = "hbase.sn2.2xlarge"
+  core_instance_type = "hbase.sn2.2xlarge"
   core_instance_quantity = 2
   core_disk_type = "cloud_efficiency"
   pay_type = "PostPaid"
   duration = 1
   auto_renew = false
+  vpc_id = data.alicloud_vpcs.default.ids.0
   vswitch_id = local.vswitch_id
   cold_storage_size = 0
   deletion_protection = false

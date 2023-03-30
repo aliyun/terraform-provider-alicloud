@@ -13,11 +13,11 @@ variable "engine_version" {
 }
 
 variable "master_instance_type" {
-  default = "hbase.sn1.large"
+  default = "hbase.sn2.2xlarge"
 }
 
 variable "core_instance_type" {
-  default = "hbase.sn1.large"
+  default = "hbase.sn2.2xlarge"
 }
 
 # 2~200
