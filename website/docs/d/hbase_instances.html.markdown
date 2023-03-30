@@ -46,9 +46,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `engine` - The engine of the instance.
   * `engine_version` - The engine_version of the instance.
   * `network_type` - Classic network or VPC.
-  * `master_instance_type` - Like hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
+  * `master_instance_type` - Like hbase.sn2.2xlarge, hbase.sn2.4xlarge, hbase.sn2.8xlarge and so on.
   * `master_node_count` - The node count of master
-  * `core_instance_type` - Like hbase.sn1.large, hbase.sn1.large, hbase.n1.2xlarge and so on.
+  * `core_instance_type` - Like hbase.sn2.2xlarge, hbase.sn2.4xlarge, hbase.sn2.8xlarge and so on.
   * `core_node_count` - Same with "core_instance_quantity"
   * `core_disk_type` - Cloud_ssd or cloud_efficiency
   * `core_disk_size` - Core node disk size, unit:GB.
