@@ -123,7 +123,7 @@ func resourceAlicloudFCAsyncInvokeConfigCreate(d *schema.ResourceData, meta inte
 		FunctionName: StringPointer(functionName),
 	}
 
-	if v, ok := d.GetOk("maximum_retry_attempts"); ok {
+	if v, ok := d.GetOkExists("maximum_retry_attempts"); ok {
 		request.MaxAsyncRetryAttempts = Int64Pointer(int64(v.(int)))
 	}
 	if v, ok := d.GetOk("destination_config"); ok {
