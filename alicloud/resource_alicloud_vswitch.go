@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -23,6 +22,7 @@ func resourceAlicloudVswitch() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -71,15 +71,18 @@ func resourceAlicloudVswitch() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"zone_id"},
-				Deprecated:    "Field 'availability_zone' has been deprecated from provider version 1.119.0. New field 'zone_id' instead.",
+				Deprecated:    "Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.",
 			},
 			"enable_ipv6": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field `enable_ipv6` has been deprecated from provider version 1.203.0. If you want to enable ipv6, please set `ipv6_cidr_block_mask` to value, and if you want to disable ipv6, please set `ipv6_cidr_block_mask` to `-1`",
 			},
 			"ipv6_cidr_block_mask": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 			},
 			"ipv6_cidr_block": {
 				Type:     schema.TypeString,
@@ -120,7 +123,7 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 		return WrapError(Error(`[ERROR] Argument "availability_zone" or "zone_id" must be set one!`))
 	}
 
-	if v, ok := d.GetOk("ipv6_cidr_block_mask"); ok {
+	if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok && fmt.Sprint(v) != "-1" {
 		request["Ipv6CidrBlock"] = v
 	}
 
@@ -137,14 +140,16 @@ func resourceAlicloudVswitchCreate(d *schema.ResourceData, meta interface{}) err
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vswitch", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["VSwitchId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VswitchStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -165,6 +170,7 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 		}
 		return WrapError(err)
 	}
+
 	d.Set("cidr_block", object["CidrBlock"])
 	d.Set("description", object["Description"])
 	d.Set("status", object["Status"])
@@ -173,7 +179,6 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("availability_zone", object["ZoneId"])
-	d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
 
 	listTagResourcesObject, err := vpcService.ListTagResources(d.Id(), "VSWITCH")
 	if err != nil {
@@ -182,10 +187,18 @@ func resourceAlicloudVswitchRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("tags", tagsToMap(listTagResourcesObject))
 
 	if v, ok := object["Ipv6CidrBlock"]; ok && fmt.Sprint(v) != "" {
-		Ipv6CidrBlock := strings.Split(v.(string), "/")
-		if len(Ipv6CidrBlock) == 2 {
-			d.Set("ipv6_cidr_block_mask", formatInt(Ipv6CidrBlock[1]))
+		ipv6CidrBlockMask, err := getIpv6CidrNum(v.(string))
+		if err != nil {
+			return WrapError(err)
 		}
+
+		d.Set("enable_ipv6", true)
+		d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
+		d.Set("ipv6_cidr_block_mask", formatInt(ipv6CidrBlockMask))
+	} else {
+		d.Set("enable_ipv6", false)
+		d.Set("ipv6_cidr_block", object["Ipv6CidrBlock"])
+		d.Set("ipv6_cidr_block_mask", -1)
 	}
 
 	return nil
@@ -207,31 +220,47 @@ func resourceAlicloudVswitchUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 		d.SetPartial("tags")
 	}
+
 	update := false
 	request := map[string]interface{}{
 		"VSwitchId": d.Id(),
 	}
+	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
 	}
-	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("vswitch_name") {
 		update = true
-		request["VSwitchName"] = d.Get("vswitch_name")
+		if v, ok := d.GetOk("vswitch_name"); ok {
+			request["VSwitchName"] = v
+		}
 	}
+
 	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
-		request["VSwitchName"] = d.Get("name")
-	}
-	if !d.IsNewResource() && d.HasChange("ipv6_cidr_block_mask") {
-		update = true
-		request["Ipv6CidrBlock"] = d.Get("ipv6_cidr_block_mask")
-	}
-	if update {
-		if _, ok := d.GetOkExists("enable_ipv6"); ok {
-			request["EnableIPv6"] = d.Get("enable_ipv6")
+		if v, ok := d.GetOk("name"); ok {
+			request["VSwitchName"] = v
 		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("ipv6_cidr_block_mask") {
+		err := vpcService.CancelIpv6(d)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if v, ok := d.GetOkExists("ipv6_cidr_block_mask"); ok && fmt.Sprint(v) != "-1" {
+			update = true
+			request["Ipv6CidrBlock"] = v
+		}
+	}
+
+	if update {
 		action := "ModifyVSwitchAttribute"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
@@ -243,17 +272,27 @@ func resourceAlicloudVswitchUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VswitchStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("description")
 		d.SetPartial("name")
 		d.SetPartial("vswitch_name")
+		d.SetPartial("ipv6_cidr_block_mask")
 	}
+
 	d.Partial(false)
+
 	return resourceAlicloudVswitchRead(d, meta)
 }
 

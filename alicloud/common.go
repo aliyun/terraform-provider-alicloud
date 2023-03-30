@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -1474,4 +1476,28 @@ func IsSubCollection(sub []string, full []string) bool {
 		}
 	}
 	return true
+}
+
+func getIpv6CidrNum(ipv6CidrBlock string) (int64, error) {
+	cidr := strings.Split(ipv6CidrBlock, "/")[0]
+	mask, err := strconv.Atoi(strings.Split(ipv6CidrBlock, "/")[1])
+	if err != nil {
+		return 0, err
+	}
+
+	ip := net.ParseIP(cidr)
+	if ip == nil {
+		return 0, nil
+	}
+
+	intCidr := big.NewInt(0)
+	intCidr.SetBytes(ip)
+
+	bitCidr := fmt.Sprintf("%0128b", intCidr)
+
+	bitNum := bitCidr[mask-8 : mask]
+
+	result, _ := strconv.ParseInt(bitNum, 2, 64)
+
+	return result, nil
 }

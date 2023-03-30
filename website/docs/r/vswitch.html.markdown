@@ -92,8 +92,8 @@ The following arguments are supported:
 * `vswitch_name` - (Optional, Available in 1.119.0+) The name of the switch. Defaults to null.
 * `description` - (Optional) The switch description. Defaults to null.
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
-* `enable_ipv6` - (Optional, Available in 1.201.1+) Specifies whether to enable the IPv6 CIDR block. Valid values: `false` (Default): disables IPv6 CIDR blocks. `true`: enables IPv6 CIDR blocks.
-* `ipv6_cidr_block_mask` - (Optional, Available in 1.201.1+) The last 8 bits of the switch's IPv6 segment, taking values: 0~255. This parameter is only supported to be configured when the VPC to which the switch belongs is IPv6 enabled.
+* `enable_ipv6` - (Optional, Deprecated in 1.203.0+) Field `enable_ipv6` has been deprecated from provider version 1.203.0. If you want to enable ipv6, please set `ipv6_cidr_block_mask` to value, and if you want to disable ipv6, please set `ipv6_cidr_block_mask` to `-1`.
+* `ipv6_cidr_block_mask` - (Optional, Available in 1.201.1+) The last 8 bits of the switch's IPv6 segment, taking values: 0~255. This parameter is only supported to be configured when the VPC to which the switch belongs is IPv6 enabled. If you want to disable ipv6, please set `ipv6_cidr_block_mask` to `-1`.
 
 ### Timeouts
 
@@ -102,6 +102,7 @@ The following arguments are supported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 10 mins) Used when creating the vswitch (until it reaches the initial `Available` status). 
+* `update` - (Defaults to 10 mins) Used when terminating the vswitch.
 * `delete` - (Defaults to 10 mins) Used when terminating the vswitch. 
 
 ## Attributes Reference
