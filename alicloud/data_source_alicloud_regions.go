@@ -68,6 +68,7 @@ func dataSourceAlicloudRegionsRead(d *schema.ResourceData, meta interface{}) err
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeRegions(request)
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_regions", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

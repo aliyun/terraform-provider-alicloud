@@ -30,6 +30,9 @@ func dataSourceAlicloudAccountRead(d *schema.ResourceData, meta interface{}) err
 
 	log.Printf("[DEBUG] alicloud_account - account ID found: %#v", accountId)
 
+
+
+
 	d.SetId(accountId)
 
 	return nil
