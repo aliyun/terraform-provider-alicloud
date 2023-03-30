@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -44,6 +43,7 @@ type LogProject struct {
 	SecurityToken   string
 	UsingHTTP       bool   // default https
 	UserAgent       string // default defaultLogUserAgent
+	AuthVersion     AuthVersionType
 	baseURL         string
 	retryTimeout    time.Duration
 	httpClient      *http.Client

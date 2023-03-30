@@ -203,7 +203,11 @@ func (s *RamService) JudgeRolePolicyPrincipal(roleName string) error {
 	return WrapError(fmt.Errorf("Role policy services must contains 'ecs.aliyuncs.com', Now is \n%v.", resp.Role.AssumeRolePolicyDocument))
 }
 
-func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}) (allData []interface{}) {
+func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMap map[string]interface{}, groupOrUserNameOk, policyNameOk bool) (allData []interface{}) {
+	if (groupOrUserNameOk || policyNameOk) && len(dataMap) == 0 {
+		return
+	}
+
 	for _, v := range dataMap {
 		if len(v) > 0 {
 			for key := range allDataMap {
@@ -219,6 +223,7 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 			allData = append(allData, v)
 		}
 	}
+
 	return
 }
 

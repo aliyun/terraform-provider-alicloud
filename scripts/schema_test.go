@@ -59,16 +59,16 @@ func TestConsistencyWithDocument(t *testing.T) {
 		log.Warningf("the resource name is empty")
 		return
 	}
-	obj := alicloud.Provider().(*schema.Provider).ResourcesMap[*resourceName].Schema
-	objSchema := make(map[string]interface{}, 0)
-	objMd, err := parseResource(*resourceName)
+	resourceSchema := alicloud.Provider().(*schema.Provider).ResourcesMap[*resourceName].Schema
+	resourceSchemaFromDocs := make(map[string]interface{}, 0)
+	objMd, err := parseResourceDocs(*resourceName)
 	if err != nil {
 		log.Error(err)
 		t.Fatal()
 	}
-	mergeMaps(objSchema, objMd.Arguments, objMd.Attributes)
+	mergeMaps(resourceSchemaFromDocs, objMd.Arguments, objMd.Attributes)
 
-	if consistencyCheck(t, *resourceName, objSchema, obj) {
+	if !consistencyCheck(t, *resourceName, resourceSchemaFromDocs, resourceSchema) {
 		t.Fatal("the consistency with document has occurred")
 		os.Exit(1)
 	}
@@ -216,7 +216,7 @@ func ParseField(hunk diffparser.DiffRange, length int) map[string]map[string]int
 	return raw
 }
 
-func parseResource(resourceName string) (*Resource, error) {
+func parseResourceDocs(resourceName string) (*Resource, error) {
 	splitRes := strings.Split(resourceName, "alicloud_")
 	if len(splitRes) < 2 {
 		log.Errorf("the resource name parsed failed")
@@ -311,41 +311,41 @@ func parseMatchLine(words []string, phase string) map[string]interface{} {
 	return nil
 }
 
-func consistencyCheck(t *testing.T, resourceName string, doc map[string]interface{}, resource map[string]*schema.Schema) bool {
-	res := false
-	fileteredList := set.NewSet()
+func consistencyCheck(t *testing.T, resourceName string, resourceSchemaFromDocs map[string]interface{}, resourceSchema map[string]*schema.Schema) bool {
+	isConsistent := true
+	filteredList := set.NewSet()
 	if val, ok := filterList[resourceName]; ok {
 		for _, v := range val {
-			fileteredList.Add(v)
+			filteredList.Add(v)
 		}
 	}
-	defer func() {
-		if r := recover(); r != nil {
-			res = true
-			log.Errorf("internal error: Please email terraform@alibabacloud.com to report the issue with the related resource")
-			t.Fatal()
-		}
-	}()
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//		res = true
+	//		log.Errorf("internal error: Please email terraform@alibabacloud.com to report the issue with the related resource")
+	//		t.Fatal()
+	//	}
+	//}()
 
 	// the number of the schema field + 1(id) should equal to the number defined in document
-	if len(resource)+1 != len(doc) {
+	if len(resourceSchema)+1 != len(resourceSchemaFromDocs) {
 		record := set.NewSet()
-		for field, _ := range doc {
-			if field == "id" || fileteredList.Contains(field) {
-				delete(doc, field)
+		for field, _ := range resourceSchemaFromDocs {
+			if field == "id" || filteredList.Contains(field) {
+				delete(resourceSchemaFromDocs, field)
 				continue
 			}
-			if _, exist := resource[field]; exist {
-				delete(doc, field)
-				delete(resource, field)
+			if _, exist := resourceSchema[field]; exist {
+				delete(resourceSchemaFromDocs, field)
+				delete(resourceSchema, field)
 			} else if !exist {
 				// the field existed in Document,but not existed in resource
 				record.Add(field)
 			}
 		}
-		if len(resource) != 0 {
-			for field, _ := range resource {
-				if fileteredList.Contains(field) {
+		if len(resourceSchema) != 0 {
+			for field, _ := range resourceSchema {
+				if filteredList.Contains(field) {
 					record.Remove(field)
 					continue
 				}
@@ -358,30 +358,30 @@ func consistencyCheck(t *testing.T, resourceName string, doc map[string]interfac
 			return true
 		}
 	}
-	for field, docFieldObj := range doc {
-		docObj := docFieldObj.(map[string]interface{})
-		if docObj["Type"] == "Attribute" || fileteredList.Contains(field) {
+	for fieldKey, fieldValue := range resourceSchemaFromDocs {
+		fieldSchema := fieldValue.(map[string]interface{})
+		if fieldSchema["Type"] == "Attribute" || filteredList.Contains(fieldKey) {
 			continue
 		}
-		resourceFieldObj := resource[field]
-		if resourceFieldObj == nil {
-			res = true
-			panic(field)
+		resourceFieldObj, ok := resourceSchema[fieldKey]
+		if !ok || resourceFieldObj == nil {
+			isConsistent = false
+			log.Errorf("attribute %v described in the docs is not defined in the resource schema", fieldKey)
 		}
-		if _, exist1 := docObj["Optional"]; exist1 && !resourceFieldObj.Optional {
-			res = true
-			log.Errorf("attribute %v should be marked as Optional in the in the document description", field)
+		if _, exist1 := fieldSchema["Optional"]; exist1 && !resourceFieldObj.Optional {
+			isConsistent = false
+			log.Errorf("attribute %v should be marked as Optional in the in the document description", fieldKey)
 		}
-		if _, exist1 := docObj["Required"]; exist1 && !resourceFieldObj.Required {
-			res = true
-			log.Errorf("attribute %v should be marked as Required in the in the document description", field)
+		if _, exist1 := fieldSchema["Required"]; exist1 && !resourceFieldObj.Required {
+			isConsistent = false
+			log.Errorf("attribute %v should be marked as Required in the in the document description", fieldKey)
 		}
-		if _, exist1 := docObj["ForceNew"]; exist1 && !resourceFieldObj.ForceNew {
-			res = true
-			log.Errorf("attribute %v should be marked as ForceNew in the document description", field)
+		if _, exist1 := fieldSchema["ForceNew"]; exist1 && !resourceFieldObj.ForceNew {
+			isConsistent = false
+			log.Errorf("attribute %v should be marked as ForceNew in the document description", fieldKey)
 		}
 	}
-	return res
+	return isConsistent
 }
 
 func mergeMaps(Dst map[string]interface{}, arr ...map[string]interface{}) map[string]interface{} {

@@ -113,7 +113,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 			"cold_storage_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.Any(validation.IntBetween(800, 1000000), validation.IntInSlice([]int{0})),
+				ValidateFunc: validation.Any(validation.IntBetween(800, 100000000), validation.IntInSlice([]int{0})),
 				Default:      0,
 			},
 			"maintain_start_time": {

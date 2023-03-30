@@ -98,7 +98,14 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-
+						"enable_dpd": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"enable_nat_traversal": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"ipsec_config": {
 							Type:     schema.TypeList,
 							Optional: true,
@@ -335,19 +342,21 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 	var s []map[string]interface{}
 	for _, conn := range vpnSetTypes {
 		mapping := map[string]interface{}{
-			"customer_gateway_id": conn.CustomerGatewayId,
-			"vpn_gateway_id":      conn.VpnGatewayId,
-			"id":                  conn.VpnConnectionId,
-			"name":                conn.Name,
-			"local_subnet":        conn.LocalSubnet,
-			"remote_subnet":       conn.RemoteSubnet,
-			"create_time":         TimestampToStr(conn.CreateTime),
-			"effect_immediately":  conn.EffectImmediately,
-			"status":              conn.Status,
-			"ike_config":          vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
-			"ipsec_config":        vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
-			"vco_health_check":    vpnGatewayService.VcoHealthCheck(conn.VcoHealthCheck),
-			"vpn_bgp_config":      vpnGatewayService.VpnBgpConfig(conn.VpnBgpConfig),
+			"customer_gateway_id":  conn.CustomerGatewayId,
+			"vpn_gateway_id":       conn.VpnGatewayId,
+			"id":                   conn.VpnConnectionId,
+			"name":                 conn.Name,
+			"local_subnet":         conn.LocalSubnet,
+			"remote_subnet":        conn.RemoteSubnet,
+			"create_time":          TimestampToStr(conn.CreateTime),
+			"effect_immediately":   conn.EffectImmediately,
+			"status":               conn.Status,
+			"enable_dpd":           conn.EnableDpd,
+			"enable_nat_traversal": conn.EnableNatTraversal,
+			"ike_config":           vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
+			"ipsec_config":         vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
+			"vco_health_check":     vpnGatewayService.VcoHealthCheck(conn.VcoHealthCheck),
+			"vpn_bgp_config":       vpnGatewayService.VpnBgpConfig(conn.VpnBgpConfig),
 		}
 		ids = append(ids, conn.VpnConnectionId)
 		names = append(names, conn.Name)

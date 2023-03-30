@@ -40,6 +40,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					"shard_count":           "1",
 					"auto_split":            "true",
 					"max_split_shard_count": "1",
+					"mode":                  "standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -48,6 +49,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 						"shard_count":           "1",
 						"auto_split":            "true",
 						"max_split_shard_count": "1",
+						"mode":                  "standard",
 					}),
 				),
 			},
@@ -73,6 +75,30 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"retention_period": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period": "35",
+					"hot_ttl":          "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "35",
+						"hot_ttl":          "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period": "30",
+					"hot_ttl":          "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "30",
+						"hot_ttl":          "0",
 					}),
 				),
 			},
@@ -114,6 +140,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 					"max_split_shard_count": REMOVEKEY,
 					"append_meta":           REMOVEKEY,
 					"enable_web_tracking":   REMOVEKEY,
+					"hot_ttl":               REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -122,6 +149,7 @@ func TestAccAlicloudLogStore_basic(t *testing.T) {
 						"max_split_shard_count": "0",
 						"append_meta":           "true",
 						"enable_web_tracking":   "false",
+						"hot_ttl":               "0",
 					}),
 				),
 			},

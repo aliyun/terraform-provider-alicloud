@@ -197,11 +197,24 @@ func (c *Client) GetHistograms(project, logstore string, topic string, from int6
 	return ls.GetHistograms(topic, from, to, queryExp)
 }
 
+// GetHistogramsToCompleted query logs with [from, to) time range to completed
+func (c *Client) GetHistogramsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetHistogramsToCompleted(topic, from, to, queryExp)
+}
+
 // GetLogs query logs with [from, to) time range
 func (c *Client) GetLogs(project, logstore string, topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.GetLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
+}
+
+// GetLogsToCompleted query logs with [from, to) time range to completed
+func (c *Client) GetLogsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogsToCompleted(topic, from, to, queryExp, maxLineNum, offset, reverse)
 }
 
 // GetLogLines ...
@@ -215,6 +228,12 @@ func (c *Client) GetLogLines(project, logstore string, topic string, from int64,
 func (c *Client) GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.GetLogsV2(req)
+}
+
+// GetLogsToCompletedV2 ...
+func (c *Client) GetLogsToCompletedV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogsToCompletedV2(req)
 }
 
 // GetLogLinesV2 ...

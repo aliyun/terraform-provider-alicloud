@@ -48,7 +48,11 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
-				ValidateFunc: validation.IntBetween(1, 3650),
+				ValidateFunc: validation.IntBetween(1, 3000),
+			},
+			"hot_ttl": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"shard_count": {
 				Type:     schema.TypeInt,
@@ -59,6 +63,14 @@ func resourceAlicloudLogStore() *schema.Resource {
 						return false
 					}
 					return true
+				},
+			},
+			"mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return old != "" && new != "" && old != new
 				},
 			},
 			"shards": {
@@ -162,6 +174,10 @@ func resourceAlicloudLogStoreCreate(d *schema.ResourceData, meta interface{}) er
 		MaxSplitShard: d.Get("max_split_shard_count").(int),
 		AppendMeta:    d.Get("append_meta").(bool),
 		TelemetryType: d.Get("telemetry_type").(string),
+		Mode:          d.Get("mode").(string),
+	}
+	if hotTTL, ok := d.GetOk("hot_ttl"); ok {
+		logstore.HotTTL = int32(hotTTL.(int))
 	}
 	if encrypt := buildEncrypt(d); encrypt != nil {
 		logstore.EncryptConf = encrypt
@@ -222,6 +238,8 @@ func resourceAlicloudLogStoreRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("retention_period", object.TTL)
 	d.Set("shard_count", object.ShardCount)
 	d.Set("telemetry_type", object.TelemetryType)
+	d.Set("hot_ttl", object.HotTTL)
+	d.Set("mode", object.Mode)
 	var shards []*sls.Shard
 	err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
 		shards, err = object.ListShards()
@@ -289,11 +307,14 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 	if d.HasChange("telemetry_type") {
 		return errors.New("telemetry_type can't be changed")
 	}
-
 	update := false
 	if d.HasChange("retention_period") {
 		update = true
 		d.SetPartial("retention_period")
+	}
+	if d.HasChange("hot_ttl") {
+		update = true
+		d.SetPartial("hot_ttl")
 	}
 	if d.HasChange("max_split_shard_count") {
 		update = true
@@ -328,6 +349,11 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		store.AutoSplit = d.Get("auto_split").(bool)
 		if encrypt := buildEncrypt(d); encrypt != nil {
 			store.EncryptConf = encrypt
+		}
+		if hotTTL, ok := d.GetOk("hot_ttl"); ok && hotTTL.(int) > 0 {
+			store.HotTTL = int32(hotTTL.(int))
+		} else {
+			store.HotTTL = 0
 		}
 		var requestInfo *sls.Client
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {

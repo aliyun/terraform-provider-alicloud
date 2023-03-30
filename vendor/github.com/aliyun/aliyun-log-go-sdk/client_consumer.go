@@ -19,11 +19,15 @@ type ConsumerGroup struct {
 	InOrder           bool   `json:"order"`
 }
 
+func (cg *ConsumerGroup) String() string {
+	return fmt.Sprintf("%+v", cg)
+}
+
 // ConsumerGroupCheckPoint type define
 type ConsumerGroupCheckPoint struct {
 	ShardID    int    `json:"shard"`
 	CheckPoint string `json:"checkpoint"`
-	UpdateTime int64    `json:"updateTime"`
+	UpdateTime int64  `json:"updateTime"`
 	Consumer   string `json:"consumer"`
 }
 
@@ -35,6 +39,9 @@ func (c *Client) CreateConsumerGroup(project, logstore string, cg ConsumerGroup)
 	}
 
 	body, err := json.Marshal(cg)
+	if err != nil {
+		return err
+	}
 	uri := fmt.Sprintf("/logstores/%v/consumergroups", logstore)
 	_, err = c.request(project, "POST", uri, h, body)
 	if err != nil {
@@ -50,7 +57,15 @@ func (c *Client) UpdateConsumerGroup(project, logstore string, cg ConsumerGroup)
 		"Content-Type":      "application/json",
 	}
 
-	body, err := json.Marshal(cg)
+	updates := make(map[string]interface{})
+	updates["order"] = cg.InOrder
+	if cg.Timeout > 0 {
+		updates["timeout"] = cg.Timeout
+	}
+	body, err := json.Marshal(updates)
+	if err != nil {
+		return err
+	}
 	uri := fmt.Sprintf("/logstores/%v/consumergroups/%v", logstore, cg.ConsumerGroupName)
 	_, err = c.request(project, "PUT", uri, h, body)
 	if err != nil {
