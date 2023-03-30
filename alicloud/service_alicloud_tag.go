@@ -64,3 +64,74 @@ func (s *TagService) ListTagValues(key string) (object []interface{}, err error)
 
 	return values, nil
 }
+
+func (s *TagService) DescribeTagPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewTagClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetPolicy"
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"PolicyId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("TagPolicy", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Policy", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policy", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
+func (s *TagService) DescribeTagPolicyAttachment(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewTagClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	//action := "ListPoliciesForTarget"
+	action := "ListTargetsForPolicy"
+	//parts, err := ParseResourceId(id, 3)
+	//if err != nil {
+	//	err = WrapError(err)
+	//	return
+	//}
+	request := map[string]interface{}{
+		"RegionId": s.client.RegionId,
+		"PolicyId": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-28"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy", "EntityNotExists.Target"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("TagPolicyAttachment", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Targets", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Targets", response)
+	}
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Tag", id)), NotFoundWithResponse, response)
+	}
+	object = v.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
