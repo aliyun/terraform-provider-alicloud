@@ -42,8 +42,9 @@ jobs:
 #        run: |
 #          make test
 
-  Field-Check:
+  Integration-Test:
     runs-on: ubuntu-latest
+    environment: IntegrationTest
     steps:
       - uses: actions/checkout@v2
         with:
@@ -53,7 +54,16 @@ jobs:
           go-version: '1.19.3'
       - name: grant permissions
         run: |
-          chmod +rwx scripts/field_check.sh
-      - name: Field Check
+          chmod +rwx scripts/attribute_compatibility_check.sh
+          chmod +rwx scripts/attribute_consistency_check.sh
+          chmod +rwx scripts/integration_test_check.sh
+          echo $TF_ACC
+#      - name: Attribute Compatibility Check
+#        run: |
+#          sudo bash scripts/attribute_compatibility_check.sh
+#      - name: Attribute Consistency Check
+#        run: |
+#          sudo bash scripts/attribute_consistency_check.sh
+      - name: Integration Test Check
         run: |
-          sudo bash scripts/field_check.sh
+          sudo bash scripts/integration_test_check.sh
