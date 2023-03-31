@@ -27,8 +27,8 @@ resource "alicloud_security_group" "ecs_sg" {
 }
 
 resource "alicloud_ecs_disk" "ecs_disk" {
-  availability_zone = "cn-beijing-a"
-  size              = "50"
+  zone_id = "cn-beijing-a"
+  size    = "50"
   tags = {
     Name = "TerraformTest-disk"
   }
@@ -57,11 +57,10 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the Instance to attach to.
 * `disk_id` - (Required, ForceNew) ID of the Disk to be attached.
-* `delete_with_instance` - (Optional, ForceNew) Indicates whether the disk is released together with the instance. Default to: `false`.
+* `delete_with_instance` - (Optional) Indicates whether the disk is released together with the instance. Default to: `false`.
 * `bootable` - (Optional, ForceNew) Whether to mount as a system disk. Default to: `false`.
 * `key_pair_name` - (Optional, ForceNew) The name of key pair
 * `password` - (Optional, ForceNew) When mounting the system disk, setting the user name and password of the instance is only effective for the administrator and root user names, and other user names are not effective.
-* `device_name` - (Deprecated) The device name has been deprecated, and when attaching disk, it will be allocated automatically by system according to default order from /dev/xvdb to /dev/xvdz.
 
 ## Attributes Reference
 
