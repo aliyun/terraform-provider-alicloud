@@ -52,6 +52,8 @@ fi
 FAILED_COUNT=0
 TEST_CASE_CODE=""
 
+go clean -cache -modcache -i -r
+
 cd terraform-provider-alicloud
 diffFiles=$(git diff --name-only HEAD~ HEAD)
 
@@ -72,7 +74,6 @@ do
           if [[ ${func} != "TestAcc"* ]]; then
             continue
           fi
-          go clean -cache -modcache -i -r
           echo -e "\033[34m################################################################################\033[0m"
           echo -e "\033[34mTF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m\033[0m"
           TF_ACC=1 go test ./alicloud -v -run=${func} -timeout=1200m | {
