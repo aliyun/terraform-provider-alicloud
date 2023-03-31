@@ -1,4 +1,34 @@
 ## 1.202.0 (Unreleased)
+
+- **New Resource:** `alicloud_rds_db_node` [GH-6022]
+- **New Resource:** `alicloud_dbfs_auto_snap_shot_policy` [GH-6023]
+- **New Resource:** `alicloud_cen_transit_route_table_aggregation` [GH-5748]
+- **New Data Source:** `alicloud_cen_transit_route_table_aggregations` [GH-5748]
+- **New Data Source:** `alicloud_dbfs_auto_snap_shot_policies` [GH-6023]
+
+ENHANCEMENTS:
+
+- resource/alicloud_ecs_disk_attachment: Shortens the pending time after creating [GH-6042]
+- resource/alicloud_ecs_disk: Remvoes the waiting after creating [GH-6042]
+- resource/alicloud_hbase_instance: Enlarges the cold_storage_size max value to 100000000 [GH-6029]
+- resource/alicloud_log_store add attribute hot_ttl and mode [GH-5923]
+- resource/alicloud_cen_instance_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteTable [GH-6005]
+- resource/alicloud_rds_account:Add Query Instance Status [GH-6013]
+- resource/alicloud_ga_endpoint_group: Added retry stragety for error code NotActive.Listener [GH-6004]
+- datasource/alicloud_vpn_connections: Supports new output enable_dpd and enable_nat_traversal [GH-6020]
+- ci: Improves the workflows bug when checking the consistency [GH-6031]
+- testcase: Improves the resource alicloud_hbase_instance testcases [GH-6034]
+- testcase: Removed the resource cen_transit_route_table_aggregation region limit [GH-6030]
+- Function Compute supports proxy [GH-6038]
+
+BUG FIXES:
+
+- resource/alicloud_mongodb_instance: Fixed ssl_action invalid error [GH-6010]
+- resource/alicloud_security_group_rule: Changed the Create SDK to common api to fix the read error caused by ipv6_cidr_ip value [GH-5988]
+- resource/alicloud_cloud_connect_network_grant: Fixed the panic error caused by cen_uid type [GH-6011]
+- data source/alicloud_ram_users: Fixed the read error caused by filter bug [GH-6018]
+- data source/alicloud_ram_groups: Fixed the read error caused by filter bug [GH-6018]
+
 ## 1.201.2 (March 17, 2023)
 
 BUG FIXES:
