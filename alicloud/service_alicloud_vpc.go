@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -462,6 +463,10 @@ func (s *VpcService) DescribeRouteEntry(id string) (*vpc.RouteEntry, error) {
 	request := vpc.CreateDescribeRouteTablesRequest()
 	request.RegionId = s.client.RegionId
 	request.RouteTableId = rtId
+
+	if strings.Contains(cidr, "_") {
+		cidr = strings.Replace(cidr, "_", ":", -1)
+	}
 
 	for {
 		wait := incrementalWait(3*time.Second, 3*time.Second)

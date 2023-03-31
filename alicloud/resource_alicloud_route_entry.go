@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -60,8 +61,8 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
+	var cidr string
 	rtId := d.Get("route_table_id").(string)
-	cidr := d.Get("destination_cidrblock").(string)
 	nt := d.Get("nexthop_type").(string)
 	ni := d.Get("nexthop_id").(string)
 
@@ -73,7 +74,15 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	request := vpc.CreateCreateRouteEntryRequest()
 	request.RegionId = client.RegionId
 	request.RouteTableId = rtId
-	request.DestinationCidrBlock = cidr
+
+	if v, ok := d.GetOk("destination_cidrblock"); ok && v.(string) != "" {
+		cidr = v.(string)
+		if strings.Contains(v.(string), ":") {
+			cidr = strings.Replace(v.(string), ":", "_", -1)
+		}
+		request.DestinationCidrBlock = v.(string)
+	}
+
 	request.NextHopType = nt
 	request.NextHopId = ni
 	request.ClientToken = buildClientToken(request.GetActionName())
@@ -144,6 +153,7 @@ func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("nexthop_type", object.NextHopType)
 	d.Set("nexthop_id", object.InstanceId)
 	d.Set("name", object.RouteEntryName)
+
 	return nil
 }
 
