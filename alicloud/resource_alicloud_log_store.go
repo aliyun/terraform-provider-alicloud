@@ -48,7 +48,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
-				ValidateFunc: validation.IntBetween(1, 3000),
+				ValidateFunc: validation.IntBetween(1, 3650),
 			},
 			"hot_ttl": {
 				Type:     schema.TypeInt,
