@@ -115,7 +115,7 @@ func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprint(request["DiskId"], ":", request["InstanceId"]))
 	parts, err := ParseResourceId(d.Id(), 2)
-	stateConf := BuildStateConf([]string{}, []string{"In_use"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ecsService.EcsDiskStateRefreshFunc(parts[0], []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"In_use"}, d.Timeout(schema.TimeoutCreate), 1*time.Second, ecsService.EcsDiskStateRefreshFunc(parts[0], []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -219,7 +219,7 @@ func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	ecsService := EcsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ecsService.EcsDiskStateRefreshFunc(parts[0], []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutDelete), 1*time.Second, ecsService.EcsDiskStateRefreshFunc(parts[0], []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
