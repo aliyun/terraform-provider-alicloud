@@ -165,7 +165,7 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 	nasService := NasService{client}
 	object, err := nasService.DescribeNasAccessRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_nas_access_rule nasService.DescribeNasAccessRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
