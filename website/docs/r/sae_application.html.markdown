@@ -50,6 +50,7 @@ resource "alicloud_sae_application" "default" {
   namespace_id    = alicloud_sae_namespace.default.id
   image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
   package_type    = "Image"
+  vpc_id          = alicloud_vswitch.vsw.vpc_id
   vswitch_id      = alicloud_vswitch.vsw.id
   timezone        = "Asia/Beijing"
   replicas        = "5"
