@@ -482,19 +482,22 @@ func (s *NlbService) NlbServerGroupServerAttachmentStateRefreshFunc(d *schema.Re
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
 func (s *NlbService) DescribeNlbLoadBalancerSecurityGroupAttachment(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewNlbClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
 	}
 
 	request := map[string]interface{}{
-		"LoadBalancerId": parts[0],
 		"RegionId":       s.client.RegionId,
+		"ClientToken":    buildClientToken("GetLoadBalancerAttribute"),
+		"LoadBalancerId": parts[0],
 	}
 
 	idExist := false
@@ -504,7 +507,7 @@ func (s *NlbService) DescribeNlbLoadBalancerSecurityGroupAttachment(id string) (
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -512,27 +515,33 @@ func (s *NlbService) DescribeNlbLoadBalancerSecurityGroupAttachment(id string) (
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 
-	if fmt.Sprint(v.(map[string]interface{})["SecurityGroupIds"].([]interface{})[0]) == parts[1] {
-		idExist = true
-		return v.(map[string]interface{}), nil
+	if securityGroupIdsList, ok := v.(map[string]interface{})["SecurityGroupIds"]; ok {
+		for _, securityGroupIds := range securityGroupIdsList.([]interface{}) {
+			if fmt.Sprint(securityGroupIds) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("NLB", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("NLB:SecurityGroupAttachment", id)), NotFoundWithResponse, response)
 	}
-	return v.(map[string]interface{}), nil
+
+	return object, nil
 }
 
 func (s *NlbService) GetJobStatus(id string) (object map[string]interface{}, err error) {
