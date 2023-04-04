@@ -886,6 +886,99 @@ func TestAccAlicloudOssBucketBasic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketColdArchive(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigBasic)
+	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                3,
+		"created_before_date": "",
+		"storage_class":       "IA",
+	}))
+	hashcode4 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                30,
+		"created_before_date": "",
+		"storage_class":       "ColdArchive",
+	}))
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":        name,
+					"acl":           "public-read",
+					"storage_class": "ColdArchive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":        name,
+						"acl":           "public-read",
+						"storage_class": "ColdArchive",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lifecycle_rule": []map[string]interface{}{
+						{
+							"id":      "rule3",
+							"prefix":  "path3/",
+							"enabled": "true",
+							"transitions": []map[string]interface{}{
+								{
+									"days":          "3",
+									"storage_class": "IA",
+								},
+								{
+									"days":          "30",
+									"storage_class": "ColdArchive",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lifecycle_rule.#":                                             "1",
+						"lifecycle_rule.0.id":                                          "rule3",
+						"lifecycle_rule.0.prefix":                                      "path3/",
+						"lifecycle_rule.0.enabled":                                     "true",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".days":          "3",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".storage_class": string(oss.StorageIA),
+						"lifecycle_rule.0.transitions." + hashcode4 + ".days":          "30",
+						"lifecycle_rule.0.transitions." + hashcode4 + ".storage_class": string(oss.StorageColdArchive),
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceOssBucketConfigBasic(name string) string {
 	return fmt.Sprintf("")
 }

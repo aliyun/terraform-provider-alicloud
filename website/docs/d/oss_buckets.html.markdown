@@ -42,7 +42,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `intranet_endpoint` - Intranet domain name for accessing the bucket from an ECS instance in the same region.
   * `location` - Region of the data center where the bucket is located.
   * `owner` - Bucket owner.
-  * `storage_class` - Object storage type. Possible values: `Standard`, `IA` and `Archive`.
+  * `storage_class` - Object storage type. Possible values: `Standard`, `IA`, `Archive` and `ColdArchive`.
   * `redundancy_type` - Redundancy type. Possible values: `LRS`, and `ZRS`.
   * `creation_date` - Bucket creation date.
   * `cors_rules` - A list of CORS rule configurations. Each element contains the following attributes:
