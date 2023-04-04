@@ -94,15 +94,16 @@ func resourceAlicloudOssBucketObject() *schema.Resource {
 			"server_side_encryption": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(ServerSideEncryptionKMS), string(ServerSideEncryptionAes256),
 				}, false),
-				Default: ServerSideEncryptionAes256,
 			},
 
 			"kms_key_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return ServerSideEncryptionKMS != d.Get("server_side_encryption").(string)
 				},
@@ -219,6 +220,12 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 	d.Set("expires", object.Get("Expires"))
 	d.Set("etag", strings.Trim(object.Get("ETag"), `"`))
 	d.Set("version_id", object.Get("x-oss-version-id"))
+	if len(object.Get("x-oss-server-side-encryption")) > 0 {
+		d.Set("server_side_encryption", object.Get("x-oss-server-side-encryption"))
+	}
+	if len(object.Get("x-oss-server-side-encryption-key-id")) > 0 {
+		d.Set("kms_key_id", object.Get("x-oss-server-side-encryption-key-id"))
+	}
 
 	return nil
 }
