@@ -277,7 +277,7 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB, and PPAS. Create a serverless instance, you must set this parameter to MySQL.
+* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB. Create a serverless instance, you must set this parameter to MySQL.
 
 -> **NOTE:**
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
@@ -289,7 +289,7 @@ The following arguments are supported:
 - When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value.
 - When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
-    - [5, 2000] for MySQL/PostgreSQL/PPAS HA dual node edition;
+    - [5, 2000] for MySQL/PostgreSQL HA dual node edition;
     - [20,1000] for MySQL 5.7 basic single node edition;
     - [10, 2000] for SQL Server 2008R2;
     - [20,2000] for SQL Server 2012 basic single node edition
