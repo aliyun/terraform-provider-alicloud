@@ -123,7 +123,6 @@ The following arguments are supported:
   * MySQL: **5.5/5.6/5.7/8.0**.
   * SQL Server: **2008r2/08r2_ent_ha/2012/2012_ent_ha/2012_std_ha/2012_web/2014_std_ha/2016_ent_ha/2016_std_ha/2016_web/2017_std_ha/2017_ent/2019_std_ha/2019_ent**.
   * PostgreSQL: **9.4/10.0/11.0/12.0/13.0**.
-  * PPAS: **9.3/10.0**.
   * MariaDB: **10.3**.
 * `instance_network_type` - (Required, ForceNew) The network type of the instance. Valid values:
   * **Classic**: Classic Network.
@@ -164,7 +163,7 @@ The following arguments are supported:
 
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
 * `zone_id_slave_1` - (Optional, Computed, ForceNew) The ID of the zone to which the secondary instance of the new instance belongs. You can specify this parameter only when the original instance runs RDS High-availability Edition. You can select a zone that belongs to the region where the original instance resides. You can call the [DescribeRegions](https://www.alibabacloud.com/help/doc-detail/26243.htm) operation to query zone IDs.
-* `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, and PPAS.
+* `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL.
 * `parameters` - (Optional, Computed) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `switch_time_mode` - (Optional) The time at which ApsaraDB RDS switches your workloads over to the new instance. This parameter is used together with the SwitchOver parameter and takes effect only when you set the SwitchOver parameter to true. Valid values:

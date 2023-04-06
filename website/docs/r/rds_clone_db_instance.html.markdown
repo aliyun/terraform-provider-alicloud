@@ -141,7 +141,6 @@ The following arguments are supported:
   * MySQL:**5.5/5.6/5.7/8.0**
   * SQL Server:**2008r2/08r2_ent_ha/2012/2012_ent_ha/2012_std_ha/2012_web/2014_std_ha/2016_ent_ha/2016_std_ha/2016_web/2017_std_ha/2017_ent/2019_std_ha/2019_ent**
   * PostgreSQL:**9.4/10.0/11.0/12.0/13.0**
-  * PPAS:**9.3/10.0**
   * MariaDB:**10.3**.
 * `instance_network_type` - (Optional, Computed, ForceNew) The network type of the instance. Valid values:
   * **Classic**: Classic Network
@@ -185,7 +184,7 @@ The following arguments are supported:
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/doc-detail/26243.htm) operation to query the most recent region list.
 
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
-* `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB, and PPAS.
+* `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 * `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
