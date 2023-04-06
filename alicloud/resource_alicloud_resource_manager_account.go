@@ -244,7 +244,7 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOk("abandon_able_check_id"); ok {
-		request["AbandonableCheckId"] = v
+		request["AbandonableCheckId"] = convertListToJsonString(v.([]interface{}))
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
