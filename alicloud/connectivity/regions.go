@@ -181,6 +181,7 @@ var MongoDBServerlessSupportRegions = []Region{APSouthEast5, Shanghai, USEast1, 
 var FnFSupportRegions = []Region{Shenzhen, Beijing, Shanghai, APSouthEast1, USWest1, Hangzhou}
 var GaSupportRegions = []Region{Hangzhou}
 var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
+var TagPolicySupportRegions = []Region{Beijing, APSouthEast1}
 var VPCVbrHaSupportRegions = []Region{Hangzhou}
 var CenSupportRegions = []Region{Hangzhou}
 var ROSSupportRegions = []Region{USWest1, HeYuan, Zhangjiakou, Hongkong, APSouthEast3, EUCentral1, Huhehaote, APSouthEast6, Shenzhen, APSouth1, Qingdao, GuangZhou, APSouthEast2, WuLanChaBu, EUWest1, MEEast1, ChengDu, Shanghai, APSouthEast1, APSouthEast5, USEast1, Beijing, APNorthEast1, Hangzhou}
