@@ -2621,3 +2621,89 @@ func (s *RdsService) DescribeRdsNode(id string) (object map[string]interface{}, 
 	}
 	return object, nil
 }
+
+func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRdsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	_, err = s.DescribeDBInstance(parts[0])
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDBInstanceEndpoints"
+	request := map[string]interface{}{
+		"SourceIp":             s.client.SourceIp,
+		"DBInstanceId":         parts[0],
+		"DBInstanceEndpointId": parts[1],
+		"RegionId":             s.client.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	v, err := jsonpath.Get("$.Data.DBInstanceEndpoints", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.DBInstanceEndpoints", response)
+	}
+	if endpoints, ok := v.(map[string]interface{})["DBInstanceEndpoint"].([]interface{}); ok {
+		if len(endpoints) < 1 {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceEndpoint", id)), NotFoundMsg, ProviderERROR)
+		}
+		endpoint := endpoints[0].(map[string]interface{})
+		object = make(map[string]interface{})
+		object["EndpointDescription"] = endpoint["EndpointDescription"]
+		object["EndpointType"] = endpoint["EndpointType"]
+		object["DBInstanceId"] = parts[0]
+		object["DBInstanceEndpointId"] = parts[1]
+		nodeList := endpoint["NodeItems"]
+		nodeItems := nodeList.(map[string]interface{})["NodeItem"].([]interface{})
+		dbNodesMaps := make([]map[string]interface{}, 0)
+		if nodeItems != nil && len(nodeItems) > 0 {
+			for _, nodeItem := range nodeItems {
+				dbNodesListItemMap := map[string]interface{}{}
+				dbNodesListItemMap["node_id"] = nodeItem.(map[string]interface{})["NodeId"]
+				dbNodesListItemMap["weight"] = nodeItem.(map[string]interface{})["Weight"]
+				dbNodesMaps = append(dbNodesMaps, dbNodesListItemMap)
+			}
+			object["NodeItems"] = dbNodesMaps
+		}
+		addressList := endpoint["AddressItems"]
+		addressItems := addressList.(map[string]interface{})["AddressItem"].([]interface{})
+		if addressItems != nil && len(addressItems) > 0 {
+			for _, addressItem := range addressItems {
+				ipType := addressItem.(map[string]interface{})["IpType"]
+				if ipType.(string) == "Private" {
+					object["VpcId"] = addressItem.(map[string]interface{})["VpcId"]
+					object["IpType"] = addressItem.(map[string]interface{})["IpType"]
+					object["IpAddress"] = addressItem.(map[string]interface{})["IpAddress"]
+					object["VSwitchId"] = addressItem.(map[string]interface{})["VSwitchId"]
+					object["Port"] = addressItem.(map[string]interface{})["Port"]
+					object["ConnectionString"] = addressItem.(map[string]interface{})["ConnectionString"]
+					object["ConnectionStringPrefix"] = strings.Split(fmt.Sprint(object["ConnectionString"]), ".")[0]
+					break
+				}
+			}
+		}
+	}
+	return object, nil
+}
