@@ -1582,6 +1582,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_auto_snap_shot_policy":                            resourceAlicloudDbfsAutoSnapShotPolicy(),
 			"alicloud_cen_transit_route_table_aggregation":                   resourceAlicloudCenTransitRouteTableAggregation(),
 			"alicloud_arms_prometheus":                                       resourceAlicloudArmsPrometheus(),
+			"alicloud_oos_default_patch_baseline":                            resourceAlicloudOosDefaultPatchBaseline(),
 		},
 
 		ConfigureFunc: providerConfigure,
