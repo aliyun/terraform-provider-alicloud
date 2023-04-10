@@ -203,6 +203,7 @@ func (s *YundunBastionhostService) UpdateInstanceSpec(schemaSpecMap map[string]s
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request.RegionId = string(connectivity.APSouthEast1)
+				request.ProductType = "bastionhost_std_public_intl"
 				request.Domain = connectivity.BssOpenAPIEndpointInternational
 				return resource.RetryableError(err)
 			}
