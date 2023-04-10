@@ -5,7 +5,7 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/alibabacloud-go/cs-20151215/v3 v3.0.16
 	github.com/alibabacloud-go/darabonba-openapi v0.1.19-0.20220507083948-2c7e1f6567c1
-	github.com/alibabacloud-go/tea v1.1.17
+	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-roa v1.3.0
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5
@@ -15,7 +15,7 @@ require (
 	github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.1+incompatible
 	github.com/aliyun/aliyun-tablestore-go-sdk v1.7.6
-	github.com/aliyun/credentials-go v1.1.2
+	github.com/aliyun/credentials-go v1.2.6
 	github.com/aliyun/fc-go-sdk v0.0.0-20220622030011-bc7ded2a9050
 	github.com/deckarep/golang-set v1.8.0
 	github.com/denverdino/aliyungo v0.0.0-20220929054937-e3c8bf5ad947
@@ -38,15 +38,22 @@ require (
 )
 
 require (
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
+	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+)
+
+require (
 	cloud.google.com/go v0.54.0 // indirect
 	cloud.google.com/go/storage v1.6.0 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
+	github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
-	github.com/alibabacloud-go/openapi-util v0.0.11 // indirect
+	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-roa-utils v1.1.5 // indirect
 	github.com/alibabacloud-go/tea-rpc-utils v1.1.2 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect

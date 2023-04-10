@@ -15,7 +15,7 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Go Version
         uses: actions/setup-go@v2
         with:
@@ -38,22 +38,131 @@ jobs:
         run: |
           make vet
 
-#      - name: test
-#        run: |
-#          make test
-
-  Field-Check:
+  CompatibilityCheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
-          fetch-depth: '3'
-      - uses: actions/setup-go@v2
+          go-version: '1.18.x'
+      - uses: actions/checkout@v3
         with:
-          go-version: '1.19.3'
-      - name: grant permissions
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Attribute Compatibility Check
         run: |
-          chmod +rwx scripts/field_check.sh
-      - name: Field Check
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          echo $diffFiles > diff.out
+          go test -v ./scripts/schema_test.go -run=TestFieldCompatibilityCheck -file_name="../diff.out"
+          if [[ "$?" != "0" ]]; then
+            echo -e "\033[31m Compatibility Error! Please check out the correct schema \033[0m"
+            exit 1
+          fi
+
+  ConsistencyCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18.x'
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Attribute Consistency Check
         run: |
-          sudo bash scripts/field_check.sh
+          diffResourceNames=""
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          for fileName in ${diffFiles[@]};
+          do
+              # currently, the action does not support checking data source
+              if [[ ${fileName} == alicloud/resource_* ]]; then
+                  resourceName=$(echo ${fileName} | grep -Eo "alicloud_[0-9a-z_]*")
+                  diffResourceNames=$diffResourceNames";"${resourceName}
+              fi
+          done
+          if [[ ${diffResourceNames} == "" ]]; then
+              echo -e "\n\033[33m missing resource files and there is no need to checking missing Consistency. \033[0m"
+              exit 0
+          fi
+          go test -v ./scripts/schema_test.go -run=TestConsistencyWithDocument -resourceNames="${diffResourceNames}"
+          if [[ "$?" != "0" ]]; then
+            echo -e "\033[31m Consistency Error! Please check out the correct schema or document \033[0m"
+            exit 1
+          fi
+
+  IntegrationTest:
+    runs-on: ubuntu-latest
+    environment: IntegrationTest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18.x'
+      - uses: ReeganExE/github-action-job-id@v1.0
+        with:
+          expose-name: true
+      - uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+        with:
+          # Can be "open", "closed", or "all".  Defaults to "open".
+          state: open
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Files Diff Check
+        run: |
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          for fileName in ${diffFiles[@]};
+          do
+              echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
+              if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
+                  if [[ ${fileName} == *?_test.go ]]; then
+                      echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
+                      continue
+                  fi
+                  fileName=(${fileName//\.go/_test\.go })
+                  checkFuncs=$(grep "func TestAcc.*" ${fileName})
+                  echo -e "found the test funcs:\n${checkFuncs}\n"
+                  funcs=(${checkFuncs//"(t *testing.T) {"/ })
+                  for func in ${funcs[@]};
+                  do
+                    if [[ ${func} != "TestAcc"* ]]; then
+                      continue
+                    fi
+                    DiffFuncNames=$DiffFuncNames";"${func}
+                  done
+              fi
+          done
+
+          if [[ ${DiffFuncNames} == "" ]]; then
+              echo -e "\n\033[31m missing integration test cases, please add them. \033[0m"
+              exit 1
+          fi
+          echo "DIFF_FUNC_NAMES=$DiffFuncNames" >> $GITHUB_ENV
+      - uses: montudor/action-zip@v1
+      - name: Zip The PR
+        run: |
+          zip -qq -r terraform-provider-alicloud.zip .
+          IN=$GH_JOB_IntegrationTest_HTML_URL
+          arrIN=(${IN//actions/ })
+          ossObjectPath="github-actions/pull/"${{ steps.findPr.outputs.pr }}${arrIN[1]}
+          echo "OSS_OBJECT_PATH=$ossObjectPath" >> $GITHUB_ENV
+
+      - name: Upload To OSS
+        uses: tvrcgo/upload-to-oss@master
+        with:
+          key-id: ${{ secrets.ALICLOUD_ACCESS_KEY }}
+          key-secret: ${{ secrets.ALICLOUD_SECRET_KEY }}
+          region: oss-${{ secrets.BUCKET_REGION }}
+          bucket: ${{ secrets.BUCKET_NAME }}
+          assets: |
+            terraform-provider-alicloud.zip:${{ env.OSS_OBJECT_PATH }}/terraform-provider-alicloud.zip
+      - name: Run Integration Test
+        run: go run scripts/integration.go ${{ secrets.ALICLOUD_ACCESS_KEY }} ${{ secrets.ALICLOUD_SECRET_KEY }} ${{ secrets.ALICLOUD_ACCOUNT_ID }} ${{ secrets.FC_SERVICE }} ${{ secrets.FC_REGION }} ${{ secrets.BUCKET_REGION }} ${{ secrets.BUCKET_NAME }} ${{ env.OSS_OBJECT_PATH }}

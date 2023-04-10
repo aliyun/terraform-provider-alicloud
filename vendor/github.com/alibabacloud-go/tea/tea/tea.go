@@ -178,22 +178,43 @@ func NewSDKError(obj map[string]interface{}) *SDKError {
 		err.Code = String(val)
 	}
 
-	if statusCode, ok := obj["statusCode"].(int); ok {
-		err.StatusCode = Int(statusCode)
-	} else if status, ok := obj["statusCode"].(string); ok {
-		statusCode, err2 := strconv.Atoi(status)
-		if err2 == nil {
-			err.StatusCode = Int(statusCode)
-		}
-	}
-
 	if obj["message"] != nil {
 		err.Message = String(obj["message"].(string))
 	}
 	if data := obj["data"]; data != nil {
+		r := reflect.ValueOf(data)
+		if r.Kind().String() == "map" {
+			res := make(map[string]interface{})
+			tmp := r.MapKeys()
+			for _, key := range tmp {
+				res[key.String()] = r.MapIndex(key).Interface()
+			}
+			if statusCode := res["statusCode"]; statusCode != nil {
+				if code, ok := statusCode.(int); ok {
+					err.StatusCode = Int(code)
+				} else if tmp, ok := statusCode.(string); ok {
+					code, err_ := strconv.Atoi(tmp)
+					if err_ == nil {
+						err.StatusCode = Int(code)
+					}
+				} else if code, ok := statusCode.(*int); ok {
+					err.StatusCode = code
+				}
+			}
+		}
 		byt, _ := json.Marshal(data)
 		err.Data = String(string(byt))
 	}
+
+	if statusCode, ok := obj["statusCode"].(int); ok {
+		err.StatusCode = Int(statusCode)
+	} else if status, ok := obj["statusCode"].(string); ok {
+		statusCode, err_ := strconv.Atoi(status)
+		if err_ == nil {
+			err.StatusCode = Int(statusCode)
+		}
+	}
+
 	return err
 }
 

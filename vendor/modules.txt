@@ -26,6 +26,9 @@ github.com/agext/levenshtein
 ## explicit; go 1.14
 github.com/agiledragon/gomonkey/v2
 github.com/agiledragon/gomonkey/v2/creflect
+# github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6
+## explicit; go 1.14
+github.com/alibabacloud-go/alibabacloud-gateway-fc-util/client
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
@@ -35,16 +38,22 @@ github.com/alibabacloud-go/cs-20151215/v3/client
 # github.com/alibabacloud-go/darabonba-openapi v0.1.19-0.20220507083948-2c7e1f6567c1
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-openapi/client
+# github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-openapi/v2/client
 # github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 ## explicit
 github.com/alibabacloud-go/debug/debug
 # github.com/alibabacloud-go/endpoint-util v1.1.0
 ## explicit
 github.com/alibabacloud-go/endpoint-util/service
-# github.com/alibabacloud-go/openapi-util v0.0.11
+# github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
+## explicit; go 1.15
+github.com/alibabacloud-go/fc-open-20210406/v2/client
+# github.com/alibabacloud-go/openapi-util v0.1.0
 ## explicit; go 1.14
 github.com/alibabacloud-go/openapi-util/service
-# github.com/alibabacloud-go/tea v1.1.17
+# github.com/alibabacloud-go/tea v1.1.19
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
@@ -63,6 +72,9 @@ github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.4.5
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-utils/service
+# github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+## explicit; go 1.14
+github.com/alibabacloud-go/tea-utils/v2/service
 # github.com/alibabacloud-go/tea-xml v1.1.2
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-xml/service
@@ -142,7 +154,7 @@ github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/sql/dataprotocol
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/timeseries/flatbuffer
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel/protocol
-# github.com/aliyun/credentials-go v1.1.2
+# github.com/aliyun/credentials-go v1.2.6
 ## explicit; go 1.14
 github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
