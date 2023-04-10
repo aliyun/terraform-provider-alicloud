@@ -313,6 +313,7 @@ func resourceAlicloudBastionhostInstanceCreate(d *schema.ResourceData, meta inte
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductType"] = "bastionhost_std_public_intl"
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
@@ -363,7 +364,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	BastionhostService := YundunBastionhostService{client}
 	instance, err := BastionhostService.DescribeBastionhostInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -432,7 +433,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
 
 	bssOpenApiService := BssOpenApiService{client}
-	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "bastionhost", "bastionhost", "bastionhost")
+	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "bastionhost", "bastionhost", "bastionhost_std_public_intl")
 	if err != nil {
 		return WrapError(err)
 	}
@@ -668,7 +669,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-					setRenewalReq["ProductType"] = "ons_onsproxy_public_intl"
+					setRenewalReq["ProductType"] = "bastionhost_std_public_intl"
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)

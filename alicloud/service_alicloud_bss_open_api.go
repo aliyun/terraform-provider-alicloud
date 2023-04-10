@@ -44,7 +44,19 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 				}
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+		}
+		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
+		if len(resp.([]interface{})) < 1 {
+			request["ProductType"] = productTypeIntl
+			conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
 		}
 		return nil
 	})
@@ -60,10 +72,10 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
 	} else {
 		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceID"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(Error(GetNotFoundMessage(productCode+"Instance", id)), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
