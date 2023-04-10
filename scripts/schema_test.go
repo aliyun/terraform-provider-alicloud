@@ -32,8 +32,8 @@ func init() {
 }
 
 var (
-	resourceName = flag.String("resource", "", "the name of the terraform resource to diff")
-	fileName     = flag.String("file_name", "", "the file to check diff")
+	resourceNames = flag.String("resourceNames", "", "the names of the terraform resources to diff")
+	fileName    = flag.String("file_name", "", "the files to check diff")
 	filterList   = map[string][]string{
 		"alicloud_amqp_instance":            []string{"logistics"},
 		"alicloud_cms_alarm":                []string{"notify_type"},
@@ -55,22 +55,25 @@ type Resource struct {
 
 func TestConsistencyWithDocument(t *testing.T) {
 	flag.Parse()
-	if resourceName != nil && len(*resourceName) == 0 {
-		log.Warningf("the resource name is empty")
+	if resourceNames != nil && len(*resourceNames) == 0 {
+		log.Warningf("there is no resource need to checking consistency")
 		return
 	}
-	resourceSchema := alicloud.Provider().(*schema.Provider).ResourcesMap[*resourceName].Schema
-	resourceSchemaFromDocs := make(map[string]interface{}, 0)
-	objMd, err := parseResourceDocs(*resourceName)
-	if err != nil {
-		log.Error(err)
-		t.Fatal()
-	}
-	mergeMaps(resourceSchemaFromDocs, objMd.Arguments, objMd.Attributes)
+	for _, resourceName := range strings.Split(strings.TrimPrefix(*resourceNames, ";"), ";") {
+		log.Debugf("checking consistency of the resource %s", resourceName)
+		resourceSchema := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName].Schema
+		resourceSchemaFromDocs := make(map[string]interface{}, 0)
+		objMd, err := parseResourceDocs(resourceName)
+		if err != nil {
+			log.Error(err)
+			t.Fatal()
+		}
+		mergeMaps(resourceSchemaFromDocs, objMd.Arguments, objMd.Attributes)
 
-	if !consistencyCheck(t, *resourceName, resourceSchemaFromDocs, resourceSchema) {
-		t.Fatal("the consistency with document has occurred")
-		os.Exit(1)
+		if !consistencyCheck(t, resourceName, resourceSchemaFromDocs, resourceSchema) {
+			t.Fatal("the consistency with document has occurred")
+			os.Exit(1)
+		}
 	}
 }
 
@@ -90,6 +93,7 @@ func TestFieldCompatibilityCheck(t *testing.T) {
 			if fileTestRegex.MatchString(file.NewName) {
 				continue
 			}
+			log.Debugf("checking compatibility of the file %s", file.NewName)
 			for _, hunk := range file.Hunks {
 				if hunk != nil {
 					prev := ParseField(hunk.OrigRange, hunk.OrigRange.Length)
