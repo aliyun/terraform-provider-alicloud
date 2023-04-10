@@ -883,6 +883,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_elastic_instance":              resourceAlicloudGpdbElasticInstance(),
 			"alicloud_gpdb_connection":                    resourceAlicloudGpdbConnection(),
 			"alicloud_db_readonly_instance":               resourceAlicloudDBReadonlyInstance(),
+			"alicloud_tag_policy_attachment":              resourceAlicloudTagPolicyAttachment(),
 			"alicloud_auto_provisioning_group":            resourceAlicloudAutoProvisioningGroup(),
 			"alicloud_ess_scaling_group":                  resourceAlicloudEssScalingGroup(),
 			"alicloud_ess_eci_scaling_configuration":      resourceAlicloudEssEciScalingConfiguration(),
