@@ -19,10 +19,10 @@ type CommonRequest struct {
 	ReadTimeout    time.Duration
 	ConnectTimeout time.Duration
 	isInsecure     *bool
-
-	userAgent   map[string]string
-	QueryParams map[string]string
-	Headers     map[string]string
+	BodyParams     map[string]string
+	userAgent      map[string]string
+	QueryParams    map[string]string
+	Headers        map[string]string
 
 	queries string
 }
@@ -30,6 +30,7 @@ type CommonRequest struct {
 // NewCommonRequest returns a CommonRequest
 func NewCommonRequest() *CommonRequest {
 	return &CommonRequest{
+		BodyParams:  make(map[string]string),
 		QueryParams: make(map[string]string),
 		Headers:     make(map[string]string),
 	}
@@ -49,6 +50,9 @@ func (request *CommonRequest) BuildStringToSign() (stringToSign string) {
 		signParams[key] = value
 	}
 
+	for key, value := range request.BodyParams {
+		signParams[key] = value
+	}
 	stringToSign = utils.GetURLFormedMap(signParams)
 	stringToSign = strings.Replace(stringToSign, "+", "%20", -1)
 	stringToSign = strings.Replace(stringToSign, "*", "%2A", -1)

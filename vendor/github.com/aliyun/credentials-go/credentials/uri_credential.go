@@ -3,6 +3,7 @@ package credentials
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
@@ -10,39 +11,35 @@ import (
 	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
-var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
-
-// EcsRAMRoleCredential is a kind of credential
-type EcsRAMRoleCredential struct {
+// URLCredential is a kind of credential
+type URLCredential struct {
+	URL string
 	*credentialUpdater
-	RoleName          string
-	sessionCredential *sessionCredential
-	runtime           *utils.Runtime
+	*sessionCredential
+	runtime *utils.Runtime
 }
 
-type ecsRAMRoleResponse struct {
-	Code            string `json:"Code" xml:"Code"`
+type URLResponse struct {
 	AccessKeyId     string `json:"AccessKeyId" xml:"AccessKeyId"`
 	AccessKeySecret string `json:"AccessKeySecret" xml:"AccessKeySecret"`
 	SecurityToken   string `json:"SecurityToken" xml:"SecurityToken"`
 	Expiration      string `json:"Expiration" xml:"Expiration"`
 }
 
-func newEcsRAMRoleCredential(roleName string, inAdvanceScale float64, runtime *utils.Runtime) *EcsRAMRoleCredential {
+func newURLCredential(URL string) *URLCredential {
 	credentialUpdater := new(credentialUpdater)
-	if inAdvanceScale < 1 && inAdvanceScale > 0 {
-		credentialUpdater.inAdvanceScale = inAdvanceScale
+	if URL == "" {
+		URL = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
 	}
-	return &EcsRAMRoleCredential{
-		RoleName:          roleName,
+	return &URLCredential{
+		URL:               URL,
 		credentialUpdater: credentialUpdater,
-		runtime:           runtime,
 	}
 }
 
-// GetAccessKeyId reutrns  EcsRAMRoleCredential's AccessKeyId
+// GetAccessKeyId reutrns  URLCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeyId() (*string, error) {
+func (e *URLCredential) GetAccessKeyId() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -55,9 +52,9 @@ func (e *EcsRAMRoleCredential) GetAccessKeyId() (*string, error) {
 	return tea.String(e.sessionCredential.AccessKeyId), nil
 }
 
-// GetAccessSecret reutrns  EcsRAMRoleCredential's AccessKeySecret
+// GetAccessSecret reutrns  URLCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetAccessKeySecret() (*string, error) {
+func (e *URLCredential) GetAccessKeySecret() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -70,9 +67,9 @@ func (e *EcsRAMRoleCredential) GetAccessKeySecret() (*string, error) {
 	return tea.String(e.sessionCredential.AccessKeySecret), nil
 }
 
-// GetSecurityToken reutrns  EcsRAMRoleCredential's SecurityToken
+// GetSecurityToken reutrns  URLCredential's SecurityToken
 // if SecurityToken is not exist or out of date, the function will update it.
-func (e *EcsRAMRoleCredential) GetSecurityToken() (*string, error) {
+func (e *URLCredential) GetSecurityToken() (*string, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -85,52 +82,31 @@ func (e *EcsRAMRoleCredential) GetSecurityToken() (*string, error) {
 	return tea.String(e.sessionCredential.SecurityToken), nil
 }
 
-// GetBearerToken is useless for EcsRAMRoleCredential
-func (e *EcsRAMRoleCredential) GetBearerToken() *string {
+// GetBearerToken is useless for URLCredential
+func (e *URLCredential) GetBearerToken() *string {
 	return tea.String("")
 }
 
-// GetType reutrns  EcsRAMRoleCredential's type
-func (e *EcsRAMRoleCredential) GetType() *string {
-	return tea.String("ecs_ram_role")
+// GetType reutrns  URLCredential's type
+func (e *URLCredential) GetType() *string {
+	return tea.String("credential_uri")
 }
 
-func getRoleName() (string, error) {
-	runtime := utils.NewRuntime(1, 1, "", "")
-	request := request.NewCommonRequest()
-	request.URL = securityCredURL
-	request.Method = "GET"
-	content, err := doAction(request, runtime)
-	if err != nil {
-		return "", err
-	}
-	return string(content), nil
-}
-
-func (e *EcsRAMRoleCredential) updateCredential() (err error) {
+func (e *URLCredential) updateCredential() (err error) {
 	if e.runtime == nil {
 		e.runtime = new(utils.Runtime)
 	}
 	request := request.NewCommonRequest()
-	if e.RoleName == "" {
-		e.RoleName, err = getRoleName()
-		if err != nil {
-			return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
-		}
-	}
-	request.URL = securityCredURL + e.RoleName
+	request.URL = e.URL
 	request.Method = "GET"
 	content, err := doAction(request, e.runtime)
 	if err != nil {
 		return fmt.Errorf("refresh Ecs sts token err: %s", err.Error())
 	}
-	var resp *ecsRAMRoleResponse
+	var resp *URLResponse
 	err = json.Unmarshal(content, &resp)
 	if err != nil {
 		return fmt.Errorf("refresh Ecs sts token err: Json Unmarshal fail: %s", err.Error())
-	}
-	if resp.Code != "Success" {
-		return fmt.Errorf("refresh Ecs sts token err: Code is not Success")
 	}
 	if resp.AccessKeyId == "" || resp.AccessKeySecret == "" || resp.SecurityToken == "" || resp.Expiration == "" {
 		return fmt.Errorf("refresh Ecs sts token err: AccessKeyId: %s, AccessKeySecret: %s, SecurityToken: %s, Expiration: %s", resp.AccessKeyId, resp.AccessKeySecret, resp.SecurityToken, resp.Expiration)

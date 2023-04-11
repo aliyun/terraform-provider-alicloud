@@ -34,23 +34,27 @@ type Credential interface {
 
 // Config is important when call NewCredential
 type Config struct {
-	Type                  *string `json:"type"`
-	AccessKeyId           *string `json:"access_key_id"`
-	AccessKeySecret       *string `json:"access_key_secret"`
-	RoleArn               *string `json:"role_arn"`
-	RoleSessionName       *string `json:"role_session_name"`
-	PublicKeyId           *string `json:"public_key_id"`
-	RoleName              *string `json:"role_name"`
-	SessionExpiration     *int    `json:"session_expiration"`
-	PrivateKeyFile        *string `json:"private_key_file"`
-	BearerToken           *string `json:"bearer_token"`
-	SecurityToken         *string `json:"security_token"`
-	RoleSessionExpiration *int    `json:"role_session_expiratioon"`
-	Policy                *string `json:"policy"`
-	Host                  *string `json:"host"`
-	Timeout               *int    `json:"timeout"`
-	ConnectTimeout        *int    `json:"connect_timeout"`
-	Proxy                 *string `json:"proxy"`
+	Type                  *string  `json:"type"`
+	AccessKeyId           *string  `json:"access_key_id"`
+	AccessKeySecret       *string  `json:"access_key_secret"`
+	OIDCProviderArn       *string  `json:"oidc_provider_arn"`
+	OIDCTokenFilePath     *string  `json:"oidc_token"`
+	RoleArn               *string  `json:"role_arn"`
+	RoleSessionName       *string  `json:"role_session_name"`
+	PublicKeyId           *string  `json:"public_key_id"`
+	RoleName              *string  `json:"role_name"`
+	SessionExpiration     *int     `json:"session_expiration"`
+	PrivateKeyFile        *string  `json:"private_key_file"`
+	BearerToken           *string  `json:"bearer_token"`
+	SecurityToken         *string  `json:"security_token"`
+	RoleSessionExpiration *int     `json:"role_session_expiratioon"`
+	Policy                *string  `json:"policy"`
+	Host                  *string  `json:"host"`
+	Timeout               *int     `json:"timeout"`
+	ConnectTimeout        *int     `json:"connect_timeout"`
+	Proxy                 *string  `json:"proxy"`
+	InAdvanceScale        *float64 `json:"inAdvanceScale"`
+	Url                   *string  `json:"url"`
 }
 
 func (s Config) String() string {
@@ -146,6 +150,24 @@ func (s *Config) SetType(v string) *Config {
 	return s
 }
 
+func (s *Config) SetOIDCTokenFilePath(v string) *Config {
+	s.OIDCTokenFilePath = &v
+	return s
+}
+
+func (s *Config) SetOIDCProviderArn(v string) *Config {
+	s.OIDCProviderArn = &v
+	return s
+}
+
+func (s *Config) SetURLCredential(v string) *Config {
+	if v == "" {
+		v = os.Getenv("ALIBABA_CLOUD_CREDENTIALS_URI")
+	}
+	s.Url = &v
+	return s
+}
+
 // NewCredential return a credential according to the type in config.
 // if config is nil, the function will use default provider chain to get credential.
 // please see README.md for detail.
@@ -158,6 +180,20 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		return NewCredential(config)
 	}
 	switch tea.StringValue(config.Type) {
+	case "credentials_uri":
+		credential = newURLCredential(tea.StringValue(config.Url))
+	case "oidc_role_arn":
+		err = checkoutAssumeRamoidc(config)
+		if err != nil {
+			return
+		}
+		runtime := &utils.Runtime{
+			Host:           tea.StringValue(config.Host),
+			Proxy:          tea.StringValue(config.Proxy),
+			ReadTimeout:    tea.IntValue(config.Timeout),
+			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+		}
+		credential = newOIDCRoleArnCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.RoleArn), tea.StringValue(config.OIDCProviderArn), tea.StringValue(config.OIDCTokenFilePath), tea.StringValue(config.RoleSessionName), tea.StringValue(config.Policy), tea.IntValue(config.RoleSessionExpiration), runtime)
 	case "access_key":
 		err = checkAccessKey(config)
 		if err != nil {
@@ -178,7 +214,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ReadTimeout:    tea.IntValue(config.Timeout),
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 		}
-		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), runtime)
+		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), tea.Float64Value(config.InAdvanceScale), runtime)
 	case "ram_role_arn":
 		err = checkRAMRoleArn(config)
 		if err != nil {
@@ -242,6 +278,18 @@ func checkRSAKeyPair(config *Config) (err error) {
 	return
 }
 
+func checkoutAssumeRamoidc(config *Config) (err error) {
+	if tea.StringValue(config.RoleArn) == "" {
+		err = errors.New("RoleArn cannot be empty")
+		return
+	}
+	if tea.StringValue(config.OIDCProviderArn) == "" {
+		err = errors.New("OIDCProviderArn cannot be empty")
+		return
+	}
+	return
+}
+
 func checkRAMRoleArn(config *Config) (err error) {
 	if tea.StringValue(config.AccessKeySecret) == "" {
 		err = errors.New("AccessKeySecret cannot be empty")
@@ -295,7 +343,11 @@ func checkAccessKey(config *Config) (err error) {
 }
 
 func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content []byte, err error) {
-	httpRequest, err := http.NewRequest(request.Method, request.URL, strings.NewReader(""))
+	var urlEncoded string
+	if request.BodyParams != nil {
+		urlEncoded = utils.GetURLFormedMap(request.BodyParams)
+	}
+	httpRequest, err := http.NewRequest(request.Method, request.URL, strings.NewReader(urlEncoded))
 	if err != nil {
 		return
 	}
