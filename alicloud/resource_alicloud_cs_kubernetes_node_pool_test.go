@@ -53,8 +53,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
 					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
-					"runtime_name":          "containerd",
-					"runtime_version":       "1.4.8",
 					"image_type":            "AliyunLinux",
 					"cis_enabled":           "true",
 					"cpu_policy":            "none",
@@ -83,8 +81,6 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
 						"security_group_ids.#":         "2",
-						"runtime_name":                 "containerd",
-						"runtime_version":              "1.4.8",
 						"image_type":                   "AliyunLinux",
 						"cis_enabled":                  "true",
 						"cpu_policy":                   "none",
@@ -197,7 +193,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 					"name":                  name,
 					"cluster_id":            "${alicloud_cs_managed_kubernetes.default.0.id}",
 					"vswitch_ids":           []string{"${local.vswitch_id}"},
-					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}"},
+					"instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"node_count":            "2",
 					"key_name":              "${alicloud_key_pair.default.key_name}",
 					"system_disk_category":  "cloud_efficiency",
@@ -207,8 +203,6 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
 					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
-					"runtime_name":          "containerd",
-					"runtime_version":       "1.4.8",
 					"image_type":            "CentOS",
 					"cpu_policy":            "none",
 					"spot_strategy":         "NoSpot",
@@ -218,7 +212,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 						"name":                         name,
 						"cluster_id":                   CHECKSET,
 						"vswitch_ids.#":                "1",
-						"instance_types.#":             "2",
+						"instance_types.#":             "1",
 						"node_count":                   "2",
 						"key_name":                     CHECKSET,
 						"system_disk_category":         "cloud_efficiency",
@@ -236,8 +230,6 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
 						"security_group_ids.#":         "2",
-						"runtime_name":                 "containerd",
-						"runtime_version":              "1.4.8",
 						"image_type":                   "CentOS",
 						"cpu_policy":                   "none",
 						"spot_strategy":                "NoSpot",
@@ -731,8 +723,6 @@ func TestAccAlicloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 					"data_disks":            []map[string]string{{"size": "100", "category": "cloud_ssd"}},
 					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
 					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "max_unavailable": "0"}},
-					"runtime_name":          "containerd",
-					"runtime_version":       "1.4.8",
 					"image_type":            "AliyunLinux",
 					"deployment_set_id":     "${alicloud_ecs_deployment_set.default.id}",
 					"cpu_policy":            "none",
@@ -760,8 +750,6 @@ func TestAccAlicloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 						"management.0.auto_upgrade":    "true",
 						"management.0.surge":           "0",
 						"management.0.max_unavailable": "0",
-						"runtime_name":                 "containerd",
-						"runtime_version":              "1.4.8",
 						"image_type":                   "AliyunLinux",
 						"deployment_set_id":            CHECKSET,
 						"cpu_policy":                   "none",
@@ -812,6 +800,7 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 4
 	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -854,7 +843,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
   pod_cidr                    = "10.99.0.0/16"
@@ -899,6 +887,7 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 4
 	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -941,7 +930,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 39)
@@ -982,6 +970,7 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 4
 	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1024,7 +1013,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 38)
@@ -1064,6 +1052,7 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 4
 	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1105,7 +1094,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 40)

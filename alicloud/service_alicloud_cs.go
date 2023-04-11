@@ -259,61 +259,6 @@ func (s *CsClient) DescribeClusterKubeConfigWithExpiration(clusterId string, tem
 	return kubeConfig.Body, nil
 }
 
-// This function returns the latest addon status information
-func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName string) (*Component, error) {
-	result := &Component{}
-
-	resp, err := s.client.DescribeClusterAddonsUpgradeStatus(&clusterId, &client.DescribeClusterAddonsUpgradeStatusRequest{
-		ComponentIds: []*string{tea.String(addonName)},
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
-	}
-
-	addon, ok := resp.Body[addonName]
-	if !ok {
-		return nil, WrapErrorf(Error(ResourceNotfound), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus")
-	}
-
-	addonInfo := addon.(map[string]interface{})["addon_info"]
-	tasks := addon.(map[string]interface{})["tasks"]
-	result.Version = addonInfo.(map[string]interface{})["version"].(string)
-	result.CanUpgrade = addon.(map[string]interface{})["can_upgrade"].(bool)
-	result.Status = tasks.(map[string]interface{})["status"].(string)
-	if message, ok := tasks.(map[string]interface{})["message"]; ok {
-		result.ErrMessage = message.(string)
-	}
-
-	return result, nil
-}
-
-// This function returns the latest multiple addons status information
-func (s *CsClient) DescribeCsKubernetesAllAddonsStatus(clusterId string, addons []*string) (map[string]*Component, error) {
-	addonsStatus := make(map[string]*Component)
-	resp, err := s.client.DescribeClusterAddonsUpgradeStatus(&clusterId, &client.DescribeClusterAddonsUpgradeStatusRequest{
-		ComponentIds: addons,
-	})
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
-	}
-
-	for name, status := range resp.Body {
-		c := &Component{}
-		addonInfo := status.(map[string]interface{})["addon_info"]
-		tasks := status.(map[string]interface{})["tasks"]
-		c.Version = addonInfo.(map[string]interface{})["version"].(string)
-		c.CanUpgrade = status.(map[string]interface{})["can_upgrade"].(bool)
-		c.Status = tasks.(map[string]interface{})["status"].(string)
-		if message, ok := tasks.(map[string]interface{})["message"]; ok {
-			c.ErrMessage = message.(string)
-		}
-
-		addonsStatus[name] = c
-	}
-
-	return addonsStatus, nil
-}
-
 // This function returns all available addons metadata of the cluster
 func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*Component, error) {
 	result := make(map[string]*Component)
@@ -344,6 +289,109 @@ func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*
 	return result, nil
 }
 
+// This function returns the latest addon status information
+func (s *CsClient) DescribeCsKubernetesAddonStatus(clusterId string, addonName string) (*Component, error) {
+	result := &Component{}
+
+	resp, err := s.client.DescribeClusterAddonsUpgradeStatus(&clusterId, &client.DescribeClusterAddonsUpgradeStatusRequest{
+		ComponentIds: []*string{tea.String(addonName)},
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
+	}
+
+	addon, ok := resp.Body[addonName]
+	if !ok {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", addonName)), ResourceNotfound)
+	}
+
+	addonInfo := addon.(map[string]interface{})["addon_info"]
+	tasks := addon.(map[string]interface{})["tasks"]
+	result.Version = addonInfo.(map[string]interface{})["version"].(string)
+	result.CanUpgrade = addon.(map[string]interface{})["can_upgrade"].(bool)
+	result.Status = tasks.(map[string]interface{})["status"].(string)
+	if message, ok := tasks.(map[string]interface{})["message"]; ok {
+		result.ErrMessage = message.(string)
+	}
+
+	if result.Version == "" {
+		return result, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", addonName)), ResourceNotfound)
+	}
+
+	return result, nil
+}
+
+// This function returns the latest addon instance
+func (s *CsClient) DescribeCsKubernetesAddonInstance(clusterId string, addonName string) (*Component, error) {
+	component := &Component{}
+
+	resp, err := s.client.DescribeClusterAddonInstance(&clusterId, tea.String(addonName))
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonInstance", err)
+	}
+
+	component.Config = *resp.Body.Config
+
+	return component, nil
+}
+
+// This function returns the status of all available addons of the cluster
+func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
+	availableAddons, err := s.DescribeClusterAddonsMetadata(clusterId)
+	if err != nil {
+		return nil, err
+	}
+
+	queryList := make([]*string, 0)
+	for name := range availableAddons {
+		queryList = append(queryList, tea.String(name))
+	}
+
+	status, err := s.DescribeCsKubernetesAllAddonsStatus(clusterId, queryList)
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
+	}
+
+	for name, addon := range availableAddons {
+		if _, ok := status[name]; !ok {
+			continue
+		}
+		addon.Version = status[name].Version
+		addon.Status = status[name].Status
+		addon.CanUpgrade = status[name].CanUpgrade
+		addon.ErrMessage = status[name].ErrMessage
+	}
+
+	return availableAddons, nil
+}
+
+// This function returns the latest multiple addons status information
+func (s *CsClient) DescribeCsKubernetesAllAddonsStatus(clusterId string, addons []*string) (map[string]*Component, error) {
+	addonsStatus := make(map[string]*Component)
+	resp, err := s.client.DescribeClusterAddonsUpgradeStatus(&clusterId, &client.DescribeClusterAddonsUpgradeStatusRequest{
+		ComponentIds: addons,
+	})
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeClusterAddonsUpgradeStatus", err)
+	}
+
+	for name, status := range resp.Body {
+		c := &Component{}
+		addonInfo := status.(map[string]interface{})["addon_info"]
+		tasks := status.(map[string]interface{})["tasks"]
+		c.Version = addonInfo.(map[string]interface{})["version"].(string)
+		c.CanUpgrade = status.(map[string]interface{})["can_upgrade"].(bool)
+		c.Status = tasks.(map[string]interface{})["status"].(string)
+		if message, ok := tasks.(map[string]interface{})["message"]; ok {
+			c.ErrMessage = message.(string)
+		}
+
+		addonsStatus[name] = c
+	}
+
+	return addonsStatus, nil
+}
+
 func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -358,7 +406,12 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 
 	addonStatus, err := s.DescribeCsKubernetesAddonStatus(clusterId, addonName)
 	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonStatus", err)
+		return nil, err
+	}
+
+	addonInstance, err := s.DescribeCsKubernetesAddonInstance(clusterId, addonName)
+	if err != nil {
+		return nil, err
 	}
 
 	// Update some fields
@@ -367,10 +420,11 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 		addon.Status = addonStatus.Status
 		addon.CanUpgrade = addonStatus.CanUpgrade
 		addon.ErrMessage = addonStatus.ErrMessage
+		addon.Config = addonInstance.Config
 		return addon, nil
 	}
 
-	return nil, WrapErrorf(Error(ResourceNotfound), DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddon")
+	return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", id)), ResourceNotfound)
 }
 
 func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
@@ -398,7 +452,7 @@ func (s *CsClient) CsKubernetesAddonExistRefreshFunc(clusterId string, addonName
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
+				return object, "Deleted", nil
 			}
 			return nil, "", WrapError(err)
 		}
@@ -502,36 +556,6 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 	}
 
 	return nil
-}
-
-// This function returns the status of all available addons of the cluster
-func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map[string]*Component, error) {
-	availableAddons, err := s.DescribeClusterAddonsMetadata(clusterId)
-	if err != nil {
-		return nil, err
-	}
-
-	queryList := make([]*string, 0)
-	for name := range availableAddons {
-		queryList = append(queryList, tea.String(name))
-	}
-
-	status, err := s.DescribeCsKubernetesAllAddonsStatus(clusterId, queryList)
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
-	}
-
-	for name, addon := range availableAddons {
-		if _, ok := status[name]; !ok {
-			continue
-		}
-		addon.Version = status[name].Version
-		addon.Status = status[name].Status
-		addon.CanUpgrade = status[name].CanUpgrade
-		addon.ErrMessage = status[name].ErrMessage
-	}
-
-	return availableAddons, nil
 }
 
 // This function returns the status of all available addons of the cluster

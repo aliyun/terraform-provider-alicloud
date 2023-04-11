@@ -43,13 +43,13 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_id": "${alicloud_cs_managed_kubernetes.default.0.id}",
 					"name":       "ack-node-problem-detector",
-					"version":    "1.2.9",
+					"version":    "1.2.11",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_id":   CHECKSET,
 						"name":         "ack-node-problem-detector",
-						"version":      "1.2.9",
+						"version":      "1.2.11",
 						"next_version": CHECKSET,
 						"can_upgrade":  CHECKSET,
 						"required":     CHECKSET,
@@ -64,11 +64,11 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.2.11",
+					"version": "1.2.14",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.2.11",
+						"version": "1.2.14",
 					}),
 				),
 			},
@@ -97,6 +97,7 @@ data "alicloud_instance_types" "default" {
 	cpu_core_count             = 4
 	memory_size                = 8
 	kubernetes_node_role       = "Worker"
+    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -131,7 +132,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids          = [local.vswitch_id]
   new_nat_gateway             = true
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  worker_number               = 2
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 37)

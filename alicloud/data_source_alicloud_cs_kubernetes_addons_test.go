@@ -77,7 +77,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
-  worker_number                = 2
   deletion_protection          = false
   worker_instance_charge_type  = "PostPaid"
   worker_disk_size             = 40

@@ -2,7 +2,7 @@ package connectivity
 
 import (
 	roaCS "github.com/alibabacloud-go/cs-20151215/v3/client"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/alibabacloud-go/tea/tea"
