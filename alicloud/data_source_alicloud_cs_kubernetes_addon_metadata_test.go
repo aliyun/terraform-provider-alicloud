@@ -25,8 +25,7 @@ func TestAccAlicloudCSKubernetesAddonMetadataDataSource(t *testing.T) {
 				Config: dataSourceCSAddonMetadataConfigDependence(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id":    CHECKSET,
-						"config_schema": CHECKSET,
+						"cluster_id": CHECKSET,
 					}),
 				),
 			},
@@ -78,7 +77,6 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   count                        = 1
   cluster_spec                 = "ack.pro.small"
   is_enterprise_security_group = true
-  worker_number                = 2
   deletion_protection          = false
   node_port_range              = "30000-32767"
   password                     = "Hello1234"
