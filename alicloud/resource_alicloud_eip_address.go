@@ -251,7 +251,7 @@ func resourceAlicloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	vpcService := VpcService{client}
 	object, err := vpcService.DescribeEipAddress(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eip_address vpcService.DescribeEipAddress Failed!!! %s", err)
 			d.SetId("")
 			return nil

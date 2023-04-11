@@ -52,18 +52,18 @@ func (s *VpcService) DescribeEip(id string) (eip vpc.EipAddress, err error) {
 	return
 }
 
-func (s *VpcService) DescribeEipAssociation(id string) (object vpc.EipAddress, err error) {
+func (s *VpcService) DescribeEipAssociation(id string) (object map[string]interface{}, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	object, err = s.DescribeEip(parts[0])
+	object, err = s.DescribeEipAddress(parts[0])
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	if object.InstanceId != parts[1] {
+	if object["InstanceId"] != parts[1] {
 		err = WrapErrorf(Error(GetNotFoundMessage("Eip Association", id)), NotFoundMsg, ProviderERROR)
 	}
 
@@ -905,29 +905,6 @@ func (s *VpcService) WaitForEip(id string, status Status, timeout int) error {
 	}
 }
 
-func (s *VpcService) WaitForEipAssociation(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeEipAssociation(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-		if object.Status == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.Status, string(status), ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
 func (s *VpcService) EipAssociationStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeEipAssociation(id)
@@ -940,11 +917,11 @@ func (s *VpcService) EipAssociationStateRefreshFunc(id string, failStates []stri
 		}
 
 		for _, failState := range failStates {
-			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatus, object.Status))
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, object["Status"]))
 			}
 		}
-		return object, object.Status, nil
+		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
 
