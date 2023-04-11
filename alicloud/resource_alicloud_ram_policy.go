@@ -419,10 +419,18 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		}
 		listVersionsAction := "ListPolicyVersions"
 		response, err = conn.DoRequest(StringPointer(listVersionsAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listVersionsRequest, &util.RuntimeOptions{})
-		versionsResp, err := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
-
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		versionsResp, er := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
+		if er != nil {
+			return WrapErrorf(er, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
+		}
 		// More than one means there are other versions besides the default version
-		if len(versionsResp.([]interface{})) > 1 {
+		if versionsResp != nil && len(versionsResp.([]interface{})) > 1 {
 			for _, v := range versionsResp.([]interface{}) {
 				if !v.(map[string]interface{})["IsDefaultVersion"].(bool) {
 					versionAction := "DeletePolicyVersion"
