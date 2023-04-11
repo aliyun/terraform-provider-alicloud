@@ -10,6 +10,7 @@ import (
 
 func TestAccAlicloudTagPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TagSupportRegions)
 	resourceId := "alicloud_tag_policy.default"
 	ra := resourceAttrInit(resourceId, TagPolicyMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

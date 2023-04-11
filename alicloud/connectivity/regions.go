@@ -101,6 +101,7 @@ var OtsCapacityNoSupportedRegions = []Region{APSouthEast1, USWest1, USEast1}
 var PrivateIpNoSupportedRegions = []Region{Beijing, Hangzhou, Shenzhen}
 var SwarmSupportedRegions = []Region{Qingdao, Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, Hongkong, APNorthEast1, APSouthEast1, APSouthEast2,
 	APSouthEast3, USWest1, USEast1, EUCentral1}
+var TagPolicySupportRegions = []Region{Beijing, APSouthEast1}
 var ManagedKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, Shenzhen, ChengDu, Hongkong, APSouthEast1, APSouthEast2, EUCentral1, USWest1}
 var ServerlessKubernetesSupportedRegions = []Region{Beijing, Hangzhou, Shanghai, APSouthEast3, APSouthEast5, APSouth1, Huhehaote}
 var KubernetesSupportedRegions = []Region{Beijing, Zhangjiakou, Huhehaote, Hangzhou, Shanghai, Shenzhen, Hongkong, APNorthEast1, APSouthEast1,
