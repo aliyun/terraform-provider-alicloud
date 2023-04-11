@@ -59,9 +59,16 @@ func TestConsistencyWithDocument(t *testing.T) {
 		log.Warningf("there is no resource need to checking consistency")
 		return
 	}
+	resourceNotFound := false
 	for _, resourceName := range strings.Split(strings.TrimPrefix(*resourceNames, ";"), ";") {
 		log.Debugf("checking consistency of the resource %s", resourceName)
-		resourceSchema := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName].Schema
+		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
+		if !ok || resource == nil {
+			log.Errorf("resource %s is not found in the ResourceMap", resourceName)
+			resourceNotFound = true
+			continue
+		}
+		resourceSchema := resource.Schema
 		resourceSchemaFromDocs := make(map[string]interface{}, 0)
 		objMd, err := parseResourceDocs(resourceName)
 		if err != nil {
@@ -74,6 +81,9 @@ func TestConsistencyWithDocument(t *testing.T) {
 			t.Fatal("the consistency with document has occurred")
 			os.Exit(1)
 		}
+	}
+	if resourceNotFound {
+		os.Exit(1)
 	}
 }
 
