@@ -11,6 +11,7 @@ import (
 func TestAccAlicloudTagPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_tag_policy.default"
+	checkoutSupportedRegions(t, true, connectivity.TagPolicySupportRegions)
 	ra := resourceAttrInit(resourceId, TagPolicyMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &TagService{testAccProvider.Meta().(*connectivity.AliyunClient)}
