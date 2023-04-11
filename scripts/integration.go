@@ -144,7 +144,7 @@ func main() {
 	ossBucketRegion := strings.TrimSpace(os.Args[6])
 	ossBucketName := strings.TrimSpace(os.Args[7])
 	ossObjectPath := strings.TrimSpace(os.Args[8])
-	invocationId := strings.Replace(strings.TrimPrefix(ossObjectPath, "github-actions"), "/", "_", -1)
+	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
 	diffFuncNames := strings.Trim(os.Getenv("DIFF_FUNC_NAMES"), ";")
 	functionName := ""
 	for true {
