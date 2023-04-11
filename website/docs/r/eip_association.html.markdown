@@ -85,9 +85,10 @@ The following arguments are supported:
 
 * `allocation_id` - (Required, ForcesNew) The allocation EIP ID.
 * `instance_id` - (Required, ForcesNew) The ID of the ECS or SLB instance or Nat Gateway or NetworkInterface or HaVip.
-* `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind. Valid values: `EcsInstance`, `SlbInstance`, `Nat`, `NetworkInterface` and `HaVip`.
+* `instance_type` - (Optional, ForceNew, Available in 1.46.0+) The type of cloud product that the eip instance to bind. Valid values: `EcsInstance`, `SlbInstance`, `Nat`, `NetworkInterface`, `HaVip` and `IpAddress`.
 * `private_ip_address` - (Optional, ForceNew, Available in 1.52.2+) The private IP address in the network segment of the vswitch which has been assigned.
 * `force` - (Optional, Available in 1.95.0+) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default to `false`.
+* `vpc_id` - (Optional, Available in 1.203.0+) The ID of the VPC that has IPv4 gateways enabled and that is deployed in the same region as the EIP. When you associate an EIP with an IP address, the system can enable the IP address to access the Internet based on VPC route configurations. **Note:** This parameter is required if `instance_type` is set to IpAddress. In this case, the EIP is associated with an IP address.
 
 
 ## Attributes Reference

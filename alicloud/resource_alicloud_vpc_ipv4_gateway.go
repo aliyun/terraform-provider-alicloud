@@ -55,6 +55,7 @@ func resourceAlicloudVpcIpv4Gateway() *schema.Resource {
 			"enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -116,7 +117,7 @@ func resourceAlicloudVpcIpv4GatewayRead(d *schema.ResourceData, meta interface{}
 	vpcService := VpcService{client}
 	object, err := vpcService.DescribeVpcIpv4Gateway(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_vpc_ipv4_gateway vpcService.DescribeVpcIpv4Gateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
