@@ -36,7 +36,7 @@ The following arguments are supported:
 * `enable_details` - (Optional, Available in 1.135.0+) Default to `false`. Set it to `true` can output parameter template about resource attributes.
 * `name_regex` - (Optional) A regex string to filter results by instance name.
 * `ids` - (Optional, Available 1.52.0+) A list of RDS instance IDs. 
-* `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB` and `PPAS`. If no value is specified, all types are returned.
+* `engine` - (Optional) Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`. If no value is specified, all types are returned.
 * `status` - (Optional) Status of the instance.
 * `db_type` - (Optional) `Primary` for primary instance, `Readonly` for read-only instance, `Guard` for disaster recovery instance, and `Temp` for temporary instance.
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
@@ -61,7 +61,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `create_time` - Creation time of the instance.
   * `expire_time` - Expiration time. Pay-As-You-Go instances never expire.
   * `status` - Status of the instance.
-  * `engine` - Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB` and `PPAS`. If no value is specified, all types are returned.
+  * `engine` - Database type. Options are `MySQL`, `SQLServer`, `PostgreSQL`, `MariaDB`. If no value is specified, all types are returned.
   * `engine_version` - Database version.
   * `net_type` - `Internet` for public network or `Intranet` for private network.
   * `connection_mode` - `Standard` for standard access mode and `Safe` for high security access mode.

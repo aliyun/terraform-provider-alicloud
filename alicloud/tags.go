@@ -35,6 +35,14 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
+func tagsSchemaForceNew() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeMap,
+		Optional: true,
+		ForceNew: true,
+	}
+}
+
 func tagsSchemaComputed() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
