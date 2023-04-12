@@ -124,6 +124,7 @@ func resourceAlicloudAlidnsInstanceCreate(d *schema.ResourceData, meta interface
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				request["ProductType"] = "dns_dns_public_intl"
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -147,7 +148,7 @@ func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}
 	alidnsService := AlidnsService{client}
 	object, err := alidnsService.DescribeAlidnsInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alidns_instance alidnsService.DescribeAlidnsInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -160,16 +161,18 @@ func resourceAlicloudAlidnsInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("version_code", object["VersionCode"])
 	d.Set("version_name", object["VersionName"])
 
-	res, err := alidnsService.QueryAvailableInstances(d.Id())
+	bssOpenApiService := BssOpenApiService{client}
+	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "", "dns", "alidns_pre", "dns", "dns_dns_public_intl")
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("payment_type", res["SubscriptionType"])
-	d.Set("renewal_status", res["RenewStatus"])
-	if fmt.Sprint(res["RenewalDurationUnit"]) == "M" {
-		d.Set("renew_period", formatInt(res["RenewalDuration"]))
+
+	d.Set("payment_type", getQueryInstanceObject["SubscriptionType"])
+	d.Set("renewal_status", getQueryInstanceObject["RenewStatus"])
+	if fmt.Sprint(getQueryInstanceObject["RenewalDurationUnit"]) == "M" {
+		d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"]))
 	} else {
-		d.Set("renew_period", formatInt(res["RenewalDuration"])*12)
+		d.Set("renew_period", formatInt(getQueryInstanceObject["RenewalDuration"])*12)
 	}
 
 	return nil

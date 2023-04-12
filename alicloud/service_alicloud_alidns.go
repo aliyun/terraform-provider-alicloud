@@ -205,56 +205,6 @@ func (s *AlidnsService) DescribeAlidnsInstance(id string) (object map[string]int
 	return object, nil
 }
 
-func (s *AlidnsService) QueryAvailableInstances(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
-	conn, err := s.client.NewBssopenapiClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	action := "QueryAvailableInstances"
-	request := map[string]interface{}{
-		"RegionId":    s.client.RegionId,
-		"InstanceIDs": id,
-		"ProductCode": "dns",
-		"ProductType": "alidns_pre",
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(11*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
-				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDnsProduct"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alidns:Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.Data.InstanceList", response)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	res, _ := v.([]interface{})
-	if len(res) < 1 || res[0].(map[string]interface{})["InstanceID"].(string) != id {
-		return nil, WrapErrorf(Error(GetNotFoundMessage("Alidns:Instance", id)), NotFoundWithResponse, response)
-	}
-	object = res[0].(map[string]interface{})
-	return object, nil
-}
-
 func (s *AlidnsService) DescribeAlidnsCustomLine(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlidnsClient()

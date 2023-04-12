@@ -361,7 +361,7 @@ func TestAccAlicloudBastionhostInstance_basic1(t *testing.T) {
 					"license_code":       "bhah_ent_50_asset",
 					"plan_code":          "cloudbastion",
 					"storage":            "5",
-					"bandwidth":          "5",
+					"bandwidth":          "10",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
