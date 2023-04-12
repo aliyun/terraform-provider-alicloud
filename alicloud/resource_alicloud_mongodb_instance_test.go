@@ -780,6 +780,116 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudMongoDBInstance_parameters(t *testing.T) {
+	var v dds.DBInstance
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	ra := resourceAttrInit(resourceId, nil)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"vswitch_id":          "${local.vswitch_id}",
+					"engine_version":      "4.2",
+					"network_type":        "VPC",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"zone_id":             "${local.zone_id}",
+					"db_instance_storage": "10",
+					"db_instance_class":   "dds.mongo.mid",
+					"name":                name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.2",
+						"network_type":         "VPC",
+						"db_instance_storage":  "10",
+						"db_instance_class":    "dds.mongo.mid",
+						"name":                 name,
+						"storage_engine":       "WiredTiger",
+						"instance_charge_type": "PostPaid",
+						"replication_factor":   "3",
+						"replica_sets.#":       CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"vpc_id":               CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"zone_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "70",
+						},
+						map[string]interface{}{
+							"name":  "setParameter.flowControlTargetLagSeconds",
+							"value": "20",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "setParameter.flowControlTargetLagSeconds",
+							"value": "10",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew", "parameters"},
+			},
+		},
+	})
+}
+
 func resourceMongodbInstanceClassicConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -839,7 +949,7 @@ func resourceMongodbInstanceVpcConfig(name string) string {
 	}
 	
 	resource "alicloud_vswitch" "this" {
-	  	count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
 	  	vswitch_name = var.name
 	  	vpc_id       = data.alicloud_vpcs.default.ids.0
 	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
@@ -848,7 +958,8 @@ func resourceMongodbInstanceVpcConfig(name string) string {
 	
 	locals {
 	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
-	  	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
+		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
+
 	}
 `, name)
 }

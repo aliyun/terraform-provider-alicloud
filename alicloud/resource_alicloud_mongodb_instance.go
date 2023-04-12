@@ -253,6 +253,24 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"parameters": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Set:      parameterToHash,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -467,6 +485,10 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("replica_set_name", instance["ReplicaSetName"])
 	d.Set("resource_group_id", instance["ResourceGroupId"])
 	d.Set("vpc_id", instance["VPCId"])
+
+	if err = ddsService.RefreshParameters(d, "parameters"); err != nil {
+		return WrapError(err)
+	}
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {
@@ -808,6 +830,12 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		stateConf = BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging", "NodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	}
+
+	if d.HasChange("parameters") {
+		if err := ddsService.ModifyParameters(d, "parameters"); err != nil {
 			return WrapError(err)
 		}
 	}

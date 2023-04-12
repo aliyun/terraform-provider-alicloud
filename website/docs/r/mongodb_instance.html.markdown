@@ -100,6 +100,14 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `storage_type` - (Optional, Computed, ForceNew, Available in v1.199.0+) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `local_ssd`.
 * `hidden_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
 * `secondary_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
+* `parameters` - (Optional, Computed, Available in v1.203.0+) Set of parameters needs to be set after mongodb instance was launched. See the following `Block parameters`.
+
+#### Block parameters
+
+The parameters supports the following:
+
+* `name` - The name of the parameter.
+* `value` - The value of the parameter.
 
 ## Attributes Reference
 
