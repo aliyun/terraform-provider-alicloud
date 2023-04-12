@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -1515,4 +1516,110 @@ func (s *MongoDBService) RdsMongodbDBShardingInstanceStateRefreshFunc(id string,
 		}
 		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
+}
+
+func (s *MongoDBService) ModifyParameters(d *schema.ResourceData, attribute string) error {
+	conn, err := s.client.NewDdsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	action := "ModifyParameters"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": d.Id(),
+	}
+	config := make(map[string]string)
+	o, n := d.GetChange(attribute)
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	if len(add) > 0 {
+		for _, i := range add {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"].(string)
+			config[key] = value
+		}
+		cfg, _ := json.Marshal(config)
+		request["Parameters"] = string(cfg)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, s.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+	}
+	d.SetPartial(attribute)
+	return nil
+}
+
+func (s *MongoDBService) RefreshParameters(d *schema.ResourceData, attribute string) error {
+	var param []map[string]interface{}
+	documented, ok := d.GetOk(attribute)
+	if !ok {
+		return nil
+	}
+
+	documentedMap := make(map[string]interface{}, 0)
+	for _, v := range documented.(*schema.Set).List() {
+		parameter := v.(map[string]interface{})
+		documentedMap[parameter["name"].(string)] = struct{}{}
+	}
+
+	object, err := s.DescribeParameters(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	dBInstanceParameters := object["RunningParameters"].(map[string]interface{})["Parameter"].([]interface{})
+	for _, v := range dBInstanceParameters {
+		item := v.(map[string]interface{})
+		if item["ParameterName"] != "" {
+			if _, ok := documentedMap[item["ParameterName"].(string)]; ok || len(documentedMap) == 0 {
+				parameter := map[string]interface{}{
+					"name":  item["ParameterName"],
+					"value": item["ParameterValue"],
+				}
+				param = append(param, parameter)
+			}
+		}
+	}
+	if len(param) > 0 {
+		if err := d.Set(attribute, param); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
+}
+
+func (s *MongoDBService) DescribeParameters(id string) (map[string]interface{}, error) {
+	conn, err := s.client.NewDdsClient()
+	var response map[string]interface{}
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeParameters"
+	request := map[string]interface{}{
+		"RegionId":     s.client.RegionId,
+		"DBInstanceId": id,
+		"ExtraParam":   "terraform",
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	return response, err
 }
