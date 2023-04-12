@@ -433,7 +433,7 @@ func resourceAlicloudBastionhostInstanceRead(d *schema.ResourceData, meta interf
 	d.Set("ldap_auth_server", []map[string]interface{}{ldapAuthServerMap})
 
 	bssOpenApiService := BssOpenApiService{client}
-	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "bastionhost", "bastionhost", "bastionhost_std_public_intl")
+	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), client.RegionId, "bastionhost", "bastionhost", "bastionhost", "bastionhost_std_public_intl")
 	if err != nil {
 		return WrapError(err)
 	}

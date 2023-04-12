@@ -39,7 +39,7 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
+			//testAccPreCheckWithTime(t, []int{1})
 		},
 		// module name
 		IDRefreshName: resourceId,

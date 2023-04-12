@@ -255,7 +255,7 @@ func resourceAlicloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("status", object["Status"])
 	d.Set("support_eip", object["SupportEIP"])
 	bssOpenApiService := BssOpenApiService{client}
-	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "ons", "ons_onsproxy_pre", "ons_onsproxy_public_intl")
+	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), client.RegionId, "ons", "ons_onsproxy_pre", "ons", "ons_onsproxy_public_intl")
 	if err != nil {
 		return WrapError(err)
 	}

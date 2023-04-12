@@ -14,7 +14,7 @@ type BssOpenApiService struct {
 	client *connectivity.AliyunClient
 }
 
-func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType, productTypeIntl string) (object map[string]interface{}, err error) {
+func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productCode, productType, productCodeIntl, productTypeIntl string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewBssopenapiClient()
 	if err != nil {
@@ -22,10 +22,12 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 	}
 	action := "QueryAvailableInstances"
 	request := map[string]interface{}{
-		"Region":      s.client.RegionId,
 		"InstanceIDs": id,
 		"ProductCode": productCode,
 		"ProductType": productType,
+	}
+	if instanceRegion != "" {
+		request["Region"] = instanceRegion
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -37,16 +39,16 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, productCode, productType
 				wait()
 				return resource.RetryableError(err)
 			}
-			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+			if IsExpectedErrors(err, []string{"NotApplicable", "SignatureDoesNotMatch"}) {
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-				if len(productTypeIntl) != 0 {
-					request["ProductType"] = productTypeIntl
-				}
+				request["ProductCode"] = productCodeIntl
+				request["ProductType"] = productTypeIntl
 				return resource.RetryableError(err)
 			}
 		}
 		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
 		if len(resp.([]interface{})) < 1 {
+			request["ProductCode"] = productCodeIntl
 			request["ProductType"] = productTypeIntl
 			conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)

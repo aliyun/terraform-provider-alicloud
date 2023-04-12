@@ -13,8 +13,6 @@ Create an Alidns Instance resource.
 
 -> **NOTE:** Available in v1.95.0+.
 
--> **NOTE:** The Alidns Instance is not support to be purchase automatically in the international site.
-
 ## Example Usage
 
 Basic Usage

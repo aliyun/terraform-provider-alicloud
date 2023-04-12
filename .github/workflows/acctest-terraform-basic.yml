@@ -1,16 +1,23 @@
 name: Terrafrom Basic Test Process
+#on:
+#  push:
+#    paths:
+##      - .github/workflows/acctest-terraform-basic.yml
+#      - alicloud/*.go
+#    branches:
+#      - master
+#  pull_request:
+#    paths:
+##      - .github/workflows/acctest-terraform-basic.yml
+#      - alicloud/*.go
 on:
-  push:
-    paths:
-#      - .github/workflows/acctest-terraform-basic.yml
-      - alicloud/*.go
-    branches:
-      - master
+#  push:
+#    branches:
+#      - master
   pull_request:
-    paths:
-#      - .github/workflows/acctest-terraform-basic.yml
-      - alicloud/*.go
-
+    pull_request_target:
+      types:
+        - opened
 jobs:
   Build:
     runs-on: ubuntu-latest
@@ -81,12 +88,8 @@ jobs:
               # currently, the action does not support checking data source
               if [[ ${fileName} == alicloud/resource_* ]]; then
                   resourceName=$(echo ${fileName} | grep -Eo "alicloud_[0-9a-z_]*")
-                  if [[ ${resourceName} == alicloud/resource_* ]]; then
-                      resourceName=$(echo ${fileName} | grep -Eo "alicloud_[0-9a-z_]*")
-                      if [[ ${resourceName} == *_test ]]; then
-                        continue
-                      fi
-                      diffResourceNames=$diffResourceNames";"${resourceName}
+                  if [[ ${resourceName} == *_test ]]; then
+                    continue
                   fi
                   diffResourceNames=$diffResourceNames";"${resourceName}
               fi
