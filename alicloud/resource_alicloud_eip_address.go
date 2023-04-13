@@ -81,7 +81,7 @@ func resourceAlicloudEipAddress() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"BGP", "BGP_PRO"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud"}, false),
 			},
 			"netmode": {
 				Type:         schema.TypeString,
