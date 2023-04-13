@@ -208,13 +208,14 @@ data "alicloud_polardb_node_classes" "default" {
 	pay_type   = "PostPaid"
 	db_type    = "MySQL"
 	db_version = "8.0"
+	category   = "Normal"
 }
 
 resource "alicloud_polardb_cluster" "default" {
 	db_type       = "MySQL"
 	db_version    = "8.0"
 	pay_type      = "PostPaid"
-	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
+	db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.2.db_node_class
 	vswitch_id    = data.alicloud_vswitches.default.ids.0
 	description   = "${var.name}"
 }

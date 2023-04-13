@@ -54,6 +54,15 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 		}),
 	}
 
+	EngineCategoryConfMysql := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"pay_type":   "PostPaid",
+			"db_type":    "Mysql",
+			"db_version": "8.0",
+			"category":   "Normal",
+		}),
+	}
+
 	RegionIdConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"pay_type":  "PostPaid",
@@ -92,7 +101,7 @@ func TestAccAlicloudPolarDBNodeClasses(t *testing.T) {
 
 	PolardbInstanceCheckInfo.dataSourceTestCheck(t, rand, PayTypeConfPrepaid,
 		PayTypeConfPostpaid, EngineVersionConfMysql, EngineVersionConfpgsql,
-		DBNodeClassConf, RegionIdConf)
+		DBNodeClassConf, EngineCategoryConfMysql, RegionIdConf)
 }
 
 func polardbConfigHeader(name string) string {

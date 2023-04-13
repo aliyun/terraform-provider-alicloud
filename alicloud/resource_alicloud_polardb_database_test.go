@@ -73,6 +73,7 @@ func resourcePolarDBDatabaseConfigDependence(name string) string {
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  zone_id    = local.zone_id
+      category   = "Normal"
 	}
 	resource "alicloud_polardb_cluster" "instance" {
 		db_type = "MySQL"

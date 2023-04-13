@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -237,7 +239,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, false),
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
@@ -258,6 +260,25 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
 				Optional:     true,
 			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"PSL5", "PSL4", "ESSDPL1", "ESSDPL2", "ESSDPL3"}, false),
+				Computed:     true,
+				ForceNew:     true,
+			},
+			"storage_space": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(20, 32000),
+				ForceNew:     true,
+			},
+			"hot_standby_cluster": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				Computed:     true,
+			},
 			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -277,15 +298,32 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapError(err)
 	}
-	raw, err := client.WithPolarDBClient(func(polarClient *polardb.Client) (interface{}, error) {
-		return polarClient.CreateDBCluster(request)
-	})
+	var response map[string]interface{}
+	action := "CreateDBCluster"
+	conn, err := client.NewPolarDBClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_cluster", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*polardb.CreateDBClusterResponse)
-	d.SetId(response.DBClusterId)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_cluster", action, AlibabaCloudSdkGoERROR)
+	}
+	d.SetId(fmt.Sprint(response["DBClusterId"]))
 
 	// wait cluster status change from Creating to running
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
@@ -293,7 +331,7 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
-		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
 		if _, err := categoryConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -814,7 +852,16 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 
 	d.Set("security_group_ids", securityGroups)
-
+	clusterInfo, err := polarDBService.DescribeDBClusterAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("storage_type", convertPolarDBStorageTypeDescribeRequest(clusterInfo["StorageType"].(string)))
+	if clusterInfo["StorageSpace"] != nil {
+		resultStorageSpace, _ := clusterInfo["StorageSpace"].(json.Number).Int64()
+		var storageSpace = resultStorageSpace / 1024 / 1024 / 1024
+		d.Set("storage_space", storageSpace)
+	}
 	return nil
 }
 
@@ -867,37 +914,39 @@ func resourceAlicloudPolarDBClusterDelete(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polardb.CreateDBClusterRequest, error) {
+func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
-	request := polardb.CreateCreateDBClusterRequest()
-	request.RegionId = string(client.Region)
-	request.DBType = Trim(d.Get("db_type").(string))
-	request.DBVersion = Trim(d.Get("db_version").(string))
-	request.DBNodeClass = d.Get("db_node_class").(string)
-	request.DBClusterDescription = d.Get("description").(string)
-	request.ClientToken = buildClientToken(request.GetActionName())
-	request.CreationCategory = d.Get("creation_category").(string)
-	request.CloneDataPoint = d.Get("clone_data_point").(string)
+
+	request := map[string]interface{}{
+		"RegionId":             client.RegionId,
+		"DBType":               Trim(d.Get("db_type").(string)),
+		"DBVersion":            Trim(d.Get("db_version").(string)),
+		"DBNodeClass":          d.Get("db_node_class").(string),
+		"DBClusterDescription": d.Get("description").(string),
+		"ClientToken":          buildClientToken("CreateDBCluster"),
+		"CreationCategory":     d.Get("creation_category").(string),
+		"CloneDataPoint":       d.Get("clone_data_point").(string),
+	}
 
 	v, exist := d.GetOk("creation_option")
 	db, ok := d.GetOk("db_type")
 	dbv, dbvok := d.GetOk("db_version")
 
 	if exist && v.(string) == "CloneFromPolarDB" {
-		request.SourceResourceId = d.Get("source_resource_id").(string)
-		request.CreationOption = d.Get("creation_option").(string)
+		request["SourceResourceId"] = d.Get("source_resource_id").(string)
+		request["CreationOption"] = d.Get("creation_option").(string)
 	}
 
 	if exist && v.(string) == "CloneFromRDS" {
-		request.CloneDataPoint = "LATEST"
+		request["CloneDataPoint"] = "LATEST"
 	}
 
 	if exist && v.(string) == "CreateGdnStandby" {
 		if ok && db.(string) == "MySQL" {
 			if dbvok && dbv.(string) == "8.0" {
-				request.CreationOption = d.Get("creation_option").(string)
-				request.GDNId = d.Get("gdn_id").(string)
+				request["CreationOption"] = d.Get("creation_option").(string)
+				request["GDNId"] = d.Get("gdn_id").(string)
 			}
 		}
 	}
@@ -905,8 +954,8 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	if exist && v.(string) == "CloneFromRDS" {
 		if ok && db.(string) == "MySQL" {
 			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
-				request.CreationOption = d.Get("creation_option").(string)
-				request.SourceResourceId = d.Get("source_resource_id").(string)
+				request["CreationOption"] = d.Get("creation_option").(string)
+				request["SourceResourceId"] = d.Get("source_resource_id").(string)
 			}
 		}
 	}
@@ -914,70 +963,93 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (*polar
 	if exist && v.(string) == "MigrationFromRDS" {
 		if ok && db.(string) == "MySQL" {
 			if dbvok && (dbv.(string) == "5.6" || dbv.(string) == "5.7") {
-				request.CreationOption = d.Get("creation_option").(string)
-				request.SourceResourceId = d.Get("source_resource_id").(string)
+				request["CreationOption"] = d.Get("creation_option").(string)
+				request["SourceResourceId"] = d.Get("source_resource_id").(string)
 			}
 		}
 	}
 
+	if v, ok := d.GetOk("storage_type"); ok && v.(string) != "" {
+		request["StorageType"] = d.Get("storage_type").(string)
+	}
+	if v, ok := d.GetOk("storage_space"); ok && v.(int) != 0 {
+		request["StorageSpace"] = d.Get("storage_space").(int)
+	}
+
+	if v, ok := d.GetOk("hot_standby_cluster"); ok && v.(string) != "" {
+		request["HotStandbyCluster"] = d.Get("hot_standby_cluster").(string)
+	}
+
+	if v, ok := d.GetOk("creation_category"); ok && v.(string) != "" {
+		if v.(string) == "SENormal" {
+			if w, ok := d.GetOk("hot_standby_cluster"); ok && w.(string) != "" {
+				if w.(string) == "ON" {
+					// 标准版：STANDBY=开启；OFF=关闭；集群版：ON=开启；OFF=关闭；
+					request["HotStandbyCluster"] = "STANDBY"
+				}
+			}
+
+		}
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
-		request.ResourceGroupId = v.(string)
+		request["ResourceGroupId"] = v.(string)
 	}
 
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
-		request.ZoneId = Trim(zone.(string))
+		request["ZoneId"] = Trim(zone.(string))
 	}
 
 	if v, ok := d.GetOk("vpc_id"); ok {
-		request.VPCId = v.(string)
+		request["VPCId"] = v.(string)
 	}
 
 	if v, ok := d.GetOk("vswitch_id"); ok {
-		request.VSwitchId = v.(string)
+		request["VSwitchId"] = v.(string)
 	}
 
-	if request.VSwitchId != "" {
-		request.ClusterNetworkType = strings.ToUpper(string(Vpc))
-		if request.ZoneId == "" || request.VPCId == "" {
+	if request["VSwitchId"] != nil {
+		request["ClusterNetworkType"] = strings.ToUpper(string(Vpc))
+		if request["ZoneId"] == nil || request["VPCId"] == nil {
 			// check vswitchId in zone
-			vsw, err := vpcService.DescribeVSwitch(request.VSwitchId)
+			vsw, err := vpcService.DescribeVSwitch(request["VSwitchId"].(string))
 			if err != nil {
 				return nil, WrapError(err)
 			}
 
-			if request.ZoneId == "" {
-				request.ZoneId = vsw.ZoneId
-			} else if request.ZoneId != vsw.ZoneId {
-				return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request.ZoneId))
+			if v, ok := request["ZoneId"].(string); !ok || v == "" {
+				request["ZoneId"] = vsw.ZoneId
+			} else if request["ZoneId"] != vsw.ZoneId {
+				return nil, WrapError(Error("The specified vswitch %s isn't in the zone %s.", vsw.VSwitchId, request["ZoneId"]))
 			}
 
-			if request.VPCId == "" {
-				request.VPCId = vsw.VpcId
+			if v, ok := request["VPCId"].(string); !ok || v == "" {
+				request["VPCId"] = vsw.VpcId
 			}
 		}
 	}
 
 	payType := Trim(d.Get("pay_type").(string))
-	request.PayType = string(Postpaid)
+	request["PayType"] = string(Postpaid)
 	if payType == string(PrePaid) {
-		request.PayType = string(Prepaid)
+		request["PayType"] = string(Prepaid)
 	}
-	if PayType(request.PayType) == Prepaid {
+	if PayType(request["PayType"].(string)) == Prepaid {
 		period := d.Get("period").(int)
-		request.UsedTime = strconv.Itoa(period)
-		request.Period = string(Month)
+		request["UsedTime"] = strconv.Itoa(period)
+		request["Period"] = string(Month)
 		if period > 9 {
-			request.UsedTime = strconv.Itoa(period / 12)
-			request.Period = string(Year)
+			request["UsedTime"] = strconv.Itoa(period / 12)
+			request["Period"] = string(Year)
 		}
 		if d.Get("renewal_status").(string) != string(RenewNotRenewal) {
-			request.AutoRenew = requests.Boolean(strconv.FormatBool(true))
+			request["AutoRenew"] = requests.Boolean(strconv.FormatBool(true))
 		} else {
-			request.AutoRenew = requests.Boolean(strconv.FormatBool(false))
+			request["AutoRenew"] = requests.Boolean(strconv.FormatBool(false))
 		}
 	}
 
-	request.TDEStatus = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
+	request["TDEStatus"] = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
 
 	return request, nil
 }
@@ -1011,4 +1083,19 @@ func convertPolarDBSubCategoryUpdateRequest(source string) string {
 		return "normal_exclusive"
 	}
 	return "normal_general"
+}
+func convertPolarDBStorageTypeDescribeRequest(source string) string {
+	switch source {
+	case "HighPerformance":
+		return "PSL5"
+	case "Standard":
+		return "PSL4"
+	case "essdpl1":
+		return "ESSDPL1"
+	case "essdpl2":
+		return "ESSDPL2"
+	case "essdpl3":
+		return "ESSDPL3"
+	}
+	return source
 }
