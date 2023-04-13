@@ -136,6 +136,7 @@ func testAccCheckAlicloudPolarClusterDataSourceConfig(rand int, attrMap map[stri
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  zone_id    = local.zone_id
+      category   = "Normal"
 	}
 
 	resource "alicloud_polardb_cluster" "default" {

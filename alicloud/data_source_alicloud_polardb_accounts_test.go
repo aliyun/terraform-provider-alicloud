@@ -74,6 +74,7 @@ func testAccCheckAlicloudPolarClusterAccountsDataSourceConfig(rand int, attrMap 
 	  db_version = "8.0"
       pay_type   = "PostPaid"
 	  zone_id    = local.zone_id
+      category   = "Normal"
 	}
 	resource "alicloud_polardb_cluster" "default" {
 	  db_type           = "MySQL"

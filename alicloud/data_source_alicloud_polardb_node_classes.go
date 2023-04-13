@@ -49,6 +49,11 @@ func dataSourceAlicloudPolarDBNodeClasses() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, false),
+			},
 			// Computed values.
 			"classes": {
 				Type:     schema.TypeList,
@@ -117,6 +122,11 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 		request.ZoneId = zoneId.(string)
 	}
 
+	var category string
+	if s, ok := d.GetOk("category"); ok && s.(string) != "" {
+		category = s.(string)
+	}
+
 	var response = &polardb.DescribeDBClusterAvailableResourcesResponse{}
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
@@ -158,7 +168,18 @@ func dataSourceAlicloudPolarDBInstanceClassesRead(d *schema.ResourceData, meta i
 			var dbNodeClasses []map[string]string
 			for _, availableResource := range supportedEngine.AvailableResources {
 				dbNodeClass := map[string]string{"db_node_class": availableResource.DBNodeClass}
-				dbNodeClasses = append(dbNodeClasses, dbNodeClass)
+
+				if "" != category {
+					// 匹配过滤条件，返回符合条件的数据
+					resultCategory := availableResource.Category
+					if category == resultCategory {
+						dbNodeClasses = append(dbNodeClasses, dbNodeClass)
+					}
+				} else {
+					// category是空没有过滤条件返回所有数据
+					dbNodeClasses = append(dbNodeClasses, dbNodeClass)
+				}
+
 			}
 			availableResources := map[string]interface{}{
 				"engine":              supportedEngine.Engine,

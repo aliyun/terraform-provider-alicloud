@@ -121,6 +121,7 @@ func testAccCheckAlicloudPolarDBGlobalDatabaseNetworkDataSourceName(rand int, at
 		pay_type   = "PostPaid"
 		db_type    = "MySQL"
 		db_version = "8.0"
+		category   = "Normal"
 	}
 	resource "alicloud_polardb_cluster" "default" {
 		db_type       = "MySQL"
