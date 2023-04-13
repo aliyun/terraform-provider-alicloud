@@ -81,14 +81,16 @@ func testSweepDBFSInstance(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["FsName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["FsName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping DBFSDbfs Instance: %s", item["FsName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping DBFSDbfs Instance: %s", item["FsName"].(string))
+					continue
+				}
 			}
 			action := "DeleteDbfs"
 			request := map[string]interface{}{

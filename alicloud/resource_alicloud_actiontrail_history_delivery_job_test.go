@@ -84,17 +84,19 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["TrailName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["TrailName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if fmt.Sprint(item["JobStatus"]) == "0" || fmt.Sprint(item["JobStatus"]) == "1" {
-				skip = true
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Delivery History Job: %s", item["TrailName"].(string))
-				continue
+				if fmt.Sprint(item["JobStatus"]) == "0" || fmt.Sprint(item["JobStatus"]) == "1" {
+					skip = true
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Delivery History Job: %s", item["TrailName"].(string))
+					continue
+				}
 			}
 			action := "DeleteDeliveryHistoryJob"
 			request := map[string]interface{}{

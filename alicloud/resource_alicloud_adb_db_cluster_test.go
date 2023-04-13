@@ -64,15 +64,17 @@ func testSweepAdbDbInstances(region string) error {
 			name := fmt.Sprint(item["DBClusterDescription"])
 			id := fmt.Sprint(item["DBClusterId"])
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping ADB Instance: %s (%s)", name, id)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping ADB Instance: %s (%s)", name, id)
+					continue
+				}
 			}
 			log.Printf("[INFO] Deleting adb Instance: %s (%s)", name, id)
 			action := "DeleteDBCluster"

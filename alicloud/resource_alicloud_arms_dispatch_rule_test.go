@@ -78,15 +78,17 @@ func testSweepArmsDispatchRule(region string) error {
 		item := v.(map[string]interface{})
 		name := fmt.Sprint(item["Name"])
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping dispatch rule: %s ", name)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping dispatch rule: %s ", name)
+				continue
+			}
 		}
 		log.Printf("[INFO] delete dispatch rule: %s ", name)
 

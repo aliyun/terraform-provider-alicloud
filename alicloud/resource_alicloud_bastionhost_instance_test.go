@@ -71,17 +71,18 @@ func testSweepBastionhostInstances(region string) error {
 	for _, v := range instances {
 		name := v.Description
 		skip := true
-		for _, prefix := range prefixes {
-			if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if name != "" && strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Bastionhost Instance: %s", name)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Bastionhost Instance: %s", name)
-			continue
-		}
-
 		log.Printf("[INFO] Deleting Bastionhost Instance %s .", v.InstanceId)
 
 		releaseReq := yundun_bastionhost.CreateRefundInstanceRequest()

@@ -85,15 +85,17 @@ func testSweepExpressConnectVirtualBorderRouters(region string) error {
 			vbrName := fmt.Sprint(item["Name"])
 			vbrId := fmt.Sprint(item["VbrId"])
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(vbrName), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(vbrName), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping VirtualBorderRouter: %s (%s)", vbrName, vbrId)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping VirtualBorderRouter: %s (%s)", vbrName, vbrId)
+					continue
+				}
 			}
 			action = "DeleteVirtualBorderRouter"
 			request := map[string]interface{}{

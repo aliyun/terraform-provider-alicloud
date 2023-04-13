@@ -85,17 +85,19 @@ func testSweepGraphDatabaseDbInstance(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DBInstanceDescription"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["DBInstanceDescription"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if item["DBInstanceStatus"].(string) != "Running" {
-				skip = true
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Graph Database DbInstance: %s", item["DBInstanceDescription"].(string))
-				continue
+				if item["DBInstanceStatus"].(string) != "Running" {
+					skip = true
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Graph Database DbInstance: %s", item["DBInstanceDescription"].(string))
+					continue
+				}
 			}
 			action := "DeleteDBInstance"
 			deleteRequest := map[string]interface{}{

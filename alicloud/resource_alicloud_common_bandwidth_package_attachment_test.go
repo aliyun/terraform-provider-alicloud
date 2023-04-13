@@ -69,15 +69,17 @@ func testSweepCommonBandwidthPackageAttachment(region string) error {
 		id := cbwp.BandwidthPackageId
 		for _, eip := range cbwp.PublicIpAddresses.PublicIpAddresse {
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Common Bandwidth Package: %s (%s)", name, id)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Common Bandwidth Package: %s (%s)", name, id)
+					continue
+				}
 			}
 			log.Printf("[INFO] Unassociating Common Bandwidth Package: %s (%s)", name, id)
 			req := vpc.CreateRemoveCommonBandwidthPackageIpRequest()

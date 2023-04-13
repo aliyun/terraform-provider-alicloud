@@ -79,16 +79,21 @@ func testSweepRouteTable(region string) error {
 			item := v.(map[string]interface{})
 			name := fmt.Sprint(item["RouteTableName"])
 			id := fmt.Sprint(item["RouteTableId"])
-			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
+			if fmt.Sprint(item["RouteTableType"]) == "System" {
 				continue
+			}
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
+					continue
+				}
 			}
 			routeTableIds = append(routeTableIds, id)
 		}
@@ -104,6 +109,7 @@ func testSweepRouteTable(region string) error {
 			"RouteTableId": id,
 		}
 		request["RegionId"] = client.RegionId
+		action := "DeleteRouteTable"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -118,9 +124,6 @@ func testSweepRouteTable(region string) error {
 			return nil
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"DependencyViolation.RouteEntry", "IncorrectRouteTableStatus", "InvalidParameter.Action", "InvalidRegionId.NotFound"}) {
-				return nil
-			}
 			log.Printf("[ERROR] Failed to delete Route Table (%s): %s", id, err)
 		}
 	}

@@ -78,14 +78,16 @@ func testSweepAlbAcl(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["AclName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["AclName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Alb Acl: %s", item["AclName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Alb Acl: %s", item["AclName"].(string))
+					continue
+				}
 			}
 			action := "DeleteAcl"
 			request := map[string]interface{}{

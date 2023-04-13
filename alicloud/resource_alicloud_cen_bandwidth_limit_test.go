@@ -75,17 +75,18 @@ func testSweepCenBandwidthLimit(region string) error {
 		name := fmt.Sprint(cen["Name"])
 		id := fmt.Sprint(cen["CenId"])
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping CEN bandwidth limit: %s (%s)", name, id)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping CEN bandwidth limit: %s (%s)", name, id)
-			continue
-		}
-
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			err := cenService.SetCenInterRegionBandwidthLimit(id, v.LocalRegionId, v.OppositeRegionId, 0)
 			if err != nil {

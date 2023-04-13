@@ -84,14 +84,16 @@ func testSweepVpcIpv4Gateway(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Ipv4GatewayName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["Ipv4GatewayName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Vpc Ipv4 Gateway: %s", item["Ipv4GatewayName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Vpc Ipv4 Gateway: %s", item["Ipv4GatewayName"].(string))
+					continue
+				}
 			}
 			action := "DeleteIpv4Gateway"
 			request := map[string]interface{}{

@@ -78,14 +78,16 @@ func testSweepAlbServerGroup(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["ServerGroupName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["ServerGroupName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Alb Server Group: %s", item["ServerGroupName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Alb Server Group: %s", item["ServerGroupName"].(string))
+					continue
+				}
 			}
 			action := "DeleteServerGroup"
 			request := map[string]interface{}{

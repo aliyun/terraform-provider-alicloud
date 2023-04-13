@@ -83,15 +83,17 @@ func testSweepConfigCompliancePack(region string) error {
 		for _, v := range result {
 			skip := true
 			item := v.(map[string]interface{})
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["CompliancePackName"])), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["CompliancePackName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Compliance Pack: %v (%v)", item["CompliancePackName"], item["CompliancePackId"])
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Compliance Pack: %v (%v)", item["CompliancePackName"], item["CompliancePackId"])
+					continue
+				}
 			}
 			compliancePackIds = append(compliancePackIds, fmt.Sprint(item["CompliancePackId"]))
 		}

@@ -70,21 +70,23 @@ func testAlicloudEcsNetworkInterface(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["NetworkInterfaceName"].(string)), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["NetworkInterfaceName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
-			if skip {
-				if need, err := service.needSweepVpc(item["VpcId"].(string), ""); err == nil {
-					skip = !need
+				// If a nat gateway name is not set successfully, it should be fetched by vpc name and deleted.
+				if skip {
+					if need, err := service.needSweepVpc(item["VpcId"].(string), ""); err == nil {
+						skip = !need
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping NetworkInterface: %s", item["NetworkInterfaceName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping NetworkInterface: %s", item["NetworkInterfaceName"].(string))
+					continue
+				}
 			}
 			sweeped = true
 			if item["InstanceId"] != "" {

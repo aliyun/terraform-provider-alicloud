@@ -87,14 +87,16 @@ func testSweepCmsSlsGroup(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["SLSGroupName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["SLSGroupName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Cms Sls Group: %s", item["SLSGroupName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Cms Sls Group: %s", item["SLSGroupName"].(string))
+					continue
+				}
 			}
 			action := "DeleteHybridMonitorSLSGroup"
 			request := map[string]interface{}{

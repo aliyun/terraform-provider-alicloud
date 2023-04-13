@@ -73,15 +73,17 @@ func testSweepRouteTableAttachment(region string) error {
 		id := vtb.RouteTableId
 		for _, vswitch := range vtb.VSwitchIds.VSwitchId {
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Route Table: %s (%s)", name, id)
+					continue
+				}
 			}
 			log.Printf("[INFO] Unassociating Route Table: %s (%s)", name, id)
 			req := vpc.CreateUnassociateRouteTableRequest()

@@ -70,15 +70,17 @@ func testSweepNasFileSystem(region string) error {
 			item := v.(map[string]interface{})
 			description, _ := item["Description"].(string)
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping FileSystem: %s (%s)", description, item["FileSystemId"])
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping FileSystem: %s (%s)", description, item["FileSystemId"])
+					continue
+				}
 			}
 			// 删除 fileSystem 时需要先删除其挂载关系
 			if v, ok := item["MountTargets"].(map[string]interface{})["MountTarget"].([]interface{}); ok && len(v) > 0 {

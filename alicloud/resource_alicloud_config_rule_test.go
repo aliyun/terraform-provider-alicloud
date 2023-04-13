@@ -88,14 +88,16 @@ func testSweepConfigRule(region string) error {
 
 	for _, ruleId := range ruleIds {
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(ruleId), strings.ToLower(prefix)) {
-				skip = false
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(ruleId), strings.ToLower(prefix)) {
+					skip = false
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping config rule: %s ", ruleId)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping config rule: %s ", ruleId)
+				continue
+			}
 		}
 		action = "DeleteConfigRules"
 		request := map[string]interface{}{

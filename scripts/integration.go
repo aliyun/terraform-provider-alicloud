@@ -123,7 +123,6 @@ func _invokeFunction(client *fc_open20210406.Client, serviceName, functionName, 
 			continue
 		}
 		if *_response.Body.Status != "Succeeded" {
-			log.Println(*_response.Body.InvocationErrorMessage)
 			return fmt.Errorf(*_response.Body.InvocationErrorMessage)
 		}
 		return nil

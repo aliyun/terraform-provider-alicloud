@@ -90,14 +90,16 @@ func testSweepGPDBDBInstance(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DBInstanceDescription"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["DBInstanceDescription"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Gpdb Instance: %s", item["DBInstanceDescription"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Gpdb Instance: %s", item["DBInstanceDescription"].(string))
+					continue
+				}
 			}
 			action := "DeleteDBInstance"
 			request := map[string]interface{}{

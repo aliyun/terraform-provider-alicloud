@@ -79,14 +79,16 @@ func testSweepMongoDBShardingInstances(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["DBInstanceDescription"])), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Mongodb Sharding Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Mongodb Sharding Instance: %s", fmt.Sprint(item["DBInstanceDescription"]))
+					continue
+				}
 			}
 			action := "DeleteDBInstance"
 			request := map[string]interface{}{

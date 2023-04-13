@@ -92,15 +92,17 @@ func testSweepVpcs(region string) error {
 			if v, ok := item["IsDefault"].(bool); ok && v {
 				continue
 			}
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["VpcName"])), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["VpcName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping VPC: %v (%v)", item["VpcName"], item["VpcId"])
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping VPC: %v (%v)", item["VpcName"], item["VpcId"])
+					continue
+				}
 			}
 			vpcIds = append(vpcIds, fmt.Sprint(item["VpcId"]))
 		}
