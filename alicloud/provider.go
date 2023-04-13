@@ -467,6 +467,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_cross_regions":                                dataSourceAlicloudRdsCrossRegions(),
 			"alicloud_rds_cross_region_backups":                         dataSourceAlicloudRdsCrossRegionBackups(),
 			"alicloud_rds_character_set_names":                          dataSourceAlicloudRdsCharacterSetNames(),
+			"alicloud_rds_slots":                                        dataSourceAlicloudRdsSlots(),
 			"alicloud_havips":                                           dataSourceAlicloudHavips(),
 			"alicloud_ecs_snapshots":                                    dataSourceAlicloudEcsSnapshots(),
 			"alicloud_ecs_key_pairs":                                    dataSourceAlicloudEcsKeyPairs(),
