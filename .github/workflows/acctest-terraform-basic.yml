@@ -1,23 +1,22 @@
 name: Terrafrom Basic Test Process
-#on:
-#  push:
-#    paths:
-##      - .github/workflows/acctest-terraform-basic.yml
-#      - alicloud/*.go
-#    branches:
-#      - master
-#  pull_request:
-#    paths:
-##      - .github/workflows/acctest-terraform-basic.yml
-#      - alicloud/*.go
 on:
 #  push:
+#    paths:
+#      - .github/workflows/acctest-terraform-basic.yml
+#      - alicloud/*.go
 #    branches:
 #      - master
   pull_request:
-    pull_request_target:
-      types:
-        - opened
+    paths:
+#      - .github/workflows/acctest-terraform-basic.yml
+      - alicloud/*.go
+  pull_request_target:
+    paths:
+      - alicloud/*.go
+
+permissions:
+  pull-requests: read
+
 jobs:
   Build:
     runs-on: ubuntu-latest
@@ -104,8 +103,15 @@ jobs:
             exit 1
           fi
 
+  Approve: # First step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve
+        run: echo For security reasons, all pull requests need to be approved first before running the integration test.
+
   IntegrationTest:
     runs-on: ubuntu-latest
+    needs: [Approve] # Require the first step to finish
     environment: IntegrationTest
     steps:
       - uses: actions/checkout@v3
