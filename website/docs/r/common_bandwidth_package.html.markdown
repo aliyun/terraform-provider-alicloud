@@ -40,7 +40,8 @@ The following arguments are supported:
 * `bandwidth_package_name` - (Optional, Available in 1.120.0+) The name of the common bandwidth package.
 * `description` - (Optional) The description of the common bandwidth package instance.
 * `resource_group_id` - (Optional, Available in 1.58.0+, Modifiable in 1.115.0+) The Id of resource group which the common bandwidth package belongs.
-* `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Valid values: `BGP` and `BGP_PRO`. Default to `BGP`.
+* `isp` - (Optional, Available in 1.90.1+) The type of the Internet Service Provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2` and `BGP_FinanceCloud`. Default to `BGP`.
+  **NOTE:** From version 1.203.0, `isp` can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`.
 * `zone` - (Optional, ForceNew, Available in 1.120.0+) The zone of bandwidth package.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
 * `deletion_protection` - (Optional, Available in v1.124.4+) Whether enable the deletion protection or not. Default value: `false`.
