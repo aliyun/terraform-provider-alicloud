@@ -5,10 +5,8 @@ import (
 	"log"
 	"testing"
 
-	"strings"
-	"time"
-
 	"strconv"
+	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -49,22 +47,21 @@ func testSweepOSSBuckets(region string) error {
 		return fmt.Errorf("Error retrieving OSS buckets: %s", err)
 	}
 	resp, _ := raw.(oss.ListBucketsResult)
-	sweeped := false
-
 	for _, v := range resp.Buckets {
 		name := v.Name
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping OSS bucket: %s", name)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping OSS bucket: %s", name)
-			continue
-		}
-		sweeped = true
 		raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 			return ossClient.Bucket(name)
 		})
@@ -91,9 +88,6 @@ func testSweepOSSBuckets(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete OSS bucket (%s): %s", name, err)
 		}
-	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

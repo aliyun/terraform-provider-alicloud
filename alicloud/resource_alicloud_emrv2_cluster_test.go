@@ -59,16 +59,17 @@ func testSweepEmrV2Cluster(region string) error {
 		for _, item := range resp.([]interface{}) {
 			skip := true
 			cluster := item.(map[string]interface{})
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(cluster["ClusterName"].(string), prefix) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(cluster["ClusterName"].(string), prefix) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping emr: %v (%v)", cluster["ClusterName"], cluster["ClusterId"])
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping emr: %v (%v)", cluster["ClusterName"], cluster["ClusterId"])
-				continue
-			}
-
 			deleteClusterAction := "DeleteCluster"
 			deleteClusterRequest := map[string]interface{}{
 				"RegionId":  client.RegionId,

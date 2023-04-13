@@ -111,21 +111,23 @@ func testSweepVSwitches(region string) error {
 		name := fmt.Sprint(vsw["VSwitchName"])
 		id := fmt.Sprint(vsw["VSwitchId"])
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		// If a vswitch name is set by other service, it should be fetched by vpc name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(fmt.Sprint(vsw["VpcId"]), ""); err == nil {
-				skip = !need
+			// If a vswitch name is set by other service, it should be fetched by vpc name and deleted.
+			if skip {
+				if need, err := service.needSweepVpc(fmt.Sprint(vsw["VpcId"]), ""); err == nil {
+					skip = !need
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping VSwitch: %s (%s)", name, id)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting VSwitch: %s (%s)", name, id)
 		if err := service.sweepVSwitch(id); err != nil {

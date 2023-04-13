@@ -23,7 +23,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_instance",
 			"alicloud_ecs_network_interface",
-			"alicloud_yundun_bastionhost_instance",
+			"alicloud_bastionhost_instance",
 			"alicloud_cs_kubernetes",
 		},
 	})
@@ -76,21 +76,23 @@ func testSweepSecurityGroups(region string) error {
 		name := v.SecurityGroupName
 		id := v.SecurityGroupId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		// If a Security Group created by other service, it should be fetched by vpc name and deleted.
-		if skip {
-			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
-				skip = !need
+			// If a Security Group created by other service, it should be fetched by vpc name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+					skip = !need
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Security Group: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping Security Group: %s (%s)", name, id)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting Security Group: %s (%s)", name, id)
 		if err := ecsService.sweepSecurityGroup(id); err != nil {

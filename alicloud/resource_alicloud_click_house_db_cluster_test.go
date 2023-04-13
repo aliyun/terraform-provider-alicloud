@@ -59,15 +59,17 @@ func testSweepClickhouseDbCLuster(region string) error {
 			item := v.(map[string]interface{})
 			name := item["DBClusterDescription"].(string)
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(name, prefix) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(name, prefix) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping DBCluster Access Group: %s ", name)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping DBCluster Access Group: %s ", name)
+					continue
+				}
 			}
 			ids = append(ids, fmt.Sprint(item["DBClusterId"]))
 		}

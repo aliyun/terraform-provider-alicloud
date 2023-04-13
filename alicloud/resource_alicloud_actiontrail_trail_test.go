@@ -71,14 +71,16 @@ func testSweepActiontrailTrail(region string) error {
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
-				skip = false
+		if sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
+					skip = false
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping ActionTrail Trails: %s", item["Name"].(string))
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping ActionTrail Trails: %s", item["Name"].(string))
+				continue
+			}
 		}
 		sweeped = true
 		action = "DeleteTrail"

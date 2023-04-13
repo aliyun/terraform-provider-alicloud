@@ -70,25 +70,26 @@ func testSweepHBaseInstances(region string) error {
 		name := v.InstanceName
 		id := v.InstanceId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
+					skip = !need
+				}
+
+			}
+
+			if skip {
+				log.Printf("[INFO] Skipping Hbase Instance: %s (%s)", name, id)
+				continue
 			}
 		}
-		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := vpcService.needSweepVpc(v.VpcId, ""); err == nil {
-				skip = !need
-			}
-
-		}
-
-		if skip {
-			log.Printf("[INFO] Skipping Hbase Instance: %s (%s)", name, id)
-			continue
-		}
-
 		log.Printf("[INFO] Deleting HBase Instance: %s (%s)", name, id)
 		req1 := hbase.CreateModifyClusterDeletionProtectionRequest()
 		req1.ClusterId = id

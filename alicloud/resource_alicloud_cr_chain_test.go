@@ -62,14 +62,16 @@ func testSweepCRChain(region string) error {
 	instanceIds := make([]string, 0)
 	for _, instance := range instances {
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(instance.InstanceName), strings.ToLower(prefix)) {
-				skip = false
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(instance.InstanceName), strings.ToLower(prefix)) {
+					skip = false
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping cr ee instance: %s ", instance.InstanceName)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping cr ee instance: %s ", instance.InstanceName)
+				continue
+			}
 		}
 		instanceIds = append(instanceIds, instance.InstanceId)
 	}

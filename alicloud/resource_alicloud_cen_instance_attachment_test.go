@@ -57,16 +57,17 @@ func testSweepCenInstanceAttachment(region string) error {
 
 		for _, v := range response.Cens.Cen {
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(v.Name), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(v.Name), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping cen instance: %s ", v.Name)
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping cen instance: %s ", v.Name)
-			} else {
-				cenIds = append(cenIds, v.CenId)
-			}
+			cenIds = append(cenIds, v.CenId)
 		}
 		if len(response.Cens.Cen) < PageSizeLarge {
 			break

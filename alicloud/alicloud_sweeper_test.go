@@ -81,3 +81,7 @@ func sharedClientForRegion(region string) (interface{}, error) {
 
 	return client, nil
 }
+
+func sweepAll() bool {
+	return os.Getenv("ALICLOUD_SWEEP_ALL_RESOURCES") == "true"
+}

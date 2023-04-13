@@ -65,15 +65,17 @@ func testSweepCmsMonitorgroup(region string) error {
 			item := v.(map[string]interface{})
 			name := item["GroupName"].(string)
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Cms Monitor Group: %s ", name)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Cms Monitor Group: %s ", name)
+					continue
+				}
 			}
 			log.Printf("[INFO] Delete Cms Monitor Group: %s ", name)
 

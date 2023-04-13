@@ -88,14 +88,16 @@ func testSweepCmsHybridMonitorSlsTask(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["TaskName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["TaskName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Cms Hybrid Monitor Sls Task: %s", item["TaskName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Cms Hybrid Monitor Sls Task: %s", item["TaskName"].(string))
+					continue
+				}
 			}
 			action := "DeleteHybridMonitorTask"
 			request := map[string]interface{}{

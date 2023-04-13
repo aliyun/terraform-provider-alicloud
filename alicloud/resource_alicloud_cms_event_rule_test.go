@@ -83,15 +83,17 @@ func testSweepCmsEventRules(region string) error {
 		for _, v := range result {
 			skip := true
 			item := v.(map[string]interface{})
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping CmsEventRule Instance: %v", item["Name"])
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping CmsEventRule Instance: %v", item["Name"])
+					continue
+				}
 			}
 			cmsEventRuleIds = append(cmsEventRuleIds, fmt.Sprint(item["Name"]))
 		}

@@ -59,16 +59,18 @@ func testSweepEdasCluster(region string) error {
 	for _, v := range listClusterResponse.ClusterList.Cluster {
 		name := v.ClusterName
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
 
-		if skip {
-			log.Printf("[INFO] Skipping edas cluster: %s", name)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping edas cluster: %s", name)
+				continue
+			}
 		}
 		log.Printf("[INFO] delete edas cluster: %s", name)
 

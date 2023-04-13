@@ -99,24 +99,24 @@ func testSweepElasticsearch(region string) error {
 		description := v.Description
 		id := v.InstanceId
 		skip := true
-
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(description), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := service.needSweepVpc(v.NetworkConfig.VpcId, v.NetworkConfig.VswitchId); err == nil {
+					skip = !need
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Elasticsearch Instance: %s (%s)", description, id)
+				continue
 			}
 		}
-		// If a ES description is not set successfully, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := service.needSweepVpc(v.NetworkConfig.VpcId, v.NetworkConfig.VswitchId); err == nil {
-				skip = !need
-			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Elasticsearch Instance: %s (%s)", description, id)
-			continue
-		}
-
 		log.Printf("[INFO] Deleting Elasticsearch Instance: %s (%s)", description, id)
 		req := elasticsearch.CreateDeleteInstanceRequest()
 		req.InstanceId = id

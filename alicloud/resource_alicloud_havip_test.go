@@ -76,15 +76,17 @@ func testSweepHaVip(region string) error {
 			name := fmt.Sprint(item["Name"])
 			id := fmt.Sprint(item["HaVipId"])
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping HaVip: %s (%s)", name, id)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping HaVip: %s (%s)", name, id)
+					continue
+				}
 			}
 			haVipIds = append(haVipIds, id)
 		}

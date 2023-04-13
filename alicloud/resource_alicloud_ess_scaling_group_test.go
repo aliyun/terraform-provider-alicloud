@@ -5,9 +5,6 @@ import (
 	"log"
 	"testing"
 
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
@@ -15,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"strings"
 )
 
 func init() {
@@ -65,22 +63,22 @@ func testSweepEssGroups(region string) error {
 		req.PageNumber = page
 	}
 
-	sweeped := false
 	for _, v := range groups {
 		name := v.ScalingGroupName
 		id := v.ScalingGroupId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Scaling Group: %s (%s)", name, id)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Scaling Group: %s (%s)", name, id)
-			continue
-		}
-		sweeped = true
 		log.Printf("[INFO] Deleting Scaling Group: %s (%s)", name, id)
 		req := ess.CreateDeleteScalingGroupRequest()
 		req.ScalingGroupId = id
@@ -91,9 +89,6 @@ func testSweepEssGroups(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Scaling Group (%s (%s)): %s", name, id, err)
 		}
-	}
-	if sweeped {
-		time.Sleep(2 * time.Minute)
 	}
 	return nil
 }

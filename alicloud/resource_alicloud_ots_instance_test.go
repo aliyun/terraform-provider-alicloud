@@ -70,20 +70,20 @@ func testSweepOtsInstances(region string) error {
 			req.PageNum = page
 		}
 	}
-	sweeped := false
-
 	for _, v := range insts {
 		name := v.InstanceName
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping OTS Instance: %s", name)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping OTS Instance: %s", name)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting OTS Instance %s table stores.", name)
 		raw, err := otsService.client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
@@ -114,13 +114,9 @@ func testSweepOtsInstances(region string) error {
 		})
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete OTS Instance (%s): %s", name, err)
-		} else {
-			sweeped = true
 		}
 	}
-	if sweeped {
-		time.Sleep(3 * time.Minute)
-	}
+
 	return nil
 }
 

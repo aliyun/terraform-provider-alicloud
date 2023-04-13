@@ -84,14 +84,16 @@ func testSweepNlbLoadBalancer(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["LoadBalancerName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Nlb Load Balancer: %s", item["LoadBalancerName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Nlb Load Balancer: %s", item["LoadBalancerName"].(string))
+					continue
+				}
 			}
 			action := "DeleteLoadBalancer"
 			request := map[string]interface{}{

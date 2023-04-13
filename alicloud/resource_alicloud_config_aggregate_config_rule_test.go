@@ -81,15 +81,17 @@ func testSweepConfigAggregateConfigRule(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["AggregatorName"])), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["AggregatorName"])), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Config Aggregator: %v (%v)", item["AggregatorName"], item["AggregatorId"])
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Config Aggregator: %v (%v)", item["AggregatorName"], item["AggregatorId"])
+					continue
+				}
 			}
 			aggregatorIds = append(aggregatorIds, fmt.Sprint(item["AggregatorId"]))
 		}

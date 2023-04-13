@@ -89,14 +89,16 @@ func testSweepAlbSecurityPolicy(region string) error {
 			}
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["SecurityPolicyName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["SecurityPolicyName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping ALB Security Policy: %s", item["SecurityPolicyName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping ALB Security Policy: %s", item["SecurityPolicyName"].(string))
+					continue
+				}
 			}
 			action := "DeleteSecurityPolicy"
 			request := map[string]interface{}{

@@ -48,17 +48,18 @@ func testSweepCassandraCluster(region string) error {
 		id := v.ClusterId
 		name := v.ClusterName
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Cassandra Clusters: %s (%s)", name, id)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Cassandra Clusters: %s (%s)", name, id)
-			continue
-		}
-
 		sweeped = true
 		log.Printf("[INFO] Deleting Cassandra Clusters: %s (%s)", name, id)
 		req := cassandra.CreateDeleteClusterRequest()

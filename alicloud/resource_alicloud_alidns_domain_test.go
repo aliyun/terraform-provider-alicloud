@@ -47,10 +47,12 @@ func testSweepAlidnsDomain(region string) error {
 		response, _ := raw.(*alidns.DescribeDomainsResponse)
 		domains := response.Domains.Domain
 		for _, domain := range domains {
-			if strings.HasPrefix(domain.DomainName, "tf-testacc") {
-				allDomains = append(allDomains, domain)
-			} else {
-				log.Printf("Skip %#v", domain)
+			if !sweepAll() {
+				if strings.HasPrefix(domain.DomainName, "tf-testacc") {
+					allDomains = append(allDomains, domain)
+				} else {
+					log.Printf("Skip %#v", domain)
+				}
 			}
 		}
 

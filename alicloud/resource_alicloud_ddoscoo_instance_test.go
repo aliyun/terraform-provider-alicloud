@@ -213,9 +213,11 @@ func testSweepDdoscooInstances(region string) error {
 				}
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Ddoscoo Instance: %s", name)
-			continue
+		if !sweepAll() {
+			if skip {
+				log.Printf("[INFO] Skipping Ddoscoo Instance: %s", name)
+				continue
+			}
 		}
 
 		log.Printf("[INFO] Deleting Ddoscoo Instance %s .", fmt.Sprint(v["InstanceId"]))

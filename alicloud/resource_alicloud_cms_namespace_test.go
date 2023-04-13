@@ -87,14 +87,16 @@ func testSweepCmsNamespace(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Namespace"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["Namespace"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Cms Namespace: %s", item["Namespace"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Cms Namespace: %s", item["Namespace"].(string))
+					continue
+				}
 			}
 			action := "DeleteHybridMonitorNamespace"
 			request := map[string]interface{}{

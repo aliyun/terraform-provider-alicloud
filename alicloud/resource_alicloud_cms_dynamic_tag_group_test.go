@@ -78,16 +78,17 @@ func testSweepCmsDynamicTagGroup(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["TagKey"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["TagKey"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping DynamicTagGroup: %s", item["TagKey"].(string))
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping DynamicTagGroup: %s", item["TagKey"].(string))
-				continue
-			}
-
 			action := "DeleteDynamicTagGroup"
 			request := map[string]interface{}{
 				"DynamicTagRuleId": item["DynamicTagRuleId"],

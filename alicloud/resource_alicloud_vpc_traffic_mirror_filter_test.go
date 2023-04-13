@@ -84,16 +84,17 @@ func testSweepVPCTrafficMirrorFilter(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["TrafficMirrorFilterName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["TrafficMirrorFilterName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping VPC Traffic Mirror Filter: %s", item["TrafficMirrorFilterName"].(string))
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping VPC Traffic Mirror Filter: %s", item["TrafficMirrorFilterName"].(string))
+					continue
+				}
 			}
 			action := "DeleteTrafficMirrorFilter"
 			request := map[string]interface{}{

@@ -73,15 +73,17 @@ func testSweepVPNCustomerGateways(region string) error {
 		name := v.Name
 		id := v.CustomerGatewayId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping VPN Customer Gateway: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping VPN Customer Gateway: %s (%s)", name, id)
+				continue
+			}
 		}
 		sweeped = true
 		log.Printf("[INFO] Deleting VPN Customer Gateway: %s (%s)", name, id)

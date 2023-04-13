@@ -49,42 +49,44 @@ func testSweepLogProjectsWithPrefixAndSuffix(region string, prefixes, suffixes [
 	for _, v := range names {
 		name := v
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		if skip {
-			for _, suffix := range suffixes {
-				if strings.HasSuffix(strings.ToLower(name), strings.ToLower(suffix)) {
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
 					skip = false
 					break
 				}
 			}
-		}
-		// Sweep the project which from the k8s cluster
-		if skip && strings.HasPrefix(name, "k8s-log-") {
-			k8sId := strings.TrimPrefix(name, "k8s-log-")
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return csClient.DescribeCluster(k8sId)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
-					skip = false
-				} else {
-					log.Printf("[ERROR] DescribeCluster got an error: %#v", err)
-				}
-			} else {
-				cluster, _ := raw.(cs.ClusterType)
-				if strings.HasPrefix(strings.ToLower(cluster.Name), "tf-testacc") || strings.HasPrefix(strings.ToLower(cluster.Name), "tf_testacc") {
-					skip = false
+			if skip {
+				for _, suffix := range suffixes {
+					if strings.HasSuffix(strings.ToLower(name), strings.ToLower(suffix)) {
+						skip = false
+						break
+					}
 				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Log Project: %s", name)
-			continue
+			// Sweep the project which from the k8s cluster
+			if skip && strings.HasPrefix(name, "k8s-log-") {
+				k8sId := strings.TrimPrefix(name, "k8s-log-")
+				raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+					return csClient.DescribeCluster(k8sId)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
+						skip = false
+					} else {
+						log.Printf("[ERROR] DescribeCluster got an error: %#v", err)
+					}
+				} else {
+					cluster, _ := raw.(cs.ClusterType)
+					if strings.HasPrefix(strings.ToLower(cluster.Name), "tf-testacc") || strings.HasPrefix(strings.ToLower(cluster.Name), "tf_testacc") {
+						skip = false
+					}
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Log Project: %s", name)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting Log Project: %s", name)
 		_, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {

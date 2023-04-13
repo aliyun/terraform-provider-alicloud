@@ -57,21 +57,23 @@ func testSweepEmrCluster(region string) error {
 		}
 		for _, v := range resp.Clusters.ClusterInfo {
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(v.Id, prefix) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(v.Id, prefix) {
+						skip = false
+					}
 				}
-			}
-			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
-			//if skip {
-			//	if need, err := vpcService.needSweepVpc(v., v.VSwitchId); err == nil {
-			//		skip = !need
-			//	}
-			//
-			//}
-			if skip {
-				log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.Id)
-				continue
+				// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+				//if skip {
+				//	if need, err := vpcService.needSweepVpc(v., v.VSwitchId); err == nil {
+				//		skip = !need
+				//	}
+				//
+				//}
+				if skip {
+					log.Printf("[INFO] Skipping emr: %s (%s)", v.Name, v.Id)
+					continue
+				}
 			}
 			request := emr.CreateReleaseClusterRequest()
 			request.Id = v.Id

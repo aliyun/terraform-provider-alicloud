@@ -88,22 +88,23 @@ func testSweepDBInstances(region string) error {
 		name := fmt.Sprint(item["DBInstanceDescription"])
 		id := fmt.Sprint(item["DBInstanceId"])
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		// If a rds name is set by other service, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := vpcService.needSweepVpc(fmt.Sprint(item["VpcId"]), fmt.Sprint(item["VSwitchId"])); err == nil {
-				skip = !need
+			// If a rds name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(fmt.Sprint(item["VpcId"]), fmt.Sprint(item["VSwitchId"])); err == nil {
+					skip = !need
+				}
 			}
-		}
-
-		if skip {
-			log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping RDS Instance: %s (%s)", name, id)
+				continue
+			}
 		}
 
 		log.Printf("[INFO] Deleting RDS Instance: %s (%s)", name, id)

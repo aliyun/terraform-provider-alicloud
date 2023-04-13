@@ -63,15 +63,17 @@ func testSweepCmsGroupMetricRule(region string) error {
 			item := v.(map[string]interface{})
 			name := item["RuleName"].(string)
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping Cms Metric Rule: %s ", name)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping Cms Metric Rule: %s ", name)
+					continue
+				}
 			}
 			log.Printf("[INFO] Delete Cms Metric Rule: %s ", name)
 

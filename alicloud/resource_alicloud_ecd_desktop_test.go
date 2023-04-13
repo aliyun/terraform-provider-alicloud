@@ -70,16 +70,17 @@ func testSweepEcdDesktop(region string) error {
 			item := v.(map[string]interface{})
 
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["DesktopName"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["DesktopName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping EcdDesktop: %s", item["DesktopName"].(string))
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping EcdDesktop: %s", item["DesktopName"].(string))
-				continue
-			}
-
 			action := "DeleteDesktops"
 			request := map[string]interface{}{
 				"DesktopId": []string{item["DesktopId"].(string)},

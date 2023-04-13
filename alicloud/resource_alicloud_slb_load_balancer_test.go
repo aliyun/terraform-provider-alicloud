@@ -90,40 +90,42 @@ func testSweepSLBs(region string) error {
 		name := fmt.Sprint(loadBalancer["LoadBalancerName"])
 		id := fmt.Sprint(loadBalancer["LoadBalancerId"])
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
-		if skip {
-			if need, err := vpcService.needSweepVpc(fmt.Sprint(loadBalancer["VpcId"]), fmt.Sprint(loadBalancer["VSwitchId"])); err == nil {
-				skip = !need
-			}
+			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				if need, err := vpcService.needSweepVpc(fmt.Sprint(loadBalancer["VpcId"]), fmt.Sprint(loadBalancer["VSwitchId"])); err == nil {
+					skip = !need
+				}
 
-		}
-		// If a slb tag key has prefix "kubernetes", this is a slb for k8s cluster and it should be deleted if cluster not exist.
-		if skip {
-			if resp, err := jsonpath.Get("$.Tags.Tag", loadBalancer); err == nil {
-				tag, _ := resp.([]interface{})
-				for _, v := range tag {
-					t, _ := v.(map[string]interface{})
-					if strings.HasPrefix(strings.ToLower(t["TagKey"].(string)), strings.ToLower(k8sPrefix)) {
-						_, err := csService.DescribeCsKubernetes(name)
-						if NotFoundError(err) {
-							skip = false
-						} else {
-							skip = true
-							break
+			}
+			// If a slb tag key has prefix "kubernetes", this is a slb for k8s cluster and it should be deleted if cluster not exist.
+			if skip {
+				if resp, err := jsonpath.Get("$.Tags.Tag", loadBalancer); err == nil {
+					tag, _ := resp.([]interface{})
+					for _, v := range tag {
+						t, _ := v.(map[string]interface{})
+						if strings.HasPrefix(strings.ToLower(t["TagKey"].(string)), strings.ToLower(k8sPrefix)) {
+							_, err := csService.DescribeCsKubernetes(name)
+							if NotFoundError(err) {
+								skip = false
+							} else {
+								skip = true
+								break
+							}
 						}
 					}
 				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping SLB: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping SLB: %s (%s)", name, id)
+				continue
+			}
 		}
 		log.Printf("[INFO] Deleting SLB: %s (%s)", name, id)
 		if err := service.sweepSlb(id); err != nil {

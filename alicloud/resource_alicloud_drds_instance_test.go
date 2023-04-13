@@ -52,36 +52,37 @@ func testSweepDRDSInstances(region string) error {
 		name := v.Description
 		id := v.DrdsInstanceId
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
-			}
-		}
-		// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
-		if skip {
-			instanceDetailRequest := drds.CreateDescribeDrdsInstanceRequest()
-			instanceDetailRequest.DrdsInstanceId = id
-			raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
-				return drdsClient.DescribeDrdsInstance(instanceDetailRequest)
-			})
-			if err != nil {
-				log.Printf("[ERROR] Error retrieving DRDS Instance: %s. %s", id, WrapError(err))
-			}
-			instanceDetailResponse, _ := raw.(*drds.DescribeDrdsInstanceResponse)
-			for _, vip := range instanceDetailResponse.Data.Vips.Vip {
-				if need, err := vpcService.needSweepVpc(vip.VpcId, ""); err == nil {
-					skip = !need
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
 					break
 				}
 			}
+			// If a slb name is set by other service, it should be fetched by vswitch name and deleted.
+			if skip {
+				instanceDetailRequest := drds.CreateDescribeDrdsInstanceRequest()
+				instanceDetailRequest.DrdsInstanceId = id
+				raw, err := client.WithDrdsClient(func(drdsClient *drds.Client) (interface{}, error) {
+					return drdsClient.DescribeDrdsInstance(instanceDetailRequest)
+				})
+				if err != nil {
+					log.Printf("[ERROR] Error retrieving DRDS Instance: %s. %s", id, WrapError(err))
+				}
+				instanceDetailResponse, _ := raw.(*drds.DescribeDrdsInstanceResponse)
+				for _, vip := range instanceDetailResponse.Data.Vips.Vip {
+					if need, err := vpcService.needSweepVpc(vip.VpcId, ""); err == nil {
+						skip = !need
+						break
+					}
+				}
 
+			}
+			if skip {
+				log.Printf("[INFO] Skipping DRDS Instance: %s (%s)", name, id)
+				continue
+			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping DRDS Instance: %s (%s)", name, id)
-			continue
-		}
-
 		log.Printf("[INFO] Deleting DRDS Instance: %s (%s)", name, id)
 		req := drds.CreateRemoveDrdsInstanceRequest()
 		req.DrdsInstanceId = id

@@ -69,15 +69,17 @@ func testSweepNetworkAclAttachment(region string) error {
 		id := nacl.NetworkAclId
 		resources := nacl.Resources.Resource
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
 			}
-		}
-		if skip {
-			log.Printf("[INFO] Skipping Network Acl: %s (%s)", name, id)
-			continue
+			if skip {
+				log.Printf("[INFO] Skipping Network Acl: %s (%s)", name, id)
+				continue
+			}
 		}
 		log.Printf("[INFO] Unassociating Network Acl: %s (%s)", name, id)
 		request := vpc.CreateUnassociateNetworkAclRequest()
