@@ -1,53 +1,53 @@
-## 1.203.0 (Unreleased)
+## 1.204.0 (Unreleased)
+## 1.203.0 (April 14, 2023)
 
-- **New Resource:** `alicloud_arms_prometheus` [GH-5961]
-- **New Resource:** `alicloud_tag_policy` [GH-6057]
-- **New Resource:** `alicloud_oos_default_patch_baseline` [GH-6058]
-- **New Resource:** `alicloud_ocean_base_instance` [GH-6069]
-- **New Resource:** `alicloud_rds_db_instance_endpoint` [GH-6056]
-- **New Resource** `alicloud_chatbot_publish_task` [GH-6014]
-- **New Resource** `alicloud_arms_integration_exporter` [GH-5990]
-- **New Datasource** `alicloud_arms_integration_exporters` [GH-5990]
-- **New Datasource** `alicloud_chatbot_agents` [GH-6014]
-- **New Datasource:** `alicloud_arms_prometheis` [GH-5961]
-- **New Datasource:** `alicloud_ocean_base_instances` [GH-6069]
+- **New Resource:** `alicloud_arms_prometheus` ([#5961](https://github.com/aliyun/terraform-provider-alicloud/issues/5961))
+- **New Resource:** `alicloud_tag_policy` ([#6057](https://github.com/aliyun/terraform-provider-alicloud/issues/6057))
+- **New Resource:** `alicloud_oos_default_patch_baseline` ([#6058](https://github.com/aliyun/terraform-provider-alicloud/issues/6058))
+- **New Resource:** `alicloud_ocean_base_instance` ([#6069](https://github.com/aliyun/terraform-provider-alicloud/issues/6069))
+- **New Resource:** `alicloud_rds_db_instance_endpoint` ([#6056](https://github.com/aliyun/terraform-provider-alicloud/issues/6056))
+- **New Resource** `alicloud_chatbot_publish_task` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
+- **New Resource** `alicloud_arms_integration_exporter` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
+- **New Datasource** `alicloud_arms_integration_exporters` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
+- **New Datasource** `alicloud_chatbot_agents` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
+- **New Datasource:** `alicloud_arms_prometheis` ([#5961](https://github.com/aliyun/terraform-provider-alicloud/issues/5961))
+- **New Datasource:** `alicloud_ocean_base_instances` ([#6069](https://github.com/aliyun/terraform-provider-alicloud/issues/6069))
 
 ENHANCEMENTS:
 
-- resource/alicloud_log_alert add attribute template_configuration. [GH-6026]
-- resource/alicloud_oss_bucket: Support ColdArchive storage class. [GH-6049]
-- docs/alicloud_sae_application: Improves the examples.  [GH-6051]
-- resource/alicloud_security_group_rule: Changed the Create SDK to common api to fix the read error caused by ipv6_cidr_ip value. [GH-5988]
-- resource/alicloud_cen_instance_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteTable. [GH-6005]
-- resource/alicloud_ga_endpoint_group: Added retry stragety for error code NotActive.Listener. [GH-6004]
-- doc/index: Optimize endpoints attribute description. [GH-6025]
-- ci: supoorts integration test checking. [GH-6041]
-- docs/db_database, docs/db_instance, docs/db_instance_classes, docs/db_instance_engines, docs/db_instances, docs/db_zones, docs/rds_clone_db_instance, docs/rds_upgrade_db_instance : RDS PPAS engine offline. [GH-6017]
-- ci: Improves the consistency checking. [GH-6068]
-- test: Improves the sweeper test by adding sweepAll function. [GH-6073]
-- ci: Improves the integration test by using pull_request_target. [GH-6074]
-- testcase: Added the resource alicloud_tag_policy region limit. [GH-6063]
-- resource/alicloud_polardb_cluster: polardb support cluster category SENormal. [GH-6000]
-- resource/alicloud_eip_address: Supported isp set to ChinaTelecom, ChinaUnicom, ChinaMobile, ChinaTelecom_L2, ChinaUnicom_L2, ChinaMobile_L2, BGP_FinanceCloud. [GH-6076]
-- resource/alicloud_common_bandwidth_package: Supported isp set to ChinaTelecom, ChinaUnicom, ChinaMobile, ChinaTelecom_L2, ChinaUnicom_L2, ChinaMobile_L2, BGP_FinanceCloud. [GH-6078]
-- resource/alicloud_eip_association: Adds new attribute vpc_id. [GH-6065]
-- datasource/alicloud_instances: Supports the new field instance_name. [GH-6077]
-- resource/alicloud_mongodb_instance: Adds new attribute parameters. [GH-6072]
+- resource/alicloud_log_alert add attribute template_configuration. ([#6026](https://github.com/aliyun/terraform-provider-alicloud/issues/6026))
+- resource/alicloud_oss_bucket: Support ColdArchive storage class. ([#6049](https://github.com/aliyun/terraform-provider-alicloud/issues/6049))
+- docs/alicloud_sae_application: Improves the examples.  ([#6051](https://github.com/aliyun/terraform-provider-alicloud/issues/6051))
+- resource/alicloud_security_group_rule: Changed the Create SDK to common api to fix the read error caused by ipv6_cidr_ip value. ([#5988](https://github.com/aliyun/terraform-provider-alicloud/issues/5988))
+- resource/alicloud_cen_instance_attachment: Added retry stragety for error code IncorrectStatus.VpcRouteTable. ([#6005](https://github.com/aliyun/terraform-provider-alicloud/issues/6005))
+- resource/alicloud_ga_endpoint_group: Added retry stragety for error code NotActive.Listener. ([#6004](https://github.com/aliyun/terraform-provider-alicloud/issues/6004))
+- doc/index: Optimize endpoints attribute description. ([#6025](https://github.com/aliyun/terraform-provider-alicloud/issues/6025))
+- ci: supoorts integration test checking. ([#6041](https://github.com/aliyun/terraform-provider-alicloud/issues/6041))
+- docs/db_database, docs/db_instance, docs/db_instance_classes, docs/db_instance_engines, docs/db_instances, docs/db_zones, docs/rds_clone_db_instance, docs/rds_upgrade_db_instance : RDS PPAS engine offline. ([#6017](https://github.com/aliyun/terraform-provider-alicloud/issues/6017))
+- ci: Improves the consistency checking. ([#6068](https://github.com/aliyun/terraform-provider-alicloud/issues/6068))
+- test: Improves the sweeper test by adding sweepAll function. ([#6073](https://github.com/aliyun/terraform-provider-alicloud/issues/6073))
+- ci: Improves the integration test by using pull_request_target. ([#6074](https://github.com/aliyun/terraform-provider-alicloud/issues/6074))
+- testcase: Added the resource alicloud_tag_policy region limit. ([#6063](https://github.com/aliyun/terraform-provider-alicloud/issues/6063))
+- resource/alicloud_polardb_cluster: polardb support cluster category SENormal. ([#6000](https://github.com/aliyun/terraform-provider-alicloud/issues/6000))
+- resource/alicloud_eip_address: Supported isp set to ChinaTelecom, ChinaUnicom, ChinaMobile, ChinaTelecom_L2, ChinaUnicom_L2, ChinaMobile_L2, BGP_FinanceCloud. ([#6076](https://github.com/aliyun/terraform-provider-alicloud/issues/6076))
+- resource/alicloud_common_bandwidth_package: Supported isp set to ChinaTelecom, ChinaUnicom, ChinaMobile, ChinaTelecom_L2, ChinaUnicom_L2, ChinaMobile_L2, BGP_FinanceCloud. ([#6078](https://github.com/aliyun/terraform-provider-alicloud/issues/6078))
+- resource/alicloud_eip_association: Adds new attribute vpc_id. ([#6065](https://github.com/aliyun/terraform-provider-alicloud/issues/6065))
+- datasource/alicloud_instances: Supports the new field instance_name. ([#6077](https://github.com/aliyun/terraform-provider-alicloud/issues/6077))
+- resource/alicloud_mongodb_instance: Adds new attribute parameters. ([#6072](https://github.com/aliyun/terraform-provider-alicloud/issues/6072))
 
 BUG FIXES:
 
-- resource/alicloud_nas_access_rule: Fixes the Throttling.User error when reading the resource. [GH-6043]
-- resource/fc_function_async_invoke_config: Fix maximum_retry_attempts cannot be set to 0. [GH-6048]
-- resource/alicloud_oss_bucket_object: Remvoes the server_side_encrypt on argument default value. [GH-6050]
-- resource/alicloud_mongodb_instance: Fixed ssl_action invalid error. [GH-6010]
-- testcase: Removed the resource cen_transit_route_table_aggregation region limit. [GH-6030]
-- data source/alicloud_ram_users: Fixed the read error caused by filter bug; data source/alicloud_ram_groups: Fixed the read error caused by filter bug. [GH-6018]
-- resource/alicloud_route_entry: Fixed the parse error caused by destination_cidrblock value. [GH-6045]
-- resource/alicloud_nlb_load_balancer_security_group_attachment: Fixed the panic error caused by index out of range. [GH-6052]
-- resource/alicloud_bastionhost_instance: Fixes the bastion host not found error when using intrenational account.  [GH-6059]
-- resource/alicloud_ram_policy: Fixes the nil pointer error when getting policy versions. [GH-6064]
-- docs/alicloud_amqp_instance: Removes the note for no supporting international account. [GH-6066]
-- resource/alicloud_alidns_instance: Fixes the NotApplicable error when operating the resource using international account. [GH-6070]
+- resource/alicloud_nas_access_rule: Fixes the Throttling.User error when reading the resource. ([#6043](https://github.com/aliyun/terraform-provider-alicloud/issues/6043))
+- resource/fc_function_async_invoke_config: Fix maximum_retry_attempts cannot be set to 0. ([#6048](https://github.com/aliyun/terraform-provider-alicloud/issues/6048))
+- resource/alicloud_mongodb_instance: Fixed ssl_action invalid error. ([#6010](https://github.com/aliyun/terraform-provider-alicloud/issues/6010))
+- testcase: Removed the resource cen_transit_route_table_aggregation region limit. ([#6030](https://github.com/aliyun/terraform-provider-alicloud/issues/6030))
+- data source/alicloud_ram_users: Fixed the read error caused by filter bug; data source/alicloud_ram_groups: Fixed the read error caused by filter bug. ([#6018](https://github.com/aliyun/terraform-provider-alicloud/issues/6018))
+- resource/alicloud_route_entry: Fixed the parse error caused by destination_cidrblock value. ([#6045](https://github.com/aliyun/terraform-provider-alicloud/issues/6045))
+- resource/alicloud_nlb_load_balancer_security_group_attachment: Fixed the panic error caused by index out of range. ([#6052](https://github.com/aliyun/terraform-provider-alicloud/issues/6052))
+- resource/alicloud_bastionhost_instance: Fixes the bastion host not found error when using intrenational account.  ([#6059](https://github.com/aliyun/terraform-provider-alicloud/issues/6059))
+- resource/alicloud_ram_policy: Fixes the nil pointer error when getting policy versions. ([#6064](https://github.com/aliyun/terraform-provider-alicloud/issues/6064))
+- docs/alicloud_amqp_instance: Removes the note for no supporting international account. ([#6066](https://github.com/aliyun/terraform-provider-alicloud/issues/6066))
+- resource/alicloud_alidns_instance: Fixes the NotApplicable error when operating the resource using international account. ([#6070](https://github.com/aliyun/terraform-provider-alicloud/issues/6070))
 
 ## 1.202.0 (March 31, 2023)
 
