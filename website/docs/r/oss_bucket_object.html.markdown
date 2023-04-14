@@ -55,7 +55,7 @@ The following arguments are supported:
 * `content_encoding` - (Optional) Specifies what content encodings have been applied to the object and thus what decoding mechanisms must be applied to obtain the media-type referenced by the Content-Type header field. Read [RFC2616 Content-Encoding](https://www.ietf.org/rfc/rfc2616.txt) for further details.
 * `content_md5` - (Optional) The MD5 value of the content. Read [MD5](https://www.alibabacloud.com/help/doc-detail/31978.htm) for computing method.
 * `expires` - (Optional) Specifies expire date for the the request/response. Read [RFC2616 Expires](https://www.ietf.org/rfc/rfc2616.txt) for further details.
-* `server_side_encryption` - (Optional) Specifies server-side encryption of the object in OSS. Valid values are `AES256`, `KMS`.
+* `server_side_encryption` - (Optional) Specifies server-side encryption of the object in OSS. Valid values are `AES256`, `KMS`. Default value is `AES256`.
 * `kms_key_id` - (Optional, Available in 1.62.1+) Specifies the primary key managed by KMS. This parameter is valid when the value of `server_side_encryption` is set to KMS.
 
 Either `source` or `content` must be provided to specify the bucket content.
