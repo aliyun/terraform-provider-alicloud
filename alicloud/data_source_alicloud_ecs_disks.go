@@ -486,7 +486,7 @@ func dataSourceAlicloudEcsDisksRead(d *schema.ResourceData, meta interface{}) er
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request["PageSize"] = v.(int)
 	} else {
-		request["PageSize"] = PageSizeLarge
+		request["PageSize"] = PageSizeXLarge
 	}
 	var objects []interface{}
 	var diskNameRegex *regexp.Regexp

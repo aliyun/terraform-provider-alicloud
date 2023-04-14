@@ -30,6 +30,11 @@ func dataSourceAlicloudInstances() *schema.Resource {
 				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
 			},
+			"instance_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -255,6 +260,9 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("availability_zone"); ok && v.(string) != "" {
 		request.ZoneId = v.(string)
 	}
+	if v, ok := d.GetOk("instance_name"); ok && v.(string) != "" {
+		request.InstanceName = v.(string)
+	}
 	if v, ok := d.GetOk("tags"); ok {
 		var tags []ecs.DescribeInstancesTag
 
@@ -277,7 +285,7 @@ func dataSourceAlicloudInstancesRead(d *schema.ResourceData, meta interface{}) e
 	if v, ok := d.GetOk("page_size"); ok && v.(int) > 0 {
 		request.PageSize = requests.NewInteger(v.(int))
 	} else {
-		request.PageSize = requests.NewInteger(PageSizeLarge)
+		request.PageSize = requests.NewInteger(PageSizeXLarge)
 	}
 	var response *ecs.DescribeInstancesResponse
 	for {
