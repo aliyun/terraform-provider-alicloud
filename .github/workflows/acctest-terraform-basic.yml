@@ -10,12 +10,12 @@ on:
     paths:
 #      - .github/workflows/acctest-terraform-basic.yml
       - alicloud/*.go
-  pull_request_target:
-    paths:
-      - alicloud/*.go
+#   pull_request_target:
+#     paths:
+#       - alicloud/*.go
 
 permissions:
-  pull-requests: read
+  pull-requests: read|write
 
 jobs:
   Build:
