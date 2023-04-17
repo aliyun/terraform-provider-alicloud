@@ -36,11 +36,6 @@ resources:
   source:
     uri: https://github.com/aliyun/terraform-provider-alicloud.git
     branch: master
-    paths:
-      - alicloud/*
-      - vendor/*
-      - go.mod
-      - main.go
 
 - name: aliyun-cli
   type: s3

@@ -22,6 +22,7 @@ func main() {
 	deadline := time.Now().Add(time.Duration(24) * time.Hour)
 	finish := false
 	exitCode := 0
+	log.Printf("see integration test log: %s", runLogUrl)
 	for !time.Now().After(deadline) {
 		runLogResponse, err := http.Get(runLogUrl)
 		if err != nil || runLogResponse.StatusCode != 200 {
