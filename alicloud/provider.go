@@ -850,6 +850,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_chatbot_agents":                                   dataSourceAlicloudChatbotAgents(),
 			"alicloud_arms_integration_exporters":                       dataSourceAlicloudArmsIntegrationExporters(),
 			"alicloud_service_catalog_portfolios":                       dataSourceAlicloudServiceCatalogPortfolios(),
+			"alicloud_cms_hybrid_double_writes":                         dataSourceAlicloudCmsHybridDoubleWrites(),
 			"alicloud_arms_remote_writes":                               dataSourceAlicloudArmsRemoteWrites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -1597,6 +1598,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_integration_exporter":                             resourceAlicloudArmsIntegrationExporter(),
 			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
 			"alicloud_arms_remote_write":                                     resourceAlicloudArmsRemoteWrite(),
+			"alicloud_cms_hybrid_double_write":                               resourceAlicloudCmsHybridDoubleWrite(),
 		},
 
 		ConfigureFunc: providerConfigure,
