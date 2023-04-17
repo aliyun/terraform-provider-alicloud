@@ -33,7 +33,7 @@ func main() {
 		}
 		defer runLogResponse.Body.Close()
 
-		runLogContent := make([]byte, 100000000)
+		runLogContent := make([]byte, 10000000000)
 		lineNum, er := runLogResponse.Body.Read(runLogContent)
 		if er != nil && fmt.Sprint(er) != "EOF" {
 			log.Println("[ERROR] reading run log response failed:", err)
@@ -42,6 +42,7 @@ func main() {
 			if lineNum <= lastLineNum {
 				continue
 			}
+			fmt.Println(lineNum, runLogResponse.ContentLength)
 			fmt.Println(string(runLogContent[lastLineNum:lineNum]))
 			lastLineNum = lineNum
 		}
