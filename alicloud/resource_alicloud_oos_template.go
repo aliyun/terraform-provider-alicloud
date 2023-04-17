@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudOosTemplate() *schema.Resource {
@@ -28,13 +27,8 @@ func resourceAlicloudOosTemplate() *schema.Resource {
 				Default:  false,
 			},
 			"content": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.ValidateJsonString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"created_by": {
 				Type:     schema.TypeString,
@@ -146,6 +140,7 @@ func resourceAlicloudOosTemplateCreate(d *schema.ResourceData, meta interface{})
 
 	return resourceAlicloudOosTemplateRead(d, meta)
 }
+
 func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	oosService := OosService{client}
@@ -177,6 +172,7 @@ func resourceAlicloudOosTemplateRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	return nil
 }
+
 func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewOosClient()
@@ -230,6 +226,7 @@ func resourceAlicloudOosTemplateUpdate(d *schema.ResourceData, meta interface{})
 	}
 	return resourceAlicloudOosTemplateRead(d, meta)
 }
+
 func resourceAlicloudOosTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteTemplate"
