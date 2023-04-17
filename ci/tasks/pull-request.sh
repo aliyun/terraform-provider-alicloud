@@ -91,11 +91,6 @@ do
     else
       arrIN=(${integrationCheck//"actions"/ })
       ossObjectPath="github-actions/pull/"${num}${arrIN[${#arrIN[@]}-1]}
-      gh pr checkout ${num}
-      if [[ "$?" != "0" ]]; then
-        echo -e "\033[31m checkout to pr ${num} failed, please checking it.\033[0m"
-        continue
-      fi
       echo "integrationCheck result: ${integrationCheck}"
       integrationFail=$(gh pr checks ${num} | grep "^IntegrationTest" | grep "pass")
       if [[ ${integrationFail} != "" ]]; then
@@ -110,6 +105,15 @@ do
       fi
       integrationPending=$(gh pr checks ${num} | grep "^IntegrationTest" | grep "pending")
       if [[ ${integrationPending} != "" ]]; then
+        cd ..
+        rm -rf $repo
+        git clone https://github.com/aliyun/terraform-provider-alicloud.git
+        cd $repo
+        gh pr checkout ${num}
+        if [[ "$?" != "0" ]]; then
+          echo -e "\033[31m checkout to pr ${num} failed, please checking it.\033[0m"
+          continue
+        fi
         zip -qq -r ${repo}.zip .
         aliyun oss cp ${repo}.zip oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${repo}.zip -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION}
         if [[ "$?" != "0" ]]; then
