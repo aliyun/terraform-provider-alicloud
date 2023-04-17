@@ -12,6 +12,7 @@ import (
 func main() {
 	ossObjectPath := strings.TrimSpace(os.Args[1])
 	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
+	log.Println("run log path:", ossObjectPath)
 	log.Println("trace id:", invocationId)
 	urlPrefix := "https://terraform-provider-alicloud-ct.oss-ap-southeast-1.aliyuncs.com"
 	runLogFileName := "terraform.run.log"
@@ -25,7 +26,7 @@ func main() {
 	for !time.Now().After(deadline) {
 		runLogResponse, err := http.Get(runLogUrl)
 		if err != nil || runLogResponse.StatusCode != 200 {
-			log.Println("waiting for job running..., run log url:", runLogUrl, "\n err:", err, "\n status:", runLogResponse.Status)
+			log.Println("waiting for job running...")
 			time.Sleep(10 * time.Second)
 			continue
 			//os.Exit(1)
@@ -55,7 +56,7 @@ func main() {
 		defer runResultResponse.Body.Close()
 		runResultContent := make([]byte, 100000)
 		_, err = runResultResponse.Body.Read(runResultContent)
-		if err != nil && fmt.Sprint(er) != "EOF" {
+		if err != nil && fmt.Sprint(err) != "EOF" {
 			log.Println("[ERROR] reading run result response failed:", err)
 		}
 		finish = true
