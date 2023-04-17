@@ -61,7 +61,7 @@ The following arguments are supported:
 * `version_name` - (Optional) The name of template version.
 * `resource_group_id` (Optional, Computed, Available in 1.177.0+) The ID of resource group which the template belongs.  
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-                    
+
 ## Attributes Reference
 
 The following attributes are exported:
