@@ -32,7 +32,7 @@ gh version
 cd $repo
 while true
 do
-  sleep 60
+  sleep 120
   pr_nums=$(gh pr list -s open --json number --jq '.[] .number')
   for num in ${pr_nums[@]};
   do
@@ -45,7 +45,7 @@ do
     echo -e "\033[33mreviewDecision:\033[0m ${reviewDecision}"
     echo -e "\033[33murl:\033[0m $(gh pr view ${num} --json url --jq '.url')\n"
     changeFiles=$(gh pr diff ${num} --name-only | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
-    if [[ ${#changeFiles[@]} == 0 ]]; then
+    if [[ ${#changeFiles[@]} -eq 0 ]]; then
       echo "the pr ${num} does not change provider code and there is no need to test."
       continue
     fi
