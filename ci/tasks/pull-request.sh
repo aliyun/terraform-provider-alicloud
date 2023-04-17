@@ -32,13 +32,17 @@ gh version
 cd $repo
 while true
 do
+  sleep 60
   pr_nums=$(gh pr list -s open --json number --jq '.[] .number')
   for num in ${pr_nums[@]};
   do
+    author=$(gh pr view ${num} --json author --jq '.author .login')
+    authorName=$(gh pr view ${num} --json author --jq '.author .name')
+    reviewDecision=$(gh pr view ${num} --json reviewDecision --jq '.reviewDecision')
     echo -e "\n\033[34m##################################### Checking PR ${num} ###########################################\033[0m"
-    echo -e "\033[33mauthor:\033[0m $(gh pr view ${num} --json author --jq '.author .login') ($(gh pr view ${num} --json author --jq '.author .name'))"
+    echo -e "\033[33mauthor:\033[0m ${author} (${authorName})"
     echo -e "\033[33mtitle:\033[0m $(gh pr view ${num} --json title --jq '.title')"
-    echo -e "\033[33mreviewDecision:\033[0m $(gh pr view ${num} --json reviewDecision --jq '.reviewDecision')"
+    echo -e "\033[33mreviewDecision:\033[0m ${reviewDecision}"
     echo -e "\033[33murl:\033[0m $(gh pr view ${num} --json url --jq '.url')\n"
     changeFiles=$(gh pr diff ${num} --name-only | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
     if [[ ${#changeFiles[@]} == 0 ]]; then
@@ -73,9 +77,7 @@ do
       echo -e "\033[31mthe pr ${num} missing integration test cases, please adding them. \033[0m"
       continue
     fi
-    author=$(gh pr view ${num} --json author --jq '.author .login')
     # checking the num decision
-    reviewDecision=$(gh pr view ${num} --json reviewDecision)
     if [[ ${reviewDecision} == "CHANGES_REQUESTED" ]]; then
       echo "the pr ${num} is not ready, continue waiting..."
       continue
@@ -92,18 +94,17 @@ do
       arrIN=(${integrationCheck//"actions"/ })
       ossObjectPath="github-actions/pull/"${num}${arrIN[${#arrIN[@]}-1]}
       echo "integrationCheck result: ${integrationCheck}"
-      integrationFail=$(gh pr checks ${num} | grep "^IntegrationTest" | grep "pass")
+      integrationFail=$(echo ${integrationCheck} | grep "pass")
       if [[ ${integrationFail} != "" ]]; then
         echo -e "\033[32m the pr ${num} latest job has passed.\033[0m"
         continue
       fi
-      integrationFail=$(gh pr checks ${num} | grep "^IntegrationTest" | grep "fail")
+      integrationFail=$(echo ${integrationCheck} | grep "fail")
       if [[ ${integrationFail} != "" ]]; then
-        gh pr comment ${num} --body "Running integration test failed and please check it."
         echo -e "\033[33m the pr ${num} latest job has finished, but failed!\033[0m"
         continue
       fi
-      integrationPending=$(gh pr checks ${num} | grep "^IntegrationTest" | grep "pending")
+      integrationPending=$(echo ${integrationCheck}  | grep "pending")
       if [[ ${integrationPending} != "" ]]; then
         cd ..
         rm -rf $repo
