@@ -44,6 +44,7 @@ func resourceAlicloudTagPolicy() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"USER", "RD"}, false),
 				ForceNew:     true,
+				Computed:     true,
 			},
 		},
 	}
