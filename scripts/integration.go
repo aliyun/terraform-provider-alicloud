@@ -12,7 +12,6 @@ import (
 	fc_open20210406 "github.com/alibabacloud-go/fc-open-20210406/v2/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 func CreateClient(accessKey, secretKey, accountId, fcRegion string) (_result *fc_open20210406.Client, _err error) {
@@ -85,40 +84,44 @@ func _invokeFunction(client *fc_open20210406.Client, serviceName, functionName, 
 
 	_, _err = client.InvokeFunctionWithOptions(tea.String(serviceName), tea.String(functionName), invokeFunctionRequest, invokeFunctionHeaders, runtime)
 	if _err != nil {
-		return _err
+		if strings.Contains(_err.Error(), "StatefulAsyncInvocationAlreadyExists") {
+			log.Printf("the invocation %s has been existed in the function: %s", invocationId, functionName)
+		} else {
+			return _err
+		}
 	}
 
-	endpoint := fmt.Sprintf("https://oss-%s.aliyuncs.com", ossBucketRegion)
-	var options []oss.ClientOption
-	accessKey, _ := client.GetAccessKeyId()
-	secretKey, _ := client.GetAccessKeySecret()
-	ossClient, err := oss.New(endpoint, *accessKey, *secretKey, options...)
-	if err != nil {
-		return err
-	}
-	bucket, err := ossClient.Bucket(ossBucketName)
-	if err != nil {
-		return err
-	}
+	//endpoint := fmt.Sprintf("https://oss-%s.aliyuncs.com", ossBucketRegion)
+	//var options []oss.ClientOption
+	//accessKey, _ := client.GetAccessKeyId()
+	//secretKey, _ := client.GetAccessKeySecret()
+	//ossClient, err := oss.New(endpoint, *accessKey, *secretKey, options...)
+	//if err != nil {
+	//	return err
+	//}
+	//bucket, err := ossClient.Bucket(ossBucketName)
+	//if err != nil {
+	//	return err
+	//}
 
 	getStatefulAsyncInvocationHeaders := &fc_open20210406.GetStatefulAsyncInvocationHeaders{}
 	getStatefulAsyncInvocationRequest := &fc_open20210406.GetStatefulAsyncInvocationRequest{}
 
-	terraformRunLog := "terraform.run.log"
-	lastRunLog := ""
+	//terraformRunLog := "terraform.run.log"
+	//lastRunLog := ""
 	for true {
 		_response, _err := client.GetStatefulAsyncInvocationWithOptions(tea.String(serviceName), tea.String(functionName), tea.String(invocationId), getStatefulAsyncInvocationRequest, getStatefulAsyncInvocationHeaders, runtime)
 		if _err != nil {
 			return _err
 		}
-		if err := bucket.GetObjectToFile(ossObjectPath+"/"+terraformRunLog, terraformRunLog); err == nil {
-			runLog, _ := os.ReadFile(terraformRunLog)
-			printRunLog := strings.TrimPrefix(string(runLog), lastRunLog)
-			if printRunLog != "" {
-				fmt.Println(printRunLog)
-				lastRunLog = string(runLog)
-			}
-		}
+		//if err := bucket.GetObjectToFile(ossObjectPath+"/"+terraformRunLog, terraformRunLog); err == nil {
+		//	runLog, _ := os.ReadFile(terraformRunLog)
+		//	printRunLog := strings.TrimPrefix(string(runLog), lastRunLog)
+		//	if printRunLog != "" {
+		//		fmt.Println(printRunLog)
+		//		lastRunLog = string(runLog)
+		//	}
+		//}
 		if fmt.Sprint(*_response.Body.EndTime) == "0" {
 			time.Sleep(5 * time.Second)
 			continue
@@ -145,7 +148,7 @@ func main() {
 	ossBucketName := strings.TrimSpace(os.Args[7])
 	ossObjectPath := strings.TrimSpace(os.Args[8])
 	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
-	diffFuncNames := strings.Trim(os.Getenv("DIFF_FUNC_NAMES"), ";")
+	diffFuncNames := strings.Trim(strings.TrimSpace(os.Args[9]), ";")
 	functionName := ""
 	for true {
 		if idleFunc, err := _getIdleFunction(client, serviceName); err != nil {
