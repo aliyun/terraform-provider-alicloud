@@ -92,7 +92,7 @@ do
       continue
     else
       arrIN=(${integrationCheck//"actions"/ })
-      ossObjectPath="github-actions/"${arrIN[${#arrIN[@]}-1]}
+      ossObjectPath="github-actions"${arrIN[${#arrIN[@]}-1]}
       echo "integrationCheck result: ${integrationCheck}"
       integrationFail=$(echo ${integrationCheck} | grep "pass")
       if [[ ${integrationFail} != "" ]]; then

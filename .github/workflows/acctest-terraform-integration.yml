@@ -65,5 +65,5 @@ jobs:
           fi
           IN=$GH_JOB_IntegrationTest_HTML_URL
           arrIN=(${IN//actions/ })
-          ossObjectPath="github-actions/"${arrIN[1]}
+          ossObjectPath="github-actions"${arrIN[1]}
           go run scripts/integration_check.go ${ossObjectPath}
