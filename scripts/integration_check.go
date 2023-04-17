@@ -29,7 +29,6 @@ func main() {
 			log.Println("waiting for job running...")
 			time.Sleep(10 * time.Second)
 			continue
-			//os.Exit(1)
 		}
 		defer runLogResponse.Body.Close()
 
@@ -42,8 +41,6 @@ func main() {
 			if lineNum > lastLineNum {
 				fmt.Println(string(runLogContent[lastLineNum:lineNum]))
 				lastLineNum = lineNum
-			} else {
-				continue
 			}
 		}
 		if finish {
@@ -53,7 +50,6 @@ func main() {
 		}
 		runResultResponse, err := http.Get(runResultUrl)
 		if err != nil || runResultResponse.StatusCode != 200 {
-			//log.Println("waiting for job finished...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
