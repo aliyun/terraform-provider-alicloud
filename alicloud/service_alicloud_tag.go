@@ -91,6 +91,12 @@ func (s *TagService) DescribeTagPolicy(id string) (object map[string]interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidParameter.PolicyId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Tag:Policy", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
 	v, err := jsonpath.Get("$.Policy", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policy", response)
