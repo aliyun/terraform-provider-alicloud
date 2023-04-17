@@ -29,6 +29,7 @@ func dataSourceAlicloudRegions() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
 			"ids": {
 				Type:     schema.TypeList,
 				Computed: true,
