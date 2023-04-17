@@ -26,7 +26,7 @@ func main() {
 	for !time.Now().After(deadline) {
 		runLogResponse, err := http.Get(runLogUrl)
 		if err != nil || runLogResponse.StatusCode != 200 {
-			log.Println("waiting for job running...")
+			log.Println("waiting for job running..., run log url:", runLogUrl, "\n err:", err, "\n status:", runLogResponse.Status)
 			time.Sleep(10 * time.Second)
 			continue
 			//os.Exit(1)
