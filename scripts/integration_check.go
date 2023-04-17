@@ -39,8 +39,10 @@ func main() {
 			log.Println("[ERROR] reading run log response failed:", err)
 		}
 		if runLogResponse.StatusCode == 200 {
-			fmt.Println(string(runLogContent[lastLineNum:lineNum]))
-			lastLineNum = lineNum
+			if lineNum > lastLineNum {
+				fmt.Println(string(runLogContent[lastLineNum:lineNum]))
+				lastLineNum = lineNum
+			}
 		}
 		if finish {
 			log.Println("run log path:", ossObjectPath)
