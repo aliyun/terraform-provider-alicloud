@@ -125,7 +125,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, name))
 
-	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	stateConf := BuildStateConf([]string{"Running", "running", "Upgrading", "Pause", ""}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if changed {
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", d.Id())
@@ -155,7 +155,7 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
 		}
 	}
-	stateConf := BuildStateConf([]string{"running", "Upgrading", "Pause"}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	stateConf := BuildStateConf([]string{"Running", "running", "Upgrading", "Pause", ""}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
 	}
