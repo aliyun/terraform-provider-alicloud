@@ -1201,6 +1201,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_account":                                           resourceAlicloudRdsAccount(),
 			"alicloud_rds_db_node":                                           resourceAlicloudRdsDBNode(),
 			"alicloud_rds_db_instance_endpoint":                              resourceAlicloudRdsDBInstanceEndpoint(),
+			"alicloud_rds_db_instance_endpoint_address":                      resourceAlicloudRdsDBInstanceEndpointAddress(),
 			"alicloud_ecs_snapshot":                                          resourceAlicloudEcsSnapshot(),
 			"alicloud_ecs_key_pair":                                          resourceAlicloudEcsKeyPair(),
 			"alicloud_ecs_key_pair_attachment":                               resourceAlicloudEcsKeyPairAttachment(),
