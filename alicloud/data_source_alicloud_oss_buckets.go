@@ -484,17 +484,19 @@ func bucketsDescriptionAttributes(d *schema.ResourceData, buckets []oss.BucketPr
 
 					// Expiration
 					expirationMapping := make(map[string]interface{})
-					if lifecycleRule.Expiration.Date != "" {
-						t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
-						if err != nil {
-							return WrapError(err)
+					if lifecycleRule.Expiration != nil {
+						if len(lifecycleRule.Expiration.Date) > 0 {
+							t, err := time.Parse("2006-01-02T15:04:05.000Z", lifecycleRule.Expiration.Date)
+							if err != nil {
+								return WrapError(err)
+							}
+							expirationMapping["date"] = t.Format("2006-01-02")
 						}
-						expirationMapping["date"] = t.Format("2006-01-02")
+						if &lifecycleRule.Expiration.Days != nil {
+							expirationMapping["days"] = int(lifecycleRule.Expiration.Days)
+						}
+						ruleMapping["expiration"] = []map[string]interface{}{expirationMapping}
 					}
-					if &lifecycleRule.Expiration.Days != nil {
-						expirationMapping["days"] = int(lifecycleRule.Expiration.Days)
-					}
-					ruleMapping["expiration"] = []map[string]interface{}{expirationMapping}
 					lifecycleRuleMappings = append(lifecycleRuleMappings, ruleMapping)
 				}
 			}
