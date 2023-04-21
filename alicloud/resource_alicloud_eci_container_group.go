@@ -3,9 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -25,6 +24,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(20 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"container_group_name": {
@@ -32,169 +32,121 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old != "" && new != "" && old != new {
+						return strings.Contains(new, old)
+					}
+					return false
+				},
+			},
+			"security_group_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"cpu": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Computed: true,
+			},
+			"memory": {
+				Type:     schema.TypeFloat,
+				Optional: true,
+				Computed: true,
+			},
+			"ram_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"restart_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
+			},
+			"auto_match_image_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"plain_http_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"insecure_registry": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"auto_create_eip": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"eip_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"eip_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags": tagsSchema(),
 			"containers": {
 				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"args": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
 						},
-						"liveness_probe": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"period_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"tcp_socket": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"port": {
-													Type:     schema.TypeInt,
-													Optional: true,
-												},
-											},
-										},
-									},
-									"initial_delay_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"success_threshold": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"exec": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"commands": {
-													Type:     schema.TypeList,
-													Optional: true,
-													Elem: &schema.Schema{
-														Type: schema.TypeString,
-													},
-												},
-											},
-										},
-									},
-									"http_get": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"scheme": {
-													Type:     schema.TypeString,
-													Optional: true,
-												},
-												"port": {
-													Type:     schema.TypeInt,
-													Optional: true,
-												},
-												"path": {
-													Type:     schema.TypeString,
-													Optional: true,
-												},
-											},
-										},
-									},
-									"failure_threshold": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"timeout_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-								},
-							},
+						"image": {
+							Type:     schema.TypeString,
+							Required: true,
 						},
-						"readiness_probe": {
-							Type:     schema.TypeList,
+						"cpu": {
+							Type:     schema.TypeFloat,
 							Optional: true,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"period_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"tcp_socket": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"port": {
-													Type:     schema.TypeInt,
-													Optional: true,
-												},
-											},
-										},
-									},
-									"initial_delay_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"success_threshold": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"exec": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"commands": {
-													Type:     schema.TypeList,
-													Optional: true,
-													Elem: &schema.Schema{
-														Type: schema.TypeString,
-													},
-												},
-											},
-										},
-									},
-									"http_get": {
-										Type:     schema.TypeList,
-										Optional: true,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"scheme": {
-													Type:     schema.TypeString,
-													Optional: true,
-												},
-												"port": {
-													Type:     schema.TypeInt,
-													Optional: true,
-												},
-												"path": {
-													Type:     schema.TypeString,
-													Optional: true,
-												},
-											},
-										},
-									},
-									"failure_threshold": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-									"timeout_seconds": {
-										Type:     schema.TypeInt,
-										Optional: true,
-									},
-								},
-							},
+							Default:  0,
+						},
+						"gpu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"memory": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  0,
+						},
+						"image_pull_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "IfNotPresent",
+							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+						},
+						"working_dir": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"commands": {
 							Type:     schema.TypeList,
@@ -203,10 +155,31 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 								Type: schema.TypeString,
 							},
 						},
-						"cpu": {
-							Type:     schema.TypeFloat,
+						"args": {
+							Type:     schema.TypeList,
 							Optional: true,
-							Default:  0,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"ports": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										ForceNew: true,
+									},
+									"protocol": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+								},
+							},
 						},
 						"environment_vars": {
 							Type:     schema.TypeList,
@@ -223,56 +196,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									},
 								},
 							},
-						},
-						"gpu": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Default:  0,
-						},
-						"image": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"image_pull_policy": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "IfNotPresent",
-						},
-						"memory": {
-							Type:     schema.TypeFloat,
-							Optional: true,
-							Default:  0,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"ports": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"port": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-									},
-									"protocol": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-								},
-							},
-							ForceNew: true,
-						},
-						"ready": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"restart_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
 						},
 						"volume_mounts": {
 							Type:     schema.TypeList,
@@ -295,17 +218,287 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 								},
 							},
 						},
-						"working_dir": {
-							Type:     schema.TypeString,
+						"liveness_probe": {
+							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"initial_delay_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"period_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"timeout_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"success_threshold": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"failure_threshold": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"exec": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"commands": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+											},
+										},
+									},
+									"tcp_socket": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"port": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"http_get": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"scheme": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"port": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+												"path": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"readiness_probe": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"initial_delay_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"period_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"timeout_seconds": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"success_threshold": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"failure_threshold": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+									"exec": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"commands": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+											},
+										},
+									},
+									"tcp_socket": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"port": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"http_get": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"scheme": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"port": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+												"path": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"ready": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"restart_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
 						},
 					},
 				},
 			},
-			"cpu": {
-				Type:     schema.TypeFloat,
+			"init_containers": {
+				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cpu": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  0,
+						},
+						"gpu": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Default:  0,
+						},
+						"memory": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Default:  0,
+						},
+						"image": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"image_pull_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "IfNotPresent",
+							ValidateFunc: StringInSlice([]string{"Always", "IfNotPresent", "Never"}, false),
+						},
+						"working_dir": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"commands": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"args": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"ports": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"port": {
+										Type:     schema.TypeInt,
+										Optional: true,
+										ForceNew: true,
+									},
+									"protocol": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+						"environment_vars": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"volume_mounts": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"mount_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"name": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"read_only": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Default:  false,
+									},
+								},
+							},
+						},
+						"ready": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"restart_count": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"dns_config": {
 				Type:     schema.TypeSet,
@@ -314,6 +507,13 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name_servers": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"searches": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem: &schema.Schema{
@@ -336,25 +536,20 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 								},
 							},
 						},
-						"searches": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
 					},
 				},
 			},
 			"eci_security_context": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"sysctls": {
 							Type:     schema.TypeList,
 							Optional: true,
+							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
@@ -369,214 +564,44 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									},
 								},
 							},
-							ForceNew: true,
 						},
 					},
 				},
-				ForceNew: true,
 			},
 			"host_aliases": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"hostnames": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-							ForceNew: true,
-						},
 						"ip": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
 						},
-					},
-				},
-				ForceNew: true,
-			},
-			"init_containers": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"args": {
+						"hostnames": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-						"commands": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
-						"cpu": {
-							Type:     schema.TypeFloat,
-							Optional: true,
-							Default:  0,
-						},
-						"environment_vars": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"key": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
-						},
-						"gpu": {
-							Type:     schema.TypeInt,
-							Optional: true,
-							Default:  0,
-						},
-						"image": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"image_pull_policy": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "IfNotPresent",
-						},
-						"memory": {
-							Type:     schema.TypeFloat,
-							Optional: true,
-							Default:  0,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"ports": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"port": {
-										Type:     schema.TypeInt,
-										Optional: true,
-										ForceNew: true,
-									},
-									"protocol": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-								},
-							},
 							ForceNew: true,
-						},
-						"ready": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"restart_count": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"volume_mounts": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"mount_path": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"read_only": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Default:  false,
-									},
-								},
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
 							},
-						},
-						"working_dir": {
-							Type:     schema.TypeString,
-							Optional: true,
 						},
 					},
 				},
-			},
-			"instance_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"memory": {
-				Type:     schema.TypeFloat,
-				Optional: true,
-				Computed: true,
-			},
-			"ram_role_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"restart_policy": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Always", "Never", "OnFailure"}, false),
-			},
-			"security_group_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"tags": tagsSchema(),
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
 			},
 			"volumes": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"config_file_volume_config_file_to_paths": {
-							Type:     schema.TypeList,
+						"name": {
+							Type:     schema.TypeString,
 							Optional: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"content": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-									"path": {
-										Type:     schema.TypeString,
-										Optional: true,
-									},
-								},
-							},
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"disk_volume_disk_id": {
 							Type:     schema.TypeString,
@@ -607,37 +632,43 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"nfs_volume_server": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"nfs_volume_read_only": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
 						},
-						"nfs_volume_server": {
-							Type:     schema.TypeString,
+						"config_file_volume_config_file_to_paths": {
+							Type:     schema.TypeList,
 							Optional: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"type": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"content": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
-			},
-			"zone_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
 			},
 			"image_registry_credential": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"user_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
 						"password": {
 							Type:     schema.TypeString,
 							Required: true,
@@ -646,44 +677,8 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"user_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
 					},
 				},
-			},
-			"auto_match_image_cache": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"plain_http_registry": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"insecure_registry": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"internet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"intranet_ip": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"auto_create_eip": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"eip_bandwidth": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-			"eip_instance_id": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"acr_registry_info": {
 				Type:     schema.TypeSet,
@@ -691,13 +686,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"domains": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
-						},
 						"instance_name": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -710,8 +698,27 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"domains": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
+			},
+			"internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"intranet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -968,6 +975,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 	}
 
 	request["RegionId"] = client.RegionId
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
@@ -1018,17 +1026,8 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 	}
 
 	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
-		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVSwitch(vswitchId)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["VSwitchId"] = vswitchId
-		if request["ZoneId"] == nil {
-			request["ZoneId"] = vsw.ZoneId
-		}
-	}
+	request["VSwitchId"] = vswitchId
+
 	if v, ok := d.GetOk("image_registry_credential"); ok {
 		imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
 		for _, raw := range v.(*schema.Set).List() {
@@ -1063,16 +1062,30 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		request["InsecureRegistry"] = v
 	}
 
+	request["ClientToken"] = buildClientToken("CreateContainerGroup")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateContainerGroup")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_eci_container_group", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["ContainerGroupId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -1080,12 +1093,13 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	return resourceAlicloudEciContainerGroupRead(d, meta)
 }
+
 func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
 	object, err := eciService.DescribeEciContainerGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_eci_openapi_container_group eciService.DescribeEciContainerGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -1411,6 +1425,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	d.Set("zone_id", object["ZoneId"])
 	return nil
 }
+
 func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	eciService := EciService{client}
@@ -1662,15 +1677,26 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 			request["ImageRegistryCredential"] = imageRegisryCredentialMaps
 		}
 	}
+
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+	}
+
 	if update {
 		action := "UpdateContainerGroup"
 		conn, err := client.NewEciClient()
 		if err != nil {
 			return WrapError(err)
 		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1678,19 +1704,23 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running", "Succeeded"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, eciService.EciContainerGroupStateRefreshFunc(d.Id(), []string{"Failed", "ScheduleFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+
 	return resourceAlicloudEciContainerGroupRead(d, meta)
 }
+
 func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteContainerGroup"
@@ -1704,9 +1734,12 @@ func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 	}
 
 	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-08-08"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1714,11 +1747,13 @@ func resourceAlicloudEciContainerGroupDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
