@@ -60,6 +60,34 @@ func _getIdleFunction(client *fc_open20210406.Client, serviceName string) (_func
 	return "", nil
 }
 
+func _checkInvocationIsExist(client *fc_open20210406.Client, serviceName, invocationId string) (exist bool, _functionName string, _err error) {
+	listFunctionsHeaders := &fc_open20210406.ListFunctionsHeaders{}
+	listFunctionsRequest := &fc_open20210406.ListFunctionsRequest{}
+	runtime := &util.RuntimeOptions{}
+	_response, _err := client.ListFunctionsWithOptions(tea.String(serviceName), listFunctionsRequest, listFunctionsHeaders, runtime)
+	if _err != nil {
+		return false, "", _err
+	}
+
+	var returnError error
+	for _, fc := range _response.Body.Functions {
+		functionName := *fc.FunctionName
+		getStatefulAsyncInvocationHeaders := &fc_open20210406.GetStatefulAsyncInvocationHeaders{}
+		getStatefulAsyncInvocationRequest := &fc_open20210406.GetStatefulAsyncInvocationRequest{}
+		_resp, _err := client.GetStatefulAsyncInvocationWithOptions(tea.String(serviceName), tea.String(functionName), tea.String(invocationId), getStatefulAsyncInvocationRequest, getStatefulAsyncInvocationHeaders, runtime)
+		if _err != nil {
+			if strings.Contains(_err.Error(), "StatefulAsyncInvocationNotFound") {
+				continue
+			}
+			returnError = _err
+			log.Printf("[ERROR] getting invocation %s failed. Error:%v", invocationId, _err)
+		} else if *_resp.Body.InvocationId == invocationId {
+			return true, functionName, nil
+		}
+	}
+	return false, "", returnError
+}
+
 func _invokeFunction(client *fc_open20210406.Client, serviceName, functionName, invocationId, ossBucketRegion, ossBucketName, ossObjectPath, diffFuncNames string) (_err error) {
 	invokeFunctionHeaders := &fc_open20210406.InvokeFunctionHeaders{
 		XFcInvocationType:            tea.String("Async"),
@@ -91,37 +119,14 @@ func _invokeFunction(client *fc_open20210406.Client, serviceName, functionName, 
 		}
 	}
 
-	//endpoint := fmt.Sprintf("https://oss-%s.aliyuncs.com", ossBucketRegion)
-	//var options []oss.ClientOption
-	//accessKey, _ := client.GetAccessKeyId()
-	//secretKey, _ := client.GetAccessKeySecret()
-	//ossClient, err := oss.New(endpoint, *accessKey, *secretKey, options...)
-	//if err != nil {
-	//	return err
-	//}
-	//bucket, err := ossClient.Bucket(ossBucketName)
-	//if err != nil {
-	//	return err
-	//}
-
 	getStatefulAsyncInvocationHeaders := &fc_open20210406.GetStatefulAsyncInvocationHeaders{}
 	getStatefulAsyncInvocationRequest := &fc_open20210406.GetStatefulAsyncInvocationRequest{}
 
-	//terraformRunLog := "terraform.run.log"
-	//lastRunLog := ""
 	for true {
 		_response, _err := client.GetStatefulAsyncInvocationWithOptions(tea.String(serviceName), tea.String(functionName), tea.String(invocationId), getStatefulAsyncInvocationRequest, getStatefulAsyncInvocationHeaders, runtime)
 		if _err != nil {
 			return _err
 		}
-		//if err := bucket.GetObjectToFile(ossObjectPath+"/"+terraformRunLog, terraformRunLog); err == nil {
-		//	runLog, _ := os.ReadFile(terraformRunLog)
-		//	printRunLog := strings.TrimPrefix(string(runLog), lastRunLog)
-		//	if printRunLog != "" {
-		//		fmt.Println(printRunLog)
-		//		lastRunLog = string(runLog)
-		//	}
-		//}
 		if fmt.Sprint(*_response.Body.EndTime) == "0" {
 			time.Sleep(5 * time.Second)
 			continue
@@ -150,6 +155,13 @@ func main() {
 	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
 	diffFuncNames := strings.Trim(strings.TrimSpace(os.Args[9]), ";")
 	functionName := ""
+	log.Println("trace id:", invocationId)
+	if exist, fcName, err := _checkInvocationIsExist(client, serviceName, invocationId); err != nil {
+		log.Printf("[ERROR] checking invocation %s failed. Error: %v", invocationId, err)
+	} else if exist {
+		log.Printf("the invocation %s has been existed in the function %s", invocationId, fcName)
+		os.Exit(0)
+	}
 	for true {
 		if idleFunc, err := _getIdleFunction(client, serviceName); err != nil {
 			log.Println("_getIdleFunction got an error:", err)
@@ -161,7 +173,6 @@ func main() {
 	}
 
 	log.Println("using function", functionName)
-	log.Println("trace id:", invocationId)
 	if err := _invokeFunction(client, serviceName, functionName, invocationId, ossBucketRegion, ossBucketName, ossObjectPath, diffFuncNames); err != nil {
 		log.Println(err)
 		os.Exit(1)
