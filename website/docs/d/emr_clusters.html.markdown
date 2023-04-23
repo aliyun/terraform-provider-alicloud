@@ -11,6 +11,8 @@ description: |-
 
 This data source provides the Emr Clusters of the current Alibaba Cloud user.
 
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.204.0`. Please use new datasource [emrv2_clusters](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/emrv2_clusters).
+
 -> **NOTE:** Available in v1.146.0+.
 
 ## Example Usage
