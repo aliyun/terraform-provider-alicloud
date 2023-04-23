@@ -210,6 +210,8 @@ The `node_attributes` block supports the following:
 * `security_group_id` - (Required) Security Group ID for Cluster.
 * `ram_role` - (Required) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
 * `key_pair_name` - (Required) The name of the key pair.
+* `data_disk_encrypted` - (Optional, Computed, Available in 1.204.0+) Whether to enable data disk encryption.
+* `data_disk_kms_key_id` - (Optional, Computed, Available in 1.204.0+) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
 
 #### Block node_groups
 

@@ -177,6 +177,19 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"data_disk_encrypted": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+						},
+						"data_disk_kms_key_id": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.NoZeroValues,
+						},
 					},
 				},
 				ForceNew: true,
@@ -536,11 +549,13 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 		if len(nodeAttributes) == 1 {
 			nodeAttributesSource := nodeAttributes[0].(map[string]interface{})
 			nodeAttributesSourceMap := map[string]interface{}{
-				"VpcId":           nodeAttributesSource["vpc_id"],
-				"ZoneId":          nodeAttributesSource["zone_id"],
-				"SecurityGroupId": nodeAttributesSource["security_group_id"],
-				"RamRole":         nodeAttributesSource["ram_role"],
-				"KeyPairName":     nodeAttributesSource["key_pair_name"],
+				"VpcId":             nodeAttributesSource["vpc_id"],
+				"ZoneId":            nodeAttributesSource["zone_id"],
+				"SecurityGroupId":   nodeAttributesSource["security_group_id"],
+				"RamRole":           nodeAttributesSource["ram_role"],
+				"KeyPairName":       nodeAttributesSource["key_pair_name"],
+				"DataDiskEncrypted": nodeAttributesSource["data_disk_encrypted"],
+				"DataDiskKMSKeyId":  nodeAttributesSource["data_disk_kms_key_id"],
 			}
 			createClusterRequest["NodeAttributes"] = nodeAttributesSourceMap
 		}
@@ -828,13 +843,18 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 	var nodeAttributes []map[string]interface{}
 	if v, ok := object["NodeAttributes"]; ok {
 		nodeAttributesMap := v.(map[string]interface{})
-		nodeAttributes = append(nodeAttributes, map[string]interface{}{
-			"vpc_id":            nodeAttributesMap["VpcId"],
-			"zone_id":           nodeAttributesMap["ZoneId"],
-			"security_group_id": nodeAttributesMap["SecurityGroupId"],
-			"ram_role":          nodeAttributesMap["RamRole"],
-			"key_pair_name":     nodeAttributesMap["KeyPairName"],
-		})
+		nodeAttribute := map[string]interface{}{
+			"vpc_id":              nodeAttributesMap["VpcId"],
+			"zone_id":             nodeAttributesMap["ZoneId"],
+			"security_group_id":   nodeAttributesMap["SecurityGroupId"],
+			"ram_role":            nodeAttributesMap["RamRole"],
+			"key_pair_name":       nodeAttributesMap["KeyPairName"],
+			"data_disk_encrypted": nodeAttributesMap["DataDiskEncrypted"],
+		}
+		if v, exists := nodeAttributesMap["DataDiskKMSKeyId"]; exists && v.(string) != "" {
+			nodeAttribute["data_disk_kms_key_id"] = v
+		}
+		nodeAttributes = append(nodeAttributes, nodeAttribute)
 		d.Set("node_attributes", nodeAttributes)
 	}
 

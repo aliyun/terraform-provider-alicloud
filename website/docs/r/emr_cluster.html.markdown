@@ -11,6 +11,8 @@ description: |-
 
 Provides a EMR Cluster resource. With this you can create, read, and release  EMR Cluster. 
 
+-> **DEPRECATED:**  This resource has been deprecated from version `1.204.0`. Please use new resource [emrv2_cluster](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/emrv2_cluster).
+
 -> **NOTE:** Available in 1.57.0+.
 
 ## Example Usage

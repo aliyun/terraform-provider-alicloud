@@ -1065,6 +1065,10 @@ data "alicloud_resource_manager_resource_groups" "default" {
 	status = "OK"
 }
 
+data "alicloud_kms_keys" "default" {
+	status = "Enabled"
+}
+
 data "alicloud_zones" "default" {
 	available_instance_type = "ecs.g7.xlarge"
 }
