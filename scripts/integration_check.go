@@ -16,7 +16,7 @@ func main() {
 	log.Println("trace id:", invocationId)
 	urlPrefix := "https://terraform-provider-alicloud-ct.oss-ap-southeast-1.aliyuncs.com"
 	runLogFileName := "terraform.run.log"
-	runResultFileName := "terraform.run.result"
+	runResultFileName := "terraform.run.result.log"
 	runLogUrl := urlPrefix + "/" + ossObjectPath + "/" + runLogFileName
 	runResultUrl := urlPrefix + "/" + ossObjectPath + "/" + runResultFileName
 	lastLineNum := 0
@@ -44,8 +44,8 @@ func main() {
 			}
 		}
 		if finish {
+			log.Println("run log path:", ossObjectPath)
 			log.Println("run log url:", runLogUrl)
-			log.Println("trace id:", invocationId)
 			os.Exit(exitCode)
 		}
 		runResultResponse, err := http.Get(runResultUrl)
