@@ -50,7 +50,7 @@ resources:
 - name: duration
   type: time
   source:
-    start: 08:00 AM
-    stop: 11:50 PM
+    start: 09:00 AM
+    stop: 10:00 PM
     days: [Monday, Tuesday, Wednesday, Thursday, Friday]
     location: {{time_location}}

@@ -20,6 +20,7 @@ params:
   TEST_CASE_CODE:        ""
   TEST_CASE_PREFIX:      "TestAccAlicloud"
   SWEEPER:               ""
+  SWEEP_ALL:             "false"
   CHECKOUT_REGION:       "false"
   ACCESS_URL:            ""
   ACCESS_USER_NAME:      ""
