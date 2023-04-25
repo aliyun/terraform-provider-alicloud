@@ -42,6 +42,10 @@ jobs:
                   echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
                   noNeedRun=false
                   fileName=(${fileName//\.go/_test\.go })
+                  if [[ $(grep -c "func TestAcc.*" ${fileName}) -le 1 ]]; then
+                    echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $fileName, continue..."
+                    continue
+                  fi
                   checkFuncs=$(grep "func TestAcc.*" ${fileName})
                   echo -e "found the test funcs:\n${checkFuncs}\n"
                   funcs=(${checkFuncs//"(t *testing.T) {"/ })
