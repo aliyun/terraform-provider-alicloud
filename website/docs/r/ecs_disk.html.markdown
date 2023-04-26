@@ -35,6 +35,13 @@ resource "alicloud_ecs_disk" "example" {
 
 ```
 
+### Deleting `alicloud_ecs_disk` or removing it from your configuration
+
+The `alicloud_ecs_disk` resource allows you to manage `payment_type = "Subscription"` and `delete_with_instance = true` disk, 
+but Terraform cannot destroy it. Deleting the subscription resource or removing it from your configuration will 
+remove it from your state file and management, but will not destroy it.
+If you want to delete it, you can change it to `PayAsYouGo` and setting `delete_with_instance = true` and detach it from instance.
+
 ## Argument Reference
 
 The following arguments are supported:

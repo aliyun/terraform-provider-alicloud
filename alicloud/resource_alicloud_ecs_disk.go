@@ -172,6 +172,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 
 func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
 	var response map[string]interface{}
 	action := "CreateDisk"
 	request := make(map[string]interface{})
@@ -274,6 +275,13 @@ func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	d.SetId(fmt.Sprint(response["DiskId"]))
+	// Setting instanceId aims to creating the PrePaid disk and the job is async
+	if fmt.Sprint(request["InstanceId"]) != "" {
+		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, ecsService.EcsDiskStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 	return resourceAlicloudEcsDiskUpdate(d, meta)
 }
 func resourceAlicloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error {
@@ -281,7 +289,7 @@ func resourceAlicloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error
 	ecsService := EcsService{client}
 	object, err := ecsService.DescribeEcsDisk(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ecs_disk ecsService.DescribeEcsDisk Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -458,6 +466,10 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(modifyDiskChargeTypeReq["DiskChargeType"])}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, ecsService.EcsDiskPropertyRefreshFunc(d.Id(), "DiskChargeType"))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("instance_id")
 		d.SetPartial("payment_type")
 	}
@@ -528,8 +540,8 @@ func resourceAlicloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) err
 		}
 		return WrapError(err)
 	}
-	if fmt.Sprint(object["DeleteWithInstance"]) == "true" {
-		log.Printf("[DEBUG] Resource alicloud_ecs_disk %s attribute DeleteWithInstance is true, so it will remove from state.", d.Id())
+	if fmt.Sprint(object["DiskChargeType"]) == "PrePaid" && fmt.Sprint(object["DeleteWithInstance"]) == "true" {
+		log.Printf("[DEBUG] Resource alicloud_ecs_disk %s charge type is PrePaid and its attribute DeleteWithInstance is true, so it will remove from state.", d.Id())
 		return nil
 	}
 
