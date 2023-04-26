@@ -193,7 +193,7 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"exclude_resource_ids_scope": "${data.alicloud_instances.default.instances[0].id}",
+					"exclude_resource_ids_scope": "${alicloud_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -213,7 +213,7 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"resource_group_ids_scope": "${alicloud_resource_manager_resource_group.example[0].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -248,8 +248,8 @@ func TestAccAlicloudConfigRule_basic(t *testing.T) {
 					"source_identifier":          "ecs-instances-in-vpc",
 					"source_owner":               "ALIYUN",
 					"region_ids_scope":           "cn-beijing",
-					"resource_group_ids_scope":   "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"exclude_resource_ids_scope": "${data.alicloud_instances.default.instances[1].id}",
+					"resource_group_ids_scope":   "${alicloud_resource_manager_resource_group.example[1].id}",
+					"exclude_resource_ids_scope": "${data.alicloud_instances.default.instances[0].id}",
 					"tag_key_scope":              "tfTest123",
 					"tag_value_scope":            "tfTest 123 Update",
 				}),
@@ -349,10 +349,62 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_instances" "default"{}
+resource "alicloud_resource_manager_resource_group" "example" {
+  count = 2
+  resource_group_name = join("-", [var.name, count.index])
+  display_name        = join("-", [var.name, count.index])
+}
 
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "default" {
+   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  cpu_core_count = 1
+  memory_size = 2
+}
+
+data "alicloud_images" "default" {
+  name_regex = "^ubuntu"
+  most_recent = true
+  owners = "system"
+}
+
+resource "alicloud_vpc" "foo" {
+  cidr_block = "172.16.0.0/12"
+  name = "${var.name}"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vpc_id = "${alicloud_vpc.foo.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = "${var.name}"
+}
+
+resource "alicloud_security_group" "tf_test_foo" {
+  name = "${var.name}"
+  description = "foo"
+  vpc_id = "${alicloud_vpc.foo.id}"
+}
+
+resource "alicloud_instance" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_id = "${alicloud_vswitch.foo.id}"
+  image_id = "${data.alicloud_images.default.images.0.id}"
+  # series III
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  system_disk_category = "cloud_efficiency"
+  internet_charge_type = "PayByTraffic"
+  internet_max_bandwidth_out = 5
+  security_groups = ["${alicloud_security_group.tf_test_foo.id}"]
+  instance_name = "${var.name}"
+  user_data = "echo 'net.ipv4.ip_forward=1'>> /etc/sysctl.conf"
+}
+
+data "alicloud_instances" "default" {
+ name_regex = "${alicloud_instance.default.instance_name}"
 }
 
 `, name)
@@ -489,7 +541,7 @@ func SkipTestAccAlicloudConfigRule_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_ids_scope": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"resource_group_ids_scope": "${alicloud_resource_manager_resource_group.example[0].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -523,7 +575,7 @@ func SkipTestAccAlicloudConfigRule_basic1(t *testing.T) {
 					"config_rule_trigger_types": "ConfigurationItemChangeNotification",
 					"resource_types_scope":      []string{"ACS::ECS::Instance"},
 					"region_ids_scope":          "cn-beijing",
-					"resource_group_ids_scope":  "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"resource_group_ids_scope":  "${alicloud_resource_manager_resource_group.example[1].id}",
 					"tag_key_scope":             "tfTest123",
 					"tag_value_scope":           "tfTest 123 Update",
 				}),
@@ -558,6 +610,107 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 `, name)
+}
+
+func TestAccAlicloudConfigRule_regression(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigRuleMap3019)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sConfigRule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigRuleBasicDependence3019)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_owner":               "ALIYUN",
+					"source_identifier":          "root-ak-check",
+					"risk_level":                 "1",
+					"source_detail_message_type": "ScheduledNotification",
+					"rule_name":                  "${var.name}",
+					"resource_types_scope": []string{
+						"ACS::::Account"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_owner":               "ALIYUN",
+						"source_identifier":          "root-ak-check",
+						"risk_level":                 "1",
+						"source_detail_message_type": "ScheduledNotification",
+						"rule_name":                  name,
+						"resource_types_scope.#":     "1",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":                    "test",
+					"tag_key_scope":                      "test",
+					"exclude_resource_ids_scope":         "test",
+					"description":                        "检查根账户访问密钥是否存在，如果存在视为“不合规”。",
+					"region_ids_scope":                   "cn-hangzhou",
+					"resource_group_ids_scope":           "${alicloud_resource_manager_resource_group.example.1.id}",
+					"risk_level":                         "2",
+					"source_maximum_execution_frequency": "TwentyFour_Hours",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":                    "test",
+						"tag_key_scope":                      "test",
+						"exclude_resource_ids_scope":         "test",
+						"description":                        "检查根账户访问密钥是否存在，如果存在视为“不合规”。",
+						"region_ids_scope":                   "cn-hangzhou",
+						"resource_group_ids_scope":           CHECKSET,
+						"risk_level":                         "2",
+						"source_maximum_execution_frequency": "TwentyFour_Hours",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"description":                "检查根账户访问密钥是否存在，如果存在视为“不合规”。",
+					"source_owner":               "ALIYUN",
+					"source_identifier":          "root-ak-check",
+					"risk_level":                 "1",
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"region_ids_scope":           "cn-hangzhou",
+					"rule_name":                  "${var.name}_update",
+					"resource_types_scope": []string{
+						"ACS::::Account"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                "检查根账户访问密钥是否存在，如果存在视为“不合规”。",
+						"source_owner":               "ALIYUN",
+						"source_identifier":          "root-ak-check",
+						"risk_level":                 "1",
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"region_ids_scope":           "cn-hangzhou",
+						"rule_name":                  name + "_update",
+						"resource_types_scope.#":     "1",
+					}),
+				),
+			}, {
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
 }
 
 func TestUnitAlicloudConfigRule(t *testing.T) {
@@ -976,3 +1129,238 @@ func TestUnitAlicloudConfigRule(t *testing.T) {
 	}
 
 }
+
+// Test Config Rule. >>> Resource test cases, automatically generated.
+// Case 3019
+func TestAccAlicloudConfigRule_basic3019(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigRuleMap3019)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sConfigRule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigRuleBasicDependence3019)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_owner":              "ALIYUN",
+					"source_identifier":         "required-tags",
+					"risk_level":                "1",
+					"config_rule_trigger_types": "ConfigurationItemChangeNotification",
+					"resource_types_scope": []string{
+						"ACS::RDS::DBInstance", "ACS::ECS::Instance"},
+					"rule_name": "${var.name}",
+					"input_parameters": map[string]string{
+						"tag1Key":   "terraform",
+						"tag1Value": "terraform",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_owner":              "ALIYUN",
+						"source_identifier":         "required-tags",
+						"risk_level":                "1",
+						"config_rule_trigger_types": "ConfigurationItemChangeNotification",
+						"resource_types_scope.#":    "2",
+						"rule_name":                 CHECKSET,
+						"input_parameters.%":        "2",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"resource_group_ids_scope":   "${alicloud_resource_manager_resource_group.example.1.id}",
+					"risk_level":                 "2",
+					"resource_types_scope": []string{
+						"ACS::ECS::Instance", "ACS::ECS::Disk"},
+					"input_parameters": map[string]string{
+						"tag1Key": "terraform",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"resource_group_ids_scope":   CHECKSET,
+						"risk_level":                 "2",
+						"resource_types_scope.#":     "2",
+						"input_parameters.%":         "1",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"description":                "关联的资源类型下实体资源均已有指定标签，存在没有指定标签的资源则视为“不合规”。",
+					"source_owner":               "ALIYUN",
+					"source_identifier":          "required-tags",
+					"risk_level":                 "1",
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"resource_types_scope": []string{
+						"ACS::RDS::DBInstance", "ACS::ECS::Instance"},
+					"rule_name": "tf-cicd-rule-by-required-tags",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                "关联的资源类型下实体资源均已有指定标签，存在没有指定标签的资源则视为“不合规”。",
+						"source_owner":               "ALIYUN",
+						"source_identifier":          "required-tags",
+						"risk_level":                 "1",
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"resource_types_scope.#":     "2",
+						"rule_name":                  "tf-cicd-rule-by-required-tags",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"risk_level":                 "2",
+					"resource_types_scope": []string{
+						"ACS::ECS::Instance", "ACS::ECS::Disk"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"risk_level":                 "2",
+						"resource_types_scope.#":     "2",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"risk_level":                 "2",
+					"resource_types_scope": []string{
+						"ACS::ECS::Instance", "ACS::ECS::Disk"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"risk_level":                 "2",
+						"resource_types_scope.#":     "2",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"risk_level":                 "2",
+					"resource_types_scope": []string{
+						"ACS::ECS::Instance", "ACS::ECS::Disk"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"risk_level":                 "2",
+						"resource_types_scope.#":     "2",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"tag_value_scope":            "test",
+					"tag_key_scope":              "test",
+					"exclude_resource_ids_scope": "test",
+					"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+					"region_ids_scope":           "cn-hangzhou",
+					"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+					"rule_name":                  "${var.name}_update",
+					"resource_group_ids_scope":   "${alicloud_resource_manager_resource_group.example.0.id}",
+					"risk_level":                 "2",
+					"resource_types_scope": []string{
+						"ACS::ECS::Instance", "ACS::ECS::Disk"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_value_scope":            "test",
+						"tag_key_scope":              "test",
+						"exclude_resource_ids_scope": "test",
+						"description":                "RDS实例的CPU核数大于等于设置的阈值，视为“合规”",
+						"region_ids_scope":           "cn-hangzhou",
+						"config_rule_trigger_types":  "ConfigurationItemChangeNotification",
+						"resource_group_ids_scope":   CHECKSET,
+						"rule_name":                  name + "_update",
+						"risk_level":                 "2",
+						"resource_types_scope.#":     "2",
+					}),
+				),
+			}, {
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudConfigRuleMap3019 = map[string]string{}
+
+func AlicloudConfigRuleBasicDependence3019(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "example" {
+  count = 2
+  resource_group_name = join("-", [var.name, count.index])
+  display_name        = join("-", [var.name, count.index])
+}
+`, name)
+}
+
+// Test Config Rule. <<< Resource test cases, automatically generated.
