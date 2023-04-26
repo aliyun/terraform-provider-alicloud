@@ -128,7 +128,7 @@ func resourceAlicloudCenTransitRouterRead(d *schema.ResourceData, meta interface
 	cbnService := CbnService{client}
 	object, err := cbnService.DescribeCenTransitRouter(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router cbnService.DescribeCenTransitRouter Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -259,7 +259,7 @@ func resourceAlicloudCenTransitRouterDelete(d *schema.ResourceData, meta interfa
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking", "IncorrectStatus.Status", "IncorrectStatus.CenInstance"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
