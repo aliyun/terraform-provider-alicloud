@@ -64,12 +64,18 @@ do
     do
       echo -e "\033[37mchecking diff file $fileName ... \033[0m"
       if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
-          if [[ ${fileName} == *?_test.go ]]; then
-              echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
-              continue
+          if [[ ${fileName} != *?_test.go ]]; then
+              fileName=(${fileName//\.go/_test\.go })
+              # echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
+              # continue
           fi
+          echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
           noNeedRun=false
-          fileName=(${fileName//\.go/_test\.go })
+          # fileName=(${fileName//\.go/_test\.go })
+          if [[ $(grep -c "func TestAcc.*" ${fileName}) -lt 1 ]]; then
+            echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $fileName, continue..."
+            continue
+          fi
           checkFuncs=$(grep "func TestAcc.*" ${fileName})
           echo -e "found the test funcs:\n${checkFuncs}"
           funcs=(${checkFuncs//"(t *testing.T) {"/ })
