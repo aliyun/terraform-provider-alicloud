@@ -19,6 +19,7 @@ func TestAccAlicloudAccountDataSource_basic(t *testing.T) {
 					testAccCheckAlicloudDataSourceID("data.alicloud_account.current"),
 					resource.TestCheckResourceAttrSet("data.alicloud_account.current", "id"),
 				),
+
 			},
 		},
 	})
