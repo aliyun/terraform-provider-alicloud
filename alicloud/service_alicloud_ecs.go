@@ -2142,10 +2142,10 @@ func (s *EcsService) DescribeEcsDisk(id string) (object map[string]interface{}, 
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Disks.Disk", response)
 	}
 	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("ECS:Disk", id)), NotFoundWithResponse, response)
 	} else {
 		if v.([]interface{})[0].(map[string]interface{})["DiskId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(Error(GetNotFoundMessage("ECS:Disk", id)), NotFoundWithResponse, response)
 		}
 	}
 	object = v.([]interface{})[0].(map[string]interface{})
@@ -2169,6 +2169,20 @@ func (s *EcsService) EcsDiskStateRefreshFunc(id string, failStates []string) res
 			}
 		}
 		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
+func (s *EcsService) EcsDiskPropertyRefreshFunc(id, property string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEcsDisk(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, fmt.Sprint(object[property]), nil
 	}
 }
 

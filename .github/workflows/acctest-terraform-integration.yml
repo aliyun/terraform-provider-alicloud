@@ -61,11 +61,11 @@ jobs:
           done
 
           if [[ "${noNeedRun}" = "false" && ${DiffFuncNames} == "" ]]; then
-              echo -e "\n\033[31m missing integration test cases, please add them. \033[0m"
+              echo -e "\n\033[33m[WARNING]\033[0m missing integration test cases, please add them. \033[0m"
               exit 1
           fi
           if [[ "${noNeedRun}" = "true"  ]]; then
-              echo -e "\n\033[32m the pr is no need to run integration test. \033[0m"
+              echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test. \033[0m"
               exit 0
           fi
           IN=$GH_JOB_IntegrationTest_HTML_URL

@@ -44,13 +44,12 @@ do
     echo -e "\033[33mtitle:\033[0m $(gh pr view ${num} --json title --jq '.title')"
     echo -e "\033[33mreviewDecision:\033[0m ${reviewDecision}"
     echo -e "\033[33murl:\033[0m $(gh pr view ${num} --json url --jq '.url')\n"
-    changeFiles=$(gh pr diff ${num} --name-only | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+#    changeFiles=$(gh pr diff ${num} --name-only | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+    changeFiles=$(gh pr diff ${num} --name-only | grep "^alicloud/" | grep ".go$")
     if [[ ${#changeFiles[@]} -eq 0 ]]; then
       echo "the pr ${num} does not change provider code and there is no need to test."
       continue
     fi
-    DiffFuncNames=""
-    noNeedRun=true
     cd ..
     rm -rf $repo
     git clone https://github.com/aliyun/terraform-provider-alicloud.git
@@ -60,6 +59,8 @@ do
       echo -e "\033[31m checkout to pr ${num} failed, please checking it.\033[0m"
       continue
     fi
+    DiffFuncNames=""
+    noNeedRun=true
     for fileName in ${changeFiles[@]};
     do
       echo -e "\033[37mchecking diff file $fileName ... \033[0m"
@@ -90,6 +91,10 @@ do
     done
     if [[ "${noNeedRun}" = "false" && ${DiffFuncNames} == "" ]]; then
       echo -e "\033[31mthe pr ${num} missing integration test cases, please adding them. \033[0m"
+      continue
+    fi
+    if [[ "${noNeedRun}" = "true"  ]]; then
+      echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test.\033[0m"
       continue
     fi
     # checking the num decision

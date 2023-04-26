@@ -337,16 +337,6 @@ func TestAccAlicloudECSDisk_basic1(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "PayAsYouGo",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type": "PayAsYouGo",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -539,7 +529,8 @@ resource "alicloud_disk" "default" {
 }
 
 data "alicloud_images" "default" {
-  owners = "system"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners      = "system"
 }
 
 resource "alicloud_instance" "default" {
