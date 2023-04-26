@@ -1648,8 +1648,9 @@ func (s *RdsService) WaitForAccountPrivilege(id, dbName string, status Status, t
 			accountPrivilegeInfos := object["Accounts"].(map[string]interface{})["AccountPrivilegeInfo"].([]interface{})
 			for _, account := range accountPrivilegeInfos {
 				// At present, postgresql response has a bug, DBOwner will be changed to ALL
+				// At present, sqlserver response has a bug, DBOwner will be changed to DbOwner
 				account := account.(map[string]interface{})
-				if account["Account"] == parts[1] && (account["AccountPrivilege"] == parts[2] || (parts[2] == "DBOwner" && account["AccountPrivilege"] == "ALL")) {
+				if account["Account"] == parts[1] && (account["AccountPrivilege"] == parts[2] || (parts[2] == "DBOwner" && (account["AccountPrivilege"] == "ALL" || account["AccountPrivilege"] == "DbOwner"))) {
 					ready = true
 					break
 				}
