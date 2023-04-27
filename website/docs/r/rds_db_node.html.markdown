@@ -10,6 +10,7 @@ description: |-
 # alicloud\_rds\_db\_node
 
 Provide RDS cluster instance to increase node resources.
+
 -> **NOTE:** Available in 1.202.0+.
 
 ## Example Usage

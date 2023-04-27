@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 

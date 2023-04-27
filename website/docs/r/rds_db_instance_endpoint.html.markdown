@@ -10,11 +10,12 @@ description: |-
 # alicloud\_rds\_db\_instance\_endpoint
 
 Provide RDS cluster instance endpoint connection resources.
+
 -> **NOTE:** Available in 1.203.0+.
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -28,28 +29,28 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "default" {
-  engine                    = "MySQL"
-  engine_version            = "8.0"
-  instance_type             = "mysql.n2.medium.xc"
-  instance_storage          = "20"
-  instance_charge_type      = "Postpaid"
-  instance_name             = var.name
-  vswitch_id                = alicloud_vswitch.default.id
-  db_instance_storage_type  = "cloud_essd"
-  zone_id                   = data.alicloud_zones.default.ids.0
-  zone_id_slave_a           = data.alicloud_zones.default.ids.0
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = "mysql.n2.medium.xc"
+  instance_storage         = "20"
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.default.id
+  db_instance_storage_type = "cloud_essd"
+  zone_id                  = data.alicloud_zones.default.ids.0
+  zone_id_slave_a          = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_rds_db_node" "default" {
@@ -59,15 +60,15 @@ resource "alicloud_rds_db_node" "default" {
 }
 
 resource "alicloud_rds_db_instance_endpoint" "default" {
-  db_instance_id                   = alicloud_db_instance.default.db_instance_id                
+  db_instance_id                   = alicloud_db_instance.default.db_instance_id
   vpc_id                           = alicloud_db_instance.default.vpc_id
   vswitch_id                       = alicloud_db_instance.default.vswitch_id
   connection_string_prefix         = "test001"
   port                             = "3307"
   db_instance_endpoint_description = "test111"
   node_items {
-      node_id = alicloud_rds_db_node.default.node_id
-      weight = 25
+    node_id = alicloud_rds_db_node.default.node_id
+    weight  = 25
   }
 }
 ```
