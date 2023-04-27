@@ -853,6 +853,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_remote_writes":                               dataSourceAlicloudArmsRemoteWrites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_config_remediation":                 resourceAliCloudConfigRemediation(),
 			"alicloud_instance":                           resourceAliyunInstance(),
 			"alicloud_image":                              resourceAliCloudImage(),
 			"alicloud_reserved_instance":                  resourceAliCloudReservedInstance(),
