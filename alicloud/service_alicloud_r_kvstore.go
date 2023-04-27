@@ -248,6 +248,20 @@ func (s *R_kvstoreService) KvstoreInstanceStateRefreshFunc(id string, failStates
 	}
 }
 
+func (s *R_kvstoreService) KvstoreInstanceAttributeRefreshFunc(id, attribute string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeKvstoreInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, fmt.Sprint(object[attribute]), nil
+	}
+}
+
 func (s *R_kvstoreService) DescribeKvstoreConnection(id string) (object []r_kvstore.InstanceNetInfo, err error) {
 	request := r_kvstore.CreateDescribeDBInstanceNetInfoRequest()
 	request.RegionId = s.client.RegionId

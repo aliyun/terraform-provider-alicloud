@@ -37,7 +37,7 @@ The following arguments are supported:
 * `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
 * `architecture_type` - (Optional, Available in 1.101.0+) The type of the architecture. Valid values: `cluster`, `standard` and `SplitRW`.
 * `edition_type` - (Optional, Available in 1.101.0+) Used to retrieve instances belong to specified `vswitch` resources.  Valid values: `Enterprise`, `Community`.
-* `engine_version` - (Optional, Available in 1.101.0+) The engine version. Valid values: `2.8`, `4.0`, `5.0`, `6.0`.
+* `engine_version` - (Optional, Available in 1.101.0+) The engine version. Valid values: `2.8`, `4.0`, `5.0`, `6.0`, `7.0`.
 * `expired` - (Optional, Available in 1.101.0+) The expiration status of the instance.
 * `global_instance` - (Optional, Available in 1.101.0+) Whether to create a distributed cache.
 * `network_type` - (Optional, Available in 1.101.0+) The type of the network. Valid values: `CLASSIC`, `VPC`.

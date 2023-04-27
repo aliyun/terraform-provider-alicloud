@@ -137,7 +137,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"engine_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0", "7.0"}, false),
 				Computed:     true,
 			},
 			"force_upgrade": {
@@ -183,6 +183,11 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Immediately", "MaintainTime"}, false),
 			},
 			"modify_mode": {
 				Type:     schema.TypeInt,
@@ -859,7 +864,9 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		update = true
 	}
 	modifyInstanceMajorVersionReq.MajorVersion = d.Get("engine_version").(string)
-	modifyInstanceMajorVersionReq.EffectiveTime = "0"
+	if v, ok := d.GetOk("effective_time"); ok {
+		modifyInstanceMajorVersionReq.EffectiveTime = v.(string)
+	}
 	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifyInstanceMajorVersion(modifyInstanceMajorVersionReq)
@@ -920,7 +927,9 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	} else {
 		migrateToOtherZoneReq.ZoneId = d.Get("availability_zone").(string)
 	}
-	migrateToOtherZoneReq.EffectiveTime = "0"
+	if v, ok := d.GetOk("effective_time"); ok {
+		migrateToOtherZoneReq.EffectiveTime = v.(string)
+	}
 	if !d.IsNewResource() && d.HasChange("vswitch_id") {
 		update = true
 		migrateToOtherZoneReq.VSwitchId = d.Get("vswitch_id").(string)
@@ -1095,7 +1104,9 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	modifyInstanceSpecReq := r_kvstore.CreateModifyInstanceSpecRequest()
 	modifyInstanceSpecReq.InstanceId = d.Id()
 	modifyInstanceSpecReq.AutoPay = requests.NewBoolean(true)
-	modifyInstanceSpecReq.EffectiveTime = "0"
+	if v, ok := d.GetOk("effective_time"); ok {
+		modifyInstanceSpecReq.EffectiveTime = v.(string)
+	}
 	if !d.IsNewResource() && d.HasChange("engine_version") {
 
 		modifyInstanceSpecReq.MajorVersion = d.Get("engine_version").(string)
@@ -1141,6 +1152,13 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		if modifyInstanceSpecReq.EffectiveTime != "MaintainTime" && d.HasChange("instance_class") {
+			stateConf := BuildStateConf([]string{}, []string{modifyInstanceSpecReq.InstanceClass}, d.Timeout(schema.TimeoutUpdate), 360*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "InstanceClass"))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
 		d.SetPartial("engine_version")
 		d.SetPartial("instance_class")
 	}

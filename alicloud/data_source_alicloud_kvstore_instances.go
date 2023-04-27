@@ -53,7 +53,7 @@ func dataSourceAlicloudKvstoreInstances() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0", "7.0"}, false),
 			},
 			"expired": {
 				Type:     schema.TypeString,

@@ -117,7 +117,7 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `auto_renew_period` - (Optional, Available in 1.36.0+) Auto-renewal period of an KVStore DBInstance, in the unit of the month. It is valid when payment_type is `PrePaid`. Valid value: [1~12], Default to `1`.
 * `instance_type` - (Optional, ForceNew) The engine type of the KVStore DBInstance. Valid values: `Redis` or `Memcache`. Defaults to `Redis`.
 * `vswitch_id` - (Optional) The ID of VSwitch.
-* `engine_version`- (Optional) The engine version of the KVStore DBInstance. Valid values: ["2.8", "4.0", "5.0", "6.0"]. Default to "5.0".
+* `engine_version`- (Optional) The engine version of the KVStore DBInstance. Valid values: ["2.8", "4.0", "5.0", "6.0", "7.0"]. Default to "5.0".
   **NOTE:** When `instance_type = Memcache`, the `engine_version` only supports "4.0". 
 * `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
 * `security_ips`- (Optional) The IP addresses in the whitelist group. The maximum number of IP addresses in the whitelist group is 1000. 
@@ -134,6 +134,11 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `config` - (Optional, Available in 1.101.0+) The configuration of the KVStore DBInstance. Available parameters can refer to the latest docs [Instance configurations table](https://www.alibabacloud.com/help/doc-detail/61209.htm) .
 * `maintain_start_time` - (Optional, Available in v1.56.0+) The start time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available in v1.56.0+) The end time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
+* `effective_time` - (Optional, Available in v1.204.0+) The time when the database is switched after the instance is migrated, 
+  or when the major version is upgraded, or when the instance class is upgraded. Valid values:
+  - Immediately (Default): The configurations are immediately changed.
+  - MaintainTime: The configurations are changed within the maintenance window. You can set `maintain_start_time` and `maintain_end_time` to change the maintenance window.
+  
 * `resource_group_id` - (Optional, Available in v1.86.0+) The ID of resource group which the resource belongs.
 * `enable_public` - (Optional, Available in v1.94.0+) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
 * `connection_string_prefix` - (Optional, Available in v1.94.0+) It has been deprecated from provider version 1.101.0 and resource `alicloud_kvstore_connection` instead.
