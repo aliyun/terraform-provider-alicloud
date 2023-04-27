@@ -91,6 +91,9 @@ The following arguments are supported:
 * `payment_type` - (Optional, ForceNew, Available in 1.168.0+) The payment type of the resource. Valid values: `PayAsYouGo`.
 * `zone_mappings` - (Required) The list of zone mapping of the VPC. **NOTE:** From version 1.184.0, `zone_mappings` can be modified.
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
+* `auto_publish_route_enabled` - (Optional, Computed, Available in v1.204.0+) Whether the transit router is automatically published to the VPC instance. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
 #### ZoneMappings Block
