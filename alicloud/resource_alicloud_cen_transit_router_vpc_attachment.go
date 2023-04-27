@@ -52,10 +52,6 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Optional:   true,
 				Deprecated: "Field 'route_table_propagation_enabled' has been deprecated from provider version 1.192.0. Please use the resource 'alicloud_cen_transit_router_route_table_propagation' instead.",
 			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"transit_router_attachment_description": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -68,10 +64,6 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
-			},
-			"transit_router_attachment_id": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -91,6 +83,11 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 			},
+			"auto_publish_route_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 			"zone_mappings": {
 				Type:     schema.TypeSet,
 				Required: true,
@@ -108,6 +105,14 @@ func resourceAlicloudCenTransitRouterVpcAttachment() *schema.Resource {
 				},
 			},
 			"tags": tagsSchema(),
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -162,6 +167,10 @@ func resourceAlicloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		request["VpcOwnerId"] = v
 	}
 
+	if v, ok := d.GetOkExists("auto_publish_route_enabled"); ok {
+		request["AutoPublishRouteEnabled"] = v
+	}
+
 	zoneMappingsMaps := make([]map[string]interface{}, 0)
 	for _, zoneMappings := range d.Get("zone_mappings").(*schema.Set).List() {
 		zoneMappingsMap := make(map[string]interface{})
@@ -206,7 +215,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	cbnService := CbnService{client}
 	object, err := cbnService.DescribeCenTransitRouterVpcAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cen_transit_router_vpc_attachment cbnService.DescribeCenTransitRouterVpcAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -226,6 +235,7 @@ func resourceAlicloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("payment_type", convertCenTransitRouterVpcAttachmentPaymentTypeResponse(object["ChargeType"].(string)))
 	d.Set("vpc_owner_id", fmt.Sprint(object["VpcOwnerId"]))
+	d.Set("auto_publish_route_enabled", object["AutoPublishRouteEnabled"])
 
 	zoneMappings := make([]map[string]interface{}, 0)
 	if zoneMappingsList, ok := object["ZoneMappings"].([]interface{}); ok {
@@ -294,6 +304,13 @@ func resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		update = true
 	}
 	request["TransitRouterAttachmentName"] = d.Get("transit_router_attachment_name")
+
+	if !d.IsNewResource() && d.HasChange("auto_publish_route_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("auto_publish_route_enabled"); ok {
+		request["AutoPublishRouteEnabled"] = v
+	}
 
 	if update {
 		if _, ok := d.GetOkExists("dry_run"); ok {

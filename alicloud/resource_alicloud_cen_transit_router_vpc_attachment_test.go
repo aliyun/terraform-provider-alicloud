@@ -247,6 +247,87 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudCenTransitRouterVpcAttachment_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterVpcAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccCenTransitRouterVpcAttachment%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cen_id":                                "${alicloud_cen_instance.default.id}",
+					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
+					"transit_router_attachment_name":        name,
+					"transit_router_attachment_description": name,
+					"vpc_id":                                "${alicloud_vpc.default.id}",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.default.id}",
+							"zone_id":    "${alicloud_vswitch.default.zone_id}",
+						},
+					},
+					"dry_run":                         "false",
+					"resource_type":                   "VPC",
+					"route_table_association_enabled": "false",
+					"route_table_propagation_enabled": "false",
+					"vpc_owner_id":                    "${data.alicloud_account.default.id}",
+					"payment_type":                    "PayAsYouGo",
+					"auto_publish_route_enabled":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cen_id":                                CHECKSET,
+						"transit_router_id":                     CHECKSET,
+						"transit_router_attachment_name":        name,
+						"transit_router_attachment_description": name,
+						"vpc_id":                                CHECKSET,
+						"zone_mappings.#":                       "1",
+						"dry_run":                               "false",
+						"resource_type":                         "VPC",
+						"route_table_association_enabled":       "false",
+						"route_table_propagation_enabled":       "false",
+						"vpc_owner_id":                          CHECKSET,
+						"payment_type":                          "PayAsYouGo",
+						"auto_publish_route_enabled":            "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_publish_route_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_publish_route_enabled": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
+			},
+		},
+	})
+}
+
 var AlicloudCenTransitRouterVpcAttachmentMap = map[string]string{
 	"cen_id":                                CHECKSET,
 	"dry_run":                               NOSET,
@@ -264,37 +345,75 @@ var AlicloudCenTransitRouterVpcAttachmentMap = map[string]string{
 
 func AlicloudCenTransitRouterVpcAttachmentBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {	
-	default = "%s"
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.ids.0
+	}
+
+	data "alicloud_vswitches" "default_master" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.ids.1
+	}
+
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+  		protection_level  = "REDUCED"
+	}
+
+	resource "alicloud_cen_transit_router" "default" {
+  		cen_id = alicloud_cen_instance.default.id
+	}
+`, name)
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
+func AlicloudCenTransitRouterVpcAttachmentBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
+	data "alicloud_account" "default" {
+	}
 
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.ids.0
-}
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
 
-data "alicloud_vswitches" "default_master" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.ids.1
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/12"
+	}
 
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = var.name
-  protection_level = "REDUCED"
-}
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
 
-resource "alicloud_cen_transit_router" "default" {
-	cen_id= alicloud_cen_instance.default.id
-}
-data "alicloud_account" "default" {}
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+	}
+
+	resource "alicloud_cen_transit_router" "default" {
+  		transit_router_name = var.name
+  		cen_id              = alicloud_cen_instance.default.id
+	}
 `, name)
 }
 
