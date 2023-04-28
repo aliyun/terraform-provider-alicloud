@@ -120,12 +120,13 @@ func resourceAlicloudResourceManagerResourceGroupCreate(d *schema.ResourceData, 
 
 	return resourceAlicloudResourceManagerResourceGroupRead(d, meta)
 }
+
 func resourceAlicloudResourceManagerResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcemanagerService := ResourcemanagerService{client}
 	object, err := resourcemanagerService.DescribeResourceManagerResourceGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_resource_manager_resource_group resourcemanagerService.DescribeResourceManagerResourceGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -156,6 +157,7 @@ func resourceAlicloudResourceManagerResourceGroupRead(d *schema.ResourceData, me
 	d.Set("status", object["Status"])
 	return nil
 }
+
 func resourceAlicloudResourceManagerResourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewResourcemanagerClient()
@@ -192,6 +194,7 @@ func resourceAlicloudResourceManagerResourceGroupUpdate(d *schema.ResourceData, 
 	}
 	return resourceAlicloudResourceManagerResourceGroupRead(d, meta)
 }
+
 func resourceAlicloudResourceManagerResourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteResourceGroup"
@@ -208,7 +211,7 @@ func resourceAlicloudResourceManagerResourceGroupDelete(d *schema.ResourceData, 
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"DeleteConflict.ResourceGroup.Resource"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
