@@ -829,13 +829,21 @@ data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
+	cidr_block = "172.16.0.0/16"
 }
+
+resource "alicloud_vswitch" "default" {
+	vswitch_name = var.name
+	cidr_block = "172.16.1.0/24"
+	vpc_id = alicloud_vpc.default.id
+	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+}
+
 resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  	name   = "${var.name}"
+	vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_security_group_rule" "default" {
   	type = "ingress"
