@@ -84,7 +84,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"monitoring_period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{5, 60, 300}),
+				ValidateFunc: validation.IntInSlice([]int{5, 10, 60, 300}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -523,10 +523,9 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"category": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "cluster"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"effective_time": {
 				Type:         schema.TypeString,
@@ -1563,20 +1562,18 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	payType := instance["PayType"]
 	if instance["PayType"] == "SERVERLESS" {
 		payType = "Serverless"
+		serverlessConfig := make([]map[string]interface{}, 0)
+		slc := instance["ServerlessConfig"].(map[string]interface{})
+		slcMaps := map[string]interface{}{
+			"max_capacity": slc["ScaleMax"],
+			"min_capacity": slc["ScaleMin"],
+			"auto_pause":   slc["AutoPause"],
+			"switch_force": slc["SwitchForce"],
+		}
+		serverlessConfig = append(serverlessConfig, slcMaps)
+		d.Set("serverless_config", serverlessConfig)
 	}
 	d.Set("instance_charge_type", payType)
-
-	serverlessConfig := make([]map[string]interface{}, 0)
-	slc := instance["ServerlessConfig"].(map[string]interface{})
-	slcMaps := map[string]interface{}{
-		"max_capacity": slc["ScaleMax"],
-		"min_capacity": slc["ScaleMin"],
-		"auto_pause":   slc["AutoPause"],
-		"switch_force": slc["SwitchForce"],
-	}
-	serverlessConfig = append(serverlessConfig, slcMaps)
-	d.Set("serverless_config", serverlessConfig)
-
 	d.Set("period", d.Get("period"))
 	d.Set("vswitch_id", instance["VSwitchId"])
 	// some instance class without connection string
