@@ -1,4 +1,5 @@
-## 1.204.0 (Unreleased)
+## 1.205.0 (Unreleased)
+## 1.204.0 (April 28, 2023)
 
 - **New Resource:** `resource_alicloud_config_remediation` ([#6100](https://github.com/aliyun/terraform-provider-alicloud/issues/6100))
 - **New Resource:** `alicloud_rds_db_instance_endpoint_address` ([#6090](https://github.com/aliyun/terraform-provider-alicloud/issues/6090))
@@ -13,12 +14,13 @@
 
 ENHANCEMENTS:
 
-- resource/alicloud_resource_manager_resource_group: Added retry stragety for error code DeleteConflict.ResourceGroup.Resource. ([#6109](https://github.com/aliyun/terraform-provider-alicloud/issues/6109))
-- resource/alicloud_cen_transit_router: Added retry stragety for error code IncorrectStatus.CenInstance. ([#6108](https://github.com/aliyun/terraform-provider-alicloud/issues/6108))
+- resource/alicloud_resource_manager_resource_group: Added retry strategy for error code DeleteConflict.ResourceGroup.Resource. ([#6109](https://github.com/aliyun/terraform-provider-alicloud/issues/6109))
+- resource/alicloud_cen_transit_router: Added retry strategy for error code IncorrectStatus.CenInstance. ([#6108](https://github.com/aliyun/terraform-provider-alicloud/issues/6108))
 - resource/alicloud_cen_transit_router_vpc_attachment: Added the field auto_publish_route_enabled. ([#6106](https://github.com/aliyun/terraform-provider-alicloud/issues/6106))
 - resource/alicloud_kvstore_instance: Engine version supports 7.0; Adds new attribute effective_time. ([#6104](https://github.com/aliyun/terraform-provider-alicloud/issues/6104))
 - ci: Supports to checking the test file. ([#6102](https://github.com/aliyun/terraform-provider-alicloud/issues/6102))
 - resource/alicloud_ecs_disk: Improves the deleting disk when it is PrePaid and setting DeleteWithInstance. ([#6099](https://github.com/aliyun/terraform-provider-alicloud/issues/6099))
+- resource/alicloud_polardb_cluster: polardb support cluster serverless ([#6098](https://github.com/aliyun/terraform-provider-alicloud/issues/6098))
 - resource/alicloud_emrv2_cluster: supported emr cluster data disk encrypted. ([#6097](https://github.com/aliyun/terraform-provider-alicloud/issues/6097))
 - ci: Improves the ci and cd feature. ([#6096](https://github.com/aliyun/terraform-provider-alicloud/issues/6096))
 - resource/alicloud_config_rule: Adds new attribute compliance,config_rule_arn,event_source etc. ([#6095](https://github.com/aliyun/terraform-provider-alicloud/issues/6095))
@@ -29,7 +31,7 @@ ENHANCEMENTS:
 - Revert "resource/alicloud_oss_bucket_object: Remvoes the server_side_encrypt on argument default value.". ([#6082](https://github.com/aliyun/terraform-provider-alicloud/issues/6082))
 - ci: Improves the integration using concourse ci. ([#6080](https://github.com/aliyun/terraform-provider-alicloud/issues/6080))
 - resource/alicloud_db_database : character_set are not case sensitive. ([#6008](https://github.com/aliyun/terraform-provider-alicloud/issues/6008))
-- resource/alicloud_cen_transit_router_vpc_attachment: Added retry stragety for error code. ([#5949](https://github.com/aliyun/terraform-provider-alicloud/issues/5949))
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry strategy for error code. ([#5949](https://github.com/aliyun/terraform-provider-alicloud/issues/5949))
 - datasource/alicloud_instances: Supports filter enable_details and sets its default to true. ([#6107](https://github.com/aliyun/terraform-provider-alicloud/issues/6107))
 
 BUG FIXES:
