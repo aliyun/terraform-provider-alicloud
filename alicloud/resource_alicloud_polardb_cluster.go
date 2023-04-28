@@ -279,6 +279,49 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 				Computed:     true,
 			},
+			"serverless_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"AgileServerless"}, false),
+				ForceNew:     true,
+			},
+			"scale_min": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validation.IntBetween(1, 31),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"scale_max": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validation.IntBetween(1, 32),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"scale_ro_num_min": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validation.IntBetween(0, 15),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"scale_ro_num_max": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     validation.IntBetween(0, 15),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"allow_shut_down": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringInSlice([]string{"true", "false"}, false),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"seconds_until_auto_pause": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     validation.IntBetween(300, 86400),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
 			"tags": tagsSchema(),
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -711,6 +754,68 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		d.SetPartial("deletion_lock")
 	}
+	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+		if w, ok := d.GetOk("db_version"); ok && w.(string) == "8.0" {
+			if !d.IsNewResource() && d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause") {
+				action := "ModifyDBClusterServerlessConf"
+				request := map[string]interface{}{
+					"DBClusterId": d.Id(),
+				}
+				if v, ok := d.GetOk("scale_min"); ok {
+					scaleMin := v.(int)
+					request["ScaleMin"] = strconv.Itoa(scaleMin)
+				}
+				if v, ok := d.GetOk("scale_max"); ok {
+					scaleMax := v.(int)
+					request["ScaleMax"] = strconv.Itoa(scaleMax)
+				}
+				if v, ok := d.GetOk("scale_ro_num_min"); ok {
+					scaleRoNumMin := v.(int)
+					request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
+				}
+				if v, ok := d.GetOk("scale_ro_num_max"); ok {
+					scaleRoNumMax := v.(int)
+					request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+				}
+				if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
+					request["AllowShutDown"] = v.(string)
+				}
+				if v, ok := d.GetOk("seconds_until_auto_pause"); ok {
+					secondsUntilAutoPause := v.(int)
+					request["SecondsUntilAutoPause"] = strconv.Itoa(secondsUntilAutoPause)
+				}
+
+				//retry
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				// wait cluster status change from ConfigSwitching to running
+				stateConf := BuildStateConf([]string{"ConfigSwitching", "Stopped", "STARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+				d.SetPartial("scale_min")
+				d.SetPartial("scale_max")
+				d.SetPartial("scale_ro_num_min")
+				d.SetPartial("scale_ro_num_max")
+				d.SetPartial("allow_shut_down")
+				d.SetPartial("seconds_until_auto_pause")
+			}
+		}
+	}
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -861,6 +966,29 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		resultStorageSpace, _ := clusterInfo["StorageSpace"].(json.Number).Int64()
 		var storageSpace = resultStorageSpace / 1024 / 1024 / 1024
 		d.Set("storage_space", storageSpace)
+	}
+	if clusterInfo["ServerlessType"] != nil {
+		d.Set("serverless_type", clusterInfo["ServerlessType"].(string))
+		serverlessInfo, err := polarDBService.DescribeDBClusterServerlessConfig(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		if scaleMin, err := strconv.Atoi(serverlessInfo["ScaleMin"].(string)); err == nil {
+			d.Set("scale_min", scaleMin)
+		}
+		if scaleMax, err := strconv.Atoi(serverlessInfo["ScaleMax"].(string)); err == nil {
+			d.Set("scale_max", scaleMax)
+		}
+		if scaleRoNumMin, err := strconv.Atoi(serverlessInfo["ScaleRoNumMin"].(string)); err == nil {
+			d.Set("scale_ro_num_min", scaleRoNumMin)
+		}
+		if scaleRoNumMax, err := strconv.Atoi(serverlessInfo["ScaleRoNumMax"].(string)); err == nil {
+			d.Set("scale_ro_num_max", scaleRoNumMax)
+		}
+		d.Set("allow_shut_down", serverlessInfo["AllowShutDown"].(string))
+		if secondsUntilAutoPause, err := strconv.Atoi(serverlessInfo["SecondsUntilAutoPause"].(string)); err == nil {
+			d.Set("seconds_until_auto_pause", secondsUntilAutoPause)
+		}
 	}
 	return nil
 }
@@ -1050,6 +1178,29 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	}
 
 	request["TDEStatus"] = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
+
+	if v, ok := d.GetOk("serverless_type"); ok && v.(string) != "" {
+		request["ServerlessType"] = d.Get("serverless_type").(string)
+	}
+	if v, ok := d.GetOk("scale_min"); ok {
+		scaleMin := v.(int)
+		request["ScaleMin"] = strconv.Itoa(scaleMin)
+	}
+	if v, ok := d.GetOk("scale_max"); ok {
+		scaleMax := v.(int)
+		request["ScaleMax"] = strconv.Itoa(scaleMax)
+	}
+	if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
+		request["AllowShutDown"] = d.Get("allow_shut_down").(string)
+	}
+	if v, ok := d.GetOk("scale_ro_num_min"); ok {
+		scaleRoNumMin := v.(int)
+		request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
+	}
+	if v, ok := d.GetOk("scale_ro_num_max"); ok {
+		scaleRoNumMax := v.(int)
+		request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+	}
 
 	return request, nil
 }

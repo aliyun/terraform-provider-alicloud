@@ -337,6 +337,13 @@ func polardbTDEAndEnabledDiffSuppressFunc(k, old, new string, d *schema.Resource
 	return false
 }
 
+func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("serverless_type").(string) == "AgileServerless" {
+		return false
+	}
+	return true
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false

@@ -784,6 +784,7 @@ func TestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.SENormalPolarDBSupportRegions)
 		},
 
 		// module name
@@ -820,6 +821,138 @@ func TestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"modify_type", "hot_standby_cluster"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudPolarDBClusterServerless(t *testing.T) {
+	var v map[string]interface{}
+	name := "tf-testAccPolarDBClusterServerless"
+	resourceId := "alicloud_polardb_cluster.default"
+	var basicMap = map[string]string{
+		"description":   CHECKSET,
+		"db_node_class": CHECKSET,
+		"vswitch_id":    CHECKSET,
+		"db_type":       CHECKSET,
+		"db_version":    CHECKSET,
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeDBClusterAttribute")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterServerlessConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_type":           "MySQL",
+					"db_version":        "8.0",
+					"pay_type":          "PostPaid",
+					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.3.db_node_class}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"description":       "${var.name}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"creation_category": "Normal",
+					"serverless_type":   "AgileServerless",
+					"scale_min":         "1",
+					"scale_max":         "2",
+					"scale_ro_num_min":  "1",
+					"scale_ro_num_max":  "2",
+					"allow_shut_down":   "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"serverless_type":   "AgileServerless",
+						"scale_min":         "1",
+						"scale_max":         "2",
+						"scale_ro_num_min":  "1",
+						"scale_ro_num_max":  "2",
+						"allow_shut_down":   "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"modify_type"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scale_max": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_max": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scale_min": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_min": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scale_ro_num_max": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_ro_num_max": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scale_ro_num_min": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_ro_num_min": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_shut_down": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_shut_down": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"seconds_until_auto_pause": "3660",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"seconds_until_auto_pause": "3660",
+					}),
+				),
 			},
 		},
 	})
@@ -1000,6 +1133,41 @@ func resourcePolarDBClusterSENormalConfigDependence(name string) string {
 		status = "OK"
 	}
 
+	resource "alicloud_security_group" "default" {
+		count = 2
+		name   = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+`, name)
+}
+
+func resourcePolarDBClusterServerlessConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+	
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	
+	data "alicloud_polardb_node_classes" "this" {
+		db_type    = "MySQL"
+		db_version = "8.0"
+		pay_type   = "PostPaid"
+		category   = "Normal"
+	}
+	
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+	
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
