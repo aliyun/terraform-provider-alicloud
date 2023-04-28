@@ -1269,7 +1269,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 						{
 							"name":              "${var.name}-6",
 							"size":              "20",
-							"category":          "cloud_essd",
+							"category":          "cloud_ssd",
 							"performance_level": "PL1",
 						},
 					},
@@ -1332,7 +1332,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 						"data_disks.4.description":             name + " description",
 						"data_disks.4.performance_level":       "",
 						"data_disks.5.name":                    name + "-6",
-						"data_disks.5.category":                "cloud_essd",
+						"data_disks.5.category":                "cloud_ssd",
 						"data_disks.5.encrypted":               "false",
 						"data_disks.5.kms_key_id":              "",
 						"data_disks.5.snapshot_id":             "",
@@ -1468,7 +1468,7 @@ func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":                 "${alicloud_vswitch.default.id}",
 					"image_id":                   "${data.alicloud_images.default.images.0.id}",
 					"availability_zone":          "${data.alicloud_instance_types.special.instance_types.0.availability_zones.0}",
 					"instance_type":              "${data.alicloud_instance_types.special.instance_types.0.id}",

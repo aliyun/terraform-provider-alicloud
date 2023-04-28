@@ -39,7 +39,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional) ID of the VPC linked to the instances.
 * `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
 * `availability_zone` - (Optional) Availability zone where instances are located.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The Id of resource group which the instance belongs.
+* `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The ID of resource group which the instance belongs.
 * `ram_role_name` - (Optional, ForceNew, Available in 1.69.0+) The RAM role name which the instance attaches.
 * `instance_name` - (Optional, ForceNew, Available in 1.203.0+) The name of the instance. Fuzzy search with the asterisk (*) wildcard characters is supported.
 * `tags` - (Optional) A map of tags assigned to the ECS instances. It must be in the format:
@@ -51,6 +51,7 @@ The following arguments are supported:
     }
   }
   ```
+* `enable_details` - (Optional, Available in 1.204.0+) Default to `true`. If false, the attributes `ram_role_name` and `disk_device_mappings` will not be fetched and output.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

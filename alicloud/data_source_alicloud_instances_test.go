@@ -54,22 +54,22 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 
 	vpcIdConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"vpc_id": `"${data.alicloud_vpcs.default.ids.0}"`,
+			"vpc_id": `"${alicloud_vpc.default.id}"`,
 			"ids":    `[ "${alicloud_instance.default.id}" ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"vpc_id": `"${data.alicloud_vpcs.default.ids.0}_fake"`,
+			"vpc_id": `"${alicloud_vpc.default.id}_fake"`,
 			"ids":    `[ "${alicloud_instance.default.id}" ]`,
 		}),
 	}
 
 	vSwitchConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"vswitch_id": `"${data.alicloud_vswitches.default.ids.0}"`,
+			"vswitch_id": `"${alicloud_vswitch.default.id}"`,
 			"ids":        `[ "${alicloud_instance.default.id}" ]`,
 		}),
 		fakeConfig: testAccCheckAlicloudInstancesDataSourceConfig(rand, map[string]string{
-			"vswitch_id": `"${data.alicloud_vswitches.default.ids.0}_fake"`,
+			"vswitch_id": `"${alicloud_vswitch.default.id}_fake"`,
 			"ids":        `[ "${alicloud_instance.default.id}" ]`,
 		}),
 	}
@@ -151,8 +151,8 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
 			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
 			"status":            `"Running"`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
-			"vswitch_id":        `"${data.alicloud_vswitches.default.ids.0}"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 			"page_number":       `1`,
@@ -172,8 +172,8 @@ func TestAccAlicloudECSInstancesDataSourceBasic(t *testing.T) {
 			"name_regex":        fmt.Sprintf(`"tf-testAccCheckAlicloudInstancesDataSource%d"`, rand),
 			"image_id":          `"${data.alicloud_images.default.images.0.id}"`,
 			"status":            `"Running"`,
-			"vpc_id":            `"${data.alicloud_vpcs.default.ids.0}"`,
-			"vswitch_id":        `"${data.alicloud_vswitches.default.ids.0}"`,
+			"vpc_id":            `"${alicloud_vpc.default.id}"`,
+			"vswitch_id":        `"${alicloud_vswitch.default.id}"`,
 			"availability_zone": `"${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"`,
 			"resource_group_id": `"${alicloud_instance.default.resource_group_id}"`,
 			"page_number":       `2`,
@@ -213,8 +213,8 @@ func testAccCheckAlicloudInstancesDataSourceConfig(rand int, attrMap map[string]
 
 	resource "alicloud_instance" "default" {
 		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-		vswitch_id = data.alicloud_vswitches.default.ids.0
-		private_ip = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 101)
+		vswitch_id = alicloud_vswitch.default.id
+		private_ip = cidrhost(alicloud_vswitch.default.cidr_block, 101)
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
@@ -293,8 +293,8 @@ func testAccCheckAlicloudInstancesDataSourceConfigWithTag(rand int, attrMap map[
 
 	resource "alicloud_instance" "default" {
 		availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
-		vswitch_id = data.alicloud_vswitches.default.ids.0
-		private_ip = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)
+		vswitch_id = alicloud_vswitch.default.id
+		private_ip = cidrhost(alicloud_vswitch.default.cidr_block, 100)
 		image_id = "${data.alicloud_images.default.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		instance_name = "${var.name}"
