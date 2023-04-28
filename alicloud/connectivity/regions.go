@@ -250,3 +250,4 @@ var EfloSupportRegions = []Region{WuLanChaBu}
 var ActiontrailGlobalEventsStorageRegionSupportRegions = []Region{Hangzhou, APSouthEast1}
 var OceanBaseSupportRegions = []Region{Hangzhou}
 var ChatbotSupportRegions = []Region{Shanghai}
+var SENormalPolarDBSupportRegions = []Region{Beijing, Shanghai, Shenzhen, Zhangjiakou, APSouthEast1}

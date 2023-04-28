@@ -69,7 +69,7 @@ The following arguments are supported:
 * `db_type` - (Required,ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `DBVersion`.
 * `db_node_class` - (Required) The db_node_class of cluster node.
--> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed.
+-> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. From version 1.204.0, If you need to create a Serverless cluster, `db_node_class` can be set to `polar. mysql. sl. small`.
 * `modify_type` - (Optional, Available in 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
 * `db_node_count` - (Optional, Available in 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
 -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
@@ -118,9 +118,23 @@ The following arguments are supported:
 -> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
 * `vpc_id` - (Optional, ForceNew, Computed, Available in v1.185.0+) The id of the VPC.
 * `storage_type` - (Optional, ForceNew, Available in v1.203.0+) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`. The standard version only supports MySQL.
-  -> **NOTE:** Serverless cluster does not support this parameter.
+-> **NOTE:** Serverless cluster does not support this parameter.
 * `storage_space` - (Optional, ForceNew, Available in v1.203.0+) Storage space charged by space (monthly package). Unit: GB.
 * `hot_standby_cluster` - (Optional, Computed, Available in v1.203.0+) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
+* `serverless_type` - (Optional, ForceNew, Available in v1.204.0+) The type of the serverless cluster. Set the value to AgileServerless.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `scale_min` - (Optional, Available in v1.204.0+) The minimum number of PCUs per node for scaling. Valid values: 1 PCU to 31 PCUs.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `scale_max` - (Optional, Available in v1.204.0+) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `scale_ro_num_min` - (Optional, Available in v1.204.0+) The minimum number of read-only nodes for scaling. Valid values: 0 to 15.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `scale_ro_num_max` - (Optional, Available in v1.204.0+) The maximum number of read-only nodes for scaling. Valid values: 0 to 15.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `allow_shut_down` - (Optional, Available in v1.204.0+) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`.
+-> **NOTE:** This parameter is valid only for serverless clusters.
+* `seconds_until_auto_pause` - (Optional, Computed, Available in v1.204.0+) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds.
+-> **NOTE:** This parameter is valid only for serverless clusters.
 
 ### Block db_cluster_ip_array
 
