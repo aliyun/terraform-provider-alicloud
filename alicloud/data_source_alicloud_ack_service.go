@@ -22,6 +22,7 @@ func dataSourceAlicloudAckService() *schema.Resource {
 				Optional:     true,
 				Default:      "Off",
 			},
+
 			"type": {
 				Type:         schema.TypeString,
 				ValidateFunc: validation.StringInSlice([]string{"propayasgo", "edgepayasgo", "gspayasgo"}, false),
