@@ -13,7 +13,6 @@ func dataSourceAlicloudAccount() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			// Computed values
-
 			"id": {
 				Type:     schema.TypeString,
 				Computed: true,
