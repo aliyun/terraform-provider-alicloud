@@ -190,7 +190,7 @@ func _fetchRunRawLog(ossBucketRegion, ossBucketName, ossObjectPath, accessKeyId,
 		if er != nil && fmt.Sprint(er) != "EOF" {
 			log.Println("[ERROR] reading run log response failed:", err)
 		}
-		if offset >= lastOffset {
+		if offset > lastOffset {
 			fmt.Println(string(runLogContent[lastOffset:offset]))
 			lastOffset = offset
 		}
