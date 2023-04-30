@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"log"
 	"os"
 	"strings"
@@ -138,6 +139,65 @@ func _invokeFunction(client *fc_open20210406.Client, serviceName, functionName, 
 	}
 	return nil
 }
+
+func _fetchRunRawLog(ossBucketRegion, ossBucketName, ossObjectPath, accessKeyId, accessKeySecret string) (_err error) {
+
+	endpoint := fmt.Sprintf("https://oss-%s.aliyuncs.com", ossBucketRegion)
+	var options []oss.ClientOption
+	client, err := oss.New(endpoint, accessKeyId, accessKeySecret, options...)
+	if err != nil {
+		return err
+	}
+	bucket, err := client.Bucket(ossBucketName)
+	if err != nil {
+		return err
+	}
+	targetObjectPath := "terraform.run.raw.log"
+	sourceObjectPath := ossObjectPath + "/" + targetObjectPath
+
+	lastOffset := 0
+	logFileIsExisted := false
+	for true {
+		if !logFileIsExisted {
+			if ok, err := bucket.IsObjectExist(sourceObjectPath); err != nil {
+				fmt.Println("\033[33m[ERROR]\033[0m checking terraform run raw log whether is existed failed. Error:", err, ". Retry...")
+				time.Sleep(5 * time.Second)
+				continue
+			} else if !ok {
+				fmt.Println("waiting for terraform run raw log...")
+				time.Sleep(10 * time.Second)
+				continue
+			} else {
+				logFileIsExisted = true
+			}
+		}
+		err = bucket.GetObjectToFile(sourceObjectPath, targetObjectPath)
+		if err != nil {
+			fmt.Println("\033[33m[ERROR]\033[0m getting terraform run raw log failed. Error:", err, ". Retry...")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		runtimeLogFile, err := os.Open(targetObjectPath)
+		if err != nil {
+			fmt.Println("reading terraform run raw log file failed:", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		defer runtimeLogFile.Close()
+
+		runLogContent := make([]byte, 100000000)
+		offset, er := runtimeLogFile.Read(runLogContent)
+		if er != nil && fmt.Sprint(er) != "EOF" {
+			log.Println("[ERROR] reading run log response failed:", err)
+		}
+		if offset >= lastOffset {
+			fmt.Println(string(runLogContent[lastOffset:offset]))
+			lastOffset = offset
+		}
+	}
+	return nil
+}
+
 func main() {
 	accessKey := os.Args[1]
 	secretKey := os.Args[2]
@@ -155,6 +215,7 @@ func main() {
 	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
 	diffFuncNames := strings.Trim(strings.TrimSpace(os.Args[9]), ";")
 	functionName := ""
+	log.Println("oss object path:", ossObjectPath)
 	log.Println("trace id:", invocationId)
 	if exist, fcName, err := _checkInvocationIsExist(client, serviceName, invocationId); err != nil {
 		log.Printf("[ERROR] checking invocation %s failed. Error: %v", invocationId, err)
@@ -171,8 +232,8 @@ func main() {
 			break
 		}
 	}
-
 	log.Println("using function", functionName)
+	go _fetchRunRawLog(ossBucketRegion, ossBucketName, ossObjectPath, accessKey, secretKey)
 	if err := _invokeFunction(client, serviceName, functionName, invocationId, ossBucketRegion, ossBucketName, ossObjectPath, diffFuncNames); err != nil {
 		log.Println(err)
 		os.Exit(1)

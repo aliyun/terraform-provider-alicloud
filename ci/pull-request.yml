@@ -22,7 +22,11 @@ jobs:
   plan:
   - in_parallel:
     - get: terraform-provider-alicloud
-      resource: terraform-provider-alicloud
+      resource: github-pr-comment-ping
+      trigger: true
+      version: every
+      params:
+        source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
     - get: trigger
@@ -31,11 +35,6 @@ jobs:
   - <<: *run
 
 resources:
-- name: terraform-provider-alicloud
-  type: git
-  source:
-    uri: https://github.com/aliyun/terraform-provider-alicloud.git
-    branch: master
 
 - name: aliyun-cli
   type: s3
@@ -54,3 +53,19 @@ resources:
     stop: 10:00 PM
     days: [Monday, Tuesday, Wednesday, Thursday, Friday]
     location: {{time_location}}
+
+- name: github-pr-comment-ping
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["approved", "commented"]
+    when: latest
+    comments: ["^approved$"]
+
+
+resource_types:
+  - name: github-pr-comment-resource
+    type: docker-image
+    source:
+      repository: ndrjng/concourse-github-pr-comment-resource
