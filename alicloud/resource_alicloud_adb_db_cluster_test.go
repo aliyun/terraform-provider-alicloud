@@ -153,11 +153,6 @@ func TestAccAlicloudADBDbCluster_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_node_class": "C32",
 				}),
@@ -269,6 +264,11 @@ func TestAccAlicloudADBDbCluster_basic0(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -311,11 +311,6 @@ func TestAccAlicloudADBDbCluster_flexible8C(t *testing.T) {
 						"vswitch_id":          CHECKSET,
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 			//// API does not support to updating the compute_resource
 			//{
@@ -421,6 +416,11 @@ func TestAccAlicloudADBDbCluster_flexible8C(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -464,11 +464,6 @@ func TestAccAlicloudADBDbCluster_flexible32C(t *testing.T) {
 						"db_node_class":       "E32",
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -572,6 +567,11 @@ func TestAccAlicloudADBDbCluster_flexible32C(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -593,7 +593,6 @@ func TestAccAlicloudADBDbCluster_modifyPayType(t *testing.T) {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.AdbReserverUnSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -669,7 +668,6 @@ func TestAccAlicloudADBDbCluster_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -706,6 +704,71 @@ func TestAccAlicloudADBDbCluster_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudADBDbCluster_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_adb_db_cluster.default"
+	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterMap2)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbDbClusterBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_category": "MixedStorage",
+					"description":         "${var.name}",
+					"mode":                "flexible",
+					"compute_resource":    "32Core128GBNEW",
+					"vswitch_id":          "${local.vswitch_id}",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"elastic_io_resource": "1",
+					//"elastic_io_resource_size": "12Core96GB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_category": "MixedStorage",
+						"description":         name,
+						"mode":                "flexible",
+						"compute_resource":    "32Core128GBNEW",
+						"vswitch_id":          CHECKSET,
+						"vpc_id":              CHECKSET,
+						"db_node_class":       "E32",
+						"elastic_io_resource": "1",
+						//"elastic_io_resource_size": "12Core96GB",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"elastic_io_resource_size": "8Core64GB",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"elastic_io_resource_size": "8Core64GB",
+			//		}),
+			//	),
+			//},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudAdbDbClusterMap0 = map[string]string{
 	"auto_renew_period":   NOSET,
 	"compute_resource":    "",
@@ -725,18 +788,6 @@ var AlicloudAdbDbClusterMap0 = map[string]string{
 	"status":              "Running",
 	"tags.%":              "0",
 	"zone_id":             CHECKSET,
-}
-
-func AlicloudAdbDbClusterBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "terraformci"
-}
-%s
-`, name, AdbCommonTestCase)
 }
 
 var AlicloudAdbDbClusterMap1 = map[string]string{
@@ -761,16 +812,31 @@ var AlicloudAdbDbClusterMap1 = map[string]string{
 	"tags.%":              "0",
 	"zone_id":             CHECKSET,
 }
+
 var AlicloudAdbDbClusterMap2 = map[string]string{}
+
+func AlicloudAdbDbClusterBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		name_regex = "terraformci"
+	}
+	%s
+`, name, AdbCommonTestCase)
+}
 
 func AlicloudAdbDbClusterBasicDependence1(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "default"
-}
-%s
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		name_regex = "default"
+	}
+	%s
 `, name, AdbCommonTestCase)
 }
