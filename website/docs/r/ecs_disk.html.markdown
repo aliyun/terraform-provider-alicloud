@@ -62,7 +62,7 @@ The following arguments are supported:
     * After you specify the instance ID, the specified `resource_group_id`, `tags`, and `kms_key_id` parameters are ignored.
     * One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
 * `kms_key_id` - (Optional, ForceNew) The ID of the KMS key corresponding to the data disk, The specified parameter `Encrypted` must be `true` when KmsKeyId is not empty.
-* `name` - (Optional, Computed, Deprecated in v1.122.0+) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
+* `name` - (Optional, Computed, Deprecated from v1.122.0+) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
 * `payment_type` - (Optional) Payment method for disk. Valid values: `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`. If you want to change the disk payment type, the `instance_id` is required.
 * `performance_level` - (Optional) Specifies the performance level of an ESSD when you create the ESSD. Valid values:                                                       
     * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.

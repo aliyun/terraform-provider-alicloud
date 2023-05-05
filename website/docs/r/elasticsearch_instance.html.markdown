@@ -75,8 +75,8 @@ The following arguments are supported:
 * `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 
   - key: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:". It cannot contain "http://" and "https://". It cannot be a null string.
   - value: It can be up to 128 characters in length. It cannot contain "http://" and "https://". It can be a null string.
-* `resource_group_id` - (Optional, ForceNew, Computed Available in v1.86.0+) The Id of resource group which the Elasticsearch instance belongs.
-* `setting_config` - (Optional, Computed Available in v1.125.0+) The YML configuration of the instance.[Detailed introduction](https://www.alibabacloud.com/help/doc-detail/61336.html). 
+* `resource_group_id` - (Optional, ForceNew, Computed, Available in v1.86.0+) The Id of resource group which the Elasticsearch instance belongs.
+* `setting_config` - (Optional, Computed, Available in v1.125.0+) The YML configuration of the instance.[Detailed introduction](https://www.alibabacloud.com/help/doc-detail/61336.html). 
 
 ### Timeouts
 

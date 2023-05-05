@@ -37,10 +37,10 @@ You can resume managing the subscription bandwidth package via the AlibabaCloud 
 The following arguments are supported:
 
 * `bandwidth` - (Required) The bandwidth in Mbps of the bandwidth package. Cannot be less than 2Mbps.
-* `geographic_region_ids` - (Required, Deprecated in 1.98.0+) Field `geographic_region_ids` has been deprecated from version 1.97.0. Use `geographic_region_a_id` and `geographic_region_b_id` instead.
-* `name` - (Optional, Deprecated in 1.98.0+) Field `name` has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
+* `geographic_region_ids` - (Required, Deprecated from 1.98.0+) Field `geographic_region_ids` has been deprecated from version 1.97.0. Use `geographic_region_a_id` and `geographic_region_b_id` instead.
+* `name` - (Optional, Deprecated from 1.98.0+) Field `name` has been deprecated from version 1.97.0. Use `cen_bandwidth_package_name` and instead.
 * `description` - (Optional) The description of the bandwidth package. Default to null.
-* `charge_type` - (Optional, Deprecated in 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
+* `charge_type` - (Optional, Deprecated from 1.98.0+) Field `charge_type` has been deprecated from version 1.97.0. Use `payment_type` and instead.
 * `period` - (Optional) The purchase period in month. Valid value: `1`, `2`, `3`, `6`, `12`.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 * `geographic_region_a_id` - (Required, ForceNew, Available in 1.98.0+) The area A to which the network instance belongs. Valid values: `China` | `North-America` | `Asia-Pacific` | `Europe` | `Australia`.

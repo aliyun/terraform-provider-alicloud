@@ -87,10 +87,10 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `modification_protection_reason` - (Optional) The reason of modification protection. It's effective when `modification_protection_status` is `ConsoleProtection`.
 * `modification_protection_status` - (Optional) The status of modification protection. Valid values: `ConsoleProtection` and `NonProtection`. Default value is `NonProtection`.
 * `status` - (Optional) The status of slb load balancer. Valid values: `active` and `inactice`. The system default value is `active`.
-* `name` - (Optional, Deprecated form v1.123.1) Field `name` has been deprecated from provider version 1.123.1 New field `load_balancer_name` instead.
+* `name` - (Optional, Deprecated from v1.123.1) Field `name` has been deprecated from provider version 1.123.1 New field `load_balancer_name` instead.
 * `instance_charge_type` - (Optional, V1.193.0+) Support `PayBySpec` (default) and `PayByCLCU`, This parameter takes effect when the value of **payment_type** (instance payment mode) is **PayAsYouGo** (pay-as-you-go).
-* `specification` - (Optional, Deprecated form v1.123.1) Field `specification` has been deprecated from provider version 1.123.1 New field `load_balancer_spec` instead.
-* `internet` - (Optional, Deprecated form v1.124.0) Field `internet` has been deprecated from provider version 1.124.0 New field `address_type` instead.
+* `specification` - (Optional, Deprecated from v1.123.1) Field `specification` has been deprecated from provider version 1.123.1 New field `load_balancer_spec` instead.
+* `internet` - (Optional, Deprecated from v1.124.0) Field `internet` has been deprecated from provider version 1.124.0 New field `address_type` instead.
 
 -> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
 

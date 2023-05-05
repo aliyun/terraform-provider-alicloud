@@ -43,7 +43,7 @@ The following arguments are supported:
 
 * `key_file` - (Optional, ForceNew) The key file.
 * `key_pair_name` - (Optional, ForceNew) The key pair's name. It is the only in one Alicloud account, the key pair's name. must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `key_name` - (Optional, ForceNew, Deprecated in v1.121.0+) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
+* `key_name` - (Optional, ForceNew, Deprecated from v1.121.0+) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
 * `key_name_prefix` - (Optional, ForceNew) The key pair name's prefix. It is conflict with `key_pair_name`. If it is specified, terraform will using it to build the only key name.
 * `public_key` - (Optional) You can import an existing public key and using Alicloud key pair to manage it. If this parameter is specified, `resource_group_id` is the key pair belongs.
 * `resource_group_id` - (Optional) The Id of resource group which the key pair belongs.

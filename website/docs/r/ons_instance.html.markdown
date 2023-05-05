@@ -33,7 +33,7 @@ resource "alicloud_ons_instance" "example" {
 The following arguments are supported:
 
 
-* `name` - (Optional, Deprecated in v1.97.0+) Replaced by `instance_name` after version 1.97.0.
+* `name` - (Optional, Deprecated from v1.97.0+) Replaced by `instance_name` after version 1.97.0.
 * `instance_name` - (Optional, Available in v1.97.0+) Two instances on a single account in the same region cannot have the same name. The length must be 3 to 64 characters. Chinese characters, English letters digits and hyphen are allowed.
 * `remark` - (Optional) This attribute is a concise description of instance. The length cannot exceed 128.
 * `tags` - (Optional, Available in v1.97.0+) A mapping of tags to assign to the resource.

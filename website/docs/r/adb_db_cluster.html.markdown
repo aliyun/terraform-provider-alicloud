@@ -71,7 +71,7 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when `payment_type` is `Subscription`. Valid values: `1`, `2`, `3`, `6`, `12`, `24`, `36`. Default to `1`.
 * `compute_resource` - (Optional) The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources. For more information, see [ComputeResource](https://www.alibabacloud.com/help/en/doc-detail/144851.htm)
 * `db_cluster_category` - (Required) The db cluster category. Valid values: `Basic`, `Cluster`, `MixedStorage`.
-* `db_cluster_class` - (Deprecated) It duplicates with attribute db_node_class and is deprecated from 1.121.2.
+* `db_cluster_class` - (Deprecated from v1.121.2+) It duplicates with attribute db_node_class and is deprecated from 1.121.2.
 * `db_cluster_version` - (Optional, ForceNew) The db cluster version. Value options: `3.0`, Default to `3.0`.
 * `db_node_class` - (Optional, Computed) The db node class. For more information, see [DBClusterClass](https://help.aliyun.com/document_detail/190519.html)
 * `db_node_count` - (Optional) The db node count.

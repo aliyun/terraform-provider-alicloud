@@ -98,7 +98,7 @@ You can resume managing the subscription nat gateway via the AlibabaCloud Consol
 The following arguments are supported:
 
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-* `spec` - (Deprecated, Remove from v1.121.0) It has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.
+* `spec` - (Deprecated from 1.7.1, Remove from v1.121.0) It has been deprecated from provider version 1.7.1, and new field 'specification' can replace it.
 * `specification` - (Optional, Computed) The specification of the nat gateway. Valid values are `Small`, `Middle` and `Large`. Effective when `internet_charge_type` is `PayBySpec` and `network_type` is `internet`. Details refer to [Nat Gateway Specification](https://help.aliyun.com/document_detail/203500.html).
 * `name` - (Optional,  Deprecated from v1.121.0+) Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.
 * `nat_gateway_name` - (Optional, Available in 1.121.0+) Name of the nat gateway. The value can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://. Defaults to null.

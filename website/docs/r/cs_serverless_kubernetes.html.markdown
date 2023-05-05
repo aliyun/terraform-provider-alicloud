@@ -110,7 +110,7 @@ The following arguments are supported:
 * `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
 * `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
-* `kube_config` - (Optional, Deprecated in 1.187.0+) The path of kube config, like `~/.kube/config`.
+* `kube_config` - (Optional, Deprecated from 1.187.0+) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`

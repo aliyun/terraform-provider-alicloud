@@ -115,12 +115,12 @@ The following arguments are supported:
 * `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
 * `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) The List of the VPC:
     * `vpc_id` - (Required) The Id of the vpc.
-    * `region_id` - (Option) The region of the vpc. If not set, the current region will instead of.
+    * `region_id` - (Optional) The region of the vpc. If not set, the current region will instead of.
     
     Recommend to use `vpcs`.
 
-* `lang` - (Optional, ForceNew,Available in 1.62.1+) The language of code.
-* `user_client_ip` - (Optional, ForceNew Available in 1.62.1+) The user custom IP address.
+* `lang` - (Optional, ForceNew, Available in 1.62.1+) The language of code.
+* `user_client_ip` - (Optional, ForceNew, Available in 1.62.1+) The user custom IP address.
 
 ### Timeouts
 

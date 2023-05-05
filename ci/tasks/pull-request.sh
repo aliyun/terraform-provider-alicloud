@@ -37,7 +37,7 @@ export PATH="/usr/local/gh_2.27.0_linux_amd64/bin:$PATH"
 gh version
 
 cd $repo
-echo -e "\n git log -n 2"
+echo -e "\n$ git log -n 2"
 git log -n 2
 prNum=${pr_id}
 #    if [[ $(gh pr diff ${prNum} --name-only | grep "^alicloud/") -lt 1 ]]; then

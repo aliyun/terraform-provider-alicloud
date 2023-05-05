@@ -374,7 +374,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
    - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
    
    See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
-* `upgrade_db_instance_kernel_version` - (Deprecated in v1.198.0+)  Whether to upgrade a minor version of the kernel. Valid values:
+* `upgrade_db_instance_kernel_version` - (Deprecated from v1.198.0+)  Whether to upgrade a minor version of the kernel. Valid values:
     - true: upgrade
     - false: not to upgrade
 * `upgrade_time` - (Optional, Available in 1.126.0+) The method to update the minor engine version. Default value: Immediate. It is valid only when `target_minor_version` is changed. Valid values:

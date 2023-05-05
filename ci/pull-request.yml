@@ -1,7 +1,8 @@
 groups:
   - name: all
     jobs:
-      - pull-request-integration-test
+      - pull-request-integration-test-approve
+      - pull-request-integration-test-comment
 
 shared:
   - &run
@@ -18,21 +19,31 @@ shared:
       GITHUB_TOKEN: {{github_token}}
 
 jobs:
-- name: pull-request-integration-test
+- name: pull-request-integration-test-approve
   plan:
   - in_parallel:
     - get: terraform-provider-alicloud
-      resource: github-pr-comment-ping
+      resource: github-pr-approve
       trigger: true
       version: every
       params:
         source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
-    - get: trigger
-      trigger: true
-      resource: duration
   - <<: *run
+
+- name: pull-request-integration-test-comment
+  plan:
+    - in_parallel:
+        - get: terraform-provider-alicloud
+          resource: github-pr-comment
+          trigger: true
+          version: every
+          params:
+            source_path: .
+        - get: aliyun-cli
+          resource: aliyun-cli
+    - <<: *run
 
 resources:
 
@@ -46,23 +57,23 @@ resources:
     region_name: {{aliyun_cli_region}}
     endpoint: oss-((aliyun_cli_region)).aliyuncs.com
 
-- name: duration
-  type: time
-  source:
-    start: 09:00 AM
-    stop: 10:00 PM
-    days: [Monday, Tuesday, Wednesday, Thursday, Friday]
-    location: {{time_location}}
-
-- name: github-pr-comment-ping
+- name: github-pr-approve
   type: github-pr-comment-resource
   source:
     repository: aliyun/terraform-provider-alicloud
     access_token: {{github_token}}
-    review_states: ["approved", "commented"]
+    review_states: ["approved"]
+    when: latest
+
+- name: github-pr-comment
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["commented"]
     when: latest
     comments: ["^approved$"]
-
+    commenter_association: ["owner"]
 
 resource_types:
   - name: github-pr-comment-resource

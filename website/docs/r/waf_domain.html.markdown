@@ -42,7 +42,7 @@ The following arguments are supported:
 
 * `cluster_type` - (Optional) The type of the WAF cluster. Valid values: `PhysicalCluster` and `VirtualCluster`. Default to `PhysicalCluster`.
 * `connection_time` - (Optional) The connection timeout for WAF exclusive clusters. Unit: seconds.
-* `domain` - (Optional, ForceNew, Deprecated in v1.94.0+)  Field `domain` has been deprecated from version 1.94.0. Use `domain_name` instead.
+* `domain` - (Optional, ForceNew, Deprecated from v1.94.0+)  Field `domain` has been deprecated from version 1.94.0. Use `domain_name` instead.
 * `domain_name` - (Optional, ForceNew, Available in v1.94.0+) The domain that you want to add to WAF. The `domain_name` is required when the value of the `domain`  is Empty.
 * `http2_port` - (Optional) List of the HTTP 2.0 ports.
 * `http_port` - (Optional) List of the HTTP ports.
