@@ -47,7 +47,7 @@ The following arguments are supported:
 * `period_unit` - (Optional, ForceNew) The unit of the validity period of the reserved instance. Valid value: `Month`, `Year`. Default value: `Year`. **NOTE:** From version 1.183.0, `period_unit` can be set to `Month`.
 * `resource_group_id` - (Optional, ForceNew) Resource group ID.
 * `description` - (Optional) Description of the RI. 2 to 256 English or Chinese characters. It cannot start with `http://` or `https://`.
-* `name` - (Optional, Computed, Deprecated in v1.194.0+) Field `name` has been deprecated from provider version 1.194.0. New field `reserved_instance_name` instead.
+* `name` - (Optional, Computed, Deprecated from v1.194.0+) Field `name` has been deprecated from provider version 1.194.0. New field `reserved_instance_name` instead.
 * `platform` - (Optional, ForceNew) The operating system type of the image used by the instance. Optional values: `Windows`, `Linux`. Default is `Linux`.
 * `reserved_instance_name` - (Optional, Computed, Available in v1.194.0+)  Name of the RI. The name must be a string of 2 to 128 characters in length and can contain letters, numbers, colons (:), underscores (_), and hyphens. It must start with a letter. It cannot start with http:// or https://.
 * `renewal_status` - (Optional, Computed, Available in v1.194.0+) Automatic renewal status. Valid values: `AutoRenewal`,`Normal`.

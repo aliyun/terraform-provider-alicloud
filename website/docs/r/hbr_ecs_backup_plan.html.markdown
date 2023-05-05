@@ -72,7 +72,7 @@ The following arguments are support:
 * `path` - (Optional) List of backup path. e.g. `["/home", "/var"]`. **Note** If `path` is empty, it means that all directories will be backed up.
 * `exclude` - (Optional) Exclude path. String of Json list, up to 255 characters. e.g. `"[\"/home/work\"]"`
 * `include` - (Optional) Include path. String of Json list, up to 255 characters. e.g. `"[\"/var\"]"`
-* `update_paths` - (Optional, Deprecated in v1.139.0+) Attribute update_paths has been deprecated in v1.139.0+, and you do not need to set it anymore.
+* `update_paths` - (Optional, Deprecated from v1.139.0+) Attribute update_paths has been deprecated in v1.139.0+, and you do not need to set it anymore.
 * `detail` - (Optional) The detail of the backup plan.
 * `cross_account_type` - (Optional, ForceNew, Computed, Available in v1.189.0+) The type of the cross account backup. Valid values: `SELF_ACCOUNT`, `CROSS_ACCOUNT`.
 * `cross_account_user_id` - (Optional, ForceNew, Available in v1.189.0+) The original account ID of the cross account backup managed by the current account.

@@ -46,7 +46,7 @@ resource "alicloud_ons_topic" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required) ID of the ONS Instance that owns the topics.
-* `topic` - (Optional, Deprecated in v1.97.0+) Replaced by `topic_name` after version 1.97.0.
+* `topic` - (Optional, Deprecated from v1.97.0+) Replaced by `topic_name` after version 1.97.0.
 * `topic_name` - (Optional, Available in v1.97.0+) Name of the topic. Two topics on a single instance cannot have the same name and the name cannot start with 'GID' or 'CID'. The length cannot exceed 64 characters.
 * `message_type` - (Required) The type of the message. Read [Ons Topic Create](https://www.alibabacloud.com/help/doc-detail/29591.html) for further details.
 * `remark` - (Optional) This attribute is a concise description of topic. The length cannot exceed 128.

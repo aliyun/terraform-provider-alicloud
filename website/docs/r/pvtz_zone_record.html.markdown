@@ -36,7 +36,7 @@ The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `lang` - (Optional, Available in 1.109.0+) User language.
-* `resource_record` - (Optional, ForceNew, Deprecated in v1.109.0+) The resource record of the Private Zone Record.
+* `resource_record` - (Optional, ForceNew, Deprecated from v1.109.0+) The resource record of the Private Zone Record.
 * `rr` - (Optional, ForceNew) The rr of the Private Zone Record.
 * `type` - (Required) The type of the Private Zone Record. Valid values: A, CNAME, TXT, MX, PTR, SRV.
 * `value` - (Required) The value of the Private Zone Record.

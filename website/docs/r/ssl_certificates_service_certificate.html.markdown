@@ -38,7 +38,7 @@ The following arguments are supported:
   and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. 
   Suffix .sh and .tel are not supported.
   **NOTE:** One of `certificate_name` and `name` must be specified.
-* `name` - (Deprecated, Optional, ForceNew) It has been deprecated from version 1.129.0 and using `certificate_name` instead.
+* `name` - (Deprecated from 1.129.0, Optional, ForceNew) It has been deprecated from version 1.129.0 and using `certificate_name` instead.
 * `key` - (Required, ForceNew) Key of the Certificate in which the Certificate will add.
 * `lang` - (Optional) The lang.
 

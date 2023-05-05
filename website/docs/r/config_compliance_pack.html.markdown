@@ -65,7 +65,7 @@ The following arguments are supported:
 
 * `compliance_pack_name` - (Required) The Compliance Package Name. . **NOTE:** the `compliance_pack_name` supports modification since V1.146.0.
 * `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
-* `config_rules` - (Optional form v1.141.0, Computed, Deprecated form v1.141.0) A list of Config Rules.
+* `config_rules` - (Optional form v1.141.0, Computed, Deprecated from v1.141.0) A list of Config Rules.
 * `config_rule_ids` - (Optional, Computed, Available in v1.141.0) A list of Config Rule IDs.
 * `description` - (Required) The Description of compliance pack.
 * `risk_level` - (Required) The Risk Level. Valid values:  `1`: critical, `2`: warning, `3`: info.

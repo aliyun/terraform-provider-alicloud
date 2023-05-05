@@ -83,7 +83,7 @@ The following arguments are supported:
 * `table_engine_specification` - (Optional, Computed) The specification of  table engine. Valid values: 
   `lindorm.c.2xlarge`, `lindorm.c.4xlarge`, `lindorm.c.8xlarge`, `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`.
 * `time_series_engine_node_count` - (Optional, Computed) The count of time series engine.
-* `time_serires_engine_specification` - (Deprecated in v1.182.0+) Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.
+* `time_serires_engine_specification` - (Deprecated from v1.182.0+) Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.
 * `time_series_engine_specification` - (Optional, Computed, Available in v1.182.0+) The specification of time series engine. 
   Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.r.8xlarge`.
 * `upgrade_type` - (Optional) The upgrade type. **NOTE:** Field 'upgrade_type' has been deprecated from provider version 1.163.0,
