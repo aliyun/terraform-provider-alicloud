@@ -24,7 +24,7 @@ data "alicloud_cs_kubernetes_addon_metadata" "default" {
 
 // Output addon configuration that can be customized
 output "addon_config_schema" {
-  value = data.alicloud_cs_kubernetes_addons.default.config_schema
+  value = data.alicloud_cs_kubernetes_addon_metadata.default.config_schema
 }
 ```
 
