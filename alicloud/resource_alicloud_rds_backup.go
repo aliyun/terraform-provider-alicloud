@@ -92,7 +92,7 @@ func resourceAlicloudRdsBackupCreate(d *schema.ResourceData, meta interface{}) e
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"BackupJobExists"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
