@@ -167,12 +167,6 @@ func TestAccAlicloudKMSSecret_Basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name,
 				}),
@@ -234,6 +228,12 @@ func TestAccAlicloudKMSSecret_Basic(t *testing.T) {
 						"tags.Name":        REMOVEKEY,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
 			},
 		},
 	})
@@ -390,6 +390,329 @@ func TestAccAlicloudKMSSecret_WithKey(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudKMSSecret_WithSecretTypeGeneric(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_kms_secret.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testaccKmsSecret_%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"arn":              CHECKSET,
+		"description":      "",
+		"secret_data_type": "text",
+		"version_stages.#": "1",
+	})
+
+	serviceFunc := func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKmsSecret")
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKmsSecretConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.KmsSkippedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_data":                   name,
+					"secret_data_type":              "text",
+					"secret_name":                   name,
+					"version_id":                    "00001",
+					"force_delete_without_recovery": "true",
+					"secret_type":                   "Generic",
+					"tags": map[string]string{
+						"Created": "TF",
+						"usage":   "acceptanceTest",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_data":  name,
+						"secret_name":  name,
+						"version_id":   "00001",
+						"secret_type":  "Generic",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.usage":   "acceptanceTest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"Name":    name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.usage":   REMOVEKEY,
+						"tags.Created": "TF",
+						"tags.Name":    name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_data": name + "update",
+					"version_id":  "00002",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_data": name + "update",
+						"version_id":  "00002",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":    name + "update",
+					"secret_data":    name,
+					"version_id":     "00003",
+					"version_stages": []string{"ACSCurrent", "UStage1"},
+					"tags": map[string]string{
+						"Description": name,
+						"usage":       "acceptanceTest",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      name + "update",
+						"secret_data":      name,
+						"version_id":       "00003",
+						"version_stages.#": "2",
+						"tags.%":           "2",
+						"tags.Description": name,
+						"tags.usage":       "acceptanceTest",
+						"tags.Created":     REMOVEKEY,
+						"tags.Name":        REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudKMSSecret_WithSecretTypeRds(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_kms_secret.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testaccKmsSecret_%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"arn":              CHECKSET,
+		"description":      "",
+		"secret_data_type": "text",
+		"version_stages.#": "1",
+	})
+
+	serviceFunc := func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKmsSecret")
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKmsSecretWithSecretTypeRdsConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.KmsSkippedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_data":                   `{\"Accounts\":[{\"AccountName\":\"` + "${alicloud_db_account.default.account_name}" + `\",\"AccountPassword\":\"` + "${alicloud_db_account.default.password}" + `\"}]}`,
+					"secret_data_type":              "text",
+					"secret_name":                   name,
+					"version_id":                    "00001",
+					"force_delete_without_recovery": "true",
+					"secret_type":                   "Rds",
+					"extended_config":               `{\"CustomData\":{\"test\":\"test\"},\"DBInstanceId\":\"` + "${alicloud_db_account.default.db_instance_id}" + `\",\"SecretSubType\":\"SingleUser\"}`,
+					"tags": map[string]string{
+						"Created": "TF",
+						"usage":   "acceptanceTest",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_data":     CHECKSET,
+						"secret_name":     name,
+						"version_id":      "00001",
+						"secret_type":     "Rds",
+						"extended_config": CHECKSET,
+						"tags.%":          "2",
+						"tags.Created":    "TF",
+						"tags.usage":      "acceptanceTest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"Name":    name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.usage":   REMOVEKEY,
+						"tags.Created": "TF",
+						"tags.Name":    name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudKMSSecret_WithSecretTypeECS(t *testing.T) {
+	var v map[string]interface{}
+
+	resourceId := "alicloud_kms_secret.default"
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testaccKmsSecret_%d", rand)
+	ra := resourceAttrInit(resourceId, map[string]string{
+		"arn":              CHECKSET,
+		"description":      "",
+		"secret_data_type": "text",
+		"version_stages.#": "1",
+	})
+
+	serviceFunc := func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeKmsSecret")
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceKmsSecretWithSecretTypeECSConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.KmsSkippedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_data":                   `{\"UserName\":\"` + "${alicloud_instance.default.instance_name}" + `\",\"Password\":\"` + "${alicloud_instance.default.password}" + `\"}`,
+					"secret_data_type":              "text",
+					"secret_name":                   "acs/ecs/" + name,
+					"version_id":                    "00001",
+					"force_delete_without_recovery": "true",
+					"secret_type":                   "ECS",
+					"extended_config":               `{\"CommandId\":\"\",\"CustomData\":{\"test\":\"test\"},\"InstanceId\":\"` + "${alicloud_instance.default.id}" + `\",\"RegionId\":\"` + defaultRegionToTest + `\",\"SecretSubType\":\"Password\"}`,
+					"tags": map[string]string{
+						"Created": "TF",
+						"usage":   "acceptanceTest",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_data":     CHECKSET,
+						"secret_name":     "acs/ecs/" + name,
+						"version_id":      "00001",
+						"secret_type":     "ECS",
+						"extended_config": CHECKSET,
+						"tags.%":          "2",
+						"tags.Created":    "TF",
+						"tags.usage":      "acceptanceTest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"Name":    name,
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.usage":   REMOVEKEY,
+						"tags.Created": "TF",
+						"tags.Name":    name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete_without_recovery", "recovery_window_in_days"},
+			},
+		},
+	})
+}
+
 func resourceKmsSecretConfigDependence(name string) string {
 	return ""
 }
@@ -403,6 +726,100 @@ func resourceKmsSecretWithKeyConfigDependence(name string) string {
 			description = var.name
 			pending_window_in_days = 7
 		}
+`, name)
+}
+
+func resourceKmsSecretWithSecretTypeRdsConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "Rds"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.0.0/24"
+  		zone_id      = data.alicloud_zones.default.zones[0].id
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_db_instance" "default" {
+  		engine           = "MySQL"
+  		engine_version   = "5.6"
+  		instance_type    = "rds.mysql.s1.small"
+  		instance_storage = "10"
+  		vswitch_id       = alicloud_vswitch.default.id
+  		instance_name    = var.name
+	}
+
+	resource "alicloud_db_account" "default" {
+  		db_instance_id = alicloud_db_instance.default.id
+  		account_name   = "tftestnormal"
+  		password       = "YourPassword12345!"
+	}
+`, name)
+}
+
+func resourceKmsSecretWithSecretTypeECSConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		instance_name              = var.name
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
+  		instance_charge_type       = "PostPaid"
+  		password                   = "YourPassword12345!"
+  		system_disk_category       = "cloud_efficiency"
+  		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+	}
 `, name)
 }
 
