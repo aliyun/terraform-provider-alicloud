@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	fc_open20210406 "github.com/alibabacloud-go/fc-open-20210406/v2/client"

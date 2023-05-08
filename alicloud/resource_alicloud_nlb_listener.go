@@ -112,10 +112,9 @@ func resourceAlicloudNlbListener() *schema.Resource {
 				Type:     schema.TypeBool,
 			},
 			"security_policy_id": {
-				Computed:     true,
-				Optional:     true,
-				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
+				Computed: true,
+				Optional: true,
+				Type:     schema.TypeString,
 			},
 			"server_group_id": {
 				Required: true,

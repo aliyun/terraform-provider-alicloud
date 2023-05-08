@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -473,7 +474,13 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		} else {
 			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])
 		}
-		return assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
+		config := assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
+		for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
+			if strings.TrimSpace(part) == "terraform_test" {
+				log.Println("###### terraform test configuration ######" + config + "\n###### (END) ######\n")
+			}
+		}
+		return config
 	}
 }
 
