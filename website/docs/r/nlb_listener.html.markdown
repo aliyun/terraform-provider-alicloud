@@ -120,7 +120,9 @@ The following arguments are supported:
 * `sec_sensor_enabled` - (Optional, Computed) Specifies whether to enable fine-grained monitoring.
 * `certificate_ids` - (Optional) The list of server certificates. This parameter takes effect only for listeners that use SSL over TCP. **Note:** Only one server certificate is supported.
 * `idle_timeout` - (Optional, Computed) The timeout period of an idle connection. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
-* `security_policy_id` - (Optional, Computed) The ID of the security policy. System security policies and custom security policies are supported. Valid values: `tls_cipher_policy_1_0` (default), `tls_cipher_policy_1_1,` `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`, and `tls_cipher_policy_1_2_strict_with_1_3`.
+* `security_policy_id` - (Optional, Computed) The ID of the security policy. System security policies and custom security policies are supported. 
+  System security policies valid values: `tls_cipher_policy_1_0` (default), `tls_cipher_policy_1_1,` `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`, and `tls_cipher_policy_1_2_strict_with_1_3`.
+  Custom security policies can be created by resource `alicloud_nlb_security_policy`.
 * `alpn_policy` - (Optional) The ALPN policy.
 * `proxy_protocol_enabled` - (Optional, Computed) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers.
 * `ca_enabled` - (Optional, Computed) Specifies whether to enable mutual authentication.
