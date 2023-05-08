@@ -23,8 +23,8 @@ func resourceAlicloudDcdnDomain() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"cert_name": {
@@ -126,6 +126,7 @@ func resourceAlicloudDcdnDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"cname": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -195,12 +196,13 @@ func resourceAlicloudDcdnDomainCreate(d *schema.ResourceData, meta interface{}) 
 
 	return resourceAlicloudDcdnDomainUpdate(d, meta)
 }
+
 func resourceAlicloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
 	object, err := dcdnService.DescribeDcdnDomain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_dcdn_domain dcdnService.DescribeDcdnDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -237,13 +239,29 @@ func resourceAlicloudDcdnDomainRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("cert_name", describeDcdnDomainCertificateInfoObject["CertName"])
 	d.Set("ssl_pub", describeDcdnDomainCertificateInfoObject["SSLPub"])
+
+	listTagResourcesObject, err := dcdnService.ListTagResources(d.Id(), "DOMAIN")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
+
 func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
 	var response map[string]interface{}
 	d.Partial(true)
+
+	if d.HasChange("tags") {
+		if err := dcdnService.SetResourceTags(d, "DOMAIN"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 
 	if !d.IsNewResource() && d.HasChange("scope") {
 		request := map[string]interface{}{
@@ -277,6 +295,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("scope")
 	}
+
 	update := false
 	request := map[string]interface{}{
 		"DomainName": d.Id(),
@@ -294,6 +313,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		request["SSLPub"] = d.Get("ssl_pub")
 	}
+
 	if update {
 		if _, ok := d.GetOk("cert_type"); ok {
 			request["CertType"] = d.Get("cert_type")
@@ -337,10 +357,12 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("cert_name")
 		d.SetPartial("ssl_pub")
 	}
+
 	update = false
 	updateDcdnDomainReq := map[string]interface{}{
 		"DomainName": d.Id(),
 	}
+
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		updateDcdnDomainReq["ResourceGroupId"] = d.Get("resource_group_id")
@@ -388,6 +410,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("resource_group_id")
 		d.SetPartial("sources")
 	}
+
 	if d.HasChange("status") {
 		object, err := dcdnService.DescribeDcdnDomain(d.Id())
 		if err != nil {
@@ -465,8 +488,10 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 	d.Partial(false)
+
 	return resourceAlicloudDcdnDomainRead(d, meta)
 }
+
 func resourceAlicloudDcdnDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
@@ -508,6 +533,7 @@ func resourceAlicloudDcdnDomainDelete(d *schema.ResourceData, meta interface{}) 
 	}
 	return nil
 }
+
 func convertSSLProtocolResponse(source string) string {
 	switch source {
 	case "":
@@ -515,6 +541,7 @@ func convertSSLProtocolResponse(source string) string {
 	}
 	return source
 }
+
 func formatSSLProtocolString(source interface{}) string {
 	if source == nil {
 		return ""
