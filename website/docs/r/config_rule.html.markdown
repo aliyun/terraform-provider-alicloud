@@ -34,7 +34,9 @@ resource "alicloud_config_rule" "default" {
   resource_types_scope = [
   "ACS::RDS::DBInstance"]
   rule_name = "tf-cicd-rule-by-required-tags"
-  input_parameters {
+  input_parameters = {
+    foo = "terraform"
+    var = "terraform"
   }
 }
 ```
@@ -45,7 +47,7 @@ The following arguments are supported:
 * `config_rule_trigger_types` - (Required) The trigger type of the rule. Valid values:  `ConfigurationItemChangeNotification`: The rule is triggered upon configuration changes. `ScheduledNotification`: The rule is triggered as scheduled.
 * `description` - (Optional) The description of the rule.
 * `exclude_resource_ids_scope` - (Optional) The rule monitors excluded resource IDs, multiple of which are separated by commas, only applies to rules created based on managed rules, , custom rule this field is empty.
-* `input_parameters` - (Optional) The settings of the input parameters for the rule.See the following `Block InputParameters`.
+* `input_parameters` - (Optional, Map) The settings of the input parameters for the rule.
 * `maximum_execution_frequency` - (Computed, Optional) The frequency of the compliance evaluations, it is required if the ConfigRuleTriggerTypes value is ScheduledNotification. Valid values:  `One_Hour`, `Three_Hours`, `Six_Hours`, `Twelve_Hours`, `TwentyFour_Hours`.
 * `region_ids_scope` - (Optional) The rule monitors region IDs, separated by commas, only applies to rules created based on managed rules.
 * `resource_group_ids_scope` - (Optional) The rule monitors resource group IDs, separated by commas, only applies to rules created based on managed rules.
@@ -62,11 +64,6 @@ The following arguments will be discarded. Please use new fields as soon as poss
 * `source_detail_message_type` - (Deprecated) Field 'source_detail_message_type' has been deprecated from provider version 1.124.1. New field 'config_rule_trigger_types' instead.
 * `source_maximum_execution_frequency` - (Deprecated) Field 'source_maximum_execution_frequency' has been deprecated from provider version 1.124.1. New field 'maximum_execution_frequency' instead.
 * `scope_compliance_resource_types` - (Deprecated) Field 'scope_compliance_resource_types' has been deprecated from provider version 1.124.1. New field 'resource_types_scope' instead.
-
-#### Block InputParameters
-
-The InputParameters supports the following:
-
 
 
 ## Attributes Reference
