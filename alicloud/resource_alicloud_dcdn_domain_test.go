@@ -122,12 +122,6 @@ func TestAccAlicloudDCDNDomain_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"top_level_domain", "security_token", "cert_type", "check_url", "force_set", "ssl_pri"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"ssl_protocol": "on",
 					"ssl_pub":      testDcdnPublicKey,
@@ -193,6 +187,12 @@ func TestAccAlicloudDCDNDomain_basic0(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"top_level_domain", "security_token", "cert_type", "check_url", "force_set", "ssl_pri"},
+			},
 		},
 	})
 }
@@ -213,7 +213,6 @@ func TestAccAlicloudDCDNDomain_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -233,12 +232,34 @@ func TestAccAlicloudDCDNDomain_basic1(t *testing.T) {
 							"weight":   "10",
 						},
 					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Domain",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain_name":       name,
 						"sources.#":         "1",
 						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Domain",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "Domain_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "Domain_Update",
 					}),
 				),
 			},

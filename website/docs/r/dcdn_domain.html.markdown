@@ -56,6 +56,7 @@ The following arguments are supported:
 * `status` - (Optional) The status of DCDN Domain. Valid values: `online`, `offline`. Default to `online`.
 * `top_level_domain` - (Optional) The top-level domain name.
 * `security_token` - (Optional) The top-level domain name.
+* `tags` - (Optional, Available in v1.205.0+) A mapping of tags to assign to the resource.
 
 ### Block sources
 * `content` - (Required) The origin address.
@@ -76,14 +77,14 @@ The following arguments are supported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when Creating DCDN domain instance. 
-* `update` - (Defaults to 5 mins) Used when Creating DCDN domain instance. 
-* `delete` - (Defaults to 10 mins) Used when terminating the DCDN domain instance. 
+* `create` - (Defaults to 10 mins) Used when create DCDN domain instance. 
+* `update` - (Defaults to 10 mins) Used when update DCDN domain instance. 
+* `delete` - (Defaults to 5 mins) Used when delete DCDN domain instance. 
 
 ## Import
 
 DCDN Domain can be imported using the id or DCDN Domain name, e.g.
 
 ```shell
-$ terraform import alicloud_dcdn_domain.example example.com
+$ terraform import alicloud_dcdn_domain.example <id>
 ```
