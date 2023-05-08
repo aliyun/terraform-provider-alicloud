@@ -4,10 +4,10 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_vswitch"
 sidebar_current: "docs-alicloud-resource-vswitch"
 description: |-
-  Provides a Alicloud VPC switch resource.
+  Provides a Alicloud Vpc Vswitch resource.
 ---
 
-# alicloud\_vswitch
+# alicloud_vswitch
 
 Provides a VPC switch resource.
 
@@ -83,17 +83,19 @@ to create a VPC and several VSwitches one-click.
 ## Argument Reference
 
 The following arguments are supported:
-
-* `availability_zone` - (Optional, ForceNew, Deprecated from v1.119.0+) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
-* `zone_id` - (Optional, ForceNew, Available in 1.119.0+) The AZ for the switch. **Note:** Required for a VPC switch.
+* `all` - (Optional) Whether to unbind all tags of the resource. Value:-**true**: untags all resources.-**false** (default): does not remove all tags of the resource.
+* `cidr_block` - (Required, ForceNew) The IPv4 CIDR block of the VSwitch.
+* `description` - (Optional) The description of VSwitch.
+* `enable_ipv6` - (Optional) Whether the IPv6 function is enabled in the switch. Value:-**true**: enables IPv6.-**false** (default): IPv6 is not enabled.
+* `ipv6_cidr_block_mask` - (Optional) The IPv6 CIDR block of the VSwitch.
+* `tags` - (Optional) The tags of VSwitch.
+* `vswitch_name` - (Optional) The name of the VSwitch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
-* `cidr_block` - (Required, ForceNew) The CIDR block for the switch.
-* `name` - (Optional, Deprecated from v1.119.0+) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.
-* `vswitch_name` - (Optional, Available in 1.119.0+) The name of the switch. Defaults to null.
-* `description` - (Optional) The switch description. Defaults to null.
-* `tags` - (Optional, Available in v1.55.3+) A mapping of tags to assign to the resource.
-* `enable_ipv6` - (Optional, Available in 1.201.1+) Specifies whether to enable the IPv6 CIDR block. Valid values: `false` (Default): disables IPv6 CIDR blocks. `true`: enables IPv6 CIDR blocks.
-* `ipv6_cidr_block_mask` - (Optional, Available in 1.201.1+) The last 8 bits of the switch's IPv6 segment, taking values: 0~255. This parameter is only supported to be configured when the VPC to which the switch belongs is IPv6 enabled.
+* `zone_id` - (Required, ForceNew) The zone ID  of the resource
+
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `name` - (Deprecated) Field 'name' has been deprecated from provider version 1.119.0. New field 'vswitch_name' instead.
+* `availability_zone` - (Deprecated) Field 'availability_zone' has been deprecated from provider version 1.119.0. New field 'zone_id' instead.
 
 ### Timeouts
 
@@ -107,20 +109,21 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The ID of the switch.
-* `availability_zone` The AZ for the switch.
-* `cidr_block` - The CIDR block for the switch.
-* `vpc_id` - The VPC ID.
-* `name` - The name of the switch.
-* `description` - The description of the switch.
-* `status` - (Available in 1.119.0+) The status of the switch.
-* `ipv6_cidr_block` - (Available in 1.201.1+) The IPv6 CIDR block for the switch.
+* `id` - The `key` of the resource supplied above.
+* `available_ip_address_count` - The number of available IP addresses.
+* `create_time` - The creation time of the VSwitch.
+* `ipv6_cidr_block` - The IPv6 CIDR block of the VSwitch.
+* `is_default` - Indicates whether the VSwitch is a default VSwitch.
+* `network_acl_id` - The ID of the network ACL.
+* `resource_group_id` - The resource group id of VSwitch.
+* `route_table_id` - The route table id
+* `status` - The status of the resource
+* `vswitch_id` - The ID of the VSwitch.
 
 ## Import
 
-Vswitch can be imported using the id, e.g.
+Vpc Vswitch can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_vswitch.example vsw-abc123456
+$ terraform import alicloud_vpc_vswitch.example <id>
 ```

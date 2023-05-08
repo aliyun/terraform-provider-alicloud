@@ -526,7 +526,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVswitchCreate(d, rawClient)
+		err := resourceAlicloudVpcVswitchCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -544,7 +544,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["Normal"]("")
 		})
-		err := resourceAlicloudVswitchCreate(d, rawClient)
+		err := resourceAlicloudVpcVswitchCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -562,7 +562,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVswitchCreate(dCreate, rawClient)
+		err := resourceAlicloudVpcVswitchCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -580,7 +580,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVswitchCreate(dCreateCompletion, rawClient)
+		err := resourceAlicloudVpcVswitchCreate(dCreateCompletion, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -596,7 +596,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudVswitchUpdate(d, rawClient)
+		err := resourceAlicloudVpcVswitchUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -620,7 +620,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["Normal"]("")
 		})
-		err := resourceAlicloudVswitchUpdate(resourceData1, rawClient)
+		err := resourceAlicloudVpcVswitchUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -653,7 +653,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVswitchUpdate(resourceData1, rawClient)
+		err := resourceAlicloudVpcVswitchUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -690,7 +690,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			_, err := responseMock["NoRetryError"]("NoRetryError")
 			return err
 		})
-		err := resourceAlicloudVswitchUpdate(resourceData1, rawClient)
+		err := resourceAlicloudVpcVswitchUpdate(resourceData1, rawClient)
 		patcheDorequest.Reset()
 		patcheSetResourceTags.Reset()
 		assert.NotNil(t, err)
@@ -706,7 +706,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVswitchDelete(d, rawClient)
+		err := resourceAlicloudVpcVswitchDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -724,7 +724,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVswitchDelete(d, rawClient)
+		err := resourceAlicloudVpcVswitchDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -742,7 +742,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVswitchDelete(d, rawClient)
+		err := resourceAlicloudVpcVswitchDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -760,7 +760,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVswitchDelete(d, rawClient)
+		err := resourceAlicloudVpcVswitchDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -790,7 +790,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 		patcheListTagResources := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "ListTagResources", func(*VpcService, string, string) (interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudVswitchRead(d, rawClient)
+		err := resourceAlicloudVpcVswitchRead(d, rawClient)
 		patcheDorequest.Reset()
 		patcheListTagResources.Reset()
 		assert.NotNil(t, err)
@@ -807,8 +807,106 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVswitchRead(d, rawClient)
+		err := resourceAlicloudVpcVswitchRead(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Vpc Vswitch. >>> Resource test cases, automatically generated.
+// Case 3078
+func TestAccAlicloudVpcVswitch_basic3078(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vswitch.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchMap3078)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcVswitch")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sVpcVswitch%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcVswitchBasicDependence3078)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":    "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":     "${alicloud_vpc.OeB4be.id}",
+					"cidr_block": "172.16.0.0/24",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":    CHECKSET,
+						"vpc_id":     CHECKSET,
+						"cidr_block": "172.16.0.0/24",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"description":  "test-update",
+					"vswitch_name": "rdktestname",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":  "test-update",
+						"vswitch_name": "rdktestname",
+					}),
+				),
+			}, {
+				Config: testAccConfig(map[string]interface{}{
+					"description":          "test",
+					"zone_id":              "${data.alicloud_zones.default.zones.0.id}",
+					"vpc_id":               "${alicloud_vpc.OeB4be.id}",
+					"cidr_block":           "172.16.0.0/24",
+					"vswitch_name":         "rdktest",
+					"ipv6_cidr_block_mask": "8",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":          "test",
+						"zone_id":              CHECKSET,
+						"vpc_id":               CHECKSET,
+						"cidr_block":           "172.16.0.0/24",
+						"vswitch_name":         "rdktest",
+						"ipv6_cidr_block_mask": "8",
+					}),
+				),
+			}, {
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"all", "enable_ipv6", "ipv6_cidr_block_mask", "resource_type"},
+			},
+		},
+	})
+}
+
+var AlicloudVpcVswitchMap3078 = map[string]string{}
+
+func AlicloudVpcVswitchBasicDependence3078(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "OeB4be" {
+  vpc_name = "rdk"
+  enable_ipv6 = true
+  cidr_block = "172.16.0.0/12"
+}
+
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
+}
+
+`, name)
+}
+
+// Test Vpc Vswitch. <<< Resource test cases, automatically generated.
