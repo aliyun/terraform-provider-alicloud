@@ -93,8 +93,10 @@ to create a scaling group, configuration and lifecycle hook one-click.
 
 The following arguments are supported:
 
-* `min_size` - (Required) Minimum number of ECS instances in the scaling group. Value range: [0, 1000].
-* `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 1000].
+* `min_size` - (Required) Minimum number of ECS instances in the scaling group. Value range: [0, 2000].
+  **NOTE:** From version 1.205.0, `min_size` can be set to `2000`.
+* `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 2000].
+  **NOTE:** From version 1.205.0, `max_size` can be set to `2000`.
 * `desired_capacity` - (Optional,Available in 1.76.0+) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain numbers, underscores `_`, hyphens `-`, and decimal points `.`. If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.

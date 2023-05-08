@@ -33,17 +33,17 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"min_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 2000),
 			},
 			"max_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 2000),
 			},
 			"desired_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
+				ValidateFunc: validation.IntBetween(0, 2000),
 			},
 			"scaling_group_name": {
 				Type:     schema.TypeString,
