@@ -702,16 +702,22 @@ func (s *AlbService) DescribeAlbListener(id string) (object map[string]interface
 	return object, nil
 }
 
-func (s *AlbService) DescribeAlbRule(id string) (object map[string]interface{}, err error) {
+func (s *AlbService) DescribeAlbRule(id, direction string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewAlbClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
+
 	action := "ListRules"
 	request := map[string]interface{}{
 		"MaxResults": PageSizeLarge,
 	}
+
+	if direction != "" {
+		request["Direction"] = direction
+	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -758,9 +764,9 @@ func (s *AlbService) DescribeAlbRule(id string) (object map[string]interface{}, 
 	return
 }
 
-func (s *AlbService) AlbRuleStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlbService) AlbRuleStateRefreshFunc(id, direction string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAlbRule(id)
+		object, err := s.DescribeAlbRule(id, direction)
 		if err != nil {
 			if NotFoundError(err) {
 				// Set this to nil as if we didn't find anything.

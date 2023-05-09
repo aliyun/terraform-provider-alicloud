@@ -141,6 +141,9 @@ The following arguments are supported:
 * `rule_actions` - (Required) The actions of the forwarding rules. See the following `Block rule_actions`.
 * `rule_conditions` - (Required) The conditions of the forwarding rule. See the following `Block rule_conditions`.
 * `rule_name` - (Required) The name of the forwarding rule. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
+* `direction` - (Optional, ForceNew, Computed, Available in v1.205.0+) The direction to which the forwarding rule is applied. Default value: `Request`. Valid values:
+  - `Request`: The forwarding rule is applied to the client requests received by ALB.
+  - `Response`: The forwarding rule is applied to the responses returned by backend servers.
 
 ### Block rule_conditions
 

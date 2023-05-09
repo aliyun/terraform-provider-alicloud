@@ -413,6 +413,13 @@ func resourceAlicloudAlbRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Request", "Response"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -424,6 +431,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var direction string
 	action := "CreateRule"
 	request := make(map[string]interface{})
 	conn, err := client.NewAlbClient()
@@ -433,6 +441,7 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+
 	request["ListenerId"] = d.Get("listener_id")
 	request["Priority"] = d.Get("priority")
 	ruleActionsMaps := make([]map[string]interface{}, 0)
@@ -623,6 +632,12 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	request["RuleConditions"] = ruleConditionsMaps
 
 	request["RuleName"] = d.Get("rule_name")
+
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+		request["Direction"] = v
+	}
+
 	request["ClientToken"] = buildClientToken("CreateRule")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -644,25 +659,35 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	d.SetId(fmt.Sprint(response["RuleId"]))
+
 	albService := AlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return resourceAlicloudAlbRuleRead(d, meta)
 }
+
 func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
-	object, err := albService.DescribeAlbRule(d.Id())
+
+	var direction string
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+	}
+
+	object, err := albService.DescribeAlbRule(d.Id(), direction)
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alb_rule albService.DescribeAlbRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("listener_id", object["ListenerId"])
 	if v, ok := object["Priority"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("priority", formatInt(v))
@@ -934,9 +959,11 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("rule_name", object["RuleName"])
+	d.Set("direction", object["Direction"])
 	d.Set("status", object["RuleStatus"])
 	return nil
 }
+
 func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -1146,6 +1173,11 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 		request["RuleConditions"] = ruleConditionsMaps
 	}
 
+	var direction string
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+	}
+
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
@@ -1174,14 +1206,17 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		albService := AlbService{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+
 	return resourceAlicloudAlbRuleRead(d, meta)
 }
+
 func resourceAlicloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRule"
