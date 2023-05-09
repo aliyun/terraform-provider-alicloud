@@ -64,7 +64,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability", "serverless_basic"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability", "serverless_basic", "serverless_standard", "serverless_ha"}, false),
 			},
 			"certificate": {
 				Type:     schema.TypeString,
@@ -345,11 +345,25 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					/*
+						If it is not a new resource and is a multi region deployment,
+						and the returned availability zone is consistent with the first input availability zone,
+						then it needs to be suppressed.
+					*/
+					newArray := strings.Split(new, ",")
+					if d.Id() != "" && len(newArray) > 1 && old == newArray[0] {
+						return true
+					}
+					return false
+				},
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -391,6 +405,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"serverless_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"max_capacity": {
@@ -403,11 +418,11 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 						},
 						"auto_pause": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
 						},
 						"switch_force": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -417,6 +432,18 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 					}
 					return false
 				},
+			},
+			"zone_id_slave_a": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"zone_id_slave_b": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -489,25 +516,52 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 		request["VSwitchId"] = v
 	}
 
+	instance, err := rdsService.DescribeDBInstance(d.Get("source_db_instance_id").(string))
+	if err != nil {
+		return WrapError(err)
+	}
+
 	if request["PayType"] == string(Serverless) {
 		if v, ok := d.GetOk("serverless_config"); ok {
 			v := v.([]interface{})[0].(map[string]interface{})
-			serverlessConfig, err := json.Marshal(struct {
-				MaxCapacity float64 `json:"MaxCapacity"`
-				MinCapacity float64 `json:"MinCapacity"`
-				AutoPause   bool    `json:"AutoPause"`
-				SwitchForce bool    `json:"SwitchForce"`
-			}{
-				v["max_capacity"].(float64),
-				v["min_capacity"].(float64),
-				v["auto_pause"].(bool),
-				v["switch_force"].(bool),
-			})
-			if err != nil {
-				return WrapError(err)
+			if string(MySQL) == instance["Engine"] || string(PostgreSQL) == instance["Engine"] {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+					AutoPause   bool    `json:"AutoPause"`
+					SwitchForce bool    `json:"SwitchForce"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+					v["auto_pause"].(bool),
+					v["switch_force"].(bool),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ServerlessConfig"] = string(serverlessConfig)
+			} else if string(SQLServer) == instance["Engine"] {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ServerlessConfig"] = string(serverlessConfig)
 			}
-			request["ServerlessConfig"] = string(serverlessConfig)
 		}
+	}
+
+	if v, ok := d.GetOk("zone_id_slave_a"); ok {
+		request["ZoneIdSlave1"] = v
+	}
+
+	if v, ok := d.GetOk("zone_id_slave_b"); ok {
+		request["ZoneIdSlave2"] = v
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -563,18 +617,37 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("maintain_time", object["MaintainTime"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
-	d.Set("payment_type", convertRdsInstancePaymentTypeResponse(object["PayType"]))
+	d.Set("vpc_id", object["VpcId"])
+	slaveZones := object["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
+	if len(slaveZones) == 2 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
+		d.Set("zone_id_slave_b", slaveZones[1].(map[string]interface{})["ZoneId"])
+	} else if len(slaveZones) == 1 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
+	}
+
+	payType := convertRdsInstancePaymentTypeResponse(object["PayType"])
+	d.Set("payment_type", payType)
 
 	serverlessConfig := make([]map[string]interface{}, 0)
 	slc := object["ServerlessConfig"].(map[string]interface{})
-	slcMaps := map[string]interface{}{
-		"max_capacity": slc["ScaleMax"],
-		"min_capacity": slc["ScaleMin"],
-		"auto_pause":   slc["AutoPause"],
-		"switch_force": slc["SwitchForce"],
+	if payType == "Serverless" && (string(MySQL) == object["Engine"] || string(PostgreSQL) == object["Engine"]) {
+		slcMaps := map[string]interface{}{
+			"max_capacity": slc["ScaleMax"],
+			"min_capacity": slc["ScaleMin"],
+			"auto_pause":   slc["AutoPause"],
+			"switch_force": slc["SwitchForce"],
+		}
+		serverlessConfig = append(serverlessConfig, slcMaps)
+		d.Set("serverless_config", serverlessConfig)
+	} else if payType == "Serverless" && string(SQLServer) == object["Engine"] {
+		slcMaps := map[string]interface{}{
+			"max_capacity": slc["ScaleMax"],
+			"min_capacity": slc["ScaleMin"],
+		}
+		serverlessConfig = append(serverlessConfig, slcMaps)
+		d.Set("serverless_config", serverlessConfig)
 	}
-	serverlessConfig = append(serverlessConfig, slcMaps)
-	d.Set("serverless_config", serverlessConfig)
 
 	d.Set("port", object["Port"])
 	d.Set("connection_string", object["ConnectionString"])
@@ -1165,27 +1238,53 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		}
 	}
 
+	instance, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
 	if d.HasChange("serverless_config") {
 		update = true
 		if v, ok := d.GetOk("serverless_config"); ok {
-			v := v.([]interface{})[0].(map[string]interface{})
-			serverlessConfig, err := json.Marshal(struct {
-				MaxCapacity float64 `json:"MaxCapacity"`
-				MinCapacity float64 `json:"MinCapacity"`
-				AutoPause   bool    `json:"AutoPause"`
-				SwitchForce bool    `json:"SwitchForce"`
-			}{
-				v["max_capacity"].(float64),
-				v["min_capacity"].(float64),
-				v["auto_pause"].(bool),
-				v["switch_force"].(bool),
-			})
-			if err != nil {
-				return WrapError(err)
+			if string(MySQL) == instance["Engine"] || string(PostgreSQL) == instance["Engine"] {
+				v := v.([]interface{})[0].(map[string]interface{})
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+					AutoPause   bool    `json:"AutoPause"`
+					SwitchForce bool    `json:"SwitchForce"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+					v["auto_pause"].(bool),
+					v["switch_force"].(bool),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				if category, ok := d.GetOk("Category"); ok {
+					modifyDBInstanceSpecReq["Category"] = category
+				}
+				modifyDBInstanceSpecReq["Direction"] = "Serverless"
+				modifyDBInstanceSpecReq["ServerlessConfiguration"] = string(serverlessConfig)
+			} else if string(SQLServer) == instance["Engine"] {
+				v := v.([]interface{})[0].(map[string]interface{})
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				if category, ok := d.GetOk("Category"); ok {
+					modifyDBInstanceSpecReq["Category"] = category
+				}
+				modifyDBInstanceSpecReq["Direction"] = "Serverless"
+				modifyDBInstanceSpecReq["ServerlessConfiguration"] = string(serverlessConfig)
 			}
-			modifyDBInstanceSpecReq["Category"] = "Serverless"
-			modifyDBInstanceSpecReq["Direction"] = "Serverless"
-			modifyDBInstanceSpecReq["ServerlessConfiguration"] = string(serverlessConfig)
 		}
 	}
 

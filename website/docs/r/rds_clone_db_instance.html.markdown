@@ -87,10 +87,10 @@ The following arguments are supported:
 * `backup_type` - (Optional) The type of backup that is used to restore the data of the original instance. Valid values:
   * **FullBackup**: full backup
   * **IncrementalBackup**: incremental backup
-* `vpc_id` - (Optional, Computed) The ID of the VPC to which the new instance belongs.
+* `vpc_id` - (Optional, Computed, ForceNew) The ID of the VPC to which the new instance belongs.
 
 -> **NOTE:** Make sure that the VPC resides in the specified region.
-* `vswitch_id` - (Optional, Computed) The ID of the vSwitch associated with the specified VPC.
+* `vswitch_id` - (Optional, Computed, ForceNew) The ID of the vSwitch associated with the specified VPC. If there are multiple vswitches, separate them with commas. The first vswitch is a primary zone switch and the query only returns that vswitch. If there are multiple vswitches, do not perform `vswitch_id` check.
 
 -> **NOTE:** Make sure that the vSwitch belongs to the specified VPC and region.
 * `private_ip_address` - (Optional, Computed) The intranet IP address of the new instance must be within the specified vSwitch IP address range. By default, the system automatically allocates by using **VPCId** and **VSwitchId**.
@@ -120,6 +120,8 @@ The following arguments are supported:
   * **AlwaysOn**: Cluster Edition
   * **Finance**: Three-node Enterprise Edition.
   * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
+  * **serverless_standard**: MySQL Serverless High Availability Edition. (Available in 1.204.0+)
+  * **serverless_ha**: SQLServer Serverless High Availability Edition. (Available in 1.204.0+)
 * `certificate` - (Optional) The file that contains the certificate used for TDE.
 * `client_ca_cert` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the public key of the client certification authority. If the value of client_ca_enabled is 1, this parameter must be configured.
 * `client_ca_enabled` - (Optional) The client ca enabled.
@@ -194,6 +196,9 @@ The following arguments are supported:
 
 * `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.
 
+* `zone_id_slave_a` - (Optional, Computed, ForceNew, Available in 1.205.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the `zone_id` parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+* `zone_id_slave_b`- (Optional, Computed, ForceNew, Available in 1.205.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the `zone_id` parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+
 #### Block pg_hba_conf
 
 The pg_hba_conf mapping supports the following:
@@ -216,16 +221,25 @@ The pg_hba_conf mapping supports the following:
 
 The serverless_config mapping supports the following:
 
-* `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). Valid values: 0.5 to 8. The value of this parameter must be greater than or equal to the value of the `min_capacity` parameter.
-* `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. Valid values: 0.5 to 8. The value of this parameter must be less than or equal to the value of the `max_capacity` parameter.
+* `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). The value of this parameter must be greater than or equal to `min_capacity` and only supports passing integers. Valid values:
+  - MySQL: 1~8
+  - SQLServer: 2~8
+  - PostgreSQL: 1~12
+* `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. The value of this parameter must be less than or equal to `max_capacity`. Valid values:
+  - MySQL: 0.5~8
+  - SQLServer: 2~8 \(Supports integers only\).
+  - PostgreSQL: 0.5~12
 
-* `auto_pause` - (Required, Available in 1.200.0+) Specifies whether to enable the smart startup and stop feature for the serverless instance. After the smart startup and stop feature is enabled, if no connections to the instance are established within 10 minutes, the instance is stopped. After a connection is established to the instance, the instance is automatically woken up. Valid values:
+* `auto_pause` - (Optional, Available in 1.200.0+) Specifies whether to enable the smart startup and stop feature for the serverless instance. Valid values:
   - true: enables the feature.
   - false: disables the feature. This is the default value.
+  > - Only MySQL Serverless instances need to set this parameter. If there is no connection within 10 minutes, it will enter a paused state and automatically wake up when the connection enters.
 
-* `switch_force` - (Required, Available in 1.200.0+) Specifies whether to enable the forced scaling feature for the serverless instance. If you set this parameter to true, a transient connection that lasts approximately 1 minute occurs during the forced scaling process. Process with caution. The RCU scaling for a serverless instance immediately takes effect. In some cases, such as the execution of large transactions, the scaling does not immediately take effect. In this case, you can enable this feature to forcefully scale the RCUs of the instance. Valid values:
+* `switch_force` - (Optional, Available in 1.200.0+) Specifies whether to enable the forced scaling feature for the serverless instance. Valid values:
   - true: enables the feature.
   - false: disables the feature. This is the default value.
+  > - Only MySQL Serverless instances need to set this parameter. After enabling this parameter, there will be a flash break within 1 minute when the instance is forced to expand or shrink. Please use it with caution according to the actual situation.
+  > - The elastic scaling of an instance RCU usually takes effect immediately, but in some special circumstances (such as during large transaction execution), it is not possible to complete scaling immediately. In this case, this parameter can be enabled to force scaling.
 
 ## Attributes Reference
 
