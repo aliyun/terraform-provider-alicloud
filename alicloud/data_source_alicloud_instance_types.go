@@ -354,8 +354,12 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 			continue
 		}
 
-		if len(imageSupportInstanceTypesMap) > 0 {
-			if _, ok := imageSupportInstanceTypesMap[object["InstanceTypeId"].(string)]; !ok {
+		if imageId != "" {
+			if len(imageSupportInstanceTypesMap) > 0 {
+				if _, ok := imageSupportInstanceTypesMap[object["InstanceTypeId"].(string)]; !ok {
+					continue
+				}
+			} else {
 				continue
 			}
 		}
