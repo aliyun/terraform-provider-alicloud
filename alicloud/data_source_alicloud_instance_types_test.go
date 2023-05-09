@@ -194,6 +194,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sSpec(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAlicloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -221,6 +222,7 @@ func TestAccAlicloudECSInstanceTypesDataSource_k8sFamily(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -251,82 +253,116 @@ func TestAccAlicloudECSInstanceTypesDataSource_imageId(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.c4g8", "ids.#"),
 				),
 			},
+			{
+				Config: testAccCheckAlicloudInstanceTypesDataSourceNoExistImageId,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAlicloudDataSourceID("data.alicloud_instance_types.noExistImageId"),
+					resource.TestCheckResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.#", "0"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.id"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.cpu_core_count"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.memory_size"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.family"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.eni_amount"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.availability_zones.#"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.gpu.%"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.burstable_instance.%"),
+					resource.TestCheckNoResourceAttr("data.alicloud_instance_types.noExistImageId", "instance_types.0.local_storage.%"),
+					resource.TestCheckResourceAttrSet("data.alicloud_instance_types.noExistImageId", "ids.#"),
+				),
+			},
 		},
 	})
 }
 
 const testAccCheckAlicloudInstanceTypesDataSourceBasicConfig = `
 data "alicloud_instance_types" "c4g8" {
-	cpu_core_count = 4
-	memory_size = 8
+  cpu_core_count = 4
+  memory_size    = 8
 }
 `
 
 const testAccCheckAlicloudInstanceTypesDataSourceGpu = `
 provider "alicloud" {
-	region = "cn-hangzhou"
+  region = "cn-hangzhou"
 }
+
 data "alicloud_instance_types" "gpu" {
-	instance_type_family = "ecs.gn5"
-	instance_charge_type = "PrePaid"
+  instance_type_family = "ecs.gn5"
+  instance_charge_type = "PrePaid"
 }
 `
+
 const testAccCheckAlicloudInstanceTypesDataSourceGpuK8SMaster = `
 provider "alicloud" {
-	region = "cn-hangzhou"
+  region = "cn-hangzhou"
 }
+
 data "alicloud_instance_types" "gpu" {
-	kubernetes_node_role = "Master"
-	instance_type_family = "ecs.gn5"
+  kubernetes_node_role = "Master"
+  instance_type_family = "ecs.gn5"
 }
 `
+
 const testAccCheckAlicloudInstanceTypesDataSourceGpuK8SWorker = `
 provider "alicloud" {
-	region = "cn-hangzhou"
+  region = "cn-hangzhou"
 }
+
 data "alicloud_instance_types" "gpu" {
-	kubernetes_node_role = "Worker"
-	instance_type_family = "ecs.gn5"
+  kubernetes_node_role = "Worker"
+  instance_type_family = "ecs.gn5"
 }
 `
 
 const testAccCheckAlicloudInstanceTypesDataSourceEmpty = `
 data "alicloud_instance_types" "empty" {
-	instance_type_family = "ecs.fake"
+  instance_type_family = "ecs.fake"
 }
 `
 
 const testAccCheckAlicloudInstanceTypesDataSourceK8Sc1g2 = `
 data "alicloud_instance_types" "c1g2" {
-	cpu_core_count = 1
-	memory_size = 2
-	kubernetes_node_role = "Master"
+  cpu_core_count       = 1
+  memory_size          = 2
+  kubernetes_node_role = "Master"
 }
 `
+
 const testAccCheckAlicloudInstanceTypesDataSourceK8Sc2g4 = `
 data "alicloud_instance_types" "c2g4" {
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Worker"
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Worker"
 }
 `
+
 const testAccCheckAlicloudInstanceTypesDataSourceK8ST5 = `
 data "alicloud_instance_types" "t5" {
-	cpu_core_count = 2
-	memory_size = 4
-	kubernetes_node_role = "Master"
-	instance_type_family = "ecs.t5"
+  cpu_core_count       = 2
+  memory_size          = 4
+  kubernetes_node_role = "Master"
+  instance_type_family = "ecs.t5"
 }
 `
+
 const testAccCheckAlicloudInstanceTypesDataSourceImageId = `
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
   owners      = "system"
 }
+
 data "alicloud_instance_types" "c4g8" {
-	image_id = data.alicloud_images.default.ids.0
-	cpu_core_count = 4
-	memory_size = 8
+  image_id       = data.alicloud_images.default.ids.0
+  cpu_core_count = 4
+  memory_size    = 8
+}
+`
+
+const testAccCheckAlicloudInstanceTypesDataSourceNoExistImageId = `
+data "alicloud_instance_types" "noExistImageId" {
+  image_id             = "m-fake"
+  instance_type_family = "ecs.g8i"
+  cpu_core_count       = 8
 }
 `
