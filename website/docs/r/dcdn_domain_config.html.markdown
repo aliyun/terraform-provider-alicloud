@@ -23,7 +23,6 @@ Basic Usage
 # Create a new Domain config.
 resource "alicloud_dcdn_domain" "domain" {
   domain_name = "mydomain.alicloud-provider.cn"
-  cdn_type    = "web"
   scope       = "overseas"
   sources {
     content  = "1.1.1.1"
@@ -43,6 +42,7 @@ resource "alicloud_dcdn_domain_config" "config" {
   }
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
