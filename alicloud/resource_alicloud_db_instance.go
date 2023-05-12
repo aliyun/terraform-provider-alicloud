@@ -532,6 +532,14 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Immediate", "MaintainTime"}, false),
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"serverless_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1138,7 +1146,8 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	if d.HasChange("babelfish_port") {
 		connectUpdate = true
 	}
-	if connectUpdate {
+	// port default to 3306 and if setting port to 3306, there will have a change
+	if d.HasChanges("port", "connection_string_prefix", "babelfish_port") {
 		instance, err := rdsService.DescribeDBInstance(d.Id())
 		if err != nil {
 			return err
@@ -1149,39 +1158,46 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		connectRequest["Port"] = instance["Port"]
 		connectRequest["ConnectionStringPrefix"] = connectionStringPrefix
 		if v, ok := d.GetOk("port"); ok && v != instance["Port"] {
+			connectUpdate = true
 			connectRequest["Port"] = v
 		}
 		if v, ok := d.GetOk("connection_string_prefix"); ok && v != connectionStringPrefix {
+			connectUpdate = true
 			connectRequest["ConnectionStringPrefix"] = v
+		}
+		if d.HasChange("babelfish_port") {
+			connectUpdate = true
 		}
 		if v, ok := d.GetOk("babelfish_port"); ok {
 			connectRequest["BabelfishPort"] = v
 		}
-
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(connectAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, connectRequest, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+		if connectUpdate {
+			var response map[string]interface{}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(connectAction), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, connectRequest, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
 				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
+				return nil
+			})
 
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), connectAction, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(connectAction, response, connectRequest)
-		d.SetPartial("port")
-		d.SetPartial("connection_string")
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), connectAction, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(connectAction, response, connectRequest)
+			d.SetPartial("port")
+			d.SetPartial("connection_string")
+			d.SetPartial("babelfish_port")
+			// wait instance status is running after modifying
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 		}
 	}
 
@@ -1557,6 +1573,8 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("instance_storage", instance["DBInstanceStorage"])
 	d.Set("db_instance_storage_type", instance["DBInstanceStorageType"])
 	d.Set("zone_id", instance["ZoneId"])
+	d.Set("status", instance["DBInstanceStatus"])
+	d.Set("create_time", instance["CreationTime"])
 
 	// MySQL Serverless instance query PayType return SERVERLESS, need to be consistent with the participant.
 	payType := instance["PayType"]

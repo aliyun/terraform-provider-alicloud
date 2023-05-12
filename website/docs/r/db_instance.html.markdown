@@ -544,6 +544,8 @@ The following attributes are exported:
 * `connection_string` - RDS database connection string.
 * `ssl_status` - Status of the SSL feature. `Yes`: SSL is turned on; `No`: SSL is turned off.
 * `db_instance_type` - (Available in 1.197.0+) The type of db instance.
+* `status` - (Available in 1.205.0+) The status of db instance.
+* `create_time` - (Available in 1.205.0+) The creation time of db instance.
 
 ### Timeouts
 
