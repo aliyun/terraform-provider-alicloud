@@ -156,8 +156,8 @@ The following attributes are exported:
 * `id` - The PolarDB cluster ID.
 * `connection_string` - (Available in 1.81.0+) PolarDB cluster connection string. 
 * `port` - (Available in 1.196.0+) PolarDB cluster connection port. 
-* `status` - (Available in 1.205.0+) PolarDB cluster status.
-* `create_time` - (Available in 1.205.0+) PolarDB cluster creation time.
+* `status` - (Available in 1.204.1+) PolarDB cluster status.
+* `create_time` - (Available in 1.204.1+) PolarDB cluster creation time.
 * `tde_region` - (Available in 1.200.0+) The region where the TDE key resides.
 -> **NOTE:** TDE can be enabled on clusters that have joined a global database network (GDN). After TDE is enabled on the primary cluster in a GDN, TDE is enabled on the secondary clusters in the GDN by default. The key used by the secondary clusters and the region for the key resides must be the same as the primary cluster. The region of the key cannot be modified.
 -> **NOTE:** You cannot enable TDE for the secondary clusters in a GDN. Used to view user KMS activation status.
