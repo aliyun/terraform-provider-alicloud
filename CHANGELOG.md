@@ -1,4 +1,23 @@
 ## 1.205.0 (Unreleased)
+
+ENHANCEMENTS:
+
+- docs: Improves the docs about available and deprecated version. ([#6112](https://github.com/aliyun/terraform-provider-alicloud/issues/6112))
+- ci: Improves the ci trigger when a pr is approved. ([#6114](https://github.com/aliyun/terraform-provider-alicloud/issues/6114))
+- resource/alicloud_rds_backup: Added retry strategy for error code BackupJobExists. ([#6117](https://github.com/aliyun/terraform-provider-alicloud/issues/6117))
+- docs/alicloud_config_rule: fix input_parameters description. ([#6123](https://github.com/aliyun/terraform-provider-alicloud/issues/6123))
+- resource/alicloud_dcdn_domain: Added the field tags. ([#6124](https://github.com/aliyun/terraform-provider-alicloud/issues/6124))
+- resource/alicloud_nlb_listener: Removes the limition for attribute security_policy_id and supports setting custom security policies. ([#6125](https://github.com/aliyun/terraform-provider-alicloud/issues/6125))
+- resource/alicloud_ecs_disk_attachment: Setting the delay to 0 when waiting for the resource reaching target status. ([#6126](https://github.com/aliyun/terraform-provider-alicloud/issues/6126))
+- resource/alicloud_ess_scaling_group:Update scalingGroup max_size min_size desired_capacity range [0-2000]. ([#6127](https://github.com/aliyun/terraform-provider-alicloud/issues/6127))
+- docs/dcdn_domain_config: Improves the docs example. ([#6133](https://github.com/aliyun/terraform-provider-alicloud/issues/6133))
+- resource/alicloud_vpc_public_ip_address_pool: Adds new attribute ResourceGroupId, Tags etc. ([#6134](https://github.com/aliyun/terraform-provider-alicloud/issues/6134))
+
+BUG FIXES:
+
+- data source/alicloud_instance_types: Fixed the read error caused by filter bug. ([#6132](https://github.com/aliyun/terraform-provider-alicloud/issues/6132))
+- resource/alicloud_pvtz_zone_record: Fixes the panic error when record id value out of range. ([#6138](https://github.com/aliyun/terraform-provider-alicloud/issues/6138))
+
 ## 1.204.0 (April 28, 2023)
 
 - **New Resource:** `resource_alicloud_config_remediation` ([#6100](https://github.com/aliyun/terraform-provider-alicloud/issues/6100))
@@ -36,7 +55,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
-- resource/alicloud_db_account_privilege : Fix SQLServer account privilege time out bug. ([#6101](https://github.com/aliyun/terraform-provider-alicloud/issues/6101))
+- resource/alicloud_db_account_privilege: Fix SQLServer account privilege time out bug. ([#6101](https://github.com/aliyun/terraform-provider-alicloud/issues/6101))
 - data/alicloud_oss_buckets: Fixed lifecycleRule.Expiration nil bug. ([#6092](https://github.com/aliyun/terraform-provider-alicloud/issues/6092))
 - resource/alicloud_resource_manager_account: Fixed abandon_able_check_id invalid error. ([#6055](https://github.com/aliyun/terraform-provider-alicloud/issues/6055))
 
