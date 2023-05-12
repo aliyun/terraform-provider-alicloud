@@ -267,6 +267,37 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
 			},
+			// test default port and there should not changes
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": "${var.name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": CHECKSET,
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"parameters": []interface{}{
@@ -387,6 +418,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						},
 					},
 					"encryption_key": "${alicloud_kms_key.default.id}",
+					"port":           "3306",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -400,7 +432,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"zone_id":                    CHECKSET,
 						"instance_charge_type":       "Postpaid",
 						"connection_string":          CHECKSET,
-						"port":                       CHECKSET,
+						"port":                       "3306",
 						"security_group_id":          CHECKSET,
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
@@ -2276,7 +2308,9 @@ var instanceBasicMap = map[string]string{
 	"zone_id":              CHECKSET,
 	"instance_charge_type": "Postpaid",
 	"connection_string":    CHECKSET,
-	"port":                 CHECKSET,
+	"port":                 "3306",
+	"status":               CHECKSET,
+	"create_time":          CHECKSET,
 }
 
 var instanceBasicMap2 = map[string]string{
