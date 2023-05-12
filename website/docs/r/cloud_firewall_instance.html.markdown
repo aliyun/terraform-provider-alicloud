@@ -38,7 +38,7 @@ resource "alicloud_cloud_firewall_instance" "example" {
 The following arguments are supported:
 
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`.
-* `period` - (Required) The prepaid period. Valid values: `6`, `12`, `24`, `36`.
+* `period` - (Required) The prepaid period. Valid values: `1`, `3`, `6`, `12`, `24`, `36`. **NOTE:** 1 and 3 available in 1.205.0+.
 * `renew_period` - (Optional) Automatic renewal period. **NOTE:** The `renew_period` is required under the condition that renewal_status is `AutoRenewal`.
 * `renewal_status` - (Optional) Automatic renewal status. Valid values: `AutoRenewal`,`ManualRenewal`. Default Value: `ManualRenewal`.
 * `logistics` - (Optional) The logistics.
