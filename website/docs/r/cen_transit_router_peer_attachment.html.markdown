@@ -52,15 +52,13 @@ resource "alicloud_cen_bandwidth_package_attachment" "default" {
 }
 
 resource "alicloud_cen_transit_router" "cn" {
-  provider   = alicloud.cn
-  cen_id     = alicloud_cen_instance.default.id
-  depends_on = [alicloud_cen_bandwidth_package_attachment.default]
+  provider = alicloud.cn
+  cen_id   = alicloud_cen_bandwidth_package_attachment.default.instance_id
 }
 
 resource "alicloud_cen_transit_router" "us" {
-  provider   = alicloud.us
-  cen_id     = alicloud_cen_instance.default.id
-  depends_on = [alicloud_cen_transit_router.default_0]
+  provider = alicloud.us
+  cen_id   = alicloud_cen_transit_router.cn.id
 }
 
 resource "alicloud_cen_transit_router_peer_attachment" "default" {
