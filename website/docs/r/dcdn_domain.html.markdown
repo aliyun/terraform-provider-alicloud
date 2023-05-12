@@ -56,7 +56,7 @@ The following arguments are supported:
 * `status` - (Optional) The status of DCDN Domain. Valid values: `online`, `offline`. Default to `online`.
 * `top_level_domain` - (Optional) The top-level domain name.
 * `security_token` - (Optional) The top-level domain name.
-* `tags` - (Optional, Available in v1.205.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available in v1.204.1+) A mapping of tags to assign to the resource.
 
 ### Block sources
 * `content` - (Required) The origin address.

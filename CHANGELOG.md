@@ -1,4 +1,27 @@
-## 1.205.0 (Unreleased)
+## 1.204.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- docs: Improves the docs about available and deprecated version. ([#6112](https://github.com/aliyun/terraform-provider-alicloud/issues/6112))
+- ci: Improves the ci trigger when a pr is approved. ([#6114](https://github.com/aliyun/terraform-provider-alicloud/issues/6114))
+- resource/alicloud_rds_backup: Added retry strategy for error code BackupJobExists. ([#6117](https://github.com/aliyun/terraform-provider-alicloud/issues/6117))
+- resource/alicloud_kms_secret: Added the field secret_type and extended_config. ([#6120](https://github.com/aliyun/terraform-provider-alicloud/issues/6120))
+- docs/alicloud_config_rule: fix input_parameters description. ([#6123](https://github.com/aliyun/terraform-provider-alicloud/issues/6123))
+- resource/alicloud_dcdn_domain: Added the field tags. ([#6124](https://github.com/aliyun/terraform-provider-alicloud/issues/6124))
+- resource/alicloud_nlb_listener: Removes the limition for attribute security_policy_id and supports setting custom security policies. ([#6125](https://github.com/aliyun/terraform-provider-alicloud/issues/6125))
+- resource/alicloud_ecs_disk_attachment: Setting the delay to 0 when waiting for the resource reaching target status. ([#6126](https://github.com/aliyun/terraform-provider-alicloud/issues/6126))
+- resource/alicloud_ess_scaling_group:Update scalingGroup max_size min_size desired_capacity range [0-2000]. ([#6127](https://github.com/aliyun/terraform-provider-alicloud/issues/6127))
+- docs/dcdn_domain_config: Improves the docs example. ([#6133](https://github.com/aliyun/terraform-provider-alicloud/issues/6133))
+- resource/alicloud_vpc_public_ip_address_pool: Adds new attribute ResourceGroupId, Tags etc. ([#6134](https://github.com/aliyun/terraform-provider-alicloud/issues/6134))
+- resource/alicloud_db_instance: Adds new attributes status and create_time; Fixes the connection string duplicate error caused by setting port to 3306 when creating. ([#6139](https://github.com/aliyun/terraform-provider-alicloud/issues/6139))
+- resource/alicloud_polardb_cluster: Adds new attributes status and create_time. ([#6140](https://github.com/aliyun/terraform-provider-alicloud/issues/6140))
+- resource/alicloud_cloud_firewall_instance: Attribute period supports setting 1 and 3. ([#6142](https://github.com/aliyun/terraform-provider-alicloud/issues/6142))
+
+BUG FIXES:
+
+- data source/alicloud_instance_types: Fixed the read error caused by filter bug. ([#6132](https://github.com/aliyun/terraform-provider-alicloud/issues/6132))
+- resource/alicloud_pvtz_zone_record: Fixes the panic error when record id value out of range. ([#6138](https://github.com/aliyun/terraform-provider-alicloud/issues/6138))
+
 ## 1.204.0 (April 28, 2023)
 
 - **New Resource:** `resource_alicloud_config_remediation` ([#6100](https://github.com/aliyun/terraform-provider-alicloud/issues/6100))
