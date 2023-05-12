@@ -31,7 +31,7 @@ func resourceAlicloudCloudFirewallInstance() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntInSlice([]int{6, 12, 24, 36}),
+				ValidateFunc: validation.IntInSlice([]int{1, 3, 6, 12, 24, 36}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
 						return false
