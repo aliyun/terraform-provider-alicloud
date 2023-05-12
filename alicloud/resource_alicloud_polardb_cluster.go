@@ -329,6 +329,14 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -826,7 +834,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 
 	clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -835,10 +843,6 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 
 	cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
 		return WrapError(err)
 	}
 
@@ -897,6 +901,8 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("deletion_lock", clusterAttribute.DeletionLock)
 	d.Set("creation_category", clusterAttribute.Category)
 	d.Set("vpc_id", clusterAttribute.VPCId)
+	d.Set("status", clusterAttribute.DBClusterStatus)
+	d.Set("create_time", clusterAttribute.CreationTime)
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
