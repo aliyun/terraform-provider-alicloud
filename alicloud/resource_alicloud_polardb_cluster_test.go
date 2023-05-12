@@ -117,6 +117,8 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 		"tde_status":        "Disabled",
 		"connection_string": REGEXMATCH + clusterConnectionStringRegexp,
 		"port":              "3306",
+		"status":            CHECKSET,
+		"create_time":       CHECKSET,
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
