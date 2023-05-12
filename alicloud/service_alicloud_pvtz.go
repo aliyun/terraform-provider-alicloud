@@ -163,7 +163,7 @@ func (s *PvtzService) DescribePvtzZoneRecord(id string) (object map[string]inter
 			return object, WrapErrorf(Error(GetNotFoundMessage("PrivateZone", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(formatInt(v.(map[string]interface{})["RecordId"])) == parts[0] || fmt.Sprint(v.(map[string]interface{})["RecordId"]) == parts[0] {
+			if fmt.Sprint(v.(map[string]interface{})["RecordId"]) == parts[0] {
 				return v.(map[string]interface{}), nil
 			}
 		}
