@@ -79,6 +79,11 @@ The following arguments are supported:
 -> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
 * `data_level2_backup_another_region_region` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-2 backup is a cross regional backup area.
 * `data_level2_backup_another_region_retention_period` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-2 backup cross region backup retention period. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
+* `log_backup_retention_period` - (Optional, Available in 1.183.0+) The retention period of the log backups. Valid values are `3 to 7300`, `-1`.
+* `log_backup_another_region_region` - (Optional, Available in 1.183.0+) The region in which you want to store cross-region log backups. For information about regions that support the cross-region backup feature, see [Overview.](https://www.alibabacloud.com/help/en/polardb/latest/backup-and-restoration-overview)
+* `log_backup_another_region_retention_period` - (Optional, Available in 1.183.0+) The retention period of cross-region log backups. Default value: OFF. Valid values are `0`, `30 to 7300`, `-1`.
+-> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
+* `enable_backup_log` - (Optional, Available in 1.183.0+) Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
 
 ## Attributes Reference
 

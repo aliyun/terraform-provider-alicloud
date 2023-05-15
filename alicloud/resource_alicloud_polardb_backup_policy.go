@@ -102,6 +102,27 @@ func resourceAlicloudPolarDBBackupPolicy() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"log_backup_retention_period": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"log_backup_another_region_region": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"log_backup_another_region_retention_period": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"enable_backup_log": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+			},
 		},
 	}
 }
@@ -148,6 +169,12 @@ func resourceAlicloudPolarDBBackupPolicyRead(d *schema.ResourceData, meta interf
 	}
 	d.Set("data_level2_backup_another_region_region", object["DataLevel2BackupAnotherRegionRegion"])
 	d.Set("data_level2_backup_another_region_retention_period", object["DataLevel2BackupAnotherRegionRetentionPeriod"])
+	logBackupPolicy, err := polardbService.DescribeLogBackupPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("log_backup_retention_period", logBackupPolicy["LogBackupRetentionPeriod"].(string))
+	d.Set("enable_backup_log", logBackupPolicy["EnableBackupLog"].(string))
 	return nil
 }
 
@@ -238,6 +265,40 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 
 	if update {
 		action := "ModifyBackupPolicy"
+		conn, err := client.NewPolarDBClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	if d.HasChanges("log_backup_retention_period", "log_backup_another_region_region", "log_backup_another_region_retention_period") {
+		if v, ok := d.GetOk("log_backup_retention_period"); ok {
+			request["LogBackupRetentionPeriod"] = v
+		}
+		if v, ok := d.GetOk("log_backup_another_region_region"); ok {
+			request["LogBackupAnotherRegionRegion"] = v
+		}
+		if v, ok := d.GetOk("log_backup_another_region_retention_period"); ok {
+			request["LogBackupAnotherRegionRetentionPeriod"] = v
+		}
+
+		action := "ModifyLogBackupPolicy"
 		conn, err := client.NewPolarDBClient()
 		if err != nil {
 			return WrapError(err)

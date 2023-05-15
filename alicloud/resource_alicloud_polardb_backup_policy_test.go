@@ -127,9 +127,10 @@ func TestAccAlicloudPolarDBNewBackupPolicy(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"log_backup_another_region_region", "log_backup_another_region_retention_period"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -198,6 +199,36 @@ func TestAccAlicloudPolarDBNewBackupPolicy(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"data_level1_backup_frequency": "Normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_backup_retention_period": "4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup_retention_period": "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_backup_another_region_region": "cn-beijing",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup_another_region_region": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_backup_another_region_retention_period": "32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_backup_another_region_retention_period": CHECKSET,
 					}),
 				),
 			},
