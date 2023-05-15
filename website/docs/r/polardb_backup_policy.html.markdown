@@ -67,7 +67,18 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `preferred_backup_time` - (Optional) PolarDB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
-* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`. Value options can refer to the latest docs [ModifyBackupPolicy](https://help.aliyun.com/document_detail/98103.html)
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`.
+* `data_level1_backup_retention_period` - (Optional, Available in 1.183.0+) The retention period of level-1 backups. Valid values: 3 to 14. Unit: days.
+* `data_level2_backup_retention_period` - (Optional, Available in 1.183.0+) The retention period of level-2 backups. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
+* `backup_frequency` - (Optional, Available in 1.183.0+) The backup frequency. Valid values are `Normal`, `2/24H`, `3/24H`, `4/24H`.Default to `Normal`.
+* `data_level1_backup_frequency` - (Optional, Available in 1.183.0+) The Id of cluster that can run database.The backup frequency. Valid values are `Normal`, `2/24H`, `3/24H`, `4/24H`.Default to `Normal`.
+* `data_level1_backup_time` - (Optional, Available in 1.183.0+) The time period during which automatic backup is performed. The format is HH: MMZ HH: MMZ (UTC time), and the entered value must be an hour apart, such as 14:00z-15:00z.
+* `data_level1_backup_period` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-1 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+-> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
+* `data_level2_backup_period` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-2 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+-> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
+* `data_level2_backup_another_region_region` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-2 backup is a cross regional backup area.
+* `data_level2_backup_another_region_retention_period` - (Optional, Available in 1.183.0+) PolarDB Cluster of level-2 backup cross region backup retention period. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
 
 ## Attributes Reference
 
