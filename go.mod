@@ -35,6 +35,7 @@ require (
 	k8s.io/apimachinery v0.21.0-rc.0
 	//k8s.io/client-go v11.0.0+incompatible
 	k8s.io/client-go v0.21.0-rc.0
+	github.com/gofrs/flock v0.8.1
 )
 
 require (

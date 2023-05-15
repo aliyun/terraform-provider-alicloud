@@ -1,0 +1,86 @@
+# This GitHub action can publish assets for release when a tag is created.
+# Currently its setup to run on any tag that matches the pattern "v*" (ie. v0.1.0).
+#
+# This uses an action (hashicorp/ghaction-import-gpg) that assumes you set your
+# private key in the `GPG_PRIVATE_KEY` secret and passphrase in the `PASSPHRASE`
+# secret. If you would rather own your own GPG handling, please fork this action
+# or use an alternative one for key handling.
+#
+# You will need to pass the `--batch` flag to `gpg` in your signing step
+# in `goreleaser` to indicate this is being used in a non-interactive mode.
+#
+name: Shinny release
+on:
+  push:
+    tags:
+      - '[0-9]+.*'
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Unshallow
+        run: git fetch --prune --unshallow
+      -
+        name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
+      -
+        name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --clean --timeout 500m --parallelism 1 --config .goreleaser.shinny.yml ${{ env.grflags }}
+        env:
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          # GitHub sets this automatically
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      -
+        name: Setup ossutil
+        uses: manyuanrong/setup-ossutil@v2.0
+        with:
+          endpoint: "oss-accelerate.aliyuncs.com"
+          access-key-id: ${{ secrets.OSS_ACCESS_KEY }}
+          access-key-secret: ${{ secrets.OSS_SECRET_KEY }}
+
+      -
+        name: Prepare versions
+        run: |
+          ossutil cp oss://shinnyterraform/providers/v1/shinnytech/alicloud/versions versions
+          export VERSION=${{ github.ref_name }}
+          cat versions | jq --arg VERSION $VERSION 'del(.versions[] | select(.version==$VERSION))' | jq --arg VERSION $VERSION '.versions[.versions| length] |= . +{version:$VERSION,protocols:["5.0"],platform:[{os:"linux",arch:"amd64"}]}' > versions.new
+
+      -
+        name: Prepare amd64
+        run: |
+          export SHASUM=`cat dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS | cut -d " " -f 1`
+          export ZIPFILE=terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip
+          export DOWNLOAD_URL=https://terraform.shinnytech.com/$ZIPFILE
+          export SHASUM_URL=https://terraform.shinnytech.com/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM
+          export SHASUM_SIG_URL=https://terraform.shinnytech.com/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM.sig
+          cat .amd64.tpl | jq --arg d "$DOWNLOAD_URL" --arg f "$ZIPFILE" --arg s "$SHASUM" --arg su "$SHASUM_URL" --arg sgu "$SHASUM_SIG_URL" '.download_url|=$d | .filename|=$f | .shasum=$s | .shasums_url=$su | .shasums_signature_url=$sgu' > amd64.new
+
+      -
+        name: Upload files
+        run: |
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS.sig oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM.sig
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip oss://shinnyterraform/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip
+          ossutil cp -f amd64.new oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/amd64
+          ossutil cp -f versions.new oss://shinnyterraform/providers/v1/shinnytech/alicloud/versions
+          
+          
+          
+
