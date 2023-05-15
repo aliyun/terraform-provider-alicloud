@@ -49,19 +49,14 @@ The following arguments are supported:
     `5`: Medium 1.
     `8`: Medium 2.
     `10`: Medium 3.
-
 * `auto_renew_duration` - (Optional, Available in v1.146.0+) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
 * `renewal_status` - (Optional, Available in v1.146.0+) Whether to renew an accelerator automatically or not. Default to "Normal". Valid values:
-    - `AutoRenewal`: Enable auto renewal.
-    - `Normal`: Disable auto renewal.
-    - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
-    
-### Timeouts
-
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when creating the Ga Accelerator.
-* `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.
+  - `AutoRenewal`: Enable auto renewal.
+  - `Normal`: Disable auto renewal.
+  - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+* `bandwidth_billing_type` - (Optional, ForceNew, Computed, Available in v1.205.0+) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
+  - `BandwidthPackage`: billed based on bandwidth plans.
+  - `CDT`: billed based on data transfer.
 
 ## Attributes Reference
 
@@ -69,6 +64,13 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
 * `status` - The status of the GA instance.
+
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 1 mins) Used when creating the Ga Accelerator.
+* `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.
 
 ## Import
 
