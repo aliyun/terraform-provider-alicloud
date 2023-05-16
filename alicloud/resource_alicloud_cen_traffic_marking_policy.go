@@ -42,13 +42,13 @@ func resourceAlicloudCenTrafficMarkingPolicy() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: intBetween(0, 63),
+				ValidateFunc: IntBetween(0, 63),
 			},
 			"priority": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: intBetween(1, 100),
+				ValidateFunc: IntBetween(1, 100),
 			},
 			"status": {
 				Type:     schema.TypeString,

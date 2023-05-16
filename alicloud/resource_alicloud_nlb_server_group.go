@@ -78,7 +78,7 @@ func resourceAlicloudNlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: intBetween(5, 40),
+							ValidateFunc: IntBetween(5, 40),
 						},
 						"health_check_type": {
 							Type:         schema.TypeString,
@@ -96,13 +96,13 @@ func resourceAlicloudNlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: intBetween(2, 10),
+							ValidateFunc: IntBetween(2, 10),
 						},
 						"unhealthy_threshold": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: intBetween(2, 10),
+							ValidateFunc: IntBetween(2, 10),
 						},
 						"http_check_method": {
 							Type:         schema.TypeString,

@@ -112,7 +112,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 													Type:         schema.TypeInt,
 													Optional:     true,
 													Computed:     true,
-													ValidateFunc: intBetween(1, 86400),
+													ValidateFunc: IntBetween(1, 86400),
 												},
 											},
 										},
