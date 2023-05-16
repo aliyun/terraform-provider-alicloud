@@ -55,7 +55,7 @@ func dataSourceAlicloudDBZones() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "cluster"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "serverless_basic", "serverless_standard", "serverless_ha", "cluster"}, false),
 			},
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
