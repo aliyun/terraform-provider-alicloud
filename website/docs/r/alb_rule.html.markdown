@@ -26,7 +26,8 @@ variable "name" {
   default = "example_name"
 }
 
-data "alicloud_alb_zones" "default" {}
+data "alicloud_alb_zones" "default" {
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
@@ -141,6 +142,9 @@ The following arguments are supported:
 * `rule_actions` - (Required) The actions of the forwarding rules. See the following `Block rule_actions`.
 * `rule_conditions` - (Required) The conditions of the forwarding rule. See the following `Block rule_conditions`.
 * `rule_name` - (Required) The name of the forwarding rule. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
+* `direction` - (Optional, ForceNew, Computed, Available in 1.205.0+) The direction to which the forwarding rule is applied. Default value: `Request`. Valid values:
+  - `Request`: The forwarding rule is applied to the client requests received by ALB.
+  - `Response`: The forwarding rule is applied to the responses returned by backend servers.
 
 ### Block rule_conditions
 
@@ -212,7 +216,10 @@ The query_string_config supports the following:
 The rule_actions supports the following: 
 
 * `order` - (Required) The order of the forwarding rule actions. Valid values: 1 to 50000. The actions are performed in ascending order. You cannot leave this parameter empty. Each value must be unique.
-* `type` - (Required) The action. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `TrafficLimit` and `TrafficMirror`. **Note:**  The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action. **NOTE:** The `TrafficLimit` and `TrafficMirror` option is available in 1.162.0+.
+* `type` - (Required) The action. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `TrafficLimit`, `TrafficMirror` and `Cors`.
+**Note:**  The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action.
+**NOTE:** The `TrafficLimit` and `TrafficMirror` option is available in 1.162.0+.
+**NOTE:** From version 1.205.0+, `type` can be set to `Cors`.
 * `fixed_response_config` - (Optional) The configuration of the fixed response. See the following `Block fixed_response_config`.
 * `insert_header_config` - (Optional) The configuration of the inserted header field. See the following `Block insert_header_config`.
 * `redirect_config` - (Optional) The configuration of the external redirect action. See the following `Block redirect_config`.
@@ -220,6 +227,7 @@ The rule_actions supports the following:
 * `forward_group_config` - (Optional) The forward response action within ALB. See the following `Block forward_group_config`.
 * `traffic_limit_config` - (Optional, Available in 1.162.0+) The Flow speed limit. See the following `Block traffic_limit_config`.
 * `traffic_mirror_config` - (Optional, Available in 1.162.0+) The Traffic mirroring. See the following `Block traffic_mirror_config`.
+* `cors_config` - (Optional, Available in 1.205.0+) Request forwarding based on CORS. See the following `Block cors_config`.
 
 #### Block rewrite_config
 
@@ -285,7 +293,18 @@ The traffic_mirror_config supports the following:
 The mirror_group_config supports the following:
 
 * `server_group_tuples` - (Optional, Array) The destination server group to which requests are forwarded.
-  * `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
+* `server_group_id` - (Optional) The ID of the destination server group to which requests are forwarded.
+
+#### Block cors_config
+
+The cors_config supports the following:
+
+* `allow_origin` - (Optional, Array) The allowed origins of CORS requests.
+* `allow_methods` - (Optional, Array) The allowed HTTP methods for CORS requests. Valid values: `GET`, `POST`, `PUT`, `DELETE`, `HEAD`, `OPTIONS`, `PATCH`.
+* `allow_headers` - (Optional, Array) The allowed headers for CORS requests.
+* `expose_headers` - (Optional, Array) The headers that can be exposed.
+* `allow_credentials` - (Optional) Specifies whether credentials can be passed during CORS operations. Valid values: `on`, `off`.
+* `max_age` - (Optional) The maximum cache time of preflight requests in the browser. Unit: seconds. Valid values: `-1` to `172800`.
 
 ## Attributes Reference
 
@@ -299,8 +318,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Rule.
-* `delete` - (Defaults to 2 mins) Used when delete the Rule.
 * `update` - (Defaults to 2 mins) Used when update the Rule.
+* `delete` - (Defaults to 2 mins) Used when delete the Rule.
 
 ## Import
 
