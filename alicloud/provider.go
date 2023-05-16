@@ -2221,7 +2221,7 @@ func assumeRoleSchema() *schema.Schema {
 					Type:         schema.TypeInt,
 					Optional:     true,
 					Description:  descriptions["assume_role_session_expiration"],
-					ValidateFunc: intBetween(900, 43200),
+					ValidateFunc: IntBetween(900, 43200),
 				},
 			},
 		},

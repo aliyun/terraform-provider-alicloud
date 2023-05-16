@@ -38,7 +38,7 @@ func resourceAlicloudRamAccountPasswordPolicy() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      default_minimum_password_length,
-				ValidateFunc: intBetween(8, 32),
+				ValidateFunc: IntBetween(8, 32),
 			},
 			"require_lowercase_characters": {
 				Type:     schema.TypeBool,
@@ -69,19 +69,19 @@ func resourceAlicloudRamAccountPasswordPolicy() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      default_max_password_age,
-				ValidateFunc: intBetween(0, 1095),
+				ValidateFunc: IntBetween(0, 1095),
 			},
 			"password_reuse_prevention": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      default_password_reuse_prevention,
-				ValidateFunc: intBetween(0, 24),
+				ValidateFunc: IntBetween(0, 24),
 			},
 			"max_login_attempts": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      default_max_login_attempts,
-				ValidateFunc: intBetween(0, 32),
+				ValidateFunc: IntBetween(0, 32),
 			},
 		},
 	}
