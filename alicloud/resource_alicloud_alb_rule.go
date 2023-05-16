@@ -24,8 +24,8 @@ func resourceAlicloudAlbRule() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
+			Delete: schema.DefaultTimeout(2 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
@@ -59,12 +59,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"content_type": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"text/plain", "text/css", "text/html", "application/javascript", "application/json"}, false),
+										ValidateFunc: StringInSlice([]string{"text/plain", "text/css", "text/html", "application/javascript", "application/json"}, false),
 									},
 									"http_code": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[2-5][0-9]{2}$`), "The http code must be an HTTP_2xx,HTTP_4xx or HTTP_5xx.x is a digit."),
+										ValidateFunc: StringMatch(regexp.MustCompile(`^[2-5][0-9]{2}$`), "The http code must be an HTTP_2xx,HTTP_4xx or HTTP_5xx.x is a digit."),
 									},
 								},
 							},
@@ -91,7 +91,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 													Type:         schema.TypeInt,
 													Optional:     true,
 													Default:      100,
-													ValidateFunc: validation.IntBetween(1, 100),
+													ValidateFunc: IntBetween(1, 100),
 												},
 											},
 										},
@@ -129,17 +129,17 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"key": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
+										ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
 									},
 									"value": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringLenBetween(1, 128),
+										ValidateFunc: StringLenBetween(1, 128),
 									},
 									"value_type": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"UserDefined", "ReferenceHeader", "SystemDefined"}, false),
+										ValidateFunc: StringInSlice([]string{"UserDefined", "ReferenceHeader", "SystemDefined"}, false),
 									},
 								},
 							},
@@ -147,7 +147,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 						"order": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validation.IntBetween(1, 50000),
+							ValidateFunc: IntBetween(1, 50000),
 						},
 						"redirect_config": {
 							Type:     schema.TypeSet,
@@ -163,7 +163,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"http_code": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"301", "302", "303", "307", "308"}, false),
+										ValidateFunc: StringInSlice([]string{"301", "302", "303", "307", "308"}, false),
 									},
 									"path": {
 										Type:     schema.TypeString,
@@ -176,12 +176,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"protocol": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS", "${protocol}"}, false),
+										ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS", "${protocol}"}, false),
 									},
 									"query": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringLenBetween(1, 128),
+										ValidateFunc: StringLenBetween(1, 128),
 									},
 								},
 							},
@@ -200,12 +200,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"path": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringLenBetween(1, 128),
+										ValidateFunc: StringLenBetween(1, 128),
 									},
 									"query": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringLenBetween(1, 128),
+										ValidateFunc: StringLenBetween(1, 128),
 									},
 								},
 							},
@@ -219,7 +219,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"qps": {
 										Type:         schema.TypeInt,
 										Optional:     true,
-										ValidateFunc: validation.IntBetween(1, 100000),
+										ValidateFunc: IntBetween(1, 100000),
 									},
 								},
 							},
@@ -258,10 +258,49 @@ func resourceAlicloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						"cors_config": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"allow_origin": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"allow_methods": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"allow_headers": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"expose_headers": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+									"allow_credentials": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"on", "off"}, false),
+									},
+									"max_age": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: IntBetween(-1, 172800),
+									},
+								},
+							},
+						},
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror"}, false),
+							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors"}, false),
 						},
 					},
 				},
@@ -285,12 +324,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 												"key": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringLenBetween(1, 100),
+													ValidateFunc: StringLenBetween(1, 100),
 												},
 												"value": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringLenBetween(1, 128),
+													ValidateFunc: StringLenBetween(1, 128),
 												},
 											},
 										},
@@ -307,7 +346,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 									"key": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
+										ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
 									},
 									"values": {
 										Type:     schema.TypeSet,
@@ -373,12 +412,12 @@ func resourceAlicloudAlbRule() *schema.Resource {
 												"key": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringLenBetween(1, 100),
+													ValidateFunc: StringLenBetween(1, 100),
 												},
 												"value": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringLenBetween(1, 128),
+													ValidateFunc: StringLenBetween(1, 128),
 												},
 											},
 										},
@@ -389,7 +428,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Host", "Path", "Header", "HTTP", "QueryString", "Method", "Cookie", "SourceIp"}, false),
+							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "HTTP", "QueryString", "Method", "Cookie", "SourceIp"}, false),
 						},
 						"source_ip_config": {
 							Type:     schema.TypeSet,
@@ -413,6 +452,13 @@ func resourceAlicloudAlbRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Request", "Response"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -424,6 +470,7 @@ func resourceAlicloudAlbRule() *schema.Resource {
 func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var direction string
 	action := "CreateRule"
 	request := make(map[string]interface{})
 	conn, err := client.NewAlbClient()
@@ -433,6 +480,7 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+
 	request["ListenerId"] = d.Get("listener_id")
 	request["Priority"] = d.Get("priority")
 	ruleActionsMaps := make([]map[string]interface{}, 0)
@@ -542,6 +590,39 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 			}
 		}
 
+		if v, ok := ruleActionsArg["cors_config"]; ok {
+			corsConfigMap := map[string]interface{}{}
+			for _, corsConfigList := range v.(*schema.Set).List() {
+				corsConfigArg := corsConfigList.(map[string]interface{})
+
+				if allowOrigin, ok := corsConfigArg["allow_origin"]; ok {
+					corsConfigMap["AllowOrigin"] = allowOrigin
+				}
+
+				if allowMethods, ok := corsConfigArg["allow_methods"]; ok {
+					corsConfigMap["AllowMethods"] = allowMethods
+				}
+
+				if allowHeaders, ok := corsConfigArg["allow_headers"]; ok {
+					corsConfigMap["AllowHeaders"] = allowHeaders
+				}
+
+				if exposeHeaders, ok := corsConfigArg["expose_headers"]; ok {
+					corsConfigMap["ExposeHeaders"] = exposeHeaders
+				}
+
+				if allowCredentials, ok := corsConfigArg["allow_credentials"]; ok {
+					corsConfigMap["AllowCredentials"] = allowCredentials
+				}
+
+				if maxAge, ok := corsConfigArg["max_age"]; ok {
+					corsConfigMap["MaxAge"] = maxAge
+				}
+			}
+
+			ruleActionsMap["CorsConfig"] = corsConfigMap
+		}
+
 		ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 	}
 	request["RuleActions"] = ruleActionsMaps
@@ -623,11 +704,17 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	request["RuleConditions"] = ruleConditionsMaps
 
 	request["RuleName"] = d.Get("rule_name")
+
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+		request["Direction"] = v
+	}
+
 	request["ClientToken"] = buildClientToken("CreateRule")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Listener", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -639,30 +726,41 @@ func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alb_rule", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["RuleId"]))
+
 	albService := AlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return resourceAlicloudAlbRuleRead(d, meta)
 }
+
 func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
-	object, err := albService.DescribeAlbRule(d.Id())
+
+	var direction string
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+	}
+
+	object, err := albService.DescribeAlbRule(d.Id(), direction)
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alb_rule albService.DescribeAlbRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("listener_id", object["ListenerId"])
 	if v, ok := object["Priority"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("priority", formatInt(v))
@@ -817,7 +915,45 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					}
 				}
 			}
+
+			if corsConfig, ok := ruleActionsArg["CorsConfig"]; ok {
+				corsConfigMaps := make([]map[string]interface{}, 0)
+				corsConfigArg := corsConfig.(map[string]interface{})
+
+				if len(corsConfigArg) > 0 {
+					corsConfigMap := map[string]interface{}{}
+
+					if allowOrigin, ok := corsConfigArg["AllowOrigin"]; ok {
+						corsConfigMap["allow_origin"] = allowOrigin
+					}
+
+					if allowMethods, ok := corsConfigArg["AllowMethods"]; ok {
+						corsConfigMap["allow_methods"] = allowMethods
+					}
+
+					if allowHeaders, ok := corsConfigArg["AllowHeaders"]; ok {
+						corsConfigMap["allow_headers"] = allowHeaders
+					}
+
+					if exposeHeaders, ok := corsConfigArg["ExposeHeaders"]; ok {
+						corsConfigMap["expose_headers"] = exposeHeaders
+					}
+
+					if allowCredentials, ok := corsConfigArg["AllowCredentials"]; ok {
+						corsConfigMap["allow_credentials"] = allowCredentials
+					}
+
+					if maxAge, ok := corsConfigArg["MaxAge"]; ok {
+						corsConfigMap["max_age"] = maxAge
+					}
+
+					corsConfigMaps = append(corsConfigMaps, corsConfigMap)
+					ruleActionsMap["cors_config"] = corsConfigMaps
+					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+				}
+			}
 		}
+
 		d.Set("rule_actions", ruleActionsMaps)
 	}
 
@@ -934,9 +1070,12 @@ func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("rule_name", object["RuleName"])
+	d.Set("direction", object["Direction"])
 	d.Set("status", object["RuleStatus"])
+
 	return nil
 }
+
 func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -1062,6 +1201,39 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 			}
 
+			if v, ok := ruleActionsArg["cors_config"]; ok {
+				corsConfigMap := map[string]interface{}{}
+				for _, corsConfigList := range v.(*schema.Set).List() {
+					corsConfigArg := corsConfigList.(map[string]interface{})
+
+					if allowOrigin, ok := corsConfigArg["allow_origin"]; ok {
+						corsConfigMap["AllowOrigin"] = allowOrigin
+					}
+
+					if allowMethods, ok := corsConfigArg["allow_methods"]; ok {
+						corsConfigMap["AllowMethods"] = allowMethods
+					}
+
+					if allowHeaders, ok := corsConfigArg["allow_headers"]; ok {
+						corsConfigMap["AllowHeaders"] = allowHeaders
+					}
+
+					if exposeHeaders, ok := corsConfigArg["expose_headers"]; ok {
+						corsConfigMap["ExposeHeaders"] = exposeHeaders
+					}
+
+					if allowCredentials, ok := corsConfigArg["allow_credentials"]; ok {
+						corsConfigMap["AllowCredentials"] = allowCredentials
+					}
+
+					if maxAge, ok := corsConfigArg["max_age"]; ok {
+						corsConfigMap["MaxAge"] = maxAge
+					}
+				}
+
+				ruleActionsMap["CorsConfig"] = corsConfigMap
+			}
+
 			ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 		}
 		request["RuleActions"] = ruleActionsMaps
@@ -1146,6 +1318,11 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 		request["RuleConditions"] = ruleConditionsMaps
 	}
 
+	var direction string
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+	}
+
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
@@ -1159,7 +1336,7 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -1171,17 +1348,21 @@ func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		albService := AlbService{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), []string{"CreateFailed"}))
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+
 	return resourceAlicloudAlbRuleRead(d, meta)
 }
+
 func resourceAlicloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRule"
@@ -1201,7 +1382,7 @@ func resourceAlicloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectStatus.Rule", "SystemBusy", "Throttling"}) || NeedRetry(err) {
@@ -1213,11 +1394,13 @@ func resourceAlicloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.Rule"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
