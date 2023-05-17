@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudForwardEntry() *schema.Resource {
@@ -69,7 +68,7 @@ func resourceAlicloudForwardEntry() *schema.Resource {
 			"ip_protocol": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"any", "tcp", "udp"}, false),
+				ValidateFunc: StringInSlice([]string{"any", "tcp", "udp"}, false),
 			},
 			"port_break": {
 				Type:     schema.TypeBool,
@@ -115,7 +114,7 @@ func resourceAlicloudForwardEntryCreate(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidIp.NotInNatgw", "OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InvalidIp.NotInNatgw", "OperationConflict", "TaskConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
