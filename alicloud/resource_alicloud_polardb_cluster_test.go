@@ -762,7 +762,8 @@ func TestAccAlicloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
+// Currently, there is no region support creating SENormal
+func SkipTestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 	var v map[string]interface{}
 	name := "tf-testAccPolarDBClusterSENormalCreate"
 	resourceId := "alicloud_polardb_cluster.default"
@@ -865,7 +866,7 @@ func TestAccAlicloudPolarDBClusterServerless(t *testing.T) {
 					"db_type":           "MySQL",
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
-					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.3.db_node_class}",
+					"db_node_class":     "polar.mysql.sl.small",
 					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -887,6 +888,7 @@ func TestAccAlicloudPolarDBClusterServerless(t *testing.T) {
 						"scale_ro_num_min":  "1",
 						"scale_ro_num_max":  "2",
 						"allow_shut_down":   "false",
+						"db_node_class":     "polar.mysql.sl.small",
 					}),
 				),
 			},
