@@ -13,6 +13,32 @@ import (
 func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	rand := acctest.RandIntRange(1, 2999)
+	tableIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_route_table_id": `"${alicloud_cen_transit_router_route_table_association.default.transit_router_route_table_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_route_table_id": `"${alicloud_cen_transit_router_route_table_association.default.transit_router_route_table_id}-fake"`,
+		}),
+	}
+	attachmentIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_attachment_id": `"${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_attachment_id": `"${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}-fake"`,
+		}),
+	}
+	resourceIdConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_attachment_resource_id":   `"${alicloud_cen_transit_router_vbr_attachment.default.vbr_id}"`,
+			"transit_router_attachment_resource_type": `"VBR"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_attachment_resource_id":   `"${alicloud_cen_transit_router_vbr_attachment.default.vbr_id}"`,
+			"transit_router_attachment_resource_type": `"VPC"`,
+		}),
+	}
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}"]`,
@@ -33,6 +59,10 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand, map[string]string{
+			"transit_router_route_table_id":           `"${alicloud_cen_transit_router_route_table_association.default.transit_router_route_table_id}"`,
+			"transit_router_attachment_id":            `"${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}"`,
+			"transit_router_attachment_resource_id":   `"${alicloud_cen_transit_router_vbr_attachment.default.vbr_id}"`,
+			"transit_router_attachment_resource_type": `"VBR"`,
 			"ids":    `["${alicloud_cen_transit_router_route_table_association.default.transit_router_attachment_id}"]`,
 			"status": `"Active"`,
 		}),
@@ -61,7 +91,7 @@ func TestAccAlicloudCenTransitRouterRouteTableAssociationsDataSource(t *testing.
 		existMapFunc: existAlicloudCenTransitRouterRouteTableAssociationsDataSourceNameMapFunc,
 		fakeMapFunc:  fakeAlicloudCenTransitRouterRouteTableAssociationsDataSourceNameMapFunc,
 	}
-	alicloudCenTransitRouterRouteTableAssociationsCheckInfo.dataSourceTestCheck(t, rand, idsConf, statusConf, allConf)
+	alicloudCenTransitRouterRouteTableAssociationsCheckInfo.dataSourceTestCheck(t, rand, tableIdConf, attachmentIdConf, resourceIdConf, idsConf, statusConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTableAssociationsDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
@@ -120,7 +150,6 @@ resource "alicloud_cen_transit_router_route_table_association" "default" {
 }
 
 data "alicloud_cen_transit_router_route_table_associations" "default" {	
-	transit_router_route_table_id = alicloud_cen_transit_router_route_table.default.transit_router_route_table_id 
 	%s
 }
 `, rand, rand, strings.Join(pairs, " \n "))
