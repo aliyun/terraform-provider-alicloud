@@ -11,8 +11,6 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
@@ -72,19 +70,19 @@ func resourceAlicloudDBInstance() *schema.Resource {
 
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{string(Postpaid), string(Prepaid), string(Serverless)}, false),
+				ValidateFunc: StringInSlice([]string{string(Postpaid), string(Prepaid), string(Serverless)}, false),
 				Optional:     true,
 				Default:      Postpaid,
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"monitoring_period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{5, 10, 60, 300}),
+				ValidateFunc: IntInSlice([]int{5, 10, 60, 300}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -96,7 +94,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"auto_renew_period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(1, 12),
+				ValidateFunc:     IntBetween(1, 12),
 				Optional:         true,
 				Default:          1,
 				DiffSuppressFunc: PostPaidAndRenewDiffSuppressFunc,
@@ -135,7 +133,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 
 			"connection_string": {
@@ -146,7 +144,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"connection_string_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
-				//ValidateFunc: validation.StringLenBetween(8, 64),
+				//ValidateFunc: StringLenBetween(8, 64),
 				Computed: true,
 			},
 
@@ -184,13 +182,13 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"whitelist_network_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Classic", "VPC", "MIX"}, false),
+				ValidateFunc:     StringInSlice([]string{"Classic", "VPC", "MIX"}, false),
 				DiffSuppressFunc: securityIpsDiffSuppressFunc,
 			},
 			"modify_mode": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+				ValidateFunc:     StringInSlice([]string{"Cover", "Append", "Delete"}, false),
 				DiffSuppressFunc: securityIpsDiffSuppressFunc,
 			},
 			"security_group_id": {
@@ -208,7 +206,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"security_ip_mode": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{NormalMode, SafetyMode}, false),
+				ValidateFunc: StringInSlice([]string{NormalMode, SafetyMode}, false),
 				Optional:     true,
 				Default:      NormalMode,
 			},
@@ -295,7 +293,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 						"migration_mode": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"single-db", "multi-db"}, false),
+							ValidateFunc: StringInSlice([]string{"single-db", "multi-db"}, false),
 						},
 						"master_username": {
 							Type:     schema.TypeString,
@@ -326,7 +324,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
+				ValidateFunc: StringInSlice([]string{"Auto", "Manual"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine").(string) != "MySQL"
 				},
@@ -335,18 +333,18 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
+				ValidateFunc: StringInSlice([]string{"local_ssd", "cloud_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3"}, false),
 			},
 			"sql_collector_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled", "Disabled"}, false),
 				Computed:     true,
 			},
 			"sql_collector_config_value": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{30, 180, 365, 1095, 1825}),
+				ValidateFunc: IntInSlice([]int{30, 180, 365, 1095, 1825}),
 				Default:      30,
 			},
 			"resource_group_id": {
@@ -356,7 +354,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"ssl_action": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Open", "Close", "Update"}, false),
+				ValidateFunc: StringInSlice([]string{"Open", "Close", "Update"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -368,7 +366,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Enabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled"}, false),
 				Optional:     true,
 				ForceNew:     true,
 			},
@@ -445,7 +443,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"upgrade_time": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Immediate", "MaintainTime", "SpecifyTime"}, false),
+				ValidateFunc:     StringInSlice([]string{"Immediate", "MaintainTime", "SpecifyTime"}, false),
 				DiffSuppressFunc: kernelSmallVersionDiffSuppressFunc,
 			},
 			"switch_time": {
@@ -460,18 +458,18 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			},
 			"storage_auto_scale": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disable"}, false),
+				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
 				Optional:     true,
 			},
 			"storage_threshold": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{10, 20, 30, 40, 50}),
+				ValidateFunc:     IntInSlice([]int{10, 20, 30, 40, 50}),
 				DiffSuppressFunc: StorageAutoScaleDiffSuppressFunc,
 				Optional:         true,
 			},
 			"storage_upper_bound": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntAtLeast(0),
+				ValidateFunc:     IntAtLeast(0),
 				DiffSuppressFunc: StorageAutoScaleDiffSuppressFunc,
 				Optional:         true,
 			},
@@ -479,7 +477,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
+				ValidateFunc: StringInSlice([]string{"Auto", "Manual"}, false),
 			},
 			"manual_ha_time": {
 				Type:     schema.TypeString,
@@ -494,7 +492,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"released_keep_policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"None", "Lastest", "All"}, false),
+				ValidateFunc: StringInSlice([]string{"None", "Lastest", "All"}, false),
 			},
 			"fresh_white_list_readins": {
 				Type:     schema.TypeString,
@@ -514,7 +512,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+				ValidateFunc: StringInSlice([]string{"SHORT", "LONG"}, false),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -523,14 +521,15 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Basic", "HighAvailability", "AlwaysOn", "Finance", "cluster", "serverless_basic", "serverless_standard", "serverless_ha"}, false),
 			},
 			"effective_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Immediate", "MaintainTime"}, false),
+				ValidateFunc: StringInSlice([]string{"Immediate", "MaintainTime"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,

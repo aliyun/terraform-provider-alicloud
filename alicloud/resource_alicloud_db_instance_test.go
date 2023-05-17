@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 	"testing"
 
@@ -193,7 +194,9 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	connectionStringPrefix := acctest.RandString(8) + "rm"
+	connectionStringPrefixSecond := acctest.RandString(8) + "rm"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -225,6 +228,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"engine_version":             "8.0",
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
+						"instance_name":              name,
 						"auto_upgrade_minor_version": "Auto",
 						"db_instance_storage_type":   "cloud_ssd",
 						"resource_group_id":          CHECKSET,
@@ -290,11 +294,11 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"connection_string_prefix": "${var.name}",
+					"connection_string_prefix": connectionStringPrefix,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_string_prefix": CHECKSET,
+						"connection_string_prefix": connectionStringPrefix,
 					}),
 				),
 			},
@@ -335,11 +339,11 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": "tf-testAccDBInstance_instance_name",
+					"instance_name": "${var.name}" + "update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": "tf-testAccDBInstance_instance_name",
+						"instance_name": name + "update",
 					}),
 				),
 			},
@@ -406,7 +410,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "cloud_essd",
-					"instance_name":              "tf-testAccDBInstanceConfig",
+					"instance_name":              "${var.name}",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
 					"security_group_ids":         []string{},
@@ -417,8 +421,9 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 							"value": "70",
 						},
 					},
-					"encryption_key": "${alicloud_kms_key.default.id}",
-					"port":           "3306",
+					"encryption_key":           "${alicloud_kms_key.default.id}",
+					"port":                     "3306",
+					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -427,12 +432,13 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
 						"db_instance_storage_type":   "cloud_essd",
-						"instance_name":              "tf-testAccDBInstanceConfig",
+						"instance_name":              name,
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,
 						"instance_charge_type":       "Postpaid",
 						"connection_string":          CHECKSET,
 						"port":                       "3306",
+						"connection_string_prefix":   connectionStringPrefixSecond,
 						"security_group_id":          CHECKSET,
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
