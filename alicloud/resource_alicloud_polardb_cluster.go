@@ -8,10 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"strconv"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -52,14 +51,14 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"modify_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Upgrade", "Downgrade"}, false),
+				ValidateFunc: StringInSlice([]string{"Upgrade", "Downgrade"}, false),
 				Optional:     true,
 				Default:      "Upgrade",
 			},
 			"db_node_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(1, 16),
+				ValidateFunc: IntBetween(1, 16),
 				Computed:     true,
 			},
 			"zone_id": {
@@ -69,7 +68,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"pay_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
+				ValidateFunc: StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
 				Optional:     true,
 				Default:      PostPaid,
 			},
@@ -77,7 +76,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  RenewNotRenewal,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
@@ -87,12 +86,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12, 24, 36}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 6, 12, 24, 36}),
 				DiffSuppressFunc: polardbPostPaidAndRenewDiffSuppressFunc,
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				DiffSuppressFunc: polardbPostPaidDiffSuppressFunc,
 			},
@@ -115,7 +114,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 						"modify_mode": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Cover", "Append", "Delete"}, false),
+							ValidateFunc: StringInSlice([]string{"Cover", "Append", "Delete"}, false),
 						},
 					},
 				},
@@ -148,7 +147,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -158,7 +157,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"collector_status": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Enable", "Disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enable", "Disabled"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -182,13 +181,13 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled", "Disabled"}, false),
 				Optional:     true,
 				Default:      "Disabled",
 			},
 			"encrypt_new_tables": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 				Optional:     true,
 			},
 			"encryption_key": {
@@ -214,24 +213,24 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"deletion_lock": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				ValidateFunc: IntInSlice([]int{0, 1}),
 				Optional:     true,
 			},
 			"backup_retention_policy_on_cluster_deletion": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ALL", "LATEST", "NONE"}, false),
+				ValidateFunc: StringInSlice([]string{"ALL", "LATEST", "NONE"}, false),
 			},
 			"imci_switch": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 			},
 			"sub_category": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Exclusive", "General"}, false),
+				ValidateFunc: StringInSlice([]string{"Exclusive", "General"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -239,11 +238,11 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, false),
+				ValidateFunc: StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, false),
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby"}, false),
+				ValidateFunc: StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -257,69 +256,69 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"clone_data_point": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
+				ValidateFunc: StringInSlice([]string{"LATEST", "BackupID", "Timestamp"}, false),
 				Optional:     true,
 			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PSL5", "PSL4", "ESSDPL1", "ESSDPL2", "ESSDPL3"}, false),
+				ValidateFunc: StringInSlice([]string{"PSL5", "PSL4", "ESSDPL1", "ESSDPL2", "ESSDPL3"}, false),
 				Computed:     true,
 				ForceNew:     true,
 			},
 			"storage_space": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(20, 32000),
+				ValidateFunc: IntBetween(20, 32000),
 				ForceNew:     true,
 			},
 			"hot_standby_cluster": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 				Computed:     true,
 			},
 			"serverless_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AgileServerless"}, false),
+				ValidateFunc: StringInSlice([]string{"AgileServerless"}, false),
 				ForceNew:     true,
 			},
 			"scale_min": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validation.IntBetween(1, 31),
+				ValidateFunc:     IntBetween(1, 31),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"scale_max": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validation.IntBetween(1, 32),
+				ValidateFunc:     IntBetween(1, 32),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"scale_ro_num_min": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validation.IntBetween(0, 15),
+				ValidateFunc:     IntBetween(0, 15),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"scale_ro_num_max": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validation.IntBetween(0, 15),
+				ValidateFunc:     IntBetween(0, 15),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"allow_shut_down": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"true", "false"}, false),
+				ValidateFunc:     StringInSlice([]string{"true", "false"}, false),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"seconds_until_auto_pause": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     validation.IntBetween(300, 86400),
+				ValidateFunc:     IntBetween(300, 86400),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
 			},
 			"tags": tagsSchema(),
