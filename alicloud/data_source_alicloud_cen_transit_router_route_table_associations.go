@@ -31,8 +31,24 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociations() *schema.Resource
 			},
 			"transit_router_route_table_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"transit_router_attachment_resource_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"transit_router_attachment_resource_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"VPC", "VBR", "TR", "VPN"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -63,6 +79,10 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociations() *schema.Resource
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"transit_router_route_table_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -75,7 +95,18 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociationsRead(d *schema.Reso
 
 	action := "ListTransitRouterRouteTableAssociations"
 	request := make(map[string]interface{})
-	request["TransitRouterRouteTableId"] = d.Get("transit_router_route_table_id")
+	if v, ok := d.GetOk("transit_router_route_table_id"); ok {
+		request["TransitRouterRouteTableId"] = v
+	}
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
+	if v, ok := d.GetOk("transit_router_attachment_resource_id"); ok {
+		request["TransitRouterAttachmentResourceId"] = v
+	}
+	if v, ok := d.GetOk("transit_router_attachment_resource_type"); ok {
+		request["TransitRouterAttachmentResourceType"] = v
+	}
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
 
@@ -140,11 +171,12 @@ func dataSourceAlicloudCenTransitRouterRouteTableAssociationsRead(d *schema.Reso
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"resource_id":                  object["ResourceId"],
-			"resource_type":                object["ResourceType"],
-			"status":                       object["Status"],
-			"id":                           fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_id": fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"resource_id":                   object["ResourceId"],
+			"resource_type":                 object["ResourceType"],
+			"status":                        object["Status"],
+			"id":                            object["TransitRouterAttachmentId"],
+			"transit_router_attachment_id":  object["TransitRouterAttachmentId"],
+			"transit_router_route_table_id": object["TransitRouterRouteTableId"],
 		}
 		ids = append(ids, fmt.Sprint(object["TransitRouterAttachmentId"]))
 		s = append(s, mapping)

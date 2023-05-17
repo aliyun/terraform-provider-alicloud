@@ -29,8 +29,15 @@ output "first_transit_router_peer_attachments_transit_router_attachment_resource
 
 The following arguments are supported:
 
-* `transit_router_route_table_id` - (Optional) ID of the route table of the VPC or VBR.
-* `transit_router_attachment_id` - (Optional) ID of the cen transit router attachment.  
+* `transit_router_route_table_id` - (Optional) The ID of the route table of the Enterprise Edition transit router.
+* `transit_router_attachment_id` - (Optional) The ID of the network instance connection. 
+* `transit_router_attachment_resource_id` - (Optional) The ID of the next hop.
+* `transit_router_attachment_resource_type` - (Optional) The type of next hop. Valid values:
+  * `VPC`: virtual private cloud (VPC)
+  * `VBR`: virtual border router (VBR)
+  * `TR`: transit router
+  * `VPN`: VPN attachment
+  
 * `status` - (Optional) The status of the route table, including `Active`, `Associating`, `Dissociating`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
