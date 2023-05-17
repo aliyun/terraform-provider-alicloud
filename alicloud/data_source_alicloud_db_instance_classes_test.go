@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
@@ -121,7 +123,11 @@ func TestAccAlicloudRdsDBInstanceClassesDatasource(t *testing.T) {
 		fakeMapFunc:  fakeDBInstanceMapFunc,
 	}
 
-	DBInstanceCheckInfo.dataSourceTestCheck(t, rand, ZoneIDConf, EngineVersionConf, ChargeTypeConfPrepaid,
+	preCheck := func() {
+		testAccPreCheckWithRegions(t, true, connectivity.RDSInstanceClassesSupportRegions)
+	}
+
+	DBInstanceCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, ZoneIDConf, EngineVersionConf, ChargeTypeConfPrepaid,
 		ChargeTypeConfPostpaid, CategoryConf, StorageTypeConf, CommodityCodeConf, ServerlessConf, allConf)
 }
 
