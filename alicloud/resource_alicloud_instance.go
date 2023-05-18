@@ -276,6 +276,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"private_ip": {
 				Type:     schema.TypeString,
