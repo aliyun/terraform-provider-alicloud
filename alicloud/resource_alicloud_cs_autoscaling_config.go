@@ -117,6 +117,18 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("expander"); ok {
 		updateAutoscalingConfigRequest.Expander = tea.String(v.(string))
 	}
+	skipNodesWithPods := d.Get("skip_nodes_with_system_pods").(bool)
+	updateAutoscalingConfigRequest.SkipNodesWithSystemPods = tea.Bool(skipNodesWithPods)
+	evictDaemonset := d.Get("daemonset_eviction_for_nodes").(bool)
+	updateAutoscalingConfigRequest.DaemonsetEvictionForNodes = tea.Bool(evictDaemonset)
+	if v, ok := d.GetOk("max_graceful_termination_sec"); ok {
+		updateAutoscalingConfigRequest.MaxGracefulTerminationSec = tea.Int(v.(int))
+	}
+	if v, ok := d.GetOk("min_replica_count"); ok {
+		updateAutoscalingConfigRequest.MinReplicaCount = tea.Int(v.(int))
+	}
+	enableDeleteRecycleNode := d.Get("recycle_node_deletion_enabled").(bool)
+	updateAutoscalingConfigRequest.RecycleNodeDeletionEnabled = tea.Bool(enableDeleteRecycleNode)
 
 	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
 	if err != nil {
