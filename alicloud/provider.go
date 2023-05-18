@@ -854,6 +854,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_subnets":                                     dataSourceAlicloudEfloSubnets(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_vswitch_cidr_reservation":       resourceAliCloudVpcVswitchCidrReservation(),
 			"alicloud_vpc_ha_vip":                         resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                 resourceAliCloudConfigRemediation(),
 			"alicloud_instance":                           resourceAliyunInstance(),
