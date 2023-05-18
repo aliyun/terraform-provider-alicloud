@@ -148,11 +148,6 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				ForceNew: true,
 			},
 			"tags": tagsSchema(),
-			"type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
-			},
 			"zone_id": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -369,9 +364,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) (er
 			"DiskId": d.Id(),
 		}
 		request["NewSize"] = d.Get("size")
-		if _, ok := d.GetOk("type"); ok {
-			request["Type"] = d.Get("type")
-		}
+		request["Type"] = string(DiskResizeTypeOnline)
 		action := "ResizeDisk"
 		request["ClientToken"] = buildClientToken("ResizeDisk")
 		runtime := util.RuntimeOptions{}
@@ -383,6 +376,9 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) (er
 				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
+				} else if request["Type"] == string(DiskResizeTypeOnline) && IsExpectedErrors(err, DiskNotSupportOnlineChangeErrors) {
+					request["Type"] = string(DiskResizeTypeOffline)
+					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
@@ -393,7 +389,6 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) (er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("size")
-		d.SetPartial("type")
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		request := map[string]interface{}{
