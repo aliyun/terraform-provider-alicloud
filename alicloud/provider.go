@@ -854,6 +854,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_subnets":                                     dataSourceAlicloudEfloSubnets(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_ha_vip":                         resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                 resourceAliCloudConfigRemediation(),
 			"alicloud_instance":                           resourceAliyunInstance(),
 			"alicloud_image":                              resourceAliCloudImage(),
@@ -1051,7 +1052,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_datahub_topic":                                         resourceAlicloudDatahubTopic(),
 			"alicloud_mns_queue":                                             resourceAlicloudMNSQueue(),
 			"alicloud_mns_topic":                                             resourceAlicloudMNSTopic(),
-			"alicloud_havip":                                                 resourceAlicloudHavip(),
+			"alicloud_havip":                                                 resourceAliCloudVpcHaVip(),
 			"alicloud_mns_topic_subscription":                                resourceAlicloudMNSSubscription(),
 			"alicloud_havip_attachment":                                      resourceAliyunHaVipAttachment(),
 			"alicloud_api_gateway_api":                                       resourceAliyunApigatewayApi(),
