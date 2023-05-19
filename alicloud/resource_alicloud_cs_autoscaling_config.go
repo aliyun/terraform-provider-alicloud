@@ -70,6 +70,31 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Optional: true,
 				Default:  "least-waste",
 			},
+			"skip_nodes_with_system_pods": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"daemonset_eviction_for_nodes": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+			"max_graceful_termination_sec": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  14400,
+			},
+			"min_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
+			"recycle_node_deletion_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
