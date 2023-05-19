@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -5,14 +6,14 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudVpcFlowLog() *schema.Resource {
+func resourceAliCloudVpcFlowLog() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudVpcFlowLogCreate,
 		Read:   resourceAlicloudVpcFlowLogRead,
@@ -22,14 +23,31 @@ func resourceAlicloudVpcFlowLog() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"aggregation_interval": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"business_status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"flow_log_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"flow_log_name": {
 				Type:     schema.TypeString,
@@ -45,6 +63,11 @@ func resourceAlicloudVpcFlowLog() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"resource_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -54,19 +77,27 @@ func resourceAlicloudVpcFlowLog() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NetworkInterface", "VPC", "VSwitch"}, false),
+				ValidateFunc: StringInSlice([]string{"NetworkInterface", "VPC", "VSwitch"}, false),
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
+				ValidateFunc: StringInSlice([]string{"Active", "Inactive"}, false),
+			},
+			"tags": tagsSchema(),
+			"traffic_path": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"traffic_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"All", "Allow", "Drop"}, false),
+				ValidateFunc: StringInSlice([]string{"All", "Allow", "Drop"}, false),
 			},
 		},
 	}
@@ -74,33 +105,45 @@ func resourceAlicloudVpcFlowLog() *schema.Resource {
 
 func resourceAlicloudVpcFlowLogCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	var response map[string]interface{}
+
 	action := "CreateFlowLog"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	request["ProjectName"] = d.Get("project_name")
+	request["ResourceId"] = d.Get("resource_id")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
+	request["LogStoreName"] = d.Get("log_store_name")
+	request["TrafficType"] = d.Get("traffic_type")
 	if v, ok := d.GetOk("flow_log_name"); ok {
 		request["FlowLogName"] = v
 	}
+	if v, ok := d.GetOk("aggregation_interval"); ok {
+		request["AggregationInterval"] = v
+	}
+	if v, ok := d.GetOk("traffic_path"); ok {
+		trafficPathMaps := v.([]interface{})
+		request["TrafficPath"] = trafficPathMaps
+	}
 
-	request["LogStoreName"] = d.Get("log_store_name")
-	request["ProjectName"] = d.Get("project_name")
-	request["RegionId"] = client.RegionId
-	request["ResourceId"] = d.Get("resource_id")
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
 	request["ResourceType"] = d.Get("resource_type")
-	request["TrafficType"] = d.Get("traffic_type")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError", "OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"TaskConflict", "OperationFailed.LastTokenProcessing", "LastTokenProcessing", "IncorrectStatus", "InvalidHdMonitorStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -109,68 +152,93 @@ func resourceAlicloudVpcFlowLogCreate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_flow_log", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["FlowLogId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcFlowLogStateRefreshFunc(d.Id(), []string{}))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcFlowLogStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAlicloudVpcFlowLogUpdate(d, meta)
 }
+
 func resourceAlicloudVpcFlowLogRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeVpcFlowLog(d.Id())
+	vpcServiceV2 := VpcServiceV2{client}
+
+	objectRaw, err := vpcServiceV2.DescribeVpcFlowLog(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_flow_log vpcService.DescribeVpcFlowLog Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_flow_log DescribeVpcFlowLog Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object["Description"])
-	d.Set("flow_log_name", object["FlowLogName"])
-	d.Set("log_store_name", object["LogStoreName"])
-	d.Set("project_name", object["ProjectName"])
-	d.Set("resource_id", object["ResourceId"])
-	d.Set("resource_type", object["ResourceType"])
-	d.Set("status", object["Status"])
-	d.Set("traffic_type", object["TrafficType"])
+
+	d.Set("aggregation_interval", objectRaw["AggregationInterval"])
+	d.Set("business_status", objectRaw["BusinessStatus"])
+	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("flow_log_name", objectRaw["FlowLogName"])
+	d.Set("log_store_name", objectRaw["LogStoreName"])
+	d.Set("project_name", objectRaw["ProjectName"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("resource_id", objectRaw["ResourceId"])
+	d.Set("resource_type", objectRaw["ResourceType"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("traffic_type", objectRaw["TrafficType"])
+	d.Set("flow_log_id", objectRaw["FlowLogId"])
+
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+	trafficPathList1Raw, _ := jsonpath.Get("$.TrafficPath.TrafficPathList", objectRaw)
+	d.Set("traffic_path", trafficPathList1Raw)
+
 	return nil
 }
+
 func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "ModifyFlowLogAttribute"
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	d.Partial(true)
+	request = make(map[string]interface{})
 
-	update := false
-	request := map[string]interface{}{
-		"FlowLogId": d.Id(),
-	}
+	request["FlowLogId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
+
 	if !d.IsNewResource() && d.HasChange("flow_log_name") {
 		update = true
 		request["FlowLogName"] = d.Get("flow_log_name")
 	}
+
+	if !d.IsNewResource() && d.HasChange("aggregation_interval") {
+		update = true
+		request["AggregationInterval"] = d.Get("aggregation_interval")
+	}
+
 	if update {
-		action := "ModifyFlowLogAttribute"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -184,27 +252,78 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		vpcServiceV2 := VpcServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Active", " Inactive"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcFlowLogStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 		d.SetPartial("description")
 		d.SetPartial("flow_log_name")
+		d.SetPartial("aggregation_interval")
 	}
+	update = false
+	action = "MoveResourceGroup"
+	conn, err = client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+		request["NewResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	request["ResourceType"] = "FLOWLOG"
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
+	}
+
 	if d.HasChange("status") {
-		object, err := vpcService.DescribeVpcFlowLog(d.Id())
+		client := meta.(*connectivity.AliyunClient)
+		vpcServiceV2 := VpcServiceV2{client}
+		object, err := vpcServiceV2.DescribeVpcFlowLog(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
+
 		target := d.Get("status").(string)
 		if object["Status"].(string) != target {
 			if target == "Active" {
-				request := map[string]interface{}{
-					"FlowLogId": d.Id(),
+				action = "ActiveFlowLog"
+				conn, err = client.NewVpcClient()
+				if err != nil {
+					return WrapError(err)
 				}
+				request = make(map[string]interface{})
+
+				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				action := "ActiveFlowLog"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 					if err != nil {
-						if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"TaskConflict", "LastTokenProcessing", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -216,22 +335,29 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpcFlowLogStateRefreshFunc(d.Id(), []string{}))
+				vpcServiceV2 := VpcServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcFlowLogStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
+
 			}
 			if target == "Inactive" {
-				request := map[string]interface{}{
-					"FlowLogId": d.Id(),
+				action = "DeactiveFlowLog"
+				conn, err = client.NewVpcClient()
+				if err != nil {
+					return WrapError(err)
 				}
+				request = make(map[string]interface{})
+
+				request["FlowLogId"] = d.Id()
 				request["RegionId"] = client.RegionId
-				action := "DeactiveFlowLog"
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 					if err != nil {
-						if IsExpectedErrors(err, []string{"TaskConflict", "UnknownError"}) || NeedRetry(err) {
+						if IsExpectedErrors(err, []string{"TaskConflict", "LastTokenProcessing", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "ServiceUnavailable", "SystemBusy", "UnknownError"}) || NeedRetry(err) {
 							wait()
 							return resource.RetryableError(err)
 						}
@@ -243,36 +369,51 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				stateConf := BuildStateConf([]string{}, []string{"Inactive"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.VpcFlowLogStateRefreshFunc(d.Id(), []string{}))
+				vpcServiceV2 := VpcServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"Inactive"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcFlowLogStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
+
 			}
-			d.SetPartial("status")
 		}
+	}
+
+	update = false
+	if d.HasChange("tags") {
+		update = true
+		vpcServiceV2 := VpcServiceV2{client}
+		if err := vpcServiceV2.SetResourceTags(d, "FLOWLOG"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAlicloudVpcFlowLogRead(d, meta)
 }
+
 func resourceAlicloudVpcFlowLogDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+
 	action := "DeleteFlowLog"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"FlowLogId": d.Id(),
-	}
+	request = make(map[string]interface{})
 
+	request["FlowLogId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "InvalidHdMonitorStatus", "IncorrectStatus", "IncorrectStatus.flowlog", "InvalidStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -281,13 +422,16 @@ func resourceAlicloudVpcFlowLogDelete(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.IsNotAvailable", "Instance.IsNotPostPay"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcFlowLogStateRefreshFunc(d.Id(), []string{}))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcFlowLogStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

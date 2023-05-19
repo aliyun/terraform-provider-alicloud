@@ -715,3 +715,313 @@ func TestUnitAlicloudVPCFlowLog(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Vpc FlowLog. >>> Resource test cases, automatically generated.
+// Case 3246
+func TestAccAlicloudVpcFlowLog_basic3246(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_flow_log.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap3246)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcFlowLog")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcflowlog%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcFlowLogBasicDependence3246)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_store_name": "${alicloud_log_store.default.name}",
+					"project_name":   "${alicloud_log_project.default.name}",
+					"resource_type":  "VPC",
+					"resource_id":    "${alicloud_vpc.defaultVpc.id}",
+					"traffic_type":   "All",
+					"flow_log_name":  name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_store_name": CHECKSET,
+						"project_name":   CHECKSET,
+						"resource_type":  "VPC",
+						"resource_id":    CHECKSET,
+						"traffic_type":   "All",
+						"flow_log_name":  name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testAcc-flowlog",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf-testAcc-flowlog",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregation_interval": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregation_interval": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "testupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "testupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.ModifyRG.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"aggregation_interval": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"aggregation_interval": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name":  name + "_update",
+					"log_store_name": "${alicloud_log_store.default.name}",
+					"description":    "tf-testAcc-flowlog",
+					"traffic_path": []string{
+						"all"},
+					"project_name":         "${alicloud_log_project.default.name}",
+					"resource_type":        "VPC",
+					"resource_group_id":    "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_id":          "${alicloud_vpc.defaultVpc.id}",
+					"aggregation_interval": "1",
+					"traffic_type":         "All",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name":        name + "_update",
+						"log_store_name":       CHECKSET,
+						"description":          "tf-testAcc-flowlog",
+						"traffic_path.#":       "1",
+						"project_name":         CHECKSET,
+						"resource_type":        "VPC",
+						"resource_group_id":    CHECKSET,
+						"resource_id":          CHECKSET,
+						"aggregation_interval": "1",
+						"traffic_type":         "All",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpcFlowLogMap3246 = map[string]string{}
+
+func AlicloudVpcFlowLogBasicDependence3246(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "defaultRg" {
+  resource_group_name = var.name
+  display_name        = "tf-testAcc-rg356"
+}
+
+resource "alicloud_vpc" "defaultVpc" {
+  vpc_name   = "${var.name}1"
+  cidr_block = "10.0.0.0/8"
+}
+
+resource "alicloud_resource_manager_resource_group" "ModifyRG" {
+  display_name        = "tf-testAcc-rg439"
+  resource_group_name = "${var.name}2"
+}
+
+resource "alicloud_log_project" "default" {
+  name = "${var.name}3"
+}
+
+resource "alicloud_log_store" "default" {
+  project = alicloud_log_project.default.name
+  name    = "${var.name}4"
+}
+
+
+`, name)
+}
+
+// Case 3246  twin
+func TestAccAlicloudVpcFlowLog_basic3246_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_flow_log.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap3246)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcFlowLog")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcflowlog%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcFlowLogBasicDependence3246)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"flow_log_name":  name,
+					"log_store_name": "${alicloud_log_store.default.name}",
+					"description":    "testupdate",
+					"traffic_path": []string{
+						"all"},
+					"project_name":         "${alicloud_log_project.default.name}",
+					"resource_type":        "VPC",
+					"resource_group_id":    "${alicloud_resource_manager_resource_group.ModifyRG.id}",
+					"resource_id":          "${alicloud_vpc.defaultVpc.id}",
+					"aggregation_interval": "5",
+					"traffic_type":         "All",
+					"status":               "Active",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"flow_log_name":        name,
+						"log_store_name":       CHECKSET,
+						"description":          "testupdate",
+						"traffic_path.#":       "1",
+						"project_name":         CHECKSET,
+						"resource_type":        "VPC",
+						"resource_group_id":    CHECKSET,
+						"resource_id":          CHECKSET,
+						"aggregation_interval": "5",
+						"traffic_type":         "All",
+						"status":               "Active",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Vpc FlowLog. <<< Resource test cases, automatically generated.
