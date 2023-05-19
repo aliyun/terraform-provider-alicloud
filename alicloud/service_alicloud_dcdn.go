@@ -3,7 +3,10 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -652,4 +655,173 @@ func (s *DcdnService) DescribeDcdnEr(id string) (object map[string]interface{}, 
 	object = v.(map[string]interface{})
 
 	return object, nil
+}
+
+func (s *DcdnService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
+	conn, err := s.client.NewDcdnClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeDcdnTagResources"
+
+	request := map[string]interface{}{
+		"ResourceType": resourceType,
+	}
+
+	resourceIdNum := strings.Count(id, ":")
+
+	switch resourceIdNum {
+	case 0:
+		request["ResourceId.1"] = id
+	case 1:
+		parts, err := ParseResourceId(id, 2)
+		if err != nil {
+			return object, WrapError(err)
+		}
+		request["ResourceId.1"] = parts[resourceIdNum]
+	}
+
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.TagResources", response)
+		if err != nil {
+			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
+		}
+
+		if v, ok := resp.([]interface{}); ok && len(v) > 0 {
+			tags = append(tags, v[0].(map[string]interface{})["Tag"].([]interface{})...)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+
+	return tags, nil
+}
+
+func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
+
+	resourceIdNum := strings.Count(d.Id(), ":")
+
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+		conn, err := s.client.NewDcdnClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+
+		if len(removedTagKeys) > 0 {
+			action := "UntagDcdnResources"
+			request := map[string]interface{}{
+				"ResourceType": resourceType,
+			}
+
+			switch resourceIdNum {
+			case 0:
+				request["ResourceId.1"] = d.Id()
+			case 1:
+				parts, err := ParseResourceId(d.Id(), 2)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ResourceId.1"] = parts[resourceIdNum]
+			}
+
+			for i, key := range removedTagKeys {
+				request[fmt.Sprintf("TagKey.%d", i+1)] = key
+			}
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(added) > 0 {
+			action := "TagDcdnResources"
+			request := map[string]interface{}{
+				"ResourceType": resourceType,
+			}
+
+			switch resourceIdNum {
+			case 0:
+				request["ResourceId.1"] = d.Id()
+			case 1:
+				parts, err := ParseResourceId(d.Id(), 2)
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ResourceId.1"] = parts[resourceIdNum]
+			}
+
+			count := 1
+			for key, value := range added {
+				request[fmt.Sprintf("Tag.%d.Key", count)] = key
+				request[fmt.Sprintf("Tag.%d.Value", count)] = value
+				count++
+			}
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(2*time.Second, 1*time.Second)
+			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+		d.SetPartial("tags")
+	}
+	return nil
 }

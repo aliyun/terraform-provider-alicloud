@@ -433,7 +433,11 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 	})
 }
 
-var MseClusterMap = map[string]string{}
+var MseClusterMap = map[string]string{
+	"cluster_id":  CHECKSET,
+	"app_version": CHECKSET,
+	"status":      CHECKSET,
+}
 
 func MseClusterBasicdependence(name string) string {
 	return fmt.Sprintf(`

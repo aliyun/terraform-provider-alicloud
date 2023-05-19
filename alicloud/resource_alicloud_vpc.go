@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -36,7 +34,7 @@ func resourceAlicloudVpc() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(1, 256),
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,

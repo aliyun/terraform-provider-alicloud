@@ -65,7 +65,14 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 			"spec": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1", "10", "2", "3", "5", "8"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"1", "2", "3", "5", "8", "10"}, false),
+			},
+			"bandwidth_billing_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"BandwidthPackage", "CDT"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -90,15 +97,23 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	//	request["Name"] = v
 	//}
 	request["AutoPay"] = true
+
 	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
 		request["AutoUseCoupon"] = v
 	}
+
 	request["Duration"] = d.Get("duration")
+
 	if v, ok := d.GetOk("pricing_cycle"); ok {
 		request["PricingCycle"] = v
 	} else {
 		request["PricingCycle"] = "Month"
 	}
+
+	if v, ok := d.GetOk("bandwidth_billing_type"); ok {
+		request["BandwidthBillingType"] = v
+	}
+
 	request["RegionId"] = client.RegionId
 	request["Spec"] = d.Get("spec")
 	runtime := util.RuntimeOptions{}
@@ -118,6 +133,7 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 
 	return resourceAlicloudGaAcceleratorUpdate(d, meta)
 }
+
 func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -130,10 +146,13 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
+
 	d.Set("accelerator_name", object["Name"])
 	d.Set("description", object["Description"])
 	d.Set("spec", object["Spec"])
+	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
 	d.Set("status", object["State"])
+
 	describeAcceleratorAutoRenewAttributeObject, err := gaService.DescribeAcceleratorAutoRenewAttribute(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -144,6 +163,7 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
 	return nil
 }
+
 func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
@@ -240,6 +260,7 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 	d.Partial(false)
 	return resourceAlicloudGaAcceleratorRead(d, meta)
 }
+
 func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] Cannot destroy resourceAlicloudGaAccelerator. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil

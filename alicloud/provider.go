@@ -852,8 +852,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_portfolios":                       dataSourceAlicloudServiceCatalogPortfolios(),
 			"alicloud_arms_remote_writes":                               dataSourceAlicloudArmsRemoteWrites(),
 			"alicloud_eflo_subnets":                                     dataSourceAlicloudEfloSubnets(),
+			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_vswitch_cidr_reservation":       resourceAliCloudVpcVswitchCidrReservation(),
+			"alicloud_vpc_ha_vip":                         resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                 resourceAliCloudConfigRemediation(),
 			"alicloud_instance":                           resourceAliyunInstance(),
 			"alicloud_image":                              resourceAliCloudImage(),
@@ -1051,7 +1054,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_datahub_topic":                                         resourceAlicloudDatahubTopic(),
 			"alicloud_mns_queue":                                             resourceAlicloudMNSQueue(),
 			"alicloud_mns_topic":                                             resourceAlicloudMNSTopic(),
-			"alicloud_havip":                                                 resourceAlicloudHavip(),
+			"alicloud_havip":                                                 resourceAliCloudVpcHaVip(),
 			"alicloud_mns_topic_subscription":                                resourceAlicloudMNSSubscription(),
 			"alicloud_havip_attachment":                                      resourceAliyunHaVipAttachment(),
 			"alicloud_api_gateway_api":                                       resourceAliyunApigatewayApi(),
@@ -1193,7 +1196,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_command":                                           resourceAlicloudEcsCommand(),
 			"alicloud_cloud_storage_gateway_storage_bundle":                  resourceAlicloudCloudStorageGatewayStorageBundle(),
 			"alicloud_ecs_hpc_cluster":                                       resourceAlicloudEcsHpcCluster(),
-			"alicloud_vpc_flow_log":                                          resourceAlicloudVpcFlowLog(),
+			"alicloud_vpc_flow_log":                                          resourceAliCloudVpcFlowLog(),
 			"alicloud_brain_industrial_pid_loop":                             resourceAlicloudBrainIndustrialPidLoop(),
 			"alicloud_quotas_quota_application":                              resourceAlicloudQuotasQuotaApplication(),
 			"alicloud_ecs_auto_snapshot_policy":                              resourceAlicloudEcsAutoSnapshotPolicy(),
@@ -1349,7 +1352,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_account":                                          resourceAlicloudGpdbAccount(),
 			"alicloud_security_center_service_linked_role":                   resourceAlicloudSecurityCenterServiceLinkedRole(),
 			"alicloud_event_bridge_service_linked_role":                      resourceAlicloudEventBridgeServiceLinkedRole(),
-			"alicloud_vpc_ipv6_gateway":                                      resourceAlicloudVpcIpv6Gateway(),
+			"alicloud_vpc_ipv6_gateway":                                      resourceAliCloudVpcIpv6Gateway(),
 			"alicloud_vpc_ipv6_egress_rule":                                  resourceAlicloudVpcIpv6EgressRule(),
 			"alicloud_hbr_server_backup_plan":                                resourceAlicloudHbrServerBackupPlan(),
 			"alicloud_cms_dynamic_tag_group":                                 resourceAlicloudCmsDynamicTagGroup(),
@@ -1486,9 +1489,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_gateway_vpn_attachment":                            resourceAlicloudVpnGatewayVpnAttachment(),
 			"alicloud_resource_manager_delegated_administrator":              resourceAlicloudResourceManagerDelegatedAdministrator(),
 			"alicloud_polardb_global_database_network":                       resourceAlicloudPolarDBGlobalDatabaseNetwork(),
-			"alicloud_vpc_ipv4_gateway":                                      resourceAlicloudVpcIpv4Gateway(),
+			"alicloud_vpc_ipv4_gateway":                                      resourceAliCloudVpcIpv4Gateway(),
 			"alicloud_api_gateway_backend":                                   resourceAlicloudApiGatewayBackend(),
-			"alicloud_vpc_prefix_list":                                       resourceAlicloudVpcPrefixList(),
+			"alicloud_vpc_prefix_list":                                       resourceAliCloudVpcPrefixList(),
 			"alicloud_cms_event_rule":                                        resourceAlicloudCmsEventRule(),
 			"alicloud_ddos_basic_threshold":                                  resourceAlicloudDdosBasicThreshold(),
 			"alicloud_cen_transit_router_vpn_attachment":                     resourceAlicloudCenTransitRouterVpnAttachment(),
@@ -1499,7 +1502,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbs_backup_plan":                                       resourceAlicloudDbsBackupPlan(),
 			"alicloud_dcdn_waf_domain":                                       resourceAlicloudDcdnWafDomain(),
 			"alicloud_vpc_ipv4_cidr_block":                                   resourceAlicloudVpcIpv4CidrBlock(),
-			"alicloud_vpc_public_ip_address_pool":                            resourceAlicloudVpcPublicIpAddressPool(),
+			"alicloud_vpc_public_ip_address_pool":                            resourceAliCloudVpcPublicIpAddressPool(),
 			"alicloud_dcdn_waf_policy_domain_attachment":                     resourceAlicloudDcdnWafPolicyDomainAttachment(),
 			"alicloud_nlb_server_group":                                      resourceAlicloudNlbServerGroup(),
 			"alicloud_vpc_peer_connection":                                   resourceAlicloudVpcPeerConnection(),
@@ -1600,6 +1603,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
 			"alicloud_arms_remote_write":                                     resourceAlicloudArmsRemoteWrite(),
 			"alicloud_eflo_subnet":                                           resourceAlicloudEfloSubnet(),
+			"alicloud_compute_nest_service_instance":                         resourceAlicloudComputeNestServiceInstance(),
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -1839,6 +1843,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.EfloEndpoint = strings.TrimSpace(endpoints["eflo"].(string))
 		config.OceanbaseEndpoint = strings.TrimSpace(endpoints["oceanbase"].(string))
 		config.BeebotEndpoint = strings.TrimSpace(endpoints["beebot"].(string))
+		config.ComputeNestEndpoint = strings.TrimSpace(endpoints["computenest"].(string))
 		if endpoint, ok := endpoints["alidns"]; ok {
 			config.AlidnsEndpoint = strings.TrimSpace(endpoint.(string))
 		} else {
@@ -2190,6 +2195,8 @@ func init() {
 		"oceanbase_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom oceanbase endpoints.",
 
 		"beebot_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom beebot endpoints.",
+
+		"computenest_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom computenest endpoints.",
 	}
 }
 
@@ -2221,7 +2228,7 @@ func assumeRoleSchema() *schema.Schema {
 					Type:         schema.TypeInt,
 					Optional:     true,
 					Description:  descriptions["assume_role_session_expiration"],
-					ValidateFunc: intBetween(900, 43200),
+					ValidateFunc: IntBetween(900, 43200),
 				},
 			},
 		},
@@ -2234,6 +2241,13 @@ func endpointsSchema() *schema.Schema {
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
+				"computenest": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["computenest_endpoint"],
+				},
+
 				"beebot": {
 					Type:        schema.TypeString,
 					Optional:    true,
@@ -3121,7 +3135,6 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["adb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cbn"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["maxcompute"].(string)))
-
 	buf.WriteString(fmt.Sprintf("%s-", m["dms_enterprise"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["waf_openapi"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["resourcemanager"].(string)))
@@ -3210,6 +3223,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["eflo"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["beebot"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["computenest"].(string)))
 	return hashcode.String(buf.String())
 }
 

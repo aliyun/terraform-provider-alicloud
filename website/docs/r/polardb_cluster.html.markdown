@@ -69,7 +69,8 @@ The following arguments are supported:
 * `db_type` - (Required,ForceNew) Database type. Value options: MySQL, Oracle, PostgreSQL.
 * `db_version` - (Required,ForceNew) Database version. Value options can refer to the latest docs [CreateDBCluster](https://help.aliyun.com/document_detail/98169.html) `DBVersion`.
 * `db_node_class` - (Required) The db_node_class of cluster node.
--> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. From version 1.204.0, If you need to create a Serverless cluster, `db_node_class` can be set to `polar. mysql. sl. small`.
+-> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. 
+  From version 1.204.0, If you need to create a Serverless cluster, `db_node_class` can be set to `polar.mysql.sl.small`.
 * `modify_type` - (Optional, Available in 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
 * `db_node_count` - (Optional, Available in 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
 -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
@@ -156,6 +157,8 @@ The following attributes are exported:
 * `id` - The PolarDB cluster ID.
 * `connection_string` - (Available in 1.81.0+) PolarDB cluster connection string. 
 * `port` - (Available in 1.196.0+) PolarDB cluster connection port. 
+* `status` - (Available in 1.204.1+) PolarDB cluster status.
+* `create_time` - (Available in 1.204.1+) PolarDB cluster creation time.
 * `tde_region` - (Available in 1.200.0+) The region where the TDE key resides.
 -> **NOTE:** TDE can be enabled on clusters that have joined a global database network (GDN). After TDE is enabled on the primary cluster in a GDN, TDE is enabled on the secondary clusters in the GDN by default. The key used by the secondary clusters and the region for the key resides must be the same as the primary cluster. The region of the key cannot be modified.
 -> **NOTE:** You cannot enable TDE for the secondary clusters in a GDN. Used to view user KMS activation status.

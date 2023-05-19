@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudMseCluster() *schema.Resource {
@@ -47,13 +46,13 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"cluster_specification": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
+				ValidateFunc: StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
 			},
 			"cluster_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Eureka", "Nacos-Ans", "ZooKeeper"}, false),
+				ValidateFunc: StringInSlice([]string{"Eureka", "Nacos-Ans", "ZooKeeper"}, false),
 			},
 			"cluster_version": {
 				Type:     schema.TypeString,
@@ -65,7 +64,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"slb"}, false),
+				ValidateFunc: StringInSlice([]string{"slb"}, false),
 			},
 			"disk_type": {
 				Type:     schema.TypeString,
@@ -80,7 +79,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"privatenet", "pubnet"}, false),
+				ValidateFunc: StringInSlice([]string{"privatenet", "pubnet"}, false),
 			},
 			"private_slb_specification": {
 				Type:     schema.TypeString,
@@ -101,31 +100,35 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-			},
-			"cluster_id": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 			"mse_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro"}, false),
+				ValidateFunc: StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro"}, false),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"cluster_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"app_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -222,19 +225,18 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	mseService := MseService{client}
 	object, err := mseService.DescribeMseCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mse_cluster mseService.DescribeMseCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("cluster_type", object["ClusterType"])
 	d.Set("cluster_specification", object["ClusterSpecification"])
 	d.Set("instance_count", formatInt(object["InstanceCount"]))
 	d.Set("pub_network_flow", object["PubNetworkFlow"])
-	d.Set("status", object["InitStatus"])
-	d.Set("cluster_id", object["ClusterId"])
 	d.Set("mse_version", object["MseVersion"])
 	d.Set("net_type", object["NetType"])
 	d.Set("vswitch_id", object["VSwitchId"])
@@ -242,6 +244,10 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("cluster_alias_name", object["ClusterAliasName"])
 	d.Set("connection_type", object["ConnectionType"])
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("cluster_id", object["ClusterId"])
+	d.Set("app_version", object["AppVersion"])
+	d.Set("status", object["InitStatus"])
+
 	return nil
 }
 

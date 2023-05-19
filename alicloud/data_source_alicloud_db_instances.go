@@ -511,7 +511,7 @@ func rdsInstancesDescription(d *schema.ResourceData, meta interface{}, objects [
 			"charge_type":              fmt.Sprint(item["PayType"]),
 			"db_type":                  fmt.Sprint(item["DBInstanceType"]),
 			"region_id":                fmt.Sprint(item["RegionId"]),
-			"create_time":              fmt.Sprint(item["CreateTime"]),
+			"create_time":              fmt.Sprint(item["CreationTime"]),
 			"expire_time":              fmt.Sprint(item["ExpireTime"]),
 			"status":                   fmt.Sprint(item["DBInstanceStatus"]),
 			"engine":                   fmt.Sprint(item["Engine"]),

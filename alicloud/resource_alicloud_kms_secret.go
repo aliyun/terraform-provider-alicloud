@@ -6,11 +6,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudKmsSecret() *schema.Resource {
@@ -70,12 +71,18 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("secret_type"); ok && v.(string) != "Generic" {
+						return d.Id() != ""
+					}
+					return false
+				},
 			},
 			"secret_data_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"binary", "text"}, false),
 				Default:      "text",
+				ValidateFunc: validation.StringInSlice([]string{"binary", "text"}, false),
 			},
 			"secret_name": {
 				Type:     schema.TypeString,
@@ -94,6 +101,18 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"secret_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Generic", "Rds", "RAMCredentials", "ECS"}, false),
+			},
+			"extended_config": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -136,6 +155,14 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 		request["DKMSInstanceId"] = v
 	}
 
+	if v, ok := d.GetOk("secret_type"); ok {
+		request["SecretType"] = v
+	}
+
+	if v, ok := d.GetOk("extended_config"); ok {
+		request["ExtendedConfig"] = v
+	}
+
 	request["SecretName"] = d.Get("secret_name")
 	if v, ok := d.GetOk("tags"); ok {
 		addTags := make([]JsonTag, 0)
@@ -173,12 +200,13 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 
 	return resourceAlicloudKmsSecretUpdate(d, meta)
 }
+
 func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
 	object, err := kmsService.DescribeKmsSecret(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_kms_secret kmsService.DescribeKmsSecret Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -199,13 +227,18 @@ func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("secret_data", getSecretValueObject["SecretData"])
 	d.Set("secret_data_type", getSecretValueObject["SecretDataType"])
 	d.Set("version_id", getSecretValueObject["VersionId"])
 	d.Set("version_stages", getSecretValueObject["VersionStages"].(map[string]interface{})["VersionStage"])
 	d.Set("dkms_instance_id", object["DKMSInstanceId"])
+	d.Set("secret_type", object["SecretType"])
+	d.Set("extended_config", object["ExtendedConfig"])
+
 	return nil
 }
+
 func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	kmsService := KmsService{client}
@@ -292,6 +325,7 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(false)
 	return resourceAlicloudKmsSecretRead(d, meta)
 }
+
 func resourceAlicloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSecret"

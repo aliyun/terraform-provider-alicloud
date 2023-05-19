@@ -60,8 +60,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The id of the resource.
+* `cluster_id` - (Available in v1.162.0+) The id of Cluster.
+* `app_version` - (Available in v1.205.0+) The application version.
 * `status` - The status of MSE Cluster.
-* `cluster_id` - (Available in v1.162.0+)  The id of Cluster.
 
 #### Timeouts
 

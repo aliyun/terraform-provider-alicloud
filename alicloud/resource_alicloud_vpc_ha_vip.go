@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudVpcIpv6Gateway() *schema.Resource {
+func resourceAliCloudVpcHaVip() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcIpv6GatewayCreate,
-		Read:   resourceAlicloudVpcIpv6GatewayRead,
-		Update: resourceAlicloudVpcIpv6GatewayUpdate,
-		Delete: resourceAlicloudVpcIpv6GatewayDelete,
+		Create: resourceAlicloudVpcHaVipCreate,
+		Read:   resourceAlicloudVpcHaVipRead,
+		Update: resourceAlicloudVpcHaVipUpdate,
+		Delete: resourceAlicloudVpcHaVipDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -29,9 +29,19 @@ func resourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"business_status": {
+			"associated_eip_addresses": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"associated_instance_type": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"associated_instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -40,54 +50,61 @@ func resourceAliCloudVpcIpv6Gateway() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9_-]{2,256}$"), "The description of the IPv6 gateway. The description must be 2 to 256 characters in length. It cannot start with http:// or https://."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^.{2,256}$"), "The description of the HaVip instance. The length is 2 to 256 characters."),
 			},
-			"expired_time": {
+			"ha_vip_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"instance_charge_type": {
+			"ha_vip_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"havip_name"},
+			},
+			"ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"master_instance_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-			},
-			"ipv6_gateway_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"ipv6_gateway_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9_-]{1,128}$"), "The name of the IPv6 gateway. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://."),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"spec": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'Spec' has been deprecated from provider version 1.205.0. IPv6 gateways do not distinguish between specifications. This parameter is no longer used.",
-			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"tags": tagsSchema(),
-			"vpc_id": {
+			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"havip_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'havip_name' has been deprecated from provider version 1.205.0. New field 'ha_vip_name' instead.",
 			},
 		},
 	}
 }
 
-func resourceAlicloudVpcIpv6GatewayCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudVpcHaVipCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateIpv6Gateway"
+	action := "CreateHaVip"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
@@ -98,23 +115,36 @@ func resourceAlicloudVpcIpv6GatewayCreate(d *schema.ResourceData, meta interface
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	request["VpcId"] = d.Get("vpc_id")
+	if v, ok := d.GetOk("vswitch_id"); ok {
+		request["VSwitchId"] = v
+	}
+
+	if v, ok := d.GetOk("ip_address"); ok {
+		request["IpAddress"] = v
+	}
+
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	if v, ok := d.GetOk("ipv6_gateway_name"); ok {
+
+	if v, ok := d.GetOk("havip_name"); ok {
 		request["Name"] = v
 	}
+	if v, ok := d.GetOk("ha_vip_name"); ok {
+		request["Name"] = v
+	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -125,83 +155,102 @@ func resourceAlicloudVpcIpv6GatewayCreate(d *schema.ResourceData, meta interface
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipv6_gateway", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ha_vip", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["Ipv6GatewayId"]))
+	d.SetId(fmt.Sprint(response["HaVipId"]))
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcIpv6GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcHaVipStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcIpv6GatewayUpdate(d, meta)
+	return resourceAlicloudVpcHaVipUpdate(d, meta)
 }
 
-func resourceAlicloudVpcIpv6GatewayRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudVpcHaVipRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcServiceV2 := VpcServiceV2{client}
 
-	objectRaw, err := vpcServiceV2.DescribeVpcIpv6Gateway(d.Id())
+	objectRaw, err := vpcServiceV2.DescribeVpcHaVip(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_ipv6_gateway DescribeVpcIpv6Gateway Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_vpc_ha_vip DescribeVpcHaVip Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("business_status", objectRaw["BusinessStatus"])
-	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("associated_instance_type", objectRaw["AssociatedInstanceType"])
+	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
-	d.Set("expired_time", objectRaw["ExpiredTime"])
-	d.Set("instance_charge_type", convertVpcInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
-	d.Set("ipv6_gateway_name", objectRaw["Name"])
+	d.Set("ha_vip_name", objectRaw["Name"])
+	d.Set("ip_address", objectRaw["IpAddress"])
+	d.Set("master_instance_id", objectRaw["MasterInstanceId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
 	d.Set("vpc_id", objectRaw["VpcId"])
-	d.Set("ipv6_gateway_id", objectRaw["Ipv6GatewayId"])
+	d.Set("ha_vip_id", objectRaw["HaVipId"])
 
+	associatedEipAddresse1Raw, _ := jsonpath.Get("$.AssociatedEipAddresses.associatedEipAddresse", objectRaw)
+	d.Set("associated_eip_addresses", associatedEipAddresse1Raw)
+	associatedInstance1Raw, _ := jsonpath.Get("$.AssociatedInstances.associatedInstance", objectRaw)
+	d.Set("associated_instances", associatedInstance1Raw)
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
 
+	d.Set("havip_name", d.Get("ha_vip_name"))
 	return nil
 }
 
-func resourceAlicloudVpcIpv6GatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	update := false
 	d.Partial(true)
-	action := "ModifyIpv6GatewayAttribute"
+	action := "ModifyHaVipAttribute"
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 
-	request["Ipv6GatewayId"] = d.Id()
+	request["HaVipId"] = d.Id()
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOk("description"); ok {
+			request["Description"] = v
+		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("ipv6_gateway_name") {
+	if !d.IsNewResource() && d.HasChange("havip_name") {
 		update = true
-		request["Name"] = d.Get("ipv6_gateway_name")
+		if v, ok := d.GetOk("havip_name"); ok {
+			request["Name"] = v
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("ha_vip_name") {
+		update = true
+		if v, ok := d.GetOk("ha_vip_name"); ok {
+			request["Name"] = v
+		}
 	}
 
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -213,13 +262,8 @@ func resourceAlicloudVpcIpv6GatewayUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		vpcServiceV2 := VpcServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcIpv6GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
 		d.SetPartial("description")
-		d.SetPartial("ipv6_gateway_name")
+		d.SetPartial("ha_vip_name")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -231,12 +275,15 @@ func resourceAlicloudVpcIpv6GatewayUpdate(d *schema.ResourceData, meta interface
 
 	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["NewResourceGroupId"] = d.Get("resource_group_id")
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["NewResourceGroupId"] = v
+		}
 	}
 
-	request["ResourceType"] = "IPV6GATEWAY"
+	request["ResourceType"] = "HAVIP"
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -262,20 +309,20 @@ func resourceAlicloudVpcIpv6GatewayUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("tags") {
 		update = true
 		vpcServiceV2 := VpcServiceV2{client}
-		if err := vpcServiceV2.SetResourceTags(d, "IPV6GATEWAY"); err != nil {
+		if err := vpcServiceV2.SetResourceTags(d, "HAVIP"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudVpcIpv6GatewayRead(d, meta)
+	return resourceAlicloudVpcHaVipRead(d, meta)
 }
 
-func resourceAlicloudVpcIpv6GatewayDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudVpcHaVipDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "DeleteIpv6Gateway"
+	action := "DeleteHaVip"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
@@ -284,15 +331,18 @@ func resourceAlicloudVpcIpv6GatewayDelete(d *schema.ResourceData, meta interface
 	}
 	request = make(map[string]interface{})
 
-	request["Ipv6GatewayId"] = d.Id()
+	request["HaVipId"] = d.Id()
 	request["RegionId"] = client.RegionId
+
+	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -303,21 +353,16 @@ func resourceAlicloudVpcIpv6GatewayDelete(d *schema.ResourceData, meta interface
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidHaVipId.NotFound", "InvalidRegionId.NotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcIpv6GatewayStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcHaVipStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
-}
-
-func convertVpcInstanceChargeTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	}
-	return source
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -124,17 +125,6 @@ func validateStringConvertInt64() schema.SchemaValidateFunc {
 
 		return
 	}
-}
-
-func validateForwardPort(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-	if value != "any" {
-		valueConv, err := strconv.Atoi(value)
-		if err != nil || valueConv < 1 || valueConv > 65535 {
-			errors = append(errors, fmt.Errorf("%q must be a valid port between 1 and 65535 or any ", k))
-		}
-	}
-	return
 }
 
 func validateOssBucketDateTimestamp(v interface{}, k string) (ws []string, errors []error) {
@@ -349,4 +339,312 @@ func validateOTSIndexName(v interface{}, k string) (ws []string, errors []error)
 			"the first character must be a letter or underscore (_), the legal length range is 1~255 bytes"))
 	}
 	return
+}
+
+var resourceSchemaValidationSkipped bool
+
+func skipResourceSchemaValidation() bool {
+	if resourceSchemaValidationSkipped {
+		return resourceSchemaValidationSkipped
+	}
+	if os.Getenv("TF_SKIP_RESOURCE_SCHEMA_VALIDATION") == "true" {
+		resourceSchemaValidationSkipped = true
+	}
+	return resourceSchemaValidationSkipped
+}
+
+const skipResourceSchemaValidationWarning = "\n[NOTE] set env variable TF_SKIP_RESOURCE_SCHEMA_VALIDATION to true can skip the error and get a warning"
+
+// IntBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type int and is between min and max (inclusive)
+func IntBetween(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(int)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be int", k))
+			return
+		}
+
+		if v < min || v > max {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be in the range (%d - %d), got %d", k, min, max, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be in the range (%d - %d), got %d %s", k, min, max, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// IntAtLeast returns a SchemaValidateFunc which tests if the provided value
+// is of type int and is at least min (inclusive)
+func IntAtLeast(min int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(int)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be int", k))
+			return
+		}
+
+		if v < min {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be at least (%d), got %d", k, min, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be at least (%d), got %d %s", k, min, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// IntAtMost returns a SchemaValidateFunc which tests if the provided value
+// is of type int and is at most max (inclusive)
+func IntAtMost(max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(int)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be int", k))
+			return
+		}
+
+		if v > max {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be at most (%d), got %d", k, max, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be at most (%d), got %d %s", k, max, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// IntInSlice returns a SchemaValidateFunc which tests if the provided value
+// is of type int and matches the value of an element in the valid slice
+func IntInSlice(valid []int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(int)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be an integer", k))
+			return
+		}
+
+		for _, validInt := range valid {
+			if v == validInt {
+				return
+			}
+		}
+
+		if skipResourceSchemaValidation() {
+			s = append(s, fmt.Sprintf("expected %s to be one of %v, got %d", k, valid, v))
+		} else {
+			es = append(es, fmt.Errorf("expected %s to be one of %v, got %d %s", k, valid, v, skipResourceSchemaValidationWarning))
+		}
+		return
+	}
+}
+
+// StringInSlice returns a SchemaValidateFunc which tests if the provided value
+// is of type string and matches the value of an element in the valid slice
+// will test with in lower case if ignoreCase is true
+func StringInSlice(valid []string, ignoreCase bool) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+
+		for _, str := range valid {
+			if v == str || (ignoreCase && strings.ToLower(v) == strings.ToLower(str)) {
+				return
+			}
+		}
+
+		if skipResourceSchemaValidation() {
+			s = append(s, fmt.Sprintf("expected %s to be one of %v, got %s", k, valid, v))
+		} else {
+			es = append(es, fmt.Errorf("expected %s to be one of %v, got %s %s", k, valid, v, skipResourceSchemaValidationWarning))
+		}
+		return
+	}
+}
+
+// StringLenBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type string and has length between min and max (inclusive)
+func StringLenBetween(min, max int) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		if len(v) < min || len(v) > max {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected length of %s to be in the range (%d - %d), got %s", k, min, max, v))
+			} else {
+				es = append(es, fmt.Errorf("expected length of %s to be in the range (%d - %d), got %s %s", k, min, max, v, skipResourceSchemaValidationWarning))
+			}
+		}
+		return
+	}
+}
+
+// StringMatch returns a SchemaValidateFunc which tests if the provided value
+// matches a given regexp. Optionally an error message can be provided to
+// return something friendlier than "must match some globby regexp".
+func StringMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			return nil, []error{fmt.Errorf("expected type of %s to be string", k)}
+		}
+
+		if ok := r.MatchString(v); !ok {
+			if message != "" {
+				if skipResourceSchemaValidation() {
+					s = append(s, fmt.Sprintf("invalid value for %s (%s)", k, message))
+				} else {
+					es = append(es, fmt.Errorf("invalid value for %s (%s) %s", k, message, skipResourceSchemaValidationWarning))
+				}
+				return
+
+			}
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected value of %s to match regular expression %q", k, r))
+			} else {
+				es = append(es, fmt.Errorf("expected value of %s to match regular expression %q %s", k, r, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+		return nil, nil
+	}
+}
+
+// StringDoesNotMatch returns a SchemaValidateFunc which tests if the provided value
+// does not match a given regexp. Optionally an error message can be provided to
+// return something friendlier than "must not match some globby regexp".
+func StringDoesNotMatch(r *regexp.Regexp, message string) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			return nil, []error{fmt.Errorf("expected type of %s to be string", k)}
+		}
+
+		if ok := r.MatchString(v); ok {
+			if message != "" {
+				if skipResourceSchemaValidation() {
+					s = append(s, fmt.Sprintf("invalid value for %s (%s)", k, message))
+				} else {
+					es = append(es, fmt.Errorf("invalid value for %s (%s) %s", k, message, skipResourceSchemaValidationWarning))
+				}
+				return
+
+			}
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected value of %s to not match regular expression %q", k, r))
+			} else {
+				es = append(es, fmt.Errorf("expected value of %s to not match regular expression %q %s", k, r, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+		return
+	}
+}
+
+// FloatBetween returns a SchemaValidateFunc which tests if the provided value
+// is of type float64 and is between min and max (inclusive).
+func FloatBetween(min, max float64) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(float64)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be float64", k))
+			return
+		}
+
+		if v < min || v > max {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be in the range (%f - %f), got %f", k, min, max, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be in the range (%f - %f), got %f %s", k, min, max, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// FloatAtLeast returns a SchemaValidateFunc which tests if the provided value
+// is of type float and is at least min (inclusive)
+func FloatAtLeast(min float64) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(float64)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be float", k))
+			return
+		}
+
+		if v < min {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be at least (%f), got %f", k, min, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be at least (%f), got %f %s", k, min, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// FloatAtMost returns a SchemaValidateFunc which tests if the provided value
+// is of type float and is at most max (inclusive)
+func FloatAtMost(max float64) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(float64)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be float", k))
+			return
+		}
+
+		if v > max {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected %s to be at most (%f), got %f", k, max, v))
+			} else {
+				es = append(es, fmt.Errorf("expected %s to be at most (%f), got %f %s", k, max, v, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
+}
+
+// StringDoesNotContainAny returns a SchemaValidateFunc which validates that the
+// provided value does not contain any of the specified Unicode code points in chars.
+func StringDoesNotContainAny(chars string) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+
+		if strings.ContainsAny(v, chars) {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("expected value of %s to not contain any of %q", k, chars))
+			} else {
+				es = append(es, fmt.Errorf("expected value of %s to not contain any of %q %s", k, chars, skipResourceSchemaValidationWarning))
+			}
+			return
+		}
+
+		return
+	}
 }
