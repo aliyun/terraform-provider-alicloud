@@ -405,6 +405,7 @@ func resourceTestAccConfigFunc(resourceId string,
 		resourceId:       resourceId,
 		attributeMap:     make(map[string]interface{}),
 		configDependence: configDependence,
+		number:           0,
 	}
 	return basicInfo.configBuild(false)
 }
@@ -433,6 +434,9 @@ type resourceConfig struct {
 
 	// generate assistant test config
 	configDependence func(name string) string
+
+	// step number
+	number int
 }
 
 // according to changeMap to change the attributeMap value
@@ -477,7 +481,8 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		config := assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
 		for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
 			if strings.TrimSpace(part) == "terraform_test" {
-				log.Println("###### terraform test configuration ######" + config + "\n###### (END) ######\n")
+				log.Printf("###### (step %d) terraform test configuration ###### %s \n###### (END) ######\n\n", b.number, config)
+				b.number += 1
 			}
 		}
 		return config

@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -11,7 +13,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGpdbInstance() *schema.Resource {
@@ -44,7 +45,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"StorageElastic", "Serverless", "Classic"}, false),
+				ValidateFunc: StringInSlice([]string{"StorageElastic", "Serverless", "Classic"}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -61,8 +62,9 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				ForceNew: true,
 			},
 			"ip_whitelist": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ip_group_attribute": {
@@ -77,7 +79,18 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 						},
 						"security_ip_list": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								if old != "" && new != "" && old != new {
+									oldParts := strings.Split(old, ",")
+									sort.Strings(oldParts)
+									newParts := strings.Split(new, ",")
+									sort.Strings(newParts)
+									return reflect.DeepEqual(newParts, oldParts)
+								}
+								return false
+							},
 						},
 					},
 				},
@@ -87,6 +100,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:          schema.TypeSet,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				Optional:      true,
+				Computed:      true,
 				Deprecated:    "Field 'security_ip_list' has been deprecated from version 1.187.0. Use 'ip_whitelist' instead.",
 				ConflictsWith: []string{"ip_whitelist"},
 			},
@@ -95,12 +109,12 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"VPC"}, false),
+				ValidateFunc: StringInSlice([]string{"VPC"}, false),
 			},
 			"instance_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2C16G", "4C32G", "16C128G", "2C8G", "4C16G", "8C32G", "16C64G"}, false),
+				ValidateFunc: StringInSlice([]string{"2C16G", "4C32G", "16C128G", "2C8G", "4C16G", "8C32G", "16C64G"}, false),
 			},
 			"maintain_end_time": {
 				Type:     schema.TypeString,
@@ -115,7 +129,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			"master_node_num": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{1, 2}),
+				ValidateFunc: IntInSlice([]int{1, 2}),
 				Default:      1,
 			},
 			"instance_group_count": {
@@ -128,7 +142,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"instance_charge_type": {
 				Type:          schema.TypeString,
@@ -136,13 +150,13 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				Deprecated:    "Field 'instance_charge_type' has been deprecated from version 1.187.0. Use 'payment_type' instead.",
-				ValidateFunc:  validation.StringInSlice([]string{"Prepaid", "PostPaid"}, false),
+				ValidateFunc:  StringInSlice([]string{"Prepaid", "PostPaid"}, false),
 				ConflictsWith: []string{"payment_type"},
 			},
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"private_ip_address": {
 				Type:     schema.TypeString,
@@ -156,7 +170,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(2, 512),
+				ValidateFunc: IntBetween(2, 512),
 			},
 			"seg_storage_type": {
 				Type:     schema.TypeString,
@@ -209,7 +223,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			},
 			"ssl_enabled": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				ValidateFunc: IntInSlice([]int{0, 1}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -322,16 +336,9 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 
 	request["SecurityIPList"] = LOCAL_HOST_IP
 
-	if v, ok := d.GetOk("ip_whitelist"); ok {
-		for _, iPWhitelist := range v.(*schema.Set).List() {
-			iPWhitelistArg := iPWhitelist.(map[string]interface{})
-			request["IPGroupAttribute"] = iPWhitelistArg["ip_group_attribute"]
-			request["IPGroupName"] = iPWhitelistArg["ip_group_name"]
-			request["SecurityIPList"] = iPWhitelistArg["security_ip_list"]
-		}
-	} else {
-		if len(d.Get("security_ip_list").(*schema.Set).List()) > 0 {
-			request["SecurityIpList"] = strings.Join(expandStringList(d.Get("security_ip_list").(*schema.Set).List())[:], COMMA_SEPARATED)
+	if v, ok := d.GetOk("security_ip_list"); ok {
+		if len(v.(*schema.Set).List()) > 0 {
+			request["SecurityIpList"] = strings.Join(expandStringList(v.(*schema.Set).List())[:], COMMA_SEPARATED)
 		}
 	}
 
@@ -356,7 +363,7 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 	}
 	d.SetId(fmt.Sprint(response["DBInstanceId"]))
 	gpdbService := GpdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -552,45 +559,109 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("maintain_end_time")
 		d.SetPartial("maintain_start_time")
 	}
-	update = false
-	request = map[string]interface{}{
-		"DBInstanceId": d.Id(),
-	}
-	if !d.IsNewResource() && d.HasChange("ip_whitelist") {
-		update = true
-		if v, ok := d.GetOk("ip_whitelist"); ok {
-			for _, iPWhitelist := range v.(*schema.Set).List() {
+
+	if d.HasChange("ip_whitelist") {
+		request = map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+		o, n := d.GetChange("ip_whitelist")
+		newGroupKeys := make(map[string]struct{})
+		if n != nil {
+			for _, iPWhitelist := range n.([]interface{}) {
 				iPWhitelistArg := iPWhitelist.(map[string]interface{})
-				request["IPGroupAttribute"] = iPWhitelistArg["ip_group_attribute"]
-				request["IPGroupName"] = iPWhitelistArg["ip_group_name"]
+				request["DBInstanceIPArrayAttribute"] = iPWhitelistArg["ip_group_attribute"]
+				request["DBInstanceIPArrayName"] = iPWhitelistArg["ip_group_name"]
 				request["SecurityIPList"] = iPWhitelistArg["security_ip_list"]
-			}
-		} else {
-			if len(d.Get("security_ip_list").(*schema.Set).List()) > 0 {
-				request["SecurityIpList"] = strings.Join(expandStringList(d.Get("security_ip_list").(*schema.Set).List())[:], COMMA_SEPARATED)
+				request["ModifyMode"] = 0
+				ipGroupName := "default"
+				if fmt.Sprint(iPWhitelistArg["ip_group_name"]) != "" {
+					ipGroupName = fmt.Sprint(iPWhitelistArg["ip_group_name"])
+				}
+				newGroupKeys[ipGroupName] = struct{}{}
+
+				action := "ModifySecurityIps"
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
 			}
 		}
-	}
-	if update {
-		action := "ModifySecurityIps"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
+		if o != nil {
+			for _, iPWhitelist := range o.([]interface{}) {
+				iPWhitelistArg := iPWhitelist.(map[string]interface{})
+				request["DBInstanceIPArrayAttribute"] = iPWhitelistArg["ip_group_attribute"]
+				request["DBInstanceIPArrayName"] = iPWhitelistArg["ip_group_name"]
+				request["SecurityIPList"] = iPWhitelistArg["security_ip_list"]
+				request["ModifyMode"] = 2
+				ipGroupName := "default"
+				if fmt.Sprint(iPWhitelistArg["ip_group_name"]) != "" {
+					ipGroupName = fmt.Sprint(iPWhitelistArg["ip_group_name"])
 				}
-				return resource.NonRetryableError(err)
+				if _, ok := newGroupKeys[ipGroupName]; ok {
+					continue
+				}
+				action := "ModifySecurityIps"
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
 			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("ip_whitelist")
 	}
+	if !d.IsNewResource() && d.HasChange("security_ip_list") {
+		request = map[string]interface{}{
+			"DBInstanceId": d.Id(),
+		}
+		if v, ok := d.GetOk("security_ip_list"); ok {
+			if len(v.(*schema.Set).List()) > 0 {
+				request["SecurityIpList"] = strings.Join(expandStringList(v.(*schema.Set).List())[:], COMMA_SEPARATED)
+			}
+			action := "ModifySecurityIps"
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			d.SetPartial("security_ip_list")
+		}
+	}
+
 	update = false
 	request = map[string]interface{}{
 		"DBInstanceId": d.Id(),
@@ -622,7 +693,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -660,7 +731,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -697,7 +768,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -734,7 +805,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -768,7 +839,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}

@@ -697,7 +697,7 @@ func (s *GpdbService) DescribeGpdbDbInstance(id string) (object map[string]inter
 	return object, nil
 }
 
-func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeGpdbDbInstance(id)
 		if err != nil {
@@ -709,11 +709,11 @@ func (s *GpdbService) GpdbDbInstanceStateRefreshFunc(id string, failStates []str
 		}
 
 		for _, failState := range failStates {
-			if fmt.Sprint(object["DBInstanceStatus"]) == failState {
-				return object, fmt.Sprint(object["DBInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DBInstanceStatus"])))
+			if fmt.Sprint(object[field]) == failState {
+				return object, fmt.Sprint(object[field]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[field])))
 			}
 		}
-		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
+		return object, fmt.Sprint(object[field]), nil
 	}
 }
 
