@@ -1,4 +1,28 @@
 ## 1.205.0 (Unreleased)
+
+- **New Resource:** `alicloud_compute_nest_service_instance` ([GH-6162])
+- **New Resource:** `alicloud_vpc_ha_vip` ([GH-6129])
+- **New Resource:** `alicloud_vpc_vswitch_cidr_reservation` ([GH-6130])
+- **New Datasource:** `alicloud_compute_nest_service_instances` ([GH-6162])
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc_prefix_list: Adds new attribute ResourceGroupId, Tags etc. ([GH-6128])
+- resource/alicloud_ga_accelerator: Added the field bandwidth_billing_type. ([GH-6145])
+- datasource/alicloud_db_zones : Support serverless instance availability zone query. ([GH-6146])
+- datasource/alicloud_db_instance_classes : Support serverless instance specification query. ([GH-6148])
+- validation: Adds env variable TF_SKIP_RESOURCE_SCHEMA_VALIDATION to support skip resource attribute limitation. ([GH-6149])
+- resource/alicloud_alb_rule: Added the field cors_config and direction. ([GH-6150])
+- resource/alicloud_db_instance: Improves the limition for attribute validation. ([GH-6152])
+- resource/alicloud_polardb_cluster: Improves the limition for attribute validation. ([GH-6153])
+- resource/alicloud_mse_cluster: Added the field app_version. ([GH-6156])
+- resource/alicloud_forward_entry: Fixes the TaskConflict error when creating the resource. ([GH-6157])
+- datasource/alicloud_cen_transit_router_route_table_associations: Adds new attributes transit_router_attachment_id, transit_router_attachment_resource_id, and transit_router_attachment_resource_type. ([GH-6158])
+- resource/alicloud_gpdb_instance: Fixes the updating attribute ip_whitelist does not work bug. ([GH-6160])
+- resource/alicloud_vpc_flow_log: Adds new attribute AggregationInterval,ResourceGroupId,Tags,TrafficPath etc. ([GH-6161])
+- resource/alicloud_vpc_ipv4_gateway: Adds new attribute resource_group_id, tags, create_time, ipv4_gateway_id, ipv4_gateway_route_table_id. ([GH-6163])
+- resource/alicloud_vpc_ipv6_gateway: adds new attribute resource_group_id, tags, business_status, create_time, expired_time, instance_charge_type, ipv6_gateway_id; deprecated attribute spec. ([GH-6164])
+
 ## 1.204.1 (May 12, 2023)
 
 ENHANCEMENTS:
