@@ -84,8 +84,9 @@ The following arguments are supported:
   * When `db_instance_category` is `Serverless`, Valid values: `4C16G`, `8C32G`.
 -> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
 
-* `ip_whitelist` - (Optional) The ip whitelist.
-* `security_ip_list` - (Optional) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
+* `ip_whitelist` - (Optional, Available in 1.187.0+) The ip whitelist. See block `ip_whitelist`.
+  Default to creating a whitelist group with the group name "default" and security_ip_list "127.0.0.1".
+* `security_ip_list` - (Optional, Deprecated from 1.187.0+) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
 * `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `master_node_num` - (Optional) The number of Master nodes. Valid values: 1 to 2. if it is not filled in, the default value is 1 Master node.
@@ -117,7 +118,8 @@ The following arguments are supported:
 
 The ip_whitelist supports the following:
 
-* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. The console does not display the whitelist group whose value of this parameter is hidden.
+* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. 
+  If the value contains `hidden`, this white list item will not output.
 * `ip_group_name` - (Optional) IP whitelist group name
 * `security_ip_list` - (Required) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 

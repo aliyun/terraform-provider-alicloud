@@ -5,13 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudGpdbInstancesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
-	checkoutSupportedRegions(t, true, connectivity.GPDBSupportRegions)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudGpdbInstancesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_gpdb_instance.default.id}"]`,

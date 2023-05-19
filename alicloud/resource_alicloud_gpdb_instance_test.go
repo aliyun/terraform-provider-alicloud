@@ -32,11 +32,6 @@ func init() {
 }
 
 func testSweepGPDBDBInstance(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.GPDBSupportRegions) {
-		log.Printf("[INFO] Skipping Gpdb Instance unsupported region: %s", region)
-		return nil
-	}
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -122,7 +117,6 @@ func testSweepGPDBDBInstance(region string) error {
 func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -160,11 +154,6 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":            "${local.vswitch_id}",
 					"create_sample_data":    `false`,
-					"ip_whitelist": []map[string]interface{}{
-						{
-							"security_ip_list": "127.0.0.1",
-						},
-					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -238,13 +227,54 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"ip_whitelist": []map[string]interface{}{
 						{
-							"security_ip_list": "1.1.1.1",
+							"ip_group_name":    "default",
+							"security_ip_list": "10.0.0.1,10.0.0.2",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ip_whitelist.#": "1",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"ip_whitelist": []map[string]interface{}{
+			//			{
+			//				"ip_group_attribute": "attributedefault",
+			//				"security_ip_list":   "10.0.0.3,10.0.0.4",
+			//			},
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"ip_whitelist.#": "1",
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"ip_group_name":    "default",
+							"security_ip_list": "10.0.0.1,10.0.0.2",
+						},
+						{
+							"ip_group_attribute": "attribute1",
+							"ip_group_name":      "group1",
+							"security_ip_list":   "11.0.0.1",
+						},
+						{
+							"ip_group_attribute": "attribute2",
+							"ip_group_name":      "group2",
+							"security_ip_list":   "12.0.0.1,10.0.0.2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_whitelist.#": "3",
 					}),
 				),
 			},
@@ -309,7 +339,14 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 					"maintain_end_time":   "13:00Z",
 					"ip_whitelist": []map[string]interface{}{
 						{
-							"security_ip_list": "127.0.0.1",
+							"ip_group_attribute": "test",
+							"ip_group_name":      "update",
+							"security_ip_list":   "10.0.0.1,11.0.0.1",
+						},
+						{
+							"ip_group_attribute": "show",
+							"ip_group_name":      "test02",
+							"security_ip_list":   "10.0.0.2,10.0.0.3",
 						},
 					},
 					"tags": map[string]string{
@@ -327,7 +364,7 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 						"storage_size":        "200",
 						"maintain_start_time": CHECKSET,
 						"maintain_end_time":   CHECKSET,
-						"ip_whitelist.#":      "1",
+						"ip_whitelist.#":      "2",
 						"tags.%":              "2",
 						"tags.Created":        "TF2",
 						"tags.For":            "acceptance test2",
@@ -348,7 +385,7 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 func TestAccAlicloudGPDBDBInstanceServerless(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -427,7 +464,6 @@ func TestAccAlicloudGPDBDBInstanceServerless(t *testing.T) {
 func TestAccAlicloudGPDBDBInstancePrepaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
