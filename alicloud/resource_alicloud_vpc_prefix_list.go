@@ -32,11 +32,9 @@ func resourceAliCloudVpcPrefixList() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"entries": {
-				Type:          schema.TypeSet,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"entrys"},
+			"entrys": {
+				Type:     schema.TypeSet,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
@@ -131,25 +129,6 @@ func resourceAliCloudVpcPrefixList() *schema.Resource {
 				Computed: true,
 			},
 			"tags": tagsSchema(),
-			"entrys": {
-				Type:       schema.TypeSet,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'entrys' has been deprecated from provider version 1.205.0. New field 'entries' instead.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"description": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_.-]{2,256}$"), "The description of the cidr entry. It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`."),
-						},
-						"cidr": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
 		},
 	}
 }
@@ -168,13 +147,6 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("entrys"); ok {
-		for entrysPtr, entrys := range v.(*schema.Set).List() {
-			entrysArg := entrys.(map[string]interface{})
-			request["PrefixListEntries."+fmt.Sprint(entrysPtr+1)+".Cidr"] = entrysArg["cidr"]
-			request["PrefixListEntries."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
-		}
-	}
 	if v, ok := d.GetOk("ip_version"); ok {
 		request["IpVersion"] = v
 	}
@@ -195,7 +167,7 @@ func resourceAlicloudVpcPrefixListCreate(d *schema.ResourceData, meta interface{
 		request["ResourceGroupId"] = v
 	}
 
-	if v, ok := d.GetOk("entries"); ok {
+	if v, ok := d.GetOk("entrys"); ok {
 		localData := v
 		prefixListEntriesMaps := make([]map[string]interface{}, 0)
 		for _, dataLoop := range localData.(*schema.Set).List() {
@@ -282,7 +254,7 @@ func resourceAlicloudVpcPrefixListRead(d *schema.ResourceData, meta interface{})
 			entriesMaps = append(entriesMaps, entriesMap)
 		}
 	}
-	d.Set("entries", entriesMaps)
+	d.Set("entrys", entriesMaps)
 
 	objectRaw, err = vpcServiceV2.DescribeGetVpcPrefixListAssociations(d.Id())
 	if err != nil {
@@ -307,8 +279,6 @@ func resourceAlicloudVpcPrefixListRead(d *schema.ResourceData, meta interface{})
 		}
 	}
 	d.Set("prefix_list_association", prefixListAssociationMaps)
-
-	d.Set("entrys", d.Get("entries"))
 	return nil
 }
 
@@ -350,26 +320,6 @@ func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("entrys") {
-		update = true
-		oldEntry, newEntry := d.GetChange("entrys")
-		oldEntrySet := oldEntry.(*schema.Set)
-		newEntrySet := newEntry.(*schema.Set)
-		removed := oldEntrySet.Difference(newEntrySet)
-		added := newEntrySet.Difference(oldEntrySet)
-
-		for entrysPtr, entrys := range removed.List() {
-			entrysArg := entrys.(map[string]interface{})
-			request["RemovePrefixListEntry."+fmt.Sprint(entrysPtr+1)+".Cidr"] = entrysArg["cidr"]
-			request["RemovePrefixListEntry."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
-		}
-
-		for entrysPtr, entrys := range added.List() {
-			entrysArg := entrys.(map[string]interface{})
-			request["AddPrefixListEntry."+fmt.Sprint(entrysPtr+1)+".Cidr"] = entrysArg["cidr"]
-			request["AddPrefixListEntry."+fmt.Sprint(entrysPtr+1)+".Description"] = entrysArg["description"]
-		}
-	}
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -412,7 +362,6 @@ func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	request["ResourceType"] = "PrefixList"
-
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -435,9 +384,9 @@ func resourceAlicloudVpcPrefixListUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	update = false
-	if !d.IsNewResource() && d.HasChange("entries") {
+	if !d.IsNewResource() && d.HasChange("entrys") {
 		update = true
-		oldEntry, newEntry := d.GetChange("entries")
+		oldEntry, newEntry := d.GetChange("entrys")
 		oldEntrySet := oldEntry.(*schema.Set)
 		newEntrySet := newEntry.(*schema.Set)
 		removed := oldEntrySet.Difference(newEntrySet)
