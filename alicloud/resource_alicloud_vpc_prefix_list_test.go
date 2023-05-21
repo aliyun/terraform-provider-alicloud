@@ -258,6 +258,16 @@ func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"entrys": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"entrys.#": "0",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -691,7 +701,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"entries": []map[string]interface{}{
+					"entrys": []map[string]interface{}{
 						{
 							"cidr":        "192.168.0.0/16",
 							"description": "test",
@@ -700,7 +710,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"entries.#": "1",
+						"entrys.#": "1",
 					}),
 				),
 			},
@@ -746,7 +756,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"entries": []map[string]interface{}{
+					"entrys": []map[string]interface{}{
 						{
 							"cidr":        "10.0.0.0/8",
 							"description": "testupdate",
@@ -755,7 +765,17 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"entries.#": "1",
+						"entrys.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"entrys": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"entrys.#": "0",
 					}),
 				),
 			},
@@ -766,7 +786,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 					"prefix_list_description": "test",
 					"ip_version":              "IPV4",
 					"prefix_list_name":        name + "_update",
-					"entries": []map[string]interface{}{
+					"entrys": []map[string]interface{}{
 						{
 							"cidr":        "192.168.0.0/16",
 							"description": "test",
@@ -780,7 +800,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 						"prefix_list_description": "test",
 						"ip_version":              "IPV4",
 						"prefix_list_name":        name + "_update",
-						"entries.#":               "1",
+						"entrys.#":                "1",
 					}),
 				),
 			},
@@ -886,7 +906,7 @@ func TestAccAlicloudVpcPrefixList_basic3120_twin(t *testing.T) {
 					"prefix_list_description": "testupdate",
 					"ip_version":              "IPV4",
 					"prefix_list_name":        name,
-					"entries": []map[string]interface{}{
+					"entrys": []map[string]interface{}{
 						{
 							"cidr":        "10.0.0.0/8",
 							"description": "testupdate",
@@ -904,7 +924,7 @@ func TestAccAlicloudVpcPrefixList_basic3120_twin(t *testing.T) {
 						"prefix_list_description": "testupdate",
 						"ip_version":              "IPV4",
 						"prefix_list_name":        name,
-						"entries.#":               "1",
+						"entrys.#":                "1",
 						"tags.%":                  "2",
 						"tags.Created":            "TF",
 						"tags.For":                "Test",

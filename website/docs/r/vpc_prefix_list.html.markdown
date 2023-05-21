@@ -41,7 +41,7 @@ resource "alicloud_vpc_prefix_list" "default" {
   prefix_list_description = "test"
   ip_version              = "IPV4"
   prefix_list_name        = var.name
-  entries {
+  entrys {
     cidr        = "192.168.0.0/16"
     description = "test"
   }
@@ -51,7 +51,7 @@ resource "alicloud_vpc_prefix_list" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `entries` - (Optional, Computed, Available in v1.205.0+) The CIDR address block list of the prefix list.See the following `Block Entries`.
+* `entrys` - (Optional) The CIDR address block list of the prefix list.See the following `Block Entrys`.
 * `ip_version` - (Optional, ForceNew, Computed) The IP version of the prefix list. Value:-**IPV4**:IPv4 version.-**IPV6**:IPv6 version.
 * `max_entries` - (Optional, Computed) The maximum number of entries for CIDR address blocks in the prefix list.
 * `prefix_list_description` - (Optional) The description of the prefix list.It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
@@ -59,10 +59,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed, Available in v1.205.0+) The ID of the resource group to which the PrefixList belongs.
 * `tags` - (Optional, Map, Available in v1.205.0+) The tags of PrefixList.
 
-The following arguments will be discarded. Please use new fields as soon as possible:
-* `entrys` - (Deprecated from v1.205.0+) Field 'entrys' has been deprecated from provider version 1.205.0. New field 'entries' instead.
-
-#### Block Entries
+#### Block Entrys
 
 The Entries supports the following:
 * `cidr` - (Optional) The CIDR address block of the prefix list.
