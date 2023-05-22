@@ -11,8 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Skip this testcase because of the account cannot purchase non-internal products.
-func SkipTestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
+func TestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 	var cenBwp cbn.CenBandwidthPackage
 
 	resourceId := "alicloud_cen_bandwidth_package_attachment.default"
@@ -48,7 +47,6 @@ func SkipTestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(cenBandwidthPackageAttachmentMap),
-					testAccCheckCenBandwidthPackageRegionId(&cenBwp, "China", "Asia-Pacific"),
 				),
 			},
 			{
@@ -56,33 +54,34 @@ func SkipTestAccAlicloudCenBandwidthPackageAttachment_basic(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":          "${alicloud_cen_instance.default.id}",
-					"bandwidth_package_id": "${alicloud_cen_bandwidth_package.default.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(cenBandwidthPackageAttachmentMap),
-				),
-			},
+			// Skip this testcase because of the account cannot purchase non-internal products.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instance_id":          "${alicloud_cen_instance.default.id}",
+			//		"bandwidth_package_id": "${alicloud_cen_bandwidth_package.default.id}",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(cenBandwidthPackageAttachmentMap),
+			//		testAccCheckCenBandwidthPackageRegionId(&cenBwp, "China", "Asia-Pacific"),
+			//	),
+			//},
 		},
 	})
 }
 
 func resourceCenBandwidthPackageAttachmentConfigDependence(name string) string {
 	return fmt.Sprintf(`
-resource "alicloud_cen_instance" "default" {
-     name = "%s"
-     description = "tf-testAccCenBandwidthPackageAttachmentDescription"
-}
+	resource "alicloud_cen_instance" "default" {
+  		name        = "%s"
+  		description = "tf-testAccCenBandwidthPackageAttachmentDescription"
+	}
 
-resource "alicloud_cen_bandwidth_package" "default" {
-	name = "%s"
-    bandwidth = 5
-    geographic_region_ids = [
-		"China",
-		"Asia-Pacific"]
-}
+	resource "alicloud_cen_bandwidth_package" "default" {
+  		cen_bandwidth_package_name = "%s"
+  		bandwidth                  = 5
+  		geographic_region_a_id     = "China"
+  		geographic_region_b_id     = "China"
+	}
 `, name, name)
 }
 

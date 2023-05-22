@@ -48,6 +48,15 @@ The following attributes are exported:
 
 * `id` - ID of the resource, the same as bandwidth_package_id.
 
+#### Timeouts
+
+-> **NOTE:** Available in 1.206.0+.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the CEN bandwidth package attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the CEN bandwidth package attachment.
+
 ## Import
 
 CEN bandwidth package attachment resource can be imported using the id, e.g.
@@ -55,6 +64,3 @@ CEN bandwidth package attachment resource can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cen_bandwidth_package_attachment.example bwp-abc123456
 ```
-
-
-
