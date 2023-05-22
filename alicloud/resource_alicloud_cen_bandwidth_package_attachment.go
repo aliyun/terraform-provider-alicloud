@@ -17,7 +17,10 @@ func resourceAlicloudCenBandwidthPackageAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -44,12 +47,12 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 	request.CenId = cenId
 	request.CenBandwidthPackageId = cenBwpId
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.AssociateCenBandwidthPackage(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -57,11 +60,13 @@ func resourceAlicloudCenBandwidthPackageAttachmentCreate(d *schema.ResourceData,
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_bandwidth_package_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(cenBwpId)
+
 	if err := cenService.WaitForCenBandwidthPackageAttachment(d.Id(), InUse, DefaultCenTimeout); err != nil {
 		return WrapError(err)
 	}
@@ -75,7 +80,7 @@ func resourceAlicloudCenBandwidthPackageAttachmentRead(d *schema.ResourceData, m
 
 	object, err := cenService.DescribeCenBandwidthPackageAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -98,18 +103,21 @@ func resourceAlicloudCenBandwidthPackageAttachmentDelete(d *schema.ResourceData,
 	request.CenId = cenId
 	request.CenBandwidthPackageId = cenBwpId
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithCenClient(func(cbnClient *cbn.Client) (interface{}, error) {
 			return cbnClient.UnassociateCenBandwidthPackage(request)
 		})
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
+			if IsExpectedErrors(err, []string{"InvalidOperation.BwpInstanceStatus", "InvalidOperation.BwpBusinessStatus", "InvalidOperation.CenInstanceStatus", "InvalidOperation.CenBandwidthLimitsNotZero", "Operation.Blocking"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 
 			return resource.NonRetryableError(err)
 		}
+
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		return nil
 	})
 
