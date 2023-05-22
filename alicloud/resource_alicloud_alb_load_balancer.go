@@ -157,6 +157,13 @@ func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"bandwidth_package_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("address_type") == "Intranet"
+				},
+			},
 		},
 	}
 }
@@ -199,6 +206,9 @@ func resourceAlicloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	for _, loadBalancerBillingConfigs := range d.Get("load_balancer_billing_config").(*schema.Set).List() {
 		loadBalancerBillingConfigArg := loadBalancerBillingConfigs.(map[string]interface{})
 		loadBalancerBillingConfigMap["PayType"] = convertAlbLoadBalancerPaymentTypeRequest(loadBalancerBillingConfigArg["pay_type"].(string))
+		if v, ok := d.GetOk("bandwidth_package_id"); ok {
+			loadBalancerBillingConfigMap["BandwidthPackageId"] = v
+		}
 	}
 	request["LoadBalancerBillingConfig"] = loadBalancerBillingConfigMap
 	modificationProtectionConfigMap := map[string]interface{}{}
@@ -265,6 +275,7 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("access_log_config", accessLogConfigSli)
 	d.Set("address_allocated_mode", object["AddressAllocatedMode"])
 	d.Set("address_type", object["AddressType"])
+	d.Set("bandwidth_package_id", object["BandwidthPackageId"])
 
 	loadBalancerBillingConfigSli := make([]map[string]interface{}, 0)
 	if object["LoadBalancerBillingConfig"] != nil && len(object["LoadBalancerBillingConfig"].(map[string]interface{})) > 0 {
@@ -311,6 +322,10 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
+	conn, err := client.NewAlbClient()
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -334,10 +349,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		request["ResourceType"] = "loadbalancer"
 		action := "MoveResourceGroup"
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -374,10 +385,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			request["DryRun"] = v
 		}
 		action := "UpdateLoadBalancerEdition"
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		request["ClientToken"] = buildClientToken("UpdateLoadBalancerEdition")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -416,10 +423,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				request["DryRun"] = v
 			}
 			action := "DisableLoadBalancerAccessLog"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request["ClientToken"] = buildClientToken("DisableLoadBalancerAccessLog")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -458,10 +461,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				request["DryRun"] = v
 			}
 			action := "EnableLoadBalancerAccessLog"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request["ClientToken"] = buildClientToken("EnableLoadBalancerAccessLog")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -520,10 +519,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		action := "UpdateLoadBalancerAttribute"
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		updateLoadBalancerAttributeReq["ClientToken"] = buildClientToken("UpdateLoadBalancerAttribute")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -561,10 +556,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				request["DryRun"] = v
 			}
 			action := "DisableDeletionProtection"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request["ClientToken"] = buildClientToken("DisableDeletionProtection")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -597,10 +588,6 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 				request["DryRun"] = v
 			}
 			action := "EnableDeletionProtection"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request["ClientToken"] = buildClientToken("EnableDeletionProtection")
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
@@ -643,13 +630,7 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
 		}
-
 		action := "UpdateLoadBalancerAddressTypeConfig"
-		conn, err := client.NewAlbClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -675,6 +656,78 @@ func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		d.SetPartial("address_type")
+	}
+
+	if !d.IsNewResource() && d.HasChange("bandwidth_package_id") {
+		o, n := d.GetChange("bandwidth_package_id")
+		oldBandwidthPackageId := o.(string)
+		newBandwidthPackageId := n.(string)
+
+		if oldBandwidthPackageId != "" {
+			request = map[string]interface{}{
+				"LoadBalancerId":     d.Id(),
+				"RegionId":           client.RegionId,
+				"BandwidthPackageId": oldBandwidthPackageId,
+			}
+			action := "DetachCommonBandwidthPackageFromLoadBalancer"
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, resp, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+		if newBandwidthPackageId != "" {
+			request = map[string]interface{}{
+				"LoadBalancerId":     d.Id(),
+				"RegionId":           client.RegionId,
+				"BandwidthPackageId": newBandwidthPackageId,
+			}
+			action := "AttachCommonBandwidthPackageToLoadBalancer"
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, resp, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+
+		d.SetPartial("bandwidth_package_id")
+
 	}
 
 	d.Partial(false)
@@ -718,6 +771,11 @@ func resourceAlicloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	albService := AlbService{client}
+	stateConf := BuildStateConf([]string{}, []string{}, client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), 5*time.Second, albService.AlbLoadBalancerStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
