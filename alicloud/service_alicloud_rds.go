@@ -2660,6 +2660,9 @@ func (s *RdsService) DescribeDBInstanceEndpoints(id string) (object map[string]i
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	v, err := jsonpath.Get("$.Data.DBInstanceEndpoints", response)
@@ -2742,7 +2745,7 @@ func (s *RdsService) DescribeDBInstanceEndpointPublicAddress(id string) (object 
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceUnavailable"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
 			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
