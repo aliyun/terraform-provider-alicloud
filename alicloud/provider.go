@@ -855,6 +855,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_subnets":                                     dataSourceAlicloudEfloSubnets(),
 			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 			"alicloud_vpc_flow_log_service":                             dataSourceAliCloudVpcFlowLogService(),
+			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),
