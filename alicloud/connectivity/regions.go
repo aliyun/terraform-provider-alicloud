@@ -194,6 +194,7 @@ var MSCSupportRegions = []Region{Hangzhou}
 var VPCPublicIpAddressPoolCidrBlockSupportRegions = []Region{Hangzhou}
 var RDSInstanceClassesSupportRegions = []Region{Hangzhou}
 var MySQLServerlessSupportRegions = []Region{Hangzhou}
+var ServerlessSupportRegions = []Region{Hangzhou}
 
 // Other regions requires the custom should have icp
 var FCCustomDomainSupportRegions = []Region{EUCentral1, APSouthEast1}
