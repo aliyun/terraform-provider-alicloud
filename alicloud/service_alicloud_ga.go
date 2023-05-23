@@ -286,7 +286,7 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -294,26 +294,27 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"UnknownError"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("GaIpSet", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+		if IsExpectedErrors(err, []string{"UnknownError", "NotExist.IpSet"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:IpSet", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
 	if object["State"] == nil {
-		err = WrapErrorf(Error(GetNotFoundMessage("GaIpSet", id)), NotFoundMsg, ProviderERROR)
-		return object, err
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:IpSet", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 
