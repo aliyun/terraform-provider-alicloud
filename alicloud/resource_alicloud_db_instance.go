@@ -542,6 +542,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 			"serverless_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"max_capacity": {
@@ -554,11 +555,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 						},
 						"auto_pause": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
 						},
 						"switch_force": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -1327,23 +1328,43 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		if v, ok := d.GetOk("serverless_config"); ok {
 			v := v.([]interface{})[0].(map[string]interface{})
-			serverlessConfig, err := json.Marshal(struct {
-				MaxCapacity float64 `json:"MaxCapacity"`
-				MinCapacity float64 `json:"MinCapacity"`
-				AutoPause   bool    `json:"AutoPause"`
-				SwitchForce bool    `json:"SwitchForce"`
-			}{
-				v["max_capacity"].(float64),
-				v["min_capacity"].(float64),
-				v["auto_pause"].(bool),
-				v["switch_force"].(bool),
-			})
-			if err != nil {
-				return WrapError(err)
+			if string(MySQL) == d.Get("engine").(string) || string(PostgreSQL) == d.Get("engine") {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+					AutoPause   bool    `json:"AutoPause"`
+					SwitchForce bool    `json:"SwitchForce"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+					v["auto_pause"].(bool),
+					v["switch_force"].(bool),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ServerlessConfiguration"] = string(serverlessConfig)
+				if category, ok := d.GetOk("category"); ok {
+					request["Category"] = category
+				}
+				request["Direction"] = "Serverless"
+			} else if string(SQLServer) == d.Get("engine") {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+				})
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ServerlessConfiguration"] = string(serverlessConfig)
+				if category, ok := d.GetOk("category"); ok {
+					request["Category"] = category
+				}
+				request["Direction"] = "Serverless"
 			}
-			request["Category"] = "Serverless"
-			request["Direction"] = "Serverless"
-			request["ServerlessConfiguration"] = string(serverlessConfig)
 		}
 	}
 
@@ -1579,13 +1600,23 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	payType := instance["PayType"]
 	if instance["PayType"] == "SERVERLESS" {
 		payType = "Serverless"
-		serverlessConfig := make([]map[string]interface{}, 0)
-		slc := instance["ServerlessConfig"].(map[string]interface{})
+	}
+
+	serverlessConfig := make([]map[string]interface{}, 0)
+	slc := instance["ServerlessConfig"].(map[string]interface{})
+	if payType == "Serverless" && (string(MySQL) == instance["Engine"] || string(PostgreSQL) == instance["Engine"]) {
 		slcMaps := map[string]interface{}{
 			"max_capacity": slc["ScaleMax"],
 			"min_capacity": slc["ScaleMin"],
 			"auto_pause":   slc["AutoPause"],
 			"switch_force": slc["SwitchForce"],
+		}
+		serverlessConfig = append(serverlessConfig, slcMaps)
+		d.Set("serverless_config", serverlessConfig)
+	} else if payType == "Serverless" && string(SQLServer) == instance["Engine"] {
+		slcMaps := map[string]interface{}{
+			"max_capacity": slc["ScaleMax"],
+			"min_capacity": slc["ScaleMin"],
 		}
 		serverlessConfig = append(serverlessConfig, slcMaps)
 		d.Set("serverless_config", serverlessConfig)
@@ -1922,24 +1953,38 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["Category"] = v
 	}
 
-	if request["Engine"] == string(MySQL) && request["PayType"] == string(Serverless) {
+	if request["PayType"] == string(Serverless) {
 		if v, ok := d.GetOk("serverless_config"); ok {
 			v := v.([]interface{})[0].(map[string]interface{})
-			serverlessConfig, err := json.Marshal(struct {
-				MaxCapacity float64 `json:"MaxCapacity"`
-				MinCapacity float64 `json:"MinCapacity"`
-				AutoPause   bool    `json:"AutoPause"`
-				SwitchForce bool    `json:"SwitchForce"`
-			}{
-				v["max_capacity"].(float64),
-				v["min_capacity"].(float64),
-				v["auto_pause"].(bool),
-				v["switch_force"].(bool),
-			})
-			if err != nil {
-				return nil, WrapError(err)
+			if string(MySQL) == request["Engine"] || string(PostgreSQL) == request["Engine"] {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+					AutoPause   bool    `json:"AutoPause"`
+					SwitchForce bool    `json:"SwitchForce"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+					v["auto_pause"].(bool),
+					v["switch_force"].(bool),
+				})
+				if err != nil {
+					return nil, WrapError(err)
+				}
+				request["ServerlessConfig"] = string(serverlessConfig)
+			} else if string(SQLServer) == request["Engine"] {
+				serverlessConfig, err := json.Marshal(struct {
+					MaxCapacity float64 `json:"MaxCapacity"`
+					MinCapacity float64 `json:"MinCapacity"`
+				}{
+					v["max_capacity"].(float64),
+					v["min_capacity"].(float64),
+				})
+				if err != nil {
+					return nil, WrapError(err)
+				}
+				request["ServerlessConfig"] = string(serverlessConfig)
 			}
-			request["ServerlessConfig"] = string(serverlessConfig)
 		}
 	}
 
