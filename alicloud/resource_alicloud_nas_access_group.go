@@ -67,6 +67,14 @@ func resourceAlicloudNasAccessGroup() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 				Default:      "standard",
 			},
+			"rule_count": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"mount_target_count": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -150,6 +158,8 @@ func resourceAlicloudNasAccessGroupRead(d *schema.ResourceData, meta interface{}
 	d.Set("access_group_type", object["AccessGroupType"])
 	d.Set("type", object["AccessGroupType"])
 	d.Set("description", object["Description"])
+	d.Set("rule_count", object["RuleCount"])
+	d.Set("mount_target_count", object["MountTargetCount"])
 	return nil
 }
 func resourceAlicloudNasAccessGroupUpdate(d *schema.ResourceData, meta interface{}) error {

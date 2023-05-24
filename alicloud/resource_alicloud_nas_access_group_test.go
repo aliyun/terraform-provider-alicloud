@@ -133,6 +133,8 @@ func TestAccAlicloudNASAccessGroup_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"access_group_name": name,
 						"access_group_type": "Vpc",
+						"rule_count":"0",
+						"mount_target_count":"0",
 					}),
 				),
 			},
