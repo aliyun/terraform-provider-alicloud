@@ -56,8 +56,9 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ID of the Access Group. The value as `<access_group_name>`. 
-* `rule_count` - The number of permission group rules contained in this permission group.
-* `mount_target_count` - The number of mount points to which this permission group applies.
+* `rule_count` - The number of permission group rules contained in this permission group. **NOTE:** Available in v1.206.0+.
+* `mount_target_count` - The number of mount points to which this permission group applies. **NOTE:** Available in v1.206.0+.
+
 -> **NOTE:** The ID value as `<access_group_name>`:`<file_system_type>` after version 1.92.0.
 
 ## Import
