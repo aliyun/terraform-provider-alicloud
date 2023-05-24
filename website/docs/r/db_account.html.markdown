@@ -66,7 +66,7 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a db account. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
-* `type` - (Optional, ForceNew)Privilege type of account.
+* `type` - (Optional, ForceNew)Privilege type of account. The SQLServer engine does not support create high privilege accounts.
     - Normal: Common privilege.
     - Super: High privilege.
     
