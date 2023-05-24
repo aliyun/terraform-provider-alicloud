@@ -53,16 +53,14 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeInt},
-							ForceNew: true,
 						},
 						"proxy_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"http", "https", "websocket", "websockets"}, false),
+							ValidateFunc: StringInSlice([]string{"http", "https", "websocket", "websockets"}, false),
 						},
 					},
 				},
-				ForceNew: true,
 			},
 			"real_servers": {
 				Type:     schema.TypeList,
@@ -74,8 +72,7 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 			"rs_type": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				ValidateFunc: IntInSlice([]int{0, 1}),
 			},
 		},
 	}
@@ -96,6 +93,7 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 	}
 
 	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
+
 	proxyTypesMaps := make([]map[string]interface{}, 0)
 	for _, proxyTypes := range d.Get("proxy_types").(*schema.Set).List() {
 		proxyTypesMap := make(map[string]interface{})
@@ -108,8 +106,9 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 
 	request["RealServers"] = d.Get("real_servers")
 	request["RsType"] = d.Get("rs_type")
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -118,9 +117,10 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_domain_resource", action, AlibabaCloudSdkGoERROR)
 	}
@@ -129,12 +129,13 @@ func resourceAlicloudDdoscooDomainResourceCreate(d *schema.ResourceData, meta in
 
 	return resourceAlicloudDdoscooDomainResourceRead(d, meta)
 }
+
 func resourceAlicloudDdoscooDomainResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 	object, err := ddoscooService.DescribeDdoscooDomainResource(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ddoscoo_domain_resource ddoscooService.DescribeDdoscooDomainResource Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -155,17 +156,20 @@ func resourceAlicloudDdoscooDomainResourceRead(d *schema.ResourceData, meta inte
 					"proxy_type":  m1["ProxyType"],
 				}
 				proxyTypes = append(proxyTypes, temp1)
-
 			}
 		}
 	}
+
 	if err := d.Set("proxy_types", proxyTypes); err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("real_servers", object["RealServers"])
 	d.Set("rs_type", formatInt(object["RsType"]))
+
 	return nil
 }
+
 func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewDdoscooClient()
@@ -176,6 +180,10 @@ func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta in
 	update := false
 	request := map[string]interface{}{
 		"Domain": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("proxy_types") {
+		update = true
 	}
 	ProxyTypes := make([]map[string]interface{}, len(d.Get("proxy_types").(*schema.Set).List()))
 	for i, ProxyTypesValue := range d.Get("proxy_types").(*schema.Set).List() {
@@ -191,19 +199,26 @@ func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta in
 		update = true
 	}
 	request["RealServers"] = d.Get("real_servers")
+
+	if d.HasChange("rs_type") {
+		update = true
+	}
 	request["RsType"] = d.Get("rs_type")
+
 	if d.HasChange("https_ext") {
 		update = true
 		request["HttpsExt"] = d.Get("https_ext")
 	}
+
 	if d.HasChange("instance_ids") {
 		update = true
 	}
 	request["InstanceIds"] = d.Get("instance_ids").(*schema.Set).List()
+
 	if update {
 		action := "ModifyDomainResource"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -212,15 +227,18 @@ func resourceAlicloudDdoscooDomainResourceUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
+
 	return resourceAlicloudDdoscooDomainResourceRead(d, meta)
 }
+
 func resourceAlicloudDdoscooDomainResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDomainResource"
@@ -234,7 +252,7 @@ func resourceAlicloudDdoscooDomainResourceDelete(d *schema.ResourceData, meta in
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -243,11 +261,13 @@ func resourceAlicloudDdoscooDomainResourceDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
