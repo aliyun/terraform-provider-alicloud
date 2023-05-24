@@ -31,53 +31,60 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%d.qq.com", rand)
+	name := fmt.Sprintf("tf-testacc%d.alibaba.com", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain": name,
+					"domain":    name,
+					"https_ext": `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
+					"proxy_types": []map[string]interface{}{
+						{
+							"proxy_ports": []string{"80", "8080"},
+							"proxy_type":  "http",
+						},
+						{
+							"proxy_ports": []string{"443", "8443"},
+							"proxy_type":  "https",
+						},
+					},
+					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
+					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
+					"rs_type":      `0`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain":         name,
+						"https_ext":      CHECKSET,
+						"proxy_types.#":  "2",
+						"instance_ids.#": "1",
+						"real_servers.#": "3",
+						"rs_type":        "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"443"},
 							"proxy_type":  "https",
 						},
 					},
-					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
-					"real_servers": []string{"177.167.32.11"},
-					"rs_type":      `0`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"domain":         name,
-						"instance_ids.#": "1",
-						"proxy_types.#":  "1",
-						"real_servers.#": "1",
-						"rs_type":        "0",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"https_ext": `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"https_ext": CHECKSET,
+						"proxy_types.#": "1",
+						"https_ext":     CHECKSET,
 					}),
 				),
 			},
@@ -93,27 +100,36 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"real_servers": []string{"177.167.32.11", "177.167.32.12"},
+					"real_servers": []string{"aliyun.com", "taobao.com", "alibaba.com"},
+					"rs_type":      `1`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"real_servers.#": "2",
+						"real_servers.#": "3",
+						"rs_type":        "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
-					"real_servers": []string{"177.167.32.11"},
+					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13", "177.167.32.14", "177.167.32.15"},
 					"https_ext":    `{\"Http2\":0,\"Http2https\":0,\"Https2http\":0}`,
+					"rs_type":      `0`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"real_servers.#": "1",
+						"real_servers.#": "5",
 						"instance_ids.#": "1",
 						"https_ext":      CHECKSET,
+						"rs_type":        "0",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -129,7 +145,8 @@ var AlicloudDdoscooDomainResourceMap0 = map[string]string{
 
 func AlicloudDdoscooDomainResourceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_ddoscoo_instances" "default" {}
+	data "alicloud_ddoscoo_instances" "default" {
+	}
 `)
 }
 
