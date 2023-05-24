@@ -1660,7 +1660,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SourceIp:             strings.TrimSpace(d.Get("source_ip").(string)),
 		SecureTransport:      strings.TrimSpace(d.Get("secure_transport").(string)),
 		MaxRetryTimeout:      d.Get("max_retry_timeout").(int),
+		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
 	}
+	log.Println("alicloud provider trace id:", config.TerraformTraceId)
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}
@@ -1883,7 +1885,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		if len(sourceAccessKey) > 25 {
 			sourceAccessKey = sourceAccessKey[:25]
 		}
-		sourceName := fmt.Sprintf("Default/%s:%s", sourceAccessKey, strings.Trim(uuid.New().String(), "-"))
+		sourceName := fmt.Sprintf("Default/%s:%s", sourceAccessKey, config.TerraformTraceId)
 		if len(sourceName) > 64 {
 			sourceName = sourceName[:64]
 		}

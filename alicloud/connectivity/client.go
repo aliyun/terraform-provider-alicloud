@@ -169,6 +169,8 @@ const Provider = "Terraform-Provider"
 
 const Module = "Terraform-Module"
 
+const TerraformTraceId = "TerraformTraceId"
+
 var goSdkMutex = sync.RWMutex{} // The Go SDK is not thread-safe
 var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
@@ -282,6 +284,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		ecsconn.AppendUserAgent(Terraform, terraformVersion)
 		ecsconn.AppendUserAgent(Provider, providerVersion)
 		ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		ecsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ecsconn = ecsconn
 	}
 
@@ -313,6 +316,7 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 		csconn.AppendUserAgent(Terraform, terraformVersion)
 		csconn.AppendUserAgent(Provider, providerVersion)
 		csconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		csconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.officalCSConn = csconn
 	}
 
@@ -343,6 +347,7 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 		polarDBconn.AppendUserAgent(Terraform, terraformVersion)
 		polarDBconn.AppendUserAgent(Provider, providerVersion)
 		polarDBconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		polarDBconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.polarDBconn = polarDBconn
 	}
 
@@ -371,6 +376,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		slbconn.AppendUserAgent(Terraform, terraformVersion)
 		slbconn.AppendUserAgent(Provider, providerVersion)
 		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		slbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.slbconn = slbconn
 	}
 
@@ -399,6 +405,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		vpcconn.AppendUserAgent(Terraform, terraformVersion)
 		vpcconn.AppendUserAgent(Provider, providerVersion)
 		vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		vpcconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.vpcconn = vpcconn
 	}
 
@@ -535,6 +542,7 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 		cenconn.AppendUserAgent(Terraform, terraformVersion)
 		cenconn.AppendUserAgent(Provider, providerVersion)
 		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cenconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cenconn = cenconn
 	}
 
@@ -563,6 +571,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 		essconn.AppendUserAgent(Terraform, terraformVersion)
 		essconn.AppendUserAgent(Provider, providerVersion)
 		essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		essconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.essconn = essconn
 	}
 
@@ -697,6 +706,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		dnsconn.AppendUserAgent(Terraform, terraformVersion)
 		dnsconn.AppendUserAgent(Provider, providerVersion)
 		dnsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		dnsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.dnsconn = dnsconn
 	}
 
@@ -728,6 +738,7 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		ramconn.AppendUserAgent(Terraform, terraformVersion)
 		ramconn.AppendUserAgent(Provider, providerVersion)
 		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ramconn = ramconn
 	}
 
@@ -813,6 +824,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		crconn.AppendUserAgent(Terraform, terraformVersion)
 		crconn.AppendUserAgent(Provider, providerVersion)
 		crconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		crconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.crconn = crconn
 	}
 
@@ -843,6 +855,7 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 		creeconn.AppendUserAgent(Terraform, terraformVersion)
 		creeconn.AppendUserAgent(Provider, providerVersion)
 		creeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		creeconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.creeconn = creeconn
 	}
 
@@ -892,6 +905,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 		cdnconn.AppendUserAgent(Terraform, terraformVersion)
 		cdnconn.AppendUserAgent(Provider, providerVersion)
 		cdnconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cdnconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cdnconn_new = cdnconn
 	}
 
@@ -920,6 +934,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 		otsconn.AppendUserAgent(Terraform, terraformVersion)
 		otsconn.AppendUserAgent(Provider, providerVersion)
 		otsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		otsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.otsconn = otsconn
 	}
 
@@ -958,6 +973,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 		cmsconn.AppendUserAgent(Terraform, terraformVersion)
 		cmsconn.AppendUserAgent(Provider, providerVersion)
 		cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cmsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cmsconn = cmsconn
 	}
 
@@ -986,6 +1002,7 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 		stsconn.AppendUserAgent(Terraform, terraformVersion)
 		stsconn.AppendUserAgent(Provider, providerVersion)
 		stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		stsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.stsconn = stsconn
 	}
 
@@ -1006,6 +1023,7 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 		logpopconn.AppendUserAgent(Terraform, terraformVersion)
 		logpopconn.AppendUserAgent(Provider, providerVersion)
 		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		logpopconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		logpopconn.Domain = "sls.aliyuncs.com"
 		client.logpopconn = logpopconn
 	}
@@ -1064,6 +1082,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 		drdsconn.AppendUserAgent(Terraform, terraformVersion)
 		drdsconn.AppendUserAgent(Provider, providerVersion)
 		drdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		drdsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.drdsconn = drdsconn
 	}
 
@@ -1092,6 +1111,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 		ddsconn.AppendUserAgent(Terraform, terraformVersion)
 		ddsconn.AppendUserAgent(Provider, providerVersion)
 		ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		ddsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ddsconn = ddsconn
 	}
 
@@ -1119,6 +1139,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 		gpdbconn.AppendUserAgent(Terraform, terraformVersion)
 		gpdbconn.AppendUserAgent(Provider, providerVersion)
 		gpdbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		gpdbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.gpdbconn = gpdbconn
 	}
 
@@ -1172,6 +1193,7 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 		rkvconn.AppendUserAgent(Terraform, terraformVersion)
 		rkvconn.AppendUserAgent(Provider, providerVersion)
 		rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		rkvconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.rkvconn = rkvconn
 	}
 
@@ -1240,6 +1262,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 		cloudapiconn.AppendUserAgent(Terraform, terraformVersion)
 		cloudapiconn.AppendUserAgent(Provider, providerVersion)
 		cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cloudapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cloudapiconn = cloudapiconn
 	}
 
@@ -1362,6 +1385,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 		elasticsearchconn.AppendUserAgent(Terraform, terraformVersion)
 		elasticsearchconn.AppendUserAgent(Provider, providerVersion)
 		elasticsearchconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		elasticsearchconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.elasticsearchconn = elasticsearchconn
 	}
 
@@ -1513,6 +1537,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	request.AppendUserAgent(Terraform, terraformVersion)
 	request.AppendUserAgent(Provider, providerVersion)
 	request.AppendUserAgent(Module, client.config.ConfigurationSource)
+	request.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 	return request, nil
 }
 
@@ -1622,6 +1647,7 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	stsClient.AppendUserAgent(Terraform, terraformVersion)
 	stsClient.AppendUserAgent(Provider, providerVersion)
 	stsClient.AppendUserAgent(Module, client.config.ConfigurationSource)
+	stsClient.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 
 	identity, err := stsClient.GetCallerIdentity(args)
 	if err != nil {
@@ -1655,6 +1681,7 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 		ddoscooconn.AppendUserAgent(Terraform, terraformVersion)
 		ddoscooconn.AppendUserAgent(Provider, providerVersion)
 		ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		ddoscooconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ddoscooconn = ddoscooconn
 
 	}
@@ -1684,6 +1711,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 		ddosbgpconn.AppendUserAgent(Terraform, terraformVersion)
 		ddosbgpconn.AppendUserAgent(Provider, providerVersion)
 		ddosbgpconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		ddosbgpconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ddosbgpconn = ddosbgpconn
 	}
 
@@ -1714,6 +1742,7 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 		bssopenapiconn.AppendUserAgent(Terraform, terraformVersion)
 		bssopenapiconn.AppendUserAgent(Provider, providerVersion)
 		bssopenapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		bssopenapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.bssopenapiconn = bssopenapiconn
 	}
 
@@ -1749,6 +1778,7 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		alikafkaconn.AppendUserAgent(Terraform, terraformVersion)
 		alikafkaconn.AppendUserAgent(Provider, providerVersion)
 		alikafkaconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		alikafkaconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.alikafkaconn = alikafkaconn
 	}
 
@@ -1775,6 +1805,7 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 		emrConn.AppendUserAgent(Terraform, terraformVersion)
 		emrConn.AppendUserAgent(Provider, providerVersion)
 		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		emrConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.emrconn = emrConn
 	}
 
@@ -1802,6 +1833,7 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 		sagconn.AppendUserAgent(Terraform, terraformVersion)
 		sagconn.AppendUserAgent(Provider, providerVersion)
 		sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		sagconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.sagconn = sagconn
 	}
 
@@ -1822,6 +1854,7 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
 		dbauditconn.AppendUserAgent(Provider, providerVersion)
 		dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		dbauditconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.dbauditconn = dbauditconn
 	}
 
@@ -1841,6 +1874,7 @@ func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Cl
 		bastionhostconn.AppendUserAgent(Terraform, terraformVersion)
 		bastionhostconn.AppendUserAgent(Provider, providerVersion)
 		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		bastionhostconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.bastionhostconn = bastionhostconn
 	}
 
@@ -1868,6 +1902,7 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		marketconn.AppendUserAgent(Terraform, terraformVersion)
 		marketconn.AppendUserAgent(Provider, providerVersion)
 		marketconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		marketconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.marketconn = marketconn
 	}
 
@@ -1895,6 +1930,7 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 		hbaseconn.AppendUserAgent(Terraform, terraformVersion)
 		hbaseconn.AppendUserAgent(Provider, providerVersion)
 		hbaseconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		hbaseconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.hbaseconn = hbaseconn
 	}
 
@@ -1953,6 +1989,7 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 		adbconn.AppendUserAgent(Terraform, terraformVersion)
 		adbconn.AppendUserAgent(Provider, providerVersion)
 		adbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		adbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.adbconn = adbconn
 	}
 
@@ -2010,6 +2047,7 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 		cbnConn.AppendUserAgent(Terraform, terraformVersion)
 		cbnConn.AppendUserAgent(Provider, providerVersion)
 		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cbnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cbnConn = cbnConn
 	}
 	return do(client.cbnConn)
@@ -2036,6 +2074,7 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		edasconn.AppendUserAgent(Terraform, terraformVersion)
 		edasconn.AppendUserAgent(Provider, providerVersion)
 		edasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		edasconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.edasconn = edasconn
 	}
 
@@ -2066,6 +2105,7 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 		alidnsConn.AppendUserAgent(Terraform, terraformVersion)
 		alidnsConn.AppendUserAgent(Provider, providerVersion)
 		alidnsConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		alidnsConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.alidnsConn = alidnsConn
 	}
 	return do(client.alidnsConn)
@@ -2089,6 +2129,7 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		cassandraConn.AppendUserAgent(Terraform, terraformVersion)
 		cassandraConn.AppendUserAgent(Provider, providerVersion)
 		cassandraConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		cassandraConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cassandraConn = cassandraConn
 	}
 	return do(client.cassandraConn)
@@ -2118,6 +2159,7 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		eciConn.AppendUserAgent(Terraform, terraformVersion)
 		eciConn.AppendUserAgent(Provider, providerVersion)
 		eciConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		eciConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.eciConn = eciConn
 	}
 	return do(client.eciConn)
@@ -2147,6 +2189,7 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
 		dcdnConn.AppendUserAgent(Provider, providerVersion)
 		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		dcdnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.dcdnConn = dcdnConn
 	}
 	return do(client.dcdnConn)
@@ -2176,6 +2219,7 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 		r_kvstoreConn.AppendUserAgent(Terraform, terraformVersion)
 		r_kvstoreConn.AppendUserAgent(Provider, providerVersion)
 		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
+		r_kvstoreConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.r_kvstoreConn = r_kvstoreConn
 	}
 	return do(client.r_kvstoreConn)
