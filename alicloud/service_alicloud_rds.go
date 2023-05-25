@@ -586,7 +586,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			value := i.(map[string]interface{})["value"].(string)
 			allConfig[key] = value
 		}
-		if err := s.WaitForDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
+		if err := s.WaitForDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
 			return WrapError(err)
 		}
 		// wait instance status is Normal after modifying

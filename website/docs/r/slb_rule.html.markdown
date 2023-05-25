@@ -26,7 +26,7 @@ You can add forwarding rules to a listener to forward requests based on the doma
 
 ```terraform
 variable "slb_rule_name" {
-  default = "forSlbRule"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "rule" {
@@ -94,13 +94,6 @@ resource "alicloud_slb_listener" "rule" {
 resource "alicloud_slb_server_group" "rule" {
   load_balancer_id = alicloud_slb_load_balancer.rule.id
   name             = var.slb_rule_name
-}
-
-resource "alicloud_slb_server_group_server_attachment" "rule" {
-  server_group_id = alicloud_slb_server_group.rule.id
-  server_id       = alicloud_instance.rule.id
-  port            = 80
-  weight          = 100
 }
 
 resource "alicloud_slb_rule" "rule" {

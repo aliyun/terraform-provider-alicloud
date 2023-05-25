@@ -18,7 +18,9 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 ## Example Usage
 
 ```terraform
+data "alicloud_waf_instances" "default" {}
 resource "alicloud_waf_instance" "default" {
+  count                = length(data.alicloud_waf_instances.default.instances) > 0 ? 0 : 1
   big_screen           = "0"
   exclusive_ip_package = "1"
   ext_bandwidth        = "50"
