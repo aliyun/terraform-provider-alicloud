@@ -70,7 +70,7 @@ The following arguments are supported:
 
 -> **NOTE:** At present, the white list of HTTP and HTTPS monitoring protocols is open. If you need to use it, please submit a work order.
              
-* `proxy_protocol` - (Optional) The proxy protocol of the listener. Default value is `false`. Valid value:
+* `proxy_protocol` - (Optional) The proxy protocol of the listener. Default value is `false`. Valid values:
     `true`: Turn on the keep client source IP function. After it is turned on, the back-end service is supported to view the original IP address of the client. 
     `false`: keep client source IP function is not turned on.
 * `security_policy_id` - (Optional, Computed, Available in v1.183.0+) The ID of the security policy. **NOTE:** Only HTTPS listeners support this parameter. Valid values:

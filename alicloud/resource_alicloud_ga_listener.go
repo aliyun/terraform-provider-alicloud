@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGaListener() *schema.Resource {
@@ -46,7 +45,7 @@ func resourceAlicloudGaListener() *schema.Resource {
 			"client_affinity": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NONE", "SOURCE_IP"}, false),
+				ValidateFunc: StringInSlice([]string{"NONE", "SOURCE_IP"}, false),
 				Default:      "NONE",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Get("protocol") == "UDP" && new == "SOURCE_IP" {
@@ -82,26 +81,25 @@ func resourceAlicloudGaListener() *schema.Resource {
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"TCP", "UDP", "HTTP", "HTTPS"}, false),
+				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "HTTP", "HTTPS"}, false),
 				Default:      "TCP",
 			},
 			"proxy_protocol": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 			"security_policy_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
+				ValidateFunc: StringInSlice([]string{"tls_cipher_policy_1_0", "tls_cipher_policy_1_1", "tls_cipher_policy_1_2", "tls_cipher_policy_1_2_strict", "tls_cipher_policy_1_2_strict_with_1_3"}, false),
 			},
 			"listener_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Standard", "CustomRouting"}, false),
+				ValidateFunc: StringInSlice([]string{"Standard", "CustomRouting"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -204,7 +202,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaListener(d.Id())
-	if err != nil {
+	if !d.IsNewResource() && NotFoundError(err) {
 		if NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ga_listener gaService.DescribeGaListener Failed!!! %s", err)
 			d.SetId("")
@@ -228,12 +226,12 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	if err := d.Set("certificates", certificates); err != nil {
 		return WrapError(err)
 	}
+
+	d.Set("accelerator_id", object["AcceleratorId"])
 	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("description", object["Description"])
 	d.Set("name", object["Name"])
-	if val, ok := d.GetOk("proxy_protocol"); ok {
-		d.Set("proxy_protocol", val)
-	}
+	d.Set("proxy_protocol", object["ProxyProtocol"])
 
 	portRanges := make([]map[string]interface{}, 0)
 	if portRangesList, ok := object["PortRanges"].([]interface{}); ok {
@@ -251,6 +249,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	if err := d.Set("port_ranges", portRanges); err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("protocol", object["Protocol"])
 	d.Set("security_policy_id", object["SecurityPolicyId"])
 	d.Set("listener_type", object["Type"])
@@ -271,6 +270,7 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	request := map[string]interface{}{
 		"ListenerId": d.Id(),
 	}
+
 	if d.HasChange("certificates") {
 		update = true
 		if v, ok := d.GetOk("certificates"); ok {
@@ -316,11 +316,16 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		request["SecurityPolicyId"] = d.Get("security_policy_id")
 	}
+
+	if d.HasChange("proxy_protocol") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("proxy_protocol"); ok {
+		request["ProxyProtocol"] = v
+	}
+
 	request["RegionId"] = client.RegionId
 	if update {
-		if _, ok := d.GetOkExists("proxy_protocol"); ok {
-			request["ProxyProtocol"] = d.Get("proxy_protocol")
-		}
 		action := "UpdateListener"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
