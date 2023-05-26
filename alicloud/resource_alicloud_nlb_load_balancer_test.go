@@ -138,16 +138,18 @@ func TestAccAlicloudNLBLoadBalancer_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name": "${var.name}",
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"load_balancer_type": "Network",
-					"address_type":       "Internet",
-					"address_ip_version": "Ipv4",
+					"load_balancer_name":             "${var.name}",
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"load_balancer_type":             "Network",
+					"address_type":                   "Internet",
+					"address_ip_version":             "Ipv4",
+					"vpc_id":                         "${data.alicloud_vpcs.default.ids.0}",
+					"deletion_protection_enabled":    "true",
+					"modification_protection_status": "ConsoleProtection",
 					"tags": map[string]string{
 						"Created": "tfTestAcc0",
 						"For":     "Tftestacc 0",
 					},
-					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${local.vswitch_id_1}",
@@ -162,17 +164,57 @@ func TestAccAlicloudNLBLoadBalancer_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name": name,
-						"resource_group_id":  CHECKSET,
-						"load_balancer_type": "Network",
-						"address_type":       "Internet",
-						"address_ip_version": "Ipv4",
-						"tags.%":             "2",
-						"tags.Created":       "tfTestAcc0",
-						"tags.For":           "Tftestacc 0",
-						"vpc_id":             CHECKSET,
-						"zone_mappings.#":    "2",
-						"cross_zone_enabled": "false",
+						"load_balancer_name":             name,
+						"resource_group_id":              CHECKSET,
+						"load_balancer_type":             "Network",
+						"address_type":                   "Internet",
+						"address_ip_version":             "Ipv4",
+						"vpc_id":                         CHECKSET,
+						"deletion_protection_enabled":    "true",
+						"modification_protection_status": "ConsoleProtection",
+						"tags.%":                         "2",
+						"tags.Created":                   "tfTestAcc0",
+						"tags.For":                       "Tftestacc 0",
+						"zone_mappings.#":                "2",
+						"cross_zone_enabled":             "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_reason":     "tf-open",
+					"modification_protection_reason": "tf-open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_reason":     "tf-open",
+						"modification_protection_reason": "tf-open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_reason":     "tf-open-update",
+					"modification_protection_reason": "tf-open-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_reason":     "tf-open-update",
+						"modification_protection_reason": "tf-open-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled":    "false",
+					"modification_protection_status": "NonProtection",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_enabled":    "false",
+						"modification_protection_status": "NonProtection",
+						"deletion_protection_reason":     "",
+						"modification_protection_reason": "",
 					}),
 				),
 			},
@@ -183,61 +225,6 @@ func TestAccAlicloudNLBLoadBalancer_basic0(t *testing.T) {
 			},
 		},
 	})
-}
-
-var AlicloudNLBLoadBalancerMap0 = map[string]string{
-	"cross_zone_enabled": CHECKSET,
-	"load_balancer_type": CHECKSET,
-	"status":             CHECKSET,
-	"address_ip_version": CHECKSET,
-	"load_balancer_name": CHECKSET,
-	"vpc_id":             CHECKSET,
-	"zone_mappings.#":    CHECKSET,
-	"address_type":       CHECKSET,
-	"resource_group_id":  CHECKSET,
-	"tags.%":             CHECKSET,
-}
-
-func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_nlb_zones" "default"{}
-
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_vswitches" "default_1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nlb_zones.default.zones.0.id
-}
-data "alicloud_vswitches" "default_2" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nlb_zones.default.zones.1.id
-}
-data "alicloud_vswitches" "default_3" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nlb_zones.default.zones.2.id
-}
-locals {
- zone_id_1 =  data.alicloud_nlb_zones.default.zones.0.id
- vswitch_id_1 =  data.alicloud_vswitches.default_1.ids[0]
- zone_id_2 =  data.alicloud_nlb_zones.default.zones.1.id
- vswitch_id_2 =  data.alicloud_vswitches.default_2.ids[0]
- zone_id_3 =  data.alicloud_nlb_zones.default.zones.2.id
- vswitch_id_3 =  data.alicloud_vswitches.default_3.ids[0]
-}
-resource "alicloud_common_bandwidth_package" "default" {
-	bandwidth = 2
-	internet_charge_type = "PayByBandwidth"
-	name = "${var.name}"
-	description = "${var.name}_description"
-}
-`, name)
 }
 
 func TestAccAlicloudNLBLoadBalancer_basic1(t *testing.T) {
@@ -404,6 +391,68 @@ func TestAccAlicloudNLBLoadBalancer_basic1(t *testing.T) {
 			},
 		},
 	})
+}
+
+var AlicloudNLBLoadBalancerMap0 = map[string]string{
+	"cross_zone_enabled": CHECKSET,
+	"load_balancer_type": CHECKSET,
+	"status":             CHECKSET,
+	"address_ip_version": CHECKSET,
+	"load_balancer_name": CHECKSET,
+	"vpc_id":             CHECKSET,
+	"zone_mappings.#":    CHECKSET,
+	"address_type":       CHECKSET,
+	"resource_group_id":  CHECKSET,
+	"tags.%":             CHECKSET,
+}
+
+func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_nlb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_vswitches" "default_1" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_nlb_zones.default.zones.0.id
+	}
+
+	data "alicloud_vswitches" "default_2" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_nlb_zones.default.zones.1.id
+	}
+
+	data "alicloud_vswitches" "default_3" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_nlb_zones.default.zones.2.id
+	}
+
+	locals {
+  		zone_id_1    = data.alicloud_nlb_zones.default.zones.0.id
+  		vswitch_id_1 = data.alicloud_vswitches.default_1.ids[0]
+  		zone_id_2    = data.alicloud_nlb_zones.default.zones.1.id
+  		vswitch_id_2 = data.alicloud_vswitches.default_2.ids[0]
+  		zone_id_3    = data.alicloud_nlb_zones.default.zones.2.id
+  		vswitch_id_3 = data.alicloud_vswitches.default_3.ids[0]
+	}
+
+	resource "alicloud_common_bandwidth_package" "default" {
+  		bandwidth            = 2
+  		internet_charge_type = "PayByBandwidth"
+  		name                 = "${var.name}"
+  		description          = "${var.name}_description"
+	}
+`, name)
 }
 
 var AlicloudNLBLoadBalancerMap1 = map[string]string{

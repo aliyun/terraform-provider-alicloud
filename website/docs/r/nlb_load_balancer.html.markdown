@@ -82,8 +82,15 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The ID of the VPC where the NLB instance is deployed.
 * `zone_mappings` - (Required) Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones. See the following `Block zone_mappings`.
 * `bandwidth_package_id` - (Optional) The ID of the EIP bandwidth plan that is associated with the NLB instance if the NLB instance uses a public IP address.
+* `deletion_protection_enabled` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable deletion protection. Default value: `false`. Valid values:
+  - `true`: Enable deletion protection.
+  - `false`: Disable deletion protection. You cannot set the `deletion_protection_reason`. If the `deletion_protection_reason` is set, the value is cleared.
+* `deletion_protection_reason` - (Optional, Available in 1.206.0+) The reason why the deletion protection feature is enabled or disabled. The `deletion_protection_reason` takes effect only when `deletion_protection_enabled` is set to `true`.
+* `modification_protection_status` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable the configuration read-only mode. Default value: `NonProtection`. Valid values:
+  - `NonProtection`: Does not enable the configuration read-only mode. You cannot set the `modification_protection_reason`. If the `modification_protection_reason` is set, the value is cleared.
+  - `ConsoleProtection`: Enables the configuration read-only mode. You can set the `modification_protection_reason`.
+* `modification_protection_reason` - (Optional, Available in 1.206.0+) The reason why the configuration read-only mode is enabled. The `modification_protection_reason` takes effect only when `modification_protection_status` is set to `ConsoleProtection`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-
 
 #### Block zone_mappings
 
