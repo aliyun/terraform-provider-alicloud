@@ -235,7 +235,7 @@ func (s *SaeService) DescribeSaeIngress(id string) (object map[string]interface{
 	if IsExpectedErrors(err, []string{"InvalidParameter.WithMessage"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("SAE:Ingress", id)), NotFoundMsg, ProviderERROR)
 	}
-	addDebug(action, response, request)
+	addDebug(action+"-Describe", response, fmt.Sprint(request))
 
 	if respBody, isExist := response["body"]; isExist {
 		response = respBody.(map[string]interface{})
