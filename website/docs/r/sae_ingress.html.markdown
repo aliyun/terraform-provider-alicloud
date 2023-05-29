@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Serverless App Engine (SAE) Ingress resource.
 ---
 
-# alicloud\_sae\_ingress
+# alicloud_sae_ingress
 
 Provides a Serverless App Engine (SAE) Ingress resource.
 
-For information about Serverless App Engine (SAE) Ingress and how to use it, see [What is Ingress](https://help.aliyun.com/document_detail/97792.html).
+For information about Serverless App Engine (SAE) Ingress and how to use it, see [What is Ingress](https://www.alibabacloud.com/help/en/sae/latest/createingress).
 
--> **NOTE:** Available in v1.137.0+.
+-> **NOTE:** Available since v1.137.0.
 
 ## Example Usage
 
@@ -23,6 +23,7 @@ Basic Usage
 variable "name" {
   default = "example_value"
 }
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -68,6 +69,7 @@ resource "alicloud_sae_application" "default" {
   memory          = "memory_specifications"
 
 }
+
 resource "alicloud_sae_ingress" "default" {
   slb_id        = alicloud_slb.default.id
   namespace_id  = alicloud_sae_namespace.default.id
@@ -86,23 +88,36 @@ resource "alicloud_sae_ingress" "default" {
 
 The following arguments are supported:
 
-* `cert_id` - (Optional) Cert Id.
-* `default_rule` - (Optional) Default Rule.
-* `description` - (Optional) Description.
-* `listener_port` - (Required) SLB listening port.
-* `namespace_id` - (Required, ForceNew) The Id of Namespace.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
-* `rules` - (Required) Forwarding rules. Forward traffic to the specified application according to the domain name and path.
+* `namespace_id` - (Required, ForceNew) The ID of Namespace. It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`.
 * `slb_id` - (Required, ForceNew) SLB ID.
+* `listener_port` - (Required, Int) SLB listening port.
+* `cert_id` - (Optional) The certificate ID of the HTTPS listener. The `cert_id` takes effect only when `load_balance_type` is set to `clb`.
+* `cert_ids` - (Optional, Available since v1.207.0) The certificate IDs of the HTTPS listener, and multiple certificate IDs are separated by commas. The `cert_ids` takes effect only when `load_balance_type` is set to `alb`.
+* `load_balance_type` - (Optional, Computed, Available since v1.207.0) The type of the SLB instance. Default value: `clb`. Valid values: `clb`, `alb`.
+* `listener_protocol` - (Optional, Computed, Available since v1.207.0) The protocol that is used to forward requests. Default value: `HTTP`. Valid values: `HTTP`, `HTTPS`.
+* `description` - (Optional) Description.
+* `rules` - (Required, Set) Forwarding rules. Forward traffic to the specified application according to the domain name and path. See [`rules`](#rules) below.
+* `default_rule` - (Optional, Set) Default Rule. See [`default_rule`](#default_rule) below.
 
-#### Block rules
+### `default_rule`
 
-The rules supports the following: 
+The default_rule supports the following:
+
+* `app_id` - (Optional) Target application ID.
+* `app_name` - (Optional) Target application name.
+* `container_port` - (Optional, Int) Application backend port.
+
+### `rules`
+
+The rules supports the following:
 
 * `app_id` - (Required) Target application ID.
 * `app_name` - (Required) Target application name.
-* `container_port` - (Required) Application backend port.
+* `container_port` - (Required, Int) Application backend port.
 * `domain` - (Required) Application domain name.
 * `path` - (Required) URL path.
+* `rewrite_path` - (Optional, Available since v1.207.0) The rewrite path.
+* `backend_protocol` - (Optional, Available since v1.207.0) The backend protocol.
 
 ## Attributes Reference
 

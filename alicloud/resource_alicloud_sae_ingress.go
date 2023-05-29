@@ -22,43 +22,41 @@ func resourceAlicloudSaeIngress() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"cert_id": {
+			"namespace_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
+				ForceNew: true,
 			},
-			"default_rule": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"app_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"app_name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"container_port": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"description": {
+			"slb_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
+				ForceNew: true,
 			},
 			"listener_port": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"namespace_id": {
+			"cert_id": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Optional: true,
+			},
+			"cert_ids": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"load_balance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"listener_protocol": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"rules": {
 				Type:     schema.TypeSet,
@@ -85,13 +83,37 @@ func resourceAlicloudSaeIngress() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"rewrite_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"backend_protocol": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
-			"slb_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+			"default_rule": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"app_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"app_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"container_port": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -107,16 +129,30 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["SlbId"] = StringPointer(d.Get("slb_id").(string))
+	request["ListenerPort"] = StringPointer(strconv.Itoa(d.Get("listener_port").(int)))
+	request["NamespaceId"] = StringPointer(d.Get("namespace_id").(string))
+
 	if v, ok := d.GetOk("cert_id"); ok {
 		request["CertId"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("cert_ids"); ok {
+		request["CertIds"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("load_balance_type"); ok {
+		request["LoadBalanceType"] = StringPointer(v.(string))
+	}
+
+	if v, ok := d.GetOk("listener_protocol"); ok {
+		request["ListenerProtocol"] = StringPointer(v.(string))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = StringPointer(v.(string))
 	}
-
-	request["ListenerPort"] = StringPointer(strconv.Itoa(d.Get("listener_port").(int)))
-	request["NamespaceId"] = StringPointer(d.Get("namespace_id").(string))
 
 	defaultrulesMap := map[string]interface{}{}
 
@@ -140,16 +176,26 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 		rulesMap["containerPort"] = rulesArg["container_port"]
 		rulesMap["domain"] = rulesArg["domain"]
 		rulesMap["path"] = rulesArg["path"]
+
+		if rewritePath, ok := rulesArg["rewrite_path"]; ok {
+			rulesMap["rewritePath"] = rewritePath
+		}
+
+		if backendProtocol, ok := rulesArg["backend_protocol"]; ok {
+			rulesMap["backendProtocol"] = backendProtocol
+		}
+
 		rulesMaps = append(rulesMaps, rulesMap)
 	}
+
 	if v, err := convertArrayObjectToJsonString(rulesMaps); err != nil {
 		return WrapError(err)
 	} else {
 		request["Rules"] = StringPointer(v)
 	}
-	request["SlbId"] = StringPointer(d.Get("slb_id").(string))
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -160,6 +206,8 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
+	addDebug(action+"-Create", response, fmt.Sprint(request))
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_ingress", action, AlibabaCloudSdkGoERROR)
 	}
@@ -169,33 +217,47 @@ func resourceAlicloudSaeIngressCreate(d *schema.ResourceData, meta interface{}) 
 	} else {
 		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
-	addDebug(action, response, request)
 
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["IngressId"]))
 
 	return resourceAlicloudSaeIngressRead(d, meta)
 }
+
 func resourceAlicloudSaeIngressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
 	object, err := saeService.DescribeSaeIngress(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sae_ingress saeService.DescribeSaeIngress Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
+	d.Set("namespace_id", object["NamespaceId"])
+	d.Set("slb_id", object["SlbId"])
+	d.Set("load_balance_type", object["LoadBalanceType"])
+	d.Set("listener_protocol", object["ListenerProtocol"])
+	d.Set("description", object["Description"])
+
 	if v, ok := object["CertId"]; ok && v.(string) != "" {
 		d.Set("cert_id", v)
 	}
 
-	d.Set("description", object["Description"])
+	if v, ok := object["CertIds"]; ok && v.(string) != "" {
+		d.Set("cert_ids", v)
+	}
+
+	if v, ok := object["ListenerPort"]; ok && fmt.Sprint(v) != "0" {
+		d.Set("listener_port", formatInt(v))
+	}
 
 	defaultRuleConfig := make([]map[string]interface{}, 0)
 	if defaultRule, ok := object["DefaultRule"]; ok {
@@ -218,18 +280,24 @@ func resourceAlicloudSaeIngressRead(d *schema.ResourceData, meta interface{}) er
 			data["container_port"] = obj_convert["ContainerPort"]
 			data["domain"] = obj_convert["Domain"]
 			data["path"] = obj_convert["Path"]
+
+			if rewritePath, ok := obj_convert["RewritePath"]; ok {
+				data["rewrite_path"] = rewritePath
+			}
+
+			if backendProtocol, ok := obj_convert["BackendProtocol"]; ok {
+				data["backend_protocol"] = backendProtocol
+			}
+
 			config = append(config, data)
 		}
+
 		d.Set("rules", config)
 	}
 
-	if v, ok := object["ListenerPort"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("listener_port", formatInt(v))
-	}
-	d.Set("namespace_id", object["NamespaceId"])
-	d.Set("slb_id", object["SlbId"])
 	return nil
 }
+
 func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
@@ -237,12 +305,35 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 	request := map[string]*string{
 		"IngressId": StringPointer(d.Id()),
 	}
+
 	if d.HasChange("cert_id") {
 		update = true
-		if v, ok := d.GetOk("cert_id"); ok {
-			request["CertId"] = StringPointer(v.(string))
+	}
+	if v, ok := d.GetOk("cert_id"); ok && v.(string) != "" {
+		request["CertId"] = StringPointer(v.(string))
+	}
+
+	if d.HasChange("cert_ids") {
+		update = true
+	}
+	if v, ok := d.GetOk("cert_ids"); ok && v.(string) != "" {
+		request["CertIds"] = StringPointer(v.(string))
+	}
+
+	if d.HasChange("load_balance_type") {
+		update = true
+		if v, ok := d.GetOk("load_balance_type"); ok {
+			request["LoadBalanceType"] = StringPointer(v.(string))
 		}
 	}
+
+	if d.HasChange("listener_protocol") {
+		update = true
+		if v, ok := d.GetOk("listener_protocol"); ok {
+			request["ListenerProtocol"] = StringPointer(v.(string))
+		}
+	}
+
 	if d.HasChange("default_rule") {
 		update = true
 		defaultrulesMap := map[string]interface{}{}
@@ -257,16 +348,19 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
+
 	if d.HasChange("description") {
 		update = true
 		if v, ok := d.GetOk("description"); ok {
 			request["Description"] = StringPointer(v.(string))
 		}
 	}
+
 	if d.HasChange("listener_port") {
 		update = true
 		request["ListenerPort"] = StringPointer(strconv.Itoa(d.Get("listener_port").(int)))
 	}
+
 	if d.HasChange("rules") {
 		update = true
 		rulesMaps := make([]map[string]interface{}, 0)
@@ -278,6 +372,15 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 			rulesMap["containerPort"] = rulesArg["container_port"]
 			rulesMap["domain"] = rulesArg["domain"]
 			rulesMap["path"] = rulesArg["path"]
+
+			if rewritePath, ok := rulesArg["rewrite_path"]; ok {
+				rulesMap["rewritePath"] = rewritePath
+			}
+
+			if backendProtocol, ok := rulesArg["backend_protocol"]; ok {
+				rulesMap["backendProtocol"] = backendProtocol
+			}
+
 			rulesMaps = append(rulesMaps, rulesMap)
 		}
 		if v, err := convertArrayObjectToJsonString(rulesMaps); err == nil {
@@ -286,6 +389,7 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
+
 	if update {
 		action := "/pop/v1/sam/ingress/Ingress"
 		conn, err := client.NewServerlessClient()
@@ -293,7 +397,7 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -304,16 +408,20 @@ func resourceAlicloudSaeIngressUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(action+"-Update", response, fmt.Sprint(request))
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", "PUT "+action, response))
 		}
 	}
+
 	return resourceAlicloudSaeIngressRead(d, meta)
 }
+
 func resourceAlicloudSaeIngressDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/sam/ingress/Ingress"
@@ -327,7 +435,7 @@ func resourceAlicloudSaeIngressDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -338,12 +446,15 @@ func resourceAlicloudSaeIngressDelete(d *schema.ResourceData, meta interface{}) 
 		}
 		return nil
 	})
-	addDebug(action, response, request)
+	addDebug(action+"-Delete", response, fmt.Sprint(request))
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", "DELETE "+action, response))
 	}
+
 	return nil
 }
