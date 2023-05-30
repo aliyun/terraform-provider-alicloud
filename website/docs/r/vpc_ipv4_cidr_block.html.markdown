@@ -22,7 +22,7 @@ Basic Usage
 ```terraform
 resource "alicloud_vpc" "default" {
   cidr_block = "192.168.0.0/24"
-  vpc_name   = var.name
+  vpc_name   = "terraform-example"
 }
 resource "alicloud_vpc_ipv4_cidr_block" "example" {
   vpc_id               = alicloud_vpc.default.id

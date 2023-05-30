@@ -20,7 +20,7 @@ and the `alicloud_slb_listener` block should use `depends_on = [alicloud_slb_ser
 
 ```terraform
 variable "slb_server_group_server_attachment" {
-  default = "forSlbServerGroupServerAttachment"
+  default = "terraform-example"
 }
 
 variable "slb_server_group_server_attachment_count" {
@@ -44,18 +44,22 @@ data "alicloud_images" "server_attachment" {
   owners      = "system"
 }
 
-data "alicloud_vpcs" "server_attachment" {
-  name_regex = "default-NODELETING"
+
+resource "alicloud_vpc" "server_attachment" {
+  vpc_name   = var.slb_server_group_server_attachment
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vswitches" "server_attachment" {
-  vpc_id  = data.alicloud_vpcs.server_attachment.ids.0
-  zone_id = data.alicloud_zones.server_attachment.zones[0].id
+resource "alicloud_vswitch" "server_attachment" {
+  vswitch_name = var.slb_server_group_server_attachment
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.server_attachment.id
+  zone_id      = data.alicloud_zones.server_attachment.zones.0.id
 }
 
 resource "alicloud_security_group" "server_attachment" {
   name   = var.slb_server_group_server_attachment
-  vpc_id = data.alicloud_vpcs.server_attachment.ids.0
+  vpc_id = alicloud_vpc.server_attachment.id
 }
 
 resource "alicloud_instance" "server_attachment" {
@@ -69,12 +73,12 @@ resource "alicloud_instance" "server_attachment" {
   availability_zone          = data.alicloud_zones.server_attachment.zones[0].id
   instance_charge_type       = "PostPaid"
   system_disk_category       = "cloud_efficiency"
-  vswitch_id                 = data.alicloud_vswitches.server_attachment.ids[0]
+  vswitch_id                 = alicloud_vswitch.server_attachment.id
 }
 
 resource "alicloud_slb_load_balancer" "server_attachment" {
   load_balancer_name = var.slb_server_group_server_attachment
-  vswitch_id         = data.alicloud_vswitches.server_attachment.vswitches.0.id
+  vswitch_id         = alicloud_vswitch.server_attachment.id
   load_balancer_spec = "slb.s2.small"
   address_type       = "intranet"
 }
@@ -92,16 +96,6 @@ resource "alicloud_slb_server_group_server_attachment" "server_attachment" {
   weight          = 0
 }
 
-resource "alicloud_slb_listener" "server_attachment" {
-  load_balancer_id = alicloud_slb_load_balancer.server_attachment.id
-  backend_port     = "80"
-  frontend_port    = "80"
-  protocol         = "tcp"
-  bandwidth        = 10
-  scheduler        = "rr"
-  server_group_id  = alicloud_slb_server_group.server_attachment.id
-  depends_on       = [alicloud_slb_server_group_server_attachment.server_attachment]
-}
 ```
 
 ## Argument Reference

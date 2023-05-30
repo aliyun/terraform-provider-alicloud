@@ -29,28 +29,28 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = "tf_test"
+  vpc_name   = "terraform-example"
   cidr_block = "10.1.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
-  name       = "tf_test"
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "10.1.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
+  vswitch_name = "terraform-example"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.1.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_vpn_gateway" "default" {
-  name                 = "tf_vpn_gateway_test"
+  name                 = "terraform-example"
   vpc_id               = alicloud_vpc.default.id
   bandwidth            = 10
-  instance_charge_type = "PayByTraffic"
+  instance_charge_type = "PrePaid"
   enable_ssl           = false
   vswitch_id           = alicloud_vswitch.default.id
 }
 
 resource "alicloud_vpn_connection" "default" {
-  name                = "tf_vpn_connection_test"
+  name                = "terraform-example"
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
   vpn_gateway_id      = alicloud_vpn_gateway.default.id
   local_subnet        = ["192.168.2.0/24"]
@@ -58,7 +58,7 @@ resource "alicloud_vpn_connection" "default" {
 }
 
 resource "alicloud_vpn_customer_gateway" "default" {
-  name       = "tf_customer_gateway_test"
+  name       = "terraform-example"
   ip_address = "192.168.1.1"
 }
 

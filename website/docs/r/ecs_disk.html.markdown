@@ -20,19 +20,28 @@ For information about ECS Disk and how to use it, see [What is Disk](https://www
 Basic Usage
 
 ```terraform
+data "alicloud_zones" "example" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_kms_key" "example" {
+  description            = "terraform-example"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
 resource "alicloud_ecs_disk" "example" {
-  zone_id     = "cn-beijing-b"
-  disk_name   = "tf-test"
-  description = "Hello ecs disk."
+  zone_id     = data.alicloud_zones.example.zones.0.id
+  disk_name   = "terraform-example"
+  description = "terraform-example"
   category    = "cloud_efficiency"
   size        = "30"
   encrypted   = true
-  kms_key_id  = "2a6767f0-a16c-4679-a60f-13bf*****"
+  kms_key_id  = alicloud_kms_key.example.id
   tags = {
-    Name = "TerraformTest"
+    Name = "terraform-example"
   }
 }
-
 ```
 
 ### Deleting `alicloud_ecs_disk` or removing it from your configuration
