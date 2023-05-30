@@ -475,6 +475,43 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 	return result
 }
 
+func albTagsToMap(tags interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	if tags == nil {
+		return result
+	}
+	switch v := tags.(type) {
+	case map[string]interface{}:
+		for key, value := range tags.(map[string]interface{}) {
+			if !albTagIgnored(key, value) {
+				result[key] = value
+			}
+		}
+	case []interface{}:
+		if len(tags.([]interface{})) < 1 {
+			return result
+		}
+		for _, tag := range tags.([]interface{}) {
+			t := tag.(map[string]interface{})
+			var tagKey string
+			var tagValue interface{}
+			if v, ok := t["TagKey"]; ok {
+				tagKey = v.(string)
+				tagValue = t["TagValue"]
+			} else if v, ok := t["Key"]; ok {
+				tagKey = v.(string)
+				tagValue = t["Value"]
+			}
+			if !albTagIgnored(tagKey, tagValue) {
+				result[tagKey] = tagValue
+			}
+		}
+	default:
+		log.Printf("\u001B[31m[ERROR]\u001B[0m Unknown tags type %s. The tags value is: %v.", v, tags)
+	}
+	return result
+}
+
 func tagsMapEqual(expectMap map[string]interface{}, compareMap map[string]string) bool {
 	if len(expectMap) != len(compareMap) {
 		return false
@@ -558,6 +595,19 @@ func slbTagIgnored(t slb.TagResource) bool {
 		ok, _ := regexp.MatchString(v, t.TagKey)
 		if ok {
 			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
+			return true
+		}
+	}
+	return false
+}
+
+func albTagIgnored(tagKey string, tagValue interface{}) bool {
+	filter := []string{"^aliyun", "^acs:", "^http://", "^https://", "^ack", "^ingress"}
+	for _, v := range filter {
+		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, tagKey)
+		ok, _ := regexp.MatchString(v, tagKey)
+		if ok {
+			log.Printf("[DEBUG] Found Alibaba Cloud specific tag %s (val: %s), ignoring.\n", tagKey, tagValue)
 			return true
 		}
 	}
