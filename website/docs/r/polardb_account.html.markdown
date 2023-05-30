@@ -16,44 +16,38 @@ Provides a PolarDB account resource and used to manage databases.
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "PolarDB"
-}
-
-variable "name" {
-  default = "polardbaccountmysql"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = var.name
+  zone_id      = data.alicloud_polardb_node_classes.default.classes[0].zone_id
+  vswitch_name = "terraform-example"
 }
 
-resource "alicloud_polardb_cluster" "cluster" {
+resource "alicloud_polardb_cluster" "default" {
   db_type       = "MySQL"
   db_version    = "8.0"
-  db_node_class = "polar.mysql.x4.large"
+  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   pay_type      = "PostPaid"
   vswitch_id    = alicloud_vswitch.default.id
-  description   = var.name
+  description   = "terraform-example"
 }
 
-resource "alicloud_polardb_account" "account" {
-  db_cluster_id       = alicloud_polardb_cluster.cluster.id
-  account_name        = "tftestnormal"
-  account_password    = "Test12345"
-  account_description = var.name
+resource "alicloud_polardb_account" "default" {
+  db_cluster_id       = alicloud_polardb_cluster.default.id
+  account_name        = "terraform_example"
+  account_password    = "Example1234"
+  account_description = "terraform-example"
 }
 ```
 
