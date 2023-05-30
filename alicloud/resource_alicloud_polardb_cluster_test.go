@@ -762,8 +762,7 @@ func TestAccAlicloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 	})
 }
 
-// Currently, there is no region support creating SENormal
-func SkipTestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
+func TestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 	var v map[string]interface{}
 	name := "tf-testAccPolarDBClusterSENormalCreate"
 	resourceId := "alicloud_polardb_cluster.default"
@@ -787,7 +786,7 @@ func SkipTestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.SENormalPolarDBSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.SENormalPolarDBSupportRegions)
 		},
 
 		// module name
