@@ -16,40 +16,34 @@ Provides a PolarDB cluster backup policy resource and used to configure cluster 
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "polardbClusterconfig"
-}
-
-variable "creation" {
-  default = "PolarDB"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_polardb_node_classes" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  zone_id      = data.alicloud_polardb_node_classes.default.classes[0].zone_id
+  vswitch_name = "terraform-example"
 }
 
 resource "alicloud_polardb_cluster" "default" {
   db_type       = "MySQL"
   db_version    = "8.0"
-  db_node_class = "polar.mysql.x4.large"
+  db_node_class = data.alicloud_polardb_node_classes.default.classes.0.supported_engines.0.available_resources.0.db_node_class
   pay_type      = "PostPaid"
-  description   = var.name
   vswitch_id    = alicloud_vswitch.default.id
+  description   = "terraform-example"
 }
 
-resource "alicloud_polardb_backup_policy" "policy" {
+resource "alicloud_polardb_backup_policy" "default" {
   db_cluster_id                               = alicloud_polardb_cluster.default.id
   preferred_backup_period                     = ["Tuesday", "Wednesday"]
   preferred_backup_time                       = "10:00Z-11:00Z"
