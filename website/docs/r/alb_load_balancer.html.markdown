@@ -100,8 +100,8 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC) where the ALB instance is deployed.
 * `zone_mappings` - (Required, ForceNew) The zones and vSwitches. You must specify at least two zones. See the following `Block zone_mappings`.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
 * `address_ip_version` - (Optional, ForceNew, Computed, Available in v1.193.1+) The IP version. Valid values: `Ipv4`, `DualStack`.
+* `tags` - (Optional) A mapping of tags to assign to the resource. **NOTE:** The Key of `tags` cannot begin with "aliyun", "acs:", "http://", "https://", "ack" or "ingress".
 
 #### Block load_balancer_billing_config
 

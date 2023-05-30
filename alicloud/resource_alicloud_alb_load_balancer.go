@@ -246,7 +246,7 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	albService := AlbService{client}
 	object, err := albService.DescribeAlbLoadBalancer(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_alb_load_balancer albService.DescribeAlbLoadBalancer Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -289,7 +289,7 @@ func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["LoadBalancerStatus"])
 	d.Set("address_ip_version", object["AddressIpVersion"])
-	d.Set("tags", tagsToMap(object["Tags"]))
+	d.Set("tags", albTagsToMap(object["Tags"]))
 	d.Set("vpc_id", object["VpcId"])
 	if zoneMappingsList, ok := object["ZoneMappings"]; ok {
 		zoneMappingsMaps := make([]map[string]interface{}, 0)
