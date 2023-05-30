@@ -22,15 +22,39 @@ Basic Usage
 ```terraform
 data "alicloud_account" "default" {}
 
-data "alicloud_vpcs" "default" {}
+variable "accepting_region" {
+  default = "cn-beijing"
+}
+
+provider "alicloud" {
+  alias  = "local"
+  region = "cn-hangzhou"
+}
+provider "alicloud" {
+  alias  = "accepting"
+  region = var.accepting_region
+}
+
+resource "alicloud_vpc" "local_vpc" {
+  provider   = alicloud.local
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vpc" "accepting_vpc" {
+  provider   = alicloud.accepting
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
 
 resource "alicloud_vpc_peer_connection" "default" {
-  peer_connection_name = var.name
-  vpc_id               = data.alicloud_vpcs.default.ids.0
+  provider             = alicloud.local
+  peer_connection_name = "terraform-example"
+  vpc_id               = alicloud_vpc.local_vpc.id
   accepting_ali_uid    = data.alicloud_account.default.id
-  accepting_region_id  = "cn-hangzhou"
-  accepting_vpc_id     = data.alicloud_vpcs.default.ids.1
-  description          = var.name
+  accepting_region_id  = var.accepting_region
+  accepting_vpc_id     = alicloud_vpc.accepting_vpc.id
+  description          = "terraform-example"
 }
 ```
 

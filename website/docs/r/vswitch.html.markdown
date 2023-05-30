@@ -16,22 +16,32 @@ Provides a VPC switch resource.
 Basic Usage
 
 ```terraform
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_test_foo"
+
+data "alicloud_zones" "foo" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vswitch" "vsw" {
-  vpc_id     = alicloud_vpc.vpc.id
-  cidr_block = "172.16.0.0/21"
-  zone_id    = "cn-beijing-b"
+resource "alicloud_vswitch" "foo" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.16.0.0/21"
+  vpc_id       = alicloud_vpc.foo.id
+  zone_id      = data.alicloud_zones.foo.zones.0.id
 }
 
 ```
 
 ```terraform
+data "alicloud_zones" "foo" {
+  available_resource_creation = "VSwitch"
+}
+
 resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_test_foo"
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/12"
 }
 
@@ -43,8 +53,8 @@ resource "alicloud_vpc_ipv4_cidr_block" "cidr_blocks" {
 resource "alicloud_vswitch" "island-nat" {
   vpc_id       = alicloud_vpc_ipv4_cidr_block.cidr_blocks.vpc_id
   cidr_block   = "172.16.0.0/21"
-  zone_id      = "cn-beijing-b"
-  vswitch_name = "example_value"
+  zone_id      = data.alicloud_zones.foo.zones.0.id
+  vswitch_name = "terraform-example"
   tags = {
     BuiltBy     = "example_value"
     cnm_version = "example_value"
@@ -58,20 +68,24 @@ resource "alicloud_vswitch" "island-nat" {
 Create a switch associated with the additional network segment
 
 ```terraform
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_test_foo"
+data "alicloud_zones" "foo" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vpc_ipv4_cidr_block" "example" {
-  vpc_id               = alicloud_vpc.default.id
+resource "alicloud_vpc_ipv4_cidr_block" "foo" {
+  vpc_id               = alicloud_vpc.foo.id
   secondary_cidr_block = "192.163.0.0/16"
 }
 
-resource "alicloud_vswitch" "vsw" {
-  vpc_id     = alicloud_vpc_ipv4_cidr_block.example.vpc_id
+resource "alicloud_vswitch" "foo" {
+  vpc_id     = alicloud_vpc_ipv4_cidr_block.foo.vpc_id
   cidr_block = "192.163.0.0/24"
-  zone_id    = "cn-beijing-b"
+  zone_id    = data.alicloud_zones.foo.zones.0.id
 }
 ```
 

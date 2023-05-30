@@ -22,23 +22,40 @@ For information about VPN connection and how to use it, see [What is vpn connect
 Basic Usage
 
 ```terraform
+data "alicloud_zones" "foo" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "foo" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "foo" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.16.0.0/21"
+  vpc_id       = alicloud_vpc.foo.id
+  zone_id      = data.alicloud_zones.foo.zones.0.id
+}
+
 resource "alicloud_vpn_gateway" "foo" {
-  name                 = "testAccVpnConfig_create"
-  vpc_id               = "vpc-fake-id"
+  name                 = "terraform-example"
+  vpc_id               = alicloud_vpc.foo.id
   bandwidth            = "10"
   enable_ssl           = true
-  instance_charge_type = "PostPaid"
+  instance_charge_type = "PrePaid"
   description          = "test_create_description"
+  vswitch_id           = alicloud_vswitch.foo.id
 }
 
 resource "alicloud_vpn_customer_gateway" "foo" {
-  name        = "testAccVpnCgwName"
-  ip_address  = "42.104.22.228"
-  description = "testAccVpnCgwDesc"
+  name        = "terraform-example"
+  ip_address  = "42.104.22.210"
+  description = "terraform-example"
 }
 
 resource "alicloud_vpn_connection" "foo" {
-  name                = "tf-vco_test1"
+  name                = "terraform-example"
   vpn_gateway_id      = alicloud_vpn_gateway.foo.id
   customer_gateway_id = alicloud_vpn_customer_gateway.foo.id
   local_subnet        = ["172.16.0.0/24", "172.16.1.0/24"]
@@ -47,7 +64,7 @@ resource "alicloud_vpn_connection" "foo" {
   ike_config {
     ike_auth_alg  = "md5"
     ike_enc_alg   = "des"
-    ike_version   = "ikev1"
+    ike_version   = "ikev2"
     ike_mode      = "main"
     ike_lifetime  = 86400
     psk           = "tf-testvpn2"

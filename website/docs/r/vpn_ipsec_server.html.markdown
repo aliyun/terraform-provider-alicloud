@@ -20,37 +20,38 @@ For information about VPN Ipsec Server and how to use it, see [What is Ipsec Ser
 Basic Usage
 
 ```terraform
-data "alicloud_zones" "default" {
+data "alicloud_zones" "foo" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-locals {
-  vswitch_id = data.alicloud_vswitches.default.ids[0]
+resource "alicloud_vpc" "foo" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/12"
 }
 
-resource "alicloud_vpn_gateway" "default" {
-  name                 = var.name
-  vpc_id               = data.alicloud_vpcs.default.ids.0
-  bandwidth            = 10
+resource "alicloud_vswitch" "foo" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.16.0.0/21"
+  vpc_id       = alicloud_vpc.foo.id
+  zone_id      = data.alicloud_zones.foo.zones.0.id
+}
+
+resource "alicloud_vpn_gateway" "foo" {
+  name                 = "terraform-example"
+  vpc_id               = alicloud_vpc.foo.id
+  bandwidth            = "10"
   enable_ssl           = true
-  enable_ipsec         = true
-  ssl_connections      = 5
   instance_charge_type = "PrePaid"
-  vswitch_id           = local.vswitch_id
+  description          = "terraform-example"
+  vswitch_id           = alicloud_vswitch.foo.id
 }
 
-resource "alicloud_vpn_ipsec_server" "example" {
-  client_ip_pool    = "example_value"
-  ipsec_server_name = "example_value"
-  local_subnet      = "example_value"
-  vpn_gateway_id    = alicloud_vpn_gateway.default.id
+resource "alicloud_vpn_ipsec_server" "foo" {
+  client_ip_pool    = "10.0.0.0/24"
+  ipsec_server_name = "terraform-example"
+  local_subnet      = "192.168.0.0/24"
+  vpn_gateway_id    = alicloud_vpn_gateway.foo.id
+  psk_enabled       = true
 }
 ```
 
