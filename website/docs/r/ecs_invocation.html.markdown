@@ -21,9 +21,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_command" "default" {
-  name            = var.name
+  name            = "terraform-example"
   command_content = "bHMK"
-  description     = "For Terraform Test"
+  description     = "terraform-example"
   type            = "RunShellScript"
   working_dir     = "/root"
 }
