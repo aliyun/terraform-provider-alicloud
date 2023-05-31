@@ -15,19 +15,18 @@ Provides a RAM User Login Profile resource.
 ## Example Usage
 
 ```terraform
-# Create a RAM login profile.
 resource "alicloud_ram_user" "user" {
-  name         = "user_test"
-  display_name = "user_display_name"
+  name         = "terraform_example"
+  display_name = "terraform_example"
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
-  comments     = "yoyoyo"
+  comments     = "terraform_example"
   force        = true
 }
 
 resource "alicloud_ram_login_profile" "profile" {
   user_name = alicloud_ram_user.user.name
-  password  = "Yourpassword1234"
+  password  = "Example_1234"
 }
 ```
 ## Argument Reference
