@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -117,19 +116,21 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":       name,
+					"domain_name":       "xxxx.myalicdn.com",
 					"cdn_type":          "web",
 					"scope":             "domestic",
-					"resource_group_id": os.Getenv("ALICLOUD_RESOURCE_GROUP_ID"),
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"sources": []map[string]interface{}{
 						{
 							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
 							"type":    "oss",
 						},
 					},
+					"check_url": "http://xxxx.myalicdn.com/test.html",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"domain_name":       "xxxx.myalicdn.com",
 						"scope":             "domestic",
 						"resource_group_id": CHECKSET,
 						"sources.#":         "1",
@@ -138,9 +139,10 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 			},
 
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url"},
 			},
 
 			{
@@ -228,14 +230,19 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"certificate_config": []map[string]interface{}{
 						{
-							"server_certificate": testServerCertificate,
-							"private_key":        testPrivateKey,
+							"server_certificate_status": "on",
+							"server_certificate":        testServerCertificate,
+							"private_key":               testPrivateKey,
+							"cert_name":                 name,
+							"cert_type":                 "cas",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"certificate_config.0.server_certificate_status": "on",
+						"certificate_config.0.cert_type":                 "cas",
+						"certificate_config.0.cert_name":                 name,
 					}),
 				),
 			},
@@ -244,70 +251,21 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"certificate_config": []map[string]interface{}{
 						{
-							"server_certificate": testServerCertificate,
-							"private_key":        testPrivateKey,
-							"force_set":          "1",
+							"server_certificate_status": "on",
+							"cert_id":                   "10162346",
+							"cert_region":               "cn-hangzhou",
+							"cert_type":                 "cas",
+							"cert_name":                 REMOVEKEY,
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"certificate_config.0.force_set": "1",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"certificate_config": []map[string]interface{}{
-						{
-							"server_certificate": testServerCertificate,
-							"private_key":        testPrivateKey,
-							"force_set":          "0",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"certificate_config.0.force_set": "0",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"certificate_config": []map[string]interface{}{
-						{
-							"server_certificate": testServerCertificate,
-							"private_key":        testPrivateKey,
-							"force_set":          "1",
-							"cert_name":          "tf-test",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"certificate_config.0.force_set": "1",
-						"certificate_config.0.cert_name": "tf-test",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"certificate_config": []map[string]interface{}{
-						{
-							"server_certificate": testServerCertificate,
-							"private_key":        testPrivateKey,
-							"force_set":          "1",
-							"cert_name":          "tf-test",
-							"cert_type":          "cas",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"certificate_config.0.cert_type": "cas",
+						"certificate_config.0.server_certificate_status": "on",
+						"certificate_config.0.cert_id":                   "10162346",
+						"certificate_config.0.cert_region":               "cn-hangzhou",
+						"certificate_config.0.cert_type":                 "cas",
+						"certificate_config.0.cert_name":                 REMOVEKEY,
 					}),
 				),
 			},
@@ -347,10 +305,14 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":        name,
-					"cdn_type":           "web",
-					"scope":              REMOVEKEY,
-					"certificate_config": REMOVEKEY,
+					"domain_name": "xxxx.myalicdn.com",
+					"cdn_type":    "web",
+					"scope":       REMOVEKEY,
+					"certificate_config": []map[string]interface{}{
+						{
+							"server_certificate_status": "off",
+						},
+					},
 					"sources": []map[string]interface{}{
 						{
 							"content": "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}",
@@ -375,14 +337,12 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"scope":     REMOVEKEY,
-						"sources.#": "3",
-
-						"certificate_config.0.server_certificate_status": REMOVEKEY,
-						"certificate_config.0.force_set":                 REMOVEKEY,
-						"certificate_config.0.cert_name":                 REMOVEKEY,
-						"certificate_config.0.cert_type":                 REMOVEKEY,
-
+						"scope":                            REMOVEKEY,
+						"sources.#":                        "3",
+						"certificate_config.0.cert_id":     "",
+						"certificate_config.0.cert_name":   "",
+						"certificate_config.0.cert_region": "",
+						"certificate_config.0.server_certificate_status": "off",
 						"tags.%":       REMOVEKEY,
 						"tags.Created": REMOVEKEY,
 						"tags.For":     REMOVEKEY,
@@ -471,7 +431,12 @@ func resourceCdnDomainDependence(name string) string {
 	return fmt.Sprintf(`
 	resource "alicloud_oss_bucket" "default" {
 	  bucket = "tf-testacc-cdn-%s"
-	}`, name)
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+`, name)
 }
 
 var cdnDomainBasicMap = map[string]string{
@@ -482,3 +447,185 @@ var cdnDomainBasicMap = map[string]string{
 
 const testServerCertificate = `-----BEGIN CERTIFICATE-----\nMIICQTCCAaoCCQCFfdyqahygLzANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJj\nbjEQMA4GA1UECAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwI\nYWxpY2xvdWQxEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwHhcNMjAw\nODA2MTAwMDAyWhcNMzAwODA0MTAwMDAyWjBlMQswCQYDVQQGEwJjbjEQMA4GA1UE\nCAwHYmVpamluZzEQMA4GA1UEBwwHYmVpamluZzERMA8GA1UECgwIYWxpY2xvdWQx\nEDAOBgNVBAsMB2FsaWJhYmExDTALBgNVBAMMBHRlc3QwgZ8wDQYJKoZIhvcNAQEB\nBQADgY0AMIGJAoGBAL7t2CmRCJ8irM5Too2QVGNm0xk6g3v+KE1/8Gthw+EtBKRw\n859SxM/+q8fS73rkadgWICgre5YZCj1oIG6hrBEUo0Fr1mklXJVtqYFZMFD8XGx+\niur2Mk1Hs5YDd/G8PGDDISS/SqyeHXNo6SPJSXEVjAOIXFnX9EcCP9IAEK5tAgMB\nAAEwDQYJKoZIhvcNAQEFBQADgYEAavYdM9s5jLFP9/ZPCrsRuRsjSJpe5y9VZL+1\n+Ebbw16V0xMYaqODyFH1meLRW/A4xUs15Ny2vLYOW15Mriif7Sixty3HUedBFa4l\ny6/gQ+mBEeZYzMaTTFgyzEZDMsfZxwV9GKfhOzAmK3jZ2LDpHIhnlJN4WwVf0lME\npCPDN7g=\n-----END CERTIFICATE-----\n`
 const testPrivateKey = `-----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQC+7dgpkQifIqzOU6KNkFRjZtMZOoN7/ihNf/BrYcPhLQSkcPOf\nUsTP/qvH0u965GnYFiAoK3uWGQo9aCBuoawRFKNBa9ZpJVyVbamBWTBQ/Fxsforq\n9jJNR7OWA3fxvDxgwyEkv0qsnh1zaOkjyUlxFYwDiFxZ1/RHAj/SABCubQIDAQAB\nAoGADiobBUprN1MdOtldj98LQ6yXMKH0qzg5yTYaofzIyWXLmF+A02sSitO77sEp\nXxae+5b4n8JKEuKcrd2RumNoHmN47iLQ0M2eodjUQ96kzm5Esq6nln62/NF5KLuK\nJDw63nTsg6K0O+gQZv4SYjZAL3cswSmeQmvmcoNgArfcaoECQQDgYy6S91ZIUsLx\n6BB3tW+x7APYnvKysYbcKUEP8AutZSo4hdMfPQkOD0LwP5dWsrNippDWjNDiPZmt\nVKuZDoDdAkEA2dPxy1eQeJsRYTZmTWIuh3UY9xlL3G9skcSOM4LbFidroHWW9UDJ\nJDSSEMH2+/4quYTdPr28cj7RCjqL0brC0QJABXDCL1QJ5oUDLwRWaeCfTawQR89K\nySRexbXGWxGR5uleBbLQ9J/xOUMLd3HDRJnemZS6TElrwyCFOlukMXjVjQJBALr5\nQC0opmu/vzVQepOl2QaQrrM7VXCLfAfLTbxNcD0d7TY4eTFfQMgBD/euZpB65LWF\npFs8hcsSvGApTObjhmECQEydB1zzjU6kH171XlXCtRFnbORu2IB7rMsDP2CBPHyR\ntYBjBNVHIUGcmrMVFX4LeMuvvmUyzwfgLmLchHxbDP8=\n-----END RSA PRIVATE KEY-----\n`
+
+// Test Cdn Domain. >>> Resource test cases, automatically generated.
+// Case 3176
+func TestAccAlicloudCdnDomain_basic3176(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cdn_domain_new.default"
+	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCdnDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scdndomain%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name": "wkk.pfytlm.xyz",
+					"cdn_type":    "web",
+					"sources": []map[string]interface{}{
+						{
+							"type":     "ipaddr",
+							"content":  "1.1.1.1",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "15",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name": "wkk.pfytlm.xyz",
+						"cdn_type":    "web",
+						"sources.#":   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope": "domestic",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope": "domestic",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url"},
+			},
+		},
+	})
+}
+
+var AlicloudCdnDomainMap3176 = map[string]string{}
+
+func AlicloudCdnDomainBasicDependence3176(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 3176  twin
+func TestAccAlicloudCdnDomain_basic3176_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cdn_domain_new.default"
+	ra := resourceAttrInit(resourceId, AlicloudCdnDomainMap3176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CdnServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCdnDomain")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scdndomain%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scope":       "domestic",
+					"domain_name": "wkk.pfytlm.xyz",
+					"cdn_type":    "web",
+					"sources": []map[string]interface{}{
+						{
+							"type":     "ipaddr",
+							"content":  "1.1.1.1",
+							"priority": "20",
+							"port":     "80",
+							"weight":   "16",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scope":        "domestic",
+						"domain_name":  "wkk.pfytlm.xyz",
+						"cdn_type":     "web",
+						"sources.#":    "1",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"check_url"},
+			},
+		},
+	})
+}
+
+// Test Cdn Domain. <<< Resource test cases, automatically generated.
