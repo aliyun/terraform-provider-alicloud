@@ -14,56 +14,68 @@ Provides an RDS read write splitting connection resource to allocate an Intranet
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "name" {
-  default = "dbInstancevpc"
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = "terraform-example"
 }
 
-resource "alicloud_db_instance" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_type        = "rds.mysql.t1.small"
-  instance_storage     = "20"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  vswitch_id           = alicloud_vswitch.default.id
-  security_ips         = ["10.168.1.12", "100.69.7.112"]
+resource "alicloud_security_group" "example" {
+  name   = "terraform-example"
+  vpc_id = alicloud_vpc.example.id
 }
 
-resource "alicloud_db_readonly_instance" "default" {
-  master_db_instance_id = alicloud_db_instance.default.id
-  zone_id               = alicloud_db_instance.default.zone_id
-  engine_version        = alicloud_db_instance.default.engine_version
-  instance_type         = alicloud_db_instance.default.instance_type
-  instance_storage      = "30"
-  instance_name         = "${var.name}ro"
-  vswitch_id            = alicloud_vswitch.default.id
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = "terraform-example"
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
 }
 
-resource "alicloud_db_read_write_splitting_connection" "default" {
-  instance_id       = alicloud_db_instance.default.id
-  connection_prefix = "t-con-123"
+resource "alicloud_db_readonly_instance" "example" {
+  zone_id               = alicloud_db_instance.example.zone_id
+  master_db_instance_id = alicloud_db_instance.example.id
+  engine_version        = alicloud_db_instance.example.engine_version
+  instance_storage      = alicloud_db_instance.example.instance_storage
+  instance_type         = data.alicloud_db_instance_classes.example.instance_classes.1.instance_class
+  instance_name         = "terraform-example-readonly"
+  vswitch_id            = alicloud_vswitch.example.id
+}
+
+resource "alicloud_db_read_write_splitting_connection" "example" {
+  instance_id       = alicloud_db_instance.example.id
+  connection_prefix = "example-con-123"
   distribution_type = "Standard"
-  depends_on        = [alicloud_db_readonly_instance.default]
+  depends_on        = [alicloud_db_readonly_instance.example]
 }
 ```
 

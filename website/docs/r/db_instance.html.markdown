@@ -20,70 +20,103 @@ For information about RDS and how to use it, see [What is ApsaraDB for RDS](http
 ### Create RDS MySQL instance
 
 ```terraform
-variable "name" {
-  default = "tf-testaccdbinstance"
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "creation" {
-  default = "Rds"
-}
-
-data "alicloud_zones" "example" {
-  available_resource_creation = var.creation
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "example" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.example.zones[0].id
-  vswitch_name = var.name
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = "terraform-example"
+}
+
+resource "alicloud_security_group" "example" {
+  name   = "terraform-example"
+  vpc_id = alicloud_vpc.example.id
 }
 
 resource "alicloud_db_instance" "example" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_type        = "rds.mysql.s2.large"
-  instance_storage     = "30"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  vswitch_id           = alicloud_vswitch.example.id
-  monitoring_period    = "60"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = "terraform-example"
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
 }
+
 ```
 
 ### Create a RDS MySQL instance with specific parameters
 
 ```terraform
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
 resource "alicloud_vpc" "example" {
-  vpc_name   = "vpc-123456"
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.example.zones.0.id
-  vswitch_name = "vpc-123456"
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = "terraform-example"
 }
 
-resource "alicloud_db_instance" "default" {
-  engine              = "MySQL"
-  engine_version      = "5.6"
-  db_instance_class   = "rds.mysql.t1.small"
-  db_instance_storage = "10"
-  vswitch_id          = alicloud_vswitch.example.id
+resource "alicloud_security_group" "example" {
+  name   = "terraform-example"
+  vpc_id = alicloud_vpc.example.id
 }
 
 resource "alicloud_db_instance" "example" {
-  engine              = "MySQL"
-  engine_version      = "5.6"
-  db_instance_class   = "rds.mysql.t1.small"
-  db_instance_storage = "10"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = "terraform-example"
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
   parameters {
     name  = "innodb_large_prefix"
     value = "ON"
@@ -97,16 +130,25 @@ resource "alicloud_db_instance" "example" {
 ### Create a High Availability RDS MySQL Instance
 
 ```terraform
-variable "name" {
-  default = "tf-testaccdbinstance"
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_zones" "example" {
-  available_resource_creation = "Rds"
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "example" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -114,21 +156,28 @@ resource "alicloud_vswitch" "example" {
   count        = 2
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = format("172.16.%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.example.zones[count.index].id
-  vswitch_name = format("vswich_%d", var.name, count.index)
+  zone_id      = data.alicloud_db_zones.example.zones[count.index].id
+  vswitch_name = format("terraform_example_%d", count.index + 1)
+}
+
+resource "alicloud_security_group" "example" {
+  name   = "terraform-example"
+  vpc_id = alicloud_vpc.example.id
 }
 
 resource "alicloud_db_instance" "example" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_storage     = "30"
-  instance_type        = "rds.mysql.t1.small"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  zone_id              = data.alicloud_zones.example.zones.0.id
-  zone_id_slave_a      = data.alicloud_zones.example.zones.1.id
-  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
-  monitoring_period    = "60"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = "terraform-example"
+  vswitch_id               = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  zone_id_slave_a          = data.alicloud_db_zones.example.zones.1.id
 }
 
 ```
