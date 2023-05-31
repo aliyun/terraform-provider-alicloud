@@ -49,6 +49,9 @@ func testSweepOSSBuckets(region string) error {
 	resp, _ := raw.(oss.ListBucketsResult)
 	for _, v := range resp.Buckets {
 		name := v.Name
+		if !strings.HasSuffix(v.Location, client.RegionId) {
+			continue
+		}
 		skip := true
 		if !sweepAll() {
 			for _, prefix := range prefixes {

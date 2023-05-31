@@ -74,7 +74,7 @@ The following arguments are supported:
 * `telemetry_type` - (Optional, Available in 1.179.0+) Determines whether store type is metric. `Metrics` means metric store, empty means log store.
 * `hot_ttl` - (Optional, Available in 1.202.0+) The ttl of hot storage. Default to `30`, at least `30`, hot storage ttl must be less than ttl.
 * `mode` - (Optional, Available in 1.202.0+) The mode of storage. Default to `standard`, must be `standard` or `query`, `mode` is only valid when creating, can't be changed after created.
-* `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 64. You must specify this parameter when autoSplit is true.
+* `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 256. You must specify this parameter when autoSplit is true.
 * `append_meta` - (Optional) Determines whether to append log meta automatically. The meta includes log receive time and client IP address. Default to `true`.
 * `enable_web_tracking` - (Optional) Determines whether to enable Web Tracking. Default `false`.
 * `encrypt_conf` (Optional, Available in 1.124.0+) Encrypted storage of data, providing data static protection capability, `encrypt_conf` can be updated since 1.188.0+ (only `enable` change is supported when updating logstore)
