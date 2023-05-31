@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
@@ -48,7 +46,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      30,
-				ValidateFunc: validation.IntBetween(1, 3650),
+				ValidateFunc: IntBetween(1, 3650),
 			},
 			"hot_ttl": {
 				Type:     schema.TypeInt,
@@ -106,7 +104,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      0,
-				ValidateFunc: validation.IntBetween(0, 64),
+				ValidateFunc: IntBetween(0, 256),
 			},
 			"append_meta": {
 				Type:     schema.TypeBool,
@@ -133,7 +131,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "default",
-							ValidateFunc: validation.StringInSlice([]string{"default", "m4"}, false),
+							ValidateFunc: StringInSlice([]string{"default", "m4"}, false),
 						},
 						"user_cmk_info": {
 							Type:     schema.TypeSet,

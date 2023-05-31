@@ -56,6 +56,8 @@ export ALICLOUD_SWEEP_ALL_RESOURCES=${SWEEP_ALL}
 #export DEBUG=terraform
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
+echo -e "Sweeper: ${SWEEPER}"
+echo -e "Sweep ALL: ${SWEEPER_SWEEP_ALL}"
 
 export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
 
