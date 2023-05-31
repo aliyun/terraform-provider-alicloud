@@ -1,0 +1,68 @@
+name: Terrafrom Basic Test Process
+on:
+  pull_request:
+    paths:
+      - .github/workflows/acctest-terraform-basic.yml
+      - alicloud/*.go
+    branches:
+      - master
+
+jobs:
+  CompatibilityCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18.x'
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Attribute Compatibility Check
+        run: |
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          echo $diffFiles > diff.out
+          go test -v ./scripts/schema_test.go -run=TestFieldCompatibilityCheck -file_name="../diff.out"
+          if [[ "$?" != "0" ]]; then
+            echo -e "\033[31m Compatibility Error! Please check out the correct schema \033[0m"
+            exit 1
+          fi
+
+  ConsistencyCheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.18.x'
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Attribute Consistency Check
+        run: |
+          diffResourceNames=""
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          for fileName in ${diffFiles[@]};
+          do
+              # currently, the action does not support checking data source
+              if [[ ${fileName} == alicloud/resource_* ]]; then
+                  resourceName=$(echo ${fileName} | grep -Eo "alicloud_[0-9a-z_]*")
+                  if [[ ${resourceName} == *_test ]]; then
+                    continue
+                  fi
+                  diffResourceNames=$diffResourceNames";"${resourceName}
+              fi
+          done
+          if [[ ${diffResourceNames} == "" ]]; then
+              echo -e "\n\033[33m missing resource files and there is no need to checking Consistency. \033[0m"
+              exit 0
+          fi
+          go test -v ./scripts/schema_test.go -run=TestConsistencyWithDocument -resourceNames="${diffResourceNames}"
+          if [[ "$?" != "0" ]]; then
+            echo -e "\033[31m Consistency Error! Please check out the correct schema or document \033[0m"
+            exit 1
+          fi

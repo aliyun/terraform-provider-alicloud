@@ -1,0 +1,97 @@
+name: Documentation Checks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    pull_request_target:
+      types:
+        - opened
+      paths:
+        - .github/workflows/document-check.yml
+        - .go-version
+        - website/docs/**
+
+
+
+jobs:
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          folder-path: "website/docs"
+          file-extension: '.md'
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: avto-dev/markdown-lint@v1
+
+  misspell:
+    name: runner/misspell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code.
+        uses: actions/checkout@v1
+      - name: misspell
+        uses: reviewdog/action-misspell@v1.11.1
+        with:
+          github_token: ${{secrets.github_token}}
+          fail_on_error: true
+          filter_mode: file
+          locale: "US"
+          path: ./website/docs
+
+  terrafmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: terrafmt
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install github.com/katbyte/terrafmt@latest
+          terrafmt diff ./website --check --pattern '*.markdown'
+
+  basic-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '3'
+      - uses: actions/setup-go@v2
+        with:
+          go-version-file: .go-version
+      - run: bash scripts/basic-check.sh
+
+#  terraform-validate:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: import
+#        run: |
+#          echo "GO_VERSION=$(cat .go-version)" >> $GITHUB_ENV
+#      - uses: actions/setup-go@v2
+#        with:
+#          go-version: ${{ env.GO_VERSION }}
+#      - name: terraform-validate
+#        run: |
+#          export PATH=$PATH:$(go env GOPATH)/bin
+#          go get -t github.com/katbyte/terrafmt
+#          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+#          FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
+#          echo ${FILES}
+#          ./scripts/terraform-validate.sh "${FILES[@]}"
+#          if [[ "$?" == "1" ]]; then
+#            echo "Please Check the Terraform Grammer" && exit 1
+#          fi
+
+
