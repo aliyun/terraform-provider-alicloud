@@ -19,8 +19,13 @@ Provides a resource to create a oss bucket and set its attribution.
 Private Bucket
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-acl" {
-  bucket = "bucket-170309-acl"
+  bucket = "example-value-${random_integer.default.result}"
   acl    = "private"
 }
 ```
@@ -28,9 +33,13 @@ resource "alicloud_oss_bucket" "bucket-acl" {
 Static Website
 
 ```terraform
-resource "alicloud_oss_bucket" "bucket-website" {
-  bucket = "bucket-170309-website"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
 
+resource "alicloud_oss_bucket" "bucket-website" {
+  bucket = "example-value-${random_integer.default.result}"
   website {
     index_document = "index.html"
     error_document = "error.html"
@@ -41,14 +50,18 @@ resource "alicloud_oss_bucket" "bucket-website" {
 Enable Logging
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-target" {
-  bucket = "bucket-170309-acl"
+  bucket = "example-value-${random_integer.default.result}"
   acl    = "public-read"
 }
 
 resource "alicloud_oss_bucket" "bucket-logging" {
-  bucket = "bucket-170309-logging"
-
+  bucket = "example-logging-${random_integer.default.result}"
   logging {
     target_bucket = alicloud_oss_bucket.bucket-target.id
     target_prefix = "log/"
@@ -59,10 +72,14 @@ resource "alicloud_oss_bucket" "bucket-logging" {
 Referer configuration
 
 ```terraform
-resource "alicloud_oss_bucket" "bucket-referer" {
-  bucket = "bucket-170309-referer"
-  acl    = "private"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
 
+resource "alicloud_oss_bucket" "bucket-referer" {
+  bucket = "example-value-${random_integer.default.result}"
+  acl    = "private"
   referer_config {
     allow_empty = false
     referers    = ["http://www.aliyun.com", "https://www.aliyun.com"]
@@ -73,8 +90,13 @@ resource "alicloud_oss_bucket" "bucket-referer" {
 Set lifecycle rule
 
 ```terraform
-resource "alicloud_oss_bucket" "bucket-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_oss_bucket" "bucket-lifecycle1" {
+  bucket = "example-lifecycle1-${random_integer.default.result}"
   acl    = "public-read"
 
   lifecycle_rule {
@@ -97,8 +119,8 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
   }
 }
 
-resource "alicloud_oss_bucket" "bucket-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
+resource "alicloud_oss_bucket" "bucket-lifecycle2" {
+  bucket = "example-lifecycle2-${random_integer.default.result}"
   acl    = "public-read"
 
   lifecycle_rule {
@@ -117,8 +139,8 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
   }
 }
 
-resource "alicloud_oss_bucket" "bucket-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
+resource "alicloud_oss_bucket" "bucket-lifecycle3" {
+  bucket = "example-lifecycle3-${random_integer.default.result}"
   acl    = "public-read"
 
   lifecycle_rule {
@@ -127,7 +149,7 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
     enabled = true
 
     transitions {
-      created_before_date = "2020-11-11"
+      created_before_date = "2022-11-11"
       storage_class       = "IA"
     }
     transitions {
@@ -137,8 +159,8 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
   }
 }
 
-resource "alicloud_oss_bucket" "bucket-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
+resource "alicloud_oss_bucket" "bucket-lifecycle4" {
+  bucket = "example-lifecycle4-${random_integer.default.result}"
   acl    = "public-read"
 
   lifecycle_rule {
@@ -153,7 +175,7 @@ resource "alicloud_oss_bucket" "bucket-lifecycle" {
 }
 
 resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
-  bucket = "bucket-170309-lifecycle"
+  bucket = "example-lifecycle5-${random_integer.default.result}"
   acl    = "private"
 
   versioning {
@@ -184,14 +206,18 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
     }
   }
 }
-
 ```
 
 Set bucket policy 
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-policy" {
-  bucket = "bucket-170309-policy"
+  bucket = "example-policy-${random_integer.default.result}"
   acl    = "private"
 
   policy = <<POLICY
@@ -209,8 +235,13 @@ resource "alicloud_oss_bucket" "bucket-policy" {
 IA Bucket
 
 ```terraform
-resource "alicloud_oss_bucket" "bucket-storageclass" {
-  bucket        = "bucket-170309-storageclass"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket        = "example-${random_integer.default.result}"
   storage_class = "IA"
 }
 ```
@@ -218,8 +249,13 @@ resource "alicloud_oss_bucket" "bucket-storageclass" {
 Set bucket server-side encryption rule 
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-sserule" {
-  bucket = "bucket-170309-sserule"
+  bucket = "terraform-example-${random_integer.default.result}"
   acl    = "private"
 
   server_side_encryption_rule {
@@ -227,13 +263,19 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
   }
 }
 
-resource "alicloud_oss_bucket" "bucket-sserule" {
-  bucket = "bucket-170309-sserule"
+resource "alicloud_kms_key" "kms" {
+  description            = "terraform-example"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
+resource "alicloud_oss_bucket" "bucket-kms" {
+  bucket = "terraform-example-kms-${random_integer.default.result}"
   acl    = "private"
 
   server_side_encryption_rule {
     sse_algorithm     = "KMS"
-    kms_master_key_id = "your kms key id"
+    kms_master_key_id = alicloud_kms_key.kms.id
   }
 }
 ```
@@ -241,8 +283,13 @@ resource "alicloud_oss_bucket" "bucket-sserule" {
 Set bucket tags 
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-tags" {
-  bucket = "bucket-170309-tags"
+  bucket = "terraform-example-${random_integer.default.result}"
   acl    = "private"
 
   tags = {
@@ -255,8 +302,13 @@ resource "alicloud_oss_bucket" "bucket-tags" {
 Enable bucket versioning 
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-versioning" {
-  bucket = "bucket-170309-versioning"
+  bucket = "terraform-example-${random_integer.default.result}"
   acl    = "private"
 
   versioning {
@@ -268,8 +320,13 @@ resource "alicloud_oss_bucket" "bucket-versioning" {
 Set bucket redundancy type
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-redundancytype" {
-  bucket          = "bucket_name"
+  bucket          = "terraform-example-${random_integer.default.result}"
   redundancy_type = "ZRS"
 
   # ... other configuration ...
@@ -279,8 +336,13 @@ resource "alicloud_oss_bucket" "bucket-redundancytype" {
 Set bucket accelerate configuration
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_oss_bucket" "bucket-accelerate" {
-  bucket = "bucket_name"
+  bucket = "terraform-example-${random_integer.default.result}"
 
   transfer_acceleration {
     enabled = false
