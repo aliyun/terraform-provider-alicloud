@@ -11,7 +11,7 @@ description: |-
 
 Provides a Serverless App Engine (SAE) Namespace resource.
 
-For information about SAE Namespace and how to use it, see [What is Namespace](https://help.aliyun.com/document_detail/97792.html).
+For information about SAE Namespace and how to use it, see [What is Namespace](https://www.alibabacloud.com/help/en/sae/latest/createnamespace).
 
 -> **NOTE:** Available in v1.129.0+.
 
@@ -32,9 +32,14 @@ resource "alicloud_sae_namespace" "example" {
 
 The following arguments are supported:
 
-* `namespace_description` - (Optional) The Description of Namespace.
-* `namespace_id` - (Required, ForceNew) The Id of Namespace.It can contain 2 to 32 lowercase characters.The value is in format `{RegionId}:{namespace}`
 * `namespace_name` - (Required) The Name of Namespace.
+* `namespace_id` - (Optional, ForceNew, Computed) The ID of the Namespace. It can contain 2 to 32 lowercase characters. The value is in format `{RegionId}:{namespace}`.
+* `namespace_short_id` - (Optional, ForceNew, Computed, Available in 1.206.0+) The short ID of the Namespace. You do not need to specify a region ID. The value of `namespace_short_id` can be up to 20 characters in length and can contain only lowercase letters and digits.
+* `namespace_description` - (Optional) The Description of Namespace.
+* `enable_micro_registration` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable the SAE built-in registry. If you do not use the built-in registry, you can set `enable_micro_registration` to `false` to accelerate the creation of the namespace. Default value: `true`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+-> **NOTE:** From version 1.206.0, You should specify one of the `namespace_id` and `namespace_short_id`, and `namespace_short_id` is recommended.
 
 ## Attributes Reference
 
