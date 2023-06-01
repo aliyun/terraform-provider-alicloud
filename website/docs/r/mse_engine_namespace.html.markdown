@@ -20,27 +20,40 @@ For information about Microservice Engine (MSE) Engine Namespace and how to use 
 Basic Usage
 
 ```terraform
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+data "alicloud_zones" "example" {
+  available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
 }
-resource "alicloud_mse_cluster" "default" {
-  cluster_specification = "MSE_SC_1_2_200_c"
+
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_zones.example.zones.0.id
+}
+
+resource "alicloud_mse_cluster" "example" {
+  cluster_specification = "MSE_SC_1_2_60_c"
   cluster_type          = "Nacos-Ans"
-  cluster_version       = "NACOS_ANS_1_2_1"
+  cluster_version       = "NACOS_2_0_0"
   instance_count        = 1
   net_type              = "privatenet"
-  vswitch_id            = data.alicloud_vswitches.default.ids.0
   pub_network_flow      = "1"
-  acl_entry_list        = ["127.0.0.1/32"]
-  cluster_alias_name    = "example_value"
+  connection_type       = "slb"
+  cluster_alias_name    = "terraform-example"
+  mse_version           = "mse_dev"
+  vswitch_id            = alicloud_vswitch.example.id
+  vpc_id                = alicloud_vpc.example.id
 }
+
 resource "alicloud_mse_engine_namespace" "example" {
-  cluster_id          = alicloud_mse_cluster.default.cluster_id
-  namespace_show_name = "example_value"
-  namespace_id        = "example_value"
+  cluster_id          = alicloud_mse_cluster.example.cluster_id
+  namespace_show_name = "terraform-example"
+  namespace_id        = "terraform-example"
 }
 ```
 

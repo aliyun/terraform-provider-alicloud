@@ -22,48 +22,60 @@ For information about NAS file system and how to use it, see [Manage file system
 Basic Usage
 
 ```terraform
+data "alicloud_nas_zones" "example" {
+  file_system_type = "standard"
+}
+
 resource "alicloud_nas_file_system" "foo" {
   protocol_type = "NFS"
   storage_type  = "Performance"
-  description   = "tf-testAccNasConfig"
+  description   = "terraform-example"
   encrypt_type  = "1"
+  zone_id       = data.alicloud_nas_zones.example.zones[0].zone_id
 }
 ```
 
 ```terraform
+data "alicloud_nas_zones" "example" {
+  file_system_type = "extreme"
+}
+
 resource "alicloud_nas_file_system" "foo" {
   file_system_type = "extreme"
   protocol_type    = "NFS"
-  zone_id          = "cn-hangzhou-f"
+  zone_id          = data.alicloud_nas_zones.example.zones[0].zone_id
   storage_type     = "standard"
-  description      = "tf-testAccNasConfig"
+  description      = "terraform-example"
   capacity         = "100"
 }
 ```
 
 ```terraform
-data "alicloud_nas_zones" "default" {
+data "alicloud_nas_zones" "example" {
   file_system_type = "cpfs"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nas_zones.default.zones.0.zone_id
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_nas_zones.example.zones[1].zone_id
 }
 
-resource "alicloud_nas_file_system" "foo" {
+resource "alicloud_nas_file_system" "example" {
   protocol_type    = "cpfs"
   storage_type     = "advance_200"
   file_system_type = "cpfs"
   capacity         = 3600
-  description      = "tf-testacc"
-  zone_id          = data.alicloud_nas_zones.default.zones.0.zone_id
-  vpc_id           = data.alicloud_vpcs.default.ids.0
-  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  description      = "terraform-example"
+  zone_id          = data.alicloud_nas_zones.example.zones[1].zone_id
+  vpc_id           = alicloud_vpc.example.id
+  vswitch_id       = alicloud_vswitch.example.id
 }
 ```
 

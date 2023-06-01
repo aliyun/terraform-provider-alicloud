@@ -20,11 +20,16 @@ For information about Network Attached Storage (NAS) Recycle Bin and how to use 
 Basic Usage
 
 ```terraform
+data "alicloud_nas_zones" "example" {
+  file_system_type = "standard"
+}
+
 resource "alicloud_nas_file_system" "example" {
   protocol_type = "NFS"
   storage_type  = "Performance"
-  description   = var.name
+  description   = "terraform-example"
   encrypt_type  = "1"
+  zone_id       = data.alicloud_nas_zones.example.zones[0].zone_id
 }
 
 resource "alicloud_nas_recycle_bin" "example" {
