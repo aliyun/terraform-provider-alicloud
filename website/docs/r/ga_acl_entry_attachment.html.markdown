@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Acl entry attachment resource.
 
-For information about Global Accelerator (GA) Acl entry attachment and how to use it, see [What is Acl entry attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/addentriestoacl).
+For information about Global Accelerator (GA) Acl entry attachment and how to use it, see [What is Acl entry attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-addentriestoacl).
 
 -> **NOTE:** Available in v1.190.0+.
 
@@ -37,7 +37,7 @@ resource "alicloud_ga_acl_entry_attachment" "default" {
 The following arguments are supported:
 
 * `acl_id` - (Required, ForceNew) The ID of the global acceleration instance.
-* `entry` - (Required, ForceNew) The IP address or CIDR block that you want to add to the network ACL.
+* `entry` - (Required, ForceNew) The IP address(192.168.XX.XX) or CIDR(10.0.XX.XX/24) block that you want to add to the network ACL.
 * `entry_description` - (Optional, ForceNew) The description of the entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 
 ## Attributes Reference

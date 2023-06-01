@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Acl resource.
 
-For information about Global Accelerator (GA) Acl and how to use it, see [What is Acl](https://www.alibabacloud.com/help/en/doc-detail/258289.html).
+For information about Global Accelerator (GA) Acl and how to use it, see [What is Acl](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createacl).
 
 -> **NOTE:** Available in v1.150.0+.
 
@@ -43,7 +43,7 @@ The following arguments are supported:
 
 The acl_entries supports the following: 
 
-* `entry` - (Optional, Computed) The IP entry that you want to add to the ACL.
+* `entry` - (Optional, Computed) The IP address(192.168.XX.XX) or CIDR(10.0.XX.XX/24) block that you want to add to the network ACL.
 * `entry_description` - (Optional, Computed) The description of the IP entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_).
 
 ## Attributes Reference
