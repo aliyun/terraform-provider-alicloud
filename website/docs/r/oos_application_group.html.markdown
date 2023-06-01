@@ -24,22 +24,21 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_oos_application" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  application_name  = "example_value"
-  description       = "example_value"
+  application_name  = "terraform-example"
+  description       = "terraform-example"
   tags = {
     Created = "TF"
   }
 }
 
 resource "alicloud_oos_application_group" "default" {
-  application_group_name = var.name
+  application_group_name = "terraform-example"
   application_name       = alicloud_oos_application.default.id
-  deploy_region_id       = "example_value"
-  description            = "example_value"
-  import_tag_key         = "example_value"
+  deploy_region_id       = "cn-beijing"
+  description            = "terraform-example"
+  import_tag_key         = "example_key"
   import_tag_value       = "example_value"
 }
-
 ```
 
 ## Argument Reference

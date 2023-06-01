@@ -16,24 +16,39 @@ Provides a resource to put a object(content or file) to a oss bucket.
 ### Uploading a file to a bucket
 
 ```terraform
-resource "alicloud_oss_bucket_object" "object-source" {
-  bucket = "your_bucket_name"
-  key    = "new_object_key"
-  source = "path/to/file"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
+  acl    = "private"
+}
+
+resource "alicloud_oss_bucket_object" "default" {
+  bucket = alicloud_oss_bucket.default.bucket
+  key    = "example_key"
+  source = "./main.tf"
 }
 ```
 
 ### Uploading a content to a bucket
 
 ```terraform
-resource "alicloud_oss_bucket" "example" {
-  bucket = "your_bucket_name"
-  acl    = "public-read"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
-resource "alicloud_oss_bucket_object" "object-content" {
-  bucket  = alicloud_oss_bucket.example.bucket
-  key     = "new_object_key"
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
+  acl    = "private"
+}
+
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.bucket
+  key     = "example_key"
   content = "the content that you want to upload."
 }
 ```

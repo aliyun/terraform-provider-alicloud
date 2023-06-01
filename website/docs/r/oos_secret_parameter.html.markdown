@@ -20,32 +20,26 @@ For information about OOS Secret Parameter and how to use it, see [What is Secre
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_resource_manager_resource_groups" "example" {}
 
-data "alicloud_kms_keys" "default" {
-  status = "Enabled"
-}
-
-resource "alicloud_kms_key" "default" {
-  count                  = length(data.alicloud_kms_keys.default.ids) > 0 ? 0 : 1
-  description            = var.name
+resource "alicloud_kms_key" "example" {
+  description            = "terraform-example"
   status                 = "Enabled"
   pending_window_in_days = 7
 }
 
 resource "alicloud_oos_secret_parameter" "example" {
-  secret_parameter_name = "example_value"
-  value                 = "example_value"
+  secret_parameter_name = "terraform-example"
+  value                 = "terraform-example"
   type                  = "Secret"
-  key_id                = length(data.alicloud_kms_keys.default.ids) > 0 ? data.alicloud_kms_keys.default.ids.0 : concat(alicloud_kms_key.default.*.id, [""])[0]
-  description           = "example_value"
+  key_id                = alicloud_kms_key.example.id
+  description           = "terraform-example"
   tags = {
     Created = "TF"
     For     = "OosSecretParameter"
   }
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.example.groups.0.id
 }
-
 ```
 
 ## Argument Reference
