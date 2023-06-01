@@ -25,21 +25,41 @@ See [Add a mount point](https://www.alibabacloud.com/help/doc-detail/60431.htm) 
 Basic Usage
 
 ```terraform
+data "alicloud_nas_zones" "example" {
+  file_system_type = "standard"
+}
+
 resource "alicloud_nas_file_system" "example" {
   protocol_type = "NFS"
   storage_type  = "Performance"
-  description   = "test file system"
+  description   = "terraform-example"
+  encrypt_type  = "1"
+  zone_id       = data.alicloud_nas_zones.example.zones[0].zone_id
 }
 
 resource "alicloud_nas_access_group" "example" {
-  access_group_name = "test_name"
-  access_group_type = "Classic"
-  description       = "test access group"
+  access_group_name = "terraform-example"
+  access_group_type = "Vpc"
+  description       = "terraform-example"
+  file_system_type  = "standard"
+}
+
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_nas_zones.example.zones[0].zone_id
 }
 
 resource "alicloud_nas_mount_target" "example" {
   file_system_id    = alicloud_nas_file_system.example.id
   access_group_name = alicloud_nas_access_group.example.access_group_name
+  vswitch_id        = alicloud_vswitch.example.id
 }
 ```
 

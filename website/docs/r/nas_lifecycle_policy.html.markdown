@@ -27,9 +27,10 @@ resource "alicloud_nas_file_system" "example" {
 
 resource "alicloud_nas_lifecycle_policy" "example" {
   file_system_id        = alicloud_nas_file_system.example.id
-  lifecycle_policy_name = "my-LifecyclePolicy"
+  lifecycle_policy_name = "terraform-example"
   lifecycle_rule_name   = "DEFAULT_ATIME_14"
   storage_type          = "InfrequentAccess"
+  paths                 = ["/"]
 }
 ```
 

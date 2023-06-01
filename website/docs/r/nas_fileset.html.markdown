@@ -20,34 +20,37 @@ For information about Network Attached Storage (NAS) Fileset and how to use it, 
 Basic Usage
 
 ```terraform
-data "alicloud_nas_zones" "default" {
+data "alicloud_nas_zones" "example" {
   file_system_type = "cpfs"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nas_zones.default.zones.0.zone_id
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_nas_zones.example.zones[1].zone_id
 }
 
-resource "alicloud_nas_file_system" "default" {
+resource "alicloud_nas_file_system" "example" {
   protocol_type    = "cpfs"
   storage_type     = "advance_200"
   file_system_type = "cpfs"
   capacity         = 3600
-  description      = "tf-testacc"
-  zone_id          = data.alicloud_nas_zones.default.zones.0.zone_id
-  vpc_id           = data.alicloud_vpcs.default.ids.0
-  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  description      = "terraform-example"
+  zone_id          = data.alicloud_nas_zones.example.zones[1].zone_id
+  vpc_id           = alicloud_vpc.example.id
+  vswitch_id       = alicloud_vswitch.example.id
 }
 
-resource "alicloud_nas_fileset" "default" {
-  file_system_id   = alicloud_nas_file_system.default.id
+resource "alicloud_nas_fileset" "example" {
+  file_system_id   = alicloud_nas_file_system.example.id
+  description      = "terraform-example"
   file_system_path = "/example_path/"
-  description      = "tf-testacc"
 }
 ```
 

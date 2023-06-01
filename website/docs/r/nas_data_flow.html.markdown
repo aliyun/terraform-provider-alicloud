@@ -20,61 +20,62 @@ For information about Network Attached Storage (NAS) Data Flow and how to use it
 Basic Usage
 
 ```terraform
-data "alicloud_nas_zones" "default" {
+data "alicloud_nas_zones" "example" {
   file_system_type = "cpfs"
 }
 
-locals {
-  count_size = length(data.alicloud_nas_zones.default.zones)
-  zone_id    = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_nas_zones.example.zones[1].zone_id
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = local.zone_id
-}
-
-resource "alicloud_nas_file_system" "default" {
+resource "alicloud_nas_file_system" "example" {
   protocol_type    = "cpfs"
   storage_type     = "advance_200"
   file_system_type = "cpfs"
   capacity         = 3600
-  description      = "tf-testacc"
-  zone_id          = local.zone_id
-  vpc_id           = data.alicloud_vpcs.default.ids.0
-  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  description      = "terraform-example"
+  zone_id          = data.alicloud_nas_zones.example.zones[1].zone_id
+  vpc_id           = alicloud_vpc.example.id
+  vswitch_id       = alicloud_vswitch.example.id
 }
 
-resource "alicloud_nas_mount_target" "default" {
-  file_system_id = alicloud_nas_file_system.default.id
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
+resource "alicloud_nas_mount_target" "example" {
+  file_system_id = alicloud_nas_file_system.example.id
+  vswitch_id     = alicloud_vswitch.example.id
 }
-
-resource "alicloud_oss_bucket" "default" {
-  bucket = "example_value"
+resource "random_integer" "example" {
+  max = 99999
+  min = 10000
+}
+resource "alicloud_oss_bucket" "example" {
+  bucket = "example-value-${random_integer.example.result}"
   acl    = "private"
   tags = {
     cpfs-dataflow = "true"
   }
 }
 
-resource "alicloud_nas_fileset" "default" {
-  depends_on       = ["alicloud_nas_mount_target.default"]
-  file_system_id   = alicloud_nas_file_system.default.id
-  description      = "example_value"
+resource "alicloud_nas_fileset" "example" {
+  depends_on       = [alicloud_nas_mount_target.example]
+  file_system_id   = alicloud_nas_file_system.example.id
+  description      = "terraform-example"
   file_system_path = "/example_path/"
 }
 
-resource "alicloud_nas_data_flow" "default" {
-  fset_id              = alicloud_nas_fileset.default.fileset_id
-  description          = "example_value"
-  file_system_id       = alicloud_nas_file_system.default.id
+resource "alicloud_nas_data_flow" "example" {
+  fset_id              = alicloud_nas_fileset.example.fileset_id
+  description          = "terraform-example"
+  file_system_id       = alicloud_nas_file_system.example.id
   source_security_type = "SSL"
-  source_storage       = join("", ["oss://", alicloud_oss_bucket.default.bucket])
+  source_storage       = join("", ["oss://", alicloud_oss_bucket.example.bucket])
   throughput           = 600
 }
 ```
