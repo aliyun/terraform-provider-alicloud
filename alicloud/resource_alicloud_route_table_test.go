@@ -451,7 +451,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudRouteTableCreate(d, rawClient)
+		err := resourceAliCloudVpcRouteTableCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -468,7 +468,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableCreate(d, rawClient)
+		err := resourceAliCloudVpcRouteTableCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -485,7 +485,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcRouteTableCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -503,7 +503,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcRouteTableCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -521,7 +521,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudRouteTableUpdate(d, rawClient)
+		err := resourceAliCloudVpcRouteTableUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -553,7 +553,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcRouteTableUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -586,7 +586,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcRouteTableUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -619,7 +619,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudRouteTableUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcRouteTableUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -634,7 +634,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudRouteTableDelete(d, rawClient)
+		err := resourceAliCloudVpcRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -651,7 +651,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudRouteTableDelete(d, rawClient)
+		err := resourceAliCloudVpcRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -668,7 +668,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudRouteTableDelete(d, rawClient)
+		err := resourceAliCloudVpcRouteTableDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -685,7 +685,7 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudRouteTableRead(d, rawClient)
+		err := resourceAliCloudVpcRouteTableRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -701,8 +701,247 @@ func TestUnitAlicloudVPCRouteTable(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudRouteTableRead(d, rawClient)
+		err := resourceAliCloudVpcRouteTableRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Vpc RouteTable. >>> Resource test cases, automatically generated.
+// Case 1952
+func TestAccAlicloudVpcRouteTable_basic1952(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcRouteTableMap1952)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcroutetable%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcRouteTableBasicDependence1952)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"route_table_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":           CHECKSET,
+						"route_table_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test-description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test-description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_table_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "description_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "description_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_table_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test-description",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test-description",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_table_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_table_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "test-description",
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"route_table_name": name + "_update",
+					"associate_type":   "VSwitch",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "test-description",
+						"vpc_id":           CHECKSET,
+						"route_table_name": name + "_update",
+						"associate_type":   "VSwitch",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpcRouteTableMap1952 = map[string]string{
+	"status":            CHECKSET,
+	"resource_group_id": CHECKSET,
+	"associate_type":    CHECKSET,
+	"create_time":       CHECKSET,
+}
+
+func AlicloudVpcRouteTableBasicDependence1952(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultVpc" {
+  vpc_name = var.name
+}
+
+
+`, name)
+}
+
+// Case 1952  twin
+func TestAccAlicloudVpcRouteTable_basic1952_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_route_table.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcRouteTableMap1952)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcRouteTable")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcroutetable%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcRouteTableBasicDependence1952)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "test-description",
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"route_table_name": name,
+					"associate_type":   "VSwitch",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "test-description",
+						"vpc_id":           CHECKSET,
+						"route_table_name": name,
+						"associate_type":   "VSwitch",
+						"tags.%":           "2",
+						"tags.Created":     "TF",
+						"tags.For":         "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Vpc RouteTable. <<< Resource test cases, automatically generated.

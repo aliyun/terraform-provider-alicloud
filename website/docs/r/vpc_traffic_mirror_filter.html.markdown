@@ -7,9 +7,9 @@ description: |-
   Provides a Alicloud VPC Traffic Mirror Filter resource.
 ---
 
-# alicloud\_vpc\_traffic\_mirror\_filter
+# alicloud_vpc_traffic_mirror_filter
 
-Provides a VPC Traffic Mirror Filter resource.
+Provides a VPC Traffic Mirror Filter resource. Traffic mirror filter criteria.
 
 For information about VPC Traffic Mirror Filter and how to use it, see [What is Traffic Mirror Filter](https://www.alibabacloud.com/help/doc-detail/207513.htm).
 
@@ -20,34 +20,112 @@ For information about VPC Traffic Mirror Filter and how to use it, see [What is 
 Basic Usage
 
 ```terraform
-resource "alicloud_vpc_traffic_mirror_filter" "example" {
-  traffic_mirror_filter_name = "example_value"
+variable "name" {
+  default = "terraform-example"
 }
 
+resource "alicloud_resource_manager_resource_group" "default3iXhoa" {
+  display_name        = "testname03"
+  resource_group_name = var.name
+}
+
+resource "alicloud_resource_manager_resource_group" "defaultdNz2qk" {
+  display_name        = "testname04"
+  resource_group_name = "${var.name}1"
+}
+
+
+resource "alicloud_vpc_traffic_mirror_filter" "default" {
+  traffic_mirror_filter_description = "test"
+  traffic_mirror_filter_name        = var.name
+  resource_group_id                 = alicloud_resource_manager_resource_group.default3iXhoa.id
+  egress_rules {
+    priority               = 1
+    protocol               = "TCP"
+    action                 = "accept"
+    destination_cidr_block = "32.0.0.0/4"
+    destination_port_range = "80/80"
+    source_cidr_block      = "16.0.0.0/4"
+    source_port_range      = "80/80"
+  }
+  ingress_rules {
+    priority               = 1
+    protocol               = "TCP"
+    action                 = "accept"
+    destination_cidr_block = "10.64.0.0/10"
+    destination_port_range = "80/80"
+    source_cidr_block      = "10.0.0.0/8"
+    source_port_range      = "80/80"
+  }
+}
 ```
+
 
 ## Argument Reference
 
 The following arguments are supported:
+* `dry_run` - (Optional) Whether to PreCheck only this request. Value:
+  - **true**: The check request is sent without creating traffic Image filter conditions. Check items include whether required parameters, request format, and business restrictions are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
+  - **false** (default): Sends a normal request, returns a 2xx HTTP status code after passing the check, and directly creates a filter condition.
+* `egress_rules` - (Optional, ForceNew, Computed, Available in v1.206.0+) Information about the outbound rule. See the following `Block EgressRules`.
+* `ingress_rules` - (Optional, ForceNew, Computed, Available in v1.206.0+) Inward direction rule information. See the following `Block IngressRules`.
+* `resource_group_id` - (Optional, Computed, Available in v1.206.0+) The ID of the resource group to which the VPC belongs.
+* `tags` - (Optional, Map, Available in v1.206.0+) The tags of this resource.
+* `traffic_mirror_filter_description` - (Optional) The description of the TrafficMirrorFilter.
+* `traffic_mirror_filter_name` - (Optional) The name of the TrafficMirrorFilter.
 
-* `dry_run` - (Optional) The dry run.
-* `traffic_mirror_filter_description` - (Optional) The description of the filter. The description must be 1 to 256 characters in length and cannot start with `http://` or `https://`.
-* `traffic_mirror_filter_name` - (Optional) The name of the filter. The name must be 1 to 128 characters in length and cannot start with `http://` or `https://`.
+
+#### Block EgressRules
+
+The EgressRules supports the following:
+* `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
+  - accept: collects network traffic.
+  - drop: No network traffic is collected.
+* `destination_cidr_block` - (Optional, ForceNew) DestinationCidrBlock.
+* `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
+-> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+* `priority` - (Optional, ForceNew) Priority.
+* `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
+  - ALL: ALL agreements.
+  - ICMP: Network Control Message Protocol.
+  - TCP: Transmission Control Protocol.
+  - UDP: User Datagram Protocol.
+* `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
+* `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
+-> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
+#### Block IngressRules
+
+The IngressRules supports the following:
+* `action` - (Required, ForceNew) Collection strategy for outbound rules. Value:
+  - accept: collects network traffic.
+  - drop: No network traffic is collected.
+* `destination_cidr_block` - (Optional, ForceNew) The destination address of the outbound rule network traffic.
+* `destination_port_range` - (Optional, ForceNew) The destination port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
+-> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+* `priority` - (Optional, ForceNew) The priority of the outbound rule. The smaller the number, the higher the priority. The maximum value of N is 10, that is, a maximum of 10 Outbound rules can be configured for a filter condition.
+* `protocol` - (Required, ForceNew) The type of protocol used by the outbound network traffic to be mirrored. Value:
+  - ALL: ALL agreements.
+  - ICMP: Network Control Message Protocol.
+  - TCP: Transmission Control Protocol.
+  - UDP: User Datagram Protocol.
+* `source_cidr_block` - (Optional, ForceNew) The source address of the outbound rule network traffic.
+* `source_port_range` - (Optional, ForceNew) The source port range of the outbound rule network traffic. The port range is 1 to 65535. Use a forward slash (/) to separate the start port and the end Port. The format is 1/200 and 80/80. Among them, - 1/-1 cannot be set separately, which means that the port is not limited.
+-> **NOTE:**  When egresrules. N.Protocol is set to ALL or ICMP, this parameter does not need to be configured, indicating that the port is not restricted.
+
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Traffic Mirror Filter.
-* `status` - The state of the filter. Valid values:`Creating`, `Created`, `Modifying` and `Deleting`. `Creating`: The filter is being created. `Created`: The filter is created. `Modifying`: The filter is being modified. `Deleting`: The filter is being deleted.
+* `id` - The ID of the resource supplied above.
+* `status` - The status of the resource.
 
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Traffic Mirror Filter.
-* `update` - (Defaults to 5 mins) Used when update the Traffic Mirror Filter.
 * `delete` - (Defaults to 5 mins) Used when delete the Traffic Mirror Filter.
+* `update` - (Defaults to 5 mins) Used when update the Traffic Mirror Filter.
 
 ## Import
 

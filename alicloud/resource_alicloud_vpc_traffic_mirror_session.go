@@ -1,12 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -14,19 +12,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcTrafficMirrorSession() *schema.Resource {
+func resourceAliCloudVpcTrafficMirrorSession() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcTrafficMirrorSessionCreate,
-		Read:   resourceAlicloudVpcTrafficMirrorSessionRead,
-		Update: resourceAlicloudVpcTrafficMirrorSessionUpdate,
-		Delete: resourceAlicloudVpcTrafficMirrorSessionDelete,
+		Create: resourceAliCloudVpcTrafficMirrorSessionCreate,
+		Read:   resourceAliCloudVpcTrafficMirrorSessionRead,
+		Update: resourceAliCloudVpcTrafficMirrorSessionUpdate,
+		Delete: resourceAliCloudVpcTrafficMirrorSessionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
@@ -37,15 +35,27 @@ func resourceAlicloudVpcTrafficMirrorSession() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"packet_length": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"priority": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(1, 32766),
+				ValidateFunc: IntBetween(1, 32766),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"tags": tagsSchema(),
 			"traffic_mirror_filter_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -53,12 +63,12 @@ func resourceAlicloudVpcTrafficMirrorSession() *schema.Resource {
 			"traffic_mirror_session_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"traffic_mirror_session_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9_-]{2,128}$"), "The name must be `2` to `128` characters in length and can contain digits, underscores (_), and hyphens (-). It must start with a letter."),
+				ValidateFunc: StringLenBetween(2, 128),
 			},
 			"traffic_mirror_source_ids": {
 				Type:     schema.TypeList,
@@ -72,320 +82,407 @@ func resourceAlicloudVpcTrafficMirrorSession() *schema.Resource {
 			"traffic_mirror_target_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NetworkInterface", "SLB"}, false),
+				ValidateFunc: StringInSlice([]string{"NetworkInterface", "SLB"}, false),
 			},
 			"virtual_network_id": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 16777215),
+				ValidateFunc: IntBetween(0, 16777215),
 			},
 		},
 	}
 }
 
-func resourceAlicloudVpcTrafficMirrorSessionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcTrafficMirrorSessionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateTrafficMirrorSession"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
-	if v, ok := d.GetOk("enabled"); ok {
-		request["Enabled"] = v
-	}
-	request["Priority"] = d.Get("priority")
+	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
-	request["TrafficMirrorFilterId"] = d.Get("traffic_mirror_filter_id")
+	request["ClientToken"] = buildClientToken(action)
+
 	if v, ok := d.GetOk("traffic_mirror_session_description"); ok {
 		request["TrafficMirrorSessionDescription"] = v
 	}
 	if v, ok := d.GetOk("traffic_mirror_session_name"); ok {
 		request["TrafficMirrorSessionName"] = v
 	}
-	request["TrafficMirrorSourceIds"] = d.Get("traffic_mirror_source_ids")
 	request["TrafficMirrorTargetId"] = d.Get("traffic_mirror_target_id")
 	request["TrafficMirrorTargetType"] = d.Get("traffic_mirror_target_type")
+	request["TrafficMirrorFilterId"] = d.Get("traffic_mirror_filter_id")
 	if v, ok := d.GetOk("virtual_network_id"); ok {
 		request["VirtualNetworkId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateTrafficMirrorSession")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	request["Priority"] = d.Get("priority")
+	if v, ok := d.GetOkExists("enabled"); ok {
+		request["Enabled"] = v
+	}
+	if v, ok := d.GetOk("packet_length"); ok {
+		request["PacketLength"] = v
+	}
+	if v, ok := d.GetOk("traffic_mirror_source_ids"); ok {
+		trafficMirrorSourceIdsMaps := v.([]interface{})
+		request["TrafficMirrorSourceIds"] = trafficMirrorSourceIdsMaps
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_traffic_mirror_session", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["TrafficMirrorSessionId"]))
-	vpcService := VpcService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), []string{}))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), "TrafficMirrorSessionStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcTrafficMirrorSessionRead(d, meta)
+	return resourceAliCloudVpcTrafficMirrorSessionUpdate(d, meta)
 }
 
-func resourceAlicloudVpcTrafficMirrorSessionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcTrafficMirrorSessionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeVpcTrafficMirrorSession(d.Id())
+	vpcServiceV2 := VpcServiceV2{client}
+
+	objectRaw, err := vpcServiceV2.DescribeVpcTrafficMirrorSession(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_traffic_mirror_session vpcService.DescribeVpcTrafficMirrorSession Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_traffic_mirror_session DescribeVpcTrafficMirrorSession Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("enabled", object["Enabled"])
-	d.Set("priority", formatInt(object["Priority"]))
-	d.Set("status", object["TrafficMirrorSessionStatus"])
-	d.Set("traffic_mirror_filter_id", object["TrafficMirrorFilterId"])
-	d.Set("traffic_mirror_session_description", object["TrafficMirrorSessionDescription"])
-	d.Set("traffic_mirror_session_name", object["TrafficMirrorSessionName"])
-	d.Set("traffic_mirror_source_ids", object["TrafficMirrorSourceIds"])
-	d.Set("traffic_mirror_target_id", object["TrafficMirrorTargetId"])
-	d.Set("traffic_mirror_target_type", object["TrafficMirrorTargetType"])
-	d.Set("virtual_network_id", formatInt(object["VirtualNetworkId"]))
+	d.Set("enabled", objectRaw["Enabled"])
+	d.Set("packet_length", objectRaw["PacketLength"])
+	d.Set("priority", objectRaw["Priority"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["TrafficMirrorSessionStatus"])
+	d.Set("traffic_mirror_filter_id", objectRaw["TrafficMirrorFilterId"])
+	d.Set("traffic_mirror_session_description", objectRaw["TrafficMirrorSessionDescription"])
+	d.Set("traffic_mirror_session_name", objectRaw["TrafficMirrorSessionName"])
+	d.Set("traffic_mirror_target_id", objectRaw["TrafficMirrorTargetId"])
+	d.Set("traffic_mirror_target_type", objectRaw["TrafficMirrorTargetType"])
+	d.Set("virtual_network_id", objectRaw["VirtualNetworkId"])
+	tagsMaps := objectRaw["Tags"]
+	d.Set("tags", tagsToMap(tagsMaps))
+	trafficMirrorSourceIds1Raw := make([]interface{}, 0)
+	if objectRaw["TrafficMirrorSourceIds"] != nil {
+		trafficMirrorSourceIds1Raw = objectRaw["TrafficMirrorSourceIds"].([]interface{})
+	}
+
+	d.Set("traffic_mirror_source_ids", trafficMirrorSourceIds1Raw)
 
 	return nil
 }
 
-func resourceAlicloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
-	d.Partial(true)
-
 	update := false
-	request := map[string]interface{}{
-		"TrafficMirrorSessionId": d.Id(),
+	d.Partial(true)
+	action := "UpdateTrafficMirrorSessionAttribute"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+
+	request["TrafficMirrorSessionId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if d.HasChange("enabled") {
+	request["ClientToken"] = buildClientToken(action)
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_session_description") {
 		update = true
-		if v, ok := d.GetOkExists("enabled"); ok {
-			request["Enabled"] = v
-		}
+		request["TrafficMirrorSessionDescription"] = d.Get("traffic_mirror_session_description")
 	}
-	if d.HasChange("priority") {
+
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_session_name") {
 		update = true
-		request["Priority"] = d.Get("priority")
+		request["TrafficMirrorSessionName"] = d.Get("traffic_mirror_session_name")
 	}
-	if d.HasChange("traffic_mirror_filter_id") {
+
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_target_id") {
 		update = true
-		request["TrafficMirrorFilterId"] = d.Get("traffic_mirror_filter_id")
 	}
-	if d.HasChange("traffic_mirror_session_description") {
+	request["TrafficMirrorTargetId"] = d.Get("traffic_mirror_target_id")
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_target_type") {
 		update = true
-		if v, ok := d.GetOk("traffic_mirror_session_description"); ok {
-			request["TrafficMirrorSessionDescription"] = v
-		}
 	}
-	if d.HasChange("traffic_mirror_session_name") {
+	request["TrafficMirrorTargetType"] = d.Get("traffic_mirror_target_type")
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_filter_id") {
 		update = true
-		if v, ok := d.GetOk("traffic_mirror_session_name"); ok {
-			request["TrafficMirrorSessionName"] = v
-		}
 	}
+	request["TrafficMirrorFilterId"] = d.Get("traffic_mirror_filter_id")
+	if !d.IsNewResource() && d.HasChange("virtual_network_id") {
+		update = true
+		request["VirtualNetworkId"] = d.Get("virtual_network_id")
+	}
+
+	if !d.IsNewResource() && d.HasChange("priority") {
+		update = true
+	}
+	request["Priority"] = d.Get("priority")
+	if !d.IsNewResource() && d.HasChange("enabled") {
+		update = true
+		request["Enabled"] = d.Get("enabled")
+	}
+
 	if d.HasChange("traffic_mirror_target_id") || d.HasChange("traffic_mirror_target_type") {
 		update = true
 		request["TrafficMirrorTargetId"] = d.Get("traffic_mirror_target_id")
 		request["TrafficMirrorTargetType"] = d.Get("traffic_mirror_target_type")
 	}
-
-	if d.HasChange("virtual_network_id") {
-		update = true
-		if v, ok := d.GetOk("virtual_network_id"); ok {
-			request["VirtualNetworkId"] = v
-		}
-	}
 	if update {
-		if v, ok := d.GetOkExists("dry_run"); ok {
-			request["DryRun"] = v
-		}
-		action := "UpdateTrafficMirrorSessionAttribute"
-		conn, err := client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken("UpdateTrafficMirrorSessionAttribute")
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			request["ClientToken"] = buildClientToken(action)
+
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.TrafficMirrorSession", "OperationConflict", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "ServiceUnavailable"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		vpcService := VpcService{client}
-		stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), []string{}))
+		vpcServiceV2 := VpcServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), "TrafficMirrorSessionStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("enabled")
-		d.SetPartial("priority")
-		d.SetPartial("traffic_mirror_filter_id")
 		d.SetPartial("traffic_mirror_session_description")
 		d.SetPartial("traffic_mirror_session_name")
 		d.SetPartial("traffic_mirror_target_id")
 		d.SetPartial("traffic_mirror_target_type")
+		d.SetPartial("traffic_mirror_filter_id")
 		d.SetPartial("virtual_network_id")
+		d.SetPartial("priority")
+		d.SetPartial("enabled")
 	}
-	d.Partial(false)
-	if d.HasChange("traffic_mirror_source_ids") {
-		oldTrafficMirrorSourceIds, newTrafficMirrorSourceIds := d.GetChange("traffic_mirror_source_ids")
-		removed := oldTrafficMirrorSourceIds.([]interface{})
-		added := newTrafficMirrorSourceIds.([]interface{})
-		conn, err := client.NewVpcClient()
+	update = false
+	action = "MoveResourceGroup"
+	conn, err = client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+		request["NewResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	request["ResourceType"] = "TrafficMirrorSession"
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
+	}
+
+	update = false
+	if !d.IsNewResource() && d.HasChange("traffic_mirror_source_ids") {
+		update = true
+		oldEntry, newEntry := d.GetChange("traffic_mirror_source_ids")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			action = "RemoveSourcesFromTrafficMirrorSession"
+			conn, err = client.NewVpcClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+
+			request["TrafficMirrorSessionId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			localData := removed
+			trafficMirrorSourceIdsMaps := localData.([]interface{})
+			request["TrafficMirrorSourceIds"] = trafficMirrorSourceIdsMaps
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				request["ClientToken"] = buildClientToken(action)
+
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectStatus.TrafficMirrorSession", "OperationConflict", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "ServiceUnavailable"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			vpcServiceV2 := VpcServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), "TrafficMirrorSessionStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+
+		if len(added.([]interface{})) > 0 {
+			action = "AddSourcesToTrafficMirrorSession"
+			conn, err = client.NewVpcClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+
+			request["TrafficMirrorSessionId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			localData := added
+			trafficMirrorSourceIdsMaps := localData.([]interface{})
+			request["TrafficMirrorSourceIds"] = trafficMirrorSourceIdsMaps
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				request["ClientToken"] = buildClientToken(action)
+
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectStatus.TrafficMirrorSession", "OperationConflict", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "ServiceUnavailable"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			vpcServiceV2 := VpcServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), "TrafficMirrorSessionStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+	}
+	update = false
+	if d.HasChange("tags") {
+		update = true
+		vpcServiceV2 := VpcServiceV2{client}
+		if err := vpcServiceV2.SetResourceTags(d, "TrafficMirrorSession"); err != nil {
 			return WrapError(err)
 		}
-		if len(removed) > 0 {
-			removeSourcesFromTrafficMirrorSessionRequest := map[string]interface{}{
-				"TrafficMirrorSessionId": d.Id(),
-				"RegionId":               client.RegionId,
-			}
-			removeSourcesFromTrafficMirrorSessionRequest["TrafficMirrorSourceIds"] = removed
-			if _, ok := d.GetOkExists("dry_run"); ok {
-				removeSourcesFromTrafficMirrorSessionRequest["DryRun"] = d.Get("dry_run")
-			}
-			action := "RemoveSourcesFromTrafficMirrorSession"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				request["ClientToken"] = buildClientToken("RemoveSourcesFromTrafficMirrorSession")
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, removeSourcesFromTrafficMirrorSessionRequest, &runtime)
-				if err != nil {
-					if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession"}) || NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, removeSourcesFromTrafficMirrorSessionRequest)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, vpcService.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), []string{}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
-
-		}
-		if len(added) > 0 {
-			AddSourcesToTrafficMirrorSessionRequest := map[string]interface{}{
-				"TrafficMirrorSessionId": d.Id(),
-				"RegionId":               client.RegionId,
-			}
-			AddSourcesToTrafficMirrorSessionRequest["TrafficMirrorSourceIds"] = added
-			if _, ok := d.GetOkExists("dry_run"); ok {
-				AddSourcesToTrafficMirrorSessionRequest["DryRun"] = d.Get("dry_run")
-			}
-			action := "AddSourcesToTrafficMirrorSession"
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				request["ClientToken"] = buildClientToken("AddSourcesToTrafficMirrorSession")
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, AddSourcesToTrafficMirrorSessionRequest, &runtime)
-				if err != nil {
-					if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession"}) || NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, AddSourcesToTrafficMirrorSessionRequest)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, vpcService.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), []string{}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
-
-		}
-		d.SetPartial("TrafficMirrorSourceIds")
+		d.SetPartial("tags")
 	}
-	return resourceAlicloudVpcTrafficMirrorSessionRead(d, meta)
+	d.Partial(false)
+	return resourceAliCloudVpcTrafficMirrorSessionRead(d, meta)
 }
 
-func resourceAlicloudVpcTrafficMirrorSessionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcTrafficMirrorSessionDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+
 	action := "DeleteTrafficMirrorSession"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"TrafficMirrorSessionId": d.Id(),
-	}
+	request = make(map[string]interface{})
+
+	request["TrafficMirrorSessionId"] = d.Id()
+	request["RegionId"] = client.RegionId
+
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 10*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteTrafficMirrorSession")
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.%s", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "IncorrectStatus.TrafficMirrorSession", "IncorrectStatus.TrafficMirrorFilter"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.TrafficMirrorSession", "OperationConflict", "IncorrectStatus", "SystemBusy", "LastTokenProcessing", "OperationFailed.LastTokenProcessing", "ServiceUnavailable", "IncorrectStatus.TrafficMirrorFilter"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.TrafficMirrorSession"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), []string{}))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcTrafficMirrorSessionStateRefreshFunc(d.Id(), "TrafficMirrorSessionStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

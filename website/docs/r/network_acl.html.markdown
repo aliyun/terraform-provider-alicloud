@@ -4,14 +4,17 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_network_acl"
 sidebar_current: "docs-alicloud-resource-network-acl"
 description: |-
-  Provides a Alicloud Network Acl resource.
+  Provides a Alicloud VPC Network Acl resource.
 ---
 
-# alicloud\_network_acl
+# alicloud_network_acl
 
-Provides a network acl resource to add network acls.
+Provides a VPC Network Acl resource. 
+-> **NOTE:** Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
 
--> **NOTE:** Available in 1.43.0+. Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
+For information about VPC Network Acl and how to use it, see [What is Network Acl](https://www.alibabacloud.com/help/en/ens/latest/createnetworkacl).
+
+-> **NOTE:** Available in v1.43.0+.
 
 ## Example Usage
 
@@ -61,62 +64,80 @@ resource "alicloud_network_acl" "default" {
 }
 ```
 
+
 ## Argument Reference
 
 The following arguments are supported:
+* `description` - (Optional) The description of the network ACL.The description must be 1 to 256 characters in length and cannot start with http:// or https.
+* `egress_acl_entries` - (Optional, Computed) Out direction rule information. See the following `Block EgressAclEntries`.
+* `ingress_acl_entries` - (Optional, Computed) Inward direction rule information. See the following `Block IngressAclEntries`.
+* `network_acl_name` - (Optional) The name of the network ACL.The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `resources` - (Optional, Computed) The associated resource. See the following `Block Resources`.
+* `tags` - (Optional, Map, Available in v1.206.0+) The tags of this resource.
+* `vpc_id` - (Required, ForceNew) The ID of the associated VPC.
 
-* `vpc_id` - (Required, ForceNew) The vpc_id of the network acl, the field can't be changed.
-* `name` - (Optional, Deprecated from v1.122.0) Field `name` has been deprecated from provider version 1.122.0. New field `network_acl_name` instead.
-* `network_acl_name` - (Optional, Available in 1.122.0+) The name of the network acl.
-* `description` - (Optional) The description of the network acl instance.
-* `ingress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the ingress entries of the network acl. The order of the ingress entries determines the priority. The details see Block `ingress_acl_entries`.
-* `egress_acl_entries` - (Optional, Computed, Available in 1.122.0+) List of the egress entries of the network acl. The order of the egress entries determines the priority. The details see Block `egress_acl_entries`.
-* `resources` - (Optional, Computed, Available in 1.124.0+) The associated resources. See the following `Block resources`. **NOTE:** "Field `resources` has been deprecated from provider version 1.193.0 and it will be removed in the future version. Please use the new resource `alicloud_vpc_network_acl_attachment`."
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `name` - (Deprecated from v1.122.0+) Field 'name' has been deprecated from provider version 1.122.0. New field 'network_acl_name' instead.
 
-### Block ingress_acl_entries
+#### Block EgressAclEntries
 
-* `description` - (Optional) The description of ingress entries.
-* `network_acl_entry_name` - (Optional) The entry name of ingress entries. 
-* `policy` - (Optional) The policy of ingress entries. Valid values `accept` and `drop`.
-* `port` - (Optional) The port of ingress entries.
-* `protocol` - (Optional) The protocol of ingress entries. Valid values `icmp`,`gre`,`tcp`,`udp`, and `all`.
-* `source_cidr_ip` - (Optional) The source cidr ip of ingress entries.
+The EgressAclEntries supports the following:
+* `description` - (Optional) The description of the outbound rule.The description must be 1 to 256 characters in length and cannot start with http:// or https.
+* `destination_cidr_ip` - (Optional) The network of the destination address.
+* `network_acl_entry_name` - (Optional) Name of the outbound rule entry.The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `policy` - (Optional) Authorization policy. Value:
+  - accept: Allow.
+  - drop: Refused.
+* `port` - (Optional) The destination port range of the outbound rule.When the Protocol type of the outbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted.When the Protocol type of the outbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
+* `protocol` - (Optional) The protocol type. Value:
+  - icmp: Network Control Message Protocol.
+  - gre: Generic Routing Encapsulation Protocol.
+  - tcp: Transmission Control Protocol.
+  - udp: User Datagram Protocol.
+  - all: Supports all protocols.
 
-### Block egress_acl_entries
+#### Block IngressAclEntries
 
-* `description` - (Optional) The description of egress entries.
-* `network_acl_entry_name` - (Optional) The entry name of egress entries. 
-* `policy` - (Optional) The policy of egress entries. Valid values `accept` and `drop`.
-* `port` - (Optional) The port of egress entries.
-* `protocol` - (Optional) The protocol of egress entries. Valid values `icmp`,`gre`,`tcp`,`udp`, and `all`.
-* `destination_cidr_ip` - (Optional) The destination cidr ip of egress entries.
+The IngressAclEntries supports the following:
+* `description` - (Optional) Description of the inbound rule.The description must be 1 to 256 characters in length and cannot start with http:// or https.
+* `network_acl_entry_name` - (Optional) The name of the inbound rule entry.The name must be 1 to 128 characters in length and cannot start with http:// or https.
+* `policy` - (Optional) Authorization policy. Value:
+  - accept: Allow.
+  - drop: Refused.
+* `port` - (Optional) The source port range of the inbound rule.When the Protocol type of the inbound rule is all, icmp, or gre, the port range is - 1/-1, indicating that the port is not restricted.When the Protocol type of the inbound rule is tcp or udp, the port range is 1 to 65535, and the format is 1/200 or 80/80, indicating port 1 to port 200 or port 80.
+* `protocol` - (Optional) The protocol type. Value:
+  - icmp: Network Control Message Protocol.
+  - gre: Generic Routing Encapsulation Protocol.
+  - tcp: Transmission Control Protocol.
+  - udp: User Datagram Protocol.
+  - all: Supports all protocols.
+* `source_cidr_ip` - (Optional) Source address network segment.
 
-### Block resources 
+#### Block Resources
 
-* `resource_id` - (Optional, Computed, Available in 1.124.0+) The ID of the associated resource.
-* `resource_type` - (Optional, Computed, Available in 1.124.0+) The type of the associated resource. Valid values `VSwitch`.
+The Resources supports the following:
+* `resource_id` - (Required) The ID of the associated resource.
+* `resource_type` - (Required) The type of the associated resource.
+
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The ID of the network acl instance id.
-* `status` - (Available in 1.122.0+) The status of the network acl.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource.
+* `status` - The state of the network ACL.
 
 ### Timeouts
 
--> **NOTE:** Available in 1.122.0+.
-
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when creating the Network ACL. (until it reaches the initial `Available` status). 
-* `update` - (Defaults to 10 mins) Used when updating the Network ACL. (until it reaches the initial `Available` status). 
-* `delete` - (Defaults to 10 mins) Used when terminating the Network ACL.
+* `create` - (Defaults to 5 mins) Used when create the Network Acl.
+* `delete` - (Defaults to 5 mins) Used when delete the Network Acl.
+* `update` - (Defaults to 5 mins) Used when update the Network Acl.
 
 ## Import
 
-The network acl can be imported using the id, e.g.
+VPC Network Acl can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_network_acl.default nacl-abc123456
+$ terraform import alicloud_vpc_network_acl.example <id>
 ```
