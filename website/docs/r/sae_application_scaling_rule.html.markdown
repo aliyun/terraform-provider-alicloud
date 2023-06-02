@@ -156,12 +156,21 @@ The scale_down_rules supports the following:
 The metrics supports the following:
 
 * `metric_target_average_utilization` - (Optional) According to different `metric_type`, set the target value of the corresponding monitoring index.
-* `metric_type` - (Optional) Monitoring indicator trigger condition. Valid values: `CPU`, `MEMORY`, `tcpActiveConn`, `SLB_QPS` and `SLB_RT`. The values are described as follows:
-  - CPU: CPU usage. 
+* `metric_type` - (Optional) Monitoring indicator trigger condition. Valid values: `CPU`, `MEMORY`, `tcpActiveConn`, `QPS`, `RT`, `SLB_QPS`, `SLB_RT`, `INTRANET_SLB_QPS` and `INTRANET_SLB_RT`. The values are described as follows:
+  - CPU: CPU usage.
   - MEMORY: MEMORY usage.
-  - tcpActiveConn: the average number of TCP active connections for a single instance in 30 seconds.
-  - SLB_QPS: the average public network SLB QPS of a single instance within 15 seconds.
-  - SLB_RT: the average response time of public network SLB within 15 seconds.
+  - tcpActiveConn: The average number of TCP active connections for a single instance in 30 seconds.
+  - QPS: The average QPS of a single instance within 1 minute of JAVA application.
+  - RT: The average response time of all service interfaces within 1 minute of JAVA application.
+  - SLB_QPS: The average public network SLB QPS of a single instance within 15 seconds.
+  - SLB_RT: The average response time of public network SLB within 15 seconds.
+  - INTRANET_SLB_QPS: The average private network SLB QPS of a single instance within 15 seconds.
+  - INTRANET_SLB_RT: The average response time of private network SLB within 15 seconds.
+**NOTE:** From version 1.206.0, `metric_type` can be set to `QPS`, `RT`, `INTRANET_SLB_QPS`, `INTRANET_SLB_RT`.
+* `slb_id` - (Optional, Available in 1.206.0+) SLB ID.
+* `slb_project` - (Optional, Available in 1.206.0+) The project of the Log Service.
+* `slb_log_store` - (Optional, Available in 1.206.0+) The log store of the Log Service.
+* `vport` - (Optional, Available in 1.206.0+) SLB listening port.
 
 ## Attributes Reference
 

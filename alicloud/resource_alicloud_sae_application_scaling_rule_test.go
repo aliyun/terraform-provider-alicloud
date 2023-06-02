@@ -366,6 +366,14 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 									"metric_type":                       "tcpActiveConn",
 									"metric_target_average_utilization": "20",
 								},
+								{
+									"metric_type":                       "SLB_QPS",
+									"metric_target_average_utilization": "50",
+									"slb_id":                            "${alicloud_slb_load_balancer.default.0.id}",
+									"slb_project":                       "${alicloud_log_store.default.project}",
+									"slb_log_store":                     "${alicloud_log_store.default.name}",
+									"vport":                             "80",
+								},
 							},
 							"scale_up_rules": []map[string]interface{}{
 								{
@@ -396,6 +404,57 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_rule_metric": []map[string]interface{}{
+						{
+							"max_replicas": "40",
+							"min_replicas": "5",
+							"metrics": []map[string]interface{}{
+								{
+									"metric_type":                       "CPU",
+									"metric_target_average_utilization": "30",
+								},
+								{
+									"metric_type":                       "MEMORY",
+									"metric_target_average_utilization": "40",
+								},
+								{
+									"metric_type":                       "tcpActiveConn",
+									"metric_target_average_utilization": "30",
+								},
+								{
+									"metric_type":                       "SLB_QPS",
+									"metric_target_average_utilization": "30",
+									"slb_id":                            "${alicloud_slb_load_balancer.default.1.id}",
+									"slb_project":                       "${alicloud_log_store.update.project}",
+									"slb_log_store":                     "${alicloud_log_store.update.name}",
+									"vport":                             "8080",
+								},
+							},
+							"scale_up_rules": []map[string]interface{}{
+								{
+									"step":                         "90",
+									"disabled":                     "false",
+									"stabilization_window_seconds": "10",
+								},
+							},
+							"scale_down_rules": []map[string]interface{}{
+								{
+									"step":                         "90",
+									"disabled":                     "false",
+									"stabilization_window_seconds": "200",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_rule_metric.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -407,34 +466,63 @@ func TestAccAlicloudSAEApplicationScalingRule_basic2(t *testing.T) {
 
 func AlicloudSAEApplicationScalingRuleBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_sae_namespace" "default" {
-  namespace_description = var.name
-  namespace_id          = join(":",["%s",var.name])
-  namespace_name        = var.name
-}
-resource "alicloud_sae_application" "default" {
-  app_description = var.name
-  app_name        = var.name
-  namespace_id    = alicloud_sae_namespace.default.namespace_id
-  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
-  package_type    = "Image"
-  jdk             = "Open JDK 8"
-  vswitch_id      = data.alicloud_vswitches.default.ids.0
-  vpc_id          = data.alicloud_vpcs.default.ids.0
-  timezone        = "Asia/Shanghai"
-  replicas        = "5"
-  cpu             = "500"
-  memory          = "2048"
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name = var.name
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project = alicloud_log_project.default.name
+  		name    = var.name
+	}
+
+	resource "alicloud_log_project" "update" {
+  		name = "${var.name}-update"
+	}
+
+	resource "alicloud_log_store" "update" {
+  		project = alicloud_log_project.default.name
+  		name    = "${var.name}-update"
+	}
+
+	resource "alicloud_slb_load_balancer" "default" {
+  		count              = 2
+  		load_balancer_name = var.name
+  		vswitch_id         = data.alicloud_vswitches.default.ids.0
+  		load_balancer_spec = "slb.s1.small"
+	}
+
+	resource "alicloud_sae_namespace" "default" {
+  		namespace_description = var.name
+  		namespace_id          = join(":", ["%s", var.name])
+  		namespace_name        = var.name
+	}
+
+	resource "alicloud_sae_application" "default" {
+  		app_description = var.name
+  		app_name        = var.name
+  		namespace_id    = alicloud_sae_namespace.default.namespace_id
+  		image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
+  		package_type    = "Image"
+  		jdk             = "Open JDK 8"
+  		vswitch_id      = data.alicloud_vswitches.default.ids.0
+  		vpc_id          = data.alicloud_vpcs.default.ids.0
+  		timezone        = "Asia/Shanghai"
+  		replicas        = "5"
+  		cpu             = "500"
+  		memory          = "2048"
+	}
 `, name, defaultRegionToTest)
 }
 
