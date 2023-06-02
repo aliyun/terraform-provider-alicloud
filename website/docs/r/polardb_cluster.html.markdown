@@ -132,12 +132,7 @@ The following arguments are supported:
 -> **NOTE:** This parameter is valid only for serverless clusters.
 * `seconds_until_auto_pause` - (Optional, Computed, Available in v1.204.0+) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds.
 -> **NOTE:** This parameter is valid only for serverless clusters.
-* `upgrade_type` - (Optional, Available in v1.206.0+) Version upgrade type. Valid values are PROXY, DB, ALL. PROXY means upgrading the proxy version, DB means upgrading the db version, ALL means upgrading both db and proxy versions simultaneously.
-* `from_time_service` - (Optional, Available in v1.206.0+) Immediate or scheduled kernel version upgrade. Valid values are `true`, `false`. True means immediate execution, False means scheduled execution.
-* `planned_start_time` - (Optional, Available in v1.206.0+) The earliest time to start executing a scheduled (i.e. within the target time period) kernel version upgrade task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
--> **NOTE:** The starting time range is any time point within the next 24 hours. For example, the current time is 2021-01-14T09:00:00Z, and the allowed start time range for filling in here is 2021-01-14T09:00:00Z~2021-01-15T09:00:00Z. If this parameter is left blank, the kernel version upgrade task will be executed immediately by default.
-* `planned_end_time` - (Optional, Available in v1.206.0+) The latest time to start executing the target scheduled task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
--> **NOTE:** The latest time must be 30 minutes or more later than the start time. If PlannedStartTime is set but this parameter is not specified, the latest time to execute the target task defaults to the start time+30 minutes. For example, when the PlannedStartTime is set to 2021-01-14T09:00:00Z and this parameter is left blank, the target task will start executing at the latest on 2021-01-14T09:30:00Z.
+
 ### Block db_cluster_ip_array
 
 The db_cluster_ip_array mapping supports the following:
