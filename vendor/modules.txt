@@ -231,6 +231,13 @@ github.com/bgentry/go-netrc/netrc
 # github.com/bgentry/speakeasy v0.1.0
 ## explicit
 github.com/bgentry/speakeasy
+# github.com/blues/jsonata-go v1.5.4
+## explicit; go 1.16
+github.com/blues/jsonata-go
+github.com/blues/jsonata-go/jlib
+github.com/blues/jsonata-go/jlib/jxpath
+github.com/blues/jsonata-go/jparse
+github.com/blues/jsonata-go/jtypes
 # github.com/cenkalti/backoff v2.2.1+incompatible
 ## explicit
 github.com/cenkalti/backoff

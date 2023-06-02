@@ -64,6 +64,7 @@ require (
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
+	github.com/blues/jsonata-go v1.5.4 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

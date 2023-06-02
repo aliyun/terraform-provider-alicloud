@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud Quotas Quota Alarm resource.
 ---
 
-# alicloud\_quotas\_quota\_alarm
+# alicloud_quotas_quota_alarm
 
-Provides a Quotas Quota Alarm resource.
+Provides a Quotas Quota Alarm resource. 
 
-For information about Quotas Quota Alarm and how to use it, see [What is Quota Alarm](https://help.aliyun.com/document_detail/184343.html).
+For information about Quotas Quota Alarm and how to use it, see [What is Quota Alarm](https://help.aliyun.com/document_detail/440558.html).
 
 -> **NOTE:** Available in v1.116.0+.
 
@@ -20,43 +20,58 @@ For information about Quotas Quota Alarm and how to use it, see [What is Quota A
 Basic Usage
 
 ```terraform
-resource "alicloud_quotas_quota_alarm" "example" {
-  quota_alarm_name  = "tf-testAcc"
-  product_code      = "ecs"
-  quota_action_code = "q_prepaid-instance-count-per-once-purchase"
-  threshold         = "100"
+variable "name" {
+  default = "terraform-example"
+}
+
+
+resource "alicloud_quotas_quota_alarm" "default" {
+  quota_action_code = "q_desktop-count"
   quota_dimensions {
     key   = "regionId"
     value = "cn-hangzhou"
   }
+  threshold_percent = 80
+  product_code      = "gws"
+  quota_alarm_name  = var.name
+  threshold_type    = "used"
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `quota_alarm_name` - (Required) The name of Quota Alarm.
 * `product_code` - (Required, ForceNew) The Product Code.
 * `quota_action_code` - (Required, ForceNew) The Quota Action Code.
-* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions.
+* `quota_alarm_name` - (Required) The name of Quota Alarm.
+* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. See the following `Block QuotaDimensions`.
 * `threshold` - (Optional) The threshold of Quota Alarm.
 * `threshold_percent` - (Optional) The threshold percent of Quota Alarm.
+* `threshold_type` - (Optional, Computed, Available in v1.206.0+) Quota alarm type. Value:
+  - used: Quota used alarm.
+  - usable: alarm for the remaining available quota.
 * `web_hook` - (Optional) The WebHook of Quota Alarm.
 
-#### Block quota_dimensions
 
-The quota_dimensions supports the following: 
+#### Block QuotaDimensions
 
+The QuotaDimensions supports the following:
 * `key` - (Optional, ForceNew) The Key of quota_dimensions.
 * `value` - (Optional, ForceNew) The Value of quota_dimensions.
+
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource.
 
-* `id` - The resource ID in terraform of Quota Alarm.
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Quota Alarm.
+* `delete` - (Defaults to 5 mins) Used when delete the Quota Alarm.
+* `update` - (Defaults to 5 mins) Used when update the Quota Alarm.
 
 ## Import
 
