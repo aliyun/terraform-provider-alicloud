@@ -1,4 +1,41 @@
 ## 1.206.0 (Unreleased)
+
+- **New Resource:** `alicloud_redis_tair_instance` ([GH-6178])
+- **New Resource:** `alicloud_quotas_template_quota` ([GH-6183])
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpc: Adds new attribute classic_link_enabled, create_time, ipv6_cidr_blocks, ipv6_isp; resource/alicloud_vswitch: Adds new attributes create_time, resource_group_id, route_table_id. ([GH-6119])
+- resource/alicloud_db_instance : Supports for serverless instance creation. ([GH-6155])
+- resource/alicloud_vpc_prefix_list: Remove attribute Entries. ([GH-6168])
+- resource/alicloud_cen_bandwidth_package_attachment: Added retry stragety for error code InvalidOperation.CenBandwidthLimitsNotZero. ([GH-6169])
+- resource/alicloud_rds_db_instance_endpoint_address:fix the DescribeDBInstanceEndpoints interface error code. ([GH-6170])
+- resource/alicloud_ddoscoo_domain_resource: Removed the ForceNew for field proxy_types and rs_type, supports modifying them online. ([GH-6173])
+- provider: Adds trace id for the provider and it can be used to debug the request. ([GH-6174])
+- docs/alicloud_db_account : Supplement the explanation that the SQLServer engine does not support create high privilege account. ([GH-6175])
+- resource/alicloud_cdn_domain: adds new attributes: check_url, certificate_config.cert_id, certificate_config.cert_region, remove attribute certificate_config.force_set. ([GH-6176])
+- resource/alicloud_quotas_quota_application: adds new attributes env_language, create_time, effective_time; resource/alicloud_quotas_quota_alarm: adds new attributes: create_time, threshold_type. ([GH-6183])
+- resource/alicloud_route_table: add new attribute create_time; resource/alicloud_network_acl add new attribute tags, create_time; resource/alicloud_vpc_gateway_route_table_attachment: add new attribute create_time; resource/alicloud_vpc_ipv6_egress_rule: optimized validation implementation; resource/alicloud_vpc_traffic_mirror_filter: adds new attributes egress_rules, ingress_rules, resource_group_id, tags; resource/alicloud_vpc_traffic_mirror_session: adds new attributes resource_group_id, tags. ([GH-6186])
+- resource/alicloud_nlb_load_balancer: Added the field deletion_protection_enabled, deletion_protection_reason, modification_protection_status and modification_protection_reason. ([GH-6189])
+- resource/alicloud_rds_account: Improves the pending time when waiting for the instance is running after creating the account. ([GH-6190])
+- resource/alicloud_alb_load_balancer: Added the limit of the field tags. ([GH-6191])
+- Improves the docs example. ([GH-6192])
+- Improves the docs example. ([GH-6193])
+- Improves the docs example. ([GH-6194])
+- resource/alicloud_log_store: Enlarges the max_split_shard_count max valid value to 256. ([GH-6197])
+- Improves the docs example. ([GH-6199])
+- Improves the docs example. ([GH-6200])
+- resource/alicloud_sae_namespace: Added the field namespace_short_id and enable_micro_registration. ([GH-6202])
+- docs: Improves the docs of ga_acl and ga_acl_entry_attachment. ([GH-6203])
+- resource/alicloud_sae_application_scaling_rule: Added the field slb_id, slb_project, slb_log_store and vport; Supported metric_type set to QPS, RT, INTRANET_SLB_QPS, INTRANET_SLB_RT. ([GH-6204])
+- Improves the docs example. ([GH-6205])
+- resource/alicloud_redis_tair_instance: Improves default creation and update timeout; testcases: Fix resource/alicloud_redis_tair_instance; Improves the docs kvstore_zones. ([GH-6206])
+
+BUG FIXES:
+
+- resource/alicloud_db_instance : fixed issue with instance status check timeout when creating PostgreSQL and modifying parameters, changing timeout from 500 to 1000. ([GH-6181])
+- resource/alicloud_ga_listener: Fixed proxy_protocol invalid error. ([GH-6184])
+
 ## 1.205.0 (May 21, 2023)
 
 - **New Resource:** `alicloud_compute_nest_service_instance` ([#6162](https://github.com/aliyun/terraform-provider-alicloud/issues/6162))
