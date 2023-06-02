@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
@@ -129,7 +130,8 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
-
+	curTime := time.Now()
+	endTime := curTime.Add(time.Hour * 2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -204,6 +206,34 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"collector_status": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upgrade_type":      "ALL",
+					"from_time_service": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upgrade_type":      "ALL",
+						"from_time_service": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upgrade_type":       "ALL",
+					"from_time_service":  "false",
+					"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+					"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upgrade_type":       "ALL",
+						"from_time_service":  "false",
+						"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+						"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
 					}),
 				),
 			},
