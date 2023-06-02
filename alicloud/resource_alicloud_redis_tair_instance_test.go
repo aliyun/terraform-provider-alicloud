@@ -26,7 +26,6 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -36,11 +35,11 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 					"payment_type":       "Subscription",
 					"period":             "1",
 					"instance_type":      "tair_rdb",
-					"zone_id":            "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"instance_class":     "tair.rdb.1g",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
 					"shard_count":        "2",
-					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"tair_instance_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -49,7 +48,7 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 						"period":             "1",
 						"instance_type":      "tair_rdb",
 						"zone_id":            CHECKSET,
-						"instance_class":     "tair.rdb.1g",
+						"instance_class":     "tair.rdb.2g",
 						"shard_count":        "2",
 						"vswitch_id":         CHECKSET,
 						"vpc_id":             CHECKSET,
@@ -99,11 +98,11 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class": "tair.rdb.2g",
+					"instance_class": "tair.rdb.4g",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class": "tair.rdb.2g",
+						"instance_class": "tair.rdb.4g",
 					}),
 				),
 			},
@@ -123,14 +122,14 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 					"instance_type":      "tair_rdb",
 					"password":           "Pass!123456",
 					"engine_version":     "5.0",
-					"zone_id":            "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"instance_class":     "tair.rdb.1g",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
 					"tair_instance_name": name + "_update",
 					"shard_count":        "2",
-					"secondary_zone_id":  "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"secondary_zone_id":  "${local.zone_id}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"auto_renew_period":  "12",
 					"period":             "1",
 				}),
@@ -141,7 +140,7 @@ func TestAccAlicloudRedisTairInstance_basic3314(t *testing.T) {
 						"password":           "Pass!123456",
 						"engine_version":     "5.0",
 						"zone_id":            CHECKSET,
-						"instance_class":     "tair.rdb.1g",
+						"instance_class":     "tair.rdb.2g",
 						"tair_instance_name": name + "_update",
 						"shard_count":        "2",
 						"secondary_zone_id":  CHECKSET,
@@ -175,11 +174,11 @@ var AlicloudRedisTairInstanceMap3314 = map[string]string{
 func AlicloudRedisTairInstanceBasicDependence3314(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultRg" {
@@ -193,7 +192,20 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -218,7 +230,6 @@ func TestAccAlicloudRedisTairInstance_basic3340(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRedisTairInstanceBasicDependence3340)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -228,11 +239,11 @@ func TestAccAlicloudRedisTairInstance_basic3340(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_type":      "tair_rdb",
-					"zone_id":            "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"instance_class":     "tair.rdb.1g",
+					"zone_id":            "${local.zone_id}",
+					"instance_class":     "tair.rdb.2g",
 					"shard_count":        "2",
-					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"tair_instance_name": name,
 					"payment_type":       "PayAsYouGo",
 				}),
@@ -240,7 +251,7 @@ func TestAccAlicloudRedisTairInstance_basic3340(t *testing.T) {
 					testAccCheck(map[string]string{
 						"instance_type":      "tair_rdb",
 						"zone_id":            CHECKSET,
-						"instance_class":     "tair.rdb.1g",
+						"instance_class":     "tair.rdb.2g",
 						"shard_count":        "2",
 						"vswitch_id":         CHECKSET,
 						"vpc_id":             CHECKSET,
@@ -271,11 +282,11 @@ func TestAccAlicloudRedisTairInstance_basic3340(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class": "tair.rdb.2g",
+					"instance_class": "tair.rdb.4g",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class": "tair.rdb.2g",
+						"instance_class": "tair.rdb.4g",
 					}),
 				),
 			},
@@ -327,13 +338,13 @@ func TestAccAlicloudRedisTairInstance_basic3340(t *testing.T) {
 					"instance_type":      "tair_rdb",
 					"password":           "Pass!123456",
 					"engine_version":     "5.0",
-					"zone_id":            "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+					"zone_id":            "${local.zone_id}",
 					"instance_class":     "tair.rdb.1g",
 					"tair_instance_name": name + "_update",
 					"shard_count":        "2",
-					"secondary_zone_id":  "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-					"vswitch_id":         "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":             "${data.alicloud_vswitches.default.vswitches.0.vpc_id}",
+					"secondary_zone_id":  "${local.zone_id}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -377,11 +388,16 @@ var AlicloudRedisTairInstanceMap3340 = map[string]string{
 func AlicloudRedisTairInstanceBasicDependence3340(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
+}
+
+resource "alicloud_resource_manager_resource_group" "defaultRg" {
+  display_name        = "tf-testacc-rg187"
+  resource_group_name = var.name
 }
 
 data "alicloud_vpcs" "default" {
@@ -390,7 +406,20 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vswitch_name = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
+  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_kvstore_zones.default.zones.0.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -416,7 +445,6 @@ func TestAccAlicloudRedisTairInstance_basic3314_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.RedisTariInstanceSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

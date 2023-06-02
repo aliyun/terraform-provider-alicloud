@@ -22,8 +22,8 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(15 * time.Minute),
-			Update: schema.DefaultTimeout(25 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -180,7 +180,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("engine_version"); ok {
 		request["EngineVersion"] = v
 	}
-	wait := incrementalWait(60*time.Second, 30*time.Second)
+	wait := incrementalWait(2*time.Minute, 1*time.Minute)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		request["ClientToken"] = buildClientToken(action)
