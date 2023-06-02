@@ -246,6 +246,68 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"traffic_mirror_filter_id":           "${alicloud_vpc_traffic_mirror_filter.default.0.id}",
 					"traffic_mirror_target_id":           "${alicloud_ecs_network_interface_attachment.default[1].network_interface_id}",
 					"traffic_mirror_target_type":         "NetworkInterface",
@@ -311,6 +373,7 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic1(t *testing.T) {
 					"dry_run":                            "false",
 					"enabled":                            "true",
 					"virtual_network_id":                 "10",
+					"packet_length":                      "1300",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -324,6 +387,7 @@ func TestAccAlicloudVPCTrafficMirrorSession_basic1(t *testing.T) {
 						"dry_run":                            "false",
 						"enabled":                            "true",
 						"virtual_network_id":                 "10",
+						"packet_length":                      "1300",
 					}),
 				),
 			},
@@ -417,5 +481,8 @@ resource "alicloud_ecs_network_interface_attachment" "default" {
   count                = 3
   instance_id          = element(alicloud_instance.default.*.id, count.index)
   network_interface_id = element(alicloud_ecs_network_interface.default.*.id, count.index)
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
 }`, name)
 }

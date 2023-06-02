@@ -409,3 +409,238 @@ resource "alicloud_vswitch" "default1" {
 
 `, name)
 }
+
+// Test Vpc NetworkAcl. >>> Resource test cases, automatically generated.
+// Case 2583
+func TestAccAlicloudVpcNetworkAcl_basic2583(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_network_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcNetworkAclMap2583)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcNetworkAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcnetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcNetworkAclBasicDependence2583)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"network_acl_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":           CHECKSET,
+						"network_acl_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_acl_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_acl_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tf-testacc-acl-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tf-testacc-acl-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_acl_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_acl_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "test",
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"network_acl_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":      "test",
+						"vpc_id":           CHECKSET,
+						"network_acl_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVpcNetworkAclMap2583 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudVpcNetworkAclBasicDependence2583(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_vpc" "defaultVpc" {
+  description = "tf-testacc-acl-vpc"
+}
+
+
+`, name)
+}
+
+// Case 2583  twin
+func TestAccAlicloudVpcNetworkAcl_basic2583_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_network_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcNetworkAclMap2583)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcNetworkAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcnetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcNetworkAclBasicDependence2583)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":      "tf-testacc-acl-update",
+					"vpc_id":           "${alicloud_vpc.defaultVpc.id}",
+					"network_acl_name": name,
+					"ingress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "ingress test change",
+							"network_acl_entry_name": "tf-testacc78999",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+							"source_cidr_ip":         "10.0.0.0/24",
+						},
+					},
+					"egress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "engress test change",
+							"destination_cidr_ip":    "10.0.0.0/24",
+							"network_acl_entry_name": "tf-testacc78924",
+							"policy":                 "accept",
+							"port":                   "20/80",
+							"protocol":               "tcp",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":           "tf-testacc-acl-update",
+						"vpc_id":                CHECKSET,
+						"network_acl_name":      name,
+						"ingress_acl_entries.#": "1",
+						"egress_acl_entries.#":  "1",
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Vpc NetworkAcl. <<< Resource test cases, automatically generated.

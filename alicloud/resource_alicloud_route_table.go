@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -5,45 +6,53 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudRouteTable() *schema.Resource {
+func resourceAliCloudVpcRouteTable() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRouteTableCreate,
-		Read:   resourceAlicloudRouteTableRead,
-		Update: resourceAlicloudRouteTableUpdate,
-		Delete: resourceAlicloudRouteTableDelete,
+		Create: resourceAliCloudVpcRouteTableCreate,
+		Read:   resourceAliCloudVpcRouteTableRead,
+		Update: resourceAliCloudVpcRouteTableUpdate,
+		Delete: resourceAliCloudVpcRouteTableDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"description": {
+			"associate_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"VSwitch", "Gateway"}, false),
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"route_table_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"name"},
-				ValidateFunc:  validation.StringLenBetween(2, 128),
-			},
-			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.119.1. New field 'route_table_name' instead.",
-				ConflictsWith: []string{"route_table_name"},
-				ValidateFunc:  validation.StringLenBetween(2, 128),
+				ValidateFunc:  StringLenBetween(2, 128),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -55,50 +64,51 @@ func resourceAlicloudRouteTable() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"associate_type": {
+			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"VSwitch", "Gateway"}, false),
+				Deprecated:   "Field 'name' has been deprecated from provider version 1.119.1. New field 'route_table_name' instead.",
+				ValidateFunc: StringLenBetween(2, 128),
 			},
 		},
 	}
 }
 
-func resourceAlicloudRouteTableCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcRouteTableCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	var response map[string]interface{}
+
 	action := "CreateRouteTable"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("name"); ok {
+		request["RouteTableName"] = v
+	}
+	if v, ok := d.GetOk("route_table_name"); ok {
+		request["RouteTableName"] = v
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("route_table_name"); ok {
-		request["RouteTableName"] = v
-	} else if v, ok := d.GetOk("name"); ok {
-		request["RouteTableName"] = v
-	}
-
+	request["VpcId"] = d.Get("vpc_id")
 	if v, ok := d.GetOk("associate_type"); ok {
 		request["AssociateType"] = v
 	}
-	request["VpcId"] = d.Get("vpc_id")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateRouteTable")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.cbnStatus"}) {
+			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus.cbnStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -107,80 +117,84 @@ func resourceAlicloudRouteTableCreate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["RouteTableId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.RouteTableStateRefreshFunc(d.Id(), []string{}))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcRouteTableStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudRouteTableUpdate(d, meta)
+	return resourceAliCloudVpcRouteTableUpdate(d, meta)
 }
-func resourceAlicloudRouteTableRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudVpcRouteTableRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeRouteTable(d.Id())
+	vpcServiceV2 := VpcServiceV2{client}
+
+	objectRaw, err := vpcServiceV2.DescribeVpcRouteTable(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_route_table vpcService.DescribeRouteTable Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_route_table DescribeVpcRouteTable Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object["Description"])
-	d.Set("route_table_name", object["RouteTableName"])
-	d.Set("name", object["RouteTableName"])
-	d.Set("status", object["Status"])
-	if v, ok := object["Tags"].(map[string]interface{}); ok {
-		d.Set("tags", tagsToMap(v["Tag"]))
-	}
-	d.Set("vpc_id", object["VpcId"])
-	d.Set("associate_type", object["AssociateType"])
+
+	d.Set("associate_type", objectRaw["AssociateType"])
+	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("route_table_name", objectRaw["RouteTableName"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	d.Set("name", d.Get("route_table_name"))
 	return nil
 }
-func resourceAlicloudRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudVpcRouteTableUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "ModifyRouteTableAttributes"
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Partial(true)
+	request = make(map[string]interface{})
 
-	if d.HasChange("tags") {
-		if err := vpcService.SetResourceTags(d, "ROUTETABLE"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
-	}
-	update := false
-	request := map[string]interface{}{
-		"RouteTableId": d.Id(),
-	}
+	request["RouteTableId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("description") {
+	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
-		request["Description"] = d.Get("description")
+		request["RouteTableName"] = d.Get("name")
 	}
 	if !d.IsNewResource() && d.HasChange("route_table_name") {
 		update = true
 		request["RouteTableName"] = d.Get("route_table_name")
 	}
-	if !d.IsNewResource() && d.HasChange("name") {
+
+	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request["RouteTableName"] = d.Get("name")
+		request["Description"] = d.Get("description")
 	}
+
 	if update {
-		action := "ModifyRouteTableAttributes"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -194,32 +208,43 @@ func resourceAlicloudRouteTableUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, response)
-		}
-		d.SetPartial("description")
-		d.SetPartial("name")
 		d.SetPartial("route_table_name")
+		d.SetPartial("description")
+	}
+
+	update = false
+	if d.HasChange("tags") {
+		update = true
+		vpcServiceV2 := VpcServiceV2{client}
+		if err := vpcServiceV2.SetResourceTags(d, "ROUTETABLE"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudRouteTableRead(d, meta)
+	return resourceAliCloudVpcRouteTableRead(d, meta)
 }
-func resourceAlicloudRouteTableDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudVpcRouteTableDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+
 	action := "DeleteRouteTable"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"RouteTableId": d.Id(),
-	}
+	request = make(map[string]interface{})
 
+	request["RouteTableId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict", "DependencyViolation.RouteEntry", "IncorrectRouteTableStatus", "IncorrectStatus.cbnStatus", "OperationDenied.GatewayAssociated"}) || NeedRetry(err) {
 				wait()
@@ -230,8 +255,15 @@ func resourceAlicloudRouteTableDelete(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcRouteTableStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
