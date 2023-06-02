@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -7,18 +8,22 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
+func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudQuotasQuotaApplicationCreate,
-		Read:   resourceAlicloudQuotasQuotaApplicationRead,
-		Delete: resourceAlicloudQuotasQuotaApplicationDelete,
+		Create: resourceAliCloudQuotasQuotaApplicationCreate,
+		Read:   resourceAliCloudQuotasQuotaApplicationRead,
+		Delete: resourceAliCloudQuotasQuotaApplicationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"approve_value": {
@@ -28,11 +33,15 @@ func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
 			"audit_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Async", "Sync"}, false),
-				Default:      "Async",
+				ValidateFunc: StringInSlice([]string{"Async", "Sync"}, false),
 			},
 			"audit_reason": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -44,36 +53,44 @@ func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
 			"dimensions": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"key": {
+						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
 						},
-						"value": {
+						"key": {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
 						},
 					},
 				},
-				ForceNew: true,
 			},
 			"effective_time": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
+			},
+			"env_language": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
 			},
 			"expire_time": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 			"notice_type": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1, 2, 3}),
-				Default:      0,
+				ValidateFunc: IntInSlice([]int{0, 3}),
 			},
 			"product_code": {
 				Type:     schema.TypeString,
@@ -89,7 +106,7 @@ func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CommonQuota", "FlowControl"}, false),
+				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
 			},
 			"quota_description": {
 				Type:     schema.TypeString,
@@ -116,48 +133,56 @@ func resourceAlicloudQuotasQuotaApplication() *schema.Resource {
 	}
 }
 
-func resourceAlicloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateQuotaApplication"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["SourceIp"] = client.SourceIp
-	if v, ok := d.GetOk("audit_mode"); ok {
-		request["AuditMode"] = v
-	}
-
-	request["DesireValue"] = d.Get("desire_value")
-	if v, ok := d.GetOk("dimensions"); ok {
-		dimensionsMaps := make([]map[string]interface{}, 0)
-		for _, dimensions := range v.(*schema.Set).List() {
-			dimensionsMap := make(map[string]interface{})
-			dimensionsArg := dimensions.(map[string]interface{})
-			dimensionsMap["Key"] = dimensionsArg["key"]
-			dimensionsMap["Value"] = dimensionsArg["value"]
-			dimensionsMaps = append(dimensionsMaps, dimensionsMap)
-		}
-		request["Dimensions"] = dimensionsMaps
-
-	}
-
-	if v, ok := d.GetOk("notice_type"); ok {
-		request["NoticeType"] = v
-	}
+	request = make(map[string]interface{})
 
 	request["ProductCode"] = d.Get("product_code")
 	request["QuotaActionCode"] = d.Get("quota_action_code")
+	request["DesireValue"] = d.Get("desire_value")
+	request["Reason"] = d.Get("reason")
+	if v, ok := d.GetOk("notice_type"); ok {
+		request["NoticeType"] = v
+	}
+	if v, ok := d.GetOk("effective_time"); ok {
+		request["EffectiveTime"] = v
+	}
+	if v, ok := d.GetOk("expire_time"); ok {
+		request["ExpireTime"] = v
+	}
+	if v, ok := d.GetOk("dimensions"); ok {
+		dimensionsMaps := make([]map[string]interface{}, 0)
+		for _, dataLoop := range v.(*schema.Set).List() {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Key"] = dataLoopTmp["key"]
+			dataLoopMap["Value"] = dataLoopTmp["value"]
+			dimensionsMaps = append(dimensionsMaps, dataLoopMap)
+		}
+		request["Dimensions"] = dimensionsMaps
+	}
+
 	if v, ok := d.GetOk("quota_category"); ok {
 		request["QuotaCategory"] = v
 	}
-
-	request["Reason"] = d.Get("reason")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if v, ok := d.GetOk("audit_mode"); ok {
+		request["AuditMode"] = v
+	}
+	if v, ok := d.GetOk("env_language"); ok {
+		request["EnvLanguage"] = v
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -168,56 +193,53 @@ func resourceAlicloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_application", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ApplicationId"]))
 
-	return resourceAlicloudQuotasQuotaApplicationRead(d, meta)
+	return resourceAliCloudQuotasQuotaApplicationRead(d, meta)
 }
-func resourceAlicloudQuotasQuotaApplicationRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudQuotasQuotaApplicationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	quotasService := QuotasService{client}
-	object, err := quotasService.DescribeQuotasQuotaApplication(d.Id())
+	quotasServiceV2 := QuotasServiceV2{client}
+
+	objectRaw, err := quotasServiceV2.DescribeQuotasQuotaApplication(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_quotas_quota_application quotasService.DescribeQuotasQuotaApplication Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_quotas_quota_application DescribeQuotasQuotaApplication Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("approve_value", object["ApproveValue"])
-	d.Set("audit_reason", object["AuditReason"])
-	d.Set("desire_value", object["DesireValue"])
 
-	dimensionList := make([]map[string]interface{}, 0)
-	if dimension, ok := object["Dimension"]; ok {
-		for k, v := range dimension.(map[string]interface{}) {
-			dimensionMap := make(map[string]interface{})
-			dimensionMap["key"] = k
-			dimensionMap["value"] = v
-			dimensionList = append(dimensionList, dimensionMap)
-		}
-	}
+	d.Set("approve_value", objectRaw["ApproveValue"])
+	d.Set("audit_reason", objectRaw["AuditReason"])
+	d.Set("create_time", objectRaw["ApplyTime"])
+	d.Set("desire_value", objectRaw["DesireValue"])
+	d.Set("effective_time", objectRaw["EffectiveTime"])
+	d.Set("expire_time", objectRaw["ExpireTime"])
+	d.Set("notice_type", objectRaw["NoticeType"])
+	d.Set("product_code", objectRaw["ProductCode"])
+	d.Set("quota_action_code", objectRaw["QuotaActionCode"])
+	d.Set("quota_description", objectRaw["QuotaDescription"])
+	d.Set("quota_name", objectRaw["QuotaName"])
+	d.Set("quota_unit", objectRaw["QuotaUnit"])
+	d.Set("reason", objectRaw["Reason"])
+	d.Set("status", objectRaw["Status"])
 
-	if err := d.Set("dimensions", dimensionList); err != nil {
-		return WrapError(err)
-	}
-	d.Set("effective_time", object["EffectiveTime"])
-	d.Set("expire_time", object["ExpireTime"])
-	d.Set("notice_type", object["NoticeType"])
-	d.Set("product_code", object["ProductCode"])
-	d.Set("quota_action_code", object["QuotaActionCode"])
-	d.Set("quota_description", object["QuotaDescription"])
-	d.Set("quota_name", object["QuotaName"])
-	d.Set("quota_unit", object["QuotaUnit"])
-	d.Set("reason", object["Reason"])
-	d.Set("status", object["Status"])
+	e := jsonata.MustCompile("$each($.Dimension, function($v, $k) {{\"value\":$v, \"key\": $k}})[]")
+	evaluation, _ := e.Eval(objectRaw)
+	d.Set("dimensions", evaluation)
+
 	return nil
 }
-func resourceAlicloudQuotasQuotaApplicationDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudQuotasQuotaApplication. Terraform will remove this resource from the state file, however resources may remain.")
+
+func resourceAliCloudQuotasQuotaApplicationDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Quota Application. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

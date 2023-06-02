@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -9,6 +10,7 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 
@@ -168,7 +170,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudQuotasQuotaApplicationCreate(dInit, rawClient)
+	err = resourceAliCloudQuotasQuotaApplicationCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -194,7 +196,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuotasQuotaApplicationCreate(dInit, rawClient)
+		err := resourceAliCloudQuotasQuotaApplicationCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -233,7 +235,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudQuotasQuotaApplicationRead(dExisted, rawClient)
+		err := resourceAliCloudQuotasQuotaApplicationRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -244,7 +246,166 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudQuotasQuotaApplicationDelete(dExisted, rawClient)
+	err = resourceAliCloudQuotasQuotaApplicationDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }
+
+// Test Quotas QuotaApplication. >>> Resource test cases, automatically generated.
+// Case 3294
+func SkipTestAccAlicloudQuotasQuotaApplication_basic3294(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_quotas_quota_application.default"
+	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3294)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeQuotasQuotaApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3294)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_action_code": "q_share_image-count",
+					"product_code":      "gws",
+					"quota_category":    "CommonQuota",
+					"notice_type":       "3",
+					"dimensions": []map[string]interface{}{
+						{
+							"key":   "regionId",
+							"value": "cn-hangzhou",
+						},
+					},
+					"desire_value": "53",
+					"reason":       "测试",
+					"env_language": "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_action_code": "q_share_image-count",
+						"product_code":      "gws",
+						"quota_category":    "CommonQuota",
+						"notice_type":       "3",
+						"dimensions.#":      "1",
+						"desire_value":      "53",
+						"reason":            "测试",
+						"env_language":      "zh",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"audit_mode", "env_language", "quota_category"},
+			},
+		},
+	})
+}
+
+var AlicloudQuotasQuotaApplicationMap3294 = map[string]string{
+	"status":            CHECKSET,
+	"quota_description": CHECKSET,
+	"create_time":       CHECKSET,
+	"approve_value":     CHECKSET,
+	"quota_name":        CHECKSET,
+	"notice_type":       CHECKSET,
+}
+
+func AlicloudQuotasQuotaApplicationBasicDependence3294(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 3289
+func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_quotas_quota_application.default"
+	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3289)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeQuotasQuotaApplication")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3289)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quota_action_code": "vpc_whitelist/ha_vip_whitelist",
+					"audit_mode":        "Sync",
+					"effective_time":    "2023-05-22T16:00:00Z",
+					"product_code":      "vpc",
+					"quota_category":    "WhiteListLabel",
+					"notice_type":       "3",
+					"expire_time":       "2023-06-26T16:00:00Z",
+					"desire_value":      "1",
+					"reason":            "测试",
+					"env_language":      "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quota_action_code": "vpc_whitelist/ha_vip_whitelist",
+						"audit_mode":        "Sync",
+						"effective_time":    "2023-05-22T16:00:00Z",
+						"product_code":      "vpc",
+						"quota_category":    "WhiteListLabel",
+						"notice_type":       "3",
+						"expire_time":       "2023-06-26T16:00:00Z",
+						"desire_value":      "1",
+						"reason":            "测试",
+						"env_language":      "zh",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"audit_mode", "env_language", "quota_category"},
+			},
+		},
+	})
+}
+
+var AlicloudQuotasQuotaApplicationMap3289 = map[string]string{
+	"status":            CHECKSET,
+	"quota_description": CHECKSET,
+	"create_time":       CHECKSET,
+	"audit_reason":      CHECKSET,
+	"approve_value":     CHECKSET,
+	"quota_name":        CHECKSET,
+	"notice_type":       CHECKSET,
+}
+
+func AlicloudQuotasQuotaApplicationBasicDependence3289(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Quotas QuotaApplication. <<< Resource test cases, automatically generated.

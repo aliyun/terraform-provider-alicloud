@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
+func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudQuotasQuotaAlarmCreate,
-		Read:   resourceAliCloudQuotasQuotaAlarmRead,
-		Update: resourceAliCloudQuotasQuotaAlarmUpdate,
-		Delete: resourceAliCloudQuotasQuotaAlarmDelete,
+		Create: resourceAliCloudQuotasTemplateQuotaCreate,
+		Read:   resourceAliCloudQuotasTemplateQuotaRead,
+		Update: resourceAliCloudQuotasTemplateQuotaUpdate,
+		Delete: resourceAliCloudQuotasTemplateQuotaDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,9 +28,44 @@ func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"create_time": {
+			"desire_value": {
+				Type:     schema.TypeFloat,
+				Required: true,
+			},
+			"dimensions": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"key": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"effective_time": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"env_language": {
+				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+			},
+			"expire_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"notice_type": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{0, 3}),
 			},
 			"product_code": {
 				Type:     schema.TypeString,
@@ -42,55 +77,19 @@ func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"quota_alarm_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"quota_dimensions": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				ForceNew: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-						},
-						"key": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-						},
-					},
-				},
-			},
-			"threshold": {
-				Type:     schema.TypeFloat,
-				Optional: true,
-			},
-			"threshold_percent": {
-				Type:         schema.TypeFloat,
-				ExactlyOneOf: []string{"threshold_percent", "threshold"},
+			"quota_category": {
+				Type:         schema.TypeString,
 				Optional:     true,
-			},
-			"threshold_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"web_hook": {
-				Type:     schema.TypeString,
-				Optional: true,
+				ValidateFunc: StringInSlice([]string{"CommonQuota", "WhiteListLabel", "FlowControl"}, false),
 			},
 		},
 	}
 }
 
-func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateQuotaAlarm"
+	action := "CreateTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewQuotasClient()
@@ -101,30 +100,33 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 
 	request["ProductCode"] = d.Get("product_code")
 	request["QuotaActionCode"] = d.Get("quota_action_code")
-	if v, ok := d.GetOk("threshold"); ok {
-		request["Threshold"] = v
+	request["DesireValue"] = d.Get("desire_value")
+	if v, ok := d.GetOk("notice_type"); ok {
+		request["NoticeType"] = v
 	}
-	if v, ok := d.GetOk("threshold_percent"); ok {
-		request["ThresholdPercent"] = v
+	if v, ok := d.GetOk("env_language"); ok {
+		request["EnvLanguage"] = v
 	}
-	if v, ok := d.GetOk("web_hook"); ok {
-		request["WebHook"] = v
+	if v, ok := d.GetOk("quota_category"); ok {
+		request["QuotaCategory"] = v
 	}
-	if v, ok := d.GetOk("quota_dimensions"); ok {
-		quotaDimensionsMaps := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("dimensions"); ok {
+		dimensionsMaps := make([]map[string]interface{}, 0)
 		for _, dataLoop := range v.(*schema.Set).List() {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Key"] = dataLoopTmp["key"]
 			dataLoopMap["Value"] = dataLoopTmp["value"]
-			quotaDimensionsMaps = append(quotaDimensionsMaps, dataLoopMap)
+			dimensionsMaps = append(dimensionsMaps, dataLoopMap)
 		}
-		request["QuotaDimensions"] = quotaDimensionsMaps
+		request["Dimensions"] = dimensionsMaps
 	}
 
-	request["AlarmName"] = d.Get("quota_alarm_name")
-	if v, ok := d.GetOk("threshold_type"); ok {
-		request["ThresholdType"] = v
+	if v, ok := d.GetOk("effective_time"); ok {
+		request["EffectiveTime"] = v
+	}
+	if v, ok := d.GetOk("expire_time"); ok {
+		request["ExpireTime"] = v
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -142,79 +144,99 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_quota_alarm", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_quota", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["AlarmId"]))
+	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudQuotasQuotaAlarmUpdate(d, meta)
+	return resourceAliCloudQuotasTemplateQuotaUpdate(d, meta)
 }
 
-func resourceAliCloudQuotasQuotaAlarmRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudQuotasTemplateQuotaRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	quotasServiceV2 := QuotasServiceV2{client}
 
-	objectRaw, err := quotasServiceV2.DescribeQuotasQuotaAlarm(d.Id())
+	objectRaw, err := quotasServiceV2.DescribeQuotasTemplateQuota(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_quotas_quota_alarm DescribeQuotasQuotaAlarm Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_quotas_template_quota DescribeQuotasTemplateQuota Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("desire_value", objectRaw["DesireValue"])
+	d.Set("effective_time", objectRaw["EffectiveTime"])
+	d.Set("env_language", objectRaw["EnvLanguage"])
+	d.Set("expire_time", objectRaw["ExpireTime"])
+	d.Set("notice_type", objectRaw["NoticeType"])
 	d.Set("product_code", objectRaw["ProductCode"])
 	d.Set("quota_action_code", objectRaw["QuotaActionCode"])
-	d.Set("quota_alarm_name", objectRaw["AlarmName"])
-	d.Set("threshold", objectRaw["Threshold"])
-	d.Set("threshold_percent", objectRaw["ThresholdPercent"])
-	d.Set("threshold_type", objectRaw["ThresholdType"])
-	d.Set("web_hook", objectRaw["Webhook"])
+	d.Set("quota_category", objectRaw["QuotaCategory"])
 
-	e := jsonata.MustCompile("$each($.QuotaDimension, function($v, $k) {{\"value\":$v, \"key\": $k}})[]")
+	e := jsonata.MustCompile("$each($.Dimensions, function($v, $k) {{\"value\":$v, \"key\": $k}})[]")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("quota_dimensions", evaluation)
+	d.Set("dimensions", evaluation)
 
 	return nil
 }
 
-func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	update := false
-	action := "UpdateQuotaAlarm"
+	action := "ModifyTemplateQuotaItem"
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 
-	request["AlarmId"] = d.Id()
-	if !d.IsNewResource() && d.HasChange("threshold") {
+	request["Id"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("desire_value") {
 		update = true
-		request["Threshold"] = d.Get("threshold")
+	}
+	request["DesireValue"] = d.Get("desire_value")
+	if !d.IsNewResource() && d.HasChange("notice_type") {
+		update = true
+		request["NoticeType"] = d.Get("notice_type")
 	}
 
-	if !d.IsNewResource() && d.HasChange("threshold_percent") {
+	if !d.IsNewResource() && d.HasChange("env_language") {
 		update = true
-		request["ThresholdPercent"] = d.Get("threshold_percent")
+		request["EnvLanguage"] = d.Get("env_language")
 	}
 
-	if !d.IsNewResource() && d.HasChange("web_hook") {
+	if !d.IsNewResource() && d.HasChange("quota_category") {
 		update = true
-		request["WebHook"] = d.Get("web_hook")
+		request["QuotaCategory"] = d.Get("quota_category")
 	}
 
-	if !d.IsNewResource() && d.HasChange("quota_alarm_name") {
+	if !d.IsNewResource() && d.HasChange("dimensions") {
 		update = true
+		if v, ok := d.GetOk("dimensions"); ok {
+			dimensionsMaps := make([]map[string]interface{}, 0)
+			for _, dataLoop := range v.(*schema.Set).List() {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["Key"] = dataLoopTmp["key"]
+				dataLoopMap["Value"] = dataLoopTmp["value"]
+				dimensionsMaps = append(dimensionsMaps, dataLoopMap)
+			}
+			request["Dimensions"] = dimensionsMaps
+		}
 	}
-	request["AlarmName"] = d.Get("quota_alarm_name")
-	if !d.IsNewResource() && d.HasChange("threshold_type") {
+
+	if !d.IsNewResource() && d.HasChange("expire_time") {
 		update = true
-		request["ThresholdType"] = d.Get("threshold_type")
+		request["ExpireTime"] = d.Get("expire_time")
+	}
+
+	if !d.IsNewResource() && d.HasChange("effective_time") {
+		update = true
+		request["EffectiveTime"] = d.Get("effective_time")
 	}
 
 	if update {
@@ -237,14 +259,14 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 		}
 
 	}
-	return resourceAliCloudQuotasQuotaAlarmRead(d, meta)
+	return resourceAliCloudQuotasTemplateQuotaRead(d, meta)
 }
 
-func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "DeleteQuotaAlarm"
+	action := "DeleteTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewQuotasClient()
@@ -253,7 +275,7 @@ func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interfa
 	}
 	request = make(map[string]interface{})
 
-	request["AlarmId"] = d.Id()
+	request["Id"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
