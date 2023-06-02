@@ -17,19 +17,32 @@ You can manage all the logs and the related log sources of an application by usi
 Basic Usage
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_log_project" "example" {
-  name        = "tf-log"
-  description = "created by terraform"
-  tags        = { "test" : "test" }
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
 }
 ```
 
 Project With Policy Usage
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_log_project" "example_policy" {
-  name        = "tf-log"
-  description = "created by terraform"
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
   policy      = <<EOF
 {
   "Statement": [

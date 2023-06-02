@@ -18,26 +18,36 @@ Log service data delivery management, this service provides the function of deli
 Basic Usage
 
 ```terraform
-resource "alicloud_log_project" "example" {
-  name        = "tf-log-project"
-  description = "created by terraform"
-  tags        = { "test" : "test" }
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
+
+resource "alicloud_log_project" "example" {
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
+
 resource "alicloud_log_store" "example" {
   project               = alicloud_log_project.example.name
-  name                  = "tf-log-logstore"
+  name                  = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
   append_meta           = true
 }
+
 resource "alicloud_log_oss_export" "example" {
   project_name      = alicloud_log_project.example.name
   logstore_name     = alicloud_log_store.example.name
-  export_name       = "oss_export_name"
-  display_name      = "oss_export_display_name"
-  bucket            = "test_bucket"
+  export_name       = "terraform-example"
+  display_name      = "terraform-example"
+  bucket            = "example-bucket"
   prefix            = "root"
   suffix            = ""
   buffer_interval   = 300
@@ -48,6 +58,7 @@ resource "alicloud_log_oss_export" "example" {
   json_enable_tag   = true
   role_arn          = "role_arn_for_oss_write"
   log_read_role_arn = "role_arn_for_sls_read"
+  time_zone         = "+0800"
 }
 ```
 
