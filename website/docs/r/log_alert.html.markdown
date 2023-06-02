@@ -21,14 +21,19 @@ For information about SLS Alert and how to use it, see [SLS Alert Overview](http
 Basic Usage
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_log_project" "example" {
-  name        = "test-tf"
-  description = "create by terraform"
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
 }
 
 resource "alicloud_log_store" "example" {
   project               = alicloud_log_project.example.name
-  name                  = "tf-test-logstore"
+  name                  = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
@@ -38,10 +43,10 @@ resource "alicloud_log_store" "example" {
 
 resource "alicloud_log_alert" "example" {
   project_name      = alicloud_log_project.example.name
-  alert_name        = "tf-test-alert"
-  alert_displayname = "tf-test-alert-displayname"
+  alert_name        = "example-alert"
+  alert_displayname = "example-alert"
   condition         = "count> 100"
-  dashboard         = "tf-test-dashboard"
+  dashboard         = "example-dashboard"
   schedule {
     type            = "FixedRate"
     interval        = "5m"
@@ -51,7 +56,7 @@ resource "alicloud_log_alert" "example" {
     run_immediately = false
   }
   query_list {
-    logstore    = "tf-test-logstore"
+    logstore    = alicloud_log_store.example.name
     chart_title = "chart_title"
     start       = "-60s"
     end         = "20s"
@@ -64,7 +69,7 @@ resource "alicloud_log_alert" "example" {
   }
   notification_list {
     type       = "Email"
-    email_list = ["aliyun@alibaba-inc.com", "tf-test@123.com"]
+    email_list = ["aliyun@alibaba-inc.com", "tf-example@123.com"]
     content    = "alert content"
   }
   notification_list {
@@ -78,14 +83,19 @@ resource "alicloud_log_alert" "example" {
 Basic Usage for new alert
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_log_project" "example" {
-  name        = "test-tf"
-  description = "create by terraform"
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
 }
 
 resource "alicloud_log_store" "example" {
   project               = alicloud_log_project.example.name
-  name                  = "tf-test-logstore"
+  name                  = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
@@ -97,14 +107,14 @@ resource "alicloud_log_alert" "example-2" {
   version           = "2.0"
   type              = "default"
   project_name      = alicloud_log_project.example.name
-  alert_name        = "tf-test-alert-2"
-  alert_displayname = "tf-test-alert-displayname-2"
-  dashboard         = "tf-test-dashboard"
+  alert_name        = "example-alert"
+  alert_displayname = "example-alert"
   mute_until        = "1632486684"
   no_data_fire      = "false"
   no_data_severity  = 8
   send_resolved     = true
   auto_annotation   = true
+  dashboard         = "example-dashboard"
   schedule {
     type            = "FixedRate"
     interval        = "5m"
@@ -114,7 +124,7 @@ resource "alicloud_log_alert" "example-2" {
     run_immediately = false
   }
   query_list {
-    store          = "tf-test-logstore"
+    store          = alicloud_log_store.example.name
     store_type     = "log"
     project        = alicloud_log_project.example.name
     region         = "cn-heyuan"
@@ -125,7 +135,7 @@ resource "alicloud_log_alert" "example-2" {
     power_sql_mode = "auto"
   }
   query_list {
-    store          = "tf-test-logstore"
+    store          = alicloud_log_store.example.name
     store_type     = "log"
     project        = alicloud_log_project.example.name
     region         = "cn-heyuan"
@@ -191,14 +201,19 @@ resource "alicloud_log_alert" "example-2" {
 Basic Usage for alert template
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_log_project" "example" {
-  name        = "test-tf"
-  description = "create by terraform"
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
 }
 
 resource "alicloud_log_store" "example" {
   project               = alicloud_log_project.example.name
-  name                  = "tf-test-logstore"
+  name                  = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
@@ -210,8 +225,8 @@ resource "alicloud_log_alert" "example-3" {
   version           = "2.0"
   type              = "tpl"
   project_name      = alicloud_log_project.example.name
-  alert_name        = "tf-test-alert-3"
-  alert_displayname = "tf-test-alert-displayname-3"
+  alert_name        = "example-alert"
+  alert_displayname = "example-alert"
   mute_until        = "1632486684"
   schedule {
     type            = "FixedRate"
@@ -235,7 +250,7 @@ resource "alicloud_log_alert" "example-3" {
       "default.logstore"       = "k8s-event"
       "default.repeatInterval" = "4h"
       "trigger_threshold"      = "1"
-      "default.clusterId"      = "test-cluster-id"
+      "default.clusterId"      = "example-cluster-id"
     }
   }
 }

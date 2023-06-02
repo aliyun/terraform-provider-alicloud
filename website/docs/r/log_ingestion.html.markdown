@@ -18,26 +18,36 @@ Log service ingestion, this service provides the function of importing logs of v
 Basic Usage
 
 ```terraform
-resource "alicloud_log_project" "example" {
-  name        = "tf-log-project"
-  description = "created by terraform"
-  tags        = { "test" : "test" }
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
+
+resource "alicloud_log_project" "example" {
+  name        = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
+
 resource "alicloud_log_store" "example" {
   project               = alicloud_log_project.example.name
-  name                  = "tf-log-logstore"
+  name                  = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
   append_meta           = true
 }
+
 resource "alicloud_log_ingestion" "example" {
   project         = alicloud_log_project.example.name
   logstore        = alicloud_log_store.example.name
-  ingestion_name  = "ingestion_name"
-  display_name    = "display_name"
-  description     = "oss2sls"
+  ingestion_name  = "terraform-example"
+  display_name    = "terraform-example"
+  description     = "terraform-example"
   interval        = "30m"
   run_immediately = true
   time_zone       = "+0800"
