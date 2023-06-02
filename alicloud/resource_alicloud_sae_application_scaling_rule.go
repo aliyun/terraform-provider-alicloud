@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -34,13 +32,26 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9-]{1,31}`), "The name must be `2` to `32` characters in length and can contain lowercase letters, digits, and hyphens (-). The name must start with a lowercase letter."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-z][a-z0-9-]{1,31}`), "The name must be `2` to `32` characters in length and can contain lowercase letters, digits, and hyphens (-). The name must start with a lowercase letter."),
 			},
 			"scaling_rule_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mix", "timing", "metric"}, false),
+				ValidateFunc: StringInSlice([]string{"mix", "timing", "metric"}, false),
+			},
+			"scaling_rule_enable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"min_ready_instances": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"min_ready_instance_ratio": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"scaling_rule_metric": {
 				Type:         schema.TypeSet,
@@ -67,6 +78,23 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 										Optional: true,
 									},
 									"metric_type": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringInSlice([]string{"CPU", "MEMORY", "tcpActiveConn", "QPS", "RT", "SLB_QPS", "SLB_RT", "INTRANET_SLB_QPS", "INTRANET_SLB_RT"}, false),
+									},
+									"slb_id": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"slb_project": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"slb_log_store": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"vport": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
@@ -118,19 +146,6 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 					},
 				},
 			},
-			"min_ready_instances": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-			"min_ready_instance_ratio": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-			"scaling_rule_enable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Computed: true,
-			},
 			"scaling_rule_timer": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -157,7 +172,7 @@ func resourceAlicloudSaeApplicationScalingRule() *schema.Resource {
 									"target_replicas": {
 										Type:         schema.TypeInt,
 										Optional:     true,
-										ValidateFunc: validation.IntBetween(1, 50),
+										ValidateFunc: IntBetween(1, 50),
 										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 											return fmt.Sprint(d.Get("scaling_rule_type")) != "timing"
 										},
@@ -266,6 +281,10 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 				metricsMap := map[string]interface{}{}
 				metricsMap["metricType"] = metricsArg["metric_type"]
 				metricsMap["metricTargetAverageUtilization"] = metricsArg["metric_target_average_utilization"]
+				metricsMap["slbId"] = metricsArg["slb_id"]
+				metricsMap["slbProject"] = metricsArg["slb_project"]
+				metricsMap["slbLogstore"] = metricsArg["slb_log_store"]
+				metricsMap["vport"] = metricsArg["vport"]
 				metricsMaps = append(metricsMaps, metricsMap)
 			}
 		}
@@ -288,7 +307,7 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 		request["ScalingRuleEnable"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -300,30 +319,36 @@ func resourceAlicloudSaeApplicationScalingRuleCreate(d *schema.ResourceData, met
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_sae_application_scaling_rule", "POST "+action, AlibabaCloudSdkGoERROR)
 	}
+
 	if respBody, isExist := response["body"]; isExist {
 		response = respBody.(map[string]interface{})
 	} else {
 		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
+
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(*request["AppId"], ":", responseData["ScaleRuleName"]))
+
 	return resourceAlicloudSaeApplicationScalingRuleRead(d, meta)
 }
+
 func resourceAlicloudSaeApplicationScalingRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	saeService := SaeService{client}
 	object, err := saeService.DescribeSaeApplicationScalingRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_sae_application_scaling_rule saeService.DescribeSaeApplicationScalingRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("scaling_rule_enable", object["ScaleRuleEnabled"])
 	d.Set("app_id", object["AppId"])
 	d.Set("scaling_rule_type", object["ScaleRuleType"])
@@ -347,6 +372,10 @@ func resourceAlicloudSaeApplicationScalingRuleRead(d *schema.ResourceData, meta 
 				metricsMap := map[string]interface{}{}
 				metricsMap["metric_type"] = metricsArg["MetricType"]
 				metricsMap["metric_target_average_utilization"] = metricsArg["MetricTargetAverageUtilization"]
+				metricsMap["slb_id"] = metricsArg["SlbId"]
+				metricsMap["slb_project"] = metricsArg["SlbProject"]
+				metricsMap["slb_log_store"] = metricsArg["SlbLogstore"]
+				metricsMap["vport"] = metricsArg["Vport"]
 				metricsMaps = append(metricsMaps, metricsMap)
 			}
 			scalingRuleMetricMap["metrics"] = metricsMaps
@@ -415,6 +444,7 @@ func resourceAlicloudSaeApplicationScalingRuleRead(d *schema.ResourceData, meta 
 
 	return nil
 }
+
 func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewServerlessClient()
@@ -501,6 +531,10 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 				metricsMap := map[string]interface{}{}
 				metricsMap["metricType"] = metricsArg["metric_type"]
 				metricsMap["metricTargetAverageUtilization"] = metricsArg["metric_target_average_utilization"]
+				metricsMap["slbId"] = metricsArg["slb_id"]
+				metricsMap["slbProject"] = metricsArg["slb_project"]
+				metricsMap["slbLogstore"] = metricsArg["slb_log_store"]
+				metricsMap["vport"] = metricsArg["vport"]
 				metricsMaps = append(metricsMaps, metricsMap)
 			}
 		}
@@ -530,7 +564,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 	if update {
 		action := "/pop/v1/sam/scale/applicationScalingRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
@@ -542,9 +576,11 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 		}
+
 		d.SetPartial("min_ready_instances")
 		d.SetPartial("min_ready_instance_ratio")
 		d.SetPartial("scaling_rule_timer")
@@ -566,7 +602,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 				}
 				action := "/pop/v1/sam/scale/enableApplicationScalingRule"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
@@ -578,6 +614,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 					return nil
 				})
 				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
@@ -589,7 +626,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 				}
 				action := "/pop/v1/sam/scale/disableApplicationScalingRule"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 					if err != nil {
 						if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
@@ -601,6 +638,7 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 					return nil
 				})
 				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PUT "+action, AlibabaCloudSdkGoERROR)
 				}
@@ -609,8 +647,10 @@ func resourceAlicloudSaeApplicationScalingRuleUpdate(d *schema.ResourceData, met
 		}
 	}
 	d.Partial(false)
+
 	return resourceAlicloudSaeApplicationScalingRuleRead(d, meta)
 }
+
 func resourceAlicloudSaeApplicationScalingRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "/pop/v1/sam/scale/applicationScalingRule"
@@ -629,7 +669,7 @@ func resourceAlicloudSaeApplicationScalingRuleDelete(d *schema.ResourceData, met
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) || NeedRetry(err) {
@@ -641,8 +681,10 @@ func resourceAlicloudSaeApplicationScalingRuleDelete(d *schema.ResourceData, met
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DELETE "+action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
