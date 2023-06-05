@@ -40,7 +40,7 @@ jobs:
         run: |
           if [[ $(git diff --name-only HEAD^ HEAD | grep -c "^alicloud/") -lt 1 ]]; then
             echo -e "\033[33m[WARNING]\033[0m there are no go files were changed, skipped."
-            continue
+            exit 0
           fi
           exitCode=0
           echo "==> Checking that code complies with gofmt and goimports requirements..."
@@ -67,6 +67,86 @@ jobs:
       - name: vet
         run: |
           make vet
+
+  title:
+    runs-on: ubuntu-latest
+    name: PR Title Check
+    steps:
+      - uses: jitterbit/get-changed-files@v1
+        id: files
+        with:
+          format: 'json'
+      - name: Checking the title info
+        run: |
+          exitCode=0
+          prTitle="${{ github.event.pull_request.title }}"
+          echo -e "PR Title: \033[1m${prTitle}\033[0m"
+          if [[ ${prTitle} == *"…" ]]; then
+            echo -e "\nERROR: The PR title should not omit important infos about added or modified files. \033[1mxxx... is not recommended.\033[0m"
+            exitCode=1
+          fi
+          readarray -t added_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added }}')"
+          for added_file in ${added_files[@]}; do
+            if [[ ${added_file} == *?_test.go ]]; then
+                continue
+            fi
+            if [[ ${added_file} == "alicloud/resource_alicloud"* ]]; then
+                prefix="alicloud/resource_"
+                suffix=".go"
+                resourceName=${added_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="New Resource: ${resourceName}"
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains new resource info \033[1m${titleStr}\033[0m"
+                  exitCode=1
+                fi
+            fi
+            if [[ ${added_file} == "alicloud/data_source_alicloud"* ]]; then
+                prefix="alicloud/data_source_"
+                suffix=".go"
+                resourceName=${added_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="New Datasource: ${resourceName}"
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains new datasource info \033[1m${titleStr}\033[0m"
+                  exitCode=1
+                fi
+            fi
+          done
+          readarray -t modified_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.modified }}')"
+          for modified_file in ${modified_files[@]}; do
+            if [[ ${modified_file} == *?_test.go ]]; then
+                continue
+            fi
+            if [[ ${modified_file} == "alicloud/resource_alicloud"* ]]; then
+                prefix="alicloud/resource_"
+                suffix=".go"
+                resourceName=${modified_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="resource/${resourceName}: "
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
+                  exitCode=1
+                fi
+            fi
+            if [[ ${modified_file} == "alicloud/data_source_alicloud"* ]]; then
+                prefix="alicloud/data_source_"
+                suffix=".go"
+                resourceName=${modified_file}
+                resourceName=${resourceName#"$prefix"}
+                resourceName=${resourceName%"$suffix"}
+                titleStr="datasource/${resourceName}: "
+                if [[ ${prTitle} != *"${titleStr}"* ]]; then
+                  echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
+                  exitCode=1
+                fi
+            fi
+          done
+
+          exit ${exitCode}
 
   labeler:
     runs-on: ubuntu-latest
