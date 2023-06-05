@@ -2,75 +2,13 @@ name: Pull Request Process
 
 on:
   pull_request:
-    paths:
-      - .github/workflows/pull_requests.yml
-      - alicloud/*.go
+    branches:
+      - master
 
 jobs:
-#  formatter:
-#    name: Go Format Check
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@master
-#        with:
-#          fetch-depth: 0
-#      - name: Golang Formatter
-#        uses: Jerome1337/gofmt-action@v1.0.4
-#        with:
-#          gofmt-path: './alicloud'
-#          gofmt-flags: '-l -d'
-  formatter:
-    name: Go Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: 2
-      - name: Set up Go Version
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.19.3'
-
-      - name: Get dependencies
-        run: |
-          go install golang.org/x/tools/cmd/goimports@latest
-          go mod tidy
-      - name: Golang Formatter Check
-        run: |
-          if [[ $(git diff --name-only HEAD^ HEAD | grep -c "^alicloud/") -lt 1 ]]; then
-            echo -e "\033[33m[WARNING]\033[0m there are no go files were changed, skipped."
-            exit 0
-          fi
-          exitCode=0
-          echo "==> Checking that code complies with gofmt and goimports requirements..."
-          diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/")
-          for fileName in ${diffFiles[@]};
-          do
-              goimpFile=$(goimports -l ${fileName})
-              if [[ -n ${goimpFile} ]]; then
-                goimports -d ${fileName}
-                exitCode=1
-              fi
-              gofmtFile=$(gofmt -l ${fileName})
-              if [[ -n ${gofmtFile} ]]; then
-                gofmt -d ${fileName}
-                exitCode=1
-              fi
-          done
-          if [[ ${exitCode} -gt 0 ]]; then
-              echo -e "\n\033[31m[Error]\033[0m==> gofmt or goimports needs running on the above files. You can use the command: \`make fmt\` to reformat code. \033[0m"
-              exit 1
-          fi
-          echo -e "==> PASS"
-
-      - name: vet
-        run: |
-          make vet
-
   title:
     runs-on: ubuntu-latest
-    name: PR Title Check
+    name: Pull Request Title Check
     steps:
       - uses: jitterbit/get-changed-files@v1
         id: files
@@ -147,6 +85,18 @@ jobs:
           done
 
           exit ${exitCode}
+
+  commits:
+    runs-on: ubuntu-latest
+    name: Pull Request Max Commits
+    steps:
+      - name: Checking the max commits number
+        run: |
+          commitNum=${{ github.event.pull_request.commits }}
+          if [[ ${commitNum} -gt 1 ]]; then
+            echo -e "\nERROR: The PR has ${commitNum} commits, and please rebase it to 1.\n"
+            exit 1
+          fi
 
   labeler:
     runs-on: ubuntu-latest
