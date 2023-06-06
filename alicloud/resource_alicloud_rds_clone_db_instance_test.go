@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -52,30 +54,28 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "this" {
- count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.0
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids)-1]
-}
-
-data "alicloud_db_instances" "default" {
-  name_regex = "^default-PostgreSQL-NODELETING$"
+resource "alicloud_db_instance" "default" {
+  engine                   = "PostgreSQL"
+  engine_version           = "13.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_name            = var.name
 }
 
 resource "alicloud_rds_backup" "default" {
-  db_instance_id    = data.alicloud_db_instances.default.instances.0.id
+  db_instance_id    = alicloud_db_instance.default.id
   remove_from_state = "true"
 }
 `, name)
 }
 
 var cloneInstanceBasicMap = map[string]string{}
+var cloneInstanceClusterMap = map[string]string{
+	"zone_id_slave_a": CHECKSET,
+	"zone_id_slave_b": CHECKSET,
+}
 
 func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 	var instance map[string]interface{}
@@ -88,7 +88,8 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccpgsslclone%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -100,7 +101,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
@@ -171,12 +172,12 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -226,7 +227,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQLSSL(t *testing.T) {
 					"db_instance_description":     "tf-testAccDBInstance_instance_name",
 					"security_ips":                []string{"10.168.1.12", "100.69.7.112"},
 					"port":                        "3333",
-					"connection_string_prefix":    "rm-ccccccc",
+					"connection_string_prefix":    "${var.name}",
 					"ssl_enabled":                 "1",
 					"ca_type":                     "aliyun",
 					"client_ca_enabled":           "1",
@@ -275,7 +276,8 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccpghbaclone%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -287,7 +289,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "PayAsYouGo",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
@@ -367,12 +369,12 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -381,7 +383,7 @@ func TestAccAlicloudRdsCloneDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 					"db_instance_description":  "tf-testAccDBInstance_instance_name",
 					"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 					"deletion_protection":      "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -424,16 +426,16 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Serverless(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_db_instance_id":    "${data.alicloud_db_instances.default.instances.0.id}",
-					"db_instance_class":        "${data.alicloud_db_instances.default.instances.0.instance_type}",
-					"zone_id":                  "${data.alicloud_db_instances.default.instances.0.availability_zone}",
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"db_instance_class":        "${alicloud_db_instance.default.instance_type}",
+					"zone_id":                  "${alicloud_db_instance.default.zone_id}",
 					"instance_network_type":    "VPC",
-					"vpc_id":                   "${data.alicloud_db_instances.default.instances.0.vpc_id}",
-					"vswitch_id":               "${data.alicloud_db_instances.default.instances.0.vswitch_id}",
+					"vpc_id":                   "${alicloud_db_instance.default.vpc_id}",
+					"vswitch_id":               "${alicloud_db_instance.default.vswitch_id}",
 					"category":                 "serverless_basic",
 					"db_instance_storage_type": "cloud_essd",
 					"payment_type":             "Serverless",
-					"db_instance_storage":      "${data.alicloud_db_instances.default.instances.0.instance_storage}",
+					"db_instance_storage":      "${alicloud_db_instance.default.instance_storage}",
 					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
 					"serverless_config": []interface{}{
 						map[string]interface{}{
@@ -446,7 +448,6 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Serverless(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"source_db_instance_id":            CHECKSET,
 						"db_instance_class":                CHECKSET,
 						"zone_id":                          CHECKSET,
 						"instance_network_type":            "VPC",
@@ -456,7 +457,6 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Serverless(t *testing.T) {
 						"db_instance_storage_type":         "cloud_essd",
 						"payment_type":                     "Serverless",
 						"db_instance_storage":              CHECKSET,
-						"backup_id":                        CHECKSET,
 						"serverless_config.#":              "1",
 						"serverless_config.0.max_capacity": "8",
 						"serverless_config.0.min_capacity": "0.5",
@@ -485,6 +485,170 @@ func TestAccAlicloudRdsCloneDBInstanceMySQL_Serverless(t *testing.T) {
 						"serverless_config.0.switch_force": "false",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "backup_id", "source_db_instance_id"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudRdsCloneDBInstanceMySQL_Cluster(t *testing.T) {
+	var instance map[string]interface{}
+	var ips []map[string]interface{}
+
+	resourceId := "alicloud_rds_clone_db_instance.default"
+	ra := resourceAttrInit(resourceId, cloneInstanceClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfig"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCloneDBInstanceConfigDependence_MySQLCluster)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_db_instance_id":    "${alicloud_db_instance.default.id}",
+					"db_instance_storage_type": "cloud_essd",
+					"payment_type":             "PayAsYouGo",
+					"backup_id":                "${alicloud_rds_backup.default.backup_id}",
+					"zone_id":                  "${alicloud_db_instance.default.zone_id}",
+					"zone_id_slave_a":          "${alicloud_db_instance.default.zone_id_slave_a}",
+					"zone_id_slave_b":          "${alicloud_db_instance.default.zone_id_slave_b}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_db_instance_id":    CHECKSET,
+						"db_instance_storage_type": "cloud_essd",
+						"payment_type":             "PayAsYouGo",
+						"backup_id":                CHECKSET,
+						"engine_version":           CHECKSET,
+						"db_instance_class":        CHECKSET,
+						"db_instance_storage":      CHECKSET,
+						"zone_id":                  CHECKSET,
+						"connection_string":        CHECKSET,
+						"port":                     CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Auto",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_minor_version": "Auto",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_description": "tf-testAccDBInstance_instance_name",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_description": "tf-testAccDBInstance_instance_name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_class": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_class": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckKeyValueInMaps(ips, "security ip", "security_ips", "10.168.1.12,100.69.7.112"),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tcp_connection_type": "SHORT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tcp_connection_type": "SHORT",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_time": "22:00Z-02:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_time": "22:00Z-02:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port":                     "3333",
+					"connection_string_prefix": "rm-ccccccc",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port":                     "3333",
+						"connection_string_prefix": "rm-ccccccc",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "backup_id", "source_db_instance_id", "connection_string_prefix", "pg_hba_conf"},
 			},
 		},
 	})
@@ -528,12 +692,79 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.ids.1
 }
 
-data "alicloud_db_instances" "default" {
-  name_regex = "^default-Serverless-NODELETING$"
+resource "alicloud_db_instance" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_charge_type     = "Serverless"
+  instance_name            = var.name
+  zone_id                  = data.alicloud_db_zones.default.ids.1
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  db_instance_storage_type = "cloud_essd"
+  category                 = "serverless_basic"
+  serverless_config {
+    max_capacity = 8
+    min_capacity = 0.5
+    auto_pause   = false
+    switch_force = false
+  }
 }
 
 resource "alicloud_rds_backup" "default" {
-  db_instance_id    = data.alicloud_db_instances.default.instances.0.id
+  db_instance_id    = alicloud_db_instance.default.id
+  remove_from_state = "true"
+}
+
+`, name)
+}
+
+func resourceCloneDBInstanceConfigDependence_MySQLCluster(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+	vpc_id 		 = data.alicloud_vpcs.default.ids.0
+	zone_id      = data.alicloud_db_zones.default.ids.0
+}
+
+resource "alicloud_db_instance" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  instance_name            = var.name
+  zone_id 				   = data.alicloud_db_zones.default.ids.0
+  zone_id_slave_a          = data.alicloud_db_zones.default.ids.0
+  zone_id_slave_b          = data.alicloud_db_zones.default.ids.0
+}
+
+resource "alicloud_rds_backup" "default" {
+  db_instance_id    = alicloud_db_instance.default.id
   remove_from_state = "true"
 }
 
