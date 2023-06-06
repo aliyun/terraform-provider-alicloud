@@ -61,7 +61,7 @@ jobs:
                 resourceName=${added_file}
                 resourceName=${resourceName#"$prefix"}
                 resourceName=${resourceName%"$suffix"}
-                titleStr="New Datasource: ${resourceName}"
+                titleStr="New Data Source: ${resourceName}"
                 if [[ ${prTitle} != *"${titleStr}"* ]]; then
                   echo -e "\nERROR: The PR title should contains new datasource info \033[1m${titleStr}\033[0m"
                   exitCode=1
@@ -102,7 +102,7 @@ jobs:
                 resourceName=${modified_file}
                 resourceName=${resourceName#"$prefix"}
                 resourceName=${resourceName%"$suffix"}
-                titleStr="datasource/${resourceName}: "
+                titleStr="data-source/${resourceName}: "
                 if [[ ${prTitle} != *"${titleStr}"* ]]; then
                   echo -e "\nERROR: The PR title should contains modified info like \033[1m${titleStr}xxx\033[0m"
                   exitCode=1
@@ -111,7 +111,7 @@ jobs:
           done
           if [[ ${docsChanged} == true && ${docsOnly} == true ]]; then
             titleStr="docs: "
-            if [[ ${prTitle} != *"${titleStr}"* ]]; then
+            if [[ ${prTitle} != "${titleStr}"* ]]; then
               echo -e "\nERROR: The PR title should contains docs modified info like \033[1m${titleStr}xxx\033[0m"
               exitCode=1
             fi

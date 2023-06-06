@@ -6,7 +6,7 @@ on:
       - alicloud/*.go
 
 jobs:
-  Integration Test:
+  IntegrationTest:
     if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
     runs-on: ubuntu-latest
     steps:
