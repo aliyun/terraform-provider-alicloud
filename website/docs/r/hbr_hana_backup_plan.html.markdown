@@ -20,36 +20,37 @@ For information about Hybrid Backup Recovery (HBR) Hana Backup Plan and how to u
 Basic Usage
 
 ```terraform
-resource "alicloud_hbr_vault" "default" {
-  vault_name = var.name
-}
-data "alicloud_resource_manager_resource_groups" "default" {
+data "alicloud_resource_manager_resource_groups" "example" {
   status = "OK"
 }
 
-resource "alicloud_hbr_hana_instance" "default" {
+resource "alicloud_hbr_vault" "example" {
+  vault_name = "terraform-example"
+}
+
+resource "alicloud_hbr_hana_instance" "example" {
   alert_setting        = "INHERITED"
-  hana_name            = var.name
+  hana_name            = "terraform-example"
   host                 = "1.1.1.1"
-  instance_number      = "1"
+  instance_number      = 1
   password             = "YouPassword123"
-  resource_group_id    = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  resource_group_id    = data.alicloud_resource_manager_resource_groups.example.groups.0.id
   sid                  = "HXE"
   use_ssl              = false
   user_name            = "admin"
   validate_certificate = false
-  vault_id             = alicloud_hbr_vault.default.id
+  vault_id             = alicloud_hbr_vault.example.id
 }
 
-resource "alicloud_hbr_hana_backup_plan" "default" {
+resource "alicloud_hbr_hana_backup_plan" "example" {
   backup_prefix     = "DIFF_DATA_BACKUP"
   backup_type       = "COMPLETE"
-  cluster_id        = alicloud_hbr_hana_instance.default.hana_instance_id
+  cluster_id        = alicloud_hbr_hana_instance.example.hana_instance_id
   database_name     = "SYSTEMDB"
-  plan_name         = var.name
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  plan_name         = "terraform-example"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.example.groups.0.id
   schedule          = "I|1602673264|P1D"
-  vault_id          = alicloud_hbr_hana_instance.default.vault_id
+  vault_id          = alicloud_hbr_hana_instance.example.vault_id
 }
 ```
 

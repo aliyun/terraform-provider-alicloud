@@ -22,16 +22,17 @@ For information about Hybrid Backup Recovery (HBR) Hana Instance and how to use 
 Basic Usage
 
 ```terraform
-resource "alicloud_hbr_vault" "example" {
-  vault_name = var.name
-}
 data "alicloud_resource_manager_resource_groups" "example" {
   status = "OK"
 }
 
+resource "alicloud_hbr_vault" "example" {
+  vault_name = "terraform-example"
+}
+
 resource "alicloud_hbr_hana_instance" "example" {
   alert_setting        = "INHERITED"
-  hana_name            = var.name
+  hana_name            = "terraform-example"
   host                 = "1.1.1.1"
   instance_number      = 1
   password             = "YouPassword123"
