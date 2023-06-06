@@ -7,67 +7,55 @@ description: |-
   Provides a Alicloud ECS Key Pair resource.
 ---
 
-# alicloud\_ecs\_key\_pair
+# alicloud_ecs_key_pair
 
-Provides a ECS Key Pair resource.
+Provides a ECS Key Pair resource. Secret key pair.
 
-For information about ECS Key Pair and how to use it, see [What is Key Pair](https://www.alibabacloud.com/help/en/doc-detail/51771.htm).
+For information about ECS Key Pair and how to use it, see [What is Key Pair](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available in v1.121.0+.
+-> **NOTE:** Available in v1.207.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ecs_key_pair" "example" {
-  key_pair_name = "key_pair_name"
+variable "name" {
+  default = "terraform-example"
 }
 
-// Using name prefix to build key pair
-resource "alicloud_ecs_key_pair" "prefix" {
-  key_name_prefix = "terraform-test-key-pair-prefix"
-}
 
-// Import an existing public key to build a alicloud key pair
-resource "alicloud_ecs_key_pair" "publickey" {
-  key_pair_name = "my_public_key"
-  public_key    = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
+resource "alicloud_ecs_key_pair" "default" {
 }
-
 ```
+
 
 ## Argument Reference
 
 The following arguments are supported:
+* `resource_group_id` - (Optional, Computed, Available in v1.121.0+) ResourceGroupId.
+* `resource_type` - (Optional) Resource type.
+* `tags` - (Optional, ForceNew, Map, Available in v1.121.0+) Tags.
 
-* `key_file` - (Optional, ForceNew) The key file.
-* `key_pair_name` - (Optional, ForceNew) The key pair's name. It is the only in one Alicloud account, the key pair's name. must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `key_name` - (Optional, ForceNew, Deprecated from v1.121.0+) Field `key_name` has been deprecated from provider version 1.121.0. New field `key_pair_name` instead.
-* `key_name_prefix` - (Optional, ForceNew) The key pair name's prefix. It is conflict with `key_pair_name`. If it is specified, terraform will using it to build the only key name.
-* `public_key` - (Optional) You can import an existing public key and using Alicloud key pair to manage it. If this parameter is specified, `resource_group_id` is the key pair belongs.
-* `resource_group_id` - (Optional) The Id of resource group which the key pair belongs.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
 
--> **NOTE:** If `key_pair_name` and `key_name_prefix` are not set, terraform will produce a specified ID to replace.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Key Pair. Value as `key_pair_name`.
-* `finger_print` The finger print of the key pair.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource.
 
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `delete` - (Defaults to 5 mins, Available in 1.173.0+) Used when delete the key pair.
+* `create` - (Defaults to 5 mins) Used when create the Key Pair.
+* `delete` - (Defaults to 5 mins) Used when delete the Key Pair.
+* `update` - (Defaults to 5 mins) Used when update the Key Pair.
 
 ## Import
 
 ECS Key Pair can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ecs_key_pair.example <key_name>
+$ terraform import alicloud_ecs_key_pair.example <id>
 ```
