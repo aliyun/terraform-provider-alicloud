@@ -20,42 +20,34 @@ For information about Hybrid Backup Recovery (HBR) Replication Vault and how to 
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf-testAccReplicationVault"
-}
-
-variable "region_source" {
-  default = "you Replication value source region"
+variable "source_region" {
+  default = "cn-hangzhou"
 }
 
 provider "alicloud" {
   alias  = "source"
-  region = var.region_source
-}
-
-resource "alicloud_hbr_vault" "default" {
-  vault_name = var.name
-  provider   = alicloud.source
+  region = var.source_region
 }
 
 data "alicloud_hbr_replication_vault_regions" "default" {}
 
-locals {
-  region_replication = data.alicloud_hbr_replication_vault_regions.default.regions.0.replication_region_id
-}
-
 provider "alicloud" {
   alias  = "replication"
-  region = local.region_replication
+  region = data.alicloud_hbr_replication_vault_regions.default.regions.0.replication_region_id
+}
+
+resource "alicloud_hbr_vault" "default" {
+  provider   = alicloud.source
+  vault_name = "terraform-example"
 }
 
 resource "alicloud_hbr_replication_vault" "default" {
-  replication_source_region_id = local.region_replication
-  replication_source_vault_id  = alicloud_hbr_vault.default.id
-  vault_name                   = var.name
-  vault_storage_class          = "STANDARD"
-  description                  = var.name
   provider                     = alicloud.replication
+  replication_source_region_id = var.source_region
+  replication_source_vault_id  = alicloud_hbr_vault.default.id
+  vault_name                   = "terraform-example"
+  vault_storage_class          = "STANDARD"
+  description                  = "terraform-example"
 }
 ```
 

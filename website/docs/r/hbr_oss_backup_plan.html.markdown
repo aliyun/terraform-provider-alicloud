@@ -20,20 +20,21 @@ For information about HBR Oss Backup Plan and how to use it, see [What is Oss Ba
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf-test112358"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
 resource "alicloud_hbr_vault" "default" {
-  vault_name = var.name
+  vault_name = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_oss_bucket" "default" {
-  bucket = var.name
+  bucket = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_hbr_oss_backup_plan" "default" {
-  oss_backup_plan_name = var.name
+  oss_backup_plan_name = "terraform-example"
   prefix               = "/"
   bucket               = alicloud_oss_bucket.default.bucket
   vault_id             = alicloud_hbr_vault.default.id
