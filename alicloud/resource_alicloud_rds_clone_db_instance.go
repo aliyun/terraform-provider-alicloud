@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
@@ -32,14 +31,14 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"acl": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
+				ValidateFunc: StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
 				Computed:     true,
 			},
 			"auto_upgrade_minor_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Auto", "Manual"}, false),
+				ValidateFunc: StringInSlice([]string{"Auto", "Manual"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine").(string) != "MySQL"
 				},
@@ -51,12 +50,12 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"backup_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"FullBackup", "IncrementalBackup"}, false),
+				ValidateFunc: StringInSlice([]string{"FullBackup", "IncrementalBackup"}, false),
 			},
 			"ca_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"aliyun", "custom"}, false),
+				ValidateFunc: StringInSlice([]string{"aliyun", "custom"}, false),
 				Computed:     true,
 			},
 			"category": {
@@ -64,7 +63,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability", "serverless_basic"}, false),
+				ValidateFunc: StringInSlice([]string{"AlwaysOn", "Basic", "Finance", "HighAvailability", "serverless_basic", "cluster"}, false),
 			},
 			"certificate": {
 				Type:     schema.TypeString,
@@ -93,7 +92,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"connection_string_prefix": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(8, 64),
+				ValidateFunc: StringLenBetween(8, 64),
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -103,7 +102,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"db_instance_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"db_instance_storage": {
 				Type:     schema.TypeInt,
@@ -119,7 +118,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"db_instance_storage_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_essd2", "cloud_essd3", "cloud_ssd", "local_ssd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_essd", "cloud_essd2", "cloud_essd3", "cloud_ssd", "local_ssd"}, false),
 			},
 			"db_name": {
 				Type:     schema.TypeString,
@@ -136,7 +135,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"direction": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Auto", "Down", "TempUpgrade", "Up"}, false),
+				ValidateFunc: StringInSlice([]string{"Auto", "Down", "TempUpgrade", "Up"}, false),
 			},
 			"effective_time": {
 				Type:     schema.TypeString,
@@ -213,13 +212,13 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"RPO", "RTO"}, false),
+				ValidateFunc: StringInSlice([]string{"RPO", "RTO"}, false),
 			},
 			"instance_network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Classic", "VPC"}, false),
+				ValidateFunc: StringInSlice([]string{"Classic", "VPC"}, false),
 				Computed:     true,
 			},
 			"maintain_time": {
@@ -234,12 +233,12 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription", "Serverless"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription", "Serverless"}, false),
 			},
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("payment_type").(string) != "Subscription"
 				},
@@ -265,7 +264,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"replication_acl": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
+				ValidateFunc: StringInSlice([]string{"cert", "perfer", "verify-ca", "verify-full"}, false),
 				Computed:     true,
 			},
 			"resource_group_id": {
@@ -311,7 +310,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			},
 			"ssl_enabled": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				ValidateFunc: IntInSlice([]int{0, 1}),
 				Optional:     true,
 				Computed:     true,
 			},
@@ -323,7 +322,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Async", "Semi-sync", "Sync"}, false),
+				ValidateFunc: StringInSlice([]string{"Async", "Semi-sync", "Sync"}, false),
 			},
 			"tde_status": {
 				Type:     schema.TypeString,
@@ -336,7 +335,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 			"used_time": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("payment_type").(string) != "Subscription"
 				},
@@ -352,6 +351,18 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Computed: true,
 			},
 			"zone_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"zone_id_slave_a": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"zone_id_slave_b": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -386,7 +397,7 @@ func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"SHORT", "LONG"}, false),
+				ValidateFunc: StringInSlice([]string{"SHORT", "LONG"}, false),
 			},
 			"serverless_config": {
 				Type:     schema.TypeList,
@@ -482,6 +493,13 @@ func resourceAlicloudRdsCloneDbInstanceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("zone_id"); ok {
 		request["ZoneId"] = v
 	}
+	if v, ok := d.GetOk("zone_id_slave_a"); ok {
+		request["ZoneIdSlave1"] = v
+	}
+
+	if v, ok := d.GetOk("zone_id_slave_b"); ok {
+		request["ZoneIdSlave2"] = v
+	}
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VPCId"] = v
 	}
@@ -563,6 +581,14 @@ func resourceAlicloudRdsCloneDbInstanceRead(d *schema.ResourceData, meta interfa
 	d.Set("maintain_time", object["MaintainTime"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("vpc_id", object["VpcId"])
+	slaveZones := object["SlaveZones"].(map[string]interface{})["SlaveZone"].([]interface{})
+	if len(slaveZones) == 2 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
+		d.Set("zone_id_slave_b", slaveZones[1].(map[string]interface{})["ZoneId"])
+	} else if len(slaveZones) == 1 {
+		d.Set("zone_id_slave_a", slaveZones[0].(map[string]interface{})["ZoneId"])
+	}
 	d.Set("payment_type", convertRdsInstancePaymentTypeResponse(object["PayType"]))
 
 	serverlessConfig := make([]map[string]interface{}, 0)

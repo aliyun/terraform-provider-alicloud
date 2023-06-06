@@ -2,22 +2,21 @@
 subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_rds_clone_db_instance"
-sidebar_current: "docs-alicloud-resource-rds-clone-db-instance"
 description: |-
   Provides a Alicloud RDS Clone DB Instance resource.
 ---
 
-# alicloud\_rds\_clone\_db\_instance
+# alicloud_rds_clone_db_instance
 
-Provides a RDS Clone DB Instance resource.
+Provides an RDS Clone DB Instance resource.
 
 For information about RDS Clone DB Instance and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0+.
 
 ## Example Usage
 
-### Create a RDS MySQL clone instance
+### Create an RDS MySQL clone instance
 
 ```terraform
 data "alicloud_db_zones" "example" {
@@ -129,6 +128,7 @@ The following arguments are supported:
   * **AlwaysOn**: Cluster Edition
   * **Finance**: Three-node Enterprise Edition.
   * **serverless_basic**: Serverless Basic Edition. (Available in 1.200.0+)
+  * **cluster**: MySQL Cluster Edition. (Available in 1.207.0+)
 * `certificate` - (Optional) The file that contains the certificate used for TDE.
 * `client_ca_cert` - (Optional) This parameter is only supported by the RDS PostgreSQL cloud disk version. It indicates the public key of the client certification authority. If the value of client_ca_enabled is 1, this parameter must be configured.
 * `client_ca_enabled` - (Optional) The client ca enabled.
@@ -191,21 +191,30 @@ The following arguments are supported:
   * Enabled
   * Disabled
 * `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/doc-detail/26243.htm) operation to query the most recent region list.
+* `zone_id_slave_a` - (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+* `zone_id_slave_b`- (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
-* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
-* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
+* `pg_hba_conf` - (Optional, Available in 1.155.0+) The details of the AD domain.See [`pg_hba_conf`](#pg_hba_conf) below.
 
-* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.
+* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for MySQL instance.See [`serverless_config`](#serverless_config) below.
 
-#### Block pg_hba_conf
+### `parameters`
 
-The pg_hba_conf mapping supports the following:
+The parameters support the following:
+
+* `name` - (Required) The parameters name.
+* `value` - (Required) The parameters value.
+
+### `pg_hba_conf`
+
+The pg_hba_conf support the following:
 
 * `type` - (Required) The type of connection to the instance. Valid values:
   * **host**: specifies to verify TCP/IP connections, including SSL connections and non-SSL connections.
@@ -221,9 +230,9 @@ The pg_hba_conf mapping supports the following:
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
 
-#### Block serverless_config
+### `serverless_config`
 
-The serverless_config mapping supports the following:
+The serverless_config support the following:
 
 * `max_capacity` - (Required, Available in 1.200.0+) The maximum number of RDS Capacity Units (RCUs). Valid values: 0.5 to 8. The value of this parameter must be greater than or equal to the value of the `min_capacity` parameter.
 * `min_capacity` - (Required, Available in 1.200.0+) The minimum number of RCUs. Valid values: 0.5 to 8. The value of this parameter must be less than or equal to the value of the `max_capacity` parameter.
@@ -245,7 +254,7 @@ The following attributes are exported:
 
 -> **NOTE:** The parameter **DBInstanceNetType** determines whether the address is internal or public.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
