@@ -1,4 +1,4 @@
-name: Terrafrom Integration Test Process
+name: Terrafrom Integration Checks
 on:
   pull_request_review:
     types: [edited, submitted]
@@ -6,7 +6,7 @@ on:
       - alicloud/*.go
 
 jobs:
-  IntegrationTest:
+  Integration Test:
     if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
     runs-on: ubuntu-latest
     steps:

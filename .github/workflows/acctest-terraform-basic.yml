@@ -1,4 +1,4 @@
-name: Terrafrom Basic Test Process
+name: Terrafrom Basic Checks
 on:
   pull_request:
     paths:
@@ -8,7 +8,7 @@ on:
       - master
 
 jobs:
-  CompatibilityCheck:
+  Compatibility:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
 
-  ConsistencyCheck:
+  Consistency:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
@@ -68,7 +68,6 @@ jobs:
           fi
 
   Formatter:
-    name: Go Format Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -112,6 +111,18 @@ jobs:
           fi
           echo -e "==> PASS"
 
+
+  Compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Set up Go Version
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.19.3'
       - name: vet
         run: |
           make vet

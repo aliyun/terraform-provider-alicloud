@@ -1,4 +1,4 @@
-name: Pull Request Process
+name: Pull Request Checks
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 jobs:
   title:
     runs-on: ubuntu-latest
-    name: Pull Request Title Check
+    name: Pull Request Title
     steps:
       - uses: jitterbit/get-changed-files@v1
         id: files
@@ -23,12 +23,24 @@ jobs:
             echo -e "\nERROR: The PR title should not omit important infos about added or modified files. \033[1mxxx... is not recommended.\033[0m"
             exitCode=1
           fi
+          docsOnly=true
+          testcaseOnly=true
+          docsChanged=false
+          testcaseChanged=false
           readarray -t added_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added }}')"
           for added_file in ${added_files[@]}; do
             if [[ ${added_file} == *?_test.go ]]; then
+                testcaseChanged=true
+                continue
+            fi
+            if [[ ${added_file} == "website/docs"* ]]; then
+                testcaseOnly=false
+                docsChanged=true
                 continue
             fi
             if [[ ${added_file} == "alicloud/resource_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 prefix="alicloud/resource_"
                 suffix=".go"
                 resourceName=${added_file}
@@ -39,8 +51,11 @@ jobs:
                   echo -e "\nERROR: The PR title should contains new resource info \033[1m${titleStr}\033[0m"
                   exitCode=1
                 fi
+                continue
             fi
             if [[ ${added_file} == "alicloud/data_source_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 prefix="alicloud/data_source_"
                 suffix=".go"
                 resourceName=${added_file}
@@ -51,14 +66,23 @@ jobs:
                   echo -e "\nERROR: The PR title should contains new datasource info \033[1m${titleStr}\033[0m"
                   exitCode=1
                 fi
+                continue
             fi
           done
           readarray -t modified_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.modified }}')"
           for modified_file in ${modified_files[@]}; do
             if [[ ${modified_file} == *?_test.go ]]; then
+                testcaseChanged=true
+                continue
+            fi
+            if [[ ${modified_file} == "website/docs"* ]]; then
+                testcaseOnly=false
+                docsChanged=true
                 continue
             fi
             if [[ ${modified_file} == "alicloud/resource_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 prefix="alicloud/resource_"
                 suffix=".go"
                 resourceName=${modified_file}
@@ -71,6 +95,8 @@ jobs:
                 fi
             fi
             if [[ ${modified_file} == "alicloud/data_source_alicloud"* ]]; then
+                docsOnly=false
+                testcaseOnly=false
                 prefix="alicloud/data_source_"
                 suffix=".go"
                 resourceName=${modified_file}
@@ -83,6 +109,19 @@ jobs:
                 fi
             fi
           done
+          if [[ ${docsChanged} == true && ${docsOnly} == true ]]; then
+            titleStr="docs: "
+            if [[ ${prTitle} != *"${titleStr}"* ]]; then
+              echo -e "\nERROR: The PR title should contains docs modified info like \033[1m${titleStr}xxx\033[0m"
+              exitCode=1
+            fi
+          elif [[ ${testcaseChanged} == true && ${testcaseOnly} == true ]]; then
+            titleStr="testcase: "
+            if [[ ${prTitle} != *"${titleStr}"* ]]; then
+              echo -e "\nERROR: The PR title should contains testcase modified info like \033[1m${titleStr}xxx\033[0m"
+              exitCode=1
+            fi
+          fi
 
           exit ${exitCode}
 
