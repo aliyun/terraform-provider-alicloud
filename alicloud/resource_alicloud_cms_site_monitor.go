@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cms"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 )
@@ -25,7 +24,11 @@ func resourceAlicloudCmsSiteMonitor() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"address": {
 				Type:     schema.TypeString,
@@ -39,7 +42,7 @@ func resourceAlicloudCmsSiteMonitor() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{SiteMonitorHTTP, SiteMonitorDNS, SiteMonitorFTP, SiteMonitorPOP3,
+				ValidateFunc: StringInSlice([]string{SiteMonitorHTTP, SiteMonitorDNS, SiteMonitorFTP, SiteMonitorPOP3,
 					SiteMonitorPing, SiteMonitorSMTP, SiteMonitorTCP, SiteMonitorUDP}, false),
 			},
 			"alert_ids": {
@@ -51,7 +54,7 @@ func resourceAlicloudCmsSiteMonitor() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      1,
-				ValidateFunc: validation.IntInSlice([]int{1, 5, 15}),
+				ValidateFunc: IntInSlice([]int{1, 5, 15, 30, 60}),
 			},
 			"options_json": {
 				Type:     schema.TypeString,
@@ -119,7 +122,7 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		raw, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.CreateSiteMonitor(request)
 		})
@@ -135,6 +138,7 @@ func resourceAlicloudCmsSiteMonitorCreate(d *schema.ResourceData, meta interface
 		d.SetId(resp.CreateResultList.CreateResultListItem[0].TaskId)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_site_monitor", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
@@ -148,7 +152,7 @@ func resourceAlicloudCmsSiteMonitorRead(d *schema.ResourceData, meta interface{}
 
 	siteMonitor, err := cmsService.DescribeSiteMonitor(d.Id(), "")
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -159,7 +163,7 @@ func resourceAlicloudCmsSiteMonitorRead(d *schema.ResourceData, meta interface{}
 	d.Set("task_name", siteMonitor.TaskName)
 	d.Set("task_type", siteMonitor.TaskType)
 	d.Set("task_state", siteMonitor.TaskState)
-	d.Set("interval", siteMonitor.Interval)
+	d.Set("interval", formatInt(siteMonitor.Interval))
 	d.Set("options_json", siteMonitor.OptionsJson)
 	d.Set("create_time", siteMonitor.CreateTime)
 	d.Set("update_time", siteMonitor.UpdateTime)
@@ -207,7 +211,7 @@ func resourceAlicloudCmsSiteMonitorUpdate(d *schema.ResourceData, meta interface
 	}
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.ModifySiteMonitor(request)
 		})
@@ -237,7 +241,7 @@ func resourceAlicloudCmsSiteMonitorDelete(d *schema.ResourceData, meta interface
 	request.IsDeleteAlarms = "false"
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	return resource.Retry(3*time.Minute, func() *resource.RetryError {
+	return resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		_, err := client.WithCmsClient(func(cmsClient *cms.Client) (interface{}, error) {
 			return cmsClient.DeleteSiteMonitors(request)
 		})

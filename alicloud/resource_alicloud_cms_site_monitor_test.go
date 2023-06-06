@@ -27,12 +27,10 @@ func testSweepCmsSiteMonitor(region string) error {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testacc",
 	}
-
 	request := cms.CreateDescribeSiteMonitorListRequest()
 	raw, err := client.WithCmsClient(func(CmsClient *cms.Client) (interface{}, error) {
 		return CmsClient.DescribeSiteMonitorList(request)
@@ -41,7 +39,6 @@ func testSweepCmsSiteMonitor(region string) error {
 		log.Printf("[ERROR] Error retrieving Cms Site Monitor: %s", WrapError(err))
 	}
 	response, _ := raw.(*cms.DescribeSiteMonitorListResponse)
-
 	sweeped := false
 	for _, v := range response.SiteMonitors.SiteMonitor {
 		id := v.TaskId
@@ -84,11 +81,9 @@ func TestAccAlicloudCmsSiteMonitor_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceName,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCmsSiteMonitorDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCmsSiteMonitor_basic(),
@@ -99,10 +94,9 @@ func TestAccAlicloudCmsSiteMonitor_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"interval"},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -113,11 +107,9 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: "alicloud_cms_site_monitor.update",
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCmsSiteMonitorDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCmsSiteMonitor_update(),
@@ -128,7 +120,6 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 					resource.TestCheckResourceAttr("alicloud_cms_site_monitor.update", "isp_cities.#", "1"),
 				),
 			},
-
 			{
 				Config: testAccCmsSiteMonitor_updateAfter(),
 				Check: resource.ComposeTestCheckFunc(
@@ -148,11 +139,9 @@ func TestAccAlicloudCmsSiteMonitor_basic1(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceName,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckCmsSiteMonitorDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckCmsSiteMonitorDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccCmsSiteMonitor_basic1(),
@@ -163,10 +152,9 @@ func TestAccAlicloudCmsSiteMonitor_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"interval"},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -204,53 +192,48 @@ func testAccCheckCmsSiteMonitorDestroy(s *terraform.State) error {
 func testAccCmsSiteMonitor_basic() string {
 	return fmt.Sprintf(`
 	resource "alicloud_cms_site_monitor" "basic" {
-	  address = "http://www.alibabacloud.com"
-	  task_name = "tf-testAccCmsSiteMonitor_basic"
-	  task_type = "HTTP"
-	  interval = 5
-	  isp_cities {
-		  city = "546"
-		  isp = "465"
-	  }
+  		address   = "http://www.alibabacloud.com"
+  		task_name = "tf-testAccCmsSiteMonitor_basic"
+  		task_type = "HTTP"
+  		interval  = 5
+  		isp_cities {
+    		city = "546"
+    		isp  = "465"
+  		}
 	}
 	`)
 }
 
 func testAccCmsSiteMonitor_update() string {
 	return fmt.Sprintf(`
-data "alicloud_account" "current"{
-}
-resource "alicloud_cms_site_monitor" "update" {
-	address = "http://www.alibabacloud.com"
-	task_name = "tf-testAccCmsSiteMonitor_update"
-	task_type = "HTTP"
-	interval = 5
-	isp_cities {
-		city = "546"
-		isp = "465"
+	resource "alicloud_cms_site_monitor" "update" {
+  		address   = "http://www.alibabacloud.com"
+  		task_name = "tf-testAccCmsSiteMonitor_update"
+  		task_type = "HTTP"
+  		interval  = 5
+  		isp_cities {
+    		city = "546"
+    		isp  = "465"
+  		}
 	}
-}
-`)
+	`)
 }
 
 func testAccCmsSiteMonitor_updateAfter() string {
 	return fmt.Sprintf(`
-	data "alicloud_account" "current"{
-	}
-	
 	resource "alicloud_cms_site_monitor" "update" {
-		address = "http://www.alibaba.com"
-		task_name = "tf-testAccCmsSiteMonitor_updateafter"
-		task_type = "HTTP"
-		interval = 1
-		isp_cities {
-			city = "546"
-			isp = "465"
-		}
-		isp_cities {
-			city = "572"
-			isp = "465"
-		}
+  		address   = "http://www.alibaba.com"
+  		task_name = "tf-testAccCmsSiteMonitor_updateafter"
+  		task_type = "HTTP"
+  		interval  = 1
+  		isp_cities {
+    		city = "546"
+    		isp  = "465"
+  		}
+  		isp_cities {
+    		city = "572"
+    		isp  = "465"
+  		}
 	}
 	`)
 }
@@ -258,14 +241,14 @@ func testAccCmsSiteMonitor_updateAfter() string {
 func testAccCmsSiteMonitor_basic1() string {
 	return fmt.Sprintf(`
 	resource "alicloud_cms_site_monitor" "basic" {
-	  address = "http://www.alibabacloud.com"
-	  task_name = "tf-testAccCmsSiteMonitor_basic"
-	  task_type = "PING"
-	  interval = 5
-	  isp_cities {
-		  city = "546"
-		  isp = "465"
-	  }
+  		address   = "http://www.alibabacloud.com"
+  		task_name = "tf-testAccCmsSiteMonitor_basic"
+  		task_type = "PING"
+  		interval  = 5
+  		isp_cities {
+			city = "546"
+    		isp  = "465"
+  		}
 	}
 	`)
 }
