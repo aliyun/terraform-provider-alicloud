@@ -552,6 +552,7 @@ func (s *VpcServiceV2) DescribeVpcFlowLog(id string) (object map[string]interfac
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FlowLogs.FlowLog[*]", response)
 	}
+
 	if len(v.([]interface{})) == 0 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("FlowLog", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
@@ -564,7 +565,7 @@ func (s *VpcServiceV2) VpcFlowLogStateRefreshFunc(id string, field string, failS
 		object, err := s.DescribeVpcFlowLog(id)
 		if err != nil {
 			if NotFoundError(err) {
-				return nil, "", nil
+				return object, "", nil
 			}
 			return nil, "", WrapError(err)
 		}
