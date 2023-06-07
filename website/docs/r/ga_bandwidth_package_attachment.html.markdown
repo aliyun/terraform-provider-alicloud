@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Bandwidth Package Attachment resource.
 ---
 
-# alicloud\_ga\_bandwidth\_package\_attachment
+# alicloud_ga_bandwidth_package_attachment
 
 Provides a Global Accelerator (GA) Bandwidth Package Attachment resource.
 
 For information about Global Accelerator (GA) Bandwidth Package Attachment and how to use it, see [What is Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/bandwidthpackageaddaccelerator).
 
--> **NOTE:** Available in v1.113.0+.
+-> **NOTE:** Available since v1.113.0.
 
 ## Example Usage
 
@@ -56,7 +56,7 @@ The following attributes are exported:
 * `accelerators` - Accelerators bound with current Bandwidth Package.
 * `status` - State of Bandwidth Package.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,22 +7,67 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Custom Routing Endpoint Group Destination resource.
 ---
 
-# alicloud\_ga\_custom\_routing\_endpoint\_group\_destination
+# alicloud_ga_custom_routing_endpoint_group_destination
 
 Provides a Global Accelerator (GA) Custom Routing Endpoint Group Destination resource.
 
 For information about Global Accelerator (GA) Custom Routing Endpoint Group Destination and how to use it, see [What is Custom Routing Endpoint Group Destination](https://www.alibabacloud.com/help/en/global-accelerator/latest/createcustomroutingendpointgroupdestinations).
 
--> **NOTE:** Available in v1.197.0+.
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region = var.region
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  duration        = 1
+  auto_use_coupon = true
+  spec            = "1"
+}
+
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
+  type           = "Basic"
+  bandwidth_type = "Basic"
+  payment_type   = "PayAsYouGo"
+  billing_type   = "PayBy95"
+  ratio          = 30
+}
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+}
+
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  listener_type  = "CustomRouting"
+  port_ranges {
+    from_port = 10000
+    to_port   = 16000
+  }
+}
+
+resource "alicloud_ga_custom_routing_endpoint_group" "default" {
+  accelerator_id                     = alicloud_ga_listener.default.accelerator_id
+  listener_id                        = alicloud_ga_listener.default.id
+  endpoint_group_region              = var.region
+  custom_routing_endpoint_group_name = "terraform-example"
+  description                        = "terraform-example"
+}
+
 resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
-  endpoint_group_id = "your_custom_routing_endpoint_group_id"
-  protocols         = ["TCP", "UDP"]
+  endpoint_group_id = alicloud_ga_custom_routing_endpoint_group.default.id
+  protocols         = ["TCP"]
   from_port         = 1
   to_port           = 2
 }
@@ -47,7 +92,7 @@ The following attributes are exported:
 * `custom_routing_endpoint_group_destination_id` - The ID of the Custom Routing Endpoint Group Destination.
 * `status` - The status of the Custom Routing Endpoint Group Destination.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

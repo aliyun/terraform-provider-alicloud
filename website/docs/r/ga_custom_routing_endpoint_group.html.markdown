@@ -7,21 +7,31 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Custom Routing Endpoint Group resource.
 ---
 
-# alicloud\_ga\_custom\_routing\_endpoint\_group
+# alicloud_ga_custom_routing_endpoint_group
 
 Provides a Global Accelerator (GA) Custom Routing Endpoint Group resource.
 
 For information about Global Accelerator (GA) Custom Routing Endpoint Group and how to use it, see [What is Custom Routing Endpoint Group](https://www.alibabacloud.com/help/en/global-accelerator/latest/createcustomroutingendpointgroups).
 
--> **NOTE:** Available in v1.197.0+.
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_ga_accelerators" "default" {
-  status = "active"
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region = var.region
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  duration        = 1
+  auto_use_coupon = true
+  spec            = "1"
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
@@ -34,7 +44,7 @@ resource "alicloud_ga_bandwidth_package" "default" {
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = data.alicloud_ga_accelerators.default.accelerators.0.id
+  accelerator_id       = alicloud_ga_accelerator.default.id
   bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
@@ -50,9 +60,9 @@ resource "alicloud_ga_listener" "default" {
 resource "alicloud_ga_custom_routing_endpoint_group" "default" {
   accelerator_id                     = alicloud_ga_listener.default.accelerator_id
   listener_id                        = alicloud_ga_listener.default.id
-  endpoint_group_region              = "cn-hangzhou"
-  custom_routing_endpoint_group_name = "example_value"
-  description                        = "example_value"
+  endpoint_group_region              = var.region
+  custom_routing_endpoint_group_name = "terraform-example"
+  description                        = "terraform-example"
 }
 ```
 
@@ -73,7 +83,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Custom Routing Endpoint Group.
 * `status` - The status of the Custom Routing Endpoint Group.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

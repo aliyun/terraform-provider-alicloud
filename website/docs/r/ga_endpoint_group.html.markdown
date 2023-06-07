@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Endpoint Group resource.
 ---
 
-# alicloud\_ga\_endpoint\_group
+# alicloud_ga_endpoint_group
 
 Provides a Global Accelerator (GA) Endpoint Group resource.
 
 For information about Global Accelerator (GA) Endpoint Group and how to use it, see [What is Endpoint Group](https://www.alibabacloud.com/help/en/doc-detail/153259.htm).
 
--> **NOTE:** Available in v1.113.0+.
+-> **NOTE:** Available since v1.113.0.
 
 -> **NOTE:** Listeners that use different protocols support different types of endpoint groups:
 * For a TCP or UDP listener, you can create only one default endpoint group. 
@@ -27,46 +27,68 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 Basic Usage
 
 ```terraform
-resource "alicloud_ga_accelerator" "example" {
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region  = var.region
+  profile = "default"
+}
+
+resource "alicloud_ga_accelerator" "default" {
   duration        = 1
   auto_use_coupon = true
   spec            = "1"
 }
-resource "alicloud_ga_bandwidth_package" "de" {
-  bandwidth      = "100"
+
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
   type           = "Basic"
   bandwidth_type = "Basic"
   payment_type   = "PayAsYouGo"
   billing_type   = "PayBy95"
   ratio          = 30
 }
-resource "alicloud_ga_bandwidth_package_attachment" "de" {
-  accelerator_id       = alicloud_ga_accelerator.example.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.de.id
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
-resource "alicloud_ga_listener" "example" {
-  depends_on     = [alicloud_ga_bandwidth_package_attachment.de]
-  accelerator_id = alicloud_ga_accelerator.example.id
+
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
   port_ranges {
     from_port = 60
     to_port   = 70
   }
+  client_affinity = "SOURCE_IP"
+  protocol        = "UDP"
+  name            = "terraform-example"
 }
-resource "alicloud_eip_address" "example" {
+
+resource "alicloud_eip_address" "default" {
+  count                = 2
   bandwidth            = "10"
   internet_charge_type = "PayByBandwidth"
+  address_name         = "terraform-example"
 }
-resource "alicloud_ga_endpoint_group" "example" {
-  accelerator_id = alicloud_ga_accelerator.example.id
+
+resource "alicloud_ga_endpoint_group" "default" {
+  accelerator_id = alicloud_ga_accelerator.default.id
   endpoint_configurations {
-    endpoint = alicloud_eip_address.example.ip_address
+    endpoint = alicloud_eip_address.default.0.ip_address
     type     = "PublicIp"
     weight   = "20"
   }
-  endpoint_group_region = "cn-hangzhou"
-  listener_id           = alicloud_ga_listener.example.id
+  endpoint_configurations {
+    endpoint = alicloud_eip_address.default.1.ip_address
+    type     = "PublicIp"
+    weight   = "20"
+  }
+  endpoint_group_region = var.region
+  listener_id           = alicloud_ga_listener.default.id
 }
-
 ```
 
 ## Argument Reference
@@ -75,7 +97,7 @@ The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
 * `description` - (Optional) The description of the endpoint group.
-* `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group. See the following `Block endpoint_configurations`.
+* `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
 * `endpoint_group_type` - (Optional, ForceNew, Computed) The endpoint group type. Valid values: `default`, `virtual`. Default value is `default`.
 
@@ -91,21 +113,21 @@ The following arguments are supported:
 * `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `name` - (Optional) The name of the endpoint group.
-* `port_overrides` - (Optional) Mapping between listening port and forwarding port of boarding point. See the following `Block port_overrides`.
+* `port_overrides` - (Optional) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
 
 -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 
 * `threshold_count` - (Optional) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value is `3`.
 * `traffic_percentage` - (Optional) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
 
-#### Block port_overrides
+### `port_overrides`
 
 The port_overrides supports the following: 
 
 * `endpoint_port` - (Optional) Forwarding port.
 * `listener_port` - (Optional) Listener port.
 
-#### Block endpoint_configurations
+### `endpoint_configurations`
 
 The endpoint_configurations supports the following: 
 
@@ -126,7 +148,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Endpoint Group.
 * `status` - The status of the endpoint group.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

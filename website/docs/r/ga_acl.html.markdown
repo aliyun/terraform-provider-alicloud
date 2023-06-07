@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Acl resource.
 ---
 
-# alicloud\_ga\_acl
+# alicloud_ga_acl
 
 Provides a Global Accelerator (GA) Acl resource.
 
 For information about Global Accelerator (GA) Acl and how to use it, see [What is Acl](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createacl).
 
--> **NOTE:** Available in v1.150.0+.
+-> **NOTE:** Available since v1.150.0.
 
 ## Example Usage
 
@@ -21,12 +21,14 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ga_acl" "default" {
-  acl_name           = "tf-testAccAcl"
+  acl_name           = "terraform-example"
   address_ip_version = "IPv4"
-  acl_entries {
-    entry             = "192.168.1.0/24"
-    entry_description = "tf-test1"
-  }
+}
+
+resource "alicloud_ga_acl_entry_attachment" "default" {
+  acl_id            = alicloud_ga_acl.default.id
+  entry             = "192.168.1.1/32"
+  entry_description = "terraform-example"
 }
 ```
 
@@ -34,12 +36,12 @@ resource "alicloud_ga_acl" "default" {
 
 The following arguments are supported:
 
-* `acl_entries` - (Optional, Computed) The entries of the Acl. See the following `Block acl_entries`. **NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`."
+* `acl_entries` - (Optional, Computed, Deprecated from v1.190.0+) The entries of the Acl. See [`acl_entries`](#acl_entries) below. **NOTE:** "Field 'acl_entries' has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`."
 * `acl_name` - (Optional) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter.
 * `address_ip_version` - (Required, ForceNew) The IP version. Valid values: `IPv4` and `IPv6`.
 * `dry_run` - (Optional) The dry run.
 
-#### Block acl_entries
+### `acl_entries`
 
 The acl_entries supports the following: 
 
@@ -53,7 +55,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Acl. Its value is same as `acl_id`.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

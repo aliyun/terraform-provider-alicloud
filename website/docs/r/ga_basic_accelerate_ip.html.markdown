@@ -7,22 +7,47 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Basic Accelerate IP resource.
 ---
 
-# alicloud\_ga\_basic\_accelerate\_ip
+# alicloud_ga_basic_accelerate_ip
 
 Provides a Global Accelerator (GA) Basic Accelerate IP resource.
 
-For information about Global Accelerator (GA) Basic Accelerate IP and how to use it, see [What is Basic Accelerate IP](https://help.aliyun.com/document_detail/466833.html).
+For information about Global Accelerator (GA) Basic Accelerate IP and how to use it, see [What is Basic Accelerate IP](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createbasicaccelerateip).
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region  = var.region
+  profile = "default"
+}
+
+resource "alicloud_ga_basic_accelerator" "default" {
+  duration               = 1
+  basic_accelerator_name = "terraform-example"
+  description            = "terraform-example"
+  bandwidth_billing_type = "CDT"
+  auto_use_coupon        = "true"
+  auto_pay               = true
+}
+
+resource "alicloud_ga_basic_ip_set" "default" {
+  accelerator_id       = alicloud_ga_basic_accelerator.default.id
+  accelerate_region_id = var.region
+  isp_type             = "BGP"
+  bandwidth            = "5"
+}
+
 resource "alicloud_ga_basic_accelerate_ip" "default" {
-  accelerator_id = "your_accelerator_id"
-  ip_set_id      = "your_ip_set_id"
+  accelerator_id = alicloud_ga_basic_accelerator.default.id
+  ip_set_id      = alicloud_ga_basic_ip_set.default.id
 }
 ```
 
@@ -41,7 +66,7 @@ The following attributes are exported:
 * `accelerate_ip_address` - The address of the Basic Accelerate IP.
 * `status` - The status of the Basic Accelerate IP instance.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

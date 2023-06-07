@@ -7,44 +7,93 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Basic Endpoint resource.
 ---
 
-# alicloud\_ga\_basic\_endpoint
+# alicloud_ga_basic_endpoint
 
 Provides a Global Accelerator (GA) Basic Endpoint resource.
 
-For information about Global Accelerator (GA) Basic Endpoint and how to use it, see [What is Basic Endpoint](https://help.aliyun.com/document_detail/466839.html).
+For information about Global Accelerator (GA) Basic Endpoint and how to use it, see [What is Basic Endpoint](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createbasicendpoint).
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  alias  = "sz"
-  region = "cn-shenzhen"
+variable "region" {
+  default = "cn-shenzhen"
+}
+
+variable "endpoint_region" {
+  default = "cn-hangzhou"
 }
 
 provider "alicloud" {
+  region = var.region
+  alias  = "sz"
+}
+
+provider "alicloud" {
+  region = var.endpoint_region
   alias  = "hz"
-  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  provider                    = alicloud.sz
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  provider   = alicloud.sz
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "default" {
+  provider     = alicloud.sz
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  provider = alicloud.sz
+  vpc_id   = alicloud_vpc.default.id
+  name     = "terraform-example"
 }
 
 resource "alicloud_ecs_network_interface" "default" {
-  provider           = "alicloud.sz"
-  vswitch_id         = "your_vswitch_id"
-  security_group_ids = ["your_security_group_id"]
+  provider           = alicloud.sz
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_ga_basic_accelerator" "default" {
+  duration               = 1
+  basic_accelerator_name = "terraform-example"
+  description            = "terraform-example"
+  bandwidth_billing_type = "CDT"
+  auto_use_coupon        = "true"
+  auto_pay               = true
+}
+
+resource "alicloud_ga_basic_endpoint_group" "default" {
+  accelerator_id            = alicloud_ga_basic_accelerator.default.id
+  endpoint_group_region     = var.region
+  basic_endpoint_group_name = "terraform-example"
+  description               = "terraform-example"
 }
 
 resource "alicloud_ga_basic_endpoint" "default" {
-  provider                  = "alicloud.hz"
-  accelerator_id            = "your_accelerator_id"
-  endpoint_group_id         = "your_endpoint_group_id"
+  provider                  = alicloud.hz
+  accelerator_id            = alicloud_ga_basic_accelerator.default.id
+  endpoint_group_id         = alicloud_ga_basic_endpoint_group.default.id
   endpoint_type             = "ENI"
   endpoint_address          = alicloud_ecs_network_interface.default.id
   endpoint_sub_address_type = "secondary"
   endpoint_sub_address      = "192.168.0.1"
-  basic_endpoint_name       = "example_value"
+  basic_endpoint_name       = "terraform-example"
 }
 ```
 
@@ -69,7 +118,7 @@ The following attributes are exported:
 * `endpoint_id` - The ID of the Basic Endpoint.
 * `status` - The status of the Basic Endpoint.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

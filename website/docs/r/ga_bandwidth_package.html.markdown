@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Bandwidth Package resource.
 ---
 
-# alicloud\_ga\_bandwidth\_package
+# alicloud_ga_bandwidth_package
 
 Provides a Global Accelerator (GA) Bandwidth Package resource.
 
@@ -15,7 +15,7 @@ For information about Global Accelerator (GA) Bandwidth Package and how to use i
 
 -> **NOTE:** At present, The `alicloud_ga_bandwidth_package` created with `Subscription` cannot be deleted. you need to wait until the resource is outdated and released automatically.
 
--> **NOTE:** Available in v1.112.0+.
+-> **NOTE:** Available since v1.112.0.
 
 ## Example Usage
 
@@ -68,7 +68,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Bandwidth Package.
 * `status` - The status of the bandwidth plan.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

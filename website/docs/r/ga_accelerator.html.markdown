@@ -7,15 +7,15 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Accelerator resource.
 ---
 
-# alicloud\_ga\_accelerator
+# alicloud_ga_accelerator
 
 Provides a Global Accelerator (GA) Accelerator resource.
 
-For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://help.aliyun.com/document_detail/153235.html).
+For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createaccelerator).
 
 -> **NOTE:** At present, The `alicloud_ga_accelerator` cannot be deleted. you need to wait until the resource is outdated and released automatically.
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
@@ -28,6 +28,11 @@ resource "alicloud_ga_accelerator" "example" {
   spec            = "1"
 }
 ```
+### Deleting `alicloud_ga_accelerator` or removing it from your configuration
+
+The `alicloud_ga_accelerator` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the DB Instance.
+You can resume managing the subscription db instance via the AlibabaCloud Console.
 
 ## Argument Reference
 
@@ -65,7 +70,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
 * `status` - The status of the GA instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

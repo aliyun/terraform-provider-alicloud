@@ -7,45 +7,46 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Listener resource.
 ---
 
-# alicloud\_ga\_listener
+# alicloud_ga_listener
 
 Provides a Global Accelerator (GA) Listener resource.
 
-For information about Global Accelerator (GA) Listener and how to use it, see [What is Listener](https://help.aliyun.com/document_detail/153253.html).
+For information about Global Accelerator (GA) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createlistener).
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ga_accelerator" "example" {
+resource "alicloud_ga_accelerator" "default" {
   duration        = 1
   auto_use_coupon = true
   spec            = "1"
 }
-resource "alicloud_ga_bandwidth_package" "de" {
-  bandwidth      = "100"
+
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
   type           = "Basic"
   bandwidth_type = "Basic"
   payment_type   = "PayAsYouGo"
   billing_type   = "PayBy95"
   ratio          = 30
 }
-resource "alicloud_ga_bandwidth_package_attachment" "de" {
-  accelerator_id       = alicloud_ga_accelerator.example.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.de.id
-}
-resource "alicloud_ga_listener" "example" {
-  depends_on     = [alicloud_ga_bandwidth_package_attachment.de]
-  accelerator_id = alicloud_ga_accelerator.example.id
-  port_ranges {
-    from_port = 60
-    to_port   = 70
-  }
+
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
+resource "alicloud_ga_listener" "default" {
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  port_ranges {
+    from_port = 80
+    to_port   = 80
+  }
+}
 ```
 
 ## Argument Reference
@@ -53,7 +54,7 @@ resource "alicloud_ga_listener" "example" {
 The following arguments are supported:
 
 * `accelerator_id` - (Required) The accelerator id.
-* `certificates` - (Optional) The certificates of the listener.
+* `certificates` - (Optional) The certificates of the listener. See [`certificates`](#certificates) below.
 
 -> **NOTE:** This parameter needs to be configured only for monitoring of the HTTPS protocol.
              
@@ -62,7 +63,7 @@ The following arguments are supported:
     `SOURCE_IP`: maintain client affinity. When a client accesses a stateful application, all requests from the same client can be directed to the same terminal node, regardless of the source port and protocol.
 * `description` - (Optional) The description of the listener.
 * `name` - (Optional) The name of the listener. The length of the name is 2-128 characters. It starts with uppercase and lowercase letters or Chinese characters. It can contain numbers and underscores and dashes.
-* `port_ranges` - (Required) The portRanges of the listener.
+* `port_ranges` - (Required) The portRanges of the listener. See [`port_ranges`](#port_ranges) below.
 
 -> **NOTE:** For HTTP or HTTPS protocol monitoring, only one monitoring port can be configured, that is, the start monitoring port and end monitoring port should be the same. 
 
@@ -93,14 +94,14 @@ The following arguments are supported:
     - `Standard`: intelligent routing.
     - `CustomRouting`: custom routing.
 
-#### Block port_ranges
+### `port_ranges`
 
 The port_ranges supports the following: 
 
 * `from_port` - (Required) The initial listening port used to receive requests and forward them to terminal nodes.
 * `to_port` - (Required) The end listening port used to receive requests and forward them to terminal nodes.
 
-#### Block certificates
+### `certificates`
 
 The certificates supports the following: 
 
@@ -113,7 +114,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Listener.
 * `status` - The status of the listener.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

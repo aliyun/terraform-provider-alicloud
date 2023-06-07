@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Accelerator Spare Ip Attachment resource.
 ---
 
-# alicloud\_ga\_accelerator\_spare\_ip\_attachment
+# alicloud_ga_accelerator_spare_ip_attachment
 
 Provides a Global Accelerator (GA) Accelerator Spare Ip Attachment resource.
 
-For information about Global Accelerator (GA) Accelerator Spare Ip Attachment and how to use it, see [What is Accelerator Spare Ip Attachment](https://help.aliyun.com/document_detail/262120.html).
+For information about Global Accelerator (GA) Accelerator Spare Ip Attachment and how to use it, see [What is Accelerator Spare Ip Attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createspareips).
 
--> **NOTE:** Available in v1.167.0+.
+-> **NOTE:** Available since v1.167.0.
 
 ## Example Usage
 
@@ -23,9 +23,9 @@ Basic Usage
 resource "alicloud_ga_accelerator" "default" {
   duration         = 1
   spec             = "1"
-  accelerator_name = var.name
+  accelerator_name = "terraform-example"
   auto_use_coupon  = true
-  description      = var.name
+  description      = "terraform-example"
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
@@ -35,7 +35,7 @@ resource "alicloud_ga_bandwidth_package" "default" {
   payment_type           = "PayAsYouGo"
   billing_type           = "PayBy95"
   ratio                  = 30
-  bandwidth_package_name = var.name
+  bandwidth_package_name = "terraform-example"
   auto_pay               = true
   auto_use_coupon        = true
 }
@@ -66,7 +66,7 @@ The following attributes are exported:
 * `id` - The resource ID of Accelerator Spare Ip Attachment. The value formats as `<accelerator_id>:<spare_ip>`.
 * `status` - The status of the standby CNAME IP address.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
