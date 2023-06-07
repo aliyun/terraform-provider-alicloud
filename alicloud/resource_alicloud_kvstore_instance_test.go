@@ -673,6 +673,7 @@ func TestAccAlicloudKVStoreRedisInstance_6_0(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAlicloudKVStoreRedisInstance_7_0(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
@@ -937,6 +938,7 @@ func TestAccAlicloudKVStoreRedisInstance_7_0(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
@@ -1507,18 +1509,19 @@ func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":            "2",
-					"instance_class":   "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
-					"db_instance_name": name,
-					"instance_type":    "Redis",
-					"engine_version":   "5.0",
+					"count":             "2",
+					"instance_class":    "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"db_instance_name":  name,
+					"instance_type":     "Redis",
+					"engine_version":    "5.0",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"shard_count":       "2",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1526,12 +1529,13 @@ func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
 						"db_instance_name":  name,
 						"instance_type":     "Redis",
 						"engine_version":    "5.0",
-						"tags.%":            "2",
-						"tags.Created":      "TF",
-						"tags.For":          "acceptance test",
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
 						"vswitch_id":        CHECKSET,
+						"shard_count":       "2",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
 					}),
 				),
 			},
