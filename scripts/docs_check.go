@@ -185,8 +185,12 @@ func main() {
 				continue
 			}
 			if strings.HasPrefix(text, "###") {
-				block := strings.TrimSpace(strings.TrimPrefix(text, "###"))
-				if !strings.HasPrefix(block, "`") && !strings.HasSuffix(block, "`") {
+				parts := strings.Split(text, " ")
+				block := strings.ToLower(parts[len(parts)-1])
+				if len(parts) > 2 ||
+					(strings.HasPrefix(block, "`") && !strings.HasSuffix(block, "`")) ||
+					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")){
+					block = strings.Trim(block, "`")
 					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "### `"+block+"`", text)
 					exitCode = 1
 				}
