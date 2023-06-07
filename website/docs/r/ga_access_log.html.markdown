@@ -7,30 +7,46 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Access Log resource.
 ---
 
-# alicloud\_ga\_access\_log
+# alicloud_ga_access_log
 
 Provides a Global Accelerator (GA) Access Log resource.
 
 For information about Global Accelerator (GA) Access Log and how to use it, see [What is Access Log](https://www.alibabacloud.com/help/en/global-accelerator/latest/attachlogstoretoendpointgroup).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_ga_accelerators" "default" {
-  status = "active"
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+provider "alicloud" {
+  region  = var.region
+  profile = "default"
+}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
 resource "alicloud_log_project" "default" {
-  name = "tf-testAcc-log-project"
+  name = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_log_store" "default" {
   project = alicloud_log_project.default.name
-  name    = "tf-testAcc-log-store"
+  name    = "terraform-example"
+}
+
+resource "alicloud_ga_accelerator" "default" {
+  duration        = 1
+  auto_use_coupon = true
+  spec            = "2"
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
@@ -43,20 +59,26 @@ resource "alicloud_ga_bandwidth_package" "default" {
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = data.alicloud_ga_accelerators.default.accelerators.0.id
+  accelerator_id       = alicloud_ga_accelerator.default.id
   bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
 resource "alicloud_ga_listener" "default" {
-  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  accelerator_id  = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  client_affinity = "SOURCE_IP"
+  protocol        = "HTTP"
+  name            = "terraform-example"
+
   port_ranges {
-    from_port = 80
-    to_port   = 80
+    from_port = 70
+    to_port   = 70
   }
 }
 
 resource "alicloud_eip_address" "default" {
-  payment_type = "PayAsYouGo"
+  bandwidth            = "10"
+  internet_charge_type = "PayByBandwidth"
+  address_name         = "terraform-example"
 }
 
 resource "alicloud_ga_endpoint_group" "default" {
@@ -66,17 +88,17 @@ resource "alicloud_ga_endpoint_group" "default" {
     type     = "PublicIp"
     weight   = 20
   }
-  endpoint_group_region = "cn-hangzhou"
+  endpoint_group_region = var.region
   listener_id           = alicloud_ga_listener.default.id
 }
 
-resource alicloud_ga_access_log "default" {
-  accelerator_id     = data.alicloud_ga_accelerators.default.accelerators.0.id
+resource "alicloud_ga_access_log" "default" {
+  accelerator_id     = alicloud_ga_accelerator.default.id
   listener_id        = alicloud_ga_listener.default.id
   endpoint_group_id  = alicloud_ga_endpoint_group.default.id
   sls_project_name   = alicloud_log_project.default.name
   sls_log_store_name = alicloud_log_store.default.name
-  sls_region_id      = "cn-hangzhou"
+  sls_region_id      = var.region
 }
 ```
 
@@ -98,7 +120,7 @@ The following attributes are exported:
 * `id` - The resource ID of Access Log. The value formats as `<accelerator_id>:<listener_id>:<endpoint_group_id>`.
 * `status` - Whether access log is enabled.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

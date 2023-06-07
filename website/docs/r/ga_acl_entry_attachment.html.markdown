@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Acl entry attachment resource.
 ---
 
-# alicloud\_ga\_acl\_entry\_attachment
+# alicloud_ga_acl_entry_attachment
 
 Provides a Global Accelerator (GA) Acl entry attachment resource.
 
 For information about Global Accelerator (GA) Acl entry attachment and how to use it, see [What is Acl entry attachment](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-addentriestoacl).
 
--> **NOTE:** Available in v1.190.0+.
+-> **NOTE:** Available since v1.190.0.
 
 ## Example Usage
 
@@ -47,7 +47,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Acl entry attachment. The value formats as `<acl_id>:<entry>`.
 * `status` - The status of the network ACL.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

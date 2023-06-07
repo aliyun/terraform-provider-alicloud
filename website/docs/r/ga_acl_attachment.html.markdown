@@ -7,75 +7,56 @@ description: |-
   Provides a Alicloud Global Accelerator (GA) Acl Attachment resource.
 ---
 
-# alicloud\_ga\_acl\_attachment
+# alicloud_ga_acl_attachment
 
 Provides a Global Accelerator (GA) Acl Attachment resource.
 
 For information about Global Accelerator (GA) Acl Attachment and how to use it, see [What is Acl Attachment](https://www.alibabacloud.com/help/en/doc-detail/258295.html).
 
--> **NOTE:** Available in v1.150.0+.
+-> **NOTE:** Available since v1.150.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf-testacc-ga"
-}
-
-data "alicloud_ga_accelerators" "default" {
-  status = "active"
-}
-
-data "alicloud_ga_bandwidth_packages" "default" {
-  status = "active"
-}
-
 resource "alicloud_ga_accelerator" "default" {
-  count           = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? 0 : 1
   duration        = 1
   auto_use_coupon = true
   spec            = "1"
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
-  count           = length(data.alicloud_ga_bandwidth_packages.default.packages) > 0 ? 0 : 1
-  bandwidth       = 20
-  type            = "Basic"
-  bandwidth_type  = "Basic"
-  duration        = 1
-  ratio           = 30
-  auto_pay        = true
-  auto_use_coupon = true
-}
-
-locals {
-  accelerator_id       = length(data.alicloud_ga_accelerators.default.accelerators) > 0 ? data.alicloud_ga_accelerators.default.accelerators.0.id : alicloud_ga_accelerator.default.0.id
-  bandwidth_package_id = length(data.alicloud_ga_bandwidth_packages.default.packages) > 0 ? data.alicloud_ga_bandwidth_packages.default.packages.0.id : alicloud_ga_bandwidth_package.default.0.id
+  bandwidth      = 100
+  type           = "Basic"
+  bandwidth_type = "Basic"
+  payment_type   = "PayAsYouGo"
+  billing_type   = "PayBy95"
+  ratio          = 30
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = local.accelerator_id
-  bandwidth_package_id = local.bandwidth_package_id
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
 resource "alicloud_ga_listener" "default" {
-  depends_on     = [alicloud_ga_bandwidth_package_attachment.default]
-  accelerator_id = local.accelerator_id
+  accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
   port_ranges {
-    from_port = 60
-    to_port   = 70
+    from_port = 80
+    to_port   = 80
   }
 }
 
 resource "alicloud_ga_acl" "default" {
-  acl_name           = var.name
+  acl_name           = "terraform-example"
   address_ip_version = "IPv4"
-  acl_entries {
-    entry             = "192.168.1.0/24"
-    entry_description = "tf-test1"
-  }
+}
+
+resource "alicloud_ga_acl_entry_attachment" "default" {
+  acl_id            = alicloud_ga_acl.default.id
+  entry             = "192.168.1.1/32"
+  entry_description = "terraform-example"
 }
 
 resource "alicloud_ga_acl_attachment" "default" {
@@ -103,7 +84,7 @@ The following attributes are exported:
 * `id` - The resource ID of Acl Attachment. The value formats as `<listener_id>:<acl_id>`.
 * `status` - The status of the resource. 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
