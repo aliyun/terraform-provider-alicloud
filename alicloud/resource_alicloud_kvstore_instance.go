@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudKvstoreInstance() *schema.Resource {
@@ -43,7 +42,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validation.IntBetween(1, 12),
+				ValidateFunc:     IntBetween(1, 12),
 				DiffSuppressFunc: redisPostPaidAndRenewDiffSuppressFunc,
 			},
 			"auto_use_coupon": {
@@ -84,8 +83,8 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"capacity": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"config": {
 				Type:          schema.TypeMap,
@@ -112,8 +111,8 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				Deprecated:    "Field 'instance_name' has been deprecated from version 1.101.0. Use 'db_instance_name' instead.",
 				ConflictsWith: []string{"db_instance_name"},
+				Deprecated:    "Field `instance_name` has been deprecated from version 1.101.0. Use `db_instance_name` instead.",
 			},
 			"dedicated_host_group_id": {
 				Type:     schema.TypeString,
@@ -127,7 +126,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"enable_backup_log": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{0, 1}),
+				ValidateFunc: IntInSlice([]int{0, 1}),
 				Default:      0,
 			},
 			"end_time": {
@@ -137,7 +136,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"engine_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"2.8", "4.0", "5.0", "6.0", "7.0"}, false),
+				ValidateFunc: StringInSlice([]string{"2.8", "4.0", "5.0", "6.0", "7.0"}, false),
 				Computed:     true,
 			},
 			"force_upgrade": {
@@ -171,7 +170,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Memcache", "Redis"}, false),
+				ValidateFunc: StringInSlice([]string{"Memcache", "Redis"}, false),
 				Default:      "Redis",
 			},
 			"maintain_end_time": {
@@ -187,7 +186,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"effective_time": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Immediately", "MaintainTime"}, false),
+				ValidateFunc: StringInSlice([]string{"Immediately", "MaintainTime"}, false),
 			},
 			"modify_mode": {
 				Type:     schema.TypeInt,
@@ -199,13 +198,13 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
+				ValidateFunc: StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
 				Deprecated:   "Field 'node_type' has been deprecated from version 1.120.1",
 			},
 			"order_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
+				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 				Default:      "UPGRADE",
 			},
 			"password": {
@@ -217,21 +216,21 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc:  StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				ConflictsWith: []string{"instance_charge_type"},
 			},
 			"instance_charge_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc:  StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				Deprecated:    "Field 'instance_charge_type' has been deprecated from version 1.101.0. Use 'payment_type' instead.",
 				ConflictsWith: []string{"payment_type"},
 			},
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1", "12", "2", "24", "3", "36", "4", "5", "6", "7", "8", "9"}, false),
+				ValidateFunc: StringInSlice([]string{"1", "12", "2", "24", "3", "36", "4", "5", "6", "7", "8", "9"}, false),
 			},
 			"port": {
 				Type:     schema.TypeInt,
@@ -249,8 +248,8 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"private_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"qps": {
 				Type:     schema.TypeInt,
@@ -269,7 +268,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"ssl_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable", "Update"}, false),
+				ValidateFunc: StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
 			"secondary_zone_id": {
 				Type:     schema.TypeString,
@@ -314,7 +313,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"vpc_auth_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Close", "Open"}, false),
+				ValidateFunc: StringInSlice([]string{"Close", "Open"}, false),
 				Default:      "Open",
 			},
 			"zone_id": {
@@ -364,12 +363,14 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Deprecated: "Field 'parameters' has been deprecated from version 1.101.0. Use 'config' instead.",
 						},
 						"value": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:       schema.TypeString,
+							Optional:   true,
+							Deprecated: "Field 'parameters' has been deprecated from version 1.101.0. Use 'config' instead.",
 						},
 					},
 				},
@@ -383,24 +384,31 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				ConflictsWith: []string{"config"},
 			},
 			"tde_status": {
-				Optional:     true,
 				Type:         schema.TypeString,
+				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Enabled", "Disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled", "Disabled"}, false),
 			},
 			"encryption_name": {
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				Type:     schema.TypeString,
 			},
 			"encryption_key": {
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				Type:     schema.TypeString,
 			},
 			"role_arn": {
-				Optional: true,
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"shard_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 		},
 	}
@@ -526,6 +534,10 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.SecondaryZoneId = v.(string)
 	}
 
+	if v, ok := d.GetOkExists("shard_count"); ok {
+		request.ShardCount = requests.NewInteger(v.(int))
+	}
+
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 	if vswitchId != "" {
 		vpcService := VpcService{client}
@@ -540,15 +552,20 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 			request.ZoneId = vsw.ZoneId
 		}
 	}
+
 	raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 		return r_kvstoreClient.CreateInstance(request)
 	})
+	addDebug(request.GetActionName(), raw)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kvstore_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
+
 	response, _ := raw.(*r_kvstore.CreateInstanceResponse)
+
 	d.SetId(fmt.Sprintf("%v", response.InstanceId))
+
 	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -556,6 +573,7 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	return resourceAlicloudKvstoreInstanceUpdate(d, meta)
 }
+
 func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
@@ -568,6 +586,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
+
 	d.Set("enable_public", false)
 	d.Set("connection_string", "")
 	net, _ := r_kvstoreService.DescribeKvstoreConnection(d.Id())
@@ -622,6 +641,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("private_ip", object["PrivateIp"])
 	d.Set("qps", object["QPS"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("shard_count", object["ShardCount"])
 	d.Set("status", object["InstanceStatus"])
 	if v, ok := object["Tags"].(map[string]interface{}); ok {
 		d.Set("tags", tagsToMap(v["Tag"]))
@@ -706,6 +726,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 
 	return nil
 }
+
 func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
@@ -1129,7 +1150,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			modifyInstanceSpecReq.OrderType = d.Get("order_type").(string)
 		}
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			modifyInstanceSpecReq.ClientToken = buildClientToken(modifyInstanceSpecReq.GetActionName())
 			args := *modifyInstanceSpecReq
 			raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
@@ -1264,7 +1285,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	if update {
 		action := "ModifyInstanceTDE"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyInstanceTDERequest, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
@@ -1291,6 +1312,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(false)
 	return resourceAlicloudKvstoreInstanceRead(d, meta)
 }
+
 func resourceAlicloudKvstoreInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
