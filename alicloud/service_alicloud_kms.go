@@ -377,3 +377,50 @@ func (s *KmsService) SetResourceTags(d *schema.ResourceData, resourceType string
 	}
 	return nil
 }
+
+func (s *KmsService) ListTagResources(id string) (object interface{}, err error) {
+	conn, err := s.client.NewKmsClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "ListResourceTags"
+
+	request := map[string]interface{}{
+		"KeyId": id,
+	}
+
+	tags := make([]interface{}, 0)
+	var response map[string]interface{}
+
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		addDebug(action, response, request)
+
+		v, err := jsonpath.Get("$.Tags.Tag", response)
+		if err != nil {
+			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.Tags.Tag", response))
+		}
+
+		if v != nil {
+			tags = append(tags, v.([]interface{})...)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return
+	}
+
+	return tags, nil
+}

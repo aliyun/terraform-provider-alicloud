@@ -141,6 +141,10 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 					"key_spec":               "Aliyun_AES_256",
 					"protection_level":       "HSM",
 					"pending_window_in_days": "7",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -148,14 +152,26 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 						"key_spec":               "Aliyun_AES_256",
 						"protection_level":       "HSM",
 						"pending_window_in_days": "7",
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "Key",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days", "is_enabled"},
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "Key_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "Key_Update",
+					}),
+				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -214,6 +230,12 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days", "is_enabled"},
+			},
 		},
 	})
 }
@@ -229,10 +251,6 @@ var KmsKeyMap = map[string]string{
 	"origin":              "Aliyun_KMS",
 	"primary_key_version": CHECKSET,
 	"protection_level":    "SOFTWARE",
-}
-
-func KmsKeyBasicdependence(name string) string {
-	return ""
 }
 
 func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
@@ -281,6 +299,10 @@ func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
 			},
 		},
 	})
+}
+
+func KmsKeyBasicdependence(name string) string {
+	return ""
 }
 
 func TestUnitAlicloudKMSKey(t *testing.T) {
