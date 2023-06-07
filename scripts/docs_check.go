@@ -113,7 +113,7 @@ func main() {
 				descriptionCheck = false
 				exampleCheck = true
 				if !versionChecked {
-					fmt.Printf("\nline %d: missing available or deprecated verison info.", line)
+					fmt.Printf("\nline %d: missing available or deprecated verison info, or check your version format. For example, `Available since v` or `Deprecated since v`, not `Available in v` or `Deprecated in v` ", line)
 					exitCode = 1
 				}
 				if text != "## Example Usage" {
@@ -189,7 +189,7 @@ func main() {
 				block := strings.ToLower(parts[len(parts)-1])
 				if len(parts) > 2 ||
 					(strings.HasPrefix(block, "`") && !strings.HasSuffix(block, "`")) ||
-					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")){
+					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")) {
 					block = strings.Trim(block, "`")
 					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "### `"+block+"`", text)
 					exitCode = 1
