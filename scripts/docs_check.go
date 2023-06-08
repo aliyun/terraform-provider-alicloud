@@ -31,6 +31,7 @@ func main() {
 	attributesCheck := false
 	importCheck := false
 	importBlockOpen := false
+	timeoutCheck := false
 	line := 0
 	for scanner.Scan() {
 		line += 1
@@ -102,7 +103,19 @@ func main() {
 				for _, v := range []string{"Available since v", "Deprecated since v"} {
 					if strings.Contains(text, v) && !strings.HasPrefix(text, "-> **NOTE:** "+v) {
 						parts := strings.Split(text, v)
-						fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "-> **NOTE:** "+v+parts[len(parts)-1], text)
+						fmt.Printf("\nline %d: Expected: %s Got: %s", line, "-> **NOTE:** "+v+strings.Replace(parts[1], "+", "", -1), text)
+						exitCode = 1
+					}
+				}
+				continue
+			}
+			if strings.Contains(text, "Available in v") || strings.Contains(text, "Deprecated from v") {
+				versionChecked = true
+				for _, v := range []string{"Available in v", "Deprecated from v"} {
+					if strings.Contains(text, v) {
+						parts := strings.Split(text, v)
+						v = strings.Replace(strings.Replace(v, "in", "since", -1), "from", "since", -1)
+						fmt.Printf("\nline %d: Expected: %s Got: %s", line, parts[0] + v+strings.Replace(parts[1], "+", "", -1), text)
 						exitCode = 1
 					}
 				}
@@ -218,8 +231,29 @@ func main() {
 		}
 
 		if attributesCheck {
+			if strings.HasPrefix(text, "## Timeout") || strings.HasSuffix(text, "Timeouts") || strings.HasSuffix(text, "Timeout") {
+				attributesCheck = false
+				timeoutCheck = true
+				if text != "## Timeouts" {
+					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Timeouts", text)
+					exitCode = 1
+				}
+				continue
+			}
 			if strings.HasPrefix(text, "## Import") || strings.HasSuffix(text, "Import") {
 				attributesCheck = false
+				importCheck = true
+				if text != "## Import" {
+					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Import", text)
+					exitCode = 1
+				}
+				continue
+			}
+		}
+
+		if timeoutCheck {
+			if strings.HasPrefix(text, "## Import") || strings.HasSuffix(text, "Import") {
+				timeoutCheck = false
 				importCheck = true
 				if text != "## Import" {
 					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Import", text)
