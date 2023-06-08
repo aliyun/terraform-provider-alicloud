@@ -33,10 +33,10 @@ func init() {
 
 var (
 	resourceNames = flag.String("resourceNames", "", "the names of the terraform resources to diff")
-	fileName      = flag.String("file_name", "", "the files to check diff")
+	fileNames     = flag.String("fileNames", "", "the files to check diff")
 	filterList    = map[string][]string{
-		"alicloud_amqp_instance":            []string{"logistics"},
-		"alicloud_cms_alarm":                []string{"notify_type"},
+		"alicloud_amqp_instance":            {"logistics"},
+		"alicloud_cms_alarm":                {"notify_type"},
 		"alicloud_cs_serverless_kubernetes": {"private_zone", "create_v2_cluster"},
 		"alicloud_slb_listener":             {"lb_protocol", "instance_port", "lb_port"},
 		"alicloud_kvstore_instance":         {"connection_string"},
@@ -53,47 +53,91 @@ type Resource struct {
 	Attributes map[string]interface{}
 }
 
+type ResourceAttribute struct {
+	Name        string
+	Type        string
+	Optional    string
+	Required    string
+	ForceNew    bool
+	Default     string
+	ElemType    string
+	Deprecated  string
+	DocsLineNum int
+}
+
 func TestConsistencyWithDocument(t *testing.T) {
+	exitCode := 0
 	flag.Parse()
-	if resourceNames != nil && len(*resourceNames) == 0 {
-		log.Warningf("there is no resource need to checking consistency")
+	if fileNames != nil && len(*fileNames) == 0 {
+		log.Infof("the diff file is empty, shipped!")
 		return
 	}
-	resourceNotFound := false
-	for _, resourceName := range strings.Split(strings.TrimPrefix(*resourceNames, ";"), ";") {
-		log.Debugf("checking consistency of the resource %s", resourceName)
-		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
-		if !ok || resource == nil {
-			log.Errorf("resource %s is not found in the ResourceMap", resourceName)
-			resourceNotFound = true
+
+	byt, _ := ioutil.ReadFile(*fileNames)
+	diff, _ := diffparser.Parse(string(byt))
+	//fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
+	//fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
+	//fileDocsRegex := regexp.MustCompile("website/docs/(d|r)/[0-9a-zA-Z_]*.html.markdown")
+	fileRegex := regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*.go")
+	fileTestRegex := regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*_test.go")
+	fileDocsRegex := regexp.MustCompile("website/docs/(r)/[0-9a-zA-Z_]*.html.markdown")
+	resourceNameMap := make(map[string]struct{})
+	for _, file := range diff.Files {
+		resourceName := ""
+		if fileRegex.MatchString(file.NewName) {
+			if fileTestRegex.MatchString(file.NewName) {
+				continue
+			}
+			resourceName = strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
+		} else if fileDocsRegex.MatchString(file.NewName) {
+			resourceName = "alicloud_" + strings.TrimSuffix(strings.Split(file.NewName, "/")[3], ".html.markdown")
+		} else {
 			continue
 		}
+		if _, ok := resourceNameMap[resourceName]; ok {
+			continue
+		} else {
+			resourceNameMap[resourceName] = struct{}{}
+		}
+
+		log.Infof("==> Checking resource %s attributes consistency...", resourceName)
+		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
+		if !ok || resource == nil {
+			//resourceName = strings.TrimPrefix(resourceName, "data_source_")
+			//resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap[resourceName]
+			//if !ok || resource == nil {
+			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
+			exitCode = 1
+			continue
+			//}
+		}
 		resourceSchema := resource.Schema
-		resourceSchemaFromDocs := make(map[string]interface{}, 0)
-		objMd, err := parseResourceDocs(resourceName)
-		if err != nil {
-			log.Error(err)
+		resourceSchemaFromDocs := make(map[string]ResourceAttribute)
+		if err := parseResourceDocs(resourceName, resourceSchemaFromDocs); err != nil {
+			fmt.Println(err)
 			t.Fatal()
 		}
-		mergeMaps(resourceSchemaFromDocs, objMd.Arguments, objMd.Attributes)
 
-		if !consistencyCheck(t, resourceName, resourceSchemaFromDocs, resourceSchema) {
-			t.Fatal("the consistency with document has occurred")
-			os.Exit(1)
+		if consistencyCheck(t, resourceName, resourceSchemaFromDocs, resourceSchema) {
+			log.Infof("--- PASS!\n\n")
+			continue
 		}
+		log.Errorf("--- Failed!\n\n")
+		exitCode = 1
 	}
-	if resourceNotFound {
-		os.Exit(1)
+	if exitCode > 0 {
+		os.Exit(exitCode)
 	}
+	return
 }
 
 func TestFieldCompatibilityCheck(t *testing.T) {
 	flag.Parse()
-	if fileName != nil && len(*fileName) == 0 {
+	if fileNames != nil && len(*fileNames) == 0 {
 		log.Warningf("the diff file is empty")
 		return
 	}
-	byt, _ := ioutil.ReadFile(*fileName)
+	byt, _ := ioutil.ReadFile(*fileNames)
 	diff, _ := diffparser.Parse(string(byt))
 	res := false
 	fileRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*.go")
@@ -230,102 +274,122 @@ func ParseField(hunk diffparser.DiffRange, length int) map[string]map[string]int
 	return raw
 }
 
-func parseResourceDocs(resourceName string) (*Resource, error) {
+func parseResourceDocs(resourceName string, resourceAttributes map[string]ResourceAttribute) error {
 	splitRes := strings.Split(resourceName, "alicloud_")
 	if len(splitRes) < 2 {
-		log.Errorf("the resource name parsed failed")
-		return nil, fmt.Errorf("the resource name parsed failed")
+		log.Errorf("parsing resource name %s failed.", resourceName)
+		return fmt.Errorf(fmt.Sprintf("parsing resource name %s failed.", resourceName))
 	}
 	basePath := "../website/docs/r/"
 	filePath := strings.Join([]string{basePath, splitRes[1], ".html.markdown"}, "")
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("cannot open text file: %s, err: [%v]", filePath, err)
-		return nil, err
+		log.Errorf("open resource %s docs failed. Error: %s", filePath, err)
+		return err
 	}
 	defer file.Close()
 
 	argsRegex := regexp.MustCompile("## Argument Reference")
 	attribRegex := regexp.MustCompile("## Attributes Reference")
-	secondLevelRegex := regexp.MustCompile("^#+")
+	secondLevelRegex := regexp.MustCompile("^### `([a-zA-Z_\\.0-9]*)`")
 	argumentsFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-? ?(\\(.*\\)) ?(.*)")
 	attributeFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
 
 	name := filepath.Base(filePath)
 	re := regexp.MustCompile("[a-z0-9A-Z_]*")
 	resourceName = "alicloud_" + re.FindString(name)
-	result := &Resource{Name: resourceName, Arguments: map[string]interface{}{}, Attributes: map[string]interface{}{}}
-	log.Infof("the resourceName = %s\n", resourceName)
+	//result := &Resource{Name: resourceName, Arguments: map[string]interface{}{}, Attributes: map[string]interface{}{}}
+	//log.Infof("the resourceName = %s\n", resourceName)
 
 	scanner := bufio.NewScanner(file)
 	phase := "Argument"
 	record := false
+	subAttributeName := ""
+	line := 0
 	for scanner.Scan() {
-		line := scanner.Text()
-		if argsRegex.MatchString(line) {
+		line += 1
+		text := scanner.Text()
+		if strings.HasPrefix(text, "#") && (strings.HasSuffix(text, "Timeouts") || strings.HasSuffix(text, "Import")) {
+			break
+		}
+		if argsRegex.MatchString(text) {
 			record = true
 			phase = "Argument"
 			continue
 		}
-		if attribRegex.MatchString(line) {
+		if attribRegex.MatchString(text) {
 			record = true
 			phase = "Attribute"
+			subAttributeName = ""
 			continue
 		}
-		if secondLevelRegex.MatchString(line) && strings.HasSuffix(line, "params") {
+		if secondLevelRegex.MatchString(text) {
 			record = true
+			parts := strings.Split(text, " ")
+			subAttributeName = strings.Trim(parts[len(parts)-1], "`")
 			continue
 		}
 		if record {
-			if secondLevelRegex.MatchString(line) && !strings.HasSuffix(line, "params") {
-				record = false
-				continue
-			}
 			var matched [][]string
 			if phase == "Argument" {
-				matched = argumentsFieldRegex.FindAllStringSubmatch(line, 1)
+				matched = argumentsFieldRegex.FindAllStringSubmatch(text, 1)
 			} else if phase == "Attribute" {
-				matched = attributeFieldRegex.FindAllStringSubmatch(line, 1)
+				matched = attributeFieldRegex.FindAllStringSubmatch(text, 1)
 			}
 
 			for _, m := range matched {
-				Field := parseMatchLine(m, phase)
-				Field["Type"] = phase
-				if v, exist := Field["Name"]; exist {
-					result.Arguments[v.(string)] = Field
+				attribute := parseMatchLine(m, phase, subAttributeName)
+				if attribute == nil {
+					continue
 				}
+				attribute.DocsLineNum = line
+				resourceAttributes[attribute.Name] = *attribute
 			}
 		}
-	}
-	return result, nil
-}
-
-func parseMatchLine(words []string, phase string) map[string]interface{} {
-	result := make(map[string]interface{}, 0)
-	if phase == "Argument" && len(words) >= 4 {
-		result["Name"] = words[1]
-		result["Description"] = words[3]
-		if strings.Contains(words[2], "Optional") {
-			result["Optional"] = true
-		}
-		if strings.Contains(words[2], "Required") {
-			result["Required"] = true
-		}
-		if strings.Contains(words[2], "ForceNew") {
-			result["ForceNew"] = true
-		}
-		return result
-	}
-	if phase == "Attribute" && len(words) >= 3 {
-		result["Name"] = words[1]
-		result["Description"] = words[2]
-		return result
 	}
 	return nil
 }
 
-func consistencyCheck(t *testing.T, resourceName string, resourceSchemaFromDocs map[string]interface{}, resourceSchema map[string]*schema.Schema) bool {
+func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
+	result := ResourceAttribute{}
+	if phase == "Argument" && len(words) >= 4 {
+		if rootName != "" {
+			result.Name = rootName + "." + words[1]
+		} else {
+			result.Name = words[1]
+		}
+		//result["Description"] = words[3]
+		if strings.Contains(words[2], "Optional") {
+			result.Optional = "true"
+		}
+		if strings.Contains(words[2], "Required") {
+			result.Required = "true"
+		}
+		if strings.Contains(words[2], "ForceNew") {
+			result.ForceNew = true
+		}
+		if strings.Contains(words[2], "Deprecated") {
+			result.Deprecated = "Deprecated since"
+		}
+		return &result
+	}
+	if phase == "Attribute" && len(words) >= 3 {
+		if words[1] == "id" {
+			return nil
+		}
+		if rootName != "" {
+			result.Name = rootName + "." + words[1]
+		} else {
+			result.Name = words[1]
+		}
+		//result["Description"] = words[2]
+		return &result
+	}
+	return nil
+}
+
+func consistencyCheck(t *testing.T, resourceName string, resourceAttributeFromDocs map[string]ResourceAttribute, resourceSchemaDefined map[string]*schema.Schema) bool {
 	isConsistent := true
 	filteredList := set.NewSet()
 	if val, ok := filterList[resourceName]; ok {
@@ -342,70 +406,69 @@ func consistencyCheck(t *testing.T, resourceName string, resourceSchemaFromDocs 
 	//}()
 
 	// the number of the schema field + 1(id) should equal to the number defined in document
-	if len(resourceSchema)+1 != len(resourceSchemaFromDocs) {
-		record := set.NewSet()
-		for field, _ := range resourceSchemaFromDocs {
-			if field == "id" || filteredList.Contains(field) {
-				delete(resourceSchemaFromDocs, field)
-				continue
-			}
-			if _, exist := resourceSchema[field]; exist {
-				delete(resourceSchemaFromDocs, field)
-				delete(resourceSchema, field)
-			} else if !exist {
-				// the field existed in Document,but not existed in resource
-				record.Add(field)
-			}
+	resourceAttributes := make(map[string]ResourceAttribute)
+	getResourceAttributes("", resourceAttributes, resourceSchemaDefined)
+
+	for attributeKey, attributeValue := range resourceAttributes {
+		attributeDocsValue, ok := resourceAttributeFromDocs[attributeKey]
+		if !ok {
+			isConsistent = false
+			log.Errorf("'%v' which described in the docs not found in the resource schema", attributeKey)
 		}
-		if len(resourceSchema) != 0 {
-			for field, _ := range resourceSchema {
-				if filteredList.Contains(field) {
-					record.Remove(field)
-					continue
-				}
-				// the field existed in resource,but not existed in document
-				record.Add(field)
-			}
+		if attributeValue.Optional == "true" && attributeDocsValue.Optional != attributeValue.Optional {
+			isConsistent = false
+			log.Errorf("'%v' should be marked as Optional in the document", attributeKey)
 		}
-		if record.Cardinality() != 0 {
-			log.Errorf("there is missing attribute %v description in the document", record)
-			return true
+		if attributeValue.Required == "true" && attributeDocsValue.Required != attributeValue.Required {
+			isConsistent = false
+			log.Errorf("'%v' should be marked as Required in the document", attributeKey)
+		}
+		if attributeValue.ForceNew && !attributeDocsValue.ForceNew {
+			isConsistent = false
+			log.Errorf("'%v' should be marked as ForceNew in the document description", attributeKey)
+		}
+		if attributeValue.Deprecated != "" && attributeDocsValue.Deprecated == "" {
+			isConsistent = false
+			log.Errorf("'%v' should be marked as Deprecated in the document description", attributeKey)
 		}
 	}
-	for fieldKey, fieldValue := range resourceSchemaFromDocs {
-		fieldSchema := fieldValue.(map[string]interface{})
-		if fieldSchema["Type"] == "Attribute" || filteredList.Contains(fieldKey) {
-			continue
-		}
-		resourceFieldObj, ok := resourceSchema[fieldKey]
-		if !ok || resourceFieldObj == nil {
+	for attributeKey, _ := range resourceAttributeFromDocs {
+		if _, ok := resourceAttributes[attributeKey]; !ok {
 			isConsistent = false
-			log.Errorf("attribute %v described in the docs is not defined in the resource schema", fieldKey)
-		}
-		if _, exist1 := fieldSchema["Optional"]; exist1 && !resourceFieldObj.Optional {
-			isConsistent = false
-			log.Errorf("attribute %v should be marked as Optional in the in the document description", fieldKey)
-		}
-		if _, exist1 := fieldSchema["Required"]; exist1 && !resourceFieldObj.Required {
-			isConsistent = false
-			log.Errorf("attribute %v should be marked as Required in the in the document description", fieldKey)
-		}
-		if _, exist1 := fieldSchema["ForceNew"]; exist1 && !resourceFieldObj.ForceNew {
-			isConsistent = false
-			log.Errorf("attribute %v should be marked as ForceNew in the document description", fieldKey)
+			log.Errorf("'%v' which described in the docs not found in the resource schema", attributeKey)
 		}
 	}
 	return isConsistent
 }
 
-func mergeMaps(Dst map[string]interface{}, arr ...map[string]interface{}) map[string]interface{} {
-	for _, m := range arr {
-		for k, v := range m {
-			if _, exist := Dst[k]; exist {
-				continue
+func getResourceAttributes(rootName string, resourceAttributeMap map[string]ResourceAttribute, resourceSchema map[string]*schema.Schema) {
+	for key, value := range resourceSchema {
+		if rootName != "" {
+			key = rootName + "." + key
+		}
+
+		if _, ok := resourceAttributeMap[key]; !ok {
+			resourceAttributeMap[key] = ResourceAttribute{
+				Name:       key,
+				Type:       value.Type.String(),
+				Optional:   fmt.Sprint(value.Optional),
+				Required:   fmt.Sprint(value.Required),
+				ForceNew:   value.ForceNew,
+				Default:    fmt.Sprint(value.Default),
+				Deprecated: value.Deprecated,
 			}
-			Dst[k] = v
+		}
+		if value.Type == schema.TypeSet || value.Type == schema.TypeList {
+			if v, ok := value.Elem.(schema.Schema); ok {
+				vv := resourceAttributeMap[key]
+				vv.ElemType = v.Type.String()
+				resourceAttributeMap[key] = vv
+			} else {
+				vv := resourceAttributeMap[key]
+				vv.ElemType = "Object"
+				resourceAttributeMap[key] = vv
+				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema)
+			}
 		}
 	}
-	return Dst
 }

@@ -115,7 +115,7 @@ func main() {
 					if strings.Contains(text, v) {
 						parts := strings.Split(text, v)
 						v = strings.Replace(strings.Replace(v, "in", "since", -1), "from", "since", -1)
-						fmt.Printf("\nline %d: Expected: %s Got: %s", line, parts[0] + v+strings.Replace(parts[1], "+", "", -1), text)
+						fmt.Printf("\nline %d: Expected: %s Got: %s", line, parts[0]+v+strings.Replace(parts[1], "+", "", -1), text)
 						exitCode = 1
 					}
 				}
@@ -181,7 +181,7 @@ func main() {
 			if strings.HasPrefix(text, "* `") {
 				parts := strings.Split(strings.Split(text, ")")[0], "(")
 				for i, tag := range strings.Split(parts[len(parts)-1], ",") {
-					if strings.Contains(tag, " ") {
+					if strings.HasPrefix(tag, " ") {
 						if i == 0 {
 							fmt.Printf("\nline %d: please remove redundant space prefix for %s. ", line, tag)
 							exitCode = 1
@@ -202,7 +202,7 @@ func main() {
 				block := strings.ToLower(parts[len(parts)-1])
 				if len(parts) > 2 ||
 					(strings.HasPrefix(block, "`") && !strings.HasSuffix(block, "`")) ||
-					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")){
+					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")) {
 					block = strings.Trim(block, "`")
 					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "### `"+block+"`", text)
 					exitCode = 1

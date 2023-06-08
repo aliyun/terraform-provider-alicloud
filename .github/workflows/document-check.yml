@@ -83,12 +83,29 @@ jobs:
           format: 'json'
       - name: Checking the docs content
         run: |
-          readarray -t added_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
-          for added_file in ${added_files[@]}; do
-            if [[ ${added_file} == "website/docs/"* ]]; then
-                go run scripts/docs_check.go ${added_file}
+          readarray -t changed_files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
+          for changed_file in ${changed_files[@]}; do
+            if [[ ${changed_file} == "website/docs/"* ]]; then
+                go run scripts/docs_check.go ${changed_file}
             fi
           done
+
+  Consistency:
+    needs: Content
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.19.x'
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Integration Test Check
+        run: |
+          git diff HEAD^ HEAD > diff.out
+          go test -v ./scripts/schema_test.go -run=TestConsistencyWithDocument -fileNames="../diff.out"
 
 #  terraform-validate:
 #    runs-on: ubuntu-latest
