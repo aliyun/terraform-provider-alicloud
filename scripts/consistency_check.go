@@ -311,7 +311,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 			}
 		}
 		if value.Type == schema.TypeSet || value.Type == schema.TypeList {
-			if v, ok := value.Elem.(schema.Schema); ok {
+			if v, ok := value.Elem.(*schema.Schema); ok {
 				vv := resourceAttributeMap[key]
 				vv.ElemType = v.Type.String()
 				resourceAttributeMap[key] = vv
