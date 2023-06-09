@@ -256,3 +256,4 @@ var SENormalPolarDBSupportRegions = []Region{Beijing, Shanghai, Shenzhen, Zhangj
 var VpcVSwitchCidrReservationSupportRegions = []Region{APSouthEast2}
 var ComputeNestSupportRegions = []Region{Hangzhou}
 var RedisTariInstanceSupportRegions = []Region{GuangZhou}
+var PolarDBNewBackupPolicySupportRegions = []Region{Hangzhou, Shanghai, Beijing, Qingdao, Shenzhen, Hongkong, USWest1, USEast1}
