@@ -60,7 +60,7 @@ func main() {
 			resourceName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
 			log.Infof("==> Checking resource %s breaking change...", resourceName)
 			for _, hunk := range file.Hunks {
-				if hunk != nil && !BreakingChangeRule(ParseResourceSchema(hunk.OrigRange, hunk.OrigRange.Length),
+				if hunk != nil && BreakingChangeRule(ParseResourceSchema(hunk.OrigRange, hunk.OrigRange.Length),
 					ParseResourceSchema(hunk.NewRange, hunk.NewRange.Length)) {
 					exitCode = 1
 				}
@@ -77,7 +77,7 @@ func BreakingChangeRule(oldAttrs, newAttrs map[string]map[string]interface{}) (r
 		_, exist2 := newAttrs[filedName]["Required"]
 		if exist1 && exist2 {
 			res = true
-			log.Errorf("[Incompatible Change]: '%v' should not been changed to required!", filedName)
+			log.Errorf("[Breaking Change]: '%v' should not been changed to required!", filedName)
 		}
 		// Type changed
 		typPrev, exist1 := oldAttr["Type"]
