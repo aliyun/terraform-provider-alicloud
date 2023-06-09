@@ -7,43 +7,118 @@ description: |-
   Provides a Alicloud Function Compute Trigger resource.
 ---
 
-# alicloud\_fc\_trigger
+# alicloud_fc_trigger
 
 Provides an Alicloud Function Compute Trigger resource. Based on trigger, execute your code in response to events in Alibaba Cloud.
- For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/doc-detail/52895.htm).
+ For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/en/function-compute/latest/api-doc-fc-open-2021-04-06-api-doc-createtrigger).
 
 -> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
+
+-> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "region" {
-  default = "cn-hangzhou"
+data "alicloud_account" "default" {}
+data "alicloud_regions" "default" {
+  current = true
 }
 
-variable "account" {
-  default = "12345"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
-provider "alicloud" {
-  account_id = var.account
-  region     = var.region
+resource "alicloud_log_project" "default" {
+  name = "example-value-${random_integer.default.result}"
 }
 
-resource "alicloud_fc_trigger" "foo" {
-  service    = "my-fc-service"
-  function   = "hello-world"
-  name       = "hello-trigger"
-  role       = alicloud_ram_role.foo.arn
-  source_arn = "acs:log:${var.region}:${var.account}:project/${alicloud_log_project.foo.name}"
+resource "alicloud_log_store" "default" {
+  project = alicloud_log_project.default.name
+  name    = "example-value"
+}
+
+resource "alicloud_log_store" "source_store" {
+  project = alicloud_log_project.default.name
+  name    = "example-source-store"
+}
+
+resource "alicloud_ram_role" "default" {
+  name        = "fcservicerole-${random_integer.default.result}"
+  document    = <<EOF
+  {
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "fc.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+  }
+  EOF
+  description = "this is a example"
+  force       = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name   = alicloud_ram_role.default.name
+  policy_name = "AliyunLogFullAccess"
+  policy_type = "System"
+}
+
+resource "alicloud_fc_service" "default" {
+  name        = "example-value-${random_integer.default.result}"
+  description = "example-value"
+  role        = alicloud_ram_role.default.arn
+  log_config {
+    project                 = alicloud_log_project.default.name
+    logstore                = alicloud_log_store.default.name
+    enable_instance_metrics = true
+    enable_request_metrics  = true
+  }
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
+}
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "index.py"
+  content = "import logging \ndef handler(event, context): \nlogger = logging.getLogger() \nlogger.info('hello world') \nreturn 'hello world'"
+}
+
+resource "alicloud_fc_function" "default" {
+  service     = alicloud_fc_service.default.name
+  name        = "terraform-example"
+  description = "example"
+  oss_bucket  = alicloud_oss_bucket.default.id
+  oss_key     = alicloud_oss_bucket_object.default.key
+  memory_size = "512"
+  runtime     = "python2.7"
+  handler     = "hello.handler"
+}
+
+
+resource "alicloud_fc_trigger" "default" {
+  service    = alicloud_fc_service.default.name
+  function   = alicloud_fc_function.default.name
+  name       = "terraform-example"
+  role       = alicloud_ram_role.default.arn
+  source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
   type       = "log"
   config     = <<EOF
     {
         "sourceConfig": {
-            "project": "project-for-fc",
-            "logstore": "project-for-fc"
+            "project": "${alicloud_log_project.default.name}",
+            "logstore": "${alicloud_log_store.source_store.name}"
         },
         "jobConfig": {
             "maxRetryTime": 3,
@@ -54,158 +129,117 @@ resource "alicloud_fc_trigger" "foo" {
             "c": "d"
         },
         "logConfig": {
-            "project": "project-for-fc-log",
-            "logstore": "project-for-fc-log"
+             "project": "${alicloud_log_project.default.name}",
+            "logstore": "${alicloud_log_store.default.name}"
         },
         "enable": true
     }
   
 EOF
-
-
-  depends_on = [alicloud_ram_role_policy_attachment.foo]
-}
-
-resource "alicloud_ram_role" "foo" {
-  name     = "${var.name}-trigger"
-  document = <<EOF
-  {
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-          "Service": [
-            "log.aliyuncs.com"
-          ]
-        }
-      }
-    ],
-    "Version": "1"
-  }
-  
-EOF
-
-
-  description = "this is a test"
-  force       = true
-}
-
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name   = alicloud_ram_role.foo.name
-  policy_name = "AliyunLogFullAccess"
-  policy_type = "System"
 }
 ```
 
 MNS topic trigger:
 
 ```terraform
-variable "name" {
-  default = "fctriggermnstopic"
-}
-data "alicloud_regions" "current_region" {
+data "alicloud_account" "default" {}
+data "alicloud_regions" "default" {
   current = true
 }
-data "alicloud_account" "current" {
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
-resource "alicloud_log_project" "foo" {
-  name        = "${var.name}"
-  description = "tf unit test"
+
+resource "alicloud_mns_topic" "default" {
+  name = "example-value-${random_integer.default.result}"
 }
-resource "alicloud_log_store" "bar" {
-  project          = "${alicloud_log_project.foo.name}"
-  name             = "${var.name}-source"
-  retention_period = "3000"
-  shard_count      = 1
-}
-resource "alicloud_log_store" "foo" {
-  project          = "${alicloud_log_project.foo.name}"
-  name             = "${var.name}"
-  retention_period = "3000"
-  shard_count      = 1
-}
-resource "alicloud_mns_topic" "foo" {
-  name = "${var.name}"
-}
-resource "alicloud_fc_service" "foo" {
-  name            = "${var.name}"
-  internet_access = false
-}
-resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
-}
-# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key    = "fc/hello.zip"
-  source = "./hello.zip"
-}
-resource "alicloud_fc_function" "foo" {
-  service     = "${alicloud_fc_service.foo.name}"
-  name        = "${var.name}"
-  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
-  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
-  memory_size = 512
-  runtime     = "python2.7"
-  handler     = "hello.handler"
-}
-resource "alicloud_ram_role" "foo" {
-  name        = "${var.name}-trigger"
+
+resource "alicloud_ram_role" "default" {
+  name        = "fcservicerole-${random_integer.default.result}"
   document    = <<EOF
   {
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Effect": "Allow",
-        "Principal": {
-          "Service": [
-            "mns.aliyuncs.com"
-          ]
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "mns.aliyuncs.com"
+            ]
+          }
         }
-      }
-    ],
-    "Version": "1"
+      ],
+      "Version": "1"
   }
   EOF
-  description = "this is a test"
+  description = "this is a example"
   force       = true
 }
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name   = "${alicloud_ram_role.foo.name}"
+
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name   = alicloud_ram_role.default.name
   policy_name = "AliyunMNSNotificationRolePolicy"
   policy_type = "System"
 }
-resource "alicloud_fc_trigger" "foo" {
-  service    = "${alicloud_fc_service.foo.name}"
-  function   = "${alicloud_fc_function.foo.name}"
-  name       = "${var.name}"
-  role       = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:mns:${data.alicloud_regions.current_region.regions.0.id}:${data.alicloud_account.current.id}:/topics/${alicloud_mns_topic.foo.name}"
+
+resource "alicloud_fc_service" "default" {
+  name            = "example-value-${random_integer.default.result}"
+  description     = "example-value"
+  internet_access = false
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
+}
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "index.py"
+  content = "import logging \ndef handler(event, context): \nlogger = logging.getLogger() \nlogger.info('hello world') \nreturn 'hello world'"
+}
+
+resource "alicloud_fc_function" "default" {
+  service     = alicloud_fc_service.default.name
+  name        = "terraform-example"
+  description = "example"
+  oss_bucket  = alicloud_oss_bucket.default.id
+  oss_key     = alicloud_oss_bucket_object.default.key
+  memory_size = "512"
+  runtime     = "python2.7"
+  handler     = "hello.handler"
+}
+
+resource "alicloud_fc_trigger" "default" {
+  service    = alicloud_fc_service.default.name
+  function   = alicloud_fc_function.default.name
+  name       = "terraform-example"
+  role       = alicloud_ram_role.default.arn
+  source_arn = "acs:mns:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:/topics/${alicloud_mns_topic.default.name}"
   type       = "mns_topic"
   config_mns = <<EOF
   {
-    "filterTag":"testTag",
+    "filterTag":"exampleTag",
     "notifyContentFormat":"STREAM",
     "notifyStrategy":"BACKOFF_RETRY"
   }
   EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
 }
 ```
 
 CDN events trigger:
 
 ```terraform
-variable "name" {
-  default = "fctriggercdneventsconfig"
+data "alicloud_account" "default" {}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
-data "alicloud_account" "current" {
-}
-
-resource "alicloud_cdn_domain_new" "domain" {
-  domain_name = "${var.name}.tf.com"
+resource "alicloud_cdn_domain_new" "default" {
+  domain_name = "example${random_integer.default.result}.tf.com"
   cdn_type    = "web"
   scope       = "overseas"
   sources {
@@ -217,53 +251,37 @@ resource "alicloud_cdn_domain_new" "domain" {
   }
 }
 
-resource "alicloud_fc_service" "foo" {
-  name            = "${var.name}"
+resource "alicloud_fc_service" "default" {
+  name            = "example-value-${random_integer.default.result}"
+  description     = "example-value"
   internet_access = false
 }
-resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
-}
-# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key    = "fc/hello.zip"
-  source = "./hello.zip"
-}
-resource "alicloud_fc_function" "foo" {
-  service     = "${alicloud_fc_service.foo.name}"
-  name        = "${var.name}"
-  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
-  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
-  memory_size = 512
-  runtime     = "python2.7"
-  handler     = "hello.handler"
-}
-resource "alicloud_ram_role" "foo" {
-  name        = "${var.name}-trigger"
+
+resource "alicloud_ram_role" "default" {
+  name        = "fcservicerole-${random_integer.default.result}"
   document    = <<EOF
     {
-        "Version": "1",
-        "Statement": [
-            {
-                "Action": "cdn:Describe*",
-                "Resource": "*",
-                "Effect": "Allow",
-		        "Principal": {
-                "Service":
-                    ["log.aliyuncs.com"]
-                }
-            }
-        ]
-    }
-    EOF
-  description = "this is a test"
+      "Statement": [
+        {
+          "Action": "sts:AssumeRole",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": [
+              "cdn.aliyuncs.com"
+            ]
+          }
+        }
+      ],
+      "Version": "1"
+  }
+  EOF
+  description = "this is a example"
   force       = true
 }
 
-resource "alicloud_ram_policy" "foo" {
-  name        = "${var.name}-trigger"
-  document    = <<EOF
+resource "alicloud_ram_policy" "default" {
+  policy_name     = "fcservicepolicy-${random_integer.default.result}"
+  policy_document = <<EOF
     {
         "Version": "1",
         "Statement": [
@@ -272,84 +290,110 @@ resource "alicloud_ram_policy" "foo" {
             "fc:InvokeFunction"
             ],
         "Resource": [
-            "acs:fc:*:*:services/tf_cdnEvents/functions/*",
-            "acs:fc:*:*:services/tf_cdnEvents.*/functions/*"
+            "acs:fc:*:*:services/${alicloud_fc_service.default.name}/functions/*",
+            "acs:fc:*:*:services/${alicloud_fc_service.default.name}.*/functions/*"
         ],
         "Effect": "Allow"
         }
         ]
     }
     EOF
-  description = "this is a test"
-  force       = true
+  description     = "this is a example"
+  force           = true
 }
-resource "alicloud_ram_role_policy_attachment" "foo" {
-  role_name   = "${alicloud_ram_role.foo.name}"
-  policy_name = "${alicloud_ram_policy.foo.name}"
+resource "alicloud_ram_role_policy_attachment" "default" {
+  role_name   = alicloud_ram_role.default.name
+  policy_name = alicloud_ram_policy.default.name
   policy_type = "Custom"
 }
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
+}
+# If you upload the function by OSS Bucket, you need to specify path can't upload by content.
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "index.py"
+  content = "import logging \ndef handler(event, context): \nlogger = logging.getLogger() \nlogger.info('hello world') \nreturn 'hello world'"
+}
+
+resource "alicloud_fc_function" "default" {
+  service     = alicloud_fc_service.default.name
+  name        = "terraform-example"
+  description = "example"
+  oss_bucket  = alicloud_oss_bucket.default.id
+  oss_key     = alicloud_oss_bucket_object.default.key
+  memory_size = "512"
+  runtime     = "python2.7"
+  handler     = "hello.handler"
+}
+
 resource "alicloud_fc_trigger" "default" {
-  service    = "${alicloud_fc_service.foo.name}"
-  function   = "${alicloud_fc_function.foo.name}"
-  name       = "${var.name}"
-  role       = "${alicloud_ram_role.foo.arn}"
-  source_arn = "acs:cdn:*:${data.alicloud_account.current.id}"
+  service    = alicloud_fc_service.default.name
+  function   = alicloud_fc_function.default.name
+  name       = "terraform-example"
+  role       = alicloud_ram_role.default.arn
+  source_arn = "acs:cdn:*:${data.alicloud_account.default.id}"
   type       = "cdn_events"
   config     = <<EOF
       {"eventName":"LogFileCreated",
      "eventVersion":"1.0.0",
      "notes":"cdn events trigger",
      "filter":{
-        "domain": ["${alicloud_cdn_domain_new.domain.domain_name}"]
+        "domain": ["${alicloud_cdn_domain_new.default.domain_name}"]
         }
     }
 EOF
-  depends_on = ["alicloud_ram_role_policy_attachment.foo"]
 }
 ```
 
 EventBridge trigger:
 
 ```terraform
-variable "name" {
-  default = "fctriggereventbridgeconfig"
+data "alicloud_account" "default" {}
+data "alicloud_regions" "default" {
+  current = true
+}
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 
-data "alicloud_account" "current" {
-}
-
-# Please make eventbridge available and then assume a specific service-linked role, which refers to https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/event_bridge_service_linked_role
 resource "alicloud_event_bridge_service_linked_role" "service_linked_role" {
   product_name = "AliyunServiceRoleForEventBridgeSendToFC"
 }
 
-resource "alicloud_fc_service" "foo" {
-  name            = "${var.name}"
+resource "alicloud_fc_service" "default" {
+  name            = "example-value-${random_integer.default.result}"
+  description     = "example-value"
   internet_access = false
 }
-resource "alicloud_oss_bucket" "foo" {
-  bucket = "${var.name}"
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = "terraform-example-${random_integer.default.result}"
 }
 # If you upload the function by OSS Bucket, you need to specify path can't upload by content.
-resource "alicloud_oss_bucket_object" "foo" {
-  bucket = "${alicloud_oss_bucket.foo.id}"
-  key    = "fc/hello.zip"
-  source = "./hello.zip"
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "index.py"
+  content = "import logging \ndef handler(event, context): \nlogger = logging.getLogger() \nlogger.info('hello world') \nreturn 'hello world'"
 }
-resource "alicloud_fc_function" "foo" {
-  service     = "${alicloud_fc_service.foo.name}"
-  name        = "${var.name}"
-  oss_bucket  = "${alicloud_oss_bucket.foo.id}"
-  oss_key     = "${alicloud_oss_bucket_object.foo.key}"
-  memory_size = 512
+
+resource "alicloud_fc_function" "default" {
+  service     = alicloud_fc_service.default.name
+  name        = "terraform-example"
+  description = "example"
+  oss_bucket  = alicloud_oss_bucket.default.id
+  oss_key     = alicloud_oss_bucket_object.default.key
+  memory_size = "512"
   runtime     = "python2.7"
   handler     = "hello.handler"
 }
 
-resource "alicloud_fc_trigger" "default" {
-  service  = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name     = "${var.name}"
+resource "alicloud_fc_trigger" "oss_trigger" {
+  service  = alicloud_fc_service.default.name
+  function = alicloud_fc_function.default.name
+  name     = "terraform-example-oss"
   type     = "eventbridge"
   config   = <<EOF
     {
@@ -363,10 +407,10 @@ resource "alicloud_fc_trigger" "default" {
 EOF
 }
 
-resource "alicloud_fc_trigger" "mns" {
-  service  = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name     = "${var.name}"
+resource "alicloud_fc_trigger" "mns_trigger" {
+  service  = alicloud_fc_service.default.name
+  function = alicloud_fc_function.default.name
+  name     = "terraform-example-mns"
   type     = "eventbridge"
   config   = <<EOF
     {
@@ -387,10 +431,26 @@ resource "alicloud_fc_trigger" "mns" {
 EOF
 }
 
-resource "alicloud_fc_trigger" "rocketmq" {
-  service  = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name     = "${var.name}"
+resource "alicloud_ons_instance" "default" {
+  instance_name = "terraform-example-${random_integer.default.result}"
+  remark        = "terraform-example"
+}
+resource "alicloud_ons_group" "default" {
+  group_name  = "GID-example"
+  instance_id = alicloud_ons_instance.default.id
+  remark      = "terraform-example"
+}
+resource "alicloud_ons_topic" "default" {
+  topic_name   = "mytopic"
+  instance_id  = alicloud_ons_instance.default.id
+  message_type = 0
+  remark       = "terraform-example"
+}
+
+resource "alicloud_fc_trigger" "rocketmq_trigger" {
+  service  = alicloud_fc_service.default.name
+  function = alicloud_fc_function.default.name
+  name     = "terraform-example-rocketmq"
   type     = "eventbridge"
   config   = <<EOF
     {
@@ -401,12 +461,12 @@ resource "alicloud_fc_trigger" "rocketmq" {
             "eventSourceType": "RocketMQ",
             "eventSourceParameters": {
                 "sourceRocketMQParameters": {
-                    "RegionId": "cn-hangzhou",
-                    "InstanceId": "MQ_INST_164901546557****_BAAN****",
-                    "GroupID": "GID_group1",
-                    "Topic": "mytopic",
-                    "Timestamp": 1636597951984,
-                    "Tag": "test-tag",
+                    "RegionId": "${data.alicloud_regions.default.regions.0.id}",
+                    "InstanceId": "${alicloud_ons_instance.default.id}",
+                    "GroupID": "${alicloud_ons_group.default.group_name}",
+                    "Topic": "${alicloud_ons_topic.default.topic_name}",
+                    "Timestamp": 1686296162,
+                    "Tag": "example-tag",
                     "Offset": "CONSUME_FROM_LAST_OFFSET"
                 }
             }
@@ -415,10 +475,32 @@ resource "alicloud_fc_trigger" "rocketmq" {
 EOF
 }
 
-resource "alicloud_fc_trigger" "rabbitmq" {
-  service  = "${alicloud_fc_service.foo.name}"
-  function = "${alicloud_fc_function.foo.name}"
-  name     = "${var.name}"
+resource "alicloud_amqp_instance" "default" {
+  instance_name  = "terraform-example-${random_integer.default.result}"
+  instance_type  = "professional"
+  max_tps        = 1000
+  queue_capacity = 50
+  support_eip    = true
+  max_eip_tps    = 128
+  payment_type   = "Subscription"
+  period         = 1
+}
+
+resource "alicloud_amqp_virtual_host" "default" {
+  instance_id       = alicloud_amqp_instance.default.id
+  virtual_host_name = "example-VirtualHost"
+}
+
+resource "alicloud_amqp_queue" "default" {
+  instance_id       = alicloud_amqp_virtual_host.default.instance_id
+  queue_name        = "example-queue"
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+}
+
+resource "alicloud_fc_trigger" "rabbitmq_trigger" {
+  service  = alicloud_fc_service.default.name
+  function = alicloud_fc_function.default.name
+  name     = "terraform-example-rabbitmq"
   type     = "eventbridge"
   config   = <<EOF
     {
@@ -429,10 +511,10 @@ resource "alicloud_fc_trigger" "rabbitmq" {
             "eventSourceType": "RabbitMQ",
             "eventSourceParameters": {
                 "sourceRabbitMQParameters": {
-                    "RegionId": "cn-hangzhou",
-                    "InstanceId": "amqp-cn-****** ",
-                    "VirtualHostName": "test-virtual",
-                    "QueueName": "test-queue"
+                    "RegionId": "${data.alicloud_regions.default.regions.0.id}",
+                    "InstanceId": "${alicloud_amqp_instance.default.id}",
+                    "VirtualHostName": "${alicloud_amqp_virtual_host.default.virtual_host_name}",
+                    "QueueName": "${alicloud_amqp_queue.default.queue_name}"
                 }
             }
         }
@@ -452,8 +534,8 @@ The following arguments are supported:
 
 * `service` - (Required, ForceNew) The Function Compute service name.
 * `function` - (Required, ForceNew) The Function Compute function name.
-* `name` - (ForceNew) The Function Compute trigger name. It is the only in one service and is conflict with "name_prefix".
-* `name_prefix` - (ForceNew) Setting a prefix to get a only trigger name. It is conflict with "name".
+* `name` - (ForceNew, Optional) The Function Compute trigger name. It is the only in one service and is conflict with "name_prefix".
+* `name_prefix` - (ForceNew, Optional) Setting a prefix to get a only trigger name. It is conflict with "name".
 * `role` - (Optional) RAM role arn attached to the Function Compute trigger. Role used by the event source to call the function. The value format is "acs:ram::$account-id:role/$role-name". See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `source_arn` - (Optional, ForceNew) Event source resource address. See [Create a trigger](https://www.alibabacloud.com/help/doc-detail/53102.htm) for more details.
 * `config` - (Optional) The config of Function Compute trigger.It is valid when `type` is not "mns_topic".See [Configure triggers and events](https://www.alibabacloud.com/help/doc-detail/70140.htm) for more details.
