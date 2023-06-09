@@ -43,6 +43,12 @@ var (
 		"alicloud_nat_gateway":              {"vswitch_id"},
 		"alicloud_ecs_disk":                 {"advanced_features", "encrypt_algorithm", "dedicated_block_storage_cluster_id"},
 	}
+	skippedSchemaKeys = map[string]struct{}{
+		"page_size":   {},
+		"page_number": {},
+		"total_count": {},
+		"max_results": {},
+	}
 )
 
 type ResourceAttribute struct {
@@ -67,15 +73,13 @@ func main() {
 
 	byt, _ := ioutil.ReadFile(*fileNames)
 	diff, _ := diffparser.Parse(string(byt))
-	//fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
-	//fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
-	//fileDocsRegex := regexp.MustCompile("website/docs/(d|r)/[0-9a-zA-Z_]*.html.markdown")
-	fileRegex := regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*.go")
-	fileTestRegex := regexp.MustCompile("alicloud/(resource)[0-9a-zA-Z_]*_test.go")
-	fileDocsRegex := regexp.MustCompile("website/docs/(r)/[0-9a-zA-Z_]*.html.markdown")
+	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
+	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
+	fileDocsRegex := regexp.MustCompile("website/docs/(r|d)/[0-9a-zA-Z_]*.html.markdown")
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		resourceName := ""
+		docsPath := "website/docs/r/"
 		if fileRegex.MatchString(file.NewName) {
 			if fileTestRegex.MatchString(file.NewName) {
 				continue
@@ -95,17 +99,18 @@ func main() {
 		log.Infof("==> Checking resource %s attributes consistency...", resourceName)
 		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
 		if !ok || resource == nil {
-			//resourceName = strings.TrimPrefix(resourceName, "data_source_")
-			//resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap[resourceName]
-			//if !ok || resource == nil {
-			log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
-			exitCode = 1
-			continue
-			//}
+			resourceName = strings.TrimPrefix(resourceName, "data_source_")
+			resource, ok = alicloud.Provider().(*schema.Provider).DataSourcesMap[resourceName]
+			if !ok || resource == nil {
+				log.Errorf("resource %s is not found in the provider ResourceMap\n\n", resourceName)
+				exitCode = 1
+				continue
+			}
+			docsPath = "website/docs/d/"
 		}
 		resourceSchema := resource.Schema
 		resourceSchemaFromDocs := make(map[string]ResourceAttribute)
-		if err := parseResourceDocs(resourceName, resourceSchemaFromDocs); err != nil {
+		if err := parseResourceDocs(resourceName, docsPath, resourceSchemaFromDocs); err != nil {
 			log.Errorf("parsing the resource %s docs failed. error: %s", resourceName, err)
 			continue
 		}
@@ -123,14 +128,14 @@ func main() {
 	return
 }
 
-func parseResourceDocs(resourceName string, resourceAttributes map[string]ResourceAttribute) error {
+func parseResourceDocs(resourceName, docsPath string, resourceAttributes map[string]ResourceAttribute) error {
 	splitRes := strings.Split(resourceName, "alicloud_")
 	if len(splitRes) < 2 {
 		log.Errorf("parsing resource name %s failed.", resourceName)
 		return fmt.Errorf(fmt.Sprintf("parsing resource name %s failed.", resourceName))
 	}
-	basePath := "website/docs/r/"
-	filePath := strings.Join([]string{basePath, splitRes[1], ".html.markdown"}, "")
+
+	filePath := strings.Join([]string{docsPath, splitRes[1], ".html.markdown"}, "")
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -141,21 +146,21 @@ func parseResourceDocs(resourceName string, resourceAttributes map[string]Resour
 
 	argsRegex := regexp.MustCompile("## Argument Reference")
 	attribRegex := regexp.MustCompile("## Attributes Reference")
-	secondLevelRegex := regexp.MustCompile("^### `([a-zA-Z_\\.0-9]*)`")
+	secondLevelRegex := regexp.MustCompile("^### `([a-zA-Z_\\.0-9-]*)`")
 	argumentsFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-? ?(\\(.*\\)) ?(.*)")
-	attributeFieldRegex := regexp.MustCompile("^\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
+	attributeFieldRegex := regexp.MustCompile("^\\s*\\* `([a-zA-Z_0-9]*)`[ ]*-?(.*)")
 
 	name := filepath.Base(filePath)
 	re := regexp.MustCompile("[a-z0-9A-Z_]*")
 	resourceName = "alicloud_" + re.FindString(name)
-	//result := &Resource{Name: resourceName, Arguments: map[string]interface{}{}, Attributes: map[string]interface{}{}}
-	//log.Infof("the resourceName = %s\n", resourceName)
 
 	scanner := bufio.NewScanner(file)
 	phase := "Argument"
 	record := false
 	subAttributeName := ""
 	line := 0
+	rootPrefixLen := 0
+	rootName := ""
 	for scanner.Scan() {
 		line += 1
 		text := scanner.Text()
@@ -176,7 +181,7 @@ func parseResourceDocs(resourceName string, resourceAttributes map[string]Resour
 		if secondLevelRegex.MatchString(text) {
 			record = true
 			parts := strings.Split(text, " ")
-			subAttributeName = strings.Trim(parts[len(parts)-1], "`")
+			subAttributeName = strings.Replace(strings.Trim(parts[len(parts)-1], "`"), "-", ".", -1)
 			continue
 		}
 		if record {
@@ -188,6 +193,27 @@ func parseResourceDocs(resourceName string, resourceAttributes map[string]Resour
 			}
 
 			for _, m := range matched {
+				if phase == "Attribute" {
+					thisLen := len(strings.Split(m[0], "*")[0])
+
+					if rootPrefixLen < thisLen {
+						if subAttributeName != "" {
+							subAttributeName += "." + rootName
+						} else {
+							subAttributeName = rootName
+						}
+						rootName = m[1]
+					} else if rootPrefixLen > thisLen {
+						parts := strings.Split(subAttributeName, ".")
+						if len(parts) > 0 {
+							subAttributeName = strings.TrimSuffix(strings.TrimSuffix(subAttributeName, parts[len(parts)-1]), ".")
+							rootName = parts[len(parts)-1]
+						}
+					} else {
+						rootName = m[1]
+					}
+					rootPrefixLen = thisLen
+				}
 				attribute := parseMatchLine(m, phase, subAttributeName)
 				if attribute == nil {
 					continue
@@ -224,9 +250,6 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 		return &result
 	}
 	if phase == "Attribute" && len(words) >= 3 {
-		if words[1] == "id" {
-			return nil
-		}
 		if rootName != "" {
 			result.Name = rootName + "." + words[1]
 		} else {
@@ -246,23 +269,19 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 			filteredList.Add(v)
 		}
 	}
-	//defer func() {
-	//	if r := recover(); r != nil {
-	//		res = true
-	//		log.Errorf("internal error: Please email terraform@alibabacloud.com to report the issue with the related resource")
-	//		t.Fatal()
-	//	}
-	//}()
 
 	// the number of the schema field + 1(id) should equal to the number defined in document
 	resourceAttributes := make(map[string]ResourceAttribute)
 	getResourceAttributes("", resourceAttributes, resourceSchemaDefined)
 
 	for attributeKey, attributeValue := range resourceAttributes {
+		if _, ok := skippedSchemaKeys[attributeKey]; ok {
+			continue
+		}
 		attributeDocsValue, ok := resourceAttributeFromDocs[attributeKey]
 		if !ok {
 			isConsistent = false
-			log.Errorf("'%v' which described in the docs not found in the resource schema", attributeKey)
+			log.Errorf("'%v' is not found in the docs", attributeKey)
 		}
 		if attributeValue.Deprecated != "" {
 			if attributeDocsValue.Deprecated == "" {
@@ -285,7 +304,7 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 		}
 	}
 	for attributeKey, _ := range resourceAttributeFromDocs {
-		if _, ok := resourceAttributes[attributeKey]; !ok {
+		if _, ok := resourceAttributes[attributeKey]; !ok && attributeKey != "id" {
 			isConsistent = false
 			log.Errorf("'%v' which described in the docs not found in the resource schema", attributeKey)
 		}

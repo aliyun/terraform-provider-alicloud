@@ -208,13 +208,23 @@ func main() {
 					exitCode = 1
 				}
 				block = strings.Trim(block, "`")
-				blockLink := fmt.Sprintf("[`%s`](#%s)", block, block)
+				blockParts := strings.Split(block, "-")
+				blockLink := fmt.Sprintf("[`%s`](#%s)", blockParts[len(blockParts)-1], block)
 				docsContent, err := os.ReadFile(docsFileName)
 				if err != nil {
 					fmt.Printf("\nreading docs file %s failed. Error: %s", docsFileName, err)
 					exitCode = 1
 				} else if !strings.Contains(string(docsContent), blockLink) {
 					fmt.Printf("\nline %d: missing link for block `%s`. Expected link like: See %s below.", line, block, blockLink)
+					exitCode = 1
+				}
+				continue
+			}
+			if strings.HasPrefix(text, "## Argument Reference") || strings.HasSuffix(text, "Argument Reference") {
+				argumentCheck = false
+				attributesCheck = true
+				if text != "## Attributes Reference" {
+					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
 					exitCode = 1
 				}
 				continue

@@ -26,8 +26,8 @@ func init() {
 }
 
 var (
-	fileNames     = flag.String("fileNames", "", "the files to check diff")
-	filterList    = map[string][]string{
+	fileNames  = flag.String("fileNames", "", "the files to check diff")
+	filterList = map[string][]string{
 		"alicloud_amqp_instance":            {"logistics"},
 		"alicloud_cms_alarm":                {"notify_type"},
 		"alicloud_cs_serverless_kubernetes": {"private_zone", "create_v2_cluster"},
