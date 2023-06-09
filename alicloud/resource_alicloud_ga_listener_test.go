@@ -183,6 +183,24 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"forwarded_for_config": []map[string]interface{}{
+						{
+							"forwarded_for_ga_id_enabled": "true",
+							"forwarded_for_ga_ap_enabled": "true",
+							"forwarded_for_proto_enabled": "true",
+							"forwarded_for_port_enabled":  "true",
+							"real_ip_enabled":             "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -234,6 +252,89 @@ func TestAccAlicloudGaListener_basic1(t *testing.T) {
 						"port_ranges.#":  "1",
 						"proxy_protocol": "true",
 						"listener_type":  "CustomRouting",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudGaListener_basic2(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudGaListenerMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaListenerBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id": "${alicloud_ga_bandwidth_package_attachment.default.accelerator_id}",
+					"description":    "create_description",
+					"name":           "${var.name}",
+					"protocol":       "HTTP",
+					"proxy_protocol": "true",
+					"port_ranges": []map[string]interface{}{
+						{
+							"from_port": "60",
+							"to_port":   "60",
+						},
+					},
+					"forwarded_for_config": []map[string]interface{}{
+						{
+							"forwarded_for_ga_id_enabled": "true",
+							"forwarded_for_ga_ap_enabled": "true",
+							"forwarded_for_proto_enabled": "true",
+							"forwarded_for_port_enabled":  "true",
+							"real_ip_enabled":             "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":         CHECKSET,
+						"description":            "create_description",
+						"name":                   name,
+						"protocol":               "HTTP",
+						"proxy_protocol":         "true",
+						"port_ranges.#":          "1",
+						"forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"forwarded_for_config": []map[string]interface{}{
+						{
+							"forwarded_for_ga_id_enabled": "false",
+							"forwarded_for_ga_ap_enabled": "false",
+							"forwarded_for_proto_enabled": "false",
+							"forwarded_for_port_enabled":  "false",
+							"real_ip_enabled":             "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"forwarded_for_config.#": "1",
 					}),
 				),
 			},
