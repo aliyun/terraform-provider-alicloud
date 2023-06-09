@@ -228,7 +228,7 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -316,7 +316,7 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -390,7 +390,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -478,7 +478,7 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -506,7 +506,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"disk_category":             "cloud_efficiency",
+					"disk_category":             "cloud_essd_pl0",
 					"payment_type":              "PayAsYouGo",
 					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
@@ -522,7 +522,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_category":             "cloud_efficiency",
+						"disk_category":             "cloud_essd_pl0",
 						"payment_type":              "PayAsYouGo",
 						"instance_name":             name,
 						"file_engine_specification": "lindorm.c.xlarge",
@@ -554,7 +554,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -642,7 +642,7 @@ func TestAccAlicloudLindormInstance_basic5(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -696,7 +696,7 @@ func TestAccAlicloudLindormInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "core_spec", "pricing_cycle", "duration"},
+				ImportStateVerifyIgnore: []string{"upgrade_type", "core_num", "group_name", "pricing_cycle", "duration"},
 			},
 		},
 	})
@@ -706,7 +706,7 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_1"
-	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap1)
+	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HitsdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeLindormInstance")
@@ -733,10 +733,10 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 					"primary_zone_id":            "${data.alicloud_zones.default.zones.0.id}",
 					"primary_vswitch_id":         "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":              name,
-					"table_engine_node_count":    "8",
+					"table_engine_node_count":    "4",
 					"table_engine_specification": "lindorm.g.4xlarge",
 					//"core_spec":               "lindorm.i2.xlarge",
-					"log_num":                "8",
+					"log_num":                "4",
 					"log_single_storage":     "400",
 					"arbiter_zone_id":        "${data.alicloud_zones.default.zones.1.id}",
 					"arbiter_vswitch_id":     "${data.alicloud_vswitches.arbitervswitchid.ids[0]}",
@@ -756,10 +756,10 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 						"primary_zone_id":         CHECKSET,
 						"primary_vswitch_id":      CHECKSET,
 						"instance_name":           name,
-						"table_engine_node_count": "8",
+						"table_engine_node_count": "4",
 						"instance_storage":        CHECKSET,
 						"core_spec":               CHECKSET,
-						"log_num":                 "8",
+						"log_num":                 "4",
 						"log_single_storage":      "400",
 						"arbiter_zone_id":         CHECKSET,
 						"multi_zone_combination":  "ap-southeast-1-abc-aliyun",
@@ -794,13 +794,13 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"table_engine_node_count": "48",
-					"log_num":                 "48",
+					"table_engine_node_count": "8",
+					"log_num":                 "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"table_engine_node_count": "48",
-						"log_num":                 "48",
+						"table_engine_node_count": "8",
+						"log_num":                 "8",
 					}),
 				),
 			},
@@ -850,9 +850,13 @@ var AlicloudLindormInstanceMap0 = map[string]string{
 	"vswitch_id":                    CHECKSET,
 	"instance_name":                 CHECKSET,
 	"table_engine_specification":    CHECKSET,
+	"service_type":                  CHECKSET,
+	"enabled_file_engine":           CHECKSET,
+	"enabled_time_serires_engine":   CHECKSET,
+	"enabled_table_engine":          CHECKSET,
+	"enabled_search_engine":         CHECKSET,
+	"enabled_lts_engine":            CHECKSET,
 }
-
-var AlicloudLindormInstanceMap1 = map[string]string{}
 
 func AlicloudLindormInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
