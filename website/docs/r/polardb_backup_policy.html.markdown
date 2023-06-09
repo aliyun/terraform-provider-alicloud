@@ -7,11 +7,11 @@ description: |-
   Provides a PolarDB backup policy resource.
 ---
 
-# alicloud\_polardb\_backup\_policy
+# alicloud_polardb_backup_policy
 
 Provides a PolarDB cluster backup policy resource and used to configure cluster backup policy.
 
--> **NOTE:** Available in v1.66.0+. Each PolarDB cluster has a backup policy.
+-> **NOTE:** Available since v1.66.0+. Each PolarDB cluster has a backup policy.
 
 ## Example Usage
 
@@ -61,14 +61,30 @@ The following arguments are supported:
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `preferred_backup_period` - (Optional) PolarDB Cluster backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]. Default to ["Tuesday", "Thursday", "Saturday"].
 * `preferred_backup_time` - (Optional) PolarDB Cluster backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
-* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`. Value options can refer to the latest docs [ModifyBackupPolicy](https://help.aliyun.com/document_detail/98103.html)
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Available in 1.170.0+) Specifies whether to retain backups when you delete a cluster. Valid values are `ALL`, `LATEST`, `NONE`. Default to `NONE`. Value options can refer to the latest docs [ModifyBackupPolicy](https://www.alibabacloud.com/help/en/polardb/latest/modifybackuppolicy)
+* `data_level1_backup_retention_period` - (Optional, Available in 1.207.0+) The retention period of level-1 backups. Valid values: 3 to 14. Unit: days.
+* `data_level2_backup_retention_period` - (Optional, Available in 1.207.0+) The retention period of level-2 backups. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
+* `backup_frequency` - (Optional, Available in 1.207.0+) The backup frequency. Valid values are `Normal`, `2/24H`, `3/24H`, `4/24H`.Default to `Normal`.
+* `data_level1_backup_frequency` - (Optional, Available in 1.207.0+) The Id of cluster that can run database.The backup frequency. Valid values are `Normal`, `2/24H`, `3/24H`, `4/24H`.Default to `Normal`.
+* `data_level1_backup_time` - (Optional, Available in 1.207.0+) The time period during which automatic backup is performed. The format is HH: MMZ HH: MMZ (UTC time), and the entered value must be an hour apart, such as 14:00z-15:00z.
+* `data_level1_backup_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-1 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+  -> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
+* `data_level2_backup_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup period. Valid values: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].
+  -> **NOTE:** Note Select at least two values. Separate multiple values with commas (,).
+* `data_level2_backup_another_region_region` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup is a cross regional backup area.
+* `data_level2_backup_another_region_retention_period` - (Optional, Available in 1.207.0+) PolarDB Cluster of level-2 backup cross region backup retention period. Valid values are `0`, `30 to 7300`, `-1`. Default to `0`.
+* `log_backup_retention_period` - (Optional, Available in 1.207.0+) The retention period of the log backups. Valid values are `3 to 7300`, `-1`.
+* `log_backup_another_region_region` - (Optional, Available in 1.207.0+) The region in which you want to store cross-region log backups. For information about regions that support the cross-region backup feature, see [Overview.](https://www.alibabacloud.com/help/en/polardb/latest/backup-and-restoration-overview)
+* `log_backup_another_region_retention_period` - (Optional, Available in 1.207.0+) The retention period of cross-region log backups. Default value: OFF. Valid values are `0`, `30 to 7300`, `-1`.
+  -> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
+* `enable_backup_log` - (Optional, Available in 1.207.0+) Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
+* `backup_retention_period` - (Optional) Cluster backup retention days, Fixed for 7 days, not modified.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current backup policy resource ID. It is same as 'db_cluster_id'.
-* `backup_retention_period` - Cluster backup retention days, Fixed for 7 days, not modified.
 
 ## Import
 
