@@ -59,15 +59,15 @@ func main() {
 			}
 			resourceName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
 			log.Infof("==> Checking resource %s breaking change...", resourceName)
-			result := true
+			oldAttrs := make(map[string]map[string]interface{})
+			newAttrs := make(map[string]map[string]interface{})
 			for _, hunk := range file.Hunks {
-				if hunk != nil && BreakingChangeRule(ParseResourceSchema(hunk.OrigRange, hunk.OrigRange.Length),
-					ParseResourceSchema(hunk.NewRange, hunk.NewRange.Length)) {
-					result = false
-					exitCode = 1
+				if hunk != nil {
+					ParseResourceSchema(hunk.OrigRange, hunk.OrigRange.Length, oldAttrs)
+					ParseResourceSchema(hunk.NewRange, hunk.NewRange.Length, newAttrs)
 				}
 			}
-			if result {
+			if !IsBreakingChange(oldAttrs, newAttrs) {
 				log.Infof("--- PASS")
 			} else {
 				log.Errorf("--- FAIL")
@@ -78,7 +78,7 @@ func main() {
 	os.Exit(exitCode)
 }
 
-func BreakingChangeRule(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
+func IsBreakingChange(oldAttrs, newAttrs map[string]map[string]interface{}) (res bool) {
 	for filedName, oldAttr := range oldAttrs {
 		// Optional -> Required
 		_, exist1 := oldAttr["Optional"]
@@ -123,7 +123,7 @@ func BreakingChangeRule(oldAttrs, newAttrs map[string]map[string]interface{}) (r
 	return
 }
 
-func ParseResourceSchema(hunk diffparser.DiffRange, length int) map[string]map[string]interface{} {
+func ParseResourceSchema(hunk diffparser.DiffRange, length int, attributeMap map[string]map[string]interface{}) {
 	schemaRegex := regexp.MustCompile("^\\t*\"([a-zA-Z_]*)\"")
 	typeRegex := regexp.MustCompile("^\\t*Type:\\s+schema.([a-zA-Z]*)")
 	optionRegex := regexp.MustCompile("^\\t*Optional:\\s+([a-z]*),")
@@ -134,7 +134,6 @@ func ParseResourceSchema(hunk diffparser.DiffRange, length int) map[string]map[s
 
 	temp := map[string]interface{}{}
 	schemaName := ""
-	raw := make(map[string]map[string]interface{}, 0)
 	for i := 0; i < length; i++ {
 		currentLine := hunk.Lines[i]
 		content := currentLine.Content
@@ -142,7 +141,7 @@ func ParseResourceSchema(hunk diffparser.DiffRange, length int) map[string]map[s
 		if fieldNameMatched != nil && fieldNameMatched[0] != nil {
 			if len(schemaName) != 0 && schemaName != fieldNameMatched[0][1] {
 				temp["Name"] = schemaName
-				raw[schemaName] = temp
+				attributeMap[schemaName] = temp
 				temp = map[string]interface{}{}
 			}
 			schemaName = fieldNameMatched[0][1]
@@ -196,9 +195,9 @@ func ParseResourceSchema(hunk diffparser.DiffRange, length int) map[string]map[s
 		}
 
 	}
-	if _, exist := raw[schemaName]; !exist && len(temp) >= 1 {
+	if _, exist := attributeMap[schemaName]; !exist && len(temp) >= 1 {
 		temp["Name"] = schemaName
-		raw[schemaName] = temp
+		attributeMap[schemaName] = temp
 	}
-	return raw
+	return
 }
