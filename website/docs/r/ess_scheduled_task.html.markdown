@@ -1,21 +1,25 @@
 ---
 subcategory: "Auto Scaling"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_ess_schedule"
+page_title: "Alicloud: alicloud_ess_scheduled_task"
 sidebar_current: "docs-alicloud-resource-ess-schedule"
 description: |-
   Provides a ESS schedule resource.
 ---
 
-# alicloud\_ess\_scheduled\_task
+# alicloud_ess_scheduled_task
 
 Provides a ESS schedule resource.
+
+For information about ess schedule task, see [Scheduled Tasks](https://www.alibabacloud.com/help/en/auto-scaling/latest/createscheduledtask).
+
+-> **NOTE:** Available since v1.60.0.
 
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "essscheduleconfig"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -41,10 +45,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
@@ -88,7 +92,7 @@ resource "alicloud_ess_scaling_rule" "default" {
 
 resource "alicloud_ess_scheduled_task" "default" {
   scheduled_action    = alicloud_ess_scaling_rule.default.ari
-  launch_time         = "2019-05-21T11:37Z"
+  launch_time         = formatdate("YYYY-MM-DD'T'hh:mm'Z'", timeadd(timestamp(), "24h"))
   scheduled_task_name = var.name
 }
 ```

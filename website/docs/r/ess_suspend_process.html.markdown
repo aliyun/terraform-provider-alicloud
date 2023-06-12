@@ -7,19 +7,19 @@ description: |-
   Provides a ESS Suspend Process resource to suspend or resume process for scaling group.
 ---
 
-# alicloud\_ess\_suspend\_process
+# alicloud_ess_suspend_process
 
 Suspend/Resume processes to a specified scaling group.
 
 For information about scaling group suspend process, see [SuspendProcesses](https://www.alibabacloud.com/help/en/auto-scaling/latest/suspendprocesses).
 
--> NOTE: Available in v1.166.0+
+-> **NOTE:** Available since v1.166.0.
 
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "testAccEssSuspendProcess"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -27,30 +27,42 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
+data "alicloud_instance_types" "default" {
+  availability_zone = data.alicloud_zones.default.zones[0].id
+  cpu_core_count    = 2
+  memory_size       = 4
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
+
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
-
-resource "alicloud_alb_server_group" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  name             = "test"
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
-
 
 resource "alicloud_ess_scaling_group" "default" {
-  min_size           = "2"
-  max_size           = "2"
+  min_size           = 1
+  max_size           = 1
   scaling_group_name = var.name
   vswitch_ids        = [alicloud_vswitch.default.id]
+  removal_policies   = ["OldestInstance"]
+  default_cooldown   = 200
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
@@ -63,25 +75,11 @@ resource "alicloud_ess_scaling_configuration" "default" {
   enable            = true
 }
 
-resource "alicloud_alb_server_group" "default" {
-  server_group_name = "${var.name}"
-  vpc_id            = "${alicloud_vpc.default.id}"
-  health_check_config {
-    health_check_enabled = "false"
-  }
-  sticky_session_config {
-    sticky_session_enabled = true
-    cookie                 = "tf-testAcc"
-    sticky_session_type    = "Server"
-  }
-}
-
 resource "alicloud_ess_suspend_process" "default" {
-  scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
+  scaling_group_id = alicloud_ess_scaling_group.default.id
   process          = "ScaleIn"
-  depends_on       = ["alicloud_ess_scaling_configuration.default"]
+  depends_on       = [alicloud_ess_scaling_configuration.default]
 }
-
 ```
 
 ## Argument Reference
@@ -108,7 +106,7 @@ ESS suspend process can be imported using the id, e.g.
 $ terraform import alicloud_suspend_process.example asg-xxx:sgp-xxx:5000 
 ```
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

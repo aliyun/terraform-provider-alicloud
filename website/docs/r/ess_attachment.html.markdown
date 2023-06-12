@@ -7,7 +7,7 @@ description: |-
   Provides a ESS Attachment resource to attach or remove ECS instances.
 ---
 
-# alicloud\_ess\_attachment
+# alicloud_ess_attachment
 
 Attaches several ECS instances to a specified scaling group or remove them from it.
 
@@ -15,11 +15,13 @@ Attaches several ECS instances to a specified scaling group or remove them from 
 
 -> **NOTE:** There are two types ECS instances in a scaling group: "AutoCreated" and "Attached". The total number of them can not larger than the scaling group "MaxSize".
 
+-> **NOTE:** Available since v1.6.0.
+
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "essattachmentconfig"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -45,10 +47,10 @@ resource "alicloud_vpc" "default" {
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_security_group" "default" {
@@ -109,7 +111,7 @@ resource "alicloud_ess_attachment" "default" {
 
 The following arguments are supported:
 
-* `scaling_group_id` - (Required) ID of the scaling group of a scaling configuration.
+* `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling configuration.
 * `instance_ids` - (Required) ID of the ECS instance to be attached to the scaling group. You can input up to 20 IDs.
 * `force` - (Optional) Whether to remove forcibly "AutoCreated" ECS instances in order to release scaling group capacity "MaxSize" for attaching ECS instances. Default to false.
 
@@ -127,9 +129,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - (Required, ForceNew) The ESS attachment resource ID.
-* `instance_ids` - (Required)ID of list "Attached" ECS instance.
-* `force` - Whether to delete "AutoCreated" ECS instances.
+* `id` - The ESS attachment resource ID.
 
 ## Import
 

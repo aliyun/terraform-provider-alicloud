@@ -7,15 +7,19 @@ description: |-
   Provides a ESS scaling rule resource.
 ---
 
-# alicloud\_ess\_scaling\_rule
+# alicloud_ess_scaling_rule
 
 Provides a ESS scaling rule resource.
+
+For information about ess scaling rule, see [CreateScalingRule](https://www.alibabacloud.com/help/en/auto-scaling/latest/createscalingrule).
+
+-> **NOTE:** Available since v1.39.0.
 
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "essscalingruleconfig"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -95,7 +99,7 @@ to create different type rules, alarm task and scheduled task one-click.
 
 The following arguments are supported:
 
-* `scaling_group_id` - (Required) ID of the scaling group of a scaling rule.
+* `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling rule.
 * `adjustment_type` - (Optional) Adjustment mode of a scaling rule. Optional values:
     - QuantityChangeInCapacity: It is used to increase or decrease a specified number of ECS instances.
     - PercentChangeInCapacity: It is used to increase or decrease a specified proportion of ECS instances.
@@ -106,14 +110,15 @@ The following arguments are supported:
     - TotalCapacity：[0, 1000]
 * `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id. 
 * `cooldown` - (Optional) The cooldown time of the scaling rule. This parameter is applicable only to simple scaling rules. Value range: [0, 86,400], in seconds. The default value is empty，if not set, the return value will be 0, which is the default value of integer.
-* `scaling_rule_type` - (Optional, Available in 1.58.0+) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
+* `scaling_rule_type` - (Optional, ForceNew, Available in 1.58.0+) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
 * `estimated_instance_warmup` - (Optional, Available in 1.58.0+) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
 * `metric_name` - (Optional, Available in 1.58.0+) A CloudMonitor metric name.
 * `target_value` - (Optional, Available in 1.58.0+) The target value for the metric.
 * `disable_scale_in` - (Optional, Available in 1.58.0+) Indicates whether scale in by the target tracking policy is disabled. Default to false.
-* `step_adjustment` - (Optional, Available in 1.58.0+) Steps for StepScalingRule. See [Block stepAdjustment](#block-stepAdjustment) below for details.
+* `step_adjustment` - (Optional, Available in 1.58.0+) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
+* `ari` - (Optional) The unique identifier of the scaling rule.
 
-## Block stepAdjustment
+### `step_adjustment`
 
 The stepAdjustment mapping supports the following:
 
