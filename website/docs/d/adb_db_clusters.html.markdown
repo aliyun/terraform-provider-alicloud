@@ -2,16 +2,15 @@
 subcategory: "AnalyticDB for MySQL (ADB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_adb_db_clusters"
-sidebar_current: "docs-alicloud-datasource-adb-db-clusters"
 description: |-
   Provides a list of Adb DBClusters to the user.
 ---
 
-# alicloud\_adb\_db\_clusters
+# alicloud_adb_db_clusters
 
 This data source provides the Adb DBClusters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.121.0+.
+-> **NOTE:** Available since v1.121.0.
 
 ## Example Usage
 
@@ -38,8 +37,9 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `status` - (Optional, ForceNew) The status of the resource.
+* `tags` - (Optional) A map of tags assigned to the cluster.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -53,6 +53,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `db_cluster_category` - The db cluster category.
 	* `db_cluster_id` - The db cluster id.
 	* `db_cluster_network_type` - The db cluster network type.
+	* `network_type` - The db cluster network type.
 	* `db_cluster_type` - The db cluster type.
 	* `db_cluster_version` - The db cluster version.
 	* `db_node_class` - The db node class.
@@ -80,11 +81,10 @@ The following attributes are exported in addition to the arguments listed above:
 	* `security_ips` - List of IP addresses allowed to access all databases of an cluster.
 	* `status` - The status of the resource.
 	* `storage_resource` - The specifications of storage resources in elastic mode. The resources are used for data read and write operations. The increase of resources can improve the read and write performance of your cluster. For more information, see [Specifications](https://www.alibabacloud.com/help/en/doc-detail/144851.htm).
-	* `tags` - The tag of the resource.
-		* `tag_key` - The key of the tags.
-		* `tag_value` - The value of the tags.
+	* `tags` - The tags of the resource.
 	* `vpc_cloud_instance_id` - The vpc cloud instance id.
 	* `vpc_id` - The vpc id.
 	* `vswitch_id` - The vswitch id.
 	* `zone_id` - The zone ID  of the resource.
+	* `region_id` - The region ID  of the resource.
 	* `mode` - The lock mode of the cluster.	

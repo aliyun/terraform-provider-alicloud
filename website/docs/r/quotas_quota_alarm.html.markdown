@@ -2,7 +2,6 @@
 subcategory: "Quotas"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_quotas_quota_alarm"
-sidebar_current: "docs-alicloud-resource-quotas-quota-alarm"
 description: |-
   Provides a Alicloud Quotas Quota Alarm resource.
 ---
@@ -11,9 +10,9 @@ description: |-
 
 Provides a Quotas Quota Alarm resource. 
 
-For information about Quotas Quota Alarm and how to use it, see [What is Quota Alarm](https://help.aliyun.com/document_detail/440558.html).
+For information about Quotas Quota Alarm and how to use it, see [What is Quota Alarm](https://www.alibabacloud.com/help/en/quota-center/latest/api-doc-quotas-2020-05-10-api-doc-createquotaalarm).
 
--> **NOTE:** Available in v1.116.0+.
+-> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
 
@@ -44,7 +43,7 @@ The following arguments are supported:
 * `product_code` - (Required, ForceNew) The Product Code.
 * `quota_action_code` - (Required, ForceNew) The Quota Action Code.
 * `quota_alarm_name` - (Required) The name of Quota Alarm.
-* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. See the following `Block QuotaDimensions`.
+* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. See [`quota_dimensions`](#quota_dimensions) below.
 * `threshold` - (Optional) The threshold of Quota Alarm.
 * `threshold_percent` - (Optional) The threshold percent of Quota Alarm.
 * `threshold_type` - (Optional, Computed, Available in v1.206.0+) Quota alarm type. Value:
@@ -53,9 +52,9 @@ The following arguments are supported:
 * `web_hook` - (Optional) The WebHook of Quota Alarm.
 
 
-#### Block QuotaDimensions
+### `quota_dimensions`
 
-The QuotaDimensions supports the following:
+The quota_dimensions supports the following:
 * `key` - (Optional, ForceNew) The Key of quota_dimensions.
 * `value` - (Optional, ForceNew) The Value of quota_dimensions.
 
@@ -66,7 +65,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Quota Alarm.

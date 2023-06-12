@@ -2,7 +2,6 @@
 subcategory: "Quotas"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_quotas_quota_application"
-sidebar_current: "docs-alicloud-resource-quotas-quota-application"
 description: |-
   Provides a Alicloud Quotas Quota Application resource.
 ---
@@ -11,9 +10,9 @@ description: |-
 
 Provides a Quotas Quota Application resource. Details of Quota Application.
 
-For information about Quotas Quota Application and how to use it, see [What is Quota Application](https://help.aliyun.com/document_detail/440566.html).
+For information about Quotas Quota Application and how to use it, see [What is Quota Application](https://www.alibabacloud.com/help/en/quota-center/latest/api-doc-quotas-2020-05-10-api-doc-createquotaapplication).
 
--> **NOTE:** Available in v1.117.0+.
+-> **NOTE:** Available since v1.117.0.
 
 ## Example Usage
 
@@ -52,7 +51,7 @@ The following arguments are supported:
   - Async: Asynchronous auditing. Manual review, the probability of application passing is relatively high, and the validity period of the increase quota is 1 month.
 -> **NOTE:**  This parameter takes effect only for the ECS specification quota of the cloud server.
 * `desire_value` - (Required, ForceNew) The desire value of the quota application.
-* `dimensions` - (Optional, ForceNew) QuotaDimensions. See the following `Block Dimensions`.
+* `dimensions` - (Optional, ForceNew) QuotaDimensions. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The effective time of the quota application.
 * `env_language` - (Optional, ForceNew, Available in v1.206.0+) The language of the quota alert notification. Value:
   - zh (default): Chinese.
@@ -68,9 +67,9 @@ The following arguments are supported:
 * `reason` - (Required, ForceNew) The reason of the quota application.
 
 
-#### Block Dimensions
+### `dimensions`
 
-The Dimensions supports the following:
+The dimensions support the following:
 * `key` - (Optional, ForceNew) Key.
 * `value` - (Optional, ForceNew) Value.
 
@@ -91,7 +90,7 @@ The following attributes are exported:
   - Process: under review.
   - Cancel: Closed.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Quota Application.

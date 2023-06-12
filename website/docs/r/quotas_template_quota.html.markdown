@@ -11,9 +11,9 @@ description: |-
 
 Provides a Quotas Template Quota resource. 
 
-For information about Quotas Template Quota and how to use it, see [What is Template Quota](https://help.aliyun.com/document_detail/450615.html).
+For information about Quotas Template Quota and how to use it, see [What is Template Quota](https://www.alibabacloud.com/help/en/quota-center/latest/api-doc-quotas-2020-05-10-api-doc-createtemplatequotaitem).
 
--> **NOTE:** Available in v1.206.0+.
+-> **NOTE:** Available since v1.206.0.
 
 ## Example Usage
 
@@ -44,7 +44,7 @@ resource "alicloud_quotas_template_quota" "default" {
 
 The following arguments are supported:
 * `desire_value` - (Required) Quota application value.
-* `dimensions` - (Optional) The Quota Dimensions. See the following `Block Dimensions`.
+* `dimensions` - (Optional) The Quota Dimensions. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional) The UTC time when the quota takes effect.
 * `env_language` - (Optional, Computed) The language of the quota alert notification. Value:
   - zh: Chinese.
@@ -60,8 +60,7 @@ The following arguments are supported:
   - WhiteListLabel: Equity quota.
   - FlowControl:API rate quota.
 
-
-#### Block Dimensions
+### `dimensions`
 
 The Dimensions supports the following:
 * `key` - (Optional) The Key of quota_dimensions.
@@ -73,7 +72,7 @@ The Dimensions supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Template Quota.

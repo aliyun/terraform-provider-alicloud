@@ -59,14 +59,22 @@ func main() {
 			}
 			resourceName := strings.TrimPrefix(strings.TrimSuffix(strings.Split(file.NewName, "/")[1], ".go"), "resource_")
 			log.Infof("==> Checking resource %s breaking change...", resourceName)
+			result := true
 			for _, hunk := range file.Hunks {
 				if hunk != nil && BreakingChangeRule(ParseResourceSchema(hunk.OrigRange, hunk.OrigRange.Length),
 					ParseResourceSchema(hunk.NewRange, hunk.NewRange.Length)) {
+					result = false
 					exitCode = 1
 				}
 			}
+			if result {
+				log.Infof("--- PASS")
+			} else {
+				log.Errorf("--- FAIL")
+			}
 		}
 	}
+
 	os.Exit(exitCode)
 }
 
