@@ -7,11 +7,11 @@ description: |-
   Provides a list of Alb Server Groups to the user.
 ---
 
-# alicloud\_alb\_server\_groups
+# alicloud_alb_server_groups
 
 This data source provides the Alb Server Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0.
 
 ## Example Usage
 
@@ -44,10 +44,10 @@ The following arguments are supported:
 * `server_group_ids` - (Optional, ForceNew) The server group ids.
 * `server_group_name` - (Optional, ForceNew) The name of the resource.
 * `status` - (Optional, ForceNew) The status of the resource.
-* `tag` - (Optional, ForceNew) The tag.
+* `tags` - (Optional, ForceNew) A map of tags assigned to the group.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC that you want to access.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -68,7 +68,7 @@ The following attributes are exported in addition to the arguments listed above:
 		* `health_check_host` - The domain name that is used for health checks.
 	* `id` - The ID of the Server Group.
 	* `protocol` - The server protocol. Valid values: `HTTP` and `HTTPS`. Default value: `HTTP`.
-    * `scheduler` - The scheduling algorithm. Valid values: `Wrr`, `Wlc` and `Sch`.
+	* `scheduler` - The scheduling algorithm. Valid values: `Wrr`, `Wlc` and `Sch`.
 	* `server_group_id` - The first ID of the res ource.
 	* `server_group_name` - The name of the resource.
 	* `servers` - The backend server.
@@ -86,3 +86,4 @@ The following attributes are exported in addition to the arguments listed above:
 		* `sticky_session_enabled` - Indicates whether sticky session is enabled. Values: `true` and `false`. Default value: `false`.  **NOTE:** This parameter exists if the `StickySession` parameter is set to `On`.
 		* `sticky_session_type` - The method that is used to handle a cookie. Values: `Server` and `Insert`. 
 	* `vpc_id` - The ID of the VPC that you want to access.
+	* `tags` - The tags of the resource.
