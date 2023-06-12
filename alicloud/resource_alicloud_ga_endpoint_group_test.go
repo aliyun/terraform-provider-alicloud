@@ -36,7 +36,6 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -44,22 +43,24 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
 					"endpoint_group_region": defaultRegionToTest,
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
-							"type":     "PublicIp",
-							"weight":   "20",
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
 						},
 					},
-					"listener_id": "${alicloud_ga_listener.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"accelerator_id":            CHECKSET,
+						"listener_id":               CHECKSET,
 						"endpoint_group_region":     defaultRegionToTest,
 						"endpoint_configurations.#": "1",
-						"listener_id":               CHECKSET,
 					}),
 				),
 			},
@@ -67,14 +68,18 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
-							"type":     "PublicIp",
-							"weight":   "20",
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
 						},
 						{
-							"endpoint": "${alicloud_eip_address.default.1.ip_address}",
-							"type":     "PublicIp",
-							"weight":   "20",
+							"endpoint":                     "${alicloud_eip_address.default.1.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
 						},
 					},
 				}),
@@ -183,9 +188,11 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
-							"type":     "PublicIp",
-							"weight":   "20",
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "false",
 						},
 					},
 					"description":                   "EndpointGroup",
@@ -219,6 +226,82 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "EndpointGroup",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "EndpointGroup",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudGaEndpointGroup_basic01(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_endpoint_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudGaEndpointGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaEndpointGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudGaEndpointGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaEndpointGroupBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":           "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region": defaultRegionToTest,
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
+							"type":                         "PublicIp",
+							"weight":                       "20",
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "EndpointGroup",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"accelerator_id":            CHECKSET,
+						"listener_id":               CHECKSET,
+						"endpoint_group_region":     defaultRegionToTest,
+						"endpoint_configurations.#": "1",
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "EndpointGroup",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -229,8 +312,8 @@ func TestAccAlicloudGaEndpointGroup_basic(t *testing.T) {
 
 var AlicloudGaEndpointGroupMap = map[string]string{
 	"endpoint_group_type": "default",
-	"status":              CHECKSET,
 	"threshold_count":     "3",
+	"status":              CHECKSET,
 }
 
 func AlicloudGaEndpointGroupBasicDependence(name string) string {

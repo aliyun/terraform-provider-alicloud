@@ -96,51 +96,53 @@ resource "alicloud_ga_endpoint_group" "default" {
 The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
-* `description` - (Optional) The description of the endpoint group.
-* `endpoint_configurations` - (Required) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
-* `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
-* `endpoint_group_type` - (Optional, ForceNew, Computed) The endpoint group type. Valid values: `default`, `virtual`. Default value is `default`.
-
--> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
-    
-* `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid value: `HTTP`, `HTTPS`.
-
--> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
-
-* `health_check_interval_seconds` - (Optional) The interval between two consecutive health checks. Unit: seconds.
-* `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
-* `health_check_port` - (Optional) The port that is used for health checks.
-* `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
+* `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
+* `endpoint_group_type` - (Optional, ForceNew, Computed) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
+-> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
+* `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid values: `HTTP`, `HTTPS`.
+-> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
+* `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
+* `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
+* `health_check_port` - (Optional, Int) The port that is used for health checks.
+* `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
+* `threshold_count` - (Optional, Computed, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
+* `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
 * `name` - (Optional) The name of the endpoint group.
-* `port_overrides` - (Optional) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
-
+* `description` - (Optional) The description of the endpoint group.
+* `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
+* `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
 -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
-
-* `threshold_count` - (Optional) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value is `3`.
-* `traffic_percentage` - (Optional) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
+* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
 
 ### `port_overrides`
 
 The port_overrides supports the following: 
 
-* `endpoint_port` - (Optional) Forwarding port.
-* `listener_port` - (Optional) Listener port.
+* `endpoint_port` - (Optional, Int) Forwarding port.
+* `listener_port` - (Optional, Int) Listener port.
 
 ### `endpoint_configurations`
 
 The endpoint_configurations supports the following: 
 
-* `enable_clientip_preservation` - (Optional, Computed) Indicates whether client IP addresses are reserved. Valid values: `true`: Client IP addresses are reserved, `false`: Client IP addresses are not reserved. Default value is `false`.
 * `endpoint` - (Required) The IP address or domain name of Endpoint N in the endpoint group.
-* `type` - (Required) The type of Endpoint N in the endpoint group. Valid values: `Domain`: a custom domain name, `Ip`: a custom IP address, `PublicIp`: an Alibaba Cloud public IP address, `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance, `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
-
+* `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
+  - `Domain`: a custom domain name.
+  - `Ip`: a custom IP address.
+  - `PublicIp`: an Alibaba Cloud public IP address.
+  - `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance.
+  - `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
 -> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
-
-* `weight` - (Required) The weight of Endpoint N in the endpoint group. Valid value is 0 to 255.
-
+* `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
 -> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
-             
+* `enable_proxy_protocol` - (Optional, Bool, Available since v1.208.0) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
+  - `true`: preserves client IP addresses by using the ProxyProtocol module.
+  - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
+* `enable_clientip_preservation` - (Optional, Computed, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
+  - `true`: Client IP addresses are reserved.
+  - `false`: Client IP addresses are not reserved.
+
 ## Attributes Reference
 
 The following attributes are exported:
