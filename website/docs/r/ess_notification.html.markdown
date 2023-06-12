@@ -7,16 +7,16 @@ description: |-
   Provides a ESS notification resource.
 ---
 
-# alicloud\_ess\_notification
+# alicloud_ess_notification
 
 Provides a ESS notification resource. More about Ess notification, see [Autoscaling Notification](https://www.alibabacloud.com/help/doc-detail/71114.htm).
 
--> **NOTE:** Available in 1.55.0+
+-> **NOTE:** Available since v1.55.0.
 
 ## Example Usage
 ```terraform
 variable "name" {
-  default = "tf-testAccEssNotification-%d"
+  default = "terraform-example"
 }
 
 data "alicloud_regions" "default" {

@@ -7,17 +7,19 @@ description: |-
   Provides a ESS scaling configuration resource.
 ---
 
-# alicloud\_ess\_scaling\_configuration
+# alicloud_ess_scaling_configuration
 
 Provides a ESS scaling configuration resource.
 
 -> **NOTE:** Several instance types have outdated in some regions and availability zones, such as `ecs.t1.*`, `ecs.s2.*`, `ecs.n1.*` and so on. If you want to keep them, you should set `is_outdated` to true. For more about the upgraded instance type, refer to `alicloud_instance_types` datasource.
 
+-> **NOTE:** Available since v1.39.0.
+
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "essscalingconfiguration"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -121,8 +123,8 @@ The following arguments are supported:
 * `key_name` - (Optional) The name of key pair that can login ECS instance successfully without password. If it is specified, the password would be invalid.
 * `role_name` - (Optional) Instance RAM role name. The name is provided and maintained by RAM. You can use `alicloud_ram_role` to create a new one.
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
-* `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [Block datadisk](#block-datadisk) below for details.
-* `instance_pattern_info` - (Optional,Available in 1.177.0+) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types
+* `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [`data_disk`](#data_disk) below for details.
+* `instance_pattern_info` - (Optional, Available in 1.177.0+) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types.  See [`instance_pattern_info`](#instance_pattern_info) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
@@ -135,7 +137,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, Available in 1.135.0+) ID of resource group.
 * `host_name` - (Optional, Available in 1.143.0+) Hostname of an ECS instance.
 * `spot_strategy` - (Optional, Available in 1.151.0+) The spot strategy for a Pay-As-You-Go instance. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
-* `spot_price_limit` - (Optional, Available in 1.151.0+) Sets the maximum price hourly for instance types. See [Block spotPriceLimit](#block-spotPriceLimit) below for details.
+* `spot_price_limit` - (Optional, Available in 1.151.0+) Sets the maximum price hourly for instance types. See [`spot_price_limit`](#spot_price_limit) below for details.
 
 -> **NOTE:** Before enabling the scaling group, it must have a active scaling configuration.
 
@@ -152,12 +154,12 @@ The following arguments are supported:
 -> **NOTE:** The last scaling configuration can't be set to inactive and deleted alone.
 
 
-## Block datadisk
+### `data_disk`
 
 The datadisk mapping supports the following:
 
 * `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
-* `device` - (Optional, Available in 1.92.0+) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
+* `device` - (Optional, Deprecated, Available in 1.92.0+) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
 * `category` - (Optional) Category of data disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd` and `cloud`.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
 * `delete_with_instance` - (Optional) Whether to delete data disks attached on ecs when release ecs instance. Optional value: `true` or `false`, default to `true`.
@@ -168,7 +170,7 @@ The datadisk mapping supports the following:
 * `auto_snapshot_policy_id` - (Optional, Available in 1.92.0+) The id of auto snapshot policy for data disk.
 * `performance_level` - (Optional, Available in 1.124.3+) The performance level of the ESSD used as data disk.
 
-## Block instancePatternInfo
+### `instance_pattern_info`
 
 The instancePatternInfo mapping supports the following:
 
@@ -177,7 +179,7 @@ The instancePatternInfo mapping supports the following:
 * `max_price` - (Optional) The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.
 * `memory` - (Optional) The memory size that is specified for an instance type in instancePatternInfo.
 
-## Block spotPriceLimit
+### `spot_price_limit`
 
 The spotPriceLimit mapping supports the following:
 
@@ -198,5 +200,3 @@ ESS scaling configuration can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_ess_scaling_configuration.example asg-abc123456
 ```
-
--> **NOTE:** Available in 1.46.0+

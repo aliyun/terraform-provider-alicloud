@@ -7,7 +7,7 @@ description: |-
   Provides a ESS Attachment resource to attach or remove vserver groups.
 ---
 
-# alicloud\_ess\_scalinggroup\_vserver\_groups
+# alicloud_ess_scalinggroup_vserver_groups
 
 Attaches/Detaches vserver groups to a specified scaling group.
 
@@ -27,13 +27,13 @@ Attaches/Detaches vserver groups to a specified scaling group.
 
 -> **NOTE:** Modifing `weight` attribute means detach vserver group first and then, attach with new weight parameter.
 
--> **NOTE:** Resource `alicloud_ess_scalinggroup_vserver_groups` is available in 1.53.0+.
+-> **NOTE:** Available since v1.53.0.
 
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "testAccEssVserverGroupsAttachment"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -42,30 +42,44 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = var.name
+  count              = 2
+  load_balancer_name = format("terraform-example%d", count.index + 1)
   vswitch_id         = alicloud_vswitch.default.id
+  load_balancer_spec = "slb.s1.small"
 }
 
-resource "alicloud_slb_server_group" "default" {
-  load_balancer_id = alicloud_slb_load_balancer.default.id
-  name             = "test"
+resource "alicloud_slb_server_group" "default1" {
+  count            = "2"
+  load_balancer_id = alicloud_slb_load_balancer.default.0.id
+  name             = var.name
+}
+
+resource "alicloud_slb_server_group" "default2" {
+  count            = "2"
+  load_balancer_id = alicloud_slb_load_balancer.default.1.id
+  name             = var.name
 }
 
 resource "alicloud_slb_listener" "default" {
   count             = 2
-  load_balancer_id  = element(alicloud_slb_load_balancer.default.*.id, count.index)
+  load_balancer_id  = alicloud_slb_load_balancer.default[count.index].id
   backend_port      = "22"
   frontend_port     = "22"
   protocol          = "tcp"
@@ -77,19 +91,41 @@ resource "alicloud_ess_scaling_group" "default" {
   min_size           = "2"
   max_size           = "2"
   scaling_group_name = var.name
+  default_cooldown   = 200
+  removal_policies   = ["OldestInstance"]
   vswitch_ids        = [alicloud_vswitch.default.id]
+  loadbalancer_ids   = alicloud_slb_listener.default.*.load_balancer_id
 }
 
 resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
   scaling_group_id = alicloud_ess_scaling_group.default.id
   vserver_groups {
-    loadbalancer_id = alicloud_slb_load_balancer.default.id
+    loadbalancer_id = alicloud_slb_load_balancer.default.0.id
     vserver_attributes {
-      vserver_group_id = alicloud_slb_server_group.default.id
+      vserver_group_id = alicloud_slb_server_group.default1.0.id
       port             = "100"
       weight           = "60"
     }
+    vserver_attributes {
+      vserver_group_id = alicloud_slb_server_group.default1.1.id
+      port             = "110"
+      weight           = "60"
+    }
   }
+  vserver_groups {
+    loadbalancer_id = alicloud_slb_load_balancer.default.1.id
+    vserver_attributes {
+      vserver_group_id = alicloud_slb_server_group.default2.0.id
+      port             = "200"
+      weight           = "60"
+    }
+    vserver_attributes {
+      vserver_group_id = alicloud_slb_server_group.default2.1.id
+      port             = "210"
+      weight           = "60"
+    }
+  }
+  force = true
 }
 ```
 
@@ -97,18 +133,18 @@ resource "alicloud_ess_scalinggroup_vserver_groups" "default" {
 
 The following arguments are supported:
 
-* `scaling_group_id` - (Required) ID of the scaling group.
-* `vserver_groups` - (Required) A list of vserver groups attached on scaling group. See [Block vserver_group](#block-vserver_group) below for details.
+* `scaling_group_id` - (Required, ForceNew) ID of the scaling group.
+* `vserver_groups` - (Required) A list of vserver groups attached on scaling group. See [`vserver_groups`](#vserver_groups) below.
 * `force` - (Optional, Available in 1.64.0+) If instances of scaling group are attached/removed from slb backend server when attach/detach vserver group from scaling group. Default to true.
 
-## Block vserver_group
+### `vserver_groups`
 
 the vserver_group supports the following:
 
 * `loadbalancer_id` - (Required) Loadbalancer server ID of VServer Group.
-* `vserver_attributes` - (Required) A list of VServer Group attributes. See [Block vserver_attribute](#block-vserver_attribute) below for details.
+* `vserver_attributes` - (Required) A list of VServer Group attributes. See [`vserver_attributes`](#vserver_groups-vserver_attributes) below.
 
-## Block vserver_attribute
+### `vserver_groups-vserver_attributes`
 
 * `vserver_group_id` - (Required) ID of VServer Group.
 * `port` - (Required) - The port will be used for VServer Group backend server.

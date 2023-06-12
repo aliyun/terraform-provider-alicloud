@@ -7,7 +7,7 @@ description: |-
   Provides a ESS scaling group resource.
 ---
 
-# alicloud\_ess\_scaling\_group
+# alicloud_ess_scaling_group
 
 Provides a ESS scaling group resource which is a collection of ECS instances with the same application scenarios.
 
@@ -15,11 +15,15 @@ It defines the maximum and minimum numbers of ECS instances in the group, and th
 
 -> **NOTE:** You can launch an ESS scaling group for a VPC network via specifying parameter `vswitch_ids`.
 
+For information about ess scaling rule, see [CreateScalingGroup](https://www.alibabacloud.com/help/en/auto-scaling/latest/createscalinggroup).
+
+-> **NOTE:** Available since v1.39.0.
+
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "essscalinggroupconfig"
+  default = "terraform-example"
 }
 
 data "alicloud_zones" "default" {
@@ -97,7 +101,7 @@ The following arguments are supported:
   **NOTE:** From version 1.204.1, `min_size` can be set to `2000`.
 * `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 2000].
   **NOTE:** From version 1.204.1, `max_size` can be set to `2000`.
-* `desired_capacity` - (Optional,Available in 1.76.0+) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
+* `desired_capacity` - (Optional, Available in 1.76.0+) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain numbers, underscores `_`, hyphens `-`, and decimal points `.`. If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
@@ -143,17 +147,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The scaling group ID.
-* `min_size` - The minimum number of ECS instances.
-* `max_size` - The maximum number of ECS instances.
-* `scaling_group_name` - The name of the scaling group.
-* `default_cooldown` - The default cool-down of the scaling group.
-* `removal_policies` - The removal policy used to select the ECS instance to remove from the scaling group.
-* `db_instance_ids` - The db instances id which the ECS instance attached to.
-* `loadbalancer_ids` - The slb instances id which the ECS instance attached to.
-* `vswitch_ids` - The vswitches id in which the ECS instance launched.
-* `launch_template_id` - The instance launch template ID.
-* `launch_template_version` - The version number of the launch template.
-* `protected_instances` - The scaling group instances in protected status.
 
 ## Import
 
