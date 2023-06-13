@@ -7,19 +7,23 @@ description: |-
   Provides a Alicloud ECD Bundle resource.
 ---
 
-# alicloud\_ecd\_bundle
+# alicloud_ecd_bundle
 
 Provides a ECD Bundle resource.
 
-For information about ECD Bundle and how to use it, see [What is Bundle](https://help.aliyun.com/document_detail/188883.html).
+For information about ECD Bundle and how to use it, see [What is Bundle](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createbundle).
 
--> **NOTE:** Available in v1.170.0+.
+-> **NOTE:** Available since v1.170.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 data "alicloud_ecd_images" "default" {
   image_type            = "SYSTEM"
   os_type               = "Windows"
@@ -65,7 +69,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Bundle.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

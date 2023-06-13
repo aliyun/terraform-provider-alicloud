@@ -7,19 +7,23 @@ description: |-
   Provides a Alicloud ECD Ad Connector Office Site resource.
 ---
 
-# alicloud\_ecd\_ad\_connector\_office\_site
+# alicloud_ecd_ad_connector_office_site
 
 Provides a ECD Ad Connector Office Site resource.
 
 For information about ECD Ad Connector Office Site and how to use it, see [What is Ad Connector Office Site](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/createadconnectorofficesite).
 
--> **NOTE:** Available in v1.176.0+.
+-> **NOTE:** Available since v1.176.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
   protection_level  = "REDUCED"
@@ -32,14 +36,14 @@ resource "alicloud_ecd_ad_connector_office_site" "default" {
   cidr_block                    = "10.0.0.0/12"
   desktop_access_type           = "INTERNET"
   dns_address                   = ["127.0.0.2"]
-  domain_name                   = "example1234.com"
-  domain_password               = "YourPassword1234"
-  domain_user_name              = "Administrator"
-  enable_admin_access           = true
-  enable_internet_access        = true
+  domain_name                   = "corp.example.com"
+  domain_password               = "Example1234"
+  domain_user_name              = "sAMAccountName"
+  enable_admin_access           = false
+  enable_internet_access        = false
   mfa_enabled                   = false
   sub_domain_dns_address        = ["127.0.0.3"]
-  sub_domain_name               = "child.example1234.com"
+  sub_domain_name               = "child.example.com"
 }
 ```
 
@@ -77,7 +81,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Ad Connector Office Site.
 * `status` - The resource State.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

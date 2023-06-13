@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECD Simple Office Site resource.
 ---
 
-# alicloud\_ecd\_simple\_office\_site
+# alicloud_ecd_simple_office_site
 
 Provides a ECD Simple Office Site resource.
 
-For information about ECD Simple Office Site and how to use it, see [What is Simple Office Site](https://help.aliyun.com/document_detail/188382.html).
+For information about ECD Simple Office Site and how to use it, see [What is Simple Office Site](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createsimpleofficesite).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -22,11 +22,10 @@ Basic Usage
 ```terraform
 resource "alicloud_ecd_simple_office_site" "default" {
   cidr_block          = "172.16.0.0/12"
-  bandwidth           = 5
+  enable_admin_access = true
   desktop_access_type = "Internet"
-  office_site_name    = "site_name"
+  office_site_name    = "terraform-example"
 }
-
 ```
 
 ## Argument Reference

@@ -7,49 +7,55 @@ description: |-
   Provides a Alicloud ECD Command resource.
 ---
 
-# alicloud\_ecd\_command
+# alicloud_ecd_command
 
 Provides a ECD Command resource.
 
-For information about ECD Command and how to use it, see [What is Command](https://help.aliyun.com/document_detail/188382.html).
+For information about ECD Command and how to use it, see [What is Command](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-runcommand).
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-
+variable "name" {
+  default = "terraform-example"
+}
 resource "alicloud_ecd_simple_office_site" "default" {
   cidr_block          = "172.16.0.0/12"
+  enable_admin_access = true
   desktop_access_type = "Internet"
-  office_site_name    = "your_office_site_name"
-
-}
-data "alicloud_ecd_bundles" "default" {
-  bundle_type = "SYSTEM"
-  name_regex  = "windows"
+  office_site_name    = var.name
 }
 
 resource "alicloud_ecd_policy_group" "default" {
-  policy_group_name = "your_policy_group_name"
-  clipboard         = "readwrite"
+  policy_group_name = var.name
+  clipboard         = "read"
   local_drive       = "read"
+  usb_redirect      = "off"
+  watermark         = "off"
+
   authorize_access_policy_rules {
-    description = "example_value"
-    cidr_ip     = "1.2.3.4/24"
+    description = var.name
+    cidr_ip     = "1.2.3.45/24"
   }
   authorize_security_policy_rules {
     type        = "inflow"
     policy      = "accept"
-    description = "example_value"
+    description = var.name
     port_range  = "80/80"
     ip_protocol = "TCP"
     priority    = "1"
-    cidr_ip     = "0.0.0.0/0"
+    cidr_ip     = "1.2.3.4/24"
   }
 }
+
+data "alicloud_ecd_bundles" "default" {
+  bundle_type = "SYSTEM"
+}
+
 resource "alicloud_ecd_desktop" "default" {
   office_site_id  = alicloud_ecd_simple_office_site.default.id
   policy_group_id = alicloud_ecd_policy_group.default.id
@@ -62,7 +68,6 @@ resource "alicloud_ecd_command" "default" {
   command_type    = "RunPowerShellScript"
   desktop_id      = alicloud_ecd_desktop.default.id
 }
-
 ```
 
 ## Argument Reference

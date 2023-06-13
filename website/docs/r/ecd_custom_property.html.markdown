@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECD Custom Property resource.
 ---
 
-# alicloud\_ecd\_custom\_property
+# alicloud_ecd_custom_property
 
 Provides a ECD Custom Property resource.
 
-For information about ECD Custom Property and how to use it, see [What is Custom Property](https://help.aliyun.com/document_detail/436381.html).
+For information about ECD Custom Property and how to use it, see [What is Custom Property](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-eds-user-2021-03-08-api-doc-createproperty-desktop).
 
--> **NOTE:** Available in v1.176.0+.
+-> **NOTE:** Available since v1.176.0.
 
 -> **NOTE:** Up to 10 different attributes can be created under an alibaba cloud account. Up to 50 different attribute values can be added under an attribute.
 
@@ -35,9 +35,9 @@ resource "alicloud_ecd_custom_property" "example" {
 The following arguments are supported:
 
 * `property_key` - (Required) The Custom attribute key.
-* `property_values` - (Optional) Custom attribute sets the value of. See the following `Block property_values`.
+* `property_values` - (Optional) Custom attribute sets the value of. See [`property_values`](#property_values) below.
 
-#### Block property_values
+### `property_values`
 
 The property_values supports the following: 
 
@@ -50,7 +50,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Custom Property.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,53 +7,48 @@ description: |-
   Provides a Alicloud Elastic Desktop Service (ECD) Policy Group resource.
 ---
 
-# alicloud\_ecd\_policy\_group
+# alicloud_ecd_policy_group
 
 Provides a Elastic Desktop Service (ECD) Policy Group resource.
 
-For information about Elastic Desktop Service (ECD) Policy Group and how to use it, see [What is Policy Group](https://help.aliyun.com/document_detail/188382.html).
+For information about Elastic Desktop Service (ECD) Policy Group and how to use it, see [What is Policy Group](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createpolicygroup).
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
 resource "alicloud_ecd_policy_group" "default" {
-  policy_group_name = "my-policy-group"
+  policy_group_name = "terraform-example"
   clipboard         = "read"
   local_drive       = "read"
   usb_redirect      = "off"
   watermark         = "off"
 
   authorize_access_policy_rules {
-    description = "my-description1"
+    description = "terraform-example"
     cidr_ip     = "1.2.3.45/24"
   }
   authorize_security_policy_rules {
     type        = "inflow"
     policy      = "accept"
-    description = "my-description"
+    description = "terraform-example"
     port_range  = "80/80"
     ip_protocol = "TCP"
     priority    = "1"
     cidr_ip     = "1.2.3.4/24"
   }
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `authorize_access_policy_rules` - (Optional) The rule of authorize access rule.
-* `authorize_security_policy_rules` - (Optional) The policy rule.
+* `authorize_access_policy_rules` - (Optional) The rule of authorize access rule. See [`authorize_access_policy_rules`](#authorize_access_policy_rules) below.
+* `authorize_security_policy_rules` - (Optional) The policy rule. See [`authorize_security_policy_rules`](#authorize_security_policy_rules) below.
 * `clipboard` - (Optional, Computed) The clipboard policy. Valid values: `off`, `read`, `readwrite`.
 * `domain_list` - (Optional) The list of domain.
 * `html_access` - (Optional, Computed) The access of html5. Valid values: `off`, `on`.
@@ -65,14 +60,14 @@ The following arguments are supported:
 * `watermark` - (Optional, Computed) The watermark policy. Valid values: `off`, `on`.
 * `watermark_transparency` - (Optional, Computed) The watermark transparency. Valid values: `DARK`, `LIGHT`, `MIDDLE`.
 * `watermark_type` - (Optional) The type of watemark. Valid values: `EndUserId`, `HostName`.
-* `recording` - (Optional, Computed, Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `alltime`, `period`.
+* `recording` - (Optional, Computed, Available in 1.171.0+) Whether to enable screen recording. Valid values: `off`, `all-time`, `period`.
 * `recording_start_time` - (Optional, Available in 1.171.0+) The start time of recording, value: `HH:MM:SS`. This return value is meaningful only when the value of `recording` is `period`.
 * `recording_end_time` - (Optional, Available in 1.171.0+) The end time of recording, value: `HH:MM:SS`. This return value is meaningful only when the value of `recording` is `period`.
 * `recording_fps` - (Optional, Computed, Available in 1.171.0+) The fps of recording. Valid values: `2`, `5`, `10`, `15`.
 * `camera_redirect` - (Optional, Computed, Available in 1.171.0+) Whether to enable local camera redirection. Valid values: `on`, `off`.
-* `recording_expires` - (Optional, Available in 1.186.0+) The screen recording video retention. Valid values between 30 and 180. This return value is meaningful only when the value of `recording` is `period` or `alltime`.
+* `recording_expires` - (Optional, Available in 1.186.0+) The screen recording video retention. Valid values between 30 and 180. This return value is meaningful only when the value of `recording` is `period` or `all-time`.
 
-#### Block authorize_security_policy_rules
+### `authorize_security_policy_rules`
 
 The authorize_security_policy_rules supports the following: 
 
@@ -84,7 +79,7 @@ The authorize_security_policy_rules supports the following:
 * `priority` - (Optional) The priority of security rules.
 * `type` - (Optional) The type of security rules.
 
-#### Block authorize_access_policy_rules
+### `authorize_access_policy_rules`
 
 The authorize_access_policy_rules supports the following: 
 

@@ -7,33 +7,34 @@ description: |-
   Provides a Alicloud ECD Nas File System resource.
 ---
 
-# alicloud\_ecd\_nas\_file\_system
+# alicloud_ecd_nas_file_system
 
 Provides a ECD Nas File System resource.
 
-For information about ECD Nas File System and how to use it, see [What is Nas File System](https://help.aliyun.com/document_detail/188382.html).
+For information about ECD Nas File System and how to use it, see [What is Nas File System](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-reference-for-easy-use-1).
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-
+variable "name" {
+  default = "terraform-example"
+}
 resource "alicloud_ecd_simple_office_site" "default" {
-  cidr_block             = "172.16.0.0/12"
-  desktop_access_type    = "Internet"
-  office_site_name       = "your_office_site_name"
-  enable_internet_access = false
+  cidr_block          = "172.16.0.0/12"
+  enable_admin_access = false
+  desktop_access_type = "Internet"
+  office_site_name    = var.name
 }
 
 resource "alicloud_ecd_nas_file_system" "example" {
-  nas_file_system_name = "example_value"
+  nas_file_system_name = var.name
   office_site_id       = alicloud_ecd_simple_office_site.default.id
-  description          = "example_value"
+  description          = var.name
 }
-
 ```
 
 ## Argument Reference
@@ -54,7 +55,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Nas File System.
 * `status` - The status of nas file system. Valid values: `Pending`, `Running`, `Stopped`,`Deleting`, `Deleted`, `Invalid`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
