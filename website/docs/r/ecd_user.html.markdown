@@ -7,24 +7,25 @@ description: |-
   Provides a Alicloud Elastic Desktop Service (ECD) User resource.
 ---
 
-# alicloud\_ecd\_user
+# alicloud_ecd_user
 
 Provides a Elastic Desktop Service (ECD) User resource.
 
-For information about Elastic Desktop Service (ECD) User and how to use it, see [What is User](https://help.aliyun.com/document_detail/188382.html).
+For information about Elastic Desktop Service (ECD) User and how to use it, see [What is User](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-eds-user-2021-03-08-api-doc-createusers-desktop).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ecd_user" "example" {
-  email       = "your_email"
-  end_user_id = "example_value"
+resource "alicloud_ecd_user" "default" {
+  end_user_id = "terraform_example123"
+  email       = "tf.example@abc.com"
+  phone       = "18888888888"
+  password    = "Example_123"
 }
-
 ```
 
 ## Argument Reference

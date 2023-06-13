@@ -7,31 +7,33 @@ description: |-
   Provides a Alicloud ECD Network Package resource.
 ---
 
-# alicloud\_ecd\_network\_package
+# alicloud_ecd_network_package
 
 Provides a ECD Network Package resource.
 
-For information about ECD Network Package and how to use it, see [What is Network Package](https://help.aliyun.com/document_detail/188382.html).
+For information about ECD Network Package and how to use it, see [What is Network Package](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createnetworkpackage).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-
+variable "name" {
+  default = "terraform-example"
+}
 resource "alicloud_ecd_simple_office_site" "default" {
   cidr_block          = "172.16.0.0/12"
+  enable_admin_access = false
   desktop_access_type = "Internet"
-  office_site_name    = "your_office_site_name"
+  office_site_name    = var.name
 }
 
-resource "alicloud_ecd_network_package" "example" {
+resource "alicloud_ecd_network_package" "default" {
   bandwidth      = 10
   office_site_id = alicloud_ecd_simple_office_site.default.id
 }
-
 ```
 
 ## Argument Reference

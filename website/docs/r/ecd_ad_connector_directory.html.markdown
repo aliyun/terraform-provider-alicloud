@@ -7,40 +7,48 @@ description: |-
   Provides a Alicloud ECD Ad Connector Directory resource.
 ---
 
-# alicloud\_ecd\_ad\_connector\_directory
+# alicloud_ecd_ad_connector_directory
 
 Provides a ECD Ad Connector Directory resource.
 
-For information about ECD Ad Connector Directory and how to use it, see [What is Ad Connector Directory](https://help.aliyun.com/document_detail/436791.html).
+For information about ECD Ad Connector Directory and how to use it, see [What is Ad Connector Directory](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createadconnectordirectory).
 
--> **NOTE:** Available in v1.174.0+.
+-> **NOTE:** Available since v1.174.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 data "alicloud_ecd_zones" "default" {}
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_ecd_zones.default.ids.0
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_ecd_zones.default.ids.0
+  vswitch_name = var.name
 }
+
 resource "alicloud_ecd_ad_connector_directory" "default" {
   directory_name         = var.name
   desktop_access_type    = "INTERNET"
   dns_address            = ["127.0.0.2"]
   domain_name            = "corp.example.com"
-  domain_password        = "YourPassword1234"
+  domain_password        = "Example1234"
   domain_user_name       = "sAMAccountName"
   enable_admin_access    = false
   mfa_enabled            = false
   specification          = 1
   sub_domain_dns_address = ["127.0.0.3"]
   sub_domain_name        = "child.example.com"
-  vswitch_ids            = [data.alicloud_vswitches.default.ids.0]
+  vswitch_ids            = [alicloud_vswitch.default.id]
 }
 ```
 ## Argument Reference
@@ -67,7 +75,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Ad Connector Directory.
 * `status` - The status of directory.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
