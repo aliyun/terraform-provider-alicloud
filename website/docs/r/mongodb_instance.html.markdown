@@ -7,13 +7,13 @@ description: |-
   Provides a MongoDB instance resource.
 ---
 
-# alicloud\_mongodb\_instance
+# alicloud_mongodb_instance
 
 Provides a MongoDB instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services. 
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/26558.htm)
 
--> **NOTE:**  Available in 1.37.0+
+-> **NOTE:** Available since v1.37.0.
 
 -> **NOTE:**  The following regions don't support create Classic network MongoDB instance.
 [`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`] 
@@ -25,28 +25,37 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 ### Create a Mongodb instance
 
 ```terraform
-data "alicloud_zones" "default" {
-  available_resource_creation = "MongoDB"
+variable "name" {
+  default = "terraform-example"
 }
-
+data "alicloud_mongodb_zones" "default" {}
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+}
 resource "alicloud_vpc" "default" {
-  name       = "vpc-123456"
-  cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = "vpc-123456"
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
 
-resource "alicloud_mongodb_instance" "example" {
-  engine_version      = "3.4"
+resource "alicloud_mongodb_instance" "default" {
+  engine_version      = "4.2"
   db_instance_class   = "dds.mongo.mid"
   db_instance_storage = 10
   vswitch_id          = alicloud_vswitch.default.id
   security_ip_list    = ["10.168.1.12", "100.69.7.112"]
+  name                = var.name
+  tags = {
+    Created = "TF"
+    For     = "example"
+  }
 }
 ```
 
@@ -87,27 +96,27 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `order_type` - (Optional, Available in v1.134.0+) The type of configuration changes performed. Default value: DOWNGRADE. Valid values:
   * UPGRADE: The specifications are upgraded.
   * DOWNGRADE: The specifications are downgraded.
-    Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
-    
+    **NOTE:** This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
 * `ssl_action` - (Optional, Available in v1.78.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate.
 * `tags` - (Optional, Available in v1.66.0+) A mapping of tags to assign to the resource.
 * `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
-* `network_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
-* `vpc_id` - (Optional, ForceNew, Computed, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
-* `resource_group_id` - (Optional, Computed, Available in v1.161.0+) The ID of the Resource Group.
-* `readonly_replicas` - (Optional, Computed, Available in v1.199.0+) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
-* `storage_type` - (Optional, Computed, ForceNew, Available in v1.199.0+) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `local_ssd`.
-* `hidden_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
-* `secondary_zone_id` - (Optional, Computed, ForceNew, Available in v1.199.0+) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
-* `parameters` - (Optional, Computed, Available in v1.203.0+) Set of parameters needs to be set after mongodb instance was launched. See the following `Block parameters`.
+* `network_type` - (Optional, ForceNew, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
+* `vpc_id` - (Optional, ForceNew, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
+* `resource_group_id` - (Optional, Available in v1.161.0+) The ID of the Resource Group.
+* `readonly_replicas` - (Optional, Available in v1.199.0+) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
+* `storage_type` - (Optional, ForceNew, Available in v1.199.0+) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `local_ssd`.
+* `hidden_zone_id` - (Optional, ForceNew, Available in v1.199.0+) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
+* `secondary_zone_id` - (Optional, ForceNew, Available in v1.199.0+) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
+* `parameters` - (Optional, Available in v1.203.0+) Set of parameters needs to be set after mongodb instance was launched. See [`parameters`](#parameters) below.
 
-#### Block parameters
+### `parameters`
 
 The parameters supports the following:
 
-* `name` - The name of the parameter.
-* `value` - The value of the parameter.
+* `name` - (Required) The name of the parameter.
+* `value` - (Required) The value of the parameter.
+
 
 ## Attributes Reference
 
@@ -117,9 +126,9 @@ The following attributes are exported:
 * `retention_period` - Instance log backup retention days. Available in 1.42.0+.
 * `replica_set_name` - The name of the mongo replica set
 * `ssl_status` - Status of the SSL feature. `Open`: SSL is turned on; `Closed`: SSL is turned off.
-* `replica_sets` - Replica set instance information. The details see Block replica_sets. **NOTE:** Available in v1.140+.
+* `replica_sets` - Replica set instance information. The details see Block replica_sets. **NOTE:** Available since v1.140. See [`replica_sets`](#replica_sets) below.
 
-#### replica_sets
+### `replica_sets`
 The replica_sets supports the following:
 * `vswitch_id` - The virtual switch ID to launch DB instances in one VPC.
 * `connection_port` - The connection port of the node.
@@ -129,7 +138,7 @@ The replica_sets supports the following:
 * `network_type` - The network type of the node. Valid values: `Classic`,`VPC`.
 * `vpc_id` - The private network ID of the node.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.53.0+.
 

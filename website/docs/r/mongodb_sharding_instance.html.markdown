@@ -7,13 +7,13 @@ description: |-
   Provides a MongoDB sharding instance resource.
 ---
 
-# alicloud\_mongodb\_sharding_instance
+# alicloud_mongodb_sharding_instance
 
 Provides a MongoDB sharding instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services. 
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/26558.htm)
 
--> **NOTE:**  Available in 1.40.0+
+-> **NOTE:** Available since v1.40.0.
 
 -> **NOTE:**  The following regions don't support create Classic network MongoDB sharding instance.
 [`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`] 
@@ -26,88 +26,44 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-
-variable "shard" {
-  default = {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
+data "alicloud_mongodb_zones" "default" {}
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
 }
-
-variable "mongo" {
-  default = {
-    node_class = "dds.mongos.mid"
-  }
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "MongoDB"
-}
-
 resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
 
-resource "alicloud_mongodb_sharding_instance" "foo" {
-  zone_id        = data.alicloud_zones.default.zones[0].id
+resource "alicloud_mongodb_sharding_instance" "default" {
+  zone_id        = local.zone_id
   vswitch_id     = alicloud_vswitch.default.id
   engine_version = "4.2"
   name           = var.name
-  dynamic "shard_list" {
-    for_each = [var.shard]
-    content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
-      node_class   = shard_list.value.node_class
-      node_storage = shard_list.value.node_storage
-    }
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = "10"
   }
-  dynamic "shard_list" {
-    for_each = [var.shard]
-    content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
-      node_class   = shard_list.value.node_class
-      node_storage = shard_list.value.node_storage
-    }
+  shard_list {
+    node_class        = "dds.shard.standard"
+    node_storage      = "20"
+    readonly_replicas = "1"
   }
-  dynamic "mongo_list" {
-    for_each = [var.mongo]
-    content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
-      node_class = mongo_list.value.node_class
-    }
+  mongo_list {
+    node_class = "dds.mongos.mid"
   }
-  dynamic "mongo_list" {
-    for_each = [var.mongo]
-    content {
-      # TF-UPGRADE-TODO: The automatic upgrade tool can't predict
-      # which keys might be set in maps assigned here, so it has
-      # produced a comprehensive set here. Consider simplifying
-      # this after confirming which keys can be set in practice.
-
-      node_class = mongo_list.value.node_class
-    }
+  mongo_list {
+    node_class = "dds.mongos.mid"
   }
 }
 ```
@@ -135,14 +91,8 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
 * `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 * `security_group_id` - (Optional, Available in 1.76.0+) The Security Group ID of ECS.
 * `tde_status` - (Optional, Available in 1.76.0+) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0+.
-* `mongo_list` - (Required) The mongo-node count can be purchased is in range of [2, 32].
-    * `node_class` -(Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
-* `shard_list` - (Required) the shard-node count can be purchased is in range of [2, 32].
-    * `node_class` -(Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
-    * `node_storage` - (Required)
-        - Custom storage space; value range: [10, 1,000]
-        - 10-GB increments. Unit: GB.
-    * `readonly_replicas` - (Optional, Available in 1.126.0+) The number of read-only nodes in shard node. Valid values: 0 to 5. Default value: 0.
+* `mongo_list` - (Required) The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
+* `shard_list` - (Required) the shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
 * `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `order_type` - (Optional, Available in v1.134.0+) The type of configuration changes performed. Default value: DOWNGRADE. Valid values:
@@ -151,37 +101,63 @@ If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of 
     Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
 * `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `network_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
-* `vpc_id` - (Optional, ForceNew, Computed, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
-* `protocol_type` - (Optional, ForceNew, Computed, Available in v1.161.0+) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
-* `resource_group_id` - (Optional, Computed, Available in v1.161.0+) The ID of the Resource Group.
+* `network_type` - (Optional, ForceNew, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
+* `vpc_id` - (Optional, ForceNew, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
+* `protocol_type` - (Optional, ForceNew, Available in v1.161.0+) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
+* `resource_group_id` - (Optional, Available in v1.161.0+) The ID of the Resource Group.
+* `config_server_list` - The node information list of config server. See [`config_server_list`](#config_server_list) below.
+
+### `mongo_list`
+
+The mongo_list supports the following: 
+
+* `node_class` -(Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
+* `node_id` - (Optional) The ID of the mongo-node.
+* `connect_string` - (Optional) Mongo node connection string.
+* `port` - (Optional) Mongo node port.
+
+### `shard_list`
+
+The shard_list supports the following: 
+
+* `node_class` - (Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
+* `node_storage` - (Required)
+    - Custom storage space; value range: [10, 1,000]
+    - 10-GB increments. Unit: GB.
+* `readonly_replicas` - (Optional, Available in 1.126.0+) The number of read-only nodes in shard node. Valid values: 0 to 5. Default value: 0.
+* `node_id` - (Optional) The ID of the shard-node.
+
+### `config_server_list`
+
+The config_server_list supports the following: 
+
+* `max_iops` - (Optional) The maximum IOPS of the Config Server node.
+* `connect_string` - (Optional) The connection address of the Config Server node.
+* `node_class` - (Optional) The node class of the Config Server node.
+* `max_connections` - (Optional) The max connections of the Config Server node.
+* `port` - (Optional) The connection port of the Config Server node.
+* `node_description` - (Optional) The description of the Config Server node.
+* `node_id` - (Optional) The ID of the Config Server node.
+* `node_storage` - (Optional) The node storage of the Config Server node.
+
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the MongoDB.
-* `mongo_list`
-    * `node_id` - The ID of the mongo-node.
-    * `connect_string` - Mongo node connection string
-    * `port` - Mongo node port
-* `shard_list`
-    * `node_id` - The ID of the shard-node.
 * `retention_period` - Instance log backup retention days. **NOTE:** Available in 1.42.0+.
-* `config_server_list` - The node information list of config server. The details see Block `config_server_list`. **NOTE:** Available in v1.140+.
+* `config_server_list` - The node information list of config server. 
+    * `max_iops` - The maximum IOPS of the Config Server node.
+    * `connect_string` - The connection address of the Config Server node.
+    * `node_class` - The node class of the Config Server node.
+    * `max_connections` - The max connections of the Config Server node.
+    * `port` - The connection port of the Config Server node.
+    * `node_description` - The description of the Config Server node.
+    * `node_id` - The ID of the Config Server node.
+    * `node_storage` - The node storage of the Config Server node.
 
-#### config_server_list
-The config_server_list supports the following:
-* `max_iops` - The maximum IOPS of the Config Server node.
-* `connect_string` - The connection address of the Config Server node.
-* `node_class` - The node class of the Config Server node.
-* `max_connections` - The max connections of the Config Server node.
-* `port` - The connection port of the Config Server node.
-* `node_description` - The description of the Config Server node.
-* `node_id` - The ID of the Config Server node.
-* `node_storage` - The node storage of the Config Server node.
-
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.126.0+.
 
