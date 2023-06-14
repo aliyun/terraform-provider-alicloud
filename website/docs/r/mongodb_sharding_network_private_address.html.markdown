@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud MongoDB Sharding Network Private Address resource.
 ---
 
-# alicloud\_mongodb\_sharding\_network\_private\_address
+# alicloud_mongodb_sharding_network_private_address
 
 Provides a MongoDB Sharding Network Private Address resource.
 
 For information about MongoDB Sharding Network Private Address and how to use it, see [What is Sharding Network Private Address](https://www.alibabacloud.com/help/en/doc-detail/141403.html).
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
 
@@ -21,47 +21,53 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
+}
+data "alicloud_mongodb_zones" "default" {}
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_mongodb_zones" "default" {
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id     = data.alicloud_vswitches.default.ids[0]
+  zone_id        = local.zone_id
+  vswitch_id     = alicloud_vswitch.default.id
   engine_version = "4.2"
   name           = var.name
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = "10"
+  }
+  shard_list {
+    node_class        = "dds.shard.standard"
+    node_storage      = "20"
+    readonly_replicas = "1"
+  }
   mongo_list {
     node_class = "dds.mongos.mid"
   }
   mongo_list {
     node_class = "dds.mongos.mid"
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
   }
 }
-resource "alicloud_mongodb_sharding_network_private_address" "example" {
+
+resource "alicloud_mongodb_sharding_network_private_address" "default" {
   db_instance_id   = alicloud_mongodb_sharding_instance.default.id
   node_id          = alicloud_mongodb_sharding_instance.default.shard_list.0.node_id
   zone_id          = alicloud_mongodb_sharding_instance.default.zone_id
-  account_name     = "example_value"
-  account_password = "YourPassword+12345"
+  account_name     = "example"
+  account_password = "Example_123"
 }
 ```
 

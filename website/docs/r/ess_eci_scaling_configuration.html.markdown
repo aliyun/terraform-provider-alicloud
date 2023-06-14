@@ -7,11 +7,13 @@ description: |-
   Provides a ESS eci scaling configuration resource.
 ---
 
-# alicloud\_ess\_eci\_scaling\_configuration
+# alicloud_ess_eci_scaling_configuration
 
 Provides a ESS eci scaling configuration resource.
 
--> **NOTE:** Resource `alicloud_ess_alb_server_group_attachment` is available in 1.164.0+.
+For information about ess eci scaling configuration, see [CreateEciScalingConfiguration](https://www.alibabacloud.com/help/en/auto-scaling/latest/create-eci-scaling-configuration).
+
+-> **NOTE:** Available since v1.164.0.
 
 ## Example Usage
 
@@ -19,11 +21,16 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "essscalingconfiguration"
+  default = "terraform-example"
+}
+
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -101,28 +108,25 @@ The following arguments are supported:
       be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "http://", or "https://" It can be
       a null string.
-* `image_registry_credentials` - (Optional)  The image registry credential. The details see
-  Block `image_registry_credential`.See [Block image_registry_credential](#block-image_registry_credential) below for
+* `image_registry_credentials` - (Optional)  The image registry credential.   See [`image_registry_credentials`](#image_registry_credentials) below for
   details.
-* `containers` - (Optional) The list of containers.See [Block container](#block-container) below for details.
-* `init_containers` - (Optional) The list of initContainers.See [Block init_container](#block-init_container) below for
-  details.
-* `volumes` - (Optional) The list of volumes.See [Block volume](#block-volume) below for details.
-* `host_aliases` - (Optional) HostAliases.See [Block host_alias](#block-host_alias) below for details.
-* `acr_registry_infos` - (Optional, Available in 1.193.1+) Information about the Container Registry Enterprise Edition instance. The details see
-  Block `acr_registry_info`.See [Block acr_registry_info](#block-acr_registry_info) below for
-  details.
+* `containers` - (Optional) The list of containers. See [`containers`](#containers) below for details.
+* `init_containers` - (Optional) The list of initContainers. See [`init_containers`](#init_containers) below for details.
+* `volumes` - (Optional) The list of volumes. See [`volumes`](#volumes) below for details.
+* `host_aliases` - (Optional) HostAliases. See [`host_aliases`](#host_aliases) below.
+* `acr_registry_infos` - (Optional, Available in 1.193.1+) Information about the Container Registry Enterprise Edition instance. See [`acr_registry_infos`](#acr_registry_infos) below for details.
 
-#### Block volume
+### `volumes`
 
 The volume supports the following:
 
 * `name` - (Optional) The name of the volume.
 * `type` - (Optional) The type of the volume.
 * `config_file_volume_config_file_to_paths` - (Optional) ConfigFileVolumeConfigFileToPaths.
-  See [Block_config_file_volume_config_file_to_path](#block-config_file_volume_config_file_to_path) below for details.
+  See [`config_file_volume_config_file_to_paths`](#volumes-config_file_volume_config_file_to_paths) below for details.
 * `disk_volume_disk_id` - (Optional) The ID of DiskVolume.
 * `disk_volume_fs_type` - (Optional) The system type of DiskVolume.
+* `disk_volume_disk_size` - (Optional) The disk size of DiskVolume.
 * `flex_volume_driver` - (Optional) The name of the FlexVolume driver.
 * `flex_volume_fs_type` - (Optional) The type of the mounted file system. The default value is determined by the script
   of FlexVolume.
@@ -134,34 +138,32 @@ The volume supports the following:
 
 -> **NOTE:** Every volume mounted must have a name and type attributes.
 
-#### Block config_file_volume_config_file_to_path
+### `volumes-config_file_volume_config_file_to_paths`
 
 The config_file_volume_config_file_to_path supports the following:
 
 * `content` - (Optional) The content of the configuration file. Maximum size: 32 KB.
 * `path` - (Optional) The relative file path.
 
-#### Block init_container
+### `init_containers`
 
 The init_container supports the following:
 
 * `args` - (Optional) The arguments passed to the commands.
 * `commands` - (Optional) The commands run by the init container.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container.
-* `environment_vars` - (Optional) The structure of environmentVars.
-  See [Block_environment_var_in_init_container](#block-environment_var_in_init_containers) below for details.
+* `environment_vars` - (Optional) The structure of environmentVars. 
+  See [`environment_vars`](#init_containers-environment_vars) below for details.
 * `gpu` - (Optional) The number GPUs.
 * `image` - (Optional) The image of the container.
 * `image_pull_policy` - (Optional) The restart policy of the image.
 * `memory` - (Optional) The amount of memory resources allocated to the container.
 * `name` - (Optional) The name of the init container.
-* `ports` - (Optional) The structure of port. See [Block_port_in_init_container](#block-port_in_init_container) below
-  for details.
-* `volume_mounts` - (Optional) The structure of volumeMounts.
-  See [Block_volume_mount_in_init_container](#block-volume_mount_in_init_container) below for details.
+* `ports` - (Optional) The structure of port. See [`ports`](#init_containers-ports) below for details.
+* `volume_mounts` - (Optional) The structure of volumeMounts. See [`volume_mounts`](#init_containers-volume_mounts) below for details.
 * `working_dir` - (Optional) The working directory of the container.
 
-#### Block environment_var_in_init_container
+### `init_containers-environment_vars`
 
 The environment_var supports the following:
 
@@ -169,14 +171,14 @@ The environment_var supports the following:
   digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
 
-#### Block port_in_init_container
+### `init_containers-ports`
 
 The port supports the following:
 
 * `port` - (Optional, ForceNew) The port number. Valid values: 1 to 65535.
 * `protocol` - (Optional, ForceNew) Valid values: TCP and UDP.
 
-#### Block volume_mount_in_init_container
+### `init_containers-volume_mounts`
 
 The volume_mount supports the following:
 
@@ -185,14 +187,7 @@ The volume_mount supports the following:
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
 
-#### Block host_alias
-
-The host_alias supports the following:
-
-* `hostnames` - (Optional) Adds a host name.
-* `ip` - (Optional) Adds an IP address.
-
-#### Block image_registry_credential
+### `image_registry_credentials`
 
 The image_registry_credential supports the following:
 
@@ -200,10 +195,17 @@ The image_registry_credential supports the following:
   when `image_registry_credential` is configured.
 * `server` - (Optional) The address of the image repository. It is required when `image_registry_credential` is
   configured.
-* `user_name` - (Optional) The username used to log on to the image repository. It is required
+* `username` - (Optional) The username used to log on to the image repository. It is required
   when `image_registry_credential` is configured.
 
-#### Block container
+### `host_aliases`
+
+The host_aliases supports the following:
+
+* `hostnames` - (Optional) Adds a host name.
+* `ip` - (Optional) Adds an IP address.
+
+### `containers`
 
 The container supports the following:
 
@@ -211,15 +213,15 @@ The container supports the following:
 * `commands` - (Optional) The commands run by the init container.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container.
 * `environment_vars` - (Optional) The structure of environmentVars.
-  See [Block_environment_var_in_container](#block-environment_var_in_container) below for details.
+  See [`environment_vars`](#containers-environment_vars) below for details.
 * `gpu` - (Optional) The number GPUs.
 * `image` - (Optional) The image of the container.
 * `image_pull_policy` - (Optional) The restart policy of the image.
 * `memory` - (Optional) The amount of memory resources allocated to the container.
 * `name` - (Optional) The name of the init container.
-* `ports` - (Optional) The structure of port. See [Block_port_in_container](#block-port_in_container) below for details.
-* `volume_mounts` - (Optional) The structure of volumeMounts.
-  See [Block_volume_mount_in_container](#block-volume_mount_in_container) below for details.
+* `ports` - (Optional) The structure of port. See [`ports`](#containers-ports) below for details.
+* `volume_mounts` - (Optional) The structure of volumeMounts. 
+   See [`volume_mounts`](#containers-volume_mounts) below for details.
 * `working_dir` - (Optional) The working directory of the container.
 * `liveness_probe_exec_commands` - (Optional, Available in 1.193.1+) Commands that you want to run in containers when you use the CLI to perform liveness probes.
 * `liveness_probe_period_seconds` - (Optional, Available in 1.193.1+) The interval at which the liveness probe is performed. Unit: seconds. Default value: 10. Minimum value: 1.
@@ -242,7 +244,7 @@ The container supports the following:
 * `readiness_probe_success_threshold` - (Optional, Available in 1.193.1+) The minimum number of consecutive successes for the readiness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
 * `readiness_probe_timeout_seconds` - (Optional, Available in 1.193.1+) The timeout period for the readiness probe. Unit: seconds. Default value: 1. Minimum value: 1.
 
-#### Block environment_var_in_container
+### `containers-environment_vars`
 
 The environment_var supports the following:
 
@@ -250,14 +252,14 @@ The environment_var supports the following:
   digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
 
-#### Block port_in_container
+### `containers-ports`
 
 The port supports the following:
 
 * `port` - (Optional, ForceNew) The port number. Valid values: 1 to 65535.
 * `protocol` - (Optional, ForceNew) Valid values: TCP and UDP.
 
-#### Block volume_mount_in_container
+### `containers-volume_mounts`
 
 The volume_mount supports the following:
 
@@ -266,7 +268,7 @@ The volume_mount supports the following:
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
 
-#### Block acr_registry_info
+### `acr_registry_infos`
 
 The acr_registry_info supports the following:
 

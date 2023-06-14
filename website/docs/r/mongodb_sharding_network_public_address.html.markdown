@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud MongoDB Sharding Network Public Address resource.
 ---
 
-# alicloud\_mongodb\_sharding\_network\_public\_address
+# alicloud_mongodb_sharding_network_public_address
 
 Provides a MongoDB Sharding Network Public Address resource.
 
 For information about MongoDB Sharding Network Public Address and how to use it, see [What is Sharding Network Public Address](https://www.alibabacloud.com/help/doc-detail/67602.html).
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0.
 
 -> **NOTE:** This operation supports sharded cluster instances only.
 
@@ -23,47 +23,44 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
+}
+data "alicloud_mongodb_zones" "default" {}
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_mongodb_zones" "default" {
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_name = "subnet-for-local-test"
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_id     = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  zone_id        = local.zone_id
+  vswitch_id     = alicloud_vswitch.default.id
   engine_version = "4.2"
   name           = var.name
+  shard_list {
+    node_class   = "dds.shard.mid"
+    node_storage = "10"
+  }
+  shard_list {
+    node_class        = "dds.shard.standard"
+    node_storage      = "20"
+    readonly_replicas = "1"
+  }
   mongo_list {
     node_class = "dds.mongos.mid"
   }
   mongo_list {
     node_class = "dds.mongos.mid"
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
-  }
-  shard_list {
-    node_class   = "dds.shard.mid"
-    node_storage = 10
   }
 }
 
@@ -97,7 +94,7 @@ The following attributes are exported:
   * `vswitch_id` - The vSwitch ID of the VPC.
   * `node_id` - The ID of the `mongos`, `shard`, or `Configserver` node in the sharded cluster instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

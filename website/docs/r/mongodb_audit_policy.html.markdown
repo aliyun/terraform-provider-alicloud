@@ -7,51 +7,53 @@ description: |-
   Provides a Alicloud MongoDB Audit Policy resource.
 ---
 
-# alicloud\_mongodb\_audit\_policy
+# alicloud_mongodb_audit_policy
 
 Provides a MongoDB Audit Policy resource.
 
 For information about MongoDB Audit Policy and how to use it, see [What is Audit Policy](https://www.alibabacloud.com/help/doc-detail/131941.html).
 
--> **NOTE:** Available in v1.148.0+.
+-> **NOTE:** Available since v1.148.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 data "alicloud_mongodb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_name = "subnet-for-local-test"
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
 
 resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
+  engine_version      = "4.2"
   db_instance_class   = "dds.mongo.mid"
   db_instance_storage = 10
-  name                = "example_value"
-  vswitch_id          = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  vswitch_id          = alicloud_vswitch.default.id
+  security_ip_list    = ["10.168.1.12", "100.69.7.112"]
+  name                = var.name
   tags = {
     Created = "TF"
-    For     = "acceptance test"
+    For     = "example"
   }
 }
 
-resource "alicloud_mongodb_audit_policy" "example" {
+resource "alicloud_mongodb_audit_policy" "default" {
   db_instance_id = alicloud_mongodb_instance.default.id
   audit_status   = "disabled"
 }
@@ -71,7 +73,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Audit Policy. Its value is same as `db_instance_id`.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.161.0+.
 

@@ -7,53 +7,58 @@ description: |-
   Provides a Alicloud MongoDB Account resource.
 ---
 
-# alicloud\_mongodb\_account
+# alicloud_mongodb_account
 
 Provides a MongoDB Account resource.
 
 For information about MongoDB Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/doc-detail/62154.html).
 
--> **NOTE:** Available in v1.148.0+.
+-> **NOTE:** Available since v1.148.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+locals {
+  index   = length(data.alicloud_mongodb_zones.default.zones) - 1
+  zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.17.3.0/24"
 }
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_name = "subnet-for-local-test"
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
 }
+
 resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
+  engine_version      = "4.2"
   db_instance_class   = "dds.mongo.mid"
   db_instance_storage = 10
+  vswitch_id          = alicloud_vswitch.default.id
+  security_ip_list    = ["10.168.1.12", "100.69.7.112"]
   name                = var.name
-  vswitch_id          = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
   tags = {
     Created = "TF"
-    For     = "acceptance test"
+    For     = "example"
   }
 }
 
-resource "alicloud_mongodb_account" "example" {
+resource "alicloud_mongodb_account" "default" {
   account_name        = "root"
-  account_password    = "example_value"
+  account_password    = "Example_123"
   instance_id         = alicloud_mongodb_instance.default.id
-  account_description = "example_value"
+  account_description = var.name
 }
-
 ```
 
 ## Argument Reference
@@ -76,7 +81,7 @@ The following attributes are exported:
 * `id` - The resource ID of Account. The value formats as `<instance_id>:<account_name>`.
 * `status` - The status of the account. Valid values: `Unavailable`, `Available`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
