@@ -64,7 +64,8 @@ func TestAccAlicloudVpcPublicIpAddressPoolCidrBlock_basic0(t *testing.T) {
 }
 
 var resourceAlicloudVpcPublicIpAddressPoolCidrBlockMap = map[string]string{
-	"status": CHECKSET,
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
 }
 
 func resourceAlicloudVpcPublicIpAddressPoolCidrBlockBasicDependence(name string) string {
@@ -149,7 +150,7 @@ func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcPublicIpAddressPoolCidrBlockCreate(dInit, rawClient)
+	err = resourceAliCloudVpcPublicIpAddressPoolCidrBlockCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -172,7 +173,7 @@ func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolCidrBlockCreate(dInit, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolCidrBlockCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -217,7 +218,7 @@ func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolCidrBlockRead(dExisted, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolCidrBlockRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -236,7 +237,7 @@ func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcPublicIpAddressPoolCidrBlockDelete(dExisted, rawClient)
+	err = resourceAliCloudVpcPublicIpAddressPoolCidrBlockDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -264,7 +265,7 @@ func TestUnitAlicloudVpcPublicIpAddressPoolCidrBlock(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolCidrBlockDelete(dExisted, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolCidrBlockDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

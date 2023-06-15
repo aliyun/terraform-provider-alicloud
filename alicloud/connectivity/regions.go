@@ -258,3 +258,4 @@ var ComputeNestSupportRegions = []Region{Hangzhou}
 var RedisTariInstanceSupportRegions = []Region{GuangZhou}
 var PolarDBNewBackupPolicySupportRegions = []Region{Hangzhou, Shanghai, Beijing, Qingdao, Shenzhen, Hongkong, USWest1, USEast1}
 var EipAddressZoneSupportRegions = []Region{APSouthEast2}
+var VpcDhcpOptionsSetSupportRegions = []Region{Hangzhou}

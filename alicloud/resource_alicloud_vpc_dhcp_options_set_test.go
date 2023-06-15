@@ -145,44 +145,6 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"associate_vpcs": []map[string]interface{}{
-						{
-							"vpc_id": "${alicloud_vpc.default.0.id}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"associate_vpcs.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"associate_vpcs": []map[string]interface{}{
-						{
-							"vpc_id": "${alicloud_vpc.default.1.id}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"associate_vpcs.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"associate_vpcs": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"associate_vpcs.#": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"dhcp_options_set_name": "${var.name}_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -218,6 +180,78 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain_name_servers": "100.100.2.138",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_lease_time": "24h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_lease_time": "24h",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -274,14 +308,6 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
 					"dhcp_options_set_description": "${var.name}",
 					"domain_name":                  domainName,
 					"domain_name_servers":          "100.100.2.136",
-					"associate_vpcs": []map[string]interface{}{
-						{
-							"vpc_id": "${alicloud_vpc.default.0.id}",
-						},
-						{
-							"vpc_id": "${alicloud_vpc.default.1.id}",
-						},
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -289,17 +315,6 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
 						"dhcp_options_set_description": name,
 						"domain_name":                  domainName,
 						"domain_name_servers":          "100.100.2.136",
-						"associate_vpcs.#":             "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"associate_vpcs": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"associate_vpcs.#": "0",
 					}),
 				),
 			},
@@ -356,6 +371,216 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic2(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudVPCDhcpOptionsSet_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_dhcp_options_set.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcDhcpOptionsSet")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpcdhcpoptionsset%d", defaultRegionToTest, rand)
+	domainName := fmt.Sprintf("tftestacc%d.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCDhcpOptionsSetBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcDhcpOptionsSetSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dhcp_options_set_name":        "${var.name}",
+					"dhcp_options_set_description": "${var.name}",
+					"domain_name":                  domainName,
+					"domain_name_servers":          "100.100.2.136",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dhcp_options_set_name":        name,
+						"dhcp_options_set_description": name,
+						"domain_name":                  domainName,
+						"domain_name_servers":          "100.100.2.136",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dhcp_options_set_name": "${var.name}_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dhcp_options_set_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dhcp_options_set_description": "${var.name}_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dhcp_options_set_description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name": "update" + domainName,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name": "update" + domainName,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name_servers": "100.100.2.138",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name_servers": "100.100.2.138",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_lease_time": "24h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_lease_time": "24h",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_lease_time": "48h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_lease_time": "48h",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lease_time": "24h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lease_time": "24h",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lease_time": "48h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lease_time": "48h",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dhcp_options_set_name":        "${var.name}",
+					"dhcp_options_set_description": "${var.name}",
+					"domain_name":                  domainName,
+					"domain_name_servers":          "100.100.2.136",
+					"ipv6_lease_time":              "24h",
+					"lease_time":                   "24h",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dhcp_options_set_name":        name,
+						"dhcp_options_set_description": name,
+						"domain_name":                  domainName,
+						"domain_name_servers":          "100.100.2.136",
+						"ipv6_lease_time":              "24h",
+						"lease_time":                   "24h",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
 var AlicloudVPCDhcpOptionsSetMap0 = map[string]string{
 	"dry_run": NOSET,
 	"status":  CHECKSET,
@@ -367,14 +592,7 @@ variable "name" {
   default = "%s"
 }
 
-resource "alicloud_vpc" "default" {
-  count = 2
-  vpc_name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-  tags 		= {
-		Created = "TF"
-		For 	= "acceptance test"
-  }
+data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 `, name)
