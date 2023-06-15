@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DTS Subscription Job resource.
 ---
 
-# alicloud\_dts\_subscription\_job
+# alicloud_dts_subscription_job
 
 Provides a DTS Subscription Job resource.
 
-For information about DTS Subscription Job and how to use it, see [What is Subscription Job](https://help.aliyun.com/document_detail/254791.html).
+For information about DTS Subscription Job and how to use it, see [What is Subscription Job](https://www.alibabacloud.com/help/en/data-transmission-service/latest/configuresubscription).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
@@ -21,84 +21,90 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "dtsSubscriptionJob"
+  default = "terraform-example"
+}
+data "alicloud_regions" "example" {
+  current = true
+}
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "creation" {
-  default = "Rds"
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
-}
-
-resource "alicloud_vpc" "default" {
+resource "alicloud_vpc" "example" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
   vswitch_name = var.name
 }
 
-resource "alicloud_db_instance" "instance" {
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = "rds.mysql.s1.small"
-  instance_storage = "10"
-  vswitch_id       = alicloud_vswitch.default.id
-  instance_name    = var.name
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
 }
 
-resource "alicloud_db_database" "db" {
-  count       = 2
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
 }
 
-resource "alicloud_db_account" "account" {
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tftestprivilege"
-  password    = "Test12345"
-  description = "from terraform"
+resource "alicloud_rds_account" "example" {
+  db_instance_id   = alicloud_db_instance.example.id
+  account_name     = "example_name"
+  account_password = "example_password"
 }
 
-resource "alicloud_db_account_privilege" "privilege" {
-  instance_id  = alicloud_db_instance.instance.id
-  account_name = alicloud_db_account.account.name
+resource "alicloud_db_database" "example" {
+  instance_id = alicloud_db_instance.example.id
+  name        = var.name
+}
+
+resource "alicloud_db_account_privilege" "example" {
+  instance_id  = alicloud_db_instance.example.id
+  account_name = alicloud_rds_account.example.name
   privilege    = "ReadWrite"
-  db_names     = alicloud_db_database.db.*.name
+  db_names     = [alicloud_db_database.example.name]
 }
 
-
-data "alicloud_vpcs" "default1" {
-  name_regex = "default-NODELETING"
-}
-
-data "alicloud_vswitches" "default_1" {
-  vpc_id = data.alicloud_vpcs.default.ids[0]
-}
-
-resource "alicloud_dts_subscription_job" "default" {
+resource "alicloud_dts_subscription_job" "example" {
   dts_job_name                       = var.name
   payment_type                       = "PayAsYouGo"
   source_endpoint_engine_name        = "MySQL"
-  source_endpoint_region             = "cn-hangzhou"
+  source_endpoint_region             = data.alicloud_regions.example.regions.0.id
   source_endpoint_instance_type      = "RDS"
-  source_endpoint_instance_id        = alicloud_db_instance.instance.id
-  source_endpoint_database_name      = "tfaccountpri_0"
-  source_endpoint_user_name          = "tftestprivilege"
-  source_endpoint_password           = "Test12345"
-  db_list                            = <<EOF
-        {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
-    EOF
+  source_endpoint_instance_id        = alicloud_db_instance.example.id
+  source_endpoint_database_name      = alicloud_db_database.example.name
+  source_endpoint_user_name          = alicloud_rds_account.example.account_name
+  source_endpoint_password           = alicloud_rds_account.example.account_password
+  db_list                            = "{\"${alicloud_db_database.example.name}\":{\"name\":\"${alicloud_db_database.example.name}\",\"all\":true}}"
   subscription_instance_network_type = "vpc"
-  subscription_instance_vpc_id       = data.alicloud_vpcs.default1.ids[0]
-  subscription_instance_vswitch_id   = data.alicloud_vswitches.default_1.ids[0]
+  subscription_instance_vpc_id       = alicloud_vpc.example.id
+  subscription_instance_vswitch_id   = alicloud_vswitch.example.id
   status                             = "Normal"
 }
 ```
@@ -107,7 +113,7 @@ resource "alicloud_dts_subscription_job" "default" {
 
 The following arguments were support:
 
-* `dts_instance_id` - (Computed, ForceNew) The ID of subscription instance.
+* `dts_instance_id` - (Optional, ForceNew) The ID of subscription instance.
 * `dts_job_name` - (Optional) The name of subscription task.
 * `checkpoint` - (Optional, OtherParam) Subscription start time in Unix timestamp format.
 * `compute_unit` - (Optional, OtherParam) [ETL specifications](https://help.aliyun.com/document_detail/212324.html). The unit is the computing unit ComputeUnit (CU), 1CU=1vCPU+4 GB memory. The value range is an integer greater than or equal to 2.
@@ -137,14 +143,14 @@ The following arguments were support:
 * `source_endpoint_port` - (Optional) The port of source database.
 * `source_endpoint_region` - (Required) The region of source database.
 * `source_endpoint_role` - (Optional) Both the authorization roles. When the source instance and configure subscriptions task of the Alibaba Cloud account is not the same as the need to pass the parameter, to specify the source of the authorization roles, to allow configuration subscription task of the Alibaba Cloud account to access the source of the source instance information.
-* `subscription_data_type_ddl` - (Optional, Computed) Whether to subscribe the DDL type of data. Valid values: `true`, `false`.
-* `subscription_data_type_dml` - (Optional, Computed) Whether to subscribe the DML type of data. Valid values: `true`, `false`.
-* `subscription_instance_network_type` - (Optional) Subscription task type of network value: classic: classic Network. Virtual Private Cloud (vpc): a vpc. Valid values: `classic`, `vpc`.
+* `subscription_data_type_ddl` - (Optional) Whether to subscribe the DDL type of data. Valid values: `true`, `false`.
+* `subscription_data_type_dml` - (Optional) Whether to subscribe the DML type of data. Valid values: `true`, `false`.
+* `subscription_instance_network_type` - (Optional, ForceNew) Subscription task type of network value: classic: classic Network. Virtual Private Cloud (vpc): a vpc. Valid values: `classic`, `vpc`.
 * `subscription_instance_vpc_id` - (Optional) The ID of subscription vpc instance. When the value of `subscription_instance_network_type` is vpc, this parameter is available and must be passed in.
 * `subscription_instance_vswitch_id` - (Optional) The ID of subscription VSwitch instance. When the value of `subscription_instance_network_type` is vpc, this parameter is available and must be passed in.
 * `sync_architecture` - (Optional) The sync architecture. Valid values: `bidirectional`, `oneway`.
 * `synchronization_direction` - (Optional) The synchronization direction. Valid values: `Forward`, `Reverse`. When the topology type of the data synchronization instance is bidirectional, it can be passed in to reverse to start the reverse synchronization link.
-* `status` - (Optional, Computed) The status of the task. Valid values: `Normal`, `Abnormal`. When a task created, it is in this state of `NotStarted`. You can specify this state to `Normal` to start the job, and specify this state of `Abnormal` to stop the job. **Note: We treat the state `Starting` as the state of `Normal`, and consider the two states to be consistent on the user side.**
+* `status` - (Optional) The status of the task. Valid values: `Normal`, `Abnormal`. When a task created, it is in this state of `NotStarted`. You can specify this state to `Normal` to start the job, and specify this state of `Abnormal` to stop the job. **Note: We treat the state `Starting` as the state of `Normal`, and consider the two states to be consistent on the user side.**
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
@@ -153,7 +159,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Subscription Job.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

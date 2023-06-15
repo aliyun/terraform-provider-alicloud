@@ -13,7 +13,7 @@ Provides a Dts Instance resource.
 
 For information about Dts Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/data-transmission-service/latest/createdtsinstance).
 
--> **NOTE:** Available in v1.198.0+.
+-> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
 
@@ -23,16 +23,18 @@ Basic Usage
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
-
+data "alicloud_regions" "default" {
+  current = true
+}
 resource "alicloud_dts_instance" "default" {
   type                             = "sync"
   resource_group_id                = data.alicloud_resource_manager_resource_groups.default.ids.0
-  payment_type                     = "PayAsYouGo"
+  payment_type                     = "Subscription"
   instance_class                   = "large"
   source_endpoint_engine_name      = "MySQL"
-  source_region                    = "cn-hangzhou"
+  source_region                    = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  region                           = "cn-hangzhou"
+  destination_region               = data.alicloud_regions.default.regions.0.id
 }
 ```
 
@@ -47,7 +49,7 @@ The following arguments are supported:
   - **true**: Yes.
 * `compute_unit` - (Optional) Specifications of ETL. The unit is compute unit (CU),1CU = 1vCPU +4GB of memory. The value range is an integer greater than or equal to 2. **NOTE:** Enter this parameter and enable ETL to clean and convert data. 
 * `database_count` - (Optional) The number of private custom RDS instances in the PolarDB-X. The default value is **1**. **NOTE:** This parameter is required only when **source_endpoint_engine_name** is **DRDS**.
-* `destination_endpoint_engine_name` - (ForceNew,Optional) The target database engine type.
+* `destination_endpoint_engine_name` - (Optional, ForceNew) The target database engine type.
   - **MySQL**:MySQL databases (including RDS MySQL and self-built MySQL).
   - **PolarDB**:PolarDB MySQL.
   - **polardb_o**:PolarDB O engine.
@@ -75,16 +77,16 @@ The following arguments are supported:
     - This parameter or **job_id** must be passed in.
 * `du` - (Optional) Assign a specified number of DU resources to DTS tasks in the DTS exclusive cluster. Valid values: **1** ~ **100**. **NOTE:** The value of this parameter must be within the range of the number of DUs available for the DTS dedicated cluster.
 * `fee_type` - (Optional) Subscription billing type, Valid values: `ONLY_CONFIGURATION_FEE`: charges only configuration fees; `CONFIGURATION_FEE_AND_DATA_FEE`: charges configuration fees and data traffic fees.
-* `instance_class` - (ForceNew,Optional) The type of the migration or synchronization instance.
+* `instance_class` - (Optional, ForceNew) The type of the migration or synchronization instance.
   - The specifications of the migration instance: **xxlarge**, **xlarge**, **large**, **medium**, **small**. 
   - The types of synchronization instances: **large**, **medium**, **small**, **micro**. 
   - **NOTE:** For performance descriptions of different specifications, see [Data Migration Link Specifications](https://www.alibabacloud.com/help/en/data-transmission-service/latest/cd773b) and [Data Synchronization Link Specifications](https://www.alibabacloud.com/help/en/data-transmission-service/latest/6bce7c).
 * `job_id` - (Optional) The ID of the task obtained by calling the **ConfigureDtsJob** operation (**DtsJobId**).> After you pass in this parameter, you do not need to pass the **source_region**, **destination_region**, **type**, **source_endpoint_engine_name**, or **destination_endpoint_engine_name** parameters. Even if the input is passed in, the configuration in **job_id** shall prevail.
-* `payment_type` - (ForceNew,Optional) The payment type of the resource. Valid values: `Subscription`, `PayAsYouGo`.
+* `payment_type` - (Optional, ForceNew) The payment type of the resource. Valid values: `Subscription`, `PayAsYouGo`.
 * `period` - (Optional) The billing method of the subscription instance. Value: `Year`, `Month`. **NOTE:** This parameter is valid and must be passed in only when `payment_type` is `Subscription`.
-* `destination_region` - (Optional) The target instance region. For more information, see [List of supported regions](https://www.alibabacloud.com/help/en/data-transmission-service/latest/list-of-supported-regions). **NOTE:** This parameter or **job_id** must be passed in.
+* `destination_region` - (Optional, ForceNew) The target instance region. For more information, see [List of supported regions](https://www.alibabacloud.com/help/en/data-transmission-service/latest/list-of-supported-regions). **NOTE:** This parameter or **job_id** must be passed in.
 * `resource_group_id` - (Optional) Resource Group ID.
-* `source_endpoint_engine_name` - (ForceNew,Optional) Source instance database engine type.
+* `source_endpoint_engine_name` - (ForceNew, Optional) Source instance database engine type.
   - **MySQL**:MySQL databases (including RDS MySQL and self-built MySQL).
   - **PolarDB**:PolarDB MySQL.
   - **polardb_o**:PolarDB O engine.
@@ -110,12 +112,12 @@ The following arguments are supported:
     - The default value is **MySQL**.
     - For more information about the supported source and destination databases, see [Database, Synchronization Initialization Type, and Synchronization Topology](https://www.alibabacloud.com/help/en/data-transmission-service/latest/overview-of-data-synchronization-scenarios-1) and [Supported Database and Migration Type](https://www.alibabacloud.com/help/en/data-transmission-service/latest/overview-of-data-migration-scenarios).
     - This parameter or **job_id** must be passed in.
-* `source_region` - (ForceNew,Optional) The source instance region. For more information, see [List of supported regions](https://www.alibabacloud.com/help/en/data-transmission-service/latest/list-of-supported-regions). **NOTE:** This parameter or **job_id** must be passed in.
+* `source_region` - (Optional, ForceNew) The source instance region. For more information, see [List of supported regions](https://www.alibabacloud.com/help/en/data-transmission-service/latest/list-of-supported-regions). **NOTE:** This parameter or **job_id** must be passed in.
 * `sync_architecture` - (Optional) Synchronization topology, value:
   - **oneway**: one-way synchronization, the default value.
   - **bidirectional**: two-way synchronization.
-* `tags` - (Computed,Optional) The tag value corresponding to the tag key.See the following `Block Tags`.
-* `type` - (ForceNew,Optional) The instance type. Valid values:
+* `tags` - (Optional) The tag value corresponding to the tag key.See the following `Block Tags`.
+* `type` - (Optional, ForceNew) The instance type. Valid values:
   - **migration**: MIGRATION.
   - **sync**: synchronization.
   - **subscribe**: SUBSCRIBE.
@@ -142,7 +144,7 @@ The following attributes are exported:
 * `status` - Instance status.
 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Instance.

@@ -7,113 +7,125 @@ description: |-
   Provides a Alicloud DTS Migration Job resource.
 ---
 
-# alicloud\_dts\_migration\_job
+# alicloud_dts_migration_job
 
 Provides a DTS Migration Job resource.
 
 For information about DTS Migration Job and how to use it, see [What is Migration Job](https://www.alibabacloud.com/help/en/doc-detail/208399.html).
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "region" {
-  default = "cn-hangzhou"
-}
-
 variable "name" {
-  default = "tftest"
+  default = "terraform-example"
+}
+data "alicloud_regions" "example" {
+  current = true
+}
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "password" {
-  default = "Test12345"
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "database_name" {
-  default = "tftestdatabase"
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_db_zones" "default" {}
-
-data "alicloud_db_instance_classes" "default" {
-  engine         = "MySQL"
-  engine_version = "5.6"
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = var.name
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_db_zones.default.zones[0].id
+resource "alicloud_db_instance" "example" {
+  count                    = 2
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = format("${var.name}_%d", count.index + 1)
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
 }
 
-resource "alicloud_db_instance" "default" {
+resource "alicloud_rds_account" "example" {
   count            = 2
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage = "10"
-  vswitch_id       = data.alicloud_vswitches.default.ids[0]
-  instance_name    = join("", [var.name, count.index])
+  db_instance_id   = alicloud_db_instance.example[count.index].id
+  account_name     = format("example_name_%d", count.index + 1)
+  account_password = format("example_password_%d", count.index + 1)
 }
 
-resource "alicloud_rds_account" "default" {
-  count            = 2
-  db_instance_id   = alicloud_db_instance.default[count.index].id
-  account_name     = join("", [var.name, count.index])
-  account_password = var.password
-}
-
-resource "alicloud_db_database" "default" {
+resource "alicloud_db_database" "example" {
   count       = 2
-  instance_id = alicloud_db_instance.default[count.index].id
-  name        = var.database_name
+  instance_id = alicloud_db_instance.example[count.index].id
+  name        = format("${var.name}_%d", count.index + 1)
 }
 
-resource "alicloud_db_account_privilege" "default" {
+resource "alicloud_db_account_privilege" "example" {
   count        = 2
-  instance_id  = alicloud_db_instance.default[count.index].id
-  account_name = alicloud_rds_account.default[count.index].name
+  instance_id  = alicloud_db_instance.example[count.index].id
+  account_name = alicloud_rds_account.example[count.index].name
   privilege    = "ReadWrite"
-  db_names     = [alicloud_db_database.default[count.index].name]
+  db_names     = [alicloud_db_database.example[count.index].name]
 }
 
-resource "alicloud_dts_migration_instance" "default" {
+resource "alicloud_dts_migration_instance" "example" {
   payment_type                     = "PayAsYouGo"
   source_endpoint_engine_name      = "MySQL"
-  source_endpoint_region           = var.region
+  source_endpoint_region           = data.alicloud_regions.example.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_endpoint_region      = var.region
+  destination_endpoint_region      = data.alicloud_regions.example.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
 
-resource "alicloud_dts_migration_job" "default" {
-  dts_instance_id                    = alicloud_dts_migration_instance.default.id
+resource "alicloud_dts_migration_job" "example" {
+  dts_instance_id                    = alicloud_dts_migration_instance.example.id
   dts_job_name                       = var.name
   source_endpoint_instance_type      = "RDS"
-  source_endpoint_instance_id        = alicloud_db_instance.default.0.id
+  source_endpoint_instance_id        = alicloud_db_instance.example.0.id
   source_endpoint_engine_name        = "MySQL"
-  source_endpoint_region             = var.region
-  source_endpoint_user_name          = alicloud_rds_account.default.0.name
-  source_endpoint_password           = var.password
+  source_endpoint_region             = data.alicloud_regions.example.regions.0.id
+  source_endpoint_user_name          = alicloud_rds_account.example.0.name
+  source_endpoint_password           = alicloud_rds_account.example.0.account_password
   destination_endpoint_instance_type = "RDS"
-  destination_endpoint_instance_id   = alicloud_db_instance.default.1.id
+  destination_endpoint_instance_id   = alicloud_db_instance.example.1.id
   destination_endpoint_engine_name   = "MySQL"
-  destination_endpoint_region        = var.region
-  destination_endpoint_user_name     = alicloud_rds_account.default.1.name
-  destination_endpoint_password      = var.password
-  db_list                            = "{\"tftestdatabase\":{\"name\":\"tftestdatabase\",\"all\":true}}"
+  destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
+  destination_endpoint_user_name     = alicloud_rds_account.example.1.name
+  destination_endpoint_password      = alicloud_rds_account.example.1.account_password
+  db_list                            = "{\"${alicloud_db_database.example.0.name}\":{\"name\":\"${alicloud_db_database.example.1.name}\",\"all\":true}}"
   structure_initialization           = true
   data_initialization                = true
   data_synchronization               = true
   status                             = "Migrating"
-  depends_on                         = [alicloud_db_account_privilege.default]
+  depends_on                         = [alicloud_db_account_privilege.example]
 }
 ```
 
@@ -122,9 +134,9 @@ resource "alicloud_dts_migration_job" "default" {
 The following arguments supported:
 
 * `dts_instance_id` - (Required, ForceNew) The Migration instance ID. The ID of `alicloud_dts_migration_instance`.
-* `dts_job_name` - (Optional, Computed, ForceNew) The name of migration job.
-* `instance_class` - (Optional, Computed) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. 
-* `checkpoint` - (Optional, Computed, ForceNew) Start time in Unix timestamp format.
+* `dts_job_name` - (Optional, ForceNew) The name of migration job.
+* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. 
+* `checkpoint` - (Optional, ForceNew) Start time in Unix timestamp format.
 * `data_initialization` - (Required, ForceNew) Whether to execute DTS supports schema migration.
 * `structure_initialization` - (Required, ForceNew) Whether to perform a database table structure to migrate.
 * `data_synchronization` - (Required, ForceNew) Whether to perform incremental data migration.
@@ -151,7 +163,7 @@ The following arguments supported:
 * `destination_endpoint_user_name` - (Optional, ForceNew) The username of database account.
 * `destination_endpoint_password` - (Optional) The password of database account.
 * `destination_endpoint_oracle_sid` - (Optional, ForceNew) The SID of Oracle database.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`.
+* `status` - (Optional) The status of the resource. Valid values: `Migrating`, `Suspending`. You can suspend the task by specifying `Suspending` and start the task by specifying `Migrating`.
 
 ## Notice
 
