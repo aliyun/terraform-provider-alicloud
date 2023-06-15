@@ -7,25 +7,28 @@ description: |-
   Provides a Alicloud DTS Migration Instance resource.
 ---
 
-# alicloud\_dts\_migration\_instance
+# alicloud_dts_migration_instance
 
 Provides a DTS Migration Instance resource.
 
 For information about DTS Migration Instance and how to use it, see [What is Synchronization Instance](https://www.alibabacloud.com/help/en/doc-detail/208270.html).
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+data "alicloud_regions" "default" {
+  current = true
+}
 resource "alicloud_dts_migration_instance" "default" {
   payment_type                     = "PayAsYouGo"
   source_endpoint_engine_name      = "MySQL"
-  source_endpoint_region           = "cn-hangzhou"
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
   destination_endpoint_engine_name = "MySQL"
-  destination_endpoint_region      = "cn-hangzhou"
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
@@ -35,7 +38,7 @@ resource "alicloud_dts_migration_instance" "default" {
 
 The following arguments are supported:
 
-* `instance_class` - (Optional, Computed) The instance class. Valid values: `large`, `medium`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
+* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`.
 * `source_endpoint_region` - (Required, ForceNew) The region of source instance.
 * `source_endpoint_engine_name` - (Required, ForceNew) The type of source endpoint engine. Valid values: `ADS`, `DB2`, `DRDS`, `DataHub`, `Greenplum`, `MSSQL`, `MySQL`, `PolarDB`, `PostgreSQL`, `Redis`, `Tablestore`, `as400`, `clickhouse`, `kafka`, `mongodb`, `odps`, `oracle`, `polardb_o`, `polardb_pg`, `tidb`. For the correspondence between the supported source and target libraries, see [Supported Databases, Synchronization Initialization Types and Synchronization Topologies](https://help.aliyun.com/document_detail/130744.html), [Supported Databases and Migration Types](https://help.aliyun.com/document_detail/26618.html).

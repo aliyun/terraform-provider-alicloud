@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DTS Consumer Channel resource.
 ---
 
-# alicloud\_dts\_consumer\_channel
+# alicloud_dts_consumer_channel
 
 Provides a DTS Consumer Channel resource.
 
 For information about DTS Consumer Channel and how to use it, see [What is Consumer Channel](https://www.alibabacloud.com/help/en/doc-detail/264593.htm).
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
@@ -21,80 +21,98 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tftestdts"
+  default = "terraform-example"
+}
+data "alicloud_regions" "example" {
+  current = true
+}
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-variable "creation" {
-  default = "Rds"
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = var.name
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_zones.default.zones[0].id
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
 }
 
-resource "alicloud_db_instance" "instance" {
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = "rds.mysql.s1.small"
-  instance_storage = "10"
-  vswitch_id       = data.alicloud_vswitches.default.ids[0]
-  instance_name    = var.name
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
 }
 
-resource "alicloud_db_database" "db" {
-  count       = 2
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+resource "alicloud_rds_account" "example" {
+  db_instance_id   = alicloud_db_instance.example.id
+  account_name     = "example_name"
+  account_password = "example_1234"
 }
 
-resource "alicloud_db_account" "account" {
-  db_instance_id      = alicloud_db_instance.instance.id
-  account_name        = "tftestprivilege"
-  account_password    = "Test12345"
-  account_description = "from terraform"
+resource "alicloud_db_database" "example" {
+  instance_id = alicloud_db_instance.example.id
+  name        = var.name
 }
 
-resource "alicloud_db_account_privilege" "privilege" {
-  instance_id  = alicloud_db_instance.instance.id
-  account_name = alicloud_db_account.account.name
+resource "alicloud_db_account_privilege" "example" {
+  instance_id  = alicloud_db_instance.example.id
+  account_name = alicloud_rds_account.example.name
   privilege    = "ReadWrite"
-  db_names     = alicloud_db_database.db.*.name
+  db_names     = [alicloud_db_database.example.name]
 }
 
-resource "alicloud_dts_subscription_job" "default" {
+resource "alicloud_dts_subscription_job" "example" {
   dts_job_name                       = var.name
   payment_type                       = "PayAsYouGo"
   source_endpoint_engine_name        = "MySQL"
-  source_endpoint_region             = "cn-hangzhou"
+  source_endpoint_region             = data.alicloud_regions.example.regions.0.id
   source_endpoint_instance_type      = "RDS"
-  source_endpoint_instance_id        = alicloud_db_instance.instance.id
-  source_endpoint_database_name      = "tfaccountpri_0"
-  source_endpoint_user_name          = "tftestprivilege"
-  source_endpoint_password           = "Test12345"
+  source_endpoint_instance_id        = alicloud_db_instance.example.id
+  source_endpoint_database_name      = alicloud_db_database.example.name
+  source_endpoint_user_name          = alicloud_rds_account.example.account_name
+  source_endpoint_password           = alicloud_rds_account.example.account_password
+  db_list                            = "{\"${alicloud_db_database.example.name}\":{\"name\":\"${alicloud_db_database.example.name}\",\"all\":true}}"
   subscription_instance_network_type = "vpc"
-  db_list                            = <<EOF
-        {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
-    EOF
-  subscription_instance_vpc_id       = data.alicloud_vpcs.default.ids[0]
-  subscription_instance_vswitch_id   = data.alicloud_vswitches.default.ids[0]
+  subscription_instance_vpc_id       = alicloud_vpc.example.id
+  subscription_instance_vswitch_id   = alicloud_vswitch.example.id
   status                             = "Normal"
 }
 
-resource "alicloud_dts_consumer_channel" "default" {
-  dts_instance_id          = alicloud_dts_subscription_job.default.dts_instance_id
+resource "alicloud_dts_consumer_channel" "example" {
+  dts_instance_id          = alicloud_dts_subscription_job.example.dts_instance_id
   consumer_group_name      = var.name
-  consumer_group_user_name = var.name
-  consumer_group_password  = "tftestAcc123"
+  consumer_group_user_name = "example"
+  consumer_group_password  = "example1234"
 }
 ```
 

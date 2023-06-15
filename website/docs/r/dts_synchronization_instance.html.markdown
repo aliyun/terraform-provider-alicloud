@@ -7,25 +7,28 @@ description: |-
   Provides a Alicloud DTS Synchronization Instance resource.
 ---
 
-# alicloud\_dts\_synchronization\_instance
+# alicloud_dts_synchronization_instance
 
 Provides a DTS Synchronization Instance resource.
 
 For information about DTS Synchronization Instance and how to use it, see [What is Synchronization Instance](https://www.alibabacloud.com/help/en/doc-detail/130744.html).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+data "alicloud_regions" "default" {
+  current = true
+}
 resource "alicloud_dts_synchronization_instance" "default" {
   payment_type                     = "PayAsYouGo"
-  source_endpoint_engine_name      = "PolarDB"
-  source_endpoint_region           = "cn-hangzhou"
-  destination_endpoint_engine_name = "ADB30"
-  destination_endpoint_region      = "cn-hangzhou"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region           = data.alicloud_regions.default.regions.0.id
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = data.alicloud_regions.default.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }

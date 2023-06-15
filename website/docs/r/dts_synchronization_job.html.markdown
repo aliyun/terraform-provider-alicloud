@@ -7,51 +7,125 @@ description: |-
   Provides a Alicloud DTS Synchronization Job resource.
 ---
 
-# alicloud\_dts\_synchronization\_job
+# alicloud_dts_synchronization_job
 
 Provides a DTS Synchronization Job resource.
 
 For information about DTS Synchronization Job and how to use it, see [What is Synchronization Job](https://www.alibabacloud.com/product/data-transmission-service).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_dts_synchronization_instance" "default" {
+variable "name" {
+  default = "terraform-example"
+}
+data "alicloud_regions" "example" {
+  current = true
+}
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+}
+
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
+  vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
+}
+
+resource "alicloud_db_instance" "example" {
+  count                    = 2
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = format("${var.name}_%d", count.index + 1)
+  vswitch_id               = alicloud_vswitch.example.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.example.id]
+}
+
+resource "alicloud_rds_account" "example" {
+  count            = 2
+  db_instance_id   = alicloud_db_instance.example[count.index].id
+  account_name     = format("example_name_%d", count.index + 1)
+  account_password = format("example_password_%d", count.index + 1)
+}
+
+resource "alicloud_db_database" "example" {
+  count       = 2
+  instance_id = alicloud_db_instance.example[count.index].id
+  name        = format("${var.name}_%d", count.index + 1)
+}
+
+resource "alicloud_db_account_privilege" "example" {
+  count        = 2
+  instance_id  = alicloud_db_instance.example[count.index].id
+  account_name = alicloud_rds_account.example[count.index].name
+  privilege    = "ReadWrite"
+  db_names     = [alicloud_db_database.example[count.index].name]
+}
+
+resource "alicloud_dts_synchronization_instance" "example" {
   payment_type                     = "PayAsYouGo"
-  source_endpoint_engine_name      = "PolarDB"
-  source_endpoint_region           = "cn-hangzhou"
-  destination_endpoint_engine_name = "ADB30"
-  destination_endpoint_region      = "cn-hangzhou"
+  source_endpoint_engine_name      = "MySQL"
+  source_endpoint_region           = data.alicloud_regions.example.regions.0.id
+  destination_endpoint_engine_name = "MySQL"
+  destination_endpoint_region      = data.alicloud_regions.example.regions.0.id
   instance_class                   = "small"
   sync_architecture                = "oneway"
 }
 
-resource "alicloud_dts_synchronization_job" "default" {
-  dts_instance_id                    = alicloud_dts_synchronization_instance.default.id
-  dts_job_name                       = "tf-testAccCase1"
-  source_endpoint_instance_type      = "PolarDB"
-  source_endpoint_instance_id        = "pc-xxxxxxxx"
-  source_endpoint_engine_name        = "PolarDB"
-  source_endpoint_region             = "cn-hangzhou"
-  source_endpoint_database_name      = "tf-testacc"
-  source_endpoint_user_name          = "root"
-  source_endpoint_password           = "password"
-  destination_endpoint_instance_type = "ads"
-  destination_endpoint_instance_id   = "am-xxxxxxxx"
-  destination_endpoint_engine_name   = "ADB30"
-  destination_endpoint_region        = "cn-hangzhou"
-  destination_endpoint_database_name = "tf-testacc"
-  destination_endpoint_user_name     = "root"
-  destination_endpoint_password      = "password"
-  db_list                            = "{\"tf-testacc\":{\"name\":\"tf-test\",\"all\":true,\"state\":\"normal\"}}"
-  structure_initialization           = "true"
-  data_initialization                = "true"
-  data_synchronization               = "true"
+resource "alicloud_dts_synchronization_job" "example" {
+  dts_instance_id                    = alicloud_dts_synchronization_instance.example.id
+  dts_job_name                       = var.name
+  source_endpoint_instance_type      = "RDS"
+  source_endpoint_instance_id        = alicloud_db_instance.example.0.id
+  source_endpoint_engine_name        = "MySQL"
+  source_endpoint_region             = data.alicloud_regions.example.regions.0.id
+  source_endpoint_user_name          = alicloud_rds_account.example.0.name
+  source_endpoint_password           = alicloud_rds_account.example.0.account_password
+  destination_endpoint_instance_type = "RDS"
+  destination_endpoint_instance_id   = alicloud_db_instance.example.1.id
+  destination_endpoint_engine_name   = "MySQL"
+  destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
+  destination_endpoint_user_name     = alicloud_rds_account.example.1.name
+  destination_endpoint_password      = alicloud_rds_account.example.1.account_password
+  db_list                            = "{\"${alicloud_db_database.example.0.name}\":{\"name\":\"${alicloud_db_database.example.1.name}\",\"all\":true}}"
+  structure_initialization           = true
+  data_initialization                = true
+  data_synchronization               = true
   status                             = "Synchronizing"
+  depends_on                         = [alicloud_db_account_privilege.example]
 }
 ```
 
@@ -66,9 +140,9 @@ The following arguments supported:
 * `structure_initialization` - (Required, ForceNew) Whether to perform library table structure migration or initialization. Valid values: `true`, `false`.
 * `db_list` - (Required) Migration object, in the format of JSON strings. For detailed definition instructions, please refer to [the description of migration, synchronization or subscription objects](https://help.aliyun.com/document_detail/209545.html). **NOTE:** From version 1.173.0, `db_list` can be modified.
 * `synchronization_direction` - (Optional, ForceNew) Synchronization direction. Valid values: `Forward`, `Reverse`. Only when the property `sync_architecture` of the `alicloud_dts_synchronization_instance` was `bidirectional` this parameter should be passed, otherwise this parameter should not be specified.
-* `instance_class` - (Optional, Computed) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
-* `checkpoint` - (Optional, Computed, ForceNew) The start point or synchronization point of incremental data migration, the format is Unix timestamp, and the unit is seconds.
-* `reserve` - (Optional, Computed) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://help.aliyun.com/document_detail/273111.html).
+* `instance_class` - (Optional) The instance class. Valid values: `large`, `medium`, `micro`, `small`, `xlarge`, `xxlarge`. You can only upgrade the configuration, not downgrade the configuration. If you downgrade the instance, you need to [submit a ticket](https://selfservice.console.aliyun.com/ticket/category/dts/today).
+* `checkpoint` - (Optional, ForceNew) The start point or synchronization point of incremental data migration, the format is Unix timestamp, and the unit is seconds.
+* `reserve` - (Optional) DTS reserves parameters, the format is a JSON string, you can pass in this parameter to complete the source and target database information (such as the data storage format of the target Kafka database, the instance ID of the cloud enterprise network CEN). For more information, please refer to the parameter [description of the Reserve parameter](https://help.aliyun.com/document_detail/273111.html).
 * `source_endpoint_instance_type` - (Required, ForceNew) The type of source instance. If the source instance is a `PolarDB O` engine cluster, the source instance type needs to be `OTHER` or `EXPRESS` as a self-built database, and access via public IP or dedicated line. For the correspondence between supported source and target instances, see [Supported Databases](https://help.aliyun.com/document_detail/131497.htm). When the source instance is a self-built database, you also need to perform corresponding preparations, for details, see [Preparations Overview](https://help.aliyun.com/document_detail/146958.htm). Valid values: `CEN`, `DG`, `DISTRIBUTED_DMSLOGICDB`, `ECS`, `EXPRESS`, `MONGODB`, `OTHER`, `PolarDB`, `POLARDBX20`, `RDS`.
 * `source_endpoint_engine_name` - (Required, ForceNew) The type of source database. The default value is `MySQL`. For the correspondence between supported source libraries and target libraries, see [Supported Databases](https://help.aliyun.com/document_detail/131497.htm). When the database type of the source instance is `MONGODB`, you also need to pass in some information in the reserved parameter `Reserve`, for the configuration method, see the description of Reserve parameters. Valid values: `AS400`, `DB2`, `DMSPOLARDB`, `HBASE`, `MONGODB`, `MSSQL`, `MySQL`, `ORACLE`, `PolarDB`, `POLARDBX20`, `POLARDB_O`, `POSTGRESQL`, `TERADATA`.
 * `source_endpoint_instance_id` - (Optional, ForceNew) The ID of source instance. If the source instance is a cloud database (such as RDS MySQL), you need to pass in the instance ID of the cloud database (such as the instance ID of RDS MySQL). If the source instance is a self-built database, the value of this parameter changes according to the value of `source_endpoint_instance_type`. For example, the value of `source_endpoint_instance_type` is:
@@ -102,7 +176,7 @@ The following arguments supported:
 * `delay_rule_time` - (Optional, ForceNew) The delay rule time. When `delay_notice` is set to `true`, this parameter must be passed in. The threshold for triggering the delay alarm. The unit is second and needs to be an integer. The threshold can be set according to business needs. It is recommended to set it above 10 seconds to avoid delay fluctuations caused by network and database load.
 * `error_notice` - (Optional, ForceNew) The error notice. Valid values: `true`, `false`.
 * `error_phone` - (Optional, ForceNew) The error phone. The mobile phone number of the contact who error the alarm. Multiple mobile phone numbers separated by English commas `,`. This parameter currently only supports China stations, and only supports mainland mobile phone numbers, and up to 10 mobile phone numbers can be passed in.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `Synchronizing`, `Suspending`. You can stop the task by specifying `Suspending` and start the task by specifying `Synchronizing`.
+* `status` - (Optional) The status of the resource. Valid values: `Synchronizing`, `Suspending`. You can stop the task by specifying `Suspending` and start the task by specifying `Synchronizing`.
 
 -> **NOTE:** From the status of `NotStarted` to `Synchronizing`, the resource goes through the `Prechecking` and `Initializing` phases. Because of the `Initializing` phase takes too long, and once the resource passes to the status of `Prechecking`, it can be considered that the task can be executed normally. Therefore, we treat the status of `Initializing` as an equivalent to `Synchronizing`.
 
