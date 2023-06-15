@@ -7,13 +7,14 @@ description: |-
   Provides an RDS instance resource.
 ---
 
-# alicloud\_db\_instance
+# alicloud_db_instance
 
 Provides an RDS instance resource. A DB instance is an isolated database environment in the cloud. A DB instance can contain multiple user-created databases.
 
 For information about RDS and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
 -> **NOTE:** This resource has a fatal bug in the version v1.155.0. If you want to use new feature, please upgrade it to v1.156.0.
+-> **NOTE:** Available since v1.155.0+.
 
 ## Example Usage
 
@@ -186,7 +187,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_zones" "example" {
@@ -220,10 +221,10 @@ resource "alicloud_db_instance" "this" {
 }
 ```
 
-### Create a Enterprise Edition RDS MySQL Instance 
+### Create an Enterprise Edition RDS MySQL Instance 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_zones" "example" {
@@ -262,7 +263,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -320,7 +321,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -376,7 +377,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -439,7 +440,7 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
+* `engine` - (Required, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 
 -> **NOTE:**
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
@@ -503,10 +504,10 @@ The following arguments are supported:
 * `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 10, 60, 300. Defaults to 300. 
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
-* `zone_id` - (ForceNew) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
+* `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
 The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+* `vswitch_id` - (ForceNew, Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
 * `private_ip_address` - (Optional, Available in v1.125.0+) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_instance_ip_array_name` - (Optional, Available in 1.125.0+) The name of the IP address whitelist. Default value: Default.
@@ -533,7 +534,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `fresh_white_list_readins` - (Optional, Available in 1.148.0+) The read-only instances to which you want to synchronize the IP address whitelist.
   * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
   * If the instance is not attached with a read-only instance, this parameter is empty.
-* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) . See [`parameters`](#parameters) below.
 * `force_restart` - (Optional, Available in 1.75.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
@@ -652,11 +653,11 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 
 -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
-* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
+* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 * `babelfish_port` - (Optional, Available in 1.176.0+) The TDS port of the instance for which Babelfish is enabled.
   
 -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
-* `babelfish_config` - (Optional, Available in 1.176.0+) The configuration of an ApsaraDB RDS for PostgreSQL instance for which Babelfish is enabled. (documented below).
+* `babelfish_config` - (ForceNew, Optional, Available in 1.176.0+) The configuration of an ApsaraDB RDS for PostgreSQL instance for which Babelfish is enabled. See [`babelfish_config`](#babelfish_config) below.
 
 -> **NOTE:** This parameter takes effect only when you create an ApsaraDB RDS for PostgreSQL instance. For more information, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
@@ -667,9 +668,16 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
-* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance.
+* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
 
-#### Block pg_hba_conf
+### `parameters`
+
+The parameters mapping supports the following:
+
+* `name` - (Required) The parameter name.
+* `value` - (Required) The parameter value.
+
+### `pg_hba_conf`
 
 The pg_hba_conf mapping supports the following:
 
@@ -687,7 +695,7 @@ The pg_hba_conf mapping supports the following:
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
 
-#### Block babelfish_config
+### `babelfish_config`
 
 The babelfish_config mapping supports the following:
 
@@ -696,7 +704,7 @@ The babelfish_config mapping supports the following:
 * `master_username` - (Required) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
 * `master_user_password` - (Required) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
 
-#### Block serverless_config
+### `serverless_config`
 
 The serverless_config mapping supports the following:
 
@@ -731,7 +739,7 @@ The following attributes are exported:
 * `status` - (Available in 1.204.1+) The status of db instance.
 * `create_time` - (Available in 1.204.1+) The creation time of db instance.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.52.1+.
 

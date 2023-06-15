@@ -90,6 +90,7 @@ func resourceAlicloudDBConnectionCreate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
@@ -183,6 +184,7 @@ func resourceAlicloudDBConnectionUpdate(d *schema.ResourceData, meta interface{}
 			request["BabelfishPort"] = v
 		}
 		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		conn, err := client.NewRdsClient()
 		if err != nil {
 			return WrapError(err)
@@ -230,6 +232,7 @@ func resourceAlicloudDBConnectionDelete(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		object, err := rdsService.DescribeDBConnection(d.Id())
 		if err != nil {

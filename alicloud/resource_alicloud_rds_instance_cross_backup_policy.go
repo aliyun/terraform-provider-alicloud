@@ -117,6 +117,7 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyUpdate(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewRdsClient()
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -175,6 +176,7 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyDelete(d *schema.ResourceData, 
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {

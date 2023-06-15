@@ -7,12 +7,13 @@ description: |-
   Provides an RDS instance connection resource.
 ---
 
-# alicloud\_db\_connection
+# alicloud_db_connection
 
 Provides an RDS connection resource to allocate an Internet connection string for RDS instance.
 
 -> **NOTE:** Each RDS instance will allocate a intranet connnection string automatically and its prifix is RDS instance ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
+-> **NOTE:** Available since v1.5.0+.
 
 ## Example Usage
 
@@ -61,7 +62,7 @@ resource "alicloud_db_connection" "foo" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
-* `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 40 characters. Default to <instance_id> + 'tf'.
+* `connection_prefix` - (Optional, ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 40 characters. Default to <instance_id> + 'tf'.
 * `port` - (Optional) Internet connection port. Valid value: [1000-5999]. Default to 3306.
 * `babelfish_port` - (Optional, Computed, Available in 1.176.0+) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
 
@@ -69,11 +70,9 @@ The following arguments are supported:
 
 ## Attributes Reference
 
-The following attributes are exported:
+The following attributes are exported in addition to the arguments listed above:
 
 * `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<instance_id>:<connection_prefix>`.
-* `connection_prefix` - Prefix of a connection string.
-* `port` - Connection instance port.
 * `connection_string` - Connection instance string.
 * `ip_address` - The ip address of connection string.
 
