@@ -2,58 +2,116 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_ipv6_internet_bandwidth"
-sidebar_current: "docs-alicloud-resource-vpc-ipv6-internet-bandwidth"
 description: |-
   Provides a Alicloud VPC Ipv6 Internet Bandwidth resource.
 ---
 
-# alicloud\_vpc\_ipv6\_internet\_bandwidth
+# alicloud_vpc_ipv6_internet_bandwidth
 
-Provides a VPC Ipv6 Internet Bandwidth resource.
+Provides a VPC Ipv6 Internet Bandwidth resource. Public network bandwidth of IPv6 address.
 
-For information about VPC Ipv6 Internet Bandwidth and how to use it, see [What is Ipv6 Internet Bandwidth](https://www.alibabacloud.com/help/doc-detail/102213.htm).
+For information about VPC Ipv6 Internet Bandwidth and how to use it, see [What is Ipv6 Internet Bandwidth](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/allocateipv6internetbandwidth).
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_instances" "example" {
-  name_regex = "ecs_with_ipv6_address"
-  status     = "Running"
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_vpc_ipv6_addresses" "example" {
-  associated_instance_id = data.alicloud_instances.example.instances.0.id
+data "alicloud_zones" "default" {
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name    = var.name
+  enable_ipv6 = "true"
+  cidr_block  = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "vsw" {
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "172.16.0.0/21"
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  name                 = var.name
+  ipv6_cidr_block_mask = "22"
+}
+
+resource "alicloud_security_group" "group" {
+  name        = var.name
+  description = "foo"
+  vpc_id      = alicloud_vpc.default.id
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone                 = data.alicloud_zones.default.zones.0.id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
+
+resource "alicloud_instance" "vpc_instance" {
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  ipv6_address_count         = 1
+  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  system_disk_category       = "cloud_efficiency"
+  image_id                   = data.alicloud_images.default.images.0.id
+  instance_name              = var.name
+  vswitch_id                 = alicloud_vswitch.vsw.id
+  internet_max_bandwidth_out = 10
+  security_groups            = alicloud_security_group.group.*.id
+}
+
+resource "alicloud_vpc_ipv6_gateway" "example" {
+  ipv6_gateway_name = "example_value"
+  vpc_id            = alicloud_vpc.default.id
+}
+
+data "alicloud_vpc_ipv6_addresses" "default" {
+  associated_instance_id = alicloud_instance.vpc_instance.id
   status                 = "Available"
 }
 
 resource "alicloud_vpc_ipv6_internet_bandwidth" "example" {
-  ipv6_address_id      = data.alicloud_vpc_ipv6_addresses.example.addresses.0.id
-  ipv6_gateway_id      = data.alicloud_vpc_ipv6_addresses.example.addresses.0.ipv6_gateway_id
+  ipv6_address_id      = data.alicloud_vpc_ipv6_addresses.default.addresses.0.id
+  ipv6_gateway_id      = alicloud_vpc_ipv6_gateway.example.ipv6_gateway_id
   internet_charge_type = "PayByBandwidth"
   bandwidth            = "20"
 }
-
 ```
+
 
 ## Argument Reference
 
 The following arguments are supported:
-
 * `bandwidth` - (Required) The amount of Internet bandwidth resources of the IPv6 address, Unit: `Mbit/s`. Valid values: `1` to `5000`. **NOTE:** If `internet_charge_type` is set to `PayByTraffic`, the amount of Internet bandwidth resources of the IPv6 address is limited by the specification of the IPv6 gateway. `Small` (default): specifies the Free edition and the Internet bandwidth is from `1` to `500` Mbit/s. `Medium`: specifies the Medium edition and the Internet bandwidth is from `1` to `1000` Mbit/s. `Large`: specifies the Large edition and the Internet bandwidth is from `1` to `2000` Mbit/s.
-* `internet_charge_type` - (Optional, Computed, ForceNew) The metering method of the Internet bandwidth resources of the IPv6 gateway. Valid values: `PayByBandwidth`, `PayByTraffic`.
-* `ipv6_address_id` - (Required, ForceNew) The ID of the IPv6 address.
-* `ipv6_gateway_id` - (Required, ForceNew) The ID of the IPv6 gateway.
+* `internet_charge_type` - (Optional, ForceNew, Computed) The metering method of the Internet bandwidth resources of the IPv6 gateway. Valid values: `PayByBandwidth`, `PayByTraffic`.
+* `ipv6_address_id` - (Required) The ID of the IPv6 address instance.
+* `ipv6_gateway_id` - (Required, ForceNew) The ID of the IPv6 gateway to which the IPv6 address belongs.
+
+
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `status` - The status of the resource.
 
-* `id` - The resource ID in terraform of Ipv6 Internet Bandwidth.
-* `status` - The status of the resource.Valid values:`Normal`, `FinancialLocked` and `SecurityLocked`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Ipv6 Internet Bandwidth.
+* `delete` - (Defaults to 5 mins) Used when delete the Ipv6 Internet Bandwidth.
+* `update` - (Defaults to 5 mins) Used when update the Ipv6 Internet Bandwidth.
 
 ## Import
 

@@ -35,7 +35,6 @@ func TestAccAlicloudVPCIpv6InternetBandwidth_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithEnvVariable(t, "ECS_WITH_IPV6_ADDRESS")
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -44,7 +43,7 @@ func TestAccAlicloudVPCIpv6InternetBandwidth_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ipv6_address_id":      "${data.alicloud_vpc_ipv6_addresses.default.addresses.0.id}",
-					"ipv6_gateway_id":      "${data.alicloud_vpc_ipv6_addresses.default.addresses.0.ipv6_gateway_id}",
+					"ipv6_gateway_id":      "${alicloud_vpc_ipv6_gateway.example.ipv6_gateway_id}",
 					"internet_charge_type": "PayByBandwidth",
 					"bandwidth":            "20",
 				}),
@@ -87,13 +86,61 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_instances" "default" {
-  name_regex = "no-deleteing-ipv6-address"
-  status     = "Running"
+data "alicloud_zones" "default" {
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name    = var.name
+  enable_ipv6 = "true"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "vsw" {
+  vpc_id = "${alicloud_vpc.default.id}"
+  cidr_block = "172.16.0.0/21"
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  name = var.name
+  ipv6_cidr_block_mask = "22"
+}
+
+resource "alicloud_security_group" "group" {
+  name        = var.name
+  description = "foo"
+  vpc_id      = alicloud_vpc.default.id
+}
+
+data "alicloud_instance_types" "default" {
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  system_disk_category = "cloud_efficiency"
+  cpu_core_count = 4
+  minimum_eni_ipv6_address_quantity = 1
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
+
+resource "alicloud_instance" "vpc_instance" {
+  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  ipv6_address_count = 1
+  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  system_disk_category = "cloud_efficiency"
+  image_id = "${data.alicloud_images.default.images.0.id}"
+  instance_name = var.name
+  vswitch_id = "${alicloud_vswitch.vsw.id}"
+  internet_max_bandwidth_out = 10
+  security_groups = "${alicloud_security_group.group.*.id}"
+}
+
+resource "alicloud_vpc_ipv6_gateway" "example" {
+  ipv6_gateway_name = "example_value"
+  vpc_id            = alicloud_vpc.default.id
 }
 
 data "alicloud_vpc_ipv6_addresses" "default" {
-  associated_instance_id = data.alicloud_instances.default.instances.0.id
+  associated_instance_id = alicloud_instance.vpc_instance.id
   status                 = "Available"
 }
 `, name)
@@ -196,7 +243,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthCreate(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -213,7 +260,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthCreate(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -230,7 +277,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -248,7 +295,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -266,7 +313,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudVpcIpv6InternetBandwidthUpdate(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -300,7 +347,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -334,7 +381,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -349,7 +396,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthDelete(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -366,7 +413,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthDelete(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -383,7 +430,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthDelete(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -400,7 +447,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthDelete(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -417,7 +464,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthRead(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -433,7 +480,7 @@ func TestUnitVPCIpv6InternetBandwidth(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcIpv6InternetBandwidthRead(d, rawClient)
+		err := resourceAliCloudVpcIpv6InternetBandwidthRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
