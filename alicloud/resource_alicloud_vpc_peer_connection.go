@@ -427,6 +427,9 @@ func resourceAliCloudVpcPeerConnectionDelete(d *schema.ResourceData, meta interf
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
