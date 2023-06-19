@@ -103,7 +103,7 @@ func resourceAlicloudResourceManagerAccountCreate(d *schema.ResourceData, meta i
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"ConcurrentCallNotSupported"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
