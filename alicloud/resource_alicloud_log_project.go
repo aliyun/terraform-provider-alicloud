@@ -93,7 +93,9 @@ func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) er
 	if projectTags != nil {
 		tags := map[string]interface{}{}
 		for _, tag := range projectTags {
-			tags[tag.TagKey] = tag.TagValue
+			if !tagIgnored(tag.TagKey, tag.TagValue) {
+				tags[tag.TagKey] = tag.TagValue
+			}
 		}
 		if err := d.Set("tags", tags); err != nil {
 			return WrapError(err)
@@ -131,7 +133,7 @@ func deleteProjectTags(client *connectivity.AliyunClient, slsTags []string, proj
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, projectName, "DeletaTags", AliyunLogGoSdkERROR)
 	}
-	addDebug("DeletaTags", raw, requestInfo, map[string]string{
+	addDebug("UnTagResources", raw, requestInfo, map[string]string{
 		"name": projectName,
 	})
 	return nil
