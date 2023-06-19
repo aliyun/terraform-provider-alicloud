@@ -1,38 +1,39 @@
-## 1.207.0 (Unreleased)
+## 1.208.0 (Unreleased)
+## 1.207.0 (June 19, 2023)
 
-- **New Resource:** `alicloud_eip_segment_address` [GH-6225]
+- **New Resource:** `alicloud_eip_segment_address` ([#6225](https://github.com/aliyun/terraform-provider-alicloud/issues/6225))
 
 ENHANCEMENTS:
 
-- resource/alicloud_adb_db_cluster: Added the field elastic_io_resource_size and disk_performance_level. [GH-6116]
-- resource/alicloud_polardb_backup_policy: polardb support backup policy. [GH-6147]
-- resource/alicloud_ga_ip_set: Added the field isp_type. [GH-6171]
-- resource/alicloud_common_bandwidth_package: add new attibutes tags, create_time. [GH-6187]
-- resource/alicloud_vpc_public_ip_address_pool_cidr_block: add new attribute create_time;resource/alicloud_vpc_dhcp_options_set: add new attributes ipv6_lease_time, lease_time, tags, resource_group_id;resource/alicloud_vpc_peer_connection: adds new attributes tags, resource_group_id;resource/alicloud_vpc_ipv6_internet_bandwidth: optimize validateFunc implementation. [GH-6188]
-- resource/alicloud_rds_clone_db_instance: Adds new attribute zone_id_slave_a and zone_id_slave_b to support creating MySQL Cluster Edition. [GH-6201]
-- resource/alicloud_cms_site_monitor: Supported interval set to 30, 60. [GH-6217]
-- resource/alicloud_kms_key: Added the field tags. [GH-6222]
-- resource/alicloud_eip_address: add new attributes zone,pricing_cycle; data-source/alicloud_eip_addresses: modify the parameter mapping function. [GH-6225]
-- resource/alicloud_ga_listener: Added the field forwarded_for_config. [GH-6227]
-- resource/alicloud_ga_forwarding_rule: Added the field rule_action_value. [GH-6228]
-- resource/alicloud_rds_clone_db_instance: Support for cloning serverless instances. [GH-6231]
-- resource/alicloud_lindorm_instance: Supported disk_category set to cloud_essd_pl0. [GH-6232]
-- resource/alicloud_sae_ingress: Added the field cert_ids, load_balance_type, listener_protocol, rewrite_path and backend_protocol. [GH-6236]
-- resource/alicloud_vpc_peer_connection: Fixes the ResourceNotFound.InstanceId error when destroying it. [GH-6242]
-- resource/alicloud_common_bandwidth_package: Reset the default value to PayByTraffic. [GH-6243]
-- resource/alicloud_eip_address: Improves the setting bandwidth value after applying it. [GH-6244]
-- resource/alicloud_log_project: Ignores the system tag which starting with acs for the attribute tags. [GH-6245]
-- resource/alicloud_resource_manager_account: Fixes the ConcurrentCallNotSupported error when creating it. [GH-6246]
-- docs: Improves the sls docs example. [GH-6210]
-- docs: Improves the hbr docs example. [GH-6214]
-- docs: Improves the product Quota resources docs content. [GH-6224]
-- docs: Improves the ga docs example. [GH-6226]
-- docs: Improves the fc docs example. [GH-6229]
-- docs: Improves the ess docs example. [GH-6230]
-- docs: Improves the ecd docs example. [GH-6233]
-- docs: Improves the mongodb docs example. [GH-6234]
-- docs: Improves the dts docs example. [GH-6238]
-- docs: Improves the resource alicloud_config_delivery example. [GH-6247]
+- resource/alicloud_adb_db_cluster: Added the field elastic_io_resource_size and disk_performance_level. ([#6116](https://github.com/aliyun/terraform-provider-alicloud/issues/6116))
+- resource/alicloud_polardb_backup_policy: polardb support backup policy. ([#6147](https://github.com/aliyun/terraform-provider-alicloud/issues/6147))
+- resource/alicloud_ga_ip_set: Added the field isp_type. ([#6171](https://github.com/aliyun/terraform-provider-alicloud/issues/6171))
+- resource/alicloud_common_bandwidth_package: add new attibutes tags, create_time. ([#6187](https://github.com/aliyun/terraform-provider-alicloud/issues/6187))
+- resource/alicloud_vpc_public_ip_address_pool_cidr_block: add new attribute create_time;resource/alicloud_vpc_dhcp_options_set: add new attributes ipv6_lease_time, lease_time, tags, resource_group_id;resource/alicloud_vpc_peer_connection: adds new attributes tags, resource_group_id;resource/alicloud_vpc_ipv6_internet_bandwidth: optimize validateFunc implementation. ([#6188](https://github.com/aliyun/terraform-provider-alicloud/issues/6188))
+- resource/alicloud_rds_clone_db_instance: Adds new attribute zone_id_slave_a and zone_id_slave_b to support creating MySQL Cluster Edition. ([#6201](https://github.com/aliyun/terraform-provider-alicloud/issues/6201))
+- resource/alicloud_cms_site_monitor: Supported interval set to 30, 60. ([#6217](https://github.com/aliyun/terraform-provider-alicloud/issues/6217))
+- resource/alicloud_kms_key: Added the field tags. ([#6222](https://github.com/aliyun/terraform-provider-alicloud/issues/6222))
+- resource/alicloud_eip_address: add new attributes zone,pricing_cycle; data-source/alicloud_eip_addresses: modify the parameter mapping function. ([#6225](https://github.com/aliyun/terraform-provider-alicloud/issues/6225))
+- resource/alicloud_ga_listener: Added the field forwarded_for_config. ([#6227](https://github.com/aliyun/terraform-provider-alicloud/issues/6227))
+- resource/alicloud_ga_forwarding_rule: Added the field rule_action_value. ([#6228](https://github.com/aliyun/terraform-provider-alicloud/issues/6228))
+- resource/alicloud_rds_clone_db_instance: Support for cloning serverless instances. ([#6231](https://github.com/aliyun/terraform-provider-alicloud/issues/6231))
+- resource/alicloud_lindorm_instance: Supported disk_category set to cloud_essd_pl0. ([#6232](https://github.com/aliyun/terraform-provider-alicloud/issues/6232))
+- resource/alicloud_sae_ingress: Added the field cert_ids, load_balance_type, listener_protocol, rewrite_path and backend_protocol. ([#6236](https://github.com/aliyun/terraform-provider-alicloud/issues/6236))
+- resource/alicloud_vpc_peer_connection: Fixes the ResourceNotFound.InstanceId error when destroying it. ([#6242](https://github.com/aliyun/terraform-provider-alicloud/issues/6242))
+- resource/alicloud_common_bandwidth_package: Reset the default value to PayByTraffic. ([#6243](https://github.com/aliyun/terraform-provider-alicloud/issues/6243))
+- resource/alicloud_eip_address: Improves the setting bandwidth value after applying it. ([#6244](https://github.com/aliyun/terraform-provider-alicloud/issues/6244))
+- resource/alicloud_log_project: Ignores the system tag which starting with acs for the attribute tags. ([#6245](https://github.com/aliyun/terraform-provider-alicloud/issues/6245))
+- resource/alicloud_resource_manager_account: Fixes the ConcurrentCallNotSupported error when creating it. ([#6246](https://github.com/aliyun/terraform-provider-alicloud/issues/6246))
+- docs: Improves the sls docs example. ([#6210](https://github.com/aliyun/terraform-provider-alicloud/issues/6210))
+- docs: Improves the hbr docs example. ([#6214](https://github.com/aliyun/terraform-provider-alicloud/issues/6214))
+- docs: Improves the product Quota resources docs content. ([#6224](https://github.com/aliyun/terraform-provider-alicloud/issues/6224))
+- docs: Improves the ga docs example. ([#6226](https://github.com/aliyun/terraform-provider-alicloud/issues/6226))
+- docs: Improves the fc docs example. ([#6229](https://github.com/aliyun/terraform-provider-alicloud/issues/6229))
+- docs: Improves the ess docs example. ([#6230](https://github.com/aliyun/terraform-provider-alicloud/issues/6230))
+- docs: Improves the ecd docs example. ([#6233](https://github.com/aliyun/terraform-provider-alicloud/issues/6233))
+- docs: Improves the mongodb docs example. ([#6234](https://github.com/aliyun/terraform-provider-alicloud/issues/6234))
+- docs: Improves the dts docs example. ([#6238](https://github.com/aliyun/terraform-provider-alicloud/issues/6238))
+- docs: Improves the resource alicloud_config_delivery example. ([#6247](https://github.com/aliyun/terraform-provider-alicloud/issues/6247))
 
 ## 1.206.0 (June 02, 2023)
 
