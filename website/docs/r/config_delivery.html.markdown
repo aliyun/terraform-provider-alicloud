@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Config Delivery resource.
 ---
 
-# alicloud\_config\_delivery
+# alicloud_config_delivery
 
 Provides a Cloud Config Delivery resource.
 
-For information about Cloud Config Delivery and how to use it, see [What is Delivery](https://help.aliyun.com/document_detail/429798.html).
+For information about Cloud Config Delivery and how to use it, see [What is Delivery](https://www.alibabacloud.com/help/en/cloud-config/latest/api-doc-config-2020-09-07-api-doc-createconfigdeliverychannel).
 
--> **NOTE:** Available in v1.171.0+.
+-> **NOTE:** Available since v1.171.0+.
 
 ## Example Usage
 
@@ -21,9 +21,13 @@ Basic Usage
 
 ```terraform
 data "alicloud_account" "this" {}
+data "alicloud_regions" "this" {
+  current = true
+}
 locals {
-  uid = data.alicloud_account.this.id
-  sls = format("acs:log:%[2]s:%%s:project/%%s/logstore/%%s", local.uid, alicloud_log_project.this.name, alicloud_log_store.this.name)
+  uid       = data.alicloud_account.this.id
+  region_id = data.alicloud_regions.this.ids.0
+  sls       = format("acs:log:%s:%s:project/%s/logstore/%s", local.region_id, local.uid, alicloud_log_project.this.name, alicloud_log_store.this.name)
 }
 resource "alicloud_log_project" "this" {
   name = "example_value"
@@ -68,7 +72,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Delivery.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
