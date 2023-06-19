@@ -721,7 +721,7 @@ var AlicloudCbwpCommonBandwidthPackageMap3426 = map[string]string{
 	"isp":                  "BGP",
 	"create_time":          CHECKSET,
 	"deletion_protection":  CHECKSET,
-	"internet_charge_type": "PayByBandwidth",
+	"internet_charge_type": "PayByTraffic",
 }
 
 func AlicloudCbwpCommonBandwidthPackageBasicDependence3426(name string) string {

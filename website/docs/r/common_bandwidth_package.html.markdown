@@ -51,7 +51,8 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Required) The peak bandwidth of the shared bandwidth. Unit: Mbps.
+* `bandwidth` - (Required) The peak bandwidth of the shared bandwidth. Unit: Mbps. 
+  Valid values: [2, 20000] for China-Site account; [1, 5000] for International-Site account. See [Account Guide](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account) details.
 * `bandwidth_package_name` - (Optional, Available since v1.120.0) The name of the Internet Shared Bandwidth instance.
 * `deletion_protection` - (Optional, Available since v1.124.4) Whether enable the deletion protection or not. Default value: false.
   - **true**: Enable deletion protection.
@@ -60,7 +61,7 @@ The following arguments are supported:
 * `force` - (Optional) Whether to forcibly delete an Internet Shared Bandwidth instance. Value:
   - **false** (default): only the internet shared bandwidth that does not contain the EIP is deleted.
   - **true**: removes all EIPs from the internet shared bandwidth instance and deletes the internet shared bandwidth.
-* `internet_charge_type` - (Optional, ForceNew, Computed) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`, `PayByDominantTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International Account doesn't supports `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`. **NOTE:** From 1.176.0+, `PayByDominantTraffic` is available.
+* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`, `PayByDominantTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International-Site Account doesn't support `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`. **NOTE:** From 1.176.0+, `PayByDominantTraffic` is available.
 * `isp` - (Optional, ForceNew, Computed, Available since v1.90.1) The type of the Internet Service Provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2` and `BGP_FinanceCloud`. Default to `BGP`. **NOTE:** From version 1.203.0, isp can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`, `BGP_International`.
 * `ratio` - (Optional, ForceNew, Computed, Available since v1.55.3) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to 100. Valid values: [10-100].
 * `resource_group_id` - (Optional, Computed, Available since v1.115.0) The Id of resource group which the common bandwidth package belongs.

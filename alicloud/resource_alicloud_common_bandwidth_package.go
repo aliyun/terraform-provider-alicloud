@@ -58,7 +58,7 @@ func resourceAliCloudCbwpCommonBandwidthPackage() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
+				Default:      "PayByTraffic",
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"PayBy95", "PayByBandwidth", "PayByTraffic", "PayByDominantTraffic"}, false),
 			},
