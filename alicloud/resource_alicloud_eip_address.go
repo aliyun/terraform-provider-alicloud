@@ -302,7 +302,11 @@ func resourceAliCloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.Set("address_name", objectRaw["Name"])
-	d.Set("bandwidth", objectRaw["Bandwidth"])
+	if eipBandwidth, ok := objectRaw["EipBandwidth"]; ok {
+		d.Set("bandwidth", eipBandwidth)
+	} else {
+		d.Set("bandwidth", objectRaw["Bandwidth"])
+	}
 	d.Set("create_time", objectRaw["AllocationTime"])
 	d.Set("deletion_protection", objectRaw["DeletionProtection"])
 	d.Set("description", objectRaw["Description"])
