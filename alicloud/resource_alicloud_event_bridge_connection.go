@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -258,7 +259,11 @@ func resourceAliCloudEventBridgeConnectionCreate(d *schema.ResourceData, meta in
 			objectDataLocalMap["SecurityGroupId"] = nodeNative3
 		}
 	}
-	request["NetworkParameters"] = objectDataLocalMap
+	raw, err := json.Marshal(objectDataLocalMap)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["NetworkParameters"] = string(raw)
 
 	objectDataLocalMap1 := make(map[string]interface{})
 	if v, ok := d.GetOk("auth_parameters"); ok {
@@ -357,7 +362,11 @@ func resourceAliCloudEventBridgeConnectionCreate(d *schema.ResourceData, meta in
 		oAuthParameters["OAuthHttpParameters"] = oAuthHttpParameters
 		objectDataLocalMap1["OAuthParameters"] = oAuthParameters
 	}
-	request["AuthParameters"] = objectDataLocalMap1
+	raw, err = json.Marshal(objectDataLocalMap1)
+	if err != nil {
+		return WrapError(err)
+	}
+	request["AuthParameters"] = string(raw)
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
