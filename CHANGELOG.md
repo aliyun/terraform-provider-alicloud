@@ -1,5 +1,5 @@
 ## 1.208.0 (Unreleased)
-## 1.207.0 (June 19, 2023)
+## 1.207.0 (June 20, 2023)
 
 - **New Resource:** `alicloud_eip_segment_address` ([#6225](https://github.com/aliyun/terraform-provider-alicloud/issues/6225))
 

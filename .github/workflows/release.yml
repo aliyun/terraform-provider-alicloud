@@ -16,7 +16,8 @@ on:
       - 'v*'
 jobs:
   goreleaser:
-    runs-on: ubuntu-20.04
+    #runs-on: ubuntu-20.04
+    runs-on: terraform-releaser
     steps:
       -
         name: Checkout
