@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGaAccelerator() *schema.Resource {
@@ -26,54 +25,55 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"accelerator_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"auto_renew_duration": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
-			"auto_use_coupon": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"spec": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringInSlice([]string{"1", "2", "3", "5", "8", "10"}, false),
 			},
 			"duration": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(1, 9),
-			},
-			"pricing_cycle": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
-			},
-			"renewal_status": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(RenewAutoRenewal),
-					string(RenewNormal),
-					string(RenewNotRenewal)}, false),
-			},
-			"spec": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1", "2", "3", "5", "8", "10"}, false),
+				ValidateFunc: IntBetween(1, 9),
 			},
 			"bandwidth_billing_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"BandwidthPackage", "CDT"}, false),
+				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT"}, false),
 			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"pricing_cycle": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+			},
+			"auto_renew_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"renewal_status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: StringInSlice([]string{
+					string(RenewAutoRenewal),
+					string(RenewNormal),
+					string(RenewNotRenewal)}, false),
+			},
+			"accelerator_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags": tagsSchema(),
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -96,13 +96,19 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	//if v, ok := d.GetOk("accelerator_name"); ok {
 	//	request["Name"] = v
 	//}
+
+	request["RegionId"] = client.RegionId
 	request["AutoPay"] = true
+	request["Spec"] = d.Get("spec")
+	request["Duration"] = d.Get("duration")
+
+	if v, ok := d.GetOk("bandwidth_billing_type"); ok {
+		request["BandwidthBillingType"] = v
+	}
 
 	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
 		request["AutoUseCoupon"] = v
 	}
-
-	request["Duration"] = d.Get("duration")
 
 	if v, ok := d.GetOk("pricing_cycle"); ok {
 		request["PricingCycle"] = v
@@ -110,12 +116,6 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 		request["PricingCycle"] = "Month"
 	}
 
-	if v, ok := d.GetOk("bandwidth_billing_type"); ok {
-		request["BandwidthBillingType"] = v
-	}
-
-	request["RegionId"] = client.RegionId
-	request["Spec"] = d.Get("spec")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateAccelerator")
@@ -126,6 +126,7 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["AcceleratorId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaAcceleratorStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -139,7 +140,7 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaAccelerator(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ga_accelerator gaService.DescribeGaAccelerator Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -147,20 +148,30 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("accelerator_name", object["Name"])
-	d.Set("description", object["Description"])
 	d.Set("spec", object["Spec"])
 	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
+	d.Set("accelerator_name", object["Name"])
+	d.Set("description", object["Description"])
 	d.Set("status", object["State"])
 
 	describeAcceleratorAutoRenewAttributeObject, err := gaService.DescribeAcceleratorAutoRenewAttribute(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := describeAcceleratorAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("auto_renew_duration", formatInt(v))
 	}
+
 	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
+
+	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "accelerator")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -177,6 +188,14 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 	request := map[string]interface{}{
 		"AcceleratorId": d.Id(),
 	}
+
+	if d.HasChange("tags") {
+		if err := gaService.SetResourceTags(d, "accelerator"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	if d.HasChange("auto_renew_duration") {
 		update = true
 	}
@@ -258,6 +277,7 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("spec")
 	}
 	d.Partial(false)
+
 	return resourceAlicloudGaAcceleratorRead(d, meta)
 }
 

@@ -273,12 +273,19 @@ func TestAccAlicloudGaAccelerator_basic(t *testing.T) {
 					"spec":            "1",
 					"auto_use_coupon": "true",
 					"duration":        "1",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Accelerator",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"spec":            "1",
 						"auto_use_coupon": "true",
 						"duration":        "1",
+						"tags.%":          "2",
+						"tags.Created":    "TF",
+						"tags.For":        "Accelerator",
 					}),
 				),
 			},
@@ -327,10 +334,25 @@ func TestAccAlicloudGaAccelerator_basic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF_Update",
+						"For":     "Accelerator_Update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF_Update",
+						"tags.For":     "Accelerator_Update",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_use_coupon", "duration"},
+				ImportStateVerifyIgnore: []string{"duration", "auto_use_coupon"},
 			},
 		},
 	})
@@ -425,7 +447,7 @@ func TestAccAlicloudGaAccelerator_basic01(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_use_coupon", "duration"},
+				ImportStateVerifyIgnore: []string{"duration", "auto_use_coupon"},
 			},
 		},
 	})

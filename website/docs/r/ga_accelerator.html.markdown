@@ -28,6 +28,7 @@ resource "alicloud_ga_accelerator" "example" {
   spec            = "1"
 }
 ```
+
 ### Deleting `alicloud_ga_accelerator` or removing it from your configuration
 
 The `alicloud_ga_accelerator` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
@@ -38,30 +39,33 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `accelerator_name` - (Optional) The Name of the GA instance.
-* `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value is `false`. Valid value: `true`: Use, `false`: Not used.
-* `description` - (Optional) Descriptive information of the global acceleration instance.
-* `duration` - (Required) The subscription duration. **NOTE:** Starting from v1.150.0+, the `duration` and  `pricing_cycle` are both required.
-  * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
-  * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
-* `pricing_cycle`- (Optional, Available in v1.150.0+) The billing cycle of the GA instance. Valid values: `Month`,`Year`. The default value: `Month`.
-  * `Month`: billed on a monthly basis.
-  * `Year`: billed on an annual basis.
-* `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance, value:
-    `1`: Small 1.
-    `2`: Small 2.
-    `3`: Small 3.
-    `5`: Medium 1.
-    `8`: Medium 2.
-    `10`: Medium 3.
-* `auto_renew_duration` - (Optional, Available in v1.146.0+) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
-* `renewal_status` - (Optional, Available in v1.146.0+) Whether to renew an accelerator automatically or not. Default to "Normal". Valid values:
+* `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance. Valid values:
+  - `1`: Small 1.
+  - `2`: Small 2.
+  - `3`: Small 3.
+  - `5`: Medium 1.
+  - `8`: Medium 2.
+  - `10`: Medium 3.
+* `duration` - (Required) The subscription duration. **NOTE:** Starting from v1.150.0, the `duration` and  `pricing_cycle` are both required.
+    * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
+    * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
+* `bandwidth_billing_type` - (Optional, ForceNew, Computed, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
+  - `BandwidthPackage`: billed based on bandwidth plans.
+  - `CDT`: billed based on data transfer.
+* `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value: `false`. Valid values:
+  - `true`: Use.
+  - `false`: Not used.
+* `pricing_cycle`- (Optional, Available since v1.150.0) The billing cycle of the GA instance. Default value: `Month`. Valid values:
+  - `Month`: billed on a monthly basis.
+  - `Year`: billed on an annual basis.
+* `auto_renew_duration` - (Optional, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
+* `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
-* `bandwidth_billing_type` - (Optional, ForceNew, Computed, Available in v1.205.0+) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
-  - `BandwidthPackage`: billed based on bandwidth plans.
-  - `CDT`: billed based on data transfer.
+* `accelerator_name` - (Optional) The Name of the GA instance.
+* `description` - (Optional) Descriptive information of the global acceleration instance.
+* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
