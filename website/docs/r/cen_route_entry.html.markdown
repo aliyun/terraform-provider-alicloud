@@ -7,106 +7,82 @@ description: |-
   Provides a Alicloud CEN manage route entried resource.
 ---
 
-# alicloud\_cen_route_entry
+# alicloud_cen_route_entry
 
 Provides a CEN route entry resource. Cloud Enterprise Network (CEN) supports publishing and withdrawing route entries of attached networks. You can publish a route entry of an attached VPC or VBR to a CEN instance, then other attached networks can learn the route if there is no route conflict. You can withdraw a published route entry when CEN does not need it any more.
 
 For information about CEN route entries publishment and how to use it, see [Manage network routes](https://www.alibabacloud.com/help/doc-detail/86980.htm).
+
+-> **NOTE:** Available since v1.20.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a cen_route_entry resource and use it to publish a route entry pointing to an ECS.
-provider "alicloud" {
-  alias  = "hz"
-  region = "cn-hangzhou"
+data "alicloud_regions" "default" {
+  current = true
 }
-
-variable "name" {
-  default = "tf-testAccCenRouteEntryConfig"
+data "alicloud_zones" "example" {
+  available_resource_creation = "Instance"
 }
-
-data "alicloud_zones" "default" {
-  provider                    = alicloud.hz
-  available_disk_category     = "cloud_efficiency"
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
-  provider          = alicloud.hz
-  availability_zone = data.alicloud_zones.default.zones[0].id
+data "alicloud_instance_types" "example" {
+  availability_zone = data.alicloud_zones.example.zones.0.id
   cpu_core_count    = 1
   memory_size       = 2
 }
-
-data "alicloud_images" "default" {
-  provider    = alicloud.hz
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+data "alicloud_images" "example" {
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners     = "system"
 }
 
-resource "alicloud_vpc" "vpc" {
-  provider   = alicloud.hz
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+resource "alicloud_vswitch" "example" {
+  vswitch_name = "terraform-example"
+  cidr_block   = "172.17.3.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_zones.example.zones.0.id
+}
+resource "alicloud_security_group" "example" {
+  name   = "terraform-example"
+  vpc_id = alicloud_vpc.example.id
 }
 
-resource "alicloud_vswitch" "default" {
-  provider     = alicloud.hz
-  vpc_id       = alicloud_vpc.vpc.id
-  cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
-}
-
-resource "alicloud_security_group" "default" {
-  provider    = alicloud.hz
-  name        = var.name
-  description = "foo"
-  vpc_id      = alicloud_vpc.vpc.id
-}
-
-resource "alicloud_instance" "default" {
-  provider                   = alicloud.hz
-  vswitch_id                 = alicloud_vswitch.default.id
-  image_id                   = data.alicloud_images.default.images[0].id
-  instance_type              = data.alicloud_instance_types.default.instance_types[0].id
-  system_disk_category       = "cloud_efficiency"
-  internet_charge_type       = "PayByTraffic"
+resource "alicloud_instance" "example" {
+  availability_zone          = data.alicloud_zones.example.zones.0.id
+  instance_name              = "terraform-example"
+  image_id                   = data.alicloud_images.example.images.0.id
+  instance_type              = data.alicloud_instance_types.example.instance_types.0.id
+  security_groups            = [alicloud_security_group.example.id]
+  vswitch_id                 = alicloud_vswitch.example.id
   internet_max_bandwidth_out = 5
-  security_groups            = [alicloud_security_group.default.id]
-  instance_name              = var.name
 }
 
-resource "alicloud_cen_instance" "cen" {
-  name = var.name
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
-
-resource "alicloud_cen_instance_attachment" "attach" {
-  instance_id              = alicloud_cen_instance.cen.id
-  child_instance_id        = alicloud_vpc.vpc.id
+resource "alicloud_cen_instance_attachment" "example" {
+  instance_id              = alicloud_cen_instance.example.id
+  child_instance_id        = alicloud_vpc.example.id
   child_instance_type      = "VPC"
-  child_instance_region_id = "cn-hangzhou"
-  depends_on               = [alicloud_vswitch.default]
+  child_instance_region_id = data.alicloud_regions.default.regions.0.id
 }
 
-resource "alicloud_route_entry" "route" {
-  provider              = alicloud.hz
-  route_table_id        = alicloud_vpc.vpc.route_table_id
+resource "alicloud_route_entry" "example" {
+  route_table_id        = alicloud_vpc.example.route_table_id
   destination_cidrblock = "11.0.0.0/16"
   nexthop_type          = "Instance"
-  nexthop_id            = alicloud_instance.default.id
+  nexthop_id            = alicloud_instance.example.id
 }
 
-resource "alicloud_cen_route_entry" "foo" {
-  provider       = alicloud.hz
-  instance_id    = alicloud_cen_instance.cen.id
-  route_table_id = alicloud_vpc.vpc.route_table_id
-  cidr_block     = alicloud_route_entry.route.destination_cidrblock
-  depends_on     = [alicloud_cen_instance_attachment.attach]
+resource "alicloud_cen_route_entry" "example" {
+  instance_id    = alicloud_cen_instance_attachment.example.instance_id
+  route_table_id = alicloud_vpc.example.route_table_id
+  cidr_block     = alicloud_route_entry.example.destination_cidrblock
 }
 ```
 ## Argument Reference

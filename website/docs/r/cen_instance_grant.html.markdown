@@ -7,69 +7,78 @@ description: |-
   Provides a Alicloud CEN child instance grant resource.
 ---
 
-# alicloud\_cen_instance_grant
+# alicloud_cen_instance_grant
 
 Provides a CEN child instance grant resource, which allow you to authorize a VPC or VBR to a CEN of a different account.
 
-For more information about how to use it, see [Attach a network in a different account](https://www.alibabacloud.com/help/doc-detail/73645.htm). 
+For more information about how to use it, see [Attach a network in a different account](https://www.alibabacloud.com/help/zh/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-attachcenchildinstance). 
+
+-> **NOTE:** Available since v1.37.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a new instance-grant and use it to grant one child instance of account1 to a new CEN of account 2.
+variable "child_account_ak" {
+  default = "example-ak"
+}
+variable "child_account_sk" {
+  default = "example-sk"
+}
 provider "alicloud" {
-  access_key = "access123"
-  secret_key = "secret123"
-  alias      = "account1"
+  alias = "your_account"
 }
-
 provider "alicloud" {
-  access_key = "access456"
-  secret_key = "secret456"
-  alias      = "account2"
+  access_key = var.child_account_ak
+  secret_key = var.child_account_sk
+  alias      = "child_account"
+}
+data "alicloud_account" "your_account" {
+  provider = alicloud.your_account
+}
+data "alicloud_account" "child_account" {
+  provider = alicloud.child_account
+}
+data "alicloud_regions" "default" {
+  current = true
 }
 
-variable "name" {
-  default = "tf-testAccCenInstanceGrantBasic"
+resource "alicloud_cen_instance" "example" {
+  provider          = alicloud.your_account
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
-resource "alicloud_cen_instance" "cen" {
-  provider = alicloud.account2
-  name     = var.name
+resource "alicloud_vpc" "child_account" {
+  provider   = alicloud.child_account
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+resource "alicloud_cen_instance_grant" "child_account" {
+  provider          = alicloud.child_account
+  cen_id            = alicloud_cen_instance.example.id
+  child_instance_id = alicloud_vpc.child_account.id
+  cen_owner_id      = data.alicloud_account.your_account.id
 }
 
-resource "alicloud_vpc" "vpc" {
-  provider   = alicloud.account1
-  name       = var.name
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_cen_instance_grant" "foo" {
-  provider          = alicloud.account1
-  cen_id            = alicloud_cen_instance.cen.id
-  child_instance_id = alicloud_vpc.vpc.id
-  cen_owner_id      = "uid2"
-}
-
-resource "alicloud_cen_instance_attachment" "foo" {
-  provider                 = alicloud.account2
-  instance_id              = alicloud_cen_instance.cen.id
-  child_instance_id        = alicloud_vpc.vpc.id
+resource "alicloud_cen_instance_attachment" "example" {
+  provider                 = alicloud.your_account
+  instance_id              = alicloud_cen_instance.example.id
+  child_instance_id        = alicloud_vpc.child_account.id
   child_instance_type      = "VPC"
-  child_instance_region_id = "cn-qingdao"
-  child_instance_owner_id  = "uid1"
-  depends_on               = [alicloud_cen_instance_grant.foo]
+  child_instance_region_id = data.alicloud_regions.default.regions.0.id
+  child_instance_owner_id  = data.alicloud_account.child_account.id
+  depends_on               = [alicloud_cen_instance_grant.child_account]
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `cen_id` - (Required) The ID of the CEN.
-* `child_instance_id` - (Required) The ID of the child instance to grant.
-* `cen_owner_id` - (Required) The owner UID of the  CEN which the child instance granted to.
+* `cen_id` - (Required, ForceNew) The ID of the CEN.
+* `child_instance_id` - (Required, ForceNew) The ID of the child instance to grant.
+* `cen_owner_id` - (Required, ForceNew) The owner UID of the  CEN which the child instance granted to.
 
 ## Attributes Reference
 

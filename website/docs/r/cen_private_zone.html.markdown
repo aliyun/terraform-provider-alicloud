@@ -7,48 +7,47 @@ description: |-
   Provides a Alicloud CEN private zone resource.
 ---
 
-# alicloud\_cen_private_zone
+# alicloud_cen_private_zone
 
 This topic describes how to configure PrivateZone access. 
 PrivateZone is a VPC-based resolution and management service for private domain names. 
 After you set a PrivateZone access, the Cloud Connect Network (CCN) and Virtual Border Router (VBR) attached to a CEN instance can access the PrivateZone service through CEN.
 
-For information about CEN Private Zone and how to use it, see [Manage CEN Private Zone](https://www.alibabacloud.com/help/en/doc-detail/106693.htm).
+For information about CEN Private Zone and how to use it, see [Manage CEN Private Zone](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-routeprivatezoneincentovpc).
 
--> **NOTE:** Available in 1.83.0+
+-> **NOTE:** Available since v1.83.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a cen Private Zone resource and use it.
-resource "alicloud_cen_instance" "default" {
-  name = "test_name"
+data "alicloud_regions" "default" {
+  current = true
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = "test_name"
-  cidr_block = "172.16.0.0/12"
+resource "alicloud_vpc" "example" {
+  vpc_name   = "tf_example"
+  cidr_block = "172.17.3.0/24"
 }
 
-resource "alicloud_cen_instance_attachment" "default" {
-  instance_id              = alicloud_cen_instance.default.id
-  child_instance_id        = alicloud_vpc.default.id
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
+}
+
+resource "alicloud_cen_instance_attachment" "example" {
+  instance_id              = alicloud_cen_instance.example.id
+  child_instance_id        = alicloud_vpc.example.id
   child_instance_type      = "VPC"
-  child_instance_region_id = "cn-hangzhou"
-  depends_on = [
-    alicloud_cen_instance.default,
-    alicloud_vpc.default,
-  ]
+  child_instance_region_id = data.alicloud_regions.default.regions.0.id
 }
 
 resource "alicloud_cen_private_zone" "default" {
-  access_region_id = "cn-hangzhou"
-  cen_id           = alicloud_cen_instance.default.id
-  host_region_id   = "cn-hangzhou"
-  host_vpc_id      = alicloud_vpc.default.id
-  depends_on       = [alicloud_cen_instance_attachment.default]
+  access_region_id = data.alicloud_regions.default.regions.0.id
+  cen_id           = alicloud_cen_instance_attachment.example.instance_id
+  host_region_id   = data.alicloud_regions.default.regions.0.id
+  host_vpc_id      = alicloud_vpc.example.id
 }
 ```
 ## Argument Reference
