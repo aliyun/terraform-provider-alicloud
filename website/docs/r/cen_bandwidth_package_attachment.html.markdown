@@ -7,32 +7,32 @@ description: |-
   Provides a Alicloud CEN bandwidth package attachment resource.
 ---
 
-# alicloud\_cen_bandwidth_package_attachment
+# alicloud_cen_bandwidth_package_attachment
 
 Provides a CEN bandwidth package attachment resource. The resource can be used to bind a bandwidth package to a specified CEN instance.
+
+-> **NOTE:** Available since v1.18.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a new bandwidth package attachment and use it to attach a bandwidth package to a new CEN
-resource "alicloud_cen_instance" "cen" {
-  name        = "tf-testAccCenBandwidthPackageAttachmentConfig"
-  description = "tf-testAccCenBandwidthPackageAttachmentDescription"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
-resource "alicloud_cen_bandwidth_package" "bwp" {
-  bandwidth = 20
-  geographic_region_ids = [
-    "China",
-    "Asia-Pacific",
-  ]
+resource "alicloud_cen_bandwidth_package" "example" {
+  bandwidth                  = 5
+  cen_bandwidth_package_name = "tf_example"
+  geographic_region_a_id     = "China"
+  geographic_region_b_id     = "China"
 }
 
-resource "alicloud_cen_bandwidth_package_attachment" "foo" {
-  instance_id          = alicloud_cen_instance.cen.id
-  bandwidth_package_id = alicloud_cen_bandwidth_package.bwp.id
+resource "alicloud_cen_bandwidth_package_attachment" "example" {
+  instance_id          = alicloud_cen_instance.example.id
+  bandwidth_package_id = alicloud_cen_bandwidth_package.example.id
 }
 ```
 ## Argument Reference
@@ -48,7 +48,7 @@ The following attributes are exported:
 
 * `id` - ID of the resource, the same as bandwidth_package_id.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.206.0+.
 

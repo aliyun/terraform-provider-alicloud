@@ -7,71 +7,66 @@ description: |-
   Provides a Alicloud CEN transit router VPC attachment resource.
 ---
 
-# alicloud\_cen_transit_router_vpc_attachment
+# alicloud_cen_transit_router_vpc_attachment
 
-Provides a CEN transit router VPC attachment resource that associate the VPC with the CEN instance. [What is Cen Transit Router VPC Attachment](https://help.aliyun.com/document_detail/261358.html)
+Provides a CEN transit router VPC attachment resource that associate the VPC with the CEN instance. [What is Cen Transit Router VPC Attachment](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtransitroutervpcattachment)
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "transit_router_attachment_name" {
-  default = "sdk_rebot_cen_tr_yaochi"
+variable "name" {
+  default = "terraform-example"
 }
-
-variable "transit_router_attachment_description" {
-  default = "sdk_rebot_cen_tr_yaochi"
+data "alicloud_cen_transit_router_available_resources" "default" {}
+locals {
+  master_zone = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[0]
+  slave_zone  = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[1]
 }
-
-data "alicloud_cen_transit_router_available_resources" "default" {
-
-}
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = "sdk_rebot_cen_tr_yaochi"
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
-
-resource "alicloud_vswitch" "default_master" {
-  vswitch_name = "sdk_rebot_cen_tr_yaochi"
-  vpc_id       = alicloud_vpc.default.id
+resource "alicloud_vswitch" "example_master" {
+  vswitch_name = var.name
   cidr_block   = "192.168.1.0/24"
-  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[0]
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = local.master_zone
 }
-
-resource "alicloud_vswitch" "default_slave" {
-  vswitch_name = "sdk_rebot_cen_tr_yaochi"
-  vpc_id       = alicloud_vpc.default.id
+resource "alicloud_vswitch" "example_slave" {
+  vswitch_name = var.name
   cidr_block   = "192.168.2.0/24"
-  zone_id      = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[0]
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = local.slave_zone
 }
 
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "sdk_rebot_cen_tr_yaochi"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = var.name
   protection_level  = "REDUCED"
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  cen_id = alicloud_cen_instance.default.id
+resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = var.name
+  cen_id              = alicloud_cen_instance.example.id
 }
 
-resource "alicloud_cen_transit_router_vpc_attachment" "default" {
-  cen_id            = alicloud_cen_instance.default.id
-  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
-  vpc_id            = alicloud_vpc.default.id
+resource "alicloud_cen_transit_router_vpc_attachment" "example" {
+  cen_id            = alicloud_cen_instance.example.id
+  transit_router_id = alicloud_cen_transit_router.example.transit_router_id
+  vpc_id            = alicloud_vpc.example.id
   zone_mappings {
-    zone_id    = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[0]
-    vswitch_id = alicloud_vswitch.default_master.id
+    zone_id    = local.master_zone
+    vswitch_id = alicloud_vswitch.example_master.id
   }
   zone_mappings {
-    zone_id    = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[1]
-    vswitch_id = alicloud_vswitch.default_slave.id
+    zone_id    = local.slave_zone
+    vswitch_id = alicloud_vswitch.example_slave.id
   }
-  transit_router_attachment_name        = var.transit_router_attachment_name
-  transit_router_attachment_description = var.transit_router_attachment_description
+  transit_router_attachment_name        = var.name
+  transit_router_attachment_description = var.name
 }
 ```
 ## Argument Reference
@@ -87,16 +82,16 @@ The following arguments are supported:
 * `resource_type` - (Optional) The resource type of transit router vpc attachment. Valid value `VPC`. Default value is `VPC`.
 * `route_table_association_enabled` - (Optional, Deprecated) Whether to enabled route table association. The system default value is `true`. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
 * `route_table_propagation_enabled` - (Optional, Deprecated) Whether to enabled route table propagation. The system default value is `true`. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
-* `vpc_owner_id` - (Optional,ForceNew) The owner id of vpc.
+* `vpc_owner_id` - (Optional, ForceNew) The owner id of vpc.
 * `payment_type` - (Optional, ForceNew, Available in 1.168.0+) The payment type of the resource. Valid values: `PayAsYouGo`.
-* `zone_mappings` - (Required) The list of zone mapping of the VPC. **NOTE:** From version 1.184.0, `zone_mappings` can be modified.
+* `zone_mappings` - (Required) The list of zone mapping of the VPC. **NOTE:** From version 1.184.0, `zone_mappings` can be modified. See [`zone_mappings`](#zone_mappings) below.
 -> **NOTE:** The Zone of CEN has MasterZone and SlaveZone, first zone_id of zone_mapping need be MasterZone. We have a API to describeZones[API](https://help.aliyun.com/document_detail/261356.html)
 * `auto_publish_route_enabled` - (Optional, Computed, Available in v1.204.0+) Whether the transit router is automatically published to the VPC instance. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
-#### ZoneMappings Block
+### `zone_mappings`
 
 The `zone_mappings` supports the following:
 
@@ -111,7 +106,7 @@ The following attributes are exported:
 * `status` - The associating status of the network.
 * `transit_router_attachment_id` - The ID of transit router attachment. 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
