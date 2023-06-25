@@ -88,6 +88,7 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 			},
 			"db_endpoint_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"db_endpoint_description": {
@@ -99,6 +100,12 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 }
 
 func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interface{}) error {
+	// 背景：用户不愿意 通过 import 导入资源形式 修改节点；
+	// endpoint_id 不为空：修改endpoint，为空：创建endpoint；
+	if v, ok := d.GetOk("db_endpoint_id"); ok && v.(string) != "" {
+		d.SetId(fmt.Sprintf("%s%s%s", d.Get("db_cluster_id").(string), COLON_SEPARATED, v.(string)))
+		return resourceAlicloudPolarDBEndpointUpdate(d, meta)
+	}
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 	clusterId := d.Get("db_cluster_id").(string)
@@ -342,7 +349,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySSLRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		// wait cluster status change from SSL_MODIFYING to Running
-		stateConf := BuildStateConf([]string{"SSL_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(dbClusterId, []string{"Deleting"}))
+		stateConf := BuildStateConf([]string{"SSL_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(dbClusterId, []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, dbClusterId)
 		}
