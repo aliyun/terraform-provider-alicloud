@@ -83,9 +83,11 @@ func resourceAlicloudSaeNamespaceCreate(d *schema.ResourceData, meta interface{}
 		request["EnableMicroRegistration"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -175,9 +177,12 @@ func resourceAlicloudSaeNamespaceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapError(err)
 		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -223,9 +228,11 @@ func resourceAlicloudSaeNamespaceDelete(d *schema.ResourceData, meta interface{}
 		"NamespaceId": StringPointer(d.Id()),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 1*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"InvalidNamespaceId.NotFound"}) || NeedRetry(err) {
 				wait()
