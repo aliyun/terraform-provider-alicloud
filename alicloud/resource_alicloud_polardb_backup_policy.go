@@ -213,25 +213,16 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		periodList := expandStringList(d.Get("preferred_backup_period").(*schema.Set).List())
 		request["PreferredBackupPeriod"] = strings.Join(periodList[:], COMMA_SEPARATED)
 	}
-	if d.HasChanges("backup_retention_policy_on_cluster_deletion", "data_level1_backup_retention_period", "data_level2_backup_retention_period",
-		"backup_frequency", "data_level1_backup_frequency", "data_level2_backup_another_region_region", "data_level2_backup_another_region_retention_period",
-		"backup_retention_period") {
+	if d.HasChanges("backup_retention_policy_on_cluster_deletion", "data_level2_backup_retention_period", "backup_frequency",
+		"data_level1_backup_frequency", "data_level2_backup_another_region_region", "data_level2_backup_another_region_retention_period") {
 		update = true
 
 		if v, ok := d.GetOk("backup_retention_policy_on_cluster_deletion"); ok {
 			request["BackupRetentionPolicyOnClusterDeletion"] = v
 		}
 		if v, ok := d.GetOk("data_level2_backup_retention_period"); ok {
-			dataLevel1BackupRetentionPeriod := v.(int)
-			request["DataLevel1BackupRetentionPeriod"] = strconv.Itoa(dataLevel1BackupRetentionPeriod)
-		}
-		if v, ok := d.GetOk("data_level2_backup_retention_period"); ok {
 			dataLevel2BackupRetentionPeriod := v.(int)
 			request["DataLevel2BackupRetentionPeriod"] = strconv.Itoa(dataLevel2BackupRetentionPeriod)
-		}
-		if v, ok := d.GetOk("log_backup_retention_period"); ok {
-			logBackupRetentionPeriod := v.(int)
-			request["LogBackupRetentionPeriod"] = strconv.Itoa(logBackupRetentionPeriod)
 		}
 		if v, ok := d.GetOk("backup_frequency"); ok {
 			request["BackupFrequency"] = v
@@ -246,8 +237,18 @@ func resourceAlicloudPolarDBBackupPolicyUpdate(d *schema.ResourceData, meta inte
 			dataLevel2BackupAnotherRegionRetentionPeriod := v.(int)
 			request["DataLevel2BackupAnotherRegionRetentionPeriod"] = strconv.Itoa(dataLevel2BackupAnotherRegionRetentionPeriod)
 		}
+	}
+	if d.HasChange("backup_retention_period") {
+		update = true
 		if v, ok := d.GetOk("backup_retention_period"); ok {
 			request["DataLevel1BackupRetentionPeriod"] = v
+		}
+	}
+	if d.HasChange("data_level1_backup_retention_period") {
+		update = true
+		if v, ok := d.GetOk("data_level1_backup_retention_period"); ok {
+			dataLevel1BackupRetentionPeriod := v.(int)
+			request["DataLevel1BackupRetentionPeriod"] = strconv.Itoa(dataLevel1BackupRetentionPeriod)
 		}
 	}
 	if d.HasChange("preferred_backup_time") {
