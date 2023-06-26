@@ -267,6 +267,82 @@ func TestAccAlicloudGaAcl_basic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Acl",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Acl",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudGaAcl_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ga_acl.default"
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudGaAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgaacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAclBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_name":           name,
+					"address_ip_version": "IPv4",
+					"acl_entries": []map[string]interface{}{
+						{
+							"entry":             "192.168.1.0/24",
+							"entry_description": "tf-test1",
+						},
+						{
+							"entry":             "192.168.2.0/24",
+							"entry_description": "tf-test2/",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Acl",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_name":           name,
+						"address_ip_version": "IPv4",
+						"acl_entries.#":      "2",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Acl",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -280,8 +356,8 @@ var AlicloudGaAclMap0 = map[string]string{}
 
 func AlicloudGaAclBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }

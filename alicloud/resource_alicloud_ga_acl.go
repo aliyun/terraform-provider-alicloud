@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGaAcl() *schema.Resource {
@@ -28,11 +27,22 @@ func resourceAlicloudGaAcl() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"address_ip_version": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6"}, false),
+			},
+			"acl_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter."),
+			},
 			"acl_entries": {
 				Type:       schema.TypeSet,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'acl_entries' has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource 'alicloud_ga_acl_entry_attachment'.",
+				Deprecated: "Field `acl_entries` has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"entry": {
@@ -44,22 +54,12 @@ func resourceAlicloudGaAcl() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[A-Za-z0-9._/-]{1,256}$`), "The description of the IP entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_)."),
+							ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9._/-]{1,256}$`), "The description of the IP entry. The description must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_)."),
 						},
 					},
 				},
 			},
-			"acl_name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter."),
-			},
-			"address_ip_version": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"IPv4", "IPv6"}, false),
-			},
+			"tags": tagsSchema(),
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -74,6 +74,7 @@ func resourceAlicloudGaAcl() *schema.Resource {
 
 func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	gaService := GaService{client}
 	var response map[string]interface{}
 	action := "CreateAcl"
 	request := make(map[string]interface{})
@@ -81,6 +82,15 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("CreateAcl")
+	request["AddressIPVersion"] = d.Get("address_ip_version")
+
+	if v, ok := d.GetOk("acl_name"); ok {
+		request["AclName"] = v
+	}
+
 	if m, ok := d.GetOk("acl_entries"); ok {
 		for k, aclEntries := range m.(*schema.Set).List() {
 			aclEntriesArg := aclEntries.(map[string]interface{})
@@ -88,15 +98,11 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 			request[fmt.Sprintf("AclEntries.%d.EntryDescription", k+1)] = aclEntriesArg["entry_description"].(string)
 		}
 	}
-	if v, ok := d.GetOk("acl_name"); ok {
-		request["AclName"] = v
-	}
-	request["AddressIPVersion"] = d.Get("address_ip_version")
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("CreateAcl")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -112,18 +118,19 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_acl", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AclId"]))
-	gaService := GaService{client}
+
 	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaAclStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAclRead(d, meta)
+	return resourceAlicloudGaAclUpdate(d, meta)
 }
 
 func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
@@ -131,13 +138,18 @@ func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaAcl(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ga_acl gaService.DescribeGaAcl Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
+	d.Set("address_ip_version", object["AddressIPVersion"])
+	d.Set("acl_name", object["AclName"])
+	d.Set("status", object["AclStatus"])
+
 	if v, ok := object["AclEntries"].([]interface{}); ok {
 		aclEntries := make([]map[string]interface{}, 0)
 		for _, val := range v {
@@ -153,9 +165,13 @@ func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	d.Set("acl_name", object["AclName"])
-	d.Set("address_ip_version", object["AddressIPVersion"])
-	d.Set("status", object["AclStatus"])
+	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "acl")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -165,27 +181,38 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 	var response map[string]interface{}
 	d.Partial(true)
 
+	if d.HasChange("tags") {
+		if err := gaService.SetResourceTags(d, "acl"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	update := false
 	request := map[string]interface{}{
-		"AclId": d.Id(),
+		"RegionId":    client.RegionId,
+		"ClientToken": buildClientToken("UpdateAclAttribute"),
+		"AclId":       d.Id(),
 	}
-	if d.HasChange("acl_name") {
+
+	if !d.IsNewResource() && d.HasChange("acl_name") {
 		update = true
 	}
 	if v, ok := d.GetOk("acl_name"); ok {
 		request["AclName"] = v
 	}
-	request["RegionId"] = client.RegionId
+
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
 		}
+
 		action := "UpdateAclAttribute"
 		conn, err := client.NewGaplusClient()
 		if err != nil {
 			return WrapError(err)
 		}
-		request["ClientToken"] = buildClientToken("UpdateAclAttribute")
+
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 20*time.Second)
@@ -201,36 +228,41 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		d.SetPartial("acl_name")
 	}
 
-	if d.HasChange("acl_entries") {
+	if !d.IsNewResource() && d.HasChange("acl_entries") {
 		oraw, nraw := d.GetChange("acl_entries")
 		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
 		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
 
 		if len(remove) > 0 {
 			removeEntriesFromAclReq := map[string]interface{}{
-				"AclId": d.Id(),
+				"RegionId":    client.RegionId,
+				"ClientToken": buildClientToken("RemoveEntriesFromAcl"),
+				"AclId":       d.Id(),
 			}
+
 			for k, aclEntries := range remove {
 				aclEntriesArg := aclEntries.(map[string]interface{})
 				removeEntriesFromAclReq[fmt.Sprintf("AclEntries.%d.Entry", k+1)] = aclEntriesArg["entry"].(string)
 			}
-			removeEntriesFromAclReq["RegionId"] = client.RegionId
 
 			if v, ok := d.GetOkExists("dry_run"); ok {
 				removeEntriesFromAclReq["DryRun"] = v
 			}
+
 			action := "RemoveEntriesFromAcl"
 			conn, err := client.NewGaplusClient()
 			if err != nil {
 				return WrapError(err)
 			}
-			request["ClientToken"] = buildClientToken("RemoveEntriesFromAcl")
+
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 20*time.Second)
@@ -246,9 +278,11 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 				return nil
 			})
 			addDebug(action, response, removeEntriesFromAclReq)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gaService.GaAclStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
@@ -257,23 +291,27 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 
 		if len(create) > 0 {
 			addEntriesToAclReq := map[string]interface{}{
-				"AclId": d.Id(),
+				"RegionId":    client.RegionId,
+				"ClientToken": buildClientToken("AddEntriesToAcl"),
+				"AclId":       d.Id(),
 			}
+
 			for k, aclEntries := range create {
 				aclEntriesArg := aclEntries.(map[string]interface{})
 				addEntriesToAclReq[fmt.Sprintf("AclEntries.%d.Entry", k+1)] = aclEntriesArg["entry"].(string)
 				addEntriesToAclReq[fmt.Sprintf("AclEntries.%d.EntryDescription", k+1)] = aclEntriesArg["entry_description"].(string)
 			}
-			addEntriesToAclReq["RegionId"] = client.RegionId
+
 			if v, ok := d.GetOkExists("dry_run"); ok {
 				addEntriesToAclReq["DryRun"] = v
 			}
+
 			action := "AddEntriesToAcl"
 			conn, err := client.NewGaplusClient()
 			if err != nil {
 				return WrapError(err)
 			}
-			request["ClientToken"] = buildClientToken("AddEntriesToAcl")
+
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 20*time.Second)
@@ -289,9 +327,11 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 				return nil
 			})
 			addDebug(action, response, addEntriesToAclReq)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gaService.GaAclStateRefreshFunc(d.Id(), []string{}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
@@ -302,6 +342,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Partial(false)
+
 	return resourceAlicloudGaAclRead(d, meta)
 }
 
@@ -310,18 +351,22 @@ func resourceAlicloudGaAclDelete(d *schema.ResourceData, meta interface{}) error
 	gaService := GaService{client}
 	action := "DeleteAcl"
 	var response map[string]interface{}
+
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"AclId": d.Id(),
+		"RegionId":    client.RegionId,
+		"ClientToken": buildClientToken("DeleteAcl"),
+		"AclId":       d.Id(),
 	}
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("DeleteAcl")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 20*time.Second)
@@ -337,15 +382,18 @@ func resourceAlicloudGaAclDelete(d *schema.ResourceData, meta interface{}) error
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Acl"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaAclStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
