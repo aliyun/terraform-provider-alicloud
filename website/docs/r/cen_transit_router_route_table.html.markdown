@@ -7,33 +7,29 @@ description: |-
   Provides a Alicloud CEN transit router route table resource.
 ---
 
-# alicloud\_cen_transit_router_route_table
+# alicloud_cen_transit_router_route_table
 
-Provides a CEN transit router route table resource.[What is Cen Transit Router Route Table](https://help.aliyun.com/document_detail/261233.html)
+Provides a CEN transit router route table resource.[What is Cen Transit Router Route Table](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtransitrouterroutetable)
 
--> **NOTE:** Available in 1.126.0+
+-> **NOTE:** Available since v1.126.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf-testAccCenTransitRouter"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
-resource "alicloud_cen_instance" "cen" {
-  name        = var.name
-  description = "terraform01"
+resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = "tf_example"
+  cen_id              = alicloud_cen_instance.example.id
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  name   = var.name
-  cen_id = alicloud_cen_instance.cen.id
-}
-
-resource "alicloud_cen_transit_router_route_table" "default" {
-  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+resource "alicloud_cen_transit_router_route_table" "example" {
+  transit_router_id = alicloud_cen_transit_router.example.transit_router_id
 }
 ```
 
@@ -56,7 +52,7 @@ The following attributes are exported:
 * `transit_router_route_table_id` - The id of the transit router route table.
 * `transit_router_route_table_type` - The type of the transit router route table. Valid values: `Custom`, `System`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

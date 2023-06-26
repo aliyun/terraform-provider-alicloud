@@ -7,46 +7,66 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Multicast Domain Association resource.
 ---
 
-# alicloud\_cen\_transit\_router\_multicast\_domain\_association
+# alicloud_cen_transit_router_multicast_domain_association
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Multicast Domain Association resource.
 
 For information about Cloud Enterprise Network (CEN) Transit Router Multicast Domain Association and how to use it, see [What is Transit Router Multicast Domain Association](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-associatetransitroutermulticastdomain).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "tf-example"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_cen_transit_router_available_resources" "default" {}
+locals {
+  zone = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]
+}
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+resource "alicloud_vswitch" "example" {
+  vswitch_name = var.name
+  cidr_block   = "192.168.1.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = local.zone
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  cen_id            = alicloud_cen_instance.default.id
-  support_multicast = true
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = var.name
 }
 
-resource "alicloud_cen_transit_router_multicast_domain" "default" {
-  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = var.name
+  cen_id              = alicloud_cen_instance.example.id
+  support_multicast   = true
 }
 
-resource "alicloud_cen_transit_router_vpc_attachment" "default" {
-  cen_id            = alicloud_cen_transit_router.default.cen_id
-  transit_router_id = alicloud_cen_transit_router_multicast_domain.default.transit_router_id
-  vpc_id            = "your_vpc_id"
+resource "alicloud_cen_transit_router_multicast_domain" "example" {
+  transit_router_id                    = alicloud_cen_transit_router.example.transit_router_id
+  transit_router_multicast_domain_name = var.name
+}
+
+resource "alicloud_cen_transit_router_vpc_attachment" "example" {
+  cen_id            = alicloud_cen_transit_router.example.cen_id
+  transit_router_id = alicloud_cen_transit_router_multicast_domain.example.transit_router_id
+  vpc_id            = alicloud_vpc.example.id
   zone_mappings {
-    zone_id    = "your_zone_id"
-    vswitch_id = "your_vswitch_id"
+    zone_id    = local.zone
+    vswitch_id = alicloud_vswitch.example.id
   }
 }
 
-resource "alicloud_cen_transit_router_multicast_domain_association" "default" {
-  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.default.id
-  transit_router_attachment_id       = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachment_id
-  vswitch_id                         = "your_vswitch_id"
+resource "alicloud_cen_transit_router_multicast_domain_association" "example" {
+  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.example.id
+  transit_router_attachment_id       = alicloud_cen_transit_router_vpc_attachment.example.transit_router_attachment_id
+  vswitch_id                         = alicloud_vswitch.example.id
 }
 ```
 
@@ -65,7 +85,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Transit Router Multicast Domain Association. It formats as `<transit_router_multicast_domain_id>:<transit_router_attachment_id>:<vswitch_id>`.
 * `status` - The status of the Transit Router Multicast Domain Association.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

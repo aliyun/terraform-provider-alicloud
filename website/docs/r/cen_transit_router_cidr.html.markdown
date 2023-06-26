@@ -7,32 +7,34 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Cidr resource.
 ---
 
-# alicloud\_cen\_transit\_router\_cidr
+# alicloud_cen_transit_router_cidr
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Cidr resource.
 
-For information about Cloud Enterprise Network (CEN) Transit Router Cidr and how to use it, see [What is Transit Router Cidr](https://www.alibabacloud.com/help/zh/cloud-enterprise-network/latest/createtransitroutercidr).
+For information about Cloud Enterprise Network (CEN) Transit Router Cidr and how to use it, see [What is Transit Router Cidr](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/createtransitroutercidr).
 
--> **NOTE:** Available in v1.193.0+.
+-> **NOTE:** Available since v1.193.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "tf-example"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  cen_id = alicloud_cen_instance.default.id
+resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = "tf_example"
+  cen_id              = alicloud_cen_instance.example.id
 }
 
-resource "alicloud_cen_transit_router_cidr" "default" {
-  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+resource "alicloud_cen_transit_router_cidr" "example" {
+  transit_router_id        = alicloud_cen_transit_router.example.transit_router_id
   cidr                     = "192.168.0.0/16"
-  transit_router_cidr_name = "tf-example-name"
-  description              = "tf-example-description"
+  transit_router_cidr_name = "tf_example"
+  description              = "tf_example"
   publish_cidr_route       = true
 }
 ```
@@ -54,7 +56,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Transit Router Cidr. It formats as `<transit_router_id>:<transit_router_cidr_id>`
 * `transit_router_cidr_id` - The ID of the transit router cidr.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

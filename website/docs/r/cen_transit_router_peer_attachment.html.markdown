@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud CEN transit router peer attachment resource.
 ---
 
-# alicloud\_cen_transit_router_peer_attachment
+# alicloud_cen_transit_router_peer_attachment
 
-Provides a CEN transit router peer attachment resource that associate the transit router with the CEN instance. [What is CEN transit router peer attachment](https://help.aliyun.com/document_detail/261363.html)
+Provides a CEN transit router peer attachment resource that associate the transit router with the CEN instance. [What is CEN transit router peer attachment](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtransitrouterpeerattachment)
 
--> **NOTE:** Available in 1.128.0+
+-> **NOTE:** Available since v1.128.0.
 
 ## Example Usage
 
@@ -19,60 +19,64 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testAcccExample"
+  default = "tf_example"
 }
-
+variable "region" {
+  default = "cn-hangzhou"
+}
+variable "peer_region" {
+  default = "cn-beijing"
+}
 provider "alicloud" {
-  alias  = "us"
-  region = "us-east-1"
+  alias  = "hz"
+  region = var.region
 }
-
 provider "alicloud" {
-  alias  = "cn"
-  region = "cn-hangzhou"
+  alias  = "bj"
+  region = var.peer_region
 }
 
-resource "alicloud_cen_instance" "default" {
-  provider          = alicloud.cn
+resource "alicloud_cen_instance" "example" {
+  provider          = alicloud.bj
   cen_instance_name = var.name
   protection_level  = "REDUCED"
 }
 
-resource "alicloud_cen_bandwidth_package" "default" {
+resource "alicloud_cen_bandwidth_package" "example" {
+  provider                   = alicloud.bj
   bandwidth                  = 5
-  cen_bandwidth_package_name = var.name
+  cen_bandwidth_package_name = "tf_example"
   geographic_region_a_id     = "China"
-  geographic_region_b_id     = "North-America"
+  geographic_region_b_id     = "China"
 }
 
-resource "alicloud_cen_bandwidth_package_attachment" "default" {
-  provider             = alicloud.cn
-  instance_id          = alicloud_cen_instance.default.id
-  bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
+resource "alicloud_cen_bandwidth_package_attachment" "example" {
+  provider             = alicloud.bj
+  instance_id          = alicloud_cen_instance.example.id
+  bandwidth_package_id = alicloud_cen_bandwidth_package.example.id
 }
 
-resource "alicloud_cen_transit_router" "cn" {
-  provider = alicloud.cn
-  cen_id   = alicloud_cen_bandwidth_package_attachment.default.instance_id
+resource "alicloud_cen_transit_router" "example" {
+  provider = alicloud.hz
+  cen_id   = alicloud_cen_bandwidth_package_attachment.example.instance_id
 }
 
-resource "alicloud_cen_transit_router" "us" {
-  provider = alicloud.us
-  cen_id   = alicloud_cen_transit_router.cn.id
+resource "alicloud_cen_transit_router" "peer" {
+  provider = alicloud.bj
+  cen_id   = alicloud_cen_transit_router.example.cen_id
 }
 
-resource "alicloud_cen_transit_router_peer_attachment" "default" {
-  provider                              = alicloud.cn
-  cen_id                                = alicloud_cen_instance.default.id
-  transit_router_id                     = alicloud_cen_transit_router.cn.transit_router_id
-  peer_transit_router_region_id         = "us-east-1"
-  peer_transit_router_id                = alicloud_cen_transit_router.us.transit_router_id
-  cen_bandwidth_package_id              = alicloud_cen_bandwidth_package_attachment.default.bandwidth_package_id
+resource "alicloud_cen_transit_router_peer_attachment" "example" {
+  provider                              = alicloud.hz
+  cen_id                                = alicloud_cen_instance.example.id
+  transit_router_id                     = alicloud_cen_transit_router.example.transit_router_id
+  peer_transit_router_region_id         = var.peer_region
+  peer_transit_router_id                = alicloud_cen_transit_router.peer.transit_router_id
+  cen_bandwidth_package_id              = alicloud_cen_bandwidth_package_attachment.example.bandwidth_package_id
   bandwidth                             = 5
   transit_router_attachment_description = var.name
   transit_router_attachment_name        = var.name
 }
-
 ```
 ## Argument Reference
 
@@ -91,7 +95,7 @@ The following arguments are supported:
 * `route_table_propagation_enabled` - (Optional, ForceNew) Whether to propagation route table. System default is `false`.
 * `transit_router_attachment_description` - (Optional) The description of transit router attachment. The description is 2~256 characters long and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
 * `transit_router_attachment_name` - (Optional) The name of transit router attachment. The name is 2~128 characters in length, starts with uppercase and lowercase letters or Chinese, and can contain numbers, underscores (_) and dashes (-)
-* `bandwidth_type` - (Optional,Available in v1.157.0+) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
+* `bandwidth_type` - (Optional, Available in v1.157.0+) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
   * `DataTransfer` - uses pay-by-data-transfer bandwidth.
   * `BandwidthPackage` - allocates bandwidth from a bandwidth plan.
 
@@ -103,7 +107,7 @@ The following attributes are exported:
 * `transit_router_attachment_id` - The ID of transit router attachment id.
 * `status` - The associating status of the network.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
