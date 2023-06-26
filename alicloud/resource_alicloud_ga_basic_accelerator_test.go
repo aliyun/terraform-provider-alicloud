@@ -75,6 +75,80 @@ func TestAccAlicloudGaBasicAccelerator_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "BasicAccelerator",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "BasicAccelerator",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_pay", "auto_use_coupon", "auto_renew", "auto_renew_duration"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_basic_accelerator.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicAcceleratorMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaBasicAccelerator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGaBasicAccelerator-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicAcceleratorBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"duration":               "1",
+					"pricing_cycle":          "Month",
+					"basic_accelerator_name": name,
+					"description":            "tf-description",
+					"bandwidth_billing_type": "BandwidthPackage",
+					"auto_pay":               "true",
+					"auto_use_coupon":        "true",
+					"auto_renew":             "false",
+					"auto_renew_duration":    "1",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "BasicAccelerator",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"basic_accelerator_name": name,
+						"description":            "tf-description",
+						"bandwidth_billing_type": "BandwidthPackage",
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "BasicAccelerator",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,

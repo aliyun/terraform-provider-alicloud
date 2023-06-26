@@ -35,21 +35,22 @@ resource "alicloud_ga_basic_accelerator" "default" {
 
 The following arguments are supported:
 
-* `duration` - (Optional) The subscription duration. Default value: `1`.
+* `duration` - (Optional, Int) The subscription duration. Default value: `1`.
   * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are `1` to `9`.
   * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are `1` to `3`.
 * `pricing_cycle` - (Optional) The billing cycle. Default value: `Month`. Valid values: `Month`, `Year`.
 * `basic_accelerator_name` - (Optional) The name of the Global Accelerator Basic Accelerator instance.
 * `description` - (Optional) The description of the Global Accelerator Basic Accelerator instance.
 * `bandwidth_billing_type` - (Optional, ForceNew) The bandwidth billing method. Valid values: `BandwidthPackage`, `CDT`, `CDT95`.
-* `auto_pay` - (Optional) Specifies whether to enable automatic payment. Default value: `false`. Valid values:
+* `auto_pay` - (Optional, Bool) Specifies whether to enable automatic payment. Default value: `false`. Valid values:
   - `true`: enables automatic payment. Payments are automatically completed.
   - `false`: disables automatic payment. If you select this option, you must go to the Order Center to complete the payment after an order is generated.
 * `auto_use_coupon` - (Optional) Specifies whether to automatically pay bills by using coupons. Default value: `false`. **NOTE:** This parameter is required only if `auto_pay` is set to `true`.
-* `auto_renew` - (Optional) Specifies whether to enable auto-renewal for the GA Basic Accelerator instance. Default value: `false`. Valid values:
+* `auto_renew` - (Optional, Bool) Specifies whether to enable auto-renewal for the GA Basic Accelerator instance. Default value: `false`. Valid values:
   - `true`: enables auto-renewal.
   - `false`: disables auto-renewal.
-* `auto_renew_duration` - (Optional) The auto-renewal period. Unit: months. Valid values: `1` to `12`. Default value: `1`. **NOTE:** This parameter is required only if `auto_renew` is set to `true`.
+* `auto_renew_duration` - (Optional, Int) The auto-renewal period. Unit: months. Default value: `1`. Valid values: `1` to `12`. **NOTE:** This parameter is required only if `auto_renew` is set to `true`.
+* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

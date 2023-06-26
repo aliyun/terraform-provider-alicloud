@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGaBasicAccelerator() *schema.Resource {
@@ -34,7 +33,7 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 			"pricing_cycle": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"basic_accelerator_name": {
 				Type:     schema.TypeString,
@@ -48,7 +47,7 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"BandwidthPackage", "CDT", "CDT95"}, false),
+				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT", "CDT95"}, false),
 			},
 			"auto_pay": {
 				Type:     schema.TypeBool,
@@ -65,8 +64,9 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 			"auto_renew_duration": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(1, 12),
+				ValidateFunc: IntBetween(1, 12),
 			},
+			"tags": tagsSchema(),
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -153,7 +153,7 @@ func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interfa
 
 	object, err := gaService.DescribeGaBasicAccelerator(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -165,6 +165,13 @@ func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interfa
 	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
 	d.Set("status", object["State"])
 
+	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "basicaccelerator")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -172,11 +179,20 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
+	d.Partial(true)
+
 	update := false
 	request := map[string]interface{}{
 		"RegionId":      client.RegionId,
 		"AcceleratorId": d.Id(),
 		"ClientToken":   buildClientToken("UpdateBasicAccelerator"),
+	}
+
+	if d.HasChange("tags") {
+		if err := gaService.SetResourceTags(d, "basicaccelerator"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
 
 	if d.HasChange("basic_accelerator_name") {
@@ -224,7 +240,12 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
+		d.SetPartial("basic_accelerator_name")
+		d.SetPartial("description")
 	}
+
+	d.Partial(false)
 
 	return resourceAlicloudGaBasicAcceleratorRead(d, meta)
 }
