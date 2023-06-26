@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudGaBandwidthPackage() *schema.Resource {
@@ -27,27 +26,20 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"auto_pay": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"auto_use_coupon": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"bandwidth_package_name": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Basic", "CrossDomain"}, false),
 			},
 			"bandwidth_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Advanced", "Basic", "Enhanced"}, false),
+				ValidateFunc: StringInSlice([]string{"Advanced", "Basic", "Enhanced"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("type").(string) != "Basic"
 				},
@@ -56,7 +48,19 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayBy95", "PayByTraffic"}, false),
+				ValidateFunc: StringInSlice([]string{"PayBy95", "PayByTraffic"}, false),
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Default:      "Subscription",
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+			},
+			"ratio": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
 			},
 			"cbn_geographic_region_ida": {
 				Type:     schema.TypeString,
@@ -76,35 +80,18 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 					return d.Get("type").(string) != "CrossDomain"
 				},
 			},
-			"description": {
-				Type:     schema.TypeString,
+			"auto_pay": {
+				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"auto_use_coupon": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"duration": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"payment_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      "Subscription",
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
-			},
-			"ratio": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "CrossDomain"}, false),
 			},
 			"auto_renew_duration": {
 				Type:     schema.TypeInt,
@@ -114,10 +101,23 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
+			},
+			"bandwidth_package_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags": tagsSchema(),
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -127,38 +127,24 @@ func resourceAlicloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
+	action := "CreateBandwidthPackage"
 	request := make(map[string]interface{})
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOkExists("auto_pay"); ok {
-		request["AutoPay"] = v
-	}
 
-	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
-		request["AutoUseCoupon"] = v
-	}
-
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("CreateBandwidthPackage")
 	request["Bandwidth"] = d.Get("bandwidth")
+	request["Type"] = d.Get("type")
+
 	if v, ok := d.GetOk("bandwidth_type"); ok {
 		request["BandwidthType"] = v
 	}
 
 	if v, ok := d.GetOk("billing_type"); ok {
 		request["BillingType"] = v
-	}
-
-	if v, ok := d.GetOk("cbn_geographic_region_ida"); ok {
-		request["CbnGeographicRegionIdA"] = v
-	}
-
-	if v, ok := d.GetOk("cbn_geographic_region_idb"); ok {
-		request["CbnGeographicRegionIdB"] = v
-	}
-
-	if v, ok := d.GetOk("duration"); ok {
-		request["Duration"] = v
 	}
 
 	if v, ok := d.GetOk("payment_type"); ok {
@@ -172,15 +158,31 @@ func resourceAlicloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 		request["Ratio"] = v
 	}
 
-	request["RegionId"] = client.RegionId
-	request["Type"] = d.Get("type")
+	if v, ok := d.GetOk("cbn_geographic_region_ida"); ok {
+		request["CbnGeographicRegionIdA"] = v
+	}
+
+	if v, ok := d.GetOk("cbn_geographic_region_idb"); ok {
+		request["CbnGeographicRegionIdB"] = v
+	}
+
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+
+	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
+		request["AutoUseCoupon"] = v
+	}
+
+	if v, ok := d.GetOk("duration"); ok {
+		request["Duration"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateBandwidthPackage")
-	action := "CreateBandwidthPackage"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -188,16 +190,16 @@ func resourceAlicloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_bandwidth_package", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
 
 	d.SetId(fmt.Sprint(response["BandwidthPackageId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, gaService.GaBandwidthPackageStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -211,7 +213,7 @@ func resourceAlicloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaBandwidthPackage(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ga_bandwidth_package gaService.DescribeGaBandwidthPackage Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -234,14 +236,24 @@ func resourceAlicloudGaBandwidthPackageRead(d *schema.ResourceData, meta interfa
 	if val, ok := d.GetOk("auto_use_coupon"); ok {
 		d.Set("auto_use_coupon", val)
 	}
+
 	describeBandwidthPackageAutoRenewAttributeObject, err := gaService.DescribeBandwidthPackageAutoRenewAttribute(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := describeBandwidthPackageAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("auto_renew_duration", formatInt(v))
 	}
 	d.Set("renewal_status", describeBandwidthPackageAutoRenewAttributeObject["RenewalStatus"])
+
+	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "bandwidthpackage")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
+
 	return nil
 }
 
@@ -258,6 +270,14 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
+
+	if d.HasChange("tags") {
+		if err := gaService.SetResourceTags(d, "bandwidthpackage"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	request["RegionId"] = client.RegionId
 	if d.HasChange("auto_renew_duration") {
 		update = true
@@ -333,22 +353,27 @@ func resourceAlicloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, updateBandwidthPackageReq)
 			return nil
 		})
+		addDebug(action, response, updateBandwidthPackageReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"active", "binded"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gaService.GaBandwidthPackageStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("bandwidth")
 		d.SetPartial("bandwidth_package_name")
 		d.SetPartial("bandwidth_type")
 		d.SetPartial("description")
 	}
+
 	d.Partial(false)
+
 	return resourceAlicloudGaBandwidthPackageRead(d, meta)
 }
 
@@ -357,7 +382,9 @@ func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 		log.Printf("[WARN] Cannot destroy resourceAlicloudGaBandwidthPackage prepay type. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
+
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
@@ -373,7 +400,7 @@ func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 	action := "DeleteBandwidthPackage"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "BindExist.BandwidthPackage"}) || NeedRetry(err) {
 				wait()
@@ -381,12 +408,14 @@ func resourceAlicloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
 
