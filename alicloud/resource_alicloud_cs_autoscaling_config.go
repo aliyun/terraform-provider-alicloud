@@ -70,6 +70,38 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Optional: true,
 				Default:  "least-waste",
 			},
+			"skip_nodes_with_system_pods": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"skip_nodes_with_local_storage": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"daemonset_eviction_for_nodes": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"max_graceful_termination_sec": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"min_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"recycle_node_deletion_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"scale_up_from_zero": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 		},
 	}
 }
@@ -117,6 +149,22 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("expander"); ok {
 		updateAutoscalingConfigRequest.Expander = tea.String(v.(string))
 	}
+	skipNodesWithPods := d.Get("skip_nodes_with_system_pods").(bool)
+	updateAutoscalingConfigRequest.SkipNodesWithSystemPods = tea.Bool(skipNodesWithPods)
+	skipNodesWithLocalStorage := d.Get("skip_nodes_with_local_storage").(bool)
+	updateAutoscalingConfigRequest.SkipNodesWithLocalStorage = tea.Bool(skipNodesWithLocalStorage)
+	evictDaemonset := d.Get("daemonset_eviction_for_nodes").(bool)
+	updateAutoscalingConfigRequest.DaemonsetEvictionForNodes = tea.Bool(evictDaemonset)
+	if v, ok := d.GetOk("max_graceful_termination_sec"); ok {
+		updateAutoscalingConfigRequest.MaxGracefulTerminationSec = tea.Int32(v.(int32))
+	}
+	if v, ok := d.GetOk("min_replica_count"); ok {
+		updateAutoscalingConfigRequest.MinReplicaCount = tea.Int32(v.(int32))
+	}
+	enableDeleteRecycleNode := d.Get("recycle_node_deletion_enabled").(bool)
+	updateAutoscalingConfigRequest.RecycleNodeDeletionEnabled = tea.Bool(enableDeleteRecycleNode)
+	scaleUpFromZero := d.Get("scale_up_from_zero").(bool)
+	updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(scaleUpFromZero)
 
 	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
 	if err != nil {
