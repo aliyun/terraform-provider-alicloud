@@ -13,16 +13,62 @@ Provides a Cen Transit Router Multicast Domain Peer Member resource.
 
 For information about Cen Transit Router Multicast Domain Peer Member and how to use it, see [What is Transit Router Multicast Domain Peer Member](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-deregistertransitroutermulticastgroupmembers).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+variable "default_region" {
+  default = "cn-hangzhou"
+}
+variable "peer_region" {
+  default = "cn-beijing"
+}
+provider "alicloud" {
+  alias  = "hz"
+  region = var.default_region
+}
+provider "alicloud" {
+  alias  = "bj"
+  region = var.peer_region
+}
+
+resource "alicloud_cen_instance" "default" {
+  cen_instance_name = var.name
+  protection_level  = "REDUCED"
+}
+
+resource "alicloud_cen_transit_router" "default" {
+  provider = alicloud.hz
+  cen_id   = alicloud_cen_instance.default.id
+}
+
+resource "alicloud_cen_transit_router" "peer" {
+  provider = alicloud.bj
+  cen_id   = alicloud_cen_transit_router.default.cen_id
+}
+
+resource "alicloud_cen_transit_router_multicast_domain" "default" {
+  provider                             = alicloud.hz
+  transit_router_id                    = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_multicast_domain_name = var.name
+}
+
+resource "alicloud_cen_transit_router_multicast_domain" "peer" {
+  provider                             = alicloud.bj
+  transit_router_id                    = alicloud_cen_transit_router.peer.transit_router_id
+  transit_router_multicast_domain_name = var.name
+}
+
 resource "alicloud_cen_transit_router_multicast_domain_peer_member" "default" {
-  peer_transit_router_multicast_domain_id = "tr-mcast-domain-itc67v79yk4xrkr9f3"
-  transit_router_multicast_domain_id      = "tr-mcast-domain-2d9oq455uk533zfr29"
+  provider                                = alicloud.hz
+  peer_transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.peer.id
+  transit_router_multicast_domain_id      = alicloud_cen_transit_router_multicast_domain.default.id
   group_ip_address                        = "239.1.1.1"
 }
 ```
@@ -39,13 +85,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<peer_transit_router_multicast_domain_id>`.
-* `peer_transit_router_multicast_domain_id` - The multicast domain ID of the peer transit router.
 * `status` - The status of the multicast resource. Valid values:
   - Registering: being created
   - Registered: available
   - Deregistering: being deleted
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 10 mins) Used when create the Transit Router Multicast Domain Peer Member.

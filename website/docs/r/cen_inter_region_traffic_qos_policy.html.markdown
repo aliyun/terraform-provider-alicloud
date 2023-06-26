@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Inter Region Traffic Qos Policy resource.
 ---
 
-# alicloud\_cen\_inter\_region\_traffic\_qos\_policy
+# alicloud_cen_inter_region_traffic_qos_policy
 
 Provides a Cloud Enterprise Network (CEN) Inter Region Traffic Qos Policy resource.
 
 For information about Cloud Enterprise Network (CEN) Inter Region Traffic Qos Policy and how to use it, see [What is Inter Region Traffic Qos Policy](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createceninterregiontrafficqospolicy).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -93,7 +93,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Inter Region Traffic Qos Policy.
 * `status` - The status of the Inter Region Traffic Qos Policy.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

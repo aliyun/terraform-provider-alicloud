@@ -7,41 +7,43 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Vpn Attachment resource.
 ---
 
-# alicloud\_cen\_transit\_router\_vpn\_attachment
+# alicloud_cen_transit_router_vpn_attachment
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Vpn Attachment resource.
 
-For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachment and how to use it, see [What is Transit Router Vpn Attachment](https://help.aliyun.com/document_detail/443993.html).
+For information about Cloud Enterprise Network (CEN) Transit Router Vpn Attachment and how to use it, see [What is Transit Router Vpn Attachment](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtransitroutervpnattachment).
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
-### Basic Example
+Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
 data "alicloud_cen_transit_router_available_resources" "default" {
 }
-
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "tf-example"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = var.name
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  cen_id                     = alicloud_cen_instance.default.id
-  transit_router_description = "tf-example-description"
-  transit_router_name        = "tf-example-name"
+resource "alicloud_cen_transit_router" "example" {
+  cen_id                     = alicloud_cen_instance.example.id
+  transit_router_description = var.name
+  transit_router_name        = var.name
 }
 
-resource "alicloud_vpn_customer_gateway" "default" {
-  name        = "tf-example-name"
+resource "alicloud_vpn_customer_gateway" "example" {
+  name        = var.name
   ip_address  = "42.104.22.210"
   asn         = "45014"
-  description = "testAccVpnConnectionDesc"
+  description = var.name
 }
 
-resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
+resource "alicloud_vpn_gateway_vpn_attachment" "example" {
+  customer_gateway_id = alicloud_vpn_customer_gateway.example.id
   network_type        = "public"
   local_subnet        = "0.0.0.0/0"
   remote_subnet       = "0.0.0.0/0"
@@ -80,99 +82,24 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   }
   enable_dpd           = true
   enable_nat_traversal = true
-  vpn_attachment_name  = "tf-example-name"
+  vpn_attachment_name  = var.name
 }
 
-resource "alicloud_cen_transit_router_vpn_attachment" "default" {
-  auto_publish_route_enabled            = false
-  transit_router_attachment_description = "tf-example-description"
-  transit_router_attachment_name        = "tf-example-name"
-  cen_id                                = alicloud_cen_transit_router.default.cen_id
-  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
-  vpn_id                                = alicloud_vpn_gateway_vpn_attachment.default.id
-  zone {
-    zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
-  }
-}
-```
-
-### Example Create a Transit Router Vpn Attachment with Transit Router Cidr
-
-```terraform
-data "alicloud_cen_transit_router_available_resources" "default" {
-}
-
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "tf-example"
-}
-
-resource "alicloud_cen_transit_router" "default" {
-  cen_id = alicloud_cen_instance.default.id
-}
-
-resource "alicloud_cen_transit_router_cidr" "default" {
-  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+resource "alicloud_cen_transit_router_cidr" "example" {
+  transit_router_id        = alicloud_cen_transit_router.example.transit_router_id
   cidr                     = "192.168.0.0/16"
-  transit_router_cidr_name = "tf-example-name"
-  description              = "tf-example-description"
+  transit_router_cidr_name = var.name
+  description              = var.name
   publish_cidr_route       = true
 }
 
-resource "alicloud_vpn_customer_gateway" "default" {
-  ip_address = "42.104.22.210"
-  asn        = "45014"
-}
-
-resource "alicloud_vpn_gateway_vpn_attachment" "default" {
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  network_type        = "public"
-  local_subnet        = "0.0.0.0/0"
-  remote_subnet       = "0.0.0.0/0"
-  effect_immediately  = false
-  ike_config {
-    ike_auth_alg = "md5"
-    ike_enc_alg  = "des"
-    ike_version  = "ikev2"
-    ike_mode     = "main"
-    ike_lifetime = 86400
-    psk          = "tf-testvpn2"
-    ike_pfs      = "group1"
-    remote_id    = "testbob2"
-    local_id     = "testalice2"
-  }
-  ipsec_config {
-    ipsec_pfs      = "group5"
-    ipsec_enc_alg  = "des"
-    ipsec_auth_alg = "md5"
-    ipsec_lifetime = 86400
-  }
-  bgp_config {
-    enable       = true
-    local_asn    = 45014
-    tunnel_cidr  = "169.254.11.0/30"
-    local_bgp_ip = "169.254.11.1"
-  }
-  health_check_config {
-    enable   = true
-    sip      = "192.168.1.1"
-    dip      = "10.0.0.1"
-    interval = 10
-    retry    = 10
-    policy   = "revoke_route"
-
-  }
-  enable_dpd           = true
-  enable_nat_traversal = true
-  vpn_attachment_name  = "tf-example-name"
-}
-
-resource "alicloud_cen_transit_router_vpn_attachment" "default" {
+resource "alicloud_cen_transit_router_vpn_attachment" "example" {
   auto_publish_route_enabled            = false
-  transit_router_attachment_description = "tf-example-description"
-  transit_router_attachment_name        = "tf-example-name"
-  cen_id                                = alicloud_cen_transit_router.default.cen_id
-  transit_router_id                     = alicloud_cen_transit_router_cidr.default.transit_router_id
-  vpn_id                                = alicloud_vpn_gateway_vpn_attachment.default.id
+  transit_router_attachment_description = var.name
+  transit_router_attachment_name        = var.name
+  cen_id                                = alicloud_cen_transit_router.example.cen_id
+  transit_router_id                     = alicloud_cen_transit_router_cidr.example.transit_router_id
+  vpn_id                                = alicloud_vpn_gateway_vpn_attachment.example.id
   zone {
     zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
   }
@@ -183,17 +110,17 @@ resource "alicloud_cen_transit_router_vpn_attachment" "default" {
 
 The following arguments are supported:
 
-* `auto_publish_route_enabled` - (Optional, Computed) Whether to allow the forwarding router instance to automatically publish routing entries to IPsec connections.
+* `auto_publish_route_enabled` - (Optional) Whether to allow the forwarding router instance to automatically publish routing entries to IPsec connections.
 * `cen_id` - (Optional, ForceNew) The id of the cen.
 * `transit_router_attachment_description` - (Optional) The description of the VPN connection. The description can contain `2` to `256` characters. The description must start with English letters, but cannot start with `http://` or `https://`.
 * `transit_router_attachment_name` - (Optional) The name of the VPN connection. The name must be `2` to `128` characters in length, and can contain digits, underscores (_), and hyphens (-). It must start with a letter.
 * `transit_router_id` - (Required, ForceNew) The ID of the forwarding router instance.
 * `vpn_id` - (Required, ForceNew) The id of the vpn.
-* `vpn_owner_id` - (Optional, Computed, ForceNew) The owner id of vpn. **NOTE:** You must set `vpn_owner_id`, if you want to connect the transit router to an IPsec-VPN connection that belongs to another Alibaba Cloud account.
-* `zone` - (Required, ForceNew) The list of zone mapping. See the following `Block zone`.
+* `vpn_owner_id` - (Optional, ForceNew) The owner id of vpn. **NOTE:** You must set `vpn_owner_id`, if you want to connect the transit router to an IPsec-VPN connection that belongs to another Alibaba Cloud account.
+* `zone` - (Required, ForceNew) The list of zone mapping. See [`zone`](#zone) below.
 * `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
 
-#### zone Block
+### `zone`
 
 The `zone` supports the following:
 
@@ -206,7 +133,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Transit Router Vpn Attachment.
 * `status` - The associating status of the network.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

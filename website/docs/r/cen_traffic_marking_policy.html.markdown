@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Traffic Marking Policy resource.
 ---
 
-# alicloud\_cen\_traffic\_marking\_policy
+# alicloud_cen_traffic_marking_policy
 
 Provides a Cloud Enterprise Network (CEN) Traffic Marking Policy resource.
 
-For information about Cloud Enterprise Network (CEN) Traffic Marking Policy and how to use it, see [What is Traffic Marking Policy](https://help.aliyun.com/document_detail/419025.html).
+For information about Cloud Enterprise Network (CEN) Traffic Marking Policy and how to use it, see [What is Traffic Marking Policy](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtrafficmarkingpolicy).
 
--> **NOTE:** Available in v1.173.0+.
+-> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
 
@@ -21,18 +21,19 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cen_instance" "example" {
-  cen_instance_name = "example_value"
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
 resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = "tf_example"
   cen_id              = alicloud_cen_instance.example.id
-  transit_router_name = "example_value"
 }
 
 resource "alicloud_cen_traffic_marking_policy" "example" {
   marking_dscp                = 1
   priority                    = 1
-  traffic_marking_policy_name = "example_value"
+  traffic_marking_policy_name = "tf_example"
   transit_router_id           = alicloud_cen_transit_router.example.transit_router_id
 }
 ```
@@ -56,7 +57,7 @@ The following attributes are exported:
 * `status` - The status of the resource.
 * `traffic_marking_policy_id` - The ID of the Traffic Marking Policy.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,32 +7,34 @@ description: |-
   Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router Multicast Domain resource.
 ---
 
-# alicloud\_cen\_transit\_router\_multicast\_domain
+# alicloud_cen_transit_router_multicast_domain
 
 Provides a Cloud Enterprise Network (CEN) Transit Router Multicast Domain resource.
 
 For information about Cloud Enterprise Network (CEN) Transit Router Multicast Domain and how to use it, see [What is Transit Router Multicast Domain](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtransitroutermulticastdomain).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_cen_instance" "default" {
-  cen_instance_name = "tf-example"
+resource "alicloud_cen_instance" "example" {
+  cen_instance_name = "tf_example"
+  description       = "an example for cen"
 }
 
-resource "alicloud_cen_transit_router" "default" {
-  cen_id            = alicloud_cen_instance.default.id
-  support_multicast = true
+resource "alicloud_cen_transit_router" "example" {
+  transit_router_name = "tf_example"
+  cen_id              = alicloud_cen_instance.example.id
+  support_multicast   = true
 }
 
-resource "alicloud_cen_transit_router_multicast_domain" "default" {
-  transit_router_id                           = alicloud_cen_transit_router.default.transit_router_id
-  transit_router_multicast_domain_name        = "tf-example-name"
-  transit_router_multicast_domain_description = "tf-example-description"
+resource "alicloud_cen_transit_router_multicast_domain" "example" {
+  transit_router_id                           = alicloud_cen_transit_router.example.transit_router_id
+  transit_router_multicast_domain_name        = "tf_example"
+  transit_router_multicast_domain_description = "tf_example"
 }
 ```
 
@@ -52,7 +54,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Transit Router Multicast Domain.
 * `status` - The status of the Transit Router Multicast Domain.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
