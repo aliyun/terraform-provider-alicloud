@@ -7,13 +7,13 @@ description: |-
   Provide RDS remote disaster recovery instance resources.
 ---
 
-# alicloud\_rds\_ddr\_instance
+# alicloud_rds_ddr_instance
 
 Provide RDS remote disaster recovery instance resources. 
 
 For information about RDS remote disaster recovery instance and how to use it, see [What is ApsaraDB for RDS Remote Disaster Recovery](https://www.alibabacloud.com/help/zh/apsaradb-for-rds/latest/cross-region-backup-and-restoration).
 
--> **NOTE:** Available in 1.198.0+.
+-> **NOTE:** Available since v1.198.0+.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ For information about RDS remote disaster recovery instance and how to use it, s
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 variable "creation" {
@@ -78,7 +78,7 @@ resource "alicloud_rds_ddr_instance" "default" {
   instance_storage         = "30"
   payment_type             = "PayAsYouGo"
   vswitch_id               = alicloud_vswitch.example.id
-  instance_name            = "tf_test_ddr"
+  instance_name            = "tf_rds_ddr"
   restore_type             = "BackupSet"
   backup_set_id            = alicloud_rds_cross_region_backups.backups.ids.0
 }
@@ -88,7 +88,7 @@ resource "alicloud_rds_ddr_instance" "default" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 variable "creation" {
@@ -145,7 +145,7 @@ resource "alicloud_rds_ddr_instance" "default" {
   instance_storage         = "30"
   payment_type             = "PayAsYouGo"
   vswitch_id               = alicloud_vswitch.example.id
-  instance_name            = "tf_test_ddr"
+  instance_name            = "tf_rds_ddr"
   restore_type             = "BackupTime"
   restore_time             = "2022-12-29T01:57:35Z"
   source_region            = "cn-hangzhou"
@@ -163,7 +163,7 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer.
+* `engine` - (Required, ForceNew) Database type. Value options: MySQL, SQLServer.
 
 -> **NOTE:** When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
 * `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDdrInstance](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/restore-data-to-a-new-instance-across-regions) `EngineVersion`.
@@ -223,7 +223,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `fresh_white_list_readins` - (Optional) The read-only instances to which you want to synchronize the IP address whitelist.
   * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
   * If the instance is not attached with a read-only instance, this parameter is empty.
-* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) . See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
@@ -319,11 +319,11 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
   
-* `pg_hba_conf` - (Optional) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
+* `pg_hba_conf` - (Optional) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 * `vpc_id` - (Optional) The VPC ID of the instance.
 
 -> **NOTE:** This parameter applies only to ApsaraDB RDS for MySQL instances. For more information about Upgrade the major engine version of an ApsaraDB RDS for MySQL instance, see [Upgrade the major engine version of an RDS instance in the ApsaraDB RDS console](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/upgrade-the-major-engine-version-of-an-apsaradb-rds-for-mysql-instance-1).
-* `effective_time` - (Optional) The method to update the engine version.  Default value: Immediate. Valid values:
+* `effective_time` - (Optional) The method to update the engine version and change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
@@ -334,7 +334,15 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `restore_time` - (Optional, ForceNew) The point in time to which you want to restore data. The point in time that you specify must be earlier than the current time. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `source_region` - (Optional, ForceNew) The region ID of the source instance if you want to restore data to a point in time.
 * `source_db_instance_name` - (Optional, ForceNew) The ID of the source instance if you want to restore data to a point in time.
-#### Block pg_hba_conf
+
+### `parameters`
+
+The parameters mapping supports the following:
+
+* `name` - (Required) The parameter name.
+* `value` - (Required) The parameter value.
+
+### `pg_hba_conf`
 
 The pg_hba_conf mapping supports the following:
 
@@ -362,7 +370,7 @@ The following attributes are exported:
 * `zone_id_slave_b`- The region ID of the log instance if you create a log instance. 
 * `category` - The RDS edition of the instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

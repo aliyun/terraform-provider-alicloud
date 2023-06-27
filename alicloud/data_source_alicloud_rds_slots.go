@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
@@ -84,6 +85,7 @@ func dataSourceAlicloudRdsRdsSlotsRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 	addDebug(action, response, request)
 	if err != nil {
