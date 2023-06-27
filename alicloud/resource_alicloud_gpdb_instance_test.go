@@ -339,14 +339,18 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 					"maintain_end_time":   "13:00Z",
 					"ip_whitelist": []map[string]interface{}{
 						{
-							"ip_group_attribute": "test",
-							"ip_group_name":      "update",
-							"security_ip_list":   "10.0.0.1,11.0.0.1",
+							"ip_group_name":    "default",
+							"security_ip_list": "10.0.0.1,10.0.0.2",
 						},
 						{
 							"ip_group_attribute": "show",
 							"ip_group_name":      "test02",
 							"security_ip_list":   "10.0.0.2,10.0.0.3",
+						},
+						{
+							"ip_group_attribute": "test",
+							"ip_group_name":      "update",
+							"security_ip_list":   "10.0.0.1,11.0.0.1",
 						},
 					},
 					"tags": map[string]string{
@@ -364,90 +368,11 @@ func TestAccAlicloudGPDBDBInstance_basic(t *testing.T) {
 						"storage_size":        "200",
 						"maintain_start_time": CHECKSET,
 						"maintain_end_time":   CHECKSET,
-						"ip_whitelist.#":      "2",
+						"ip_whitelist.#":      "3",
 						"tags.%":              "2",
 						"tags.Created":        "TF2",
 						"tags.For":            "acceptance test2",
 						"ssl_enabled":         "0",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "used_time", "seg_storage_type", "private_ip_address", "instance_spec", "db_instance_class", "resource_group_id", "create_sample_data", "ssl_enabled"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudGPDBDBInstanceServerless(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_gpdb_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGpdbDbInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstanceBasicDependence1)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_mode":      "Serverless",
-					"description":           name,
-					"engine":                "gpdb",
-					"engine_version":        "6.0",
-					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
-					"instance_network_type": "VPC",
-					"instance_spec":         "4C16G",
-					"master_node_num":       "1",
-					"payment_type":          "PayAsYouGo",
-					"private_ip_address":    "1.1.1.1",
-					"seg_node_num":          "2",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":            "${local.vswitch_id}",
-					"create_sample_data":    `false`,
-					"ip_whitelist": []map[string]interface{}{
-						{
-							"security_ip_list": "127.0.0.1",
-						},
-					},
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_mode":      "Serverless",
-						"description":           name,
-						"engine":                "gpdb",
-						"engine_version":        "6.0",
-						"zone_id":               CHECKSET,
-						"instance_network_type": "VPC",
-						"instance_spec":         "4C16G",
-						"master_node_num":       "1",
-						"payment_type":          "PayAsYouGo",
-						"private_ip_address":    "1.1.1.1",
-						"seg_node_num":          "2",
-						"vpc_id":                CHECKSET,
-						"vswitch_id":            CHECKSET,
-						"ip_whitelist.#":        "1",
-						"tags.%":                "2",
-						"tags.Created":          "TF",
-						"tags.For":              "acceptance test",
 					}),
 				),
 			},
@@ -546,63 +471,295 @@ func TestAccAlicloudGPDBDBInstancePrepaid(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudGPDBDBInstanceServerless(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_mode":      "Serverless",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "ap-southeast-1c",
+					"instance_network_type": "VPC",
+					"instance_spec":         "4C16G",
+					"master_node_num":       "1",
+					"payment_type":          "PayAsYouGo",
+					"private_ip_address":    "1.1.1.1",
+					"seg_node_num":          "2",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    `false`,
+					"ip_whitelist": []map[string]interface{}{
+						{
+							"security_ip_list": "127.0.0.1",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_mode":      "Serverless",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "6.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"instance_spec":         "4C16G",
+						"master_node_num":       "1",
+						"payment_type":          "PayAsYouGo",
+						"private_ip_address":    "1.1.1.1",
+						"seg_node_num":          "2",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+						"ip_whitelist.#":        "1",
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "acceptance test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "seg_storage_type", "private_ip_address", "instance_spec", "db_instance_class", "resource_group_id", "create_sample_data"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudGPDBDBInstance_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_gpdb_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstanceBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_category":  "HighAvailability",
+					"db_instance_class":     "gpdb.group.segsdx1",
+					"db_instance_mode":      "StorageElastic",
+					"description":           name,
+					"engine":                "gpdb",
+					"engine_version":        "6.0",
+					"zone_id":               "${data.alicloud_gpdb_zones.default.ids.0}",
+					"instance_network_type": "VPC",
+					"instance_spec":         "4C32G",
+					"master_node_num":       "1",
+					"payment_type":          "PayAsYouGo",
+					"private_ip_address":    "1.1.1.1",
+					"seg_storage_type":      "cloud_essd",
+					"seg_node_num":          "4",
+					"storage_size":          "50",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":            "${local.vswitch_id}",
+					"create_sample_data":    `false`,
+					"encryption_type":       "CloudDisk",
+					"encryption_key":        "${alicloud_kms_key.key.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_category":  "HighAvailability",
+						"db_instance_mode":      "StorageElastic",
+						"description":           name,
+						"engine":                "gpdb",
+						"engine_version":        "6.0",
+						"zone_id":               CHECKSET,
+						"instance_network_type": "VPC",
+						"instance_spec":         "4C32G",
+						"master_node_num":       "1",
+						"payment_type":          "PayAsYouGo",
+						"private_ip_address":    "1.1.1.1",
+						"seg_node_num":          "4",
+						"storage_size":          "50",
+						"vpc_id":                CHECKSET,
+						"vswitch_id":            CHECKSET,
+						"ip_whitelist.#":        "1",
+						"encryption_type":       "CloudDisk",
+						"encryption_key":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vector_configuration_status": "enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vector_configuration_status": "enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vector_configuration_status": "disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vector_configuration_status": "disabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "used_time", "seg_storage_type", "private_ip_address", "instance_spec", "db_instance_class", "resource_group_id", "create_sample_data"},
+			},
+		},
+	})
+}
+
 var AlicloudGPDBDBInstanceMap0 = map[string]string{
-	"status":            CHECKSET,
 	"connection_string": CHECKSET,
 	"port":              CHECKSET,
+	"status":            CHECKSET,
 }
 
 func AlicloudGPDBDBInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_gpdb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.ids.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_gpdb_zones.default.ids.0
-  vswitch_name = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_gpdb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_gpdb_zones.default.ids.0
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  		zone_id      = data.alicloud_gpdb_zones.default.ids.0
+  		vswitch_name = var.name
+	}
+
+	locals {
+  		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	}
 `, name)
 }
 
 func AlicloudGPDBDBInstanceBasicDependence1(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_gpdb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = "ap-southeast-1c"
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  		zone_id      = "ap-southeast-1c"
+  		vswitch_name = var.name
+	}
+
+	locals {
+  		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	}
+`, name)
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_gpdb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_gpdb_zones.default.ids.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = data.alicloud_gpdb_zones.default.ids.0
-  vswitch_name = var.name
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
+
+func AlicloudGPDBDBInstanceBasicDependence2(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_gpdb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_gpdb_zones.default.ids.0
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  		zone_id      = data.alicloud_gpdb_zones.default.ids.0
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_kms_key" "key" {
+  		pending_window_in_days = "7"
+  		key_state              = "Enabled"
+  		description            = var.name
+	}
+
+	locals {
+  		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	}
 `, name)
 }
 
