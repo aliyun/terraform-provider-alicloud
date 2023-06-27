@@ -7,13 +7,14 @@ description: |-
   Provides an RDS instance resource.
 ---
 
-# alicloud\_db\_instance
+# alicloud_db_instance
 
 Provides an RDS instance resource. A DB instance is an isolated database environment in the cloud. A DB instance can contain multiple user-created databases.
 
 For information about RDS and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
 -> **NOTE:** This resource has a fatal bug in the version v1.155.0. If you want to use new feature, please upgrade it to v1.156.0.
+-> **NOTE:** Available since v1.155.0+.
 
 ## Example Usage
 
@@ -186,7 +187,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-zccdbinstance"
 }
 
 data "alicloud_zones" "example" {
@@ -220,10 +221,10 @@ resource "alicloud_db_instance" "this" {
 }
 ```
 
-### Create a Enterprise Edition RDS MySQL Instance 
+### Create an Enterprise Edition RDS MySQL Instance
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_zones" "example" {
@@ -262,7 +263,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -320,7 +321,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -376,7 +377,7 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-testaccdbinstance"
+  default = "tf-accdbinstance"
 }
 
 data "alicloud_db_zones" "example" {
@@ -439,44 +440,44 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 
 The following arguments are supported:
 
-* `engine` - (Required,ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
+* `engine` - (Required, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 
 -> **NOTE:**
 - Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
 * `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
-    - MySQL: [ 5.5、5.6、5.7、8.0 ]
-    - SQLServer: [ 2008r2、08r2_ent_ha、2012、2012_ent_ha、2012_std_ha、2012_web、2014_std_ha、2016_ent_ha、2016_std_ha、2016_web、2017_std_ha、2017_ent、2019_std_ha、2019_ent ]
-    - PostgreSQL: [ 10.0、11.0、12.0、13.0、14.0、15.0 ]
-    - MariaDB: [ 10.3 ]
-    - Serverless
-    > - MySQL: [ 5.7、8.0 ]
-    > - SQLServer: [ 2016_std_sl、2017_std_sl、2019_std_sl ]
-    > - PostgreSQL: [ 14.0 ]
-    > - MariaDB does not support creating serverless instances.
+  - MySQL: [ 5.5、5.6、5.7、8.0 ]
+  - SQLServer: [ 2008r2、08r2_ent_ha、2012、2012_ent_ha、2012_std_ha、2012_web、2014_std_ha、2016_ent_ha、2016_std_ha、2016_web、2017_std_ha、2017_ent、2019_std_ha、2019_ent ]
+  - PostgreSQL: [ 10.0、11.0、12.0、13.0、14.0、15.0 ]
+  - MariaDB: [ 10.3 ]
+  - Serverless
+  > - MySQL: [ 5.7、8.0 ]
+  > - SQLServer: [ 2016_std_sl、2017_std_sl、2019_std_sl ]
+  > - PostgreSQL: [ 14.0 ]
+  > - MariaDB does not support creating serverless instances.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
-    - To create a serverless instance, please pass the following values:
-    - MySQL basic: mysql.n2.serverless.1c
-    - MySQL high availability: mysql.n2.serverless.2c
-    - SQLServer high availability: mssql.mem2.serverless.s2
-    - PostgreSQL basic: pg.n2.serverless.1c
+  - To create a serverless instance, please pass the following values:
+  - MySQL basic: mysql.n2.serverless.1c
+  - MySQL high availability: mysql.n2.serverless.2c
+  - SQLServer high availability: mssql.mem2.serverless.s2
+  - PostgreSQL basic: pg.n2.serverless.1c
 
 -> **NOTE:**
 - When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value.
 - When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
-    - [5, 2000] for MySQL/PostgreSQL HA dual node edition;
-    - [20,1000] for MySQL 5.7 basic single node edition;
-    - [10, 2000] for SQL Server 2008R2;
-    - [20,2000] for SQL Server 2012 basic single node edition
+  - [5, 2000] for MySQL/PostgreSQL HA dual node edition;
+  - [20,1000] for MySQL 5.7 basic single node edition;
+  - [10, 2000] for SQL Server 2008R2;
+  - [20,2000] for SQL Server 2012 basic single node edition
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
     Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
 
 * `db_instance_storage_type` - (Optional, Available in 1.68.0+) The storage type of the instance. Serverless instance, only `cloud_essd` can be selected. Valid values:
-    - local_ssd: specifies to use local SSDs. This value is recommended.
-    - cloud_ssd: specifies to use standard SSDs.
-    - cloud_essd: specifies to use enhanced SSDs (ESSDs).
-    - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
-    - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+  - local_ssd: specifies to use local SSDs. This value is recommended.
+  - cloud_ssd: specifies to use standard SSDs.
+  - cloud_essd: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
+  - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
 * `db_time_zone` - (Optional, Available in 1.136.0+) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
   - If you set the `Engine` parameter to MySQL.
@@ -491,22 +492,22 @@ The following arguments are supported:
 - If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
 * `sql_collector_status` - (Optional, Available in 1.70.0+) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
 * `sql_collector_config_value` - (Optional, Available in 1.70.0+) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
-    
+
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `connection_string_prefix` - (Optional, Available in 1.126.0+) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix). 
--> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
+* `connection_string_prefix` - (Optional, Available in 1.126.0+) The private connection string prefix. If you want to update public connection string prefix, please use resource alicloud_db_connection [connection_prefix](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#connection_prefix).
+  -> **NOTE:** The prefix must be 8 to 64 characters in length and can contain letters, digits, and hyphens (-). It cannot contain Chinese characters and special characters ~!#%^&*=+\|{};:'",<>/?
 * `port` - (Optional, Available in 1.126.0+) The private port of the database service. If you want to update public port, please use resource alicloud_db_connection [port](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/db_connection#port).
 * `instance_charge_type` - (Optional) Valid values are `Prepaid`, `Postpaid`, `Serverless`, Default to `Postpaid`. Currently, the resource only supports PostPaid to PrePaid. For more information, see [Overview](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/what-is-serverless?spm=a2c63.p38356.0.0.772a28cfTAGqIv).
 * `resource_group_id` (Optional, Computed, Available in 1.86.0+, Modifiable in 1.115.0+) The ID of resource group which the DB instance belongs.
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
--> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 10, 60, 300. Defaults to 300. 
+  -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
+* `monitoring_period` - (Optional) The monitoring frequency in seconds. Valid values are 5, 10, 60, 300. Defaults to 300.
 * `auto_renew` - (Optional, Available in 1.34.0+) Whether to renewal a DB instance automatically or not. It is valid when instance_charge_type is `PrePaid`. Default to `false`.
 * `auto_renew_period` - (Optional, Available in 1.34.0+) Auto-renewal period of an instance, in the unit of the month. It is valid when instance_charge_type is `PrePaid`. Valid value:[1~12], Default to 1.
-* `zone_id` - (ForceNew) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
-If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
-The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
-* `vswitch_id` - (ForceNew) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
+* `zone_id` - (ForceNew, Optional) The Zone to launch the DB instance. From version 1.8.1, it supports multiple zone.
+  If it is a multi-zone and `vswitch_id` is specified, the vswitch must in the one of them.
+  The multiple zone ID can be retrieved by setting `multi` to "true" in the data source `alicloud_zones`.
+* `vswitch_id` - (ForceNew, Optional) The virtual switch ID to launch DB instances in one VPC. If there are multiple vswitches, separate them with commas.
 * `private_ip_address` - (Optional, Available in v1.125.0+) The private IP address of the instance. The private IP address must be within the Classless Inter-Domain Routing (CIDR) block of the vSwitch that is specified by the VSwitchId parameter.
 * `security_ips` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `db_instance_ip_array_name` - (Optional, Available in 1.125.0+) The name of the IP address whitelist. Default value: Default.
@@ -520,52 +521,52 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   * `true` - Table names are not case-sensitive. This is the default value.
   * `false` - Table names are case-sensitive.
 * `whitelist_network_type` - (Optional, Available in 1.125.0+) The network type of the IP address whitelist. Default value: MIX. Valid values:
-    - Classic: classic network in enhanced whitelist mode
-    - VPC: virtual private cloud (VPC) in enhanced whitelist mode
-    - MIX: standard whitelist mode
+  - Classic: classic network in enhanced whitelist mode
+  - VPC: virtual private cloud (VPC) in enhanced whitelist mode
+  - MIX: standard whitelist mode
 
 -> **NOTE:** In standard whitelist mode, IP addresses and CIDR blocks can be added only to the default IP address whitelist. In enhanced whitelist mode, IP addresses and CIDR blocks can be added to both IP address whitelists of the classic network type and those of the VPC network type.
 * `modify_mode` - (Optional, Available in 1.125.0+) The method that is used to modify the IP address whitelist. Default value: Cover. Valid values:
-    - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
-    - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
-    - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
+  - Cover: Use the value of the SecurityIps parameter to overwrite the existing entries in the IP address whitelist.
+  - Append: Add the IP addresses and CIDR blocks that are specified in the SecurityIps parameter to the IP address whitelist.
+  - Delete: Delete IP addresses and CIDR blocks that are specified in the SecurityIps parameter from the IP address whitelist. You must retain at least one IP address or CIDR block.
 * `security_ip_mode` - (Optional, Available in 1.62.1+)  Valid values are `normal`, `safety`, Default to `normal`. support `safety` switch to high security access mode.
 * `fresh_white_list_readins` - (Optional, Available in 1.148.0+) The read-only instances to which you want to synchronize the IP address whitelist.
   * If the instance is attached with a read-only instance, you can use this parameter to synchronize the IP address whitelist to the read-only instance. If the instance is attached with multiple read-only instances, the read-only instances must be separated by commas (,).
   * If the instance is not attached with a read-only instance, this parameter is empty.
-* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) .
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm) . See [`parameters`](#parameters) below.
 * `force_restart` - (Optional, Available in 1.75.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
-   Note: From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
+  Note: From 1.63.0, the tag key and value are case sensitive. Before that, they are not case sensitive.
 
 * `security_group_id` - (Deprecated) It has been deprecated from 1.69.0 and use `security_group_ids` instead.
 * `security_group_ids` - (Optional, List(string), Available in 1.69.0+) The list IDs to join ECS Security Group. At most supports three security groups.
 * `maintain_time` - (Optional, Available in 1.56.0+) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `auto_upgrade_minor_version` - (Optional, Available in 1.62.1+) The upgrade method to use. Valid values:
-   - Auto: Instances are automatically upgraded to a higher minor version.
-   - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
-   
-   See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
+  - Auto: Instances are automatically upgraded to a higher minor version.
+  - Manual: Instances are forcibly upgraded to a higher minor version when the current version is unpublished.
+
+  See more [details and limitation](https://www.alibabacloud.com/help/doc-detail/123605.htm).
 * `upgrade_db_instance_kernel_version` - (Deprecated from v1.198.0+)  Whether to upgrade a minor version of the kernel. Valid values:
-    - true: upgrade
-    - false: not to upgrade
+  - true: upgrade
+  - false: not to upgrade
 * `upgrade_time` - (Optional, Available in 1.126.0+) The method to update the minor engine version. Default value: Immediate. It is valid only when `target_minor_version` is changed. Valid values:
-    - Immediate: The minor engine version is immediately updated.
-    - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
-    - SpecifyTime: The minor engine version is updated at the point in time you specify.
+  - Immediate: The minor engine version is immediately updated.
+  - MaintainTime: The minor engine version is updated during the maintenance window. For more information about how to change the maintenance window, see ModifyDBInstanceMaintainTime.
+  - SpecifyTime: The minor engine version is updated at the point in time you specify.
 * `switch_time` - (Optional, Available in 1.126.0+) The specific point in time when you want to perform the update. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. It is valid only when `target_minor_version` is changed. The time must be in UTC.
 
 -> **NOTE:** This parameter takes effect only when you set the UpgradeTime parameter to SpecifyTime.
 * `target_minor_version` - (Optional, Available in 1.126.0+) The minor engine version to which you want to update the instance. If you do not specify this parameter, the instance is updated to the latest minor engine version. You must specify the minor engine version in one of the following formats:
-    - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
-    - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
-      - rds: The instance runs RDS Basic or High-availability Edition.
-      - xcluster: The instance runs MySQL 5.7 on RDS Enterprise Edition.
-      - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
-    - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
+  - PostgreSQL: rds_postgres_<Major engine version>00_<Minor engine version>. Example: rds_postgres_1200_20200830.
+  - MySQL: <RDS edition>_<Minor engine version>. Examples: rds_20200229, xcluster_20200229, and xcluster80_20200229. The following RDS editions are supported:
+    - rds: The instance runs RDS Basic or High-availability Edition.
+    - xcluster: The instance runs MySQL 5.7 on RDS Enterprise Edition.
+    - xcluster80: The instance runs MySQL 8.0 on RDS Enterprise Edition.
+  - SQLServer: <Minor engine version>. Example: 15.0.4073.23.
 
 -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
@@ -575,31 +576,31 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 * `encryption_key` - (Optional, Available in 1.109.0+) The key id of the KMS. Used for encrypting a disk if not null. Only for PostgreSQL, MySQL and SQLServer.
 * `ca_type` - (Optional, Available in 1.124.1+) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. Value range:
-    - aliyun: a cloud certificate
-    - custom: a custom certificate
+  - aliyun: a cloud certificate
+  - custom: a custom certificate
 * `server_cert` - (Optional, Available in 1.124.1+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
 * `server_key` - (Optional, Available in 1.124.1+) The private key of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the CAType parameter to custom, you must also specify this parameter.
 * `client_ca_enabled` - (Optional, Available in 1.124.1+) Specifies whether to enable the public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
-    - 1: enables the public key
-    - 0: disables the public key
+  - 1: enables the public key
+  - 0: disables the public key
 * `client_ca_cert` - (Optional, Available in 1.124.1+) The public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCAEbabled parameter to 1, you must also specify this parameter.
 * `client_crl_enabled` - (Optional, Available in 1.124.1+) Specifies whether to enable a certificate revocation list (CRL) that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - 1: enables the CRL
-    - 0: disables the CRL
+  - 1: enables the CRL
+  - 0: disables the CRL
 * `client_cert_revocation_list` - (Optional, Available in 1.124.1+) The CRL that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the ClientCrlEnabled parameter to 1, you must also specify this parameter.
 * `acl` - (Optional, Available in 1.124.1+) The method that is used to verify the identities of clients. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - cert
-    - perfer
-    - verify-ca
-    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 * `replication_acl` - (Optional, Available in 1.124.1+) The method that is used to verify the replication permission. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. In addition, this parameter is available only when the public key of the CA that issues client certificates is enabled. Valid values:
-    - cert
-    - perfer
-    - verify-ca
-    - verify-full (supported only when the instance runs PostgreSQL 12 or later)
+  - cert
+  - perfer
+  - verify-ca
+  - verify-full (supported only when the instance runs PostgreSQL 12 or later)
 * `ha_config` - (Optional, Available in 1.128.0+) The primary/secondary switchover mode of the instance. Default value: Auto. Valid values:
-    - Auto: The system automatically switches over services from the primary to secondary instances in the event of a fault.
-    - Manual: You must manually switch over services from the primary to secondary instances in the event of a fault.
+  - Auto: The system automatically switches over services from the primary to secondary instances in the event of a fault.
+  - Manual: You must manually switch over services from the primary to secondary instances in the event of a fault.
 
 -> **NOTE:** If you set this parameter to Manual, you must specify the ManualHATime parameter.
 * `manual_ha_time` - (Optional, Available in 1.128.0+) The time after when you want to enable automatic primary/secondary switchover. At most, you can set this parameter to 23:59:59 seven days later. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
@@ -627,7 +628,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 * `storage_upper_bound` - (Optional, Available in 1.129.0+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
 
 -> **NOTE:** Because of data backup and migration, change DB instance type and storage would cost 15~20 minutes. Please make full preparation before changing them.
-* `deletion_protection` - (Optional, Available in 1.165.0+) The switch of delete protection. Valid values: 
+* `deletion_protection` - (Optional, Available in 1.165.0+) The switch of delete protection. Valid values:
   - true: delete protect.
   - false: no delete protect.
 
@@ -652,24 +653,31 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
 
 
 -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
-* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
+* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 * `babelfish_port` - (Optional, Available in 1.176.0+) The TDS port of the instance for which Babelfish is enabled.
-  
+
 -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
-* `babelfish_config` - (Optional, Available in 1.176.0+) The configuration of an ApsaraDB RDS for PostgreSQL instance for which Babelfish is enabled. (documented below).
+* `babelfish_config` - (ForceNew, Optional, Available in 1.176.0+) The configuration of an ApsaraDB RDS for PostgreSQL instance for which Babelfish is enabled. See [`babelfish_config`](#babelfish_config) below.
 
 -> **NOTE:** This parameter takes effect only when you create an ApsaraDB RDS for PostgreSQL instance. For more information, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The VPC ID of the instance.
 
 
 -> **NOTE:** This parameter applies only to ApsaraDB RDS for MySQL instances. For more information about Upgrade the major engine version of an ApsaraDB RDS for MySQL instance, see [Upgrade the major engine version of an RDS instance in the ApsaraDB RDS console](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/upgrade-the-major-engine-version-of-an-apsaradb-rds-for-mysql-instance-1).
-* `effective_time` - (Optional, Available in 1.191.0+) The method to update the engine version.  Default value: Immediate. Valid values:
+* `effective_time` - (Optional, Available in 1.191.0+) The method to update the engine version and change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
-* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance.
+* `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
 
-#### Block pg_hba_conf
+### `parameters`
+
+The parameters mapping supports the following:
+
+* `name` - (Required) The parameter name.
+* `value` - (Required) The parameter value.
+
+### `pg_hba_conf`
 
 The pg_hba_conf mapping supports the following:
 
@@ -687,7 +695,7 @@ The pg_hba_conf mapping supports the following:
 * `method` - (Required) The authentication method of Lightweight Directory Access Protocol (LDAP). Valid values: `trust`, `reject`, `scram-sha-256`, `md5`, `password`, `gss`, `sspi`, `ldap`, `radius`, `cert`, `pam`.
 * `option` - (Optional) Optional. The value of this parameter is based on the value of the HbaItem.N.Method parameter. In this topic, LDAP is used as an example. You must configure this parameter. For more information, see [Authentication Methods](https://www.postgresql.org/docs/11/auth-methods.html).
 
-#### Block babelfish_config
+### `babelfish_config`
 
 The babelfish_config mapping supports the following:
 
@@ -696,7 +704,7 @@ The babelfish_config mapping supports the following:
 * `master_username` - (Required) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
 * `master_user_password` - (Required) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
 
-#### Block serverless_config
+### `serverless_config`
 
 The serverless_config mapping supports the following:
 
@@ -731,15 +739,15 @@ The following attributes are exported:
 * `status` - (Available in 1.204.1+) The status of db instance.
 * `create_time` - (Available in 1.204.1+) The creation time of db instance.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.52.1+.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the db instance (until it reaches the initial `Running` status). 
-* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status). 
-* `delete` - (Defaults to 20 mins) Used when terminating the db instance. 
+* `create` - (Defaults to 30 mins) Used when creating the db instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 
 ## Import
 

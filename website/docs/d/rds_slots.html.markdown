@@ -2,16 +2,15 @@
 subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_rds_slots"
-sidebar_current: "docs-alicloud-datasource-rds-slots"
 description: |-
   Provides a list of Rds Replication Slots to the user.
 ---
 
-# alicloud\_rds\_slots
+# alicloud_rds_slots
 
 This data source provides the Rds Replication Slots of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.204.0+.
+-> **NOTE:** Available since v1.204.0+.
 
 ## Example Usage
 
@@ -35,7 +34,7 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
