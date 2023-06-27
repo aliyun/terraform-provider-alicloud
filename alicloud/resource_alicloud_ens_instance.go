@@ -10,7 +10,6 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -75,6 +74,7 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -350,17 +350,23 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 			dataDiskMap := make(map[string]interface{})
 			dataDiskChild1Raw := dataDiskChild1Raw.(map[string]interface{})
 			dataDiskMap["category"] = dataDiskChild1Raw["Category"]
+			size, _ := dataDiskChild1Raw["Size"].(json.Number).Int64()
+			dataDiskMap["size"] = size / 1024
 			dataDiskMaps = append(dataDiskMaps, dataDiskMap)
 		}
 	}
 	d.Set("data_disk", dataDiskMaps)
 
-	e := jsonata.MustCompile("ApiOutput.Instances.Instance.DataDisk.DataDisk.Size/1024")
-	evaluation, _ := e.Eval(objectRaw)
-	d.Set("data_disk", evaluation)
-	e = jsonata.MustCompile("ApiOutput.Instances.Instance.SystemDisk.Size/1024")
-	evaluation, _ = e.Eval(objectRaw)
-	d.Set("system_disk", evaluation)
+	systemDiskRaw, _ := jsonpath.Get("$.SystemDisk", objectRaw)
+	systemDiskMaps := make([]map[string]interface{}, 0)
+	if systemDiskRaw != nil {
+		systemDiskMap := make(map[string]interface{})
+		systemDiskChild1Raw := systemDiskRaw.(map[string]interface{})
+		size, _ := systemDiskChild1Raw["Size"].(json.Number).Int64()
+		systemDiskMap["size"] = size / 1024
+		systemDiskMaps = append(systemDiskMaps, systemDiskMap)
+	}
+	d.Set("system_disk", systemDiskMaps)
 
 	return nil
 }

@@ -39,6 +39,13 @@ func TestAccAlicloudEnsInstance_basic3412(t *testing.T) {
 					"internet_max_bandwidth_out": "100",
 					"instance_charge_type":       "PrePaid",
 					"instance_name":              name,
+					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
+					"system_disk": []map[string]interface{}{
+						{
+							"size": "20",
+						},
+					},
+					"ens_region_id":              "cn-hefei-cmcc-2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
