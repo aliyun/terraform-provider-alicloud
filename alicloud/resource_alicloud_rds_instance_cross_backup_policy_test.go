@@ -23,6 +23,7 @@ func TestAccAlicloudRdsInstanceCrossBackupPolicyMySql(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.RDSInstanceClassesSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -108,7 +109,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.5.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
@@ -124,19 +125,7 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.5.id
-}
-
-resource "alicloud_vswitch" "this" {
- count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.5
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids.5
+  zone_id = data.alicloud_db_zones.default.ids.0
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -149,7 +138,7 @@ resource "alicloud_db_instance" "default" {
  	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id = local.vswitch_id
+	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 }
 `, name)
@@ -170,6 +159,7 @@ func TestAccAlicloudRdsInstanceCrossBackupPolicyPostgreSQL(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.RDSInstanceClassesSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -255,7 +245,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.2.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
 	engine_version = "10.0"
     category = "HighAvailability"
@@ -271,19 +261,7 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.2.id
-}
-
-resource "alicloud_vswitch" "this" {
- count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
- vswitch_name = var.name
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.ids.2
- cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.ids.2
+  zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
@@ -296,7 +274,7 @@ resource "alicloud_db_instance" "default" {
  	db_instance_storage_type = "local_ssd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id = local.vswitch_id
+	vswitch_id = data.alicloud_vswitches.default.ids.0
 	instance_name = var.name
 }
 `, name)
