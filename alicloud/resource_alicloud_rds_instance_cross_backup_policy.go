@@ -117,6 +117,7 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyUpdate(d *schema.ResourceData, 
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewRdsClient()
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -163,6 +164,19 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyUpdate(d *schema.ResourceData, 
 
 func resourceAlicloudRdsInstanceCrossBackupPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	rdsService := RdsService{client}
+	object, err := rdsService.DescribeInstanceCrossBackupPolicy(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	if v, ok := object["LockMode"]; ok && v.(string) == "null" {
+		d.SetId("")
+		return nil
+	}
 	action := "ModifyInstanceCrossBackupPolicy"
 	request := map[string]interface{}{
 		"RegionId":      client.RegionId,
@@ -175,6 +189,7 @@ func resourceAlicloudRdsInstanceCrossBackupPolicyDelete(d *schema.ResourceData, 
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
