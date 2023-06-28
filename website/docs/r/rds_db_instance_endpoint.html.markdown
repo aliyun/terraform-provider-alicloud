@@ -7,14 +7,15 @@ description: |-
   Provide RDS cluster instance endpoint connection resources.
 ---
 
-# alicloud\_rds\_db\_instance\_endpoint
+# alicloud_rds_db_instance_endpoint
 
 Provide RDS cluster instance endpoint connection resources.
--> **NOTE:** Available in 1.203.0+.
+
+-> **NOTE:** Available since v1.203.0+.
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -28,28 +29,28 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "default" {
-  engine                    = "MySQL"
-  engine_version            = "8.0"
-  instance_type             = "mysql.n2.medium.xc"
-  instance_storage          = "20"
-  instance_charge_type      = "Postpaid"
-  instance_name             = var.name
-  vswitch_id                = alicloud_vswitch.default.id
-  db_instance_storage_type  = "cloud_essd"
-  zone_id                   = data.alicloud_zones.default.ids.0
-  zone_id_slave_a           = data.alicloud_zones.default.ids.0
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = "mysql.n2.medium.xc"
+  instance_storage         = "20"
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.default.id
+  db_instance_storage_type = "cloud_essd"
+  zone_id                  = data.alicloud_zones.default.ids.0
+  zone_id_slave_a          = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_rds_db_node" "default" {
@@ -59,15 +60,15 @@ resource "alicloud_rds_db_node" "default" {
 }
 
 resource "alicloud_rds_db_instance_endpoint" "default" {
-  db_instance_id                   = alicloud_db_instance.default.db_instance_id                
+  db_instance_id                   = alicloud_db_instance.default.db_instance_id
   vpc_id                           = alicloud_db_instance.default.vpc_id
   vswitch_id                       = alicloud_db_instance.default.vswitch_id
   connection_string_prefix         = "test001"
   port                             = "3307"
   db_instance_endpoint_description = "test111"
   node_items {
-      node_id = alicloud_rds_db_node.default.node_id
-      weight = 25
+    node_id = alicloud_rds_db_node.default.node_id
+    weight  = 25
   }
 }
 ```
@@ -82,9 +83,9 @@ The following arguments are supported:
 * `connection_string_prefix` - (Required) The IP address of the internal endpoint.
 * `port` - (Required) The port number of the internal endpoint. You can specify the port number for the internal endpoint.Valid values: 3000 to 5999.
 * `db_instance_endpoint_description` - (Optional) The user-defined description of the endpoint.
-* `node_items` - (Required) The information about the node that is configured for the endpoint.  It contains two sub-fields(node_id and weight). 
+* `node_items` - (Required) The information about the node that is configured for the endpoint.  It contains two sub-fields(node_id and weight). See [`node_items`](#node_items) below.
 
-## Block node_items
+### `node_items`
 
 The node_items mapping supports the following:
 
@@ -102,7 +103,7 @@ The following attributes are exported:
 * `ip_type` - The type of the IP address.
 * `db_instance_endpoint_id` - The Endpoint ID of the instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
