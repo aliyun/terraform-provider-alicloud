@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -47,26 +49,13 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "this" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vswitch_name = var.name
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  zone_id      = data.alicloud_db_zones.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id    = data.alicloud_db_zones.default.ids[length(data.alicloud_db_zones.default.ids) - 1]
-}
-
 resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "13.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = local.vswitch_id
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
   instance_name            = var.name
 }
 `, name)
@@ -85,7 +74,8 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccdbpgupgrade%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceUpgradeDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -175,12 +165,12 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -230,7 +220,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 					"db_instance_description":     "tf-testAccDBInstance_instance_name",
 					"security_ips":                []string{"10.168.1.12", "100.69.7.112"},
 					"port":                        "3333",
-					"connection_string_prefix":    "rm-ccccccc",
+					"connection_string_prefix":    "${var.name}",
 					"ssl_enabled":                 "1",
 					"ca_type":                     "aliyun",
 					"client_ca_enabled":           "1",
@@ -277,9 +267,9 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccdbpghaconfig%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceUpgradeDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -378,12 +368,12 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -392,7 +382,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 					"db_instance_description":  "tf-testAccDBInstance_instance_name",
 					"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 					"deletion_protection":      "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -422,7 +412,8 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testaccdbpgupgradetwo%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceUpgradeDBInstanceConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -445,7 +436,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 					"switch_over":              "true",
 					"switch_time_mode":         "Immediate",
 					"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":               "${local.vswitch_id}",
+					"vswitch_id":               "${alicloud_db_instance.default.vswitch_id}",
 					"zone_id":                  "${data.alicloud_db_zones.default.zones.0.id}",
 					"zone_id_slave_1":          "${data.alicloud_db_zones.default.zones.0.id}",
 				}),
@@ -498,12 +489,12 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"port":                     "3333",
-					"connection_string_prefix": "rm-ccccccc",
+					"connection_string_prefix": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port":                     "3333",
-						"connection_string_prefix": "rm-ccccccc",
+						"connection_string_prefix": CHECKSET,
 					}),
 				),
 			},
@@ -553,7 +544,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 					"db_instance_description":     "tf-testAccDBInstance_instance_name",
 					"security_ips":                []string{"10.168.1.12", "100.69.7.112"},
 					"port":                        "3333",
-					"connection_string_prefix":    "rm-ccccccc",
+					"connection_string_prefix":    "${var.name}",
 					"ssl_enabled":                 "1",
 					"ca_type":                     "aliyun",
 					"client_ca_enabled":           "1",

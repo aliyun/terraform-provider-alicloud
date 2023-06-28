@@ -27,7 +27,7 @@ func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
 
 	rc_connection := resourceCheckInitWithDescribeMethod(resourceId, &connection, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDBProxy")
+	}, "DescribeRdsProxyEndpoint")
 	rc_primary := resourceCheckInitWithDescribeMethod("alicloud_db_instance.default", &primary, func() interface{} {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDBInstance")

@@ -188,6 +188,7 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 		request["ResourceGroupId"] = resourceGroupId
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	conn, err := client.NewRdsClient()
 	if err != nil {
 		return WrapError(err)
@@ -229,7 +230,7 @@ func resourceAlicloudRdsDBProxyRead(d *schema.ResourceData, meta interface{}) er
 		d.SetId("")
 		return nil
 	}
-	endpointInfo, endpointError := rdsService.DescribeDBProxyEndpoint(d.Id(), proxy["DBProxyInstanceName"].(string))
+	endpointInfo, endpointError := rdsService.DescribeRdsProxyEndpoint(d.Id())
 	if endpointError != nil {
 		if NotFoundError(endpointError) {
 			d.SetId("")
@@ -290,6 +291,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewRdsClient()
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -305,13 +307,16 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 	if _, ok := proxy["DBProxyInstanceStatus"]; !ok {
 		return nil
 	}
-
+	endpointInfo, endpointError := rdsService.DescribeRdsProxyEndpoint(d.Id())
+	if endpointError != nil {
+		return WrapError(endpointError)
+	}
 	if d.HasChanges("db_proxy_connection_prefix", "db_proxy_connect_string_port") && d.Get("instance_network_type") != "" {
 		action := "ModifyDBProxyEndpointAddress"
 		request := map[string]interface{}{
 			"RegionId":                    client.RegionId,
 			"DBInstanceId":                d.Id(),
-			"DBProxyEndpointId":           proxy["DBProxyInstanceName"],
+			"DBProxyEndpointId":           endpointInfo["DBProxyEndpointId"],
 			"DBProxyConnectStringNetType": d.Get("instance_network_type"),
 			"SourceIp":                    client.SourceIp,
 		}
@@ -345,12 +350,16 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 			}
 		}
 	}
+	endpointInfo, endpointError = rdsService.DescribeRdsProxyEndpoint(d.Id())
+	if endpointError != nil {
+		return WrapError(endpointError)
+	}
 	if !d.IsNewResource() && d.HasChange("db_proxy_instance_num") {
 		action := "ModifyDBProxyInstance"
 		request := map[string]interface{}{
 			"RegionId":            client.RegionId,
 			"DBInstanceId":        d.Id(),
-			"DBProxyEndpointId":   proxy["DBProxyInstanceName"],
+			"DBProxyEndpointId":   endpointInfo["DBProxyEndpointId"],
 			"DBProxyInstanceNum":  d.Get("db_proxy_instance_num"),
 			"DBProxyInstanceType": "DedicatedProxy",
 			"SourceIp":            client.SourceIp,
@@ -387,8 +396,8 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		request := map[string]interface{}{
 			"RegionId":          client.RegionId,
 			"DBInstanceId":      d.Id(),
-			"DBProxyEndpointId": proxy["DBProxyInstanceName"],
-			"DbEndpointAliases": proxy["DBProxyInstanceName"],
+			"DBProxyEndpointId": endpointInfo["DBProxyEndpointId"],
+			"DbEndpointAliases": endpointInfo["DbProxyEndpointAliases"],
 			"SourceIp":          client.SourceIp,
 		}
 		if v, ok := d.GetOk("db_proxy_endpoint_read_write_mode"); ok {
@@ -440,7 +449,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		request := map[string]interface{}{
 			"RegionId":          client.RegionId,
 			"DBInstanceId":      d.Id(),
-			"DBProxyEndpointId": proxy["DBProxyInstanceName"],
+			"DBProxyEndpointId": endpointInfo["DBProxyEndpointId"],
 			"SourceIp":          client.SourceIp,
 		}
 		proxySsl := d.Get("db_proxy_ssl_enabled").(string)
@@ -453,7 +462,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		if proxySsl == "Update" {
 			request["DbProxySslEnabled"] = 2
 		}
-		ProxyEndpoint, ProxyEndpointErr := rdsService.DescribeDBProxyEndpoint(d.Id(), d.Get("db_proxy_endpoint_id").(string))
+		ProxyEndpoint, ProxyEndpointErr := rdsService.DescribeRdsProxyEndpoint(d.Id())
 		if ProxyEndpointErr != nil {
 			if NotFoundError(ProxyEndpointErr) {
 				d.SetId("")
@@ -545,6 +554,7 @@ func resourceAlicloudRdsDBProxyDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	if err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {

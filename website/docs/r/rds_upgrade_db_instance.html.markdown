@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RDS Upgrade DB Instance resource.
 ---
 
-# alicloud\_rds\_upgrade\_db\_instance
+# alicloud_rds_upgrade_db_instance
 
 Provides a RDS Upgrade DB Instance resource.
 
 For information about RDS Upgrade DB Instance and how to use it, see [What is ApsaraDB for RDS](https://www.alibabacloud.com/help/en/doc-detail/26092.htm).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0+.
 
 ## Example Usage
 
@@ -175,7 +175,7 @@ The following arguments are supported:
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
 * `zone_id_slave_1` - (Optional, Computed, ForceNew) The ID of the zone to which the secondary instance of the new instance belongs. You can specify this parameter only when the original instance runs RDS High-availability Edition. You can select a zone that belongs to the region where the original instance resides. You can call the [DescribeRegions](https://www.alibabacloud.com/help/doc-detail/26243.htm) operation to query zone IDs.
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL.
-* `parameters` - (Optional, Computed) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
+* `parameters` - (Optional, Computed) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm). See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `switch_time_mode` - (Optional) The time at which ApsaraDB RDS switches your workloads over to the new instance. This parameter is used together with the SwitchOver parameter and takes effect only when you set the SwitchOver parameter to true. Valid values:
   * **Immediate**: After data is migrated to the new instance, ApsaraDB RDS immediately switches your workloads over to the new instance.
@@ -199,9 +199,16 @@ The following arguments are supported:
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
-* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) (documented below).
+* `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 
-#### Block pg_hba_conf
+### `parameters`
+
+The parameters mapping supports the following:
+
+* `name` - (Required) The parameter name.
+* `value` - (Required) The parameter value.
+
+### `pg_hba_conf`
 
 The pg_hba_conf mapping supports the following:
 
@@ -226,7 +233,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Upgrade DB Instance.
 * `connection_string` - The database connection address.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
