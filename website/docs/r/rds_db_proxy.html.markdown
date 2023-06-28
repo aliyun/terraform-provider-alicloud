@@ -7,14 +7,14 @@ description: |-
   Provides an RDS instance read write splitting connection resource.
 ---
 
-# alicloud\_rds\_db\_proxy
+# alicloud_rds_db_proxy
 
 Information about RDS database exclusive agent and its usage, see [Dedicated proxy (read/write splitting).](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/dedicated-proxy).
--> **NOTE:** Available in 1.193.0+.
+-> **NOTE:** Available since v1.193.0+.
 
 ## Example Usage
 
-```
+```terraform
 variable "creation" {
   default = "Rds"
 }
@@ -28,26 +28,26 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_db_instance" "default" {
-  engine               = "MySQL"
-  engine_version       = "5.7"
-  instance_type        = "rds.mysql.c1.large"
-  instance_storage     = "20"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  vswitch_id           = alicloud_vswitch.default.id
-  db_instance_storage_type  = "local_ssd"
+  engine                   = "MySQL"
+  engine_version           = "5.7"
+  instance_type            = "rds.mysql.c1.large"
+  instance_storage         = "20"
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.default.id
+  db_instance_storage_type = "local_ssd"
 }
 
 resource "alicloud_db_readonly_instance" "default" {
@@ -61,24 +61,24 @@ resource "alicloud_db_readonly_instance" "default" {
 }
 
 resource "alicloud_rds_db_proxy" "default" {
-  instance_id = alicloud_db_instance.default.id
-  instance_network_type = "VPC"
-  vpc_id = alicloud_db_instance.default.vpc_id
-  vswitch_id = alicloud_db_instance.default.vswitch_id
-  db_proxy_instance_num = 2
-  db_proxy_connection_prefix = "ttest001"
-  db_proxy_connect_string_port = 3306
-  db_proxy_endpoint_read_write_mode = "ReadWrite"
-  read_only_instance_max_delay_time = 90
-  db_proxy_features = "TransactionReadSqlRouteOptimizeStatus:1;ConnectionPersist:1;ReadWriteSpliting:1"
+  instance_id                          = alicloud_db_instance.default.id
+  instance_network_type                = "VPC"
+  vpc_id                               = alicloud_db_instance.default.vpc_id
+  vswitch_id                           = alicloud_db_instance.default.vswitch_id
+  db_proxy_instance_num                = 2
+  db_proxy_connection_prefix           = "ttest001"
+  db_proxy_connect_string_port         = 3306
+  db_proxy_endpoint_read_write_mode    = "ReadWrite"
+  read_only_instance_max_delay_time    = 90
+  db_proxy_features                    = "TransactionReadSqlRouteOptimizeStatus:1;ConnectionPersist:1;ReadWriteSpliting:1"
   read_only_instance_distribution_type = "Custom"
   read_only_instance_weight {
-    instance_id  = alicloud_db_instance.default.id
-    weight = "100"
+    instance_id = alicloud_db_instance.default.id
+    weight      = "100"
   }
   read_only_instance_weight {
-    instance_id  = alicloud_db_readonly_instance.default.id
-    weight = "500"
+    instance_id = alicloud_db_readonly_instance.default.id
+    weight      = "500"
   }
 }
 ```
@@ -124,7 +124,7 @@ The following arguments are supported:
 
 -> **NOTE:** Note If you set the ReadOnlyInstanceDistributionType parameter to Custom, you must specify the ReadOnlyInstanceWeight parameter.
 
-* `read_only_instance_weight` - (Optional) A list of the read weights of the instance and its read-only instances.  It contains two sub-fields(instance_id and weight). Read weights increase in increments of 100, and the maximum read weight is 10000.
+* `read_only_instance_weight` - (Optional) A list of the read weights of the instance and its read-only instances.  It contains two sub-fields(instance_id and weight). Read weights increase in increments of 100, and the maximum read weight is 10000. See [`read_only_instance_weight`](#read_only_instance_weight) below.
 * `db_proxy_endpoint_read_write_mode` - (Optional) The read and write attributes of the proxy terminal. Valid values:
   - ReadWrite: The proxy terminal connects to the primary instance and can receive both read and write requests.
   - ReadOnly: The proxy terminal does not connect to the primary instance and can receive only read requests. This is the default value.
@@ -142,7 +142,7 @@ The following arguments are supported:
 * `switch_time` - (Optional) The point in time at which you want to upgrade the database proxy version of the instance. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `resource_group_id` - (Optional) The ID of the resource group.
 
-## Block read_only_instance_weight
+### `read_only_instance_weight`
 
 The read_only_instance_weight mapping supports the following:
 
@@ -160,7 +160,7 @@ The following attributes are exported:
 * `db_proxy_connection_string` - Connection instance string.
 * `ssl_expired_time` - The time when the certificate expires.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
