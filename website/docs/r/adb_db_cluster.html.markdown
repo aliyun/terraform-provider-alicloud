@@ -11,7 +11,7 @@ description: |-
 
 Provides a AnalyticDB for MySQL (ADB) DBCluster resource.
 
-For information about AnalyticDB for MySQL (ADB) DBCluster and how to use it, see [What is DBCluster](https://www.alibabacloud.com/help/en/doc-detail/190519.htm).
+For information about AnalyticDB for MySQL (ADB) DBCluster and how to use it, see [What is DBCluster](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2019-03-15-api-doc-createdbcluster).
 
 -> **NOTE:** Available since v1.121.0.
 
@@ -21,30 +21,27 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "adbClusterconfig"
+  default = "terraform-example"
 }
 
-variable "creation" {
-  default = "ADB"
+data "alicloud_adb_zones" "default" {
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+  cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  cidr_block   = "10.4.0.0/24"
+  zone_id      = data.alicloud_adb_zones.default.zones[0].id
   vswitch_name = var.name
 }
 
-resource "alicloud_adb_db_cluster" "this" {
+resource "alicloud_adb_db_cluster" "default" {
   db_cluster_category = "Cluster"
   db_node_class       = "C8"
   db_node_count       = "4"
@@ -53,14 +50,14 @@ resource "alicloud_adb_db_cluster" "this" {
   db_cluster_version  = "3.0"
   payment_type        = "PayAsYouGo"
   vswitch_id          = alicloud_vswitch.default.id
-  description         = "Test new adb again."
+  description         = var.name
   maintain_time       = "23:00Z-00:00Z"
+  resource_group_id   = data.alicloud_resource_manager_resource_groups.default.ids.0
+  security_ips        = ["10.168.1.12", "10.168.1.11"]
   tags = {
-    Created = "TF-update"
-    For     = "acceptance-test-update"
+    Created = "TF",
+    For     = "example",
   }
-  resource_group_id = "rg-aek2s7ylxx6****"
-  security_ips      = ["10.168.1.12", "10.168.1.11"]
 }
 ```
 
@@ -72,33 +69,33 @@ The alicloud_adb_cluster resource allows you to manage your adb cluster, but Ter
 
 The following arguments are supported:
 
-* `auto_renew_period` - (Optional, Computed, Int) Auto-renewal period of an cluster, in the unit of the month. It is valid when `payment_type` is `Subscription`. Valid values: `1`, `2`, `3`, `6`, `12`, `24`, `36`. Default Value: `1`.
+* `auto_renew_period` - (Optional, Int) Auto-renewal period of an cluster, in the unit of the month. It is valid when `payment_type` is `Subscription`. Valid values: `1`, `2`, `3`, `6`, `12`, `24`, `36`. Default Value: `1`.
 * `compute_resource` - (Optional) The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources. For more information, see [ComputeResource](https://www.alibabacloud.com/help/en/doc-detail/144851.htm)
 * `db_cluster_category` - (Required) The db cluster category. Valid values: `Basic`, `Cluster`, `MixedStorage`.
 * `db_cluster_class` - (Deprecated since v1.121.2) It duplicates with attribute db_node_class and is deprecated from 1.121.2.
 * `db_cluster_version` - (Optional, ForceNew) The db cluster version. Valid values: `3.0`. Default Value: `3.0`.
-* `db_node_class` - (Optional, Computed) The db node class. For more information, see [DBClusterClass](https://help.aliyun.com/document_detail/190519.html)
-* `db_node_count` - (Optional, Computed, Int) The db node count.
-* `db_node_storage` - (Optional, Computed, Int) The db node storage.
-* `description` - (Optional, Computed) The description of DBCluster.
-* `elastic_io_resource` - (Optional, Computed, Int) The elastic io resource.
-* `maintain_time` - (Optional, Computed) The maintenance window of the cluster. Format: hh:mmZ-hh:mmZ.
+* `db_node_class` - (Optional) The db node class. For more information, see [DBClusterClass](https://help.aliyun.com/document_detail/190519.html)
+* `db_node_count` - (Optional, Int) The db node count.
+* `db_node_storage` - (Optional, Int) The db node storage.
+* `description` - (Optional) The description of DBCluster.
+* `elastic_io_resource` - (Optional, Int) The elastic io resource.
+* `maintain_time` - (Optional) The maintenance window of the cluster. Format: hh:mmZ-hh:mmZ.
 * `mode` - (Required) The mode of the cluster. Valid values: `reserver`, `flexible`.
 * `modify_type` - (Optional) The modify type.
 * `pay_type` - (Deprecated since v1.166.0) Field `pay_type` has been deprecated. New field `payment_type` instead.
-* `payment_type` - (Optional, Computed) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`. **Note:** The `payment_type` supports updating from v1.166.0+.
+* `payment_type` - (Optional) The payment type of the resource. Valid values: `PayAsYouGo` and `Subscription`. Default Value: `PayAsYouGo`. **Note:** The `payment_type` supports updating from v1.166.0+.
 * `period` - (Optional, Int) The duration that you will buy DB cluster (in month). It is valid when `payment_type` is `Subscription`. Valid values: [1~9], 12, 24, 36.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not affect the resource.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
-* `resource_group_id` - (Optional, Computed) The ID of the resource group.
-* `security_ips` - (Optional, Computed, List) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `resource_group_id` - (Optional) The ID of the resource group.
+* `security_ips` - (Optional, List) List of IP addresses allowed to access all databases of an cluster. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
-* `zone_id` - (Optional, Computed, ForceNew) The zone ID of the resource.
-* `vpc_id` - (Optional, Computed, ForceNew, Available since v1.178.0) The vpc ID of the resource.
-* `elastic_io_resource_size` - (Optional, Computed, Available since v1.207.0) The specifications of a single elastic resource node. Default Value: `8Core64GB`. Valid values:
+* `zone_id` - (Optional, ForceNew) The zone ID of the resource.
+* `vpc_id` - (Optional, ForceNew, Available since v1.178.0) The vpc ID of the resource.
+* `elastic_io_resource_size` - (Optional, Available since v1.207.0) The specifications of a single elastic resource node. Default Value: `8Core64GB`. Valid values:
   - `8Core64GB`: If you set `elastic_io_resource_size` to `8Core64GB`, the specifications of an EIU are 24 cores and 192 GB memory.
   - `12Core96GB`: If you set `elastic_io_resource_size` to `12Core96GB`, the specifications of an EIU are 36 cores and 288 GB memory.
-* `disk_performance_level` - (Optional, Computed, Available since v1.207.0) The ESSD performance level. Default Value: `PL1`. Valid values: `PL1`, `PL2`, `PL3`.
+* `disk_performance_level` - (Optional, Available since v1.207.0) The ESSD performance level. Default Value: `PL1`. Valid values: `PL1`, `PL2`, `PL3`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
     - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
