@@ -7,38 +7,49 @@ description: |-
   Provides a Alicloud AnalyticDB for MySQL (ADB) DB Cluster Lake Version resource.
 ---
 
-# alicloud\_adb\_db\_cluster\_lake\_version
+# alicloud_adb_db_cluster_lake_version
 
 Provides a AnalyticDB for MySQL (ADB) DB Cluster Lake Version resource.
 
-For information about AnalyticDB for MySQL (ADB) DB Cluster Lake Version and how to use it, see [What is DB Cluster Lake Version](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/what-is-analyticdb-for-mysql).
+For information about AnalyticDB for MySQL (ADB) DB Cluster Lake Version and how to use it, see [What is DB Cluster Lake Version](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2021-12-01-api-doc-createdbcluster).
 
--> **NOTE:** Available in v1.190.0+.
+-> **NOTE:** Available since v1.190.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING"
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "example"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+locals {
+  zone_id = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.4.0.0/24"
+  zone_id      = local.zone_id
+  vswitch_name = var.name
 }
 
 resource "alicloud_adb_db_cluster_lake_version" "default" {
-  compute_resource   = "16ACU"
-  db_cluster_version = "5.0"
-  payment_type       = "PayAsYouGo"
-  storage_resource   = "0ACU"
-  vswitch_id         = data.alicloud_vswitches.default.ids.0
-  vpc_id             = data.alicloud_vpcs.default.ids.0
-  zone_id            = "example"
+  compute_resource              = "16ACU"
+  db_cluster_version            = "5.0"
+  payment_type                  = "PayAsYouGo"
+  storage_resource              = "24ACU"
+  enable_default_resource_group = false
+  vswitch_id                    = alicloud_vswitch.default.id
+  vpc_id                        = alicloud_vpc.default.id
+  zone_id                       = local.zone_id
 }
 ```
 
@@ -54,10 +65,10 @@ The following arguments are supported:
 * `vpc_id` - (Required, ForceNew) The vpc ID of the resource.
 * `zone_id` - (Required, ForceNew) The zone ID of the resource.
 * `enable_default_resource_group` - (Optional) Whether to enable default allocation of resources to user_default resource groups.
-* `security_ips` - (Optional, Computed, Available in v1.198.0+) The IP addresses in an IP address whitelist of a cluster. Separate multiple IP addresses with commas (,). You can add a maximum of 500 different IP addresses to a whitelist. The entries in the IP address whitelist must be in one of the following formats:
+* `security_ips` - (Optional, Available in v1.198.0+) The IP addresses in an IP address whitelist of a cluster. Separate multiple IP addresses with commas (,). You can add a maximum of 500 different IP addresses to a whitelist. The entries in the IP address whitelist must be in one of the following formats:
   - IP addresses, such as 10.23.XX.XX.
   - CIDR blocks, such as 10.23.xx.xx/24. In this example, 24 indicates that the prefix of each IP address in the IP whitelist is 24 bits in length. You can replace 24 with a value within the range of 1 to 32.
-* `db_cluster_description` - (Optional, Computed, Available in v1.198.0+) The description of the cluster.
+* `db_cluster_description` - (Optional, Available in v1.198.0+) The description of the cluster.
 
 ## Attributes Reference
 
@@ -77,7 +88,7 @@ The following attributes are exported:
 * `create_time` - The createTime of the cluster.
 * `resource_group_id` - The ID of the resource group.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,54 +7,59 @@ description: |-
   Provides a ADB account resource.
 ---
 
-# alicloud\_adb\_account
+# alicloud_adb_account
 
-Provides a [ADB](https://www.alibabacloud.com/help/product/92664.htm) account resource and used to manage databases.
+Provides a [ADB](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/latest/api-doc-adb-2019-03-15-api-doc-createaccount) account resource and used to manage databases.
 
--> **NOTE:** Available in v1.71.0+. 
+-> **NOTE:** Available since v1.71.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "ADB"
-}
-
 variable "name" {
-  default = "adbaccountmysql"
+  default = "tf_example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_adb_zones" "default" {
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "10.4.0.0/24"
+  zone_id      = data.alicloud_adb_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
-resource "alicloud_adb_cluster" "cluster" {
-  db_cluster_version  = "3.0"
+resource "alicloud_adb_db_cluster" "default" {
   db_cluster_category = "Cluster"
   db_node_class       = "C8"
-  db_node_count       = 2
-  db_node_storage     = 200
-  pay_type            = "PostPaid"
+  db_node_count       = "4"
+  db_node_storage     = "400"
+  mode                = "reserver"
+  db_cluster_version  = "3.0"
+  payment_type        = "PayAsYouGo"
   vswitch_id          = alicloud_vswitch.default.id
   description         = var.name
+  maintain_time       = "23:00Z-00:00Z"
+  resource_group_id   = data.alicloud_resource_manager_resource_groups.default.ids.0
+  security_ips        = ["10.168.1.12", "10.168.1.11"]
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
 }
 
-resource "alicloud_adb_account" "account" {
-  db_cluster_id       = alicloud_adb_cluster.cluster.id
-  account_name        = "tftestnormal"
-  account_password    = "Test12345"
+resource "alicloud_adb_account" "default" {
+  db_cluster_id       = alicloud_adb_db_cluster.default.id
+  account_name        = var.name
+  account_password    = "tf_example123"
   account_description = var.name
 }
 ```
@@ -69,6 +74,9 @@ The following arguments are supported:
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a db account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `account_description` - (Optional) Account description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
+* `account_type` - (Optional, ForceNew) The type of the database account. Default Value: `Super`. Valid values:
+  - `Normal`: standard account. Up to 256 standard accounts can be created for a cluster.
+  - `Super`: privileged account. Only a single privileged account can be created for a cluster.
 
 ## Attributes Reference
 
