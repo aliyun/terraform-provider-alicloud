@@ -7,9 +7,9 @@ description: |-
   Provides a Acl entry attachment resource.
 ---
 
-# alicloud\_alb\_acl\_entry\_attachment
+# alicloud_alb_acl_entry_attachment
 
--> **NOTE:** Available in v1.166.0+.
+-> **NOTE:** Available since v1.166.0.
 
 
 For information about acl entry attachment and how to use it, see [Configure an acl entry](https://www.alibabacloud.com/help/en/server-load-balancer/latest/addentriestoacl).
@@ -19,9 +19,8 @@ For information about acl entry attachment and how to use it, see [Configure an 
 
 ```terraform
 variable "name" {
-  default = "terraformalbaclconfig"
+  default = "tf_example"
 }
-
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_alb_acl" "default" {
@@ -51,7 +50,7 @@ The following attributes are exported:
 * `id` - The ID of the resource. The value formats as `<acl_id>:<entry>`.
 * `status` - The Status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
