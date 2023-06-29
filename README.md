@@ -1,20 +1,15 @@
 Terraform Provider For Alibaba Cloud
 ==================
 
-- Website: https://www.terraform.io
+- Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
+- Documentation: https://www.terraform.io/docs/providers/alicloud/index.html
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
-
-<img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" width="400px"> 
-
-
-<img src="https://www.datocms-assets.com/2885/1506527326-color.svg" width="400px">
-
 
 Supported Versions
 ------------------
 
-| Terraform version | minimum provider version |maxmimum provider version
+| Terraform version | minimum provider version |maximum provider version
 | ---- | ---- | ----| 
 | >= 0.11.x	| 1.0.0	| latest |
 
@@ -22,7 +17,7 @@ Requirements
 ------------
 
 -	[Terraform](https://www.terraform.io/downloads.html) 0.12.x
--	[Go](https://golang.org/doc/install) 1.13 (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) 1.18 (to build the provider plugin)
 -   [goimports](https://godoc.org/golang.org/x/tools/cmd/goimports):
     ```
     go get golang.org/x/tools/cmd/goimports
@@ -47,9 +42,10 @@ $ make build
 
 Using the provider
 ----------------------
-## Fill in for each provider
+Please see [instructions](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication) on how to configure the Alibaba Cloud Provider.
 
-Developing the Provider
+
+## Developing the Provider
 ---------------------------
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.11+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
@@ -89,17 +85,16 @@ export ALICLOUD_ACCESS_KEY=xxx
 export ALICLOUD_SECRET_KEY=xxx
 export ALICLOUD_REGION=xxx
 export ALICLOUD_ACCOUNT_ID=xxx
-export ALICLOUD_RESOURCE_GROUP_ID=xxx
 export outfile=gotest.out
 TF_ACC=1 TF_LOG=INFO go test ./alicloud -v -run=TestAccAlicloud -timeout=1440m | tee $outfile
 go2xunit -input $outfile -output $GOPATH/tests.xml
 ```
 
--> **Note:** The last line is optional, it allows to convert test results into a XML format compatible with xUnit.
+-> **Note:** The last line is optional, it allows converting test results into an XML format compatible with xUnit.
 
 
--> **Note:** Most test cases will create PostPaid resources when running above test command. However, currently not all
- account site type support create PostPaid resources, so you need set your account site type before running the command:
+-> **Note:** Most test cases will create PayAsYouGo resources when running above test command. However, currently not all
+ account site type support create PayAsYouGo resources, so you need set your account site type before running the command:
 ```
 # If your account belongs to domestic site
 export ALICLOUD_ACCOUNT_SITE=Domestic
@@ -107,15 +102,4 @@ export ALICLOUD_ACCOUNT_SITE=Domestic
 # If your account belongs to international site
 export ALICLOUD_ACCOUNT_SITE=International
 ```
-The setting of acount site type can skip some unsupported cases automatically.
-
--> **Note:** At present, there is missing CMS contact group resource and please create manually a contact group by web console and set it by environment variable `ALICLOUD_CMS_CONTACT_GROUP`, like:
- ```
- export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
- ```
- Otherwise, all of resource `alicloud_cms_alarm's` test cases will be skipped.
-
-## Refer
-
-Alibaba Cloud Provider [Official Docs](https://www.terraform.io/docs/providers/alicloud/index.html)
-Alibaba Cloud Provider Modules [Official Modules](https://registry.terraform.io/browse?provider=alicloud)
+The setting of account site type can skip some unsupported cases automatically.
