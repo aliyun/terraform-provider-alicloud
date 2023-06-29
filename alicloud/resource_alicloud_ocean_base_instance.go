@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudOceanBaseInstance() *schema.Resource {
@@ -23,9 +22,9 @@ func resourceAlicloudOceanBaseInstance() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(41 * time.Minute),
-			Update: schema.DefaultTimeout(61 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(80 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_renew": {
@@ -42,7 +41,7 @@ func resourceAlicloudOceanBaseInstance() *schema.Resource {
 			},
 			"backup_retain_mode": {
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"delete_all", "receive_all", "receive_last"}, false),
+				ValidateFunc: StringInSlice([]string{"delete_all", "receive_all", "receive_last"}, false),
 				Type:         schema.TypeString,
 			},
 			"commodity_code": {
@@ -60,11 +59,11 @@ func resourceAlicloudOceanBaseInstance() *schema.Resource {
 			"disk_size": {
 				Required:     true,
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(100, 10000),
+				ValidateFunc: IntBetween(100, 10000),
 			},
 			"instance_class": {
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"14C70GB", "30C180GB", "62C400GB", "8C32GB"}, false),
+				ValidateFunc: StringInSlice([]string{"14C70GB", "30C180GB", "62C400GB", "8C32GB", "16C70GB", "24C120GB", "32C160GB", "64C380GB", "20C32GB", "40C64GB", "4C16GB"}, false),
 				Type:         schema.TypeString,
 			},
 			"instance_name": {
@@ -80,19 +79,19 @@ func resourceAlicloudOceanBaseInstance() *schema.Resource {
 			"payment_type": {
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				Type:         schema.TypeString,
 			},
 			"period": {
 				Optional:         true,
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Optional:         true,
 				Type:             schema.TypeString,
-				ValidateFunc:     validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc:     StringInSlice([]string{"Month", "Year"}, false),
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"resource_group_id": {
@@ -104,7 +103,7 @@ func resourceAlicloudOceanBaseInstance() *schema.Resource {
 			"series": {
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"normal", "normal_ssd", "history"}, false),
+				ValidateFunc: StringInSlice([]string{"normal", "normal_ssd", "history"}, false),
 				Type:         schema.TypeString,
 			},
 			"status": {
