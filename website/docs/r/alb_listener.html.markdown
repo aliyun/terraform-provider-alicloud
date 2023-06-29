@@ -7,74 +7,59 @@ description: |-
   Provides a Alicloud Application Load Balancer (ALB) Listener resource.
 ---
 
-# alicloud\_alb\_listener
+# alicloud_alb_listener
 
 Provides a Application Load Balancer (ALB) Listener resource.
 
-For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/doc-detail/214348.htm).
+For information about Application Load Balancer (ALB) Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-doc-alb-2020-06-16-api-doc-createlistener).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-
 variable "name" {
-  default = "example-name"
+  default = "tf_example"
 }
-
 data "alicloud_alb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default_1" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "vswitch_1" {
-  count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id      = data.alicloud_alb_zones.default.zones.0.id
-  vswitch_name = var.name
-}
-
-data "alicloud_vswitches" "default_2" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.1.id
-}
-resource "alicloud_vswitch" "vswitch_2" {
-  count        = length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
-  zone_id      = data.alicloud_alb_zones.default.zones.1.id
-  vswitch_name = var.name
-}
 data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_instance_types" "default" {
+  availability_zone = data.alicloud_alb_zones.default.zones.0.id
+  cpu_core_count    = 1
+  memory_size       = 2
+}
+data "alicloud_images" "default" {
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners     = "system"
+}
 
-resource "alicloud_log_project" "default" {
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  count        = 2
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = format("10.4.%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_alb_zones.default.zones[count.index].id
+  vswitch_name = format("${var.name}_%d", count.index + 1)
+}
+
+resource "alicloud_security_group" "default" {
   name        = var.name
-  description = "created by terraform"
+  description = var.name
+  vpc_id      = alicloud_vpc.default.id
 }
 
-resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
-  shard_count           = 3
-  auto_split            = true
-  max_split_shard_count = 60
-  append_meta           = true
-}
-
-resource "alicloud_alb_load_balancer" "default_3" {
-  vpc_id                 = data.alicloud_vpcs.default.ids.0
+resource "alicloud_alb_load_balancer" "default" {
+  vpc_id                 = alicloud_vpc.default.id
   address_type           = "Internet"
   address_allocated_mode = "Fixed"
   load_balancer_name     = var.name
-  load_balancer_edition  = "Standard"
+  load_balancer_edition  = "Basic"
   resource_group_id      = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   load_balancer_billing_config {
     pay_type = "PayAsYouGo"
@@ -83,53 +68,66 @@ resource "alicloud_alb_load_balancer" "default_3" {
     Created = "TF"
   }
   zone_mappings {
-    vswitch_id = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
+    vswitch_id = alicloud_vswitch.default.0.id
     zone_id    = data.alicloud_alb_zones.default.zones.0.id
   }
   zone_mappings {
-    vswitch_id = length(data.alicloud_vswitches.default_2.ids) > 0 ? data.alicloud_vswitches.default_2.ids[0] : concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
+    vswitch_id = alicloud_vswitch.default.1.id
     zone_id    = data.alicloud_alb_zones.default.zones.1.id
   }
   modification_protection_config {
     status = "NonProtection"
   }
-  access_log_config {
-    log_project = alicloud_log_project.default.name
-    log_store   = alicloud_log_store.default.name
-  }
+}
+
+resource "alicloud_instance" "default" {
+  availability_zone = data.alicloud_alb_zones.default.zones.0.id
+  instance_name     = var.name
+  image_id          = data.alicloud_images.default.images.0.id
+  instance_type     = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups   = [alicloud_security_group.default.id]
+  vswitch_id        = alicloud_vswitch.default.0.id
 }
 
 resource "alicloud_alb_server_group" "default" {
   protocol          = "HTTP"
-  vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  vpc_id            = alicloud_vpc.default.id
   server_group_name = var.name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   health_check_config {
-    health_check_enabled = "false"
+    health_check_connect_port = "46325"
+    health_check_enabled      = true
+    health_check_host         = "tf-example.com"
+    health_check_codes        = ["http_2xx", "http_3xx", "http_4xx"]
+    health_check_http_version = "HTTP1.1"
+    health_check_interval     = "2"
+    health_check_method       = "HEAD"
+    health_check_path         = "/tf-example"
+    health_check_protocol     = "HTTP"
+    health_check_timeout      = 5
+    healthy_threshold         = 3
+    unhealthy_threshold       = 3
   }
   sticky_session_config {
-    sticky_session_enabled = "false"
+    sticky_session_enabled = true
+    cookie                 = "tf-example"
+    sticky_session_type    = "Server"
   }
-  tags = {
-    Created = "TF"
+  servers {
+    description = var.name
+    port        = 80
+    server_id   = alicloud_instance.default.id
+    server_ip   = alicloud_instance.default.private_ip
+    server_type = "Ecs"
+    weight      = 10
   }
 }
 
-resource "alicloud_ssl_certificates_service_certificate" "default" {
-  certificate_name = "test"
-  cert             = file("${path.module}/test.crt")
-  key              = file("${path.module}/test.key")
-}
-
-resource "alicloud_alb_acl" "example" {
-  acl_name = var.name
-}
-
-resource "alicloud_alb_listener" "example" {
-  load_balancer_id     = alicloud_alb_load_balancer.default_3.id
-  listener_protocol    = "HTTPS"
+resource "alicloud_alb_listener" "default" {
+  load_balancer_id     = alicloud_alb_load_balancer.default.id
+  listener_protocol    = "HTTP"
   listener_port        = 443
-  listener_description = "createdByTerraform"
+  listener_description = var.name
   default_actions {
     type = "ForwardGroup"
     forward_group_config {
@@ -138,52 +136,42 @@ resource "alicloud_alb_listener" "example" {
       }
     }
   }
-  certificates {
-    certificate_id = join("", [alicloud_ssl_certificates_service_certificate.default.id, "-cn-hangzhou"])
-  }
-  acl_config {
-    acl_type = "White"
-    acl_relations {
-      acl_id = alicloud_alb_acl.example.id
-    }
-  }
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `access_log_record_customized_headers_enabled` - (Optional, Computed)Indicates whether the access log has a custom header field. Valid values: true and false. Default value: false.
+* `access_log_record_customized_headers_enabled` - (Optional)Indicates whether the access log has a custom header field. Valid values: true and false. Default value: false.
 
 -> **NOTE:** Only Instances outside the Security Group to Access the Log Switch **accesslogenabled** Open, in Order to Set This Parameter to the **True**.
-* `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See the following `Block access_log_tracing_config`.
-* `certificates` - (Optional) The default certificate of the Listener. See the following `Block certificates`. **NOTE:** When `listener_protocol` is `HTTPS`, The default certificate must be set one。
-* `default_actions` - (Optional) The Default Rule Action List. See the following `Block default_actions`.
+* `access_log_tracing_config` - (Optional) Xtrace Configuration Information. See [`access_log_tracing_config`](#access_log_tracing_config) below for details.
+* `certificates` - (Optional) The default certificate of the Listener. See [`certificates`](#certificates) below for details. **NOTE:** When `listener_protocol` is `HTTPS`, The default certificate must be set one。
+* `default_actions` - (Optional) The Default Rule Action List. See [`default_actions`](#default_actions) below for details.
 * `dry_run` - (Optional) The dry run.
-* `gzip_enabled` - (Optional, Computed) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
-* `http2_enabled` - (Optional, Computed) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.
+* `gzip_enabled` - (Optional) Whether to Enable Gzip Compression, as a Specific File Type on a Compression. Valid values: `false`, `true`. Default Value: `true`. .
+* `http2_enabled` - (Optional) Whether to Enable HTTP/2 Features. Valid Values: `True` Or `False`. Default Value: `True`.
 
 -> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `idle_timeout` - (Optional, Computed) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
+* `idle_timeout` - (Optional) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
 * `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: `/^([^\x00-\xff]|[\w.,;/@-]){2,256}$/`.
 * `listener_port` - (Required, ForceNew) The ALB Instance Front-End, and Those of the Ports Used. Value: `1` to `65535`.
 * `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: `HTTP`, `HTTPS` Or `QUIC`. 
 * `load_balancer_id` - (Required, ForceNew) The ALB Instance Id.
-* `quic_config` - (Optional) Configuration Associated with the QuIC Listening. See the following `Block quic_config`.
-* `request_timeout` - (Optional, Computed) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
-* `security_policy_id` - (Optional, Computed) Security Policy.
+* `quic_config` - (Optional) Configuration Associated with the QuIC Listening. See [`quic_config`](#quic_config) below for details.
+* `request_timeout` - (Optional) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
+* `security_policy_id` - (Optional) Security Policy.
 
 -> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 
-* `status` - (Optional, Computed, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
-* `xforwarded_for_config` - (Optional, Deprecated from v1.161.0+) xforwardfor Related Attribute Configuration. See the following `Block xforwarded_for_config`. **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
-* `x_forwarded_for_config` - (Optional, Available in v1.161.0+) The `x_forward_for` Related Attribute Configuration. See the following `Block x_forwarded_for_config`. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `acl_config` - (Optional, Available in v1.136.0+)The configurations of the access control lists (ACLs). See the following `Block acl_config`. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+* `status` - (Optional, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
+* `xforwarded_for_config` - (Optional, Deprecated from v1.161.0+) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
+* `x_forwarded_for_config` - (Optional, Available in v1.161.0+) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
+* `acl_config` - (Optional, Deprecated from v1.163.0+)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
 
 
-#### Block x_forwarded_for_config
+### `x_forwarded_for_config`
 
 The x_forwarded_for_config supports the following:
 
@@ -201,7 +189,7 @@ The x_forwarded_for_config supports the following:
 * `x_forwarded_for_slb_id_enabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
 * `x_forwarded_for_slb_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
 
-#### Block xforwarded_for_config
+### `xforwarded_for_config`
 
 The xforwarded_for_config supports the following: 
 
@@ -219,7 +207,7 @@ The xforwarded_for_config supports the following:
 * `xforwardedforslbidenabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
 * `xforwardedforslbportenabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
 
-#### Block quic_config
+### `quic_config`
 
 The quic_config supports the following: 
 
@@ -228,24 +216,40 @@ The quic_config supports the following:
 
 -> **NOTE:** The attribute is valid when the attribute `ListenerProtocol` is `HTTPS`.
 
-#### Block default_actions
+### `default_actions`
 
 The default_actions supports the following: 
 
 * `type` - (Required) Action Type.
-* `forward_group_config` - (Required) The configurations of the actions. This parameter is required if Type is set to FowardGroup.
-    *  `server_group_tuples` - (Required) The destination server group to which requests are forwarded.
-        * `server_group_id` - (Required) The ID of the destination server group to which requests are forwarded.
+* `forward_group_config` - (Required) The configurations of the actions. This parameter is required if Type is set to FowardGroup. See [`forward_group_config`](#default_actions-forward_group_config) below for details.
 
-#### Block acl_config
+### `default_actions-forward_group_config`
+
+The forward_group_config supports the following:
+
+* `server_group_tuples` - (Required) The destination server group to which requests are forwarded. See [`server_group_tuples`](#default_actions-forward_group_config-server_group_tuples) below for details.
+
+### `default_actions-forward_group_config-server_group_tuples`
+
+The server_group_tuples supports the following:
+
+* `server_group_id` - (Required) The ID of the destination server group to which requests are forwarded.
+
+### `acl_config`
 
 The acl_config supports the following:
 
-* `acl_relations` - (Optional, Available 1.136.0+) The ACLs that are associated with the listener.
-    * `acl_id` - (Optional, Available 1.136.0+) Snooping Binding of the Access Policy Group ID List.
+* `acl_relations` - (Optional, Available 1.136.0+) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
 * `acl_type` - (Optional, Available 1.136.0+) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
 
-#### Block access_log_tracing_config
+### `acl_config-acl_relations`
+
+The acl_relations supports the following:
+
+* `acl_id` - (Optional, Available 1.136.0+) Snooping Binding of the Access Policy Group ID List.
+* `status` - (Optional) The status of the ACL relation.
+
+### `access_log_tracing_config`
 
 The access_log_tracing_config supports the following: 
 
@@ -260,7 +264,7 @@ The access_log_tracing_config supports the following:
 -> **NOTE:** This attribute is valid when `tracingenabled` is `true`.
 
 
-#### Block certificates
+### `certificates`
 
 The certificates supports the following:
 
@@ -272,7 +276,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Listener.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

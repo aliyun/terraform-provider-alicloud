@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Application Load Balancer (ALB) Listener Acl Attachment resource.
 ---
 
-# alicloud\_alb\_listener\_acl\_attachment
+# alicloud_alb_listener_acl_attachment
 
 Provides a Application Load Balancer (ALB) Listener Acl Attachment resource.
 
 For information about Application Load Balancer (ALB) Listener Acl Attachment and how to use it, see [What is Listener Acl Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/associateaclswithlistener).
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
 
 -> **NOTE:** You can associate at most three ACLs with a listener.
 
@@ -24,37 +24,30 @@ For information about Application Load Balancer (ALB) Listener Acl Attachment an
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_alb_zones" "default" {}
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-resource "alicloud_alb_acl" "default" {
-  acl_name          = "example_value"
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  acl_entries {
-    description = "description"
-    entry       = "10.0.0.0/24"
-  }
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-data "alicloud_alb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default_1" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.0.id
-}
-
-data "alicloud_vswitches" "default_2" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.1.id
+resource "alicloud_vswitch" "default" {
+  count        = 2
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = format("10.4.%d.0/24", count.index + 1)
+  zone_id      = data.alicloud_alb_zones.default.zones[count.index].id
+  vswitch_name = format("${var.name}_%d", count.index + 1)
 }
 
 resource "alicloud_alb_load_balancer" "default" {
-  vpc_id                 = data.alicloud_vpcs.default.ids.0
+  vpc_id                 = alicloud_vpc.default.id
   address_type           = "Internet"
   address_allocated_mode = "Fixed"
-  load_balancer_name     = "example_value"
+  load_balancer_name     = var.name
   load_balancer_edition  = "Standard"
   resource_group_id      = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   load_balancer_billing_config {
@@ -64,22 +57,19 @@ resource "alicloud_alb_load_balancer" "default" {
     Created = "TF"
   }
   zone_mappings {
-    vswitch_id = data.alicloud_vswitches.default_1.ids[0]
+    vswitch_id = alicloud_vswitch.default.0.id
     zone_id    = data.alicloud_alb_zones.default.zones.0.id
   }
   zone_mappings {
-    vswitch_id = data.alicloud_vswitches.default_2.ids[0]
+    vswitch_id = alicloud_vswitch.default.1.id
     zone_id    = data.alicloud_alb_zones.default.zones.1.id
-  }
-  modification_protection_config {
-    status = "NonProtection"
   }
 }
 
 resource "alicloud_alb_server_group" "default" {
   protocol          = "HTTP"
-  vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
-  server_group_name = "example_value"
+  vpc_id            = alicloud_vpc.default.id
+  server_group_name = var.name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   health_check_config {
     health_check_enabled = "false"
@@ -96,7 +86,7 @@ resource "alicloud_alb_listener" "default" {
   load_balancer_id     = alicloud_alb_load_balancer.default.id
   listener_protocol    = "HTTP"
   listener_port        = 80
-  listener_description = "example_value"
+  listener_description = var.name
   default_actions {
     type = "ForwardGroup"
     forward_group_config {
@@ -105,6 +95,17 @@ resource "alicloud_alb_listener" "default" {
       }
     }
   }
+}
+
+resource "alicloud_alb_acl" "default" {
+  acl_name          = var.name
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+}
+
+resource "alicloud_alb_acl_entry_attachment" "default" {
+  acl_id      = alicloud_alb_acl.default.id
+  entry       = "10.0.0.0/24"
+  description = var.name
 }
 
 resource "alicloud_alb_listener_acl_attachment" "default" {
@@ -132,7 +133,7 @@ The following attributes are exported:
 * `status` - The status of the Listener Acl Attachment.
 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
