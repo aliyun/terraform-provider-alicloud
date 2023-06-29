@@ -1196,7 +1196,7 @@ jobs:
         resource: terraform-provider-alicloud
       - get: trigger
         trigger: true
-        resource: eight-half
+        resource: ten
       - get: aliyun-cli
         resource: aliyun-cli
     - <<: *run
