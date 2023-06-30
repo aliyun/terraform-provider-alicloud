@@ -49,7 +49,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.Any(IntInSlice([]int{0}), IntBetween(800, 100000)),
+				ValidateFunc: validation.Any(IntInSlice([]int{0}), IntBetween(800, 1000000)),
 			},
 			"core_num": {
 				Type:     schema.TypeInt,

@@ -11,11 +11,11 @@ description: |-
 
 Provides a Lindorm Instance resource.
 
-For information about Lindorm Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/zh/doc-detail/174640.html).
+For information about Lindorm Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/lindorm/latest/product-introduction-overview).
 
 -> **NOTE:** Available since v1.132.0.
 
--> **NOTE:**  The Lindorm Instance does not support updating the specifications of multiple different engines or the number of nodes at the same time.
+-> **NOTE:**  The Lindorm Instance does not support updating the specifications of multiple different engines, or the number of nodes at the same time.
 
 ## Example Usage
 
@@ -65,7 +65,7 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `disk_category` - (Required, ForceNew) The disk type of instance. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_essd_pl0`, `capacity_cloud_storage`, `local_ssd_pro`, `local_hdd_pro`. **NOTE:** From version 1.207.0, `disk_category` can be set to `cloud_essd_pl0`.
 * `payment_type` - (Required, ForceNew) The billing method. Valid values: `PayAsYouGo` and `Subscription`.
-* `cold_storage` - (Optional, Computed, Int) The cold storage capacity of the instance. Unit: GB.
+* `cold_storage` - (Optional, Computed, Int) The cold storage capacity of the instance. Unit: GB. Valid values: [800, 1000000].
 * `core_num` - (Removed since v1.207.0) The core num. **NOTE:** Field `core_num` has been deprecated from provider version 1.188.0, and it has been removed from provider version 1.207.0.
 * `core_spec` - (Optional, Computed) The core spec. When `disk_category` is `local_ssd_pro` or `local_hdd_pro`, this filed is valid.
    - When `disk_category` is `local_ssd_pro`, the valid values is `lindorm.i2.xlarge`, `lindorm.i2.2xlarge`, `lindorm.i2.4xlarge`, `lindorm.i2.8xlarge`.
