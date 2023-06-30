@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud Alidns Instance resource.
 ---
 
-# alicloud\_alidns\_instance
+# alicloud_alidns_instance
 
 Create an Alidns Instance resource.
 
--> **NOTE:** Available in v1.95.0+.
+-> **NOTE:** Available since v1.95.0.
 
 ## Example Usage
 

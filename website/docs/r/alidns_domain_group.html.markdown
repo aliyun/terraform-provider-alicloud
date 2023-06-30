@@ -7,18 +7,17 @@ description: |-
   Provides a Alidns Domain Group resource.
 ---
 
-# alicloud\_alidns\_domain\_group
+# alicloud_alidns_domain_group
 
 Provides a Alidns Domain Group resource. For information about Alidns Domain Group and how to use it, see [What is Resource Alidns Domain Group](https://www.alibabacloud.com/help/en/doc-detail/29762.htm).
 
--> **NOTE:** Available in v1.84.0+.
+-> **NOTE:** Available since v1.84.0.
 
 ## Example Usage
 
 ```terraform
-# Add a new Alinds Domain Group.
-resource "alicloud_alidns_domain_group" "example" {
-  domain_group_name = "tf-testDG"
+resource "alicloud_alidns_domain_group" "default" {
+  domain_group_name = "tf-example"
 }
 ```
 ## Argument Reference

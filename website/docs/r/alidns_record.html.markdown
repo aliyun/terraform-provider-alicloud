@@ -7,24 +7,34 @@ description: |-
   Provides a Alidns Domain Record resource.
 ---
 
-# alicloud\_alidns\_record
+# alicloud_alidns_record
 
 Provides a Alidns Record resource. For information about Alidns Domain Record and how to use it, see [What is Resource Alidns Record](https://www.alibabacloud.com/help/en/doc-detail/29772.htm).
 
--> **NOTE:** Available in v1.85.0+.
+-> **NOTE:** Available since v1.85.0.
 
 -> **NOTE:** When the site is an international site, the `type` neither supports `REDIRECT_URL` nor `REDIRECT_URL`
 
 ## Example Usage
 
 ```terraform
-# Create a new Domain Record
+resource "alicloud_alidns_domain_group" "default" {
+  domain_group_name = "tf-example"
+}
+resource "alicloud_alidns_domain" "default" {
+  domain_name = "starmove.com"
+  group_id    = alicloud_alidns_domain_group.default.id
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
 resource "alicloud_alidns_record" "record" {
-  domain_name = "domainname"
-  rr          = "@"
-  type        = "A"
-  value       = "192.168.99.99"
-  remark      = "Test new alidns record."
+  domain_name = alicloud_alidns_domain.default.domain_name
+  rr          = "alimail"
+  type        = "CNAME"
+  value       = "mail.mxhichin.com"
+  remark      = "tf-example"
   status      = "ENABLE"
 }
 ```
@@ -51,7 +61,7 @@ The following attributes are exported:
 
 * `id` - The id of Domain Record.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.99.0+.
 
