@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DNS Monitor Config resource.
 ---
 
-# alicloud\_alidns\_monitor\_config
+# alicloud_alidns_monitor_config
 
 Provides a DNS Monitor Config resource.
 
 For information about DNS Monitor Config and how to use it, see [What is Monitor Config](https://www.alibabacloud.com/help/en/doc-detail/198064.html).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
@@ -21,15 +21,12 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testacc"
+  default = "tf_example"
 }
-
 variable "domain_name" {
-  default = "your_domain_name"
+  default = "alicloud-provider.com"
 }
-
 data "alicloud_resource_manager_resource_groups" "default" {}
-
 resource "alicloud_cms_alarm_contact_group" "default" {
   alarm_contact_group_name = var.name
 }
@@ -39,7 +36,7 @@ resource "alicloud_alidns_gtm_instance" "default" {
   payment_type            = "Subscription"
   period                  = 1
   renewal_status          = "ManualRenewal"
-  package_edition         = "ultimate"
+  package_edition         = "standard"
   health_check_task_count = 100
   sms_notification_count  = 1000
   public_cname_mode       = "SYSTEM_ASSIGN"
@@ -76,8 +73,8 @@ resource "alicloud_alidns_monitor_config" "default" {
   interval            = "60"
   timeout             = "5000"
   protocol_type       = "TCP"
-  monitor_extend_info = "{\"failureRate\"=50,\"port\"=80}"
-  isp_city_node = {
+  monitor_extend_info = "{\"failureRate\":50,\"port\":80}"
+  isp_city_node {
     city_code = "503"
     isp_code  = "465"
   }
@@ -91,13 +88,13 @@ The following arguments are supported:
 * `addr_pool_id` - (Required, ForceNew) The ID of the address pool.
 * `evaluation_count` - (Required) The number of consecutive times of failed health check attempts. Valid values: `1`, `2`, `3`.
 * `interval` - (Required) The health check interval. Unit: seconds. Valid values: `60`.
-* `isp_city_node` - (Required) The Monitoring node. See the following `Block isp_city_node`.
+* `isp_city_node` - (Required) The Monitoring node. See [`isp_city_node`](#isp_city_node) below for details.
 * `lang` - (Optional) The lang.
 * `monitor_extend_info` - (Required) The extended information. This value follows the json format. For more details, see the [description of MonitorExtendInfo in the Request parameters table for details](https://www.alibabacloud.com/help/en/doc-detail/198064.html).
 * `protocol_type` - (Required) The health check protocol. Valid values: `HTTP`, `HTTPS`, `PING`, `TCP`.
 * `timeout` - (Required) The timeout period. Unit: milliseconds. Valid values: `2000`, `3000`, `5000`, `10000`.
 
-#### Block isp_city_node
+### `isp_city_node`
 
 The isp_city_node supports the following: 
 

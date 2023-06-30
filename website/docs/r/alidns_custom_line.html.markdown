@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Alidns Custom Line resource.
 ---
 
-# alicloud\_alidns\_custom\_line
+# alicloud_alidns_custom_line
 
 Provides a Alidns Custom Line resource.
 
 For information about Alidns Custom Line and how to use it, see [What is Custom Line](https://www.alibabacloud.com/help/en/doc-detail/145059.html).
 
--> **NOTE:** Available in v1.151.0+.
+-> **NOTE:** Available since v1.151.0.
 
 ## Example Usage
 
@@ -21,8 +21,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_alidns_custom_line" "default" {
-  custom_line_name = "tf-testacc"
-  domain_name      = "your_domain_name"
+  custom_line_name = "tf-example"
+  domain_name      = "alicloud-provider.com"
   ip_segment_list {
     start_ip = "192.0.2.123"
     end_ip   = "192.0.2.125"
@@ -35,10 +35,10 @@ resource "alicloud_alidns_custom_line" "default" {
 The following arguments are supported:
 * `custom_line_name` - (Required) The name of the Custom Line.
 * `domain_name` - (Required, ForceNew) The Domain name.
-* `ip_segment_list` - (Required) The IP segment list. See the following `Block ip_segment_list`.
+* `ip_segment_list` - (Required) The IP segment list. See [`ip_segment_list`](#ip_segment_list) below for details.
 * `lang` - (Optional) The lang.
 
-### Block ip_segment_list
+### `ip_segment_list`
 
 The ip_segment_list supports the following:
 

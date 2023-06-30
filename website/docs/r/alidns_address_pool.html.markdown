@@ -7,34 +7,36 @@ description: |-
   Provides a Alicloud Alidns Address Pool resource.
 ---
 
-# alicloud\_alidns\_address\_pool
+# alicloud_alidns_address_pool
 
 Provides a Alidns Address Pool resource.
 
 For information about Alidns Address Pool and how to use it, see [What is Address Pool](https://www.alibabacloud.com/help/doc-detail/189621.html).
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+variable "domain_name" {
+  default = "alicloud-provider.com"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
-
 resource "alicloud_cms_alarm_contact_group" "default" {
-  alarm_contact_group_name = "example_value"
+  alarm_contact_group_name = var.name
 }
 
-data "alicloud_alidns_gtm_instances" "default" {}
-
 resource "alicloud_alidns_gtm_instance" "default" {
-  count                   = length(data.alicloud_alidns_gtm_instances.default.ids) > 0 ? 0 : 1
-  instance_name           = "example_value"
+  instance_name           = var.name
   payment_type            = "Subscription"
   period                  = 1
   renewal_status          = "ManualRenewal"
-  package_edition         = "ultimate"
+  package_edition         = "standard"
   health_check_task_count = 100
   sms_notification_count  = 1000
   public_cname_mode       = "SYSTEM_ASSIGN"
@@ -42,7 +44,7 @@ resource "alicloud_alidns_gtm_instance" "default" {
   cname_type              = "PUBLIC"
   resource_group_id       = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   alert_group             = [alicloud_cms_alarm_contact_group.default.alarm_contact_group_name]
-  public_user_domain_name = "example_domain_name"
+  public_user_domain_name = var.domain_name
   alert_config {
     sms_notice      = true
     notice_type     = "ADDR_ALERT"
@@ -51,13 +53,9 @@ resource "alicloud_alidns_gtm_instance" "default" {
   }
 }
 
-locals {
-  gtm_instance_id = length(data.alicloud_alidns_gtm_instances.default.ids) > 0 ? data.alicloud_alidns_gtm_instances.default.ids[0] : concat(alicloud_alidns_gtm_instance.default.*.id, [""])[0]
-}
-
 resource "alicloud_alidns_address_pool" "default" {
   address_pool_name = var.name
-  instance_id       = local.gtm_instance_id
+  instance_id       = alicloud_alidns_gtm_instance.default.id
   lba_strategy      = "RATIO"
   type              = "IPV4"
   address {
@@ -74,12 +72,12 @@ resource "alicloud_alidns_address_pool" "default" {
 
 The following arguments are supported:
 * `address_pool_name` - (Required) The name of the address pool.
-* `address` - (Required) The address lists of the Address Pool. See the following `Block address`.
+* `address` - (Required) The address lists of the Address Pool. See [`address`](#address) below for details.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
 * `lba_strategy` - (Required)The load balancing policy of the address pool. Valid values:`ALL_RR` or `RATIO`. `ALL_RR`: returns all addresses. `RATIO`: returns addresses by weight.
 * `type` - (Required, ForceNew) The type of the address pool. Valid values: `IPV4`, `IPV6`, `DOMAIN`.
 
-#### Block address
+### `address`
 
 The address supports the following:
 * `address` - (Required) The address that you want to add to the address pool.

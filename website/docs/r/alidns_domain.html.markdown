@@ -7,24 +7,26 @@ description: |-
   Provides a Alidns domain resource.
 ---
 
-# alicloud\_alidns\_domain
+# alicloud_alidns_domain
 
 Provides a Alidns domain resource.
 
 -> **NOTE:** The domain name which you want to add must be already registered and had not added by another account. Every domain name can only exist in a unique group.
 
--> **NOTE:** Available in v1.95.0+.
+-> **NOTE:** Available since v1.95.0.
 
 ## Example Usage
 
 ```terraform
-# Add a new Domain.
-resource "alicloud_alidns_domain" "dns" {
+resource "alicloud_alidns_domain_group" "default" {
+  domain_group_name = "tf-example"
+}
+resource "alicloud_alidns_domain" "default" {
   domain_name = "starmove.com"
-  group_id    = "85ab8713-4a30-4de4-9d20-155ff830****"
+  group_id    = alicloud_alidns_domain_group.default.id
   tags = {
-    Created     = "Terraform"
-    Environment = "test"
+    Created = "TF",
+    For     = "example",
   }
 }
 ```
@@ -51,7 +53,7 @@ The following attributes are exported:
 * `group_name` - Domain name group name.
 * `puny_code` - Only return punycode codes for Chinese domain names.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.97.0+.
 
