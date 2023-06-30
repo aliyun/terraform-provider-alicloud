@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud Alikafka Sasl Acl resource.
 ---
 
-# alicloud\_alikafka\_sasl\_acl
+# alicloud_alikafka_sasl_acl
 
-Provides an ALIKAFKA sasl acl resource.
+Provides an ALIKAFKA sasl acl resource, see [What is alikafka sasl acl](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-createacl).
 
--> **NOTE:** Available in 1.66.0+
+-> **NOTE:** Available since v1.66.0.
 
 -> **NOTE:**  Only the following regions support create alikafka sasl user.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
@@ -21,48 +21,53 @@ Provides an ALIKAFKA sasl acl resource.
 Basic Usage
 
 ```terraform
-variable "username" {
-  default = "testusername"
+variable "name" {
+  default = "tf_example"
 }
-
-variable "password" {
-  default = "testpassword"
-}
-
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name          = "tf-testacc-alikafkainstance"
-  partition_num = "50"
-  disk_type     = "1"
-  disk_size     = "500"
-  deploy_type   = "5"
-  io_max        = "20"
-  vswitch_id    = alicloud_vswitch.default.id
+  name            = var.name
+  partition_num   = 50
+  disk_type       = "1"
+  disk_size       = "500"
+  deploy_type     = "5"
+  io_max          = "20"
+  spec_type       = "professional"
+  service_version = "2.2.0"
+  config          = "{\"enable.acl\":\"true\"}"
+  vswitch_id      = alicloud_vswitch.default.id
+  security_group  = alicloud_security_group.default.id
 }
 
 resource "alicloud_alikafka_topic" "default" {
   instance_id = alicloud_alikafka_instance.default.id
-  topic       = "test-topic"
+  topic       = "example-topic"
   remark      = "topic-remark"
 }
 
 resource "alicloud_alikafka_sasl_user" "default" {
   instance_id = alicloud_alikafka_instance.default.id
-  username    = var.username
-  password    = var.password
+  username    = var.name
+  password    = "tf_example123"
 }
 
 resource "alicloud_alikafka_sasl_acl" "default" {

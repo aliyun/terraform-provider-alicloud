@@ -1,19 +1,19 @@
 ---
 subcategory: "AliKafka"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_ali_kafka_instance_allowed_ip_attachment"
+page_title: "Alicloud: alicloud_alikafka_instance_allowed_ip_attachment"
 sidebar_current: "docs-alicloud-resource-alikafka-instance-allowed-ip-attachment"
 description: |-
   Provides a Alicloud AliKafka Instance Allowed Ip Attachment resource.
 ---
 
-# alicloud\_alikafka\_instance\_allowed\_ip\_attachment
+# alicloud_alikafka_instance_allowed_ip_attachment
 
 Provides a AliKafka Instance Allowed Ip Attachment resource.
 
-For information about Ali Kafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/doc-detail/68151.html).
+For information about Ali Kafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-updateallowedip).
 
--> **NOTE:** Available in v1.163.0+.
+-> **NOTE:** Available since v1.163.0.
 
 ## Example Usage
 
@@ -21,20 +21,26 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tftest"
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
@@ -44,7 +50,7 @@ resource "alicloud_alikafka_instance" "default" {
   disk_size      = 500
   deploy_type    = 5
   io_max         = 20
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
+  vswitch_id     = alicloud_vswitch.default.id
   security_group = alicloud_security_group.default.id
 }
 
@@ -75,7 +81,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Instance Allowed Ip Attachment. The value formats as `<instance_id>:<allowed_type>:<port_range>:<allowed_ip>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
