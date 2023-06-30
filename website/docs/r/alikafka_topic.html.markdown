@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud ALIKAFKA Topic resource.
 ---
 
-# alicloud\_alikafka\_topic
+# alicloud_alikafka_topic
 
-Provides an ALIKAFKA topic resource.
+Provides an ALIKAFKA topic resource, see [What is Alikafka topic ](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-createtopic).
 
--> **NOTE:** Available in 1.56.0+
+-> **NOTE:** Available since v1.56.0.
 
 -> **NOTE:**  Only the following regions support create alikafka topic.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
@@ -36,7 +36,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name          = "tf-testacc-alikafkainstance"
+  name          = "tf-example"
   partition_num = "50"
   disk_type     = "1"
   disk_size     = "500"
@@ -45,13 +45,9 @@ resource "alicloud_alikafka_instance" "default" {
   vswitch_id    = alicloud_vswitch.default.id
 }
 
-variable "topic" {
-  default = "alikafkaTopicName"
-}
-
 resource "alicloud_alikafka_topic" "default" {
   instance_id   = alicloud_alikafka_instance.default.id
-  topic         = var.topic
+  topic         = "example-topic"
   local_topic   = "false"
   compact_topic = "false"
   partition_num = "12"
@@ -85,9 +81,9 @@ ALIKAFKA TOPIC can be imported using the id, e.g.
 $ terraform import alicloud_alikafka_topic.topic alikafka_post-cn-123455abc:topicName
 ```
 
-### Timeouts
+## Timeouts
 
--> **NOTE:** Available in v1.119.0+.
+-> **NOTE:** Available since v1.119.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
