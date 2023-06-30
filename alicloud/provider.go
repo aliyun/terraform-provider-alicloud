@@ -855,6 +855,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+"alicloud_elasticsearch_logstash":resourceAliCloudElasticsearchLogstash(),
 			"alicloud_eip_segment_address":                resourceAliCloudEipSegmentAddress(),
 			"alicloud_quotas_template_quota":              resourceAliCloudQuotasTemplateQuota(),
 			"alicloud_redis_tair_instance":                resourceAliCloudRedisTairInstance(),
