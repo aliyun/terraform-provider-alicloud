@@ -71,17 +71,17 @@ func (client *Client) RestartK8sApplicationWithCallback(request *RestartK8sAppli
 // RestartK8sApplicationRequest is the request struct for api RestartK8sApplication
 type RestartK8sApplicationRequest struct {
 	*requests.RoaRequest
-	AppId   string           `position:"Query" name:"AppId"`
-	Timeout requests.Integer `position:"Query" name:"Timeout"`
+	AppId   string `position:"Query" name:"AppId"`
+	Timeout string `position:"Query" name:"Timeout"`
 }
 
 // RestartK8sApplicationResponse is the response struct for api RestartK8sApplication
 type RestartK8sApplicationResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
+	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
 	Code          int    `json:"Code" xml:"Code"`
 	Message       string `json:"Message" xml:"Message"`
-	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateRestartK8sApplicationRequest creates a request to invoke RestartK8sApplication API

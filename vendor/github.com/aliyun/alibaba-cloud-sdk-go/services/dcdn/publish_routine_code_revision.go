@@ -71,17 +71,16 @@ func (client *Client) PublishRoutineCodeRevisionWithCallback(request *PublishRou
 // PublishRoutineCodeRevisionRequest is the request struct for api PublishRoutineCodeRevision
 type PublishRoutineCodeRevisionRequest struct {
 	*requests.RpcRequest
-	SelectCodeRevision string           `position:"Body" name:"SelectCodeRevision"`
-	Envs               string           `position:"Body" name:"Envs"`
-	OwnerId            requests.Integer `position:"Query" name:"OwnerId"`
-	Name               string           `position:"Body" name:"Name"`
+	Name               string `position:"Body" name:"Name"`
+	SelectCodeRevision string `position:"Body" name:"SelectCodeRevision"`
+	Envs               string `position:"Body" name:"Envs"`
 }
 
 // PublishRoutineCodeRevisionResponse is the response struct for api PublishRoutineCodeRevision
 type PublishRoutineCodeRevisionResponse struct {
 	*responses.BaseResponse
-	RequestId string                 `json:"RequestId" xml:"RequestId"`
 	Content   map[string]interface{} `json:"Content" xml:"Content"`
+	RequestId string                 `json:"RequestId" xml:"RequestId"`
 }
 
 // CreatePublishRoutineCodeRevisionRequest creates a request to invoke PublishRoutineCodeRevision API

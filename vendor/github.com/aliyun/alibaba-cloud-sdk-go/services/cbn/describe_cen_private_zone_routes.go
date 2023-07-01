@@ -78,6 +78,7 @@ type DescribeCenPrivateZoneRoutesRequest struct {
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	HostRegionId         string           `position:"Query" name:"HostRegionId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
+	Version              string           `position:"Query" name:"Version"`
 }
 
 // DescribeCenPrivateZoneRoutesResponse is the response struct for api DescribeCenPrivateZoneRoutes

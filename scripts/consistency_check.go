@@ -79,6 +79,7 @@ func main() {
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		resourceName := ""
+		isResource := true
 		docsPath := "website/docs/r/"
 		if fileRegex.MatchString(file.NewName) {
 			if fileTestRegex.MatchString(file.NewName) {
@@ -96,7 +97,7 @@ func main() {
 			resourceNameMap[resourceName] = struct{}{}
 		}
 
-		log.Infof("==> Checking resource %s attributes consistency...", resourceName)
+		log.Infof("==> Checking resource or data-source %s attributes consistency...", resourceName)
 		resource, ok := alicloud.Provider().(*schema.Provider).ResourcesMap[resourceName]
 		if !ok || resource == nil {
 			resourceName = strings.TrimPrefix(resourceName, "data_source_")
@@ -107,10 +108,11 @@ func main() {
 				continue
 			}
 			docsPath = "website/docs/d/"
+			isResource = false
 		}
 		resourceSchema := resource.Schema
 		resourceSchemaFromDocs := make(map[string]ResourceAttribute)
-		if err := parseResourceDocs(resourceName, docsPath, resourceSchemaFromDocs); err != nil {
+		if err := parseResourceDocs(resourceName, docsPath, isResource, resourceSchemaFromDocs); err != nil {
 			log.Errorf("parsing the resource %s docs failed. error: %s", resourceName, err)
 			continue
 		}
@@ -128,7 +130,7 @@ func main() {
 	return
 }
 
-func parseResourceDocs(resourceName, docsPath string, resourceAttributes map[string]ResourceAttribute) error {
+func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceAttributes map[string]ResourceAttribute) error {
 	splitRes := strings.Split(resourceName, "alicloud_")
 	if len(splitRes) < 2 {
 		log.Errorf("parsing resource name %s failed.", resourceName)
@@ -178,9 +180,9 @@ func parseResourceDocs(resourceName, docsPath string, resourceAttributes map[str
 			subAttributeName = ""
 			continue
 		}
-		if secondLevelRegex.MatchString(text) {
+		if secondLevelRegex.MatchString(strings.TrimSpace(text)) {
 			record = true
-			parts := strings.Split(text, " ")
+			parts := strings.Split(strings.TrimSpace(text), " ")
 			subAttributeName = strings.Replace(strings.Trim(parts[len(parts)-1], "`"), "-", ".", -1)
 			continue
 		}
@@ -219,7 +221,11 @@ func parseResourceDocs(resourceName, docsPath string, resourceAttributes map[str
 					continue
 				}
 				attribute.DocsLineNum = line
-				resourceAttributes[attribute.Name] = *attribute
+				if _, ok := resourceAttributes[attribute.Name]; !ok {
+					resourceAttributes[attribute.Name] = *attribute
+				} else if isResource {
+					log.Errorf("'%v' has been set in the `## Argument Reference` and it should be removed from `## Attributes Reference`", attribute.Name)
+				}
 			}
 		}
 	}

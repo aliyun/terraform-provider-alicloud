@@ -71,19 +71,20 @@ func (client *Client) DescribeAclsWithCallback(request *DescribeAclsRequest, cal
 // DescribeAclsRequest is the request struct for api DescribeAcls
 type DescribeAclsRequest struct {
 	*requests.RpcRequest
-	AclResourceType string `position:"Query" name:"AclResourceType"`
-	AclResourceName string `position:"Query" name:"AclResourceName"`
-	InstanceId      string `position:"Query" name:"InstanceId"`
-	Username        string `position:"Query" name:"Username"`
+	AclResourcePatternType string `position:"Query" name:"AclResourcePatternType"`
+	AclResourceType        string `position:"Query" name:"AclResourceType"`
+	AclResourceName        string `position:"Query" name:"AclResourceName"`
+	InstanceId             string `position:"Query" name:"InstanceId"`
+	Username               string `position:"Query" name:"Username"`
 }
 
 // DescribeAclsResponse is the response struct for api DescribeAcls
 type DescribeAclsResponse struct {
 	*responses.BaseResponse
-	RequestId    string       `json:"RequestId" xml:"RequestId"`
-	Success      bool         `json:"Success" xml:"Success"`
 	Code         int          `json:"Code" xml:"Code"`
 	Message      string       `json:"Message" xml:"Message"`
+	RequestId    string       `json:"RequestId" xml:"RequestId"`
+	Success      bool         `json:"Success" xml:"Success"`
 	KafkaAclList KafkaAclList `json:"KafkaAclList" xml:"KafkaAclList"`
 }
 
@@ -92,7 +93,7 @@ func CreateDescribeAclsRequest() (request *DescribeAclsRequest) {
 	request = &DescribeAclsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "DescribeAcls", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "DescribeAcls", "", "")
 	request.Method = requests.POST
 	return
 }

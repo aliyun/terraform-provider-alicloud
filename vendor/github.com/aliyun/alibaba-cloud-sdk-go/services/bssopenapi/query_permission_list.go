@@ -77,11 +77,11 @@ type QueryPermissionListRequest struct {
 // QueryPermissionListResponse is the response struct for api QueryPermissionList
 type QueryPermissionListResponse struct {
 	*responses.BaseResponse
-	Code      string `json:"Code" xml:"Code"`
-	Message   string `json:"Message" xml:"Message"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
-	Data      Data   `json:"Data" xml:"Data"`
+	Code      string                    `json:"Code" xml:"Code"`
+	Message   string                    `json:"Message" xml:"Message"`
+	RequestId string                    `json:"RequestId" xml:"RequestId"`
+	Success   bool                      `json:"Success" xml:"Success"`
+	Data      DataInQueryPermissionList `json:"Data" xml:"Data"`
 }
 
 // CreateQueryPermissionListRequest creates a request to invoke QueryPermissionList API
@@ -89,7 +89,7 @@ func CreateQueryPermissionListRequest() (request *QueryPermissionListRequest) {
 	request = &QueryPermissionListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryPermissionList", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QueryPermissionList", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -71,17 +71,16 @@ func (client *Client) DescribeCustomLogConfigWithCallback(request *DescribeCusto
 // DescribeCustomLogConfigRequest is the request struct for api DescribeCustomLogConfig
 type DescribeCustomLogConfigRequest struct {
 	*requests.RpcRequest
-	OwnerId  requests.Integer `position:"Query" name:"OwnerId"`
-	ConfigId string           `position:"Query" name:"ConfigId"`
+	ConfigId string `position:"Query" name:"ConfigId"`
 }
 
 // DescribeCustomLogConfigResponse is the response struct for api DescribeCustomLogConfig
 type DescribeCustomLogConfigResponse struct {
 	*responses.BaseResponse
+	Tag       string `json:"Tag" xml:"Tag"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	Remark    string `json:"Remark" xml:"Remark"`
 	Sample    string `json:"Sample" xml:"Sample"`
-	Tag       string `json:"Tag" xml:"Tag"`
 }
 
 // CreateDescribeCustomLogConfigRequest creates a request to invoke DescribeCustomLogConfig API

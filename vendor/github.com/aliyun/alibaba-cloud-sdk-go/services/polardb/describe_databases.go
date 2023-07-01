@@ -84,9 +84,9 @@ type DescribeDatabasesRequest struct {
 // DescribeDatabasesResponse is the response struct for api DescribeDatabases
 type DescribeDatabasesResponse struct {
 	*responses.BaseResponse
+	PageRecordCount int       `json:"PageRecordCount" xml:"PageRecordCount"`
 	RequestId       string    `json:"RequestId" xml:"RequestId"`
 	PageNumber      int       `json:"PageNumber" xml:"PageNumber"`
-	PageRecordCount int       `json:"PageRecordCount" xml:"PageRecordCount"`
 	Databases       Databases `json:"Databases" xml:"Databases"`
 }
 

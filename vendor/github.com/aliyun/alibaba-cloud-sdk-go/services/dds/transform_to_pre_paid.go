@@ -83,6 +83,7 @@ type TransformToPrePaidRequest struct {
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	InstanceId           string           `position:"Query" name:"InstanceId"`
 	AutoRenew            string           `position:"Query" name:"AutoRenew"`
+	ChargeType           string           `position:"Query" name:"ChargeType"`
 }
 
 // TransformToPrePaidResponse is the response struct for api TransformToPrePaid

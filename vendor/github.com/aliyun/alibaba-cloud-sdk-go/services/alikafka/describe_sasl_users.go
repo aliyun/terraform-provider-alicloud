@@ -77,10 +77,10 @@ type DescribeSaslUsersRequest struct {
 // DescribeSaslUsersResponse is the response struct for api DescribeSaslUsers
 type DescribeSaslUsersResponse struct {
 	*responses.BaseResponse
-	RequestId    string       `json:"RequestId" xml:"RequestId"`
-	Success      bool         `json:"Success" xml:"Success"`
 	Code         int          `json:"Code" xml:"Code"`
 	Message      string       `json:"Message" xml:"Message"`
+	RequestId    string       `json:"RequestId" xml:"RequestId"`
+	Success      bool         `json:"Success" xml:"Success"`
 	SaslUserList SaslUserList `json:"SaslUserList" xml:"SaslUserList"`
 }
 
@@ -89,7 +89,7 @@ func CreateDescribeSaslUsersRequest() (request *DescribeSaslUsersRequest) {
 	request = &DescribeSaslUsersRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "DescribeSaslUsers", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "DescribeSaslUsers", "", "")
 	request.Method = requests.POST
 	return
 }

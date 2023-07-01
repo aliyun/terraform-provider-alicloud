@@ -71,20 +71,18 @@ func (client *Client) DescribeDcdnIpInfoWithCallback(request *DescribeDcdnIpInfo
 // DescribeDcdnIpInfoRequest is the request struct for api DescribeDcdnIpInfo
 type DescribeDcdnIpInfoRequest struct {
 	*requests.RpcRequest
-	IP            string           `position:"Query" name:"IP"`
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
-	SecurityToken string           `position:"Query" name:"SecurityToken"`
+	IP string `position:"Query" name:"IP"`
 }
 
 // DescribeDcdnIpInfoResponse is the response struct for api DescribeDcdnIpInfo
 type DescribeDcdnIpInfoResponse struct {
 	*responses.BaseResponse
 	RequestId   string `json:"RequestId" xml:"RequestId"`
+	RegionEname string `json:"RegionEname" xml:"RegionEname"`
+	Region      string `json:"Region" xml:"Region"`
+	IspEname    string `json:"IspEname" xml:"IspEname"`
 	DcdnIp      string `json:"DcdnIp" xml:"DcdnIp"`
 	ISP         string `json:"ISP" xml:"ISP"`
-	IspEname    string `json:"IspEname" xml:"IspEname"`
-	Region      string `json:"Region" xml:"Region"`
-	RegionEname string `json:"RegionEname" xml:"RegionEname"`
 }
 
 // CreateDescribeDcdnIpInfoRequest creates a request to invoke DescribeDcdnIpInfo API

@@ -75,6 +75,7 @@ type DescribeBackupsRequest struct {
 	StartTime            string           `position:"Query" name:"StartTime"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	BackupRegion         string           `position:"Query" name:"BackupRegion"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	DBClusterId          string           `position:"Query" name:"DBClusterId"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -88,10 +89,10 @@ type DescribeBackupsRequest struct {
 // DescribeBackupsResponse is the response struct for api DescribeBackups
 type DescribeBackupsResponse struct {
 	*responses.BaseResponse
-	RequestId        string                 `json:"RequestId" xml:"RequestId"`
 	TotalRecordCount string                 `json:"TotalRecordCount" xml:"TotalRecordCount"`
-	PageNumber       string                 `json:"PageNumber" xml:"PageNumber"`
 	PageRecordCount  string                 `json:"PageRecordCount" xml:"PageRecordCount"`
+	RequestId        string                 `json:"RequestId" xml:"RequestId"`
+	PageNumber       string                 `json:"PageNumber" xml:"PageNumber"`
 	Items            ItemsInDescribeBackups `json:"Items" xml:"Items"`
 }
 

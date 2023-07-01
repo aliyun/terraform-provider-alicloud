@@ -71,21 +71,20 @@ func (client *Client) DescribeDomainRealTimeTrafficDataWithCallback(request *Des
 // DescribeDomainRealTimeTrafficDataRequest is the request struct for api DescribeDomainRealTimeTrafficData
 type DescribeDomainRealTimeTrafficDataRequest struct {
 	*requests.RpcRequest
-	LocationNameEn string           `position:"Query" name:"LocationNameEn"`
-	StartTime      string           `position:"Query" name:"StartTime"`
-	IspNameEn      string           `position:"Query" name:"IspNameEn"`
-	DomainName     string           `position:"Query" name:"DomainName"`
-	EndTime        string           `position:"Query" name:"EndTime"`
-	OwnerId        requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName     string `position:"Query" name:"DomainName"`
+	EndTime        string `position:"Query" name:"EndTime"`
+	LocationNameEn string `position:"Query" name:"LocationNameEn"`
+	StartTime      string `position:"Query" name:"StartTime"`
+	IspNameEn      string `position:"Query" name:"IspNameEn"`
 }
 
 // DescribeDomainRealTimeTrafficDataResponse is the response struct for api DescribeDomainRealTimeTrafficData
 type DescribeDomainRealTimeTrafficDataResponse struct {
 	*responses.BaseResponse
+	EndTime                        string                         `json:"EndTime" xml:"EndTime"`
+	StartTime                      string                         `json:"StartTime" xml:"StartTime"`
 	RequestId                      string                         `json:"RequestId" xml:"RequestId"`
 	DomainName                     string                         `json:"DomainName" xml:"DomainName"`
-	StartTime                      string                         `json:"StartTime" xml:"StartTime"`
-	EndTime                        string                         `json:"EndTime" xml:"EndTime"`
 	DataInterval                   string                         `json:"DataInterval" xml:"DataInterval"`
 	RealTimeTrafficDataPerInterval RealTimeTrafficDataPerInterval `json:"RealTimeTrafficDataPerInterval" xml:"RealTimeTrafficDataPerInterval"`
 }

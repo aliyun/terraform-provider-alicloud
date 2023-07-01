@@ -7,11 +7,11 @@ description: |-
   Binds SLB to an EDAS application.
 ---
 
-# alicloud\_edas\_slb\_attachment
+# alicloud_edas_slb_attachment
 
 Binds SLB to an EDAS application.
 
--> **NOTE:** Available in 1.82.0+
+-> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
 

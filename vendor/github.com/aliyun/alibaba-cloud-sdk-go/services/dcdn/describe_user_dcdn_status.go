@@ -71,18 +71,17 @@ func (client *Client) DescribeUserDcdnStatusWithCallback(request *DescribeUserDc
 // DescribeUserDcdnStatusRequest is the request struct for api DescribeUserDcdnStatus
 type DescribeUserDcdnStatusRequest struct {
 	*requests.RpcRequest
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
-	SecurityToken string           `position:"Query" name:"SecurityToken"`
+	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeUserDcdnStatusResponse is the response struct for api DescribeUserDcdnStatus
 type DescribeUserDcdnStatusResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
-	Enabled       bool   `json:"Enabled" xml:"Enabled"`
-	OnService     bool   `json:"OnService" xml:"OnService"`
 	InDebt        bool   `json:"InDebt" xml:"InDebt"`
+	OnService     bool   `json:"OnService" xml:"OnService"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 	InDebtOverdue bool   `json:"InDebtOverdue" xml:"InDebtOverdue"`
+	Enabled       bool   `json:"Enabled" xml:"Enabled"`
 }
 
 // CreateDescribeUserDcdnStatusRequest creates a request to invoke DescribeUserDcdnStatus API

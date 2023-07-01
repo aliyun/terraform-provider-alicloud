@@ -71,17 +71,16 @@ func (client *Client) DescribeEsExecuteDataWithCallback(request *DescribeEsExecu
 // DescribeEsExecuteDataRequest is the request struct for api DescribeEsExecuteData
 type DescribeEsExecuteDataRequest struct {
 	*requests.RpcRequest
-	StartTime string           `position:"Query" name:"StartTime"`
-	EndTime   string           `position:"Query" name:"EndTime"`
-	OwnerId   requests.Integer `position:"Query" name:"OwnerId"`
-	RuleId    string           `position:"Query" name:"RuleId"`
+	EndTime   string `position:"Query" name:"EndTime"`
+	StartTime string `position:"Query" name:"StartTime"`
+	RuleId    string `position:"Query" name:"RuleId"`
 }
 
 // DescribeEsExecuteDataResponse is the response struct for api DescribeEsExecuteData
 type DescribeEsExecuteDataResponse struct {
 	*responses.BaseResponse
-	RequestId string    `json:"RequestId" xml:"RequestId"`
-	Contents  []Content `json:"Contents" xml:"Contents"`
+	RequestId string                           `json:"RequestId" xml:"RequestId"`
+	Contents  []ContentInDescribeEsExecuteData `json:"Contents" xml:"Contents"`
 }
 
 // CreateDescribeEsExecuteDataRequest creates a request to invoke DescribeEsExecuteData API

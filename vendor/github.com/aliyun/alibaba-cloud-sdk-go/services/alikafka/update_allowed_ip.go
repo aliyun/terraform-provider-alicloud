@@ -75,16 +75,17 @@ type UpdateAllowedIpRequest struct {
 	AllowedListIp   string `position:"Query" name:"AllowedListIp"`
 	UpdateType      string `position:"Query" name:"UpdateType"`
 	AllowedListType string `position:"Query" name:"AllowedListType"`
+	Description     string `position:"Query" name:"Description"`
 	InstanceId      string `position:"Query" name:"InstanceId"`
 }
 
 // UpdateAllowedIpResponse is the response struct for api UpdateAllowedIp
 type UpdateAllowedIpResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateUpdateAllowedIpRequest creates a request to invoke UpdateAllowedIp API
@@ -92,7 +93,7 @@ func CreateUpdateAllowedIpRequest() (request *UpdateAllowedIpRequest) {
 	request = &UpdateAllowedIpRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "UpdateAllowedIp", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "UpdateAllowedIp", "", "")
 	request.Method = requests.POST
 	return
 }

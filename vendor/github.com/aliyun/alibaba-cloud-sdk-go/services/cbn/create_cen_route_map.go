@@ -87,6 +87,7 @@ type CreateCenRouteMapRequest struct {
 	Preference                         requests.Integer `position:"Query" name:"Preference"`
 	OwnerId                            requests.Integer `position:"Query" name:"OwnerId"`
 	Priority                           requests.Integer `position:"Query" name:"Priority"`
+	Version                            string           `position:"Query" name:"Version"`
 	DestinationChildInstanceTypes      *[]string        `position:"Query" name:"DestinationChildInstanceTypes"  type:"Repeated"`
 	SourceRouteTableIds                *[]string        `position:"Query" name:"SourceRouteTableIds"  type:"Repeated"`
 	SourceChildInstanceTypes           *[]string        `position:"Query" name:"SourceChildInstanceTypes"  type:"Repeated"`
@@ -98,6 +99,7 @@ type CreateCenRouteMapRequest struct {
 	CenId                              string           `position:"Query" name:"CenId"`
 	Description                        string           `position:"Query" name:"Description"`
 	SourceInstanceIdsReverseMatch      requests.Boolean `position:"Query" name:"SourceInstanceIdsReverseMatch"`
+	GatewayRegionId                    string           `position:"Query" name:"GatewayRegionId"`
 	DestinationRouteTableIds           *[]string        `position:"Query" name:"DestinationRouteTableIds"  type:"Repeated"`
 	SourceZoneIds                      *[]string        `position:"Query" name:"SourceZoneIds"  type:"Repeated"`
 	TransmitDirection                  string           `position:"Query" name:"TransmitDirection"`

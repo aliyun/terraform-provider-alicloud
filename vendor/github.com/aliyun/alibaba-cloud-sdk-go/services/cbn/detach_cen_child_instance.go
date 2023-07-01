@@ -79,6 +79,7 @@ type DetachCenChildInstanceRequest struct {
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
 	ChildInstanceType     string           `position:"Query" name:"ChildInstanceType"`
+	Version               string           `position:"Query" name:"Version"`
 	ChildInstanceOwnerId  requests.Integer `position:"Query" name:"ChildInstanceOwnerId"`
 	ChildInstanceId       string           `position:"Query" name:"ChildInstanceId"`
 }

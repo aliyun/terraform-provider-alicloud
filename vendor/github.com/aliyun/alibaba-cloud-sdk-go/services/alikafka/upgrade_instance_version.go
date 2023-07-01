@@ -78,10 +78,10 @@ type UpgradeInstanceVersionRequest struct {
 // UpgradeInstanceVersionResponse is the response struct for api UpgradeInstanceVersion
 type UpgradeInstanceVersionResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateUpgradeInstanceVersionRequest creates a request to invoke UpgradeInstanceVersion API
@@ -89,7 +89,7 @@ func CreateUpgradeInstanceVersionRequest() (request *UpgradeInstanceVersionReque
 	request = &UpgradeInstanceVersionRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "UpgradeInstanceVersion", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "UpgradeInstanceVersion", "", "")
 	request.Method = requests.POST
 	return
 }

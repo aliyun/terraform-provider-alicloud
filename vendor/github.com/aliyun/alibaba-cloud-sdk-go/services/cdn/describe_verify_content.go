@@ -71,15 +71,14 @@ func (client *Client) DescribeVerifyContentWithCallback(request *DescribeVerifyC
 // DescribeVerifyContentRequest is the request struct for api DescribeVerifyContent
 type DescribeVerifyContentRequest struct {
 	*requests.RpcRequest
-	DomainName string           `position:"Query" name:"DomainName"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
 }
 
 // DescribeVerifyContentResponse is the response struct for api DescribeVerifyContent
 type DescribeVerifyContentResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Content   string `json:"Content" xml:"Content"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeVerifyContentRequest creates a request to invoke DescribeVerifyContent API

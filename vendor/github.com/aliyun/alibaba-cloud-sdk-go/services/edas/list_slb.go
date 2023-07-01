@@ -71,6 +71,9 @@ func (client *Client) ListSlbWithCallback(request *ListSlbRequest, callback func
 // ListSlbRequest is the request struct for api ListSlb
 type ListSlbRequest struct {
 	*requests.RoaRequest
+	SlbType     string `position:"Query" name:"SlbType"`
+	VpcId       string `position:"Query" name:"VpcId"`
+	AddressType string `position:"Query" name:"AddressType"`
 }
 
 // ListSlbResponse is the response struct for api ListSlb

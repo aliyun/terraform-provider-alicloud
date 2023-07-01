@@ -7,11 +7,11 @@ description: |-
   This operation is provided to scale out an EDAS application.
 ---
 
-# alicloud\_edas\_application\_scale
+# alicloud_edas_application_scale
 
 This operation is provided to scale out an EDAS application.
 
--> **NOTE:** Available in 1.82.0+
+-> **NOTE:** Available since v1.82.0
 
 ## Example Usage
 

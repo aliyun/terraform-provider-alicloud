@@ -71,16 +71,16 @@ func (client *Client) VerifyDomainOwnerWithCallback(request *VerifyDomainOwnerRe
 // VerifyDomainOwnerRequest is the request struct for api VerifyDomainOwner
 type VerifyDomainOwnerRequest struct {
 	*requests.RpcRequest
-	VerifyType string           `position:"Query" name:"VerifyType"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	GlobalResourcePlan string `position:"Query" name:"GlobalResourcePlan"`
+	DomainName         string `position:"Query" name:"DomainName"`
+	VerifyType         string `position:"Query" name:"VerifyType"`
 }
 
 // VerifyDomainOwnerResponse is the response struct for api VerifyDomainOwner
 type VerifyDomainOwnerResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Content   string `json:"Content" xml:"Content"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateVerifyDomainOwnerRequest creates a request to invoke VerifyDomainOwner API

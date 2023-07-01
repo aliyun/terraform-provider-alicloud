@@ -71,16 +71,16 @@ func (client *Client) RetryChangeOrderTaskWithCallback(request *RetryChangeOrder
 // RetryChangeOrderTaskRequest is the request struct for api RetryChangeOrderTask
 type RetryChangeOrderTaskRequest struct {
 	*requests.RoaRequest
-	RetryStatus requests.Boolean `position:"Query" name:"RetryStatus"`
-	TaskId      string           `position:"Query" name:"TaskId"`
+	RetryStatus string `position:"Query" name:"RetryStatus"`
+	TaskId      string `position:"Query" name:"TaskId"`
 }
 
 // RetryChangeOrderTaskResponse is the response struct for api RetryChangeOrderTask
 type RetryChangeOrderTaskResponse struct {
 	*responses.BaseResponse
 	Code      int    `json:"Code" xml:"Code"`
-	Data      string `json:"Data" xml:"Data"`
 	Message   string `json:"Message" xml:"Message"`
+	Data      string `json:"Data" xml:"Data"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 

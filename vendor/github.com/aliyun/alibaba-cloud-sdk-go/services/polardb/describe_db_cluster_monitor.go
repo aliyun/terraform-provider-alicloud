@@ -81,8 +81,8 @@ type DescribeDBClusterMonitorRequest struct {
 // DescribeDBClusterMonitorResponse is the response struct for api DescribeDBClusterMonitor
 type DescribeDBClusterMonitorResponse struct {
 	*responses.BaseResponse
-	Period    string `json:"Period" xml:"Period"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
+	Period    string `json:"Period" xml:"Period"`
 }
 
 // CreateDescribeDBClusterMonitorRequest creates a request to invoke DescribeDBClusterMonitor API

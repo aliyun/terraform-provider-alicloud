@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteApp invokes the cloudapi.DeleteApp API synchronously
-// api document: https://help.aliyun.com/api/cloudapi/deleteapp.html
 func (client *Client) DeleteApp(request *DeleteAppRequest) (response *DeleteAppResponse, err error) {
 	response = CreateDeleteAppResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteApp(request *DeleteAppRequest) (response *DeleteAppR
 }
 
 // DeleteAppWithChan invokes the cloudapi.DeleteApp API asynchronously
-// api document: https://help.aliyun.com/api/cloudapi/deleteapp.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAppWithChan(request *DeleteAppRequest) (<-chan *DeleteAppResponse, <-chan error) {
 	responseChan := make(chan *DeleteAppResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteAppWithChan(request *DeleteAppRequest) (<-chan *Dele
 }
 
 // DeleteAppWithCallback invokes the cloudapi.DeleteApp API asynchronously
-// api document: https://help.aliyun.com/api/cloudapi/deleteapp.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteAppWithCallback(request *DeleteAppRequest, callback func(response *DeleteAppResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,9 +71,10 @@ func (client *Client) DeleteAppWithCallback(request *DeleteAppRequest, callback 
 // DeleteAppRequest is the request struct for api DeleteApp
 type DeleteAppRequest struct {
 	*requests.RpcRequest
-	SecurityToken string           `position:"Query" name:"SecurityToken"`
-	AppId         requests.Integer `position:"Query" name:"AppId"`
-	Tag           *[]DeleteAppTag  `position:"Query" name:"Tag"  type:"Repeated"`
+	AppOwnerUserId requests.Integer `position:"Query" name:"AppOwnerUserId"`
+	SecurityToken  string           `position:"Query" name:"SecurityToken"`
+	AppId          requests.Integer `position:"Query" name:"AppId"`
+	Tag            *[]DeleteAppTag  `position:"Query" name:"Tag"  type:"Repeated"`
 }
 
 // DeleteAppTag is a repeated param struct in DeleteAppRequest

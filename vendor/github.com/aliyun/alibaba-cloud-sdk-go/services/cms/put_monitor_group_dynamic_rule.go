@@ -73,6 +73,7 @@ type PutMonitorGroupDynamicRuleRequest struct {
 	*requests.RpcRequest
 	GroupRules *[]PutMonitorGroupDynamicRuleGroupRules `position:"Query" name:"GroupRules"  type:"Repeated"`
 	GroupId    requests.Integer                        `position:"Query" name:"GroupId"`
+	IsAsync    requests.Boolean                        `position:"Query" name:"IsAsync"`
 }
 
 // PutMonitorGroupDynamicRuleGroupRules is a repeated param struct in PutMonitorGroupDynamicRuleRequest
@@ -103,7 +104,7 @@ func CreatePutMonitorGroupDynamicRuleRequest() (request *PutMonitorGroupDynamicR
 	request = &PutMonitorGroupDynamicRuleRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "PutMonitorGroupDynamicRule", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "PutMonitorGroupDynamicRule", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

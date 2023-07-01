@@ -71,16 +71,15 @@ func (client *Client) DescribeDcdnWafDomainWithCallback(request *DescribeDcdnWaf
 // DescribeDcdnWafDomainRequest is the request struct for api DescribeDcdnWafDomain
 type DescribeDcdnWafDomainRequest struct {
 	*requests.RpcRequest
-	ResourceGroupId string           `position:"Query" name:"ResourceGroupId"`
-	DomainName      string           `position:"Query" name:"DomainName"`
-	OwnerId         requests.Integer `position:"Query" name:"OwnerId"`
+	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
+	DomainName      string `position:"Query" name:"DomainName"`
 }
 
 // DescribeDcdnWafDomainResponse is the response struct for api DescribeDcdnWafDomain
 type DescribeDcdnWafDomainResponse struct {
 	*responses.BaseResponse
-	RequestId     string         `json:"RequestId" xml:"RequestId"`
 	TotalCount    int            `json:"TotalCount" xml:"TotalCount"`
+	RequestId     string         `json:"RequestId" xml:"RequestId"`
 	OutPutDomains []OutPutDomain `json:"OutPutDomains" xml:"OutPutDomains"`
 }
 

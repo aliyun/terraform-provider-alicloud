@@ -71,14 +71,13 @@ func (client *Client) DescribeRoutineCanaryEnvsWithCallback(request *DescribeRou
 // DescribeRoutineCanaryEnvsRequest is the request struct for api DescribeRoutineCanaryEnvs
 type DescribeRoutineCanaryEnvsRequest struct {
 	*requests.RpcRequest
-	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeRoutineCanaryEnvsResponse is the response struct for api DescribeRoutineCanaryEnvs
 type DescribeRoutineCanaryEnvsResponse struct {
 	*responses.BaseResponse
-	RequestId string                 `json:"RequestId" xml:"RequestId"`
 	Content   map[string]interface{} `json:"Content" xml:"Content"`
+	RequestId string                 `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeRoutineCanaryEnvsRequest creates a request to invoke DescribeRoutineCanaryEnvs API

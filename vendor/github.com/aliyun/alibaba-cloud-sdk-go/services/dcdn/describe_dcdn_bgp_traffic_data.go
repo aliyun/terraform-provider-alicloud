@@ -71,19 +71,18 @@ func (client *Client) DescribeDcdnBgpTrafficDataWithCallback(request *DescribeDc
 // DescribeDcdnBgpTrafficDataRequest is the request struct for api DescribeDcdnBgpTrafficData
 type DescribeDcdnBgpTrafficDataRequest struct {
 	*requests.RpcRequest
-	Isp       string           `position:"Query" name:"Isp"`
-	StartTime string           `position:"Query" name:"StartTime"`
-	EndTime   string           `position:"Query" name:"EndTime"`
-	OwnerId   requests.Integer `position:"Query" name:"OwnerId"`
-	Interval  string           `position:"Query" name:"Interval"`
+	Isp       string `position:"Query" name:"Isp"`
+	EndTime   string `position:"Query" name:"EndTime"`
+	Interval  string `position:"Query" name:"Interval"`
+	StartTime string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDcdnBgpTrafficDataResponse is the response struct for api DescribeDcdnBgpTrafficData
 type DescribeDcdnBgpTrafficDataResponse struct {
 	*responses.BaseResponse
-	RequestId       string                                `json:"RequestId" xml:"RequestId"`
-	StartTime       string                                `json:"StartTime" xml:"StartTime"`
 	EndTime         string                                `json:"EndTime" xml:"EndTime"`
+	StartTime       string                                `json:"StartTime" xml:"StartTime"`
+	RequestId       string                                `json:"RequestId" xml:"RequestId"`
 	BgpDataInterval []BgpDataInDescribeDcdnBgpTrafficData `json:"BgpDataInterval" xml:"BgpDataInterval"`
 }
 

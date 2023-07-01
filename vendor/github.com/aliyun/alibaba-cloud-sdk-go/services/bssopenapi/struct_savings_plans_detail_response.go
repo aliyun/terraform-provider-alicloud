@@ -36,5 +36,7 @@ type SavingsPlansDetailResponse struct {
 	TotalSave           string `json:"TotalSave" xml:"TotalSave"`
 	PoolValue           string `json:"PoolValue" xml:"PoolValue"`
 	PayMode             string `json:"PayMode" xml:"PayMode"`
+	DeductCycleType     string `json:"DeductCycleType" xml:"DeductCycleType"`
+	RestPoolValue       string `json:"RestPoolValue" xml:"RestPoolValue"`
 	Tags                []Tag  `json:"Tags" xml:"Tags"`
 }

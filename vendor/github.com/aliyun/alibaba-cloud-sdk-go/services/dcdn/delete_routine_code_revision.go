@@ -71,16 +71,15 @@ func (client *Client) DeleteRoutineCodeRevisionWithCallback(request *DeleteRouti
 // DeleteRoutineCodeRevisionRequest is the request struct for api DeleteRoutineCodeRevision
 type DeleteRoutineCodeRevisionRequest struct {
 	*requests.RpcRequest
-	SelectCodeRevision string           `position:"Body" name:"SelectCodeRevision"`
-	OwnerId            requests.Integer `position:"Query" name:"OwnerId"`
-	Name               string           `position:"Body" name:"Name"`
+	Name               string `position:"Body" name:"Name"`
+	SelectCodeRevision string `position:"Body" name:"SelectCodeRevision"`
 }
 
 // DeleteRoutineCodeRevisionResponse is the response struct for api DeleteRoutineCodeRevision
 type DeleteRoutineCodeRevisionResponse struct {
 	*responses.BaseResponse
-	RequestId string                 `json:"RequestId" xml:"RequestId"`
 	Content   map[string]interface{} `json:"Content" xml:"Content"`
+	RequestId string                 `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteRoutineCodeRevisionRequest creates a request to invoke DeleteRoutineCodeRevision API

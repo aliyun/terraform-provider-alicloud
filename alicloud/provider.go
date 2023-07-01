@@ -1113,7 +1113,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_domain_attachment":                              resourceAlicloudAlidnsDomainAttachment(),
 			"alicloud_edas_application":                                      resourceAlicloudEdasApplication(),
 			"alicloud_edas_deploy_group":                                     resourceAlicloudEdasDeployGroup(),
-			"alicloud_edas_application_scale":                                resourceAlicloudEdasInstanceApplicationAttachment(),
+			"alicloud_edas_application_scale":                                resourceAlicloudEdasApplicationScale(),
 			"alicloud_edas_slb_attachment":                                   resourceAlicloudEdasSlbAttachment(),
 			"alicloud_edas_cluster":                                          resourceAlicloudEdasCluster(),
 			"alicloud_edas_instance_cluster_attachment":                      resourceAlicloudEdasInstanceClusterAttachment(),
@@ -1703,9 +1703,12 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		} else {
 			config.RamRoleSessionExpiration = assumeRole["session_expiration"].(int)
 		}
+		if v := assumeRole["external_id"].(string); v != "" {
+			config.RamRoleExternalId = v
+		}
 
-		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d)",
-			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration)
+		log.Printf("[INFO] assume_role configuration set: (RamRoleArn: %q, RamRoleSessionName: %q, RamRolePolicy: %q, RamRoleSessionExpiration: %d, RamRoleExternalId: %s)",
+			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.RamRoleExternalId)
 	}
 
 	if err := config.MakeConfigByEcsRoleName(); err != nil {
@@ -2234,6 +2237,11 @@ func assumeRoleSchema() *schema.Schema {
 					Optional:     true,
 					Description:  descriptions["assume_role_session_expiration"],
 					ValidateFunc: IntBetween(900, 43200),
+				},
+				"external_id": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: descriptions["external_id"],
 				},
 			},
 		},
@@ -3309,6 +3317,9 @@ func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error
 	request.RoleSessionName = config.RamRoleSessionName
 	request.DurationSeconds = requests.NewInteger(config.RamRoleSessionExpiration)
 	request.Policy = config.RamRolePolicy
+	if config.RamRoleExternalId != "" {
+		request.ExternalId = config.RamRoleExternalId
+	}
 	request.Scheme = "https"
 	request.Domain = config.StsEndpoint
 

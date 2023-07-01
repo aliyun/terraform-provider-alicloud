@@ -71,16 +71,16 @@ func (client *Client) UpdateContainerWithCallback(request *UpdateContainerReques
 // UpdateContainerRequest is the request struct for api UpdateContainer
 type UpdateContainerRequest struct {
 	*requests.RoaRequest
-	BuildPackId requests.Integer `position:"Query" name:"BuildPackId"`
-	AppId       string           `position:"Query" name:"AppId"`
+	BuildPackId string `position:"Query" name:"BuildPackId"`
+	AppId       string `position:"Query" name:"AppId"`
 }
 
 // UpdateContainerResponse is the response struct for api UpdateContainer
 type UpdateContainerResponse struct {
 	*responses.BaseResponse
 	Code          int    `json:"Code" xml:"Code"`
-	Message       string `json:"Message" xml:"Message"`
 	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	Message       string `json:"Message" xml:"Message"`
 	RequestId     string `json:"RequestId" xml:"RequestId"`
 }
 

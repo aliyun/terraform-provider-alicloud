@@ -17,5 +17,7 @@ package cdn
 
 // Data is a nested struct in cdn response
 type Data struct {
-	BpsModel []BpsModel `json:"BpsModel" xml:"BpsModel"`
+	Domain string `json:"Domain" xml:"Domain"`
+	Cname  string `json:"Cname" xml:"Cname"`
+	Status int    `json:"Status" xml:"Status"`
 }

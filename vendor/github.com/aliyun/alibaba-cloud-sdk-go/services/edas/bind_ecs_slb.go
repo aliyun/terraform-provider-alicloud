@@ -71,24 +71,24 @@ func (client *Client) BindEcsSlbWithCallback(request *BindEcsSlbRequest, callbac
 // BindEcsSlbRequest is the request struct for api BindEcsSlb
 type BindEcsSlbRequest struct {
 	*requests.RoaRequest
-	VServerGroupId         string           `position:"Query" name:"VServerGroupId"`
-	ListenerPort           requests.Integer `position:"Query" name:"ListenerPort"`
-	VForwardingUrlRule     string           `position:"Query" name:"VForwardingUrlRule"`
-	SlbId                  string           `position:"Query" name:"SlbId"`
-	DeployGroupId          string           `position:"Query" name:"DeployGroupId"`
-	ListenerHealthCheckUrl string           `position:"Query" name:"ListenerHealthCheckUrl"`
-	AppId                  string           `position:"Query" name:"AppId"`
-	ListenerProtocol       string           `position:"Query" name:"ListenerProtocol"`
-	VServerGroupName       string           `position:"Query" name:"VServerGroupName"`
+	VServerGroupId         string `position:"Query" name:"VServerGroupId"`
+	ListenerPort           string `position:"Query" name:"ListenerPort"`
+	VForwardingUrlRule     string `position:"Query" name:"VForwardingUrlRule"`
+	SlbId                  string `position:"Query" name:"SlbId"`
+	DeployGroupId          string `position:"Query" name:"DeployGroupId"`
+	ListenerHealthCheckUrl string `position:"Query" name:"ListenerHealthCheckUrl"`
+	AppId                  string `position:"Query" name:"AppId"`
+	ListenerProtocol       string `position:"Query" name:"ListenerProtocol"`
+	VServerGroupName       string `position:"Query" name:"VServerGroupName"`
 }
 
 // BindEcsSlbResponse is the response struct for api BindEcsSlb
 type BindEcsSlbResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
-	Message       string `json:"Message" xml:"Message"`
-	Code          int    `json:"Code" xml:"Code"`
 	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	Code          int    `json:"Code" xml:"Code"`
+	Message       string `json:"Message" xml:"Message"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateBindEcsSlbRequest creates a request to invoke BindEcsSlb API

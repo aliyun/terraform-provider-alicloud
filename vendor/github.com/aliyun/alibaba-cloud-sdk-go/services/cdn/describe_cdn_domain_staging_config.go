@@ -71,14 +71,14 @@ func (client *Client) DescribeCdnDomainStagingConfigWithCallback(request *Descri
 // DescribeCdnDomainStagingConfigRequest is the request struct for api DescribeCdnDomainStagingConfig
 type DescribeCdnDomainStagingConfigRequest struct {
 	*requests.RpcRequest
-	FunctionNames string           `position:"Query" name:"FunctionNames"`
-	DomainName    string           `position:"Query" name:"DomainName"`
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
+	FunctionNames string `position:"Query" name:"FunctionNames"`
+	DomainName    string `position:"Query" name:"DomainName"`
 }
 
 // DescribeCdnDomainStagingConfigResponse is the response struct for api DescribeCdnDomainStagingConfig
 type DescribeCdnDomainStagingConfigResponse struct {
 	*responses.BaseResponse
+	DomainName    string         `json:"DomainName" xml:"DomainName"`
 	RequestId     string         `json:"RequestId" xml:"RequestId"`
 	DomainConfigs []DomainConfig `json:"DomainConfigs" xml:"DomainConfigs"`
 }

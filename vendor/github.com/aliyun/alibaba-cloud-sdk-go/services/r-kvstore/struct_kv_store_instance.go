@@ -21,8 +21,8 @@ type KVStoreInstance struct {
 	PackageType         string                  `json:"PackageType" xml:"PackageType"`
 	ChargeType          string                  `json:"ChargeType" xml:"ChargeType"`
 	ConnectionDomain    string                  `json:"ConnectionDomain" xml:"ConnectionDomain"`
-	SearchKey           string                  `json:"SearchKey" xml:"SearchKey"`
 	CreateTime          string                  `json:"CreateTime" xml:"CreateTime"`
+	EditionType         string                  `json:"EditionType" xml:"EditionType"`
 	InstanceType        string                  `json:"InstanceType" xml:"InstanceType"`
 	VpcCloudInstanceId  string                  `json:"VpcCloudInstanceId" xml:"VpcCloudInstanceId"`
 	GlobalInstanceId    string                  `json:"GlobalInstanceId" xml:"GlobalInstanceId"`
@@ -37,12 +37,14 @@ type KVStoreInstance struct {
 	VpcId               string                  `json:"VpcId" xml:"VpcId"`
 	NetworkType         string                  `json:"NetworkType" xml:"NetworkType"`
 	HasRenewChangeOrder bool                    `json:"HasRenewChangeOrder" xml:"HasRenewChangeOrder"`
+	ReadOnlyCount       string                  `json:"ReadOnlyCount" xml:"ReadOnlyCount"`
 	NodeType            string                  `json:"NodeType" xml:"NodeType"`
 	Connections         int64                   `json:"Connections" xml:"Connections"`
 	ArchitectureType    string                  `json:"ArchitectureType" xml:"ArchitectureType"`
 	ReplacateId         string                  `json:"ReplacateId" xml:"ReplacateId"`
 	EngineVersion       string                  `json:"EngineVersion" xml:"EngineVersion"`
 	ProxyCount          int                     `json:"ProxyCount" xml:"ProxyCount"`
+	ShardClass          string                  `json:"ShardClass" xml:"ShardClass"`
 	Capacity            int64                   `json:"Capacity" xml:"Capacity"`
 	VSwitchId           string                  `json:"VSwitchId" xml:"VSwitchId"`
 	InstanceName        string                  `json:"InstanceName" xml:"InstanceName"`

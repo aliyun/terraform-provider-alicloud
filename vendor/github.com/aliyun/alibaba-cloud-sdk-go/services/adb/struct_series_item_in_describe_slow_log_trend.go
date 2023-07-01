@@ -17,6 +17,6 @@ package adb
 
 // SeriesItemInDescribeSlowLogTrend is a nested struct in adb response
 type SeriesItemInDescribeSlowLogTrend struct {
-	Name   string `json:"Name" xml:"Name"`
 	Values string `json:"Values" xml:"Values"`
+	Name   string `json:"Name" xml:"Name"`
 }

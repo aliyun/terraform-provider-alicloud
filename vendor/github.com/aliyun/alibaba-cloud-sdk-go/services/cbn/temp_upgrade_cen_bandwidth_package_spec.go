@@ -77,6 +77,7 @@ type TempUpgradeCenBandwidthPackageSpecRequest struct {
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
 	EndTime               string           `position:"Query" name:"EndTime"`
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
+	Version               string           `position:"Query" name:"Version"`
 	CenBandwidthPackageId string           `position:"Query" name:"CenBandwidthPackageId"`
 }
 

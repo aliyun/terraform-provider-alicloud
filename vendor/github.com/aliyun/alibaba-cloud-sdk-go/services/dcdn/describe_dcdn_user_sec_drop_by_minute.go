@@ -71,15 +71,14 @@ func (client *Client) DescribeDcdnUserSecDropByMinuteWithCallback(request *Descr
 // DescribeDcdnUserSecDropByMinuteRequest is the request struct for api DescribeDcdnUserSecDropByMinute
 type DescribeDcdnUserSecDropByMinuteRequest struct {
 	*requests.RpcRequest
+	DomainName string           `position:"Query" name:"DomainName"`
+	PageSize   requests.Integer `position:"Query" name:"PageSize"`
+	EndTime    string           `position:"Query" name:"EndTime"`
 	RuleName   string           `position:"Query" name:"RuleName"`
 	StartTime  string           `position:"Query" name:"StartTime"`
-	PageNumber requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize   requests.Integer `position:"Query" name:"PageSize"`
-	Lang       string           `position:"Query" name:"Lang"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
 	SecFunc    string           `position:"Query" name:"SecFunc"`
+	Lang       string           `position:"Query" name:"Lang"`
+	PageNumber requests.Integer `position:"Query" name:"PageNumber"`
 	Object     string           `position:"Query" name:"Object"`
 }
 
@@ -88,10 +87,10 @@ type DescribeDcdnUserSecDropByMinuteResponse struct {
 	*responses.BaseResponse
 	RequestId   string     `json:"RequestId" xml:"RequestId"`
 	Description string     `json:"Description" xml:"Description"`
-	TotalCount  int        `json:"TotalCount" xml:"TotalCount"`
 	Len         int        `json:"Len" xml:"Len"`
 	PageNumber  int        `json:"PageNumber" xml:"PageNumber"`
 	PageSize    int        `json:"PageSize" xml:"PageSize"`
+	TotalCount  int        `json:"TotalCount" xml:"TotalCount"`
 	Rows        []RowsItem `json:"Rows" xml:"Rows"`
 }
 

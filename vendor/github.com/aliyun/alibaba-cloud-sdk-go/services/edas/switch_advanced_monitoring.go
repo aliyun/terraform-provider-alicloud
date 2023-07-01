@@ -71,16 +71,16 @@ func (client *Client) SwitchAdvancedMonitoringWithCallback(request *SwitchAdvanc
 // SwitchAdvancedMonitoringRequest is the request struct for api SwitchAdvancedMonitoring
 type SwitchAdvancedMonitoringRequest struct {
 	*requests.RoaRequest
-	EnableAdvancedMonitoring requests.Boolean `position:"Query" name:"EnableAdvancedMonitoring"`
-	AppId                    string           `position:"Query" name:"AppId"`
+	EnableAdvancedMonitoring string `position:"Query" name:"EnableAdvancedMonitoring"`
+	AppId                    string `position:"Query" name:"AppId"`
 }
 
 // SwitchAdvancedMonitoringResponse is the response struct for api SwitchAdvancedMonitoring
 type SwitchAdvancedMonitoringResponse struct {
 	*responses.BaseResponse
-	RequestId                 string `json:"RequestId" xml:"RequestId"`
 	Code                      int    `json:"Code" xml:"Code"`
 	Message                   string `json:"Message" xml:"Message"`
+	RequestId                 string `json:"RequestId" xml:"RequestId"`
 	AdvancedMonitoringEnabled bool   `json:"AdvancedMonitoringEnabled" xml:"AdvancedMonitoringEnabled"`
 }
 

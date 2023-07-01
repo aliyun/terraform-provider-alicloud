@@ -71,21 +71,21 @@ func (client *Client) ListK8sConfigMapsWithCallback(request *ListK8sConfigMapsRe
 // ListK8sConfigMapsRequest is the request struct for api ListK8sConfigMaps
 type ListK8sConfigMapsRequest struct {
 	*requests.RoaRequest
-	Condition       string           `position:"Query" name:"Condition"`
-	PageNo          requests.Integer `position:"Query" name:"PageNo"`
-	Namespace       string           `position:"Query" name:"Namespace"`
-	PageSize        requests.Integer `position:"Query" name:"PageSize"`
-	ClusterId       string           `position:"Query" name:"ClusterId"`
-	ShowRelatedApps requests.Boolean `position:"Query" name:"ShowRelatedApps"`
+	Condition       string `position:"Query" name:"Condition"`
+	PageNo          string `position:"Query" name:"PageNo"`
+	Namespace       string `position:"Query" name:"Namespace"`
+	PageSize        string `position:"Query" name:"PageSize"`
+	ClusterId       string `position:"Query" name:"ClusterId"`
+	ShowRelatedApps string `position:"Query" name:"ShowRelatedApps"`
 }
 
 // ListK8sConfigMapsResponse is the response struct for api ListK8sConfigMaps
 type ListK8sConfigMapsResponse struct {
 	*responses.BaseResponse
-	RequestId string       `json:"RequestId" xml:"RequestId"`
-	Code      int          `json:"Code" xml:"Code"`
-	Message   string       `json:"Message" xml:"Message"`
-	Result    []ResultItem `json:"Result" xml:"Result"`
+	Code      int    `json:"Code" xml:"Code"`
+	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Result    Result `json:"Result" xml:"Result"`
 }
 
 // CreateListK8sConfigMapsRequest creates a request to invoke ListK8sConfigMaps API

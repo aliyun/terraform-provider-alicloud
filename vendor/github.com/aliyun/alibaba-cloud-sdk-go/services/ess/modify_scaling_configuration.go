@@ -77,6 +77,7 @@ type ModifyScalingConfigurationRequest struct {
 	ResourceGroupId                 string                                            `position:"Query" name:"ResourceGroupId"`
 	PrivatePoolOptionsMatchCriteria string                                            `position:"Query" name:"PrivatePoolOptions.MatchCriteria"`
 	HostName                        string                                            `position:"Query" name:"HostName"`
+	Password                        string                                            `position:"Query" name:"Password"`
 	InstanceDescription             string                                            `position:"Query" name:"InstanceDescription"`
 	SystemDiskAutoSnapshotPolicyId  string                                            `position:"Query" name:"SystemDisk.AutoSnapshotPolicyId"`
 	PrivatePoolOptionsId            string                                            `position:"Query" name:"PrivatePoolOptions.Id"`
@@ -88,6 +89,7 @@ type ModifyScalingConfigurationRequest struct {
 	Tags                            string                                            `position:"Query" name:"Tags"`
 	ScalingConfigurationId          string                                            `position:"Query" name:"ScalingConfigurationId"`
 	SpotStrategy                    string                                            `position:"Query" name:"SpotStrategy"`
+	SystemDiskBurstingEnabled       requests.Boolean                                  `position:"Query" name:"SystemDisk.BurstingEnabled"`
 	InstanceName                    string                                            `position:"Query" name:"InstanceName"`
 	InternetChargeType              string                                            `position:"Query" name:"InternetChargeType"`
 	ZoneId                          string                                            `position:"Query" name:"ZoneId"`
@@ -100,6 +102,7 @@ type ModifyScalingConfigurationRequest struct {
 	InstanceTypes                   *[]string                                         `position:"Query" name:"InstanceTypes"  type:"Repeated"`
 	InternetMaxBandwidthOut         requests.Integer                                  `position:"Query" name:"InternetMaxBandwidthOut"`
 	SecurityGroupId                 string                                            `position:"Query" name:"SecurityGroupId"`
+	SystemDiskKMSKeyId              string                                            `position:"Query" name:"SystemDisk.KMSKeyId"`
 	SystemDiskCategory              string                                            `position:"Query" name:"SystemDisk.Category"`
 	SystemDiskPerformanceLevel      string                                            `position:"Query" name:"SystemDisk.PerformanceLevel"`
 	UserData                        string                                            `position:"Query" name:"UserData"`
@@ -113,16 +116,19 @@ type ModifyScalingConfigurationRequest struct {
 	Tenancy                         string                                            `position:"Query" name:"Tenancy"`
 	SystemDiskDiskName              string                                            `position:"Query" name:"SystemDisk.DiskName"`
 	RamRoleName                     string                                            `position:"Query" name:"RamRoleName"`
+	SystemDiskEncryptAlgorithm      string                                            `position:"Query" name:"SystemDisk.EncryptAlgorithm"`
 	DedicatedHostId                 string                                            `position:"Query" name:"DedicatedHostId"`
 	CreditSpecification             string                                            `position:"Query" name:"CreditSpecification"`
 	SpotDuration                    requests.Integer                                  `position:"Query" name:"SpotDuration"`
 	SecurityGroupIds                *[]string                                         `position:"Query" name:"SecurityGroupIds"  type:"Repeated"`
 	DataDisk                        *[]ModifyScalingConfigurationDataDisk             `position:"Query" name:"DataDisk"  type:"Repeated"`
 	InstanceTypeOverride            *[]ModifyScalingConfigurationInstanceTypeOverride `position:"Query" name:"InstanceTypeOverride"  type:"Repeated"`
+	SystemDiskProvisionedIops       requests.Integer                                  `position:"Query" name:"SystemDisk.ProvisionedIops"`
 	LoadBalancerWeight              requests.Integer                                  `position:"Query" name:"LoadBalancerWeight"`
 	SystemDiskSize                  requests.Integer                                  `position:"Query" name:"SystemDisk.Size"`
 	ImageFamily                     string                                            `position:"Query" name:"ImageFamily"`
 	SystemDiskDescription           string                                            `position:"Query" name:"SystemDisk.Description"`
+	SystemDiskEncrypted             requests.Boolean                                  `position:"Query" name:"SystemDisk.Encrypted"`
 }
 
 // ModifyScalingConfigurationSpotPriceLimit is a repeated param struct in ModifyScalingConfigurationRequest
@@ -133,21 +139,26 @@ type ModifyScalingConfigurationSpotPriceLimit struct {
 
 // ModifyScalingConfigurationInstancePatternInfo is a repeated param struct in ModifyScalingConfigurationRequest
 type ModifyScalingConfigurationInstancePatternInfo struct {
-	Cores               string `name:"Cores"`
-	InstanceFamilyLevel string `name:"InstanceFamilyLevel"`
-	Memory              string `name:"Memory"`
-	MaxPrice            string `name:"MaxPrice"`
+	Cores                string    `name:"Cores"`
+	InstanceFamilyLevel  string    `name:"InstanceFamilyLevel"`
+	Memory               string    `name:"Memory"`
+	MaxPrice             string    `name:"MaxPrice"`
+	ExcludedInstanceType *[]string `name:"ExcludedInstanceType" type:"Repeated"`
+	BurstablePerformance string    `name:"BurstablePerformance"`
+	Architecture         *[]string `name:"Architecture" type:"Repeated"`
 }
 
 // ModifyScalingConfigurationDataDisk is a repeated param struct in ModifyScalingConfigurationRequest
 type ModifyScalingConfigurationDataDisk struct {
-	DiskName             string    `name:"DiskName"`
 	SnapshotId           string    `name:"SnapshotId"`
-	Encrypted            string    `name:"Encrypted"`
-	Size                 string    `name:"Size"`
 	PerformanceLevel     string    `name:"PerformanceLevel"`
 	AutoSnapshotPolicyId string    `name:"AutoSnapshotPolicyId"`
 	Description          string    `name:"Description"`
+	BurstingEnabled      string    `name:"BurstingEnabled"`
+	DiskName             string    `name:"DiskName"`
+	ProvisionedIops      string    `name:"ProvisionedIops"`
+	Encrypted            string    `name:"Encrypted"`
+	Size                 string    `name:"Size"`
 	Categories           *[]string `name:"Categories" type:"Repeated"`
 	Category             string    `name:"Category"`
 	KMSKeyId             string    `name:"KMSKeyId"`

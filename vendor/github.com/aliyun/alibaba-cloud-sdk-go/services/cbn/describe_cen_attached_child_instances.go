@@ -80,6 +80,7 @@ type DescribeCenAttachedChildInstancesRequest struct {
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
 	ChildInstanceType     string           `position:"Query" name:"ChildInstanceType"`
+	Version               string           `position:"Query" name:"Version"`
 }
 
 // DescribeCenAttachedChildInstancesResponse is the response struct for api DescribeCenAttachedChildInstances

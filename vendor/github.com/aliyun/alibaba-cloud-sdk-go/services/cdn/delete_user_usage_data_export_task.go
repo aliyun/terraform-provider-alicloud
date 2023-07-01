@@ -71,8 +71,7 @@ func (client *Client) DeleteUserUsageDataExportTaskWithCallback(request *DeleteU
 // DeleteUserUsageDataExportTaskRequest is the request struct for api DeleteUserUsageDataExportTask
 type DeleteUserUsageDataExportTaskRequest struct {
 	*requests.RpcRequest
-	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
-	TaskId  string           `position:"Query" name:"TaskId"`
+	TaskId string `position:"Query" name:"TaskId"`
 }
 
 // DeleteUserUsageDataExportTaskResponse is the response struct for api DeleteUserUsageDataExportTask

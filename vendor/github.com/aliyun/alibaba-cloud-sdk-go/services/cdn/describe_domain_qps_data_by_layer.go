@@ -71,25 +71,24 @@ func (client *Client) DescribeDomainQpsDataByLayerWithCallback(request *Describe
 // DescribeDomainQpsDataByLayerRequest is the request struct for api DescribeDomainQpsDataByLayer
 type DescribeDomainQpsDataByLayerRequest struct {
 	*requests.RpcRequest
-	LocationNameEn string           `position:"Query" name:"LocationNameEn"`
-	StartTime      string           `position:"Query" name:"StartTime"`
-	IspNameEn      string           `position:"Query" name:"IspNameEn"`
-	Layer          string           `position:"Query" name:"Layer"`
-	DomainName     string           `position:"Query" name:"DomainName"`
-	EndTime        string           `position:"Query" name:"EndTime"`
-	OwnerId        requests.Integer `position:"Query" name:"OwnerId"`
-	Interval       string           `position:"Query" name:"Interval"`
+	DomainName     string `position:"Query" name:"DomainName"`
+	EndTime        string `position:"Query" name:"EndTime"`
+	Interval       string `position:"Query" name:"Interval"`
+	LocationNameEn string `position:"Query" name:"LocationNameEn"`
+	StartTime      string `position:"Query" name:"StartTime"`
+	IspNameEn      string `position:"Query" name:"IspNameEn"`
+	Layer          string `position:"Query" name:"Layer"`
 }
 
 // DescribeDomainQpsDataByLayerResponse is the response struct for api DescribeDomainQpsDataByLayer
 type DescribeDomainQpsDataByLayerResponse struct {
 	*responses.BaseResponse
-	RequestId       string                                        `json:"RequestId" xml:"RequestId"`
-	DomainName      string                                        `json:"DomainName" xml:"DomainName"`
-	StartTime       string                                        `json:"StartTime" xml:"StartTime"`
 	EndTime         string                                        `json:"EndTime" xml:"EndTime"`
-	DataInterval    string                                        `json:"DataInterval" xml:"DataInterval"`
+	StartTime       string                                        `json:"StartTime" xml:"StartTime"`
+	RequestId       string                                        `json:"RequestId" xml:"RequestId"`
 	Layer           string                                        `json:"Layer" xml:"Layer"`
+	DomainName      string                                        `json:"DomainName" xml:"DomainName"`
+	DataInterval    string                                        `json:"DataInterval" xml:"DataInterval"`
 	QpsDataInterval QpsDataIntervalInDescribeDomainQpsDataByLayer `json:"QpsDataInterval" xml:"QpsDataInterval"`
 }
 

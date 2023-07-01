@@ -71,7 +71,8 @@ func (client *Client) DescribeMonitoringAgentStatusesWithCallback(request *Descr
 // DescribeMonitoringAgentStatusesRequest is the request struct for api DescribeMonitoringAgentStatuses
 type DescribeMonitoringAgentStatusesRequest struct {
 	*requests.RpcRequest
-	InstanceIds string `position:"Query" name:"InstanceIds"`
+	HostAvailabilityTaskId string `position:"Query" name:"HostAvailabilityTaskId"`
+	InstanceIds            string `position:"Query" name:"InstanceIds"`
 }
 
 // DescribeMonitoringAgentStatusesResponse is the response struct for api DescribeMonitoringAgentStatuses
@@ -89,7 +90,7 @@ func CreateDescribeMonitoringAgentStatusesRequest() (request *DescribeMonitoring
 	request = &DescribeMonitoringAgentStatusesRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMonitoringAgentStatuses", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMonitoringAgentStatuses", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

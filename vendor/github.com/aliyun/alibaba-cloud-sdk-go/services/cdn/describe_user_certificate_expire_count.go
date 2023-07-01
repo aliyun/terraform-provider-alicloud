@@ -71,14 +71,13 @@ func (client *Client) DescribeUserCertificateExpireCountWithCallback(request *De
 // DescribeUserCertificateExpireCountRequest is the request struct for api DescribeUserCertificateExpireCount
 type DescribeUserCertificateExpireCountRequest struct {
 	*requests.RpcRequest
-	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeUserCertificateExpireCountResponse is the response struct for api DescribeUserCertificateExpireCount
 type DescribeUserCertificateExpireCountResponse struct {
 	*responses.BaseResponse
-	RequestId               string `json:"RequestId" xml:"RequestId"`
 	ExpireWithin30DaysCount int    `json:"ExpireWithin30DaysCount" xml:"ExpireWithin30DaysCount"`
+	RequestId               string `json:"RequestId" xml:"RequestId"`
 	ExpiredCount            int    `json:"ExpiredCount" xml:"ExpiredCount"`
 }
 

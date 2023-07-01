@@ -123,6 +123,9 @@ func (r *OIDCCredential) updateCredential() (err error) {
 	}
 	request := request.NewCommonRequest()
 	request.Domain = "sts.aliyuncs.com"
+	if r.runtime.STSEndpoint != "" {
+		request.Domain = r.runtime.STSEndpoint
+	}
 	request.Scheme = "HTTPS"
 	request.Method = "POST"
 	request.QueryParams["Timestamp"] = utils.GetTimeInFormatISO8601()

@@ -17,7 +17,8 @@ package cbn
 
 // VSwitch is a nested struct in cbn response
 type VSwitch struct {
-	VpcId     string `json:"VpcId" xml:"VpcId"`
-	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
-	VSwitchId string `json:"VSwitchId" xml:"VSwitchId"`
+	VpcId       string `json:"VpcId" xml:"VpcId"`
+	ZoneId      string `json:"ZoneId" xml:"ZoneId"`
+	VSwitchId   string `json:"VSwitchId" xml:"VSwitchId"`
+	VSwitchName string `json:"VSwitchName" xml:"VSwitchName"`
 }

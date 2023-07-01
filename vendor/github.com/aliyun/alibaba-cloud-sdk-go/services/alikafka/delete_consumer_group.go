@@ -78,10 +78,10 @@ type DeleteConsumerGroupRequest struct {
 // DeleteConsumerGroupResponse is the response struct for api DeleteConsumerGroup
 type DeleteConsumerGroupResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateDeleteConsumerGroupRequest creates a request to invoke DeleteConsumerGroup API
@@ -89,7 +89,7 @@ func CreateDeleteConsumerGroupRequest() (request *DeleteConsumerGroupRequest) {
 	request = &DeleteConsumerGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteConsumerGroup", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteConsumerGroup", "", "")
 	request.Method = requests.POST
 	return
 }

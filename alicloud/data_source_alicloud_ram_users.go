@@ -210,7 +210,7 @@ func ramUsersDescriptionAttributes(d *schema.ResourceData, users []interface{}) 
 	var names []string
 	var s []map[string]interface{}
 	for _, v := range users {
-		user, ok := v.(ram.UserInListUsers)
+		user, ok := v.(ram.User)
 		if !ok {
 			return WrapError(Error("wrong interface convince"))
 		}

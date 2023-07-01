@@ -71,20 +71,19 @@ func (client *Client) DescribeDcdnDomainIspDataWithCallback(request *DescribeDcd
 // DescribeDcdnDomainIspDataRequest is the request struct for api DescribeDcdnDomainIspData
 type DescribeDcdnDomainIspDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDcdnDomainIspDataResponse is the response struct for api DescribeDcdnDomainIspData
 type DescribeDcdnDomainIspDataResponse struct {
 	*responses.BaseResponse
+	EndTime      string                           `json:"EndTime" xml:"EndTime"`
+	StartTime    string                           `json:"StartTime" xml:"StartTime"`
 	RequestId    string                           `json:"RequestId" xml:"RequestId"`
 	DomainName   string                           `json:"DomainName" xml:"DomainName"`
 	DataInterval string                           `json:"DataInterval" xml:"DataInterval"`
-	StartTime    string                           `json:"StartTime" xml:"StartTime"`
-	EndTime      string                           `json:"EndTime" xml:"EndTime"`
 	Value        ValueInDescribeDcdnDomainIspData `json:"Value" xml:"Value"`
 }
 

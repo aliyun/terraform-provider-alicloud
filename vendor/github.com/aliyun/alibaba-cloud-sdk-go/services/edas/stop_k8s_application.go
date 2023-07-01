@@ -71,17 +71,17 @@ func (client *Client) StopK8sApplicationWithCallback(request *StopK8sApplication
 // StopK8sApplicationRequest is the request struct for api StopK8sApplication
 type StopK8sApplicationRequest struct {
 	*requests.RoaRequest
-	AppId   string           `position:"Query" name:"AppId"`
-	Timeout requests.Integer `position:"Query" name:"Timeout"`
+	AppId   string `position:"Query" name:"AppId"`
+	Timeout string `position:"Query" name:"Timeout"`
 }
 
 // StopK8sApplicationResponse is the response struct for api StopK8sApplication
 type StopK8sApplicationResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
+	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
 	Code          int    `json:"Code" xml:"Code"`
 	Message       string `json:"Message" xml:"Message"`
-	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateStopK8sApplicationRequest creates a request to invoke StopK8sApplication API

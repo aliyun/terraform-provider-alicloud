@@ -252,7 +252,7 @@ func testAccCheckRamAccountPasswordPolicyDestroy(s *terraform.State) error {
 			return WrapError(err)
 		}
 
-		var expectedPasswordPolicyDefault = ram.PasswordPolicyInGetPasswordPolicy{
+		var expectedPasswordPolicyDefault = ram.PasswordPolicy{
 			MinimumPasswordLength:      12,
 			RequireLowercaseCharacters: true,
 			RequireUppercaseCharacters: true,

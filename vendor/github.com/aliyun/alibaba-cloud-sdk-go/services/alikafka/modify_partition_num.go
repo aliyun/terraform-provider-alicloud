@@ -71,18 +71,18 @@ func (client *Client) ModifyPartitionNumWithCallback(request *ModifyPartitionNum
 // ModifyPartitionNumRequest is the request struct for api ModifyPartitionNum
 type ModifyPartitionNumRequest struct {
 	*requests.RpcRequest
+	AddPartitionNum requests.Integer `position:"Query" name:"AddPartitionNum"`
 	InstanceId      string           `position:"Query" name:"InstanceId"`
 	Topic           string           `position:"Query" name:"Topic"`
-	AddPartitionNum requests.Integer `position:"Query" name:"AddPartitionNum"`
 }
 
 // ModifyPartitionNumResponse is the response struct for api ModifyPartitionNum
 type ModifyPartitionNumResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateModifyPartitionNumRequest creates a request to invoke ModifyPartitionNum API
@@ -90,7 +90,7 @@ func CreateModifyPartitionNumRequest() (request *ModifyPartitionNumRequest) {
 	request = &ModifyPartitionNumRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "ModifyPartitionNum", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "ModifyPartitionNum", "", "")
 	request.Method = requests.POST
 	return
 }

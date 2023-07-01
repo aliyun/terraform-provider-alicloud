@@ -37,7 +37,7 @@ func testSweepRamUsers(region string) error {
 		"tf_testacc",
 	}
 
-	var users []ram.UserInListUsers
+	var users []ram.User
 	request := ram.CreateListUsersRequest()
 	for {
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
@@ -165,7 +165,7 @@ func testSweepRamUsers(region string) error {
 }
 
 func TestAccAlicloudRAMUser(t *testing.T) {
-	var v *ram.UserInGetUser
+	var v *ram.User
 	randInt := acctest.RandIntRange(1000000, 99999999)
 
 	resourceId := "alicloud_ram_user.default"
@@ -249,7 +249,7 @@ func TestAccAlicloudRAMUser(t *testing.T) {
 	})
 }
 
-func testAccCheckRamUserExists(n string, user *ram.UserInGetUser) resource.TestCheckFunc {
+func testAccCheckRamUserExists(n string, user *ram.User) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

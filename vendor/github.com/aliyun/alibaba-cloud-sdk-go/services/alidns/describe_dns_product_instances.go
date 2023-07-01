@@ -71,22 +71,24 @@ func (client *Client) DescribeDnsProductInstancesWithCallback(request *DescribeD
 // DescribeDnsProductInstancesRequest is the request struct for api DescribeDnsProductInstances
 type DescribeDnsProductInstancesRequest struct {
 	*requests.RpcRequest
+	OrderBy      string           `position:"Query" name:"OrderBy"`
 	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
 	DomainType   string           `position:"Query" name:"DomainType"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
 	PageSize     requests.Integer `position:"Query" name:"PageSize"`
 	Lang         string           `position:"Query" name:"Lang"`
 	VersionCode  string           `position:"Query" name:"VersionCode"`
+	Direction    string           `position:"Query" name:"Direction"`
 }
 
 // DescribeDnsProductInstancesResponse is the response struct for api DescribeDnsProductInstances
 type DescribeDnsProductInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	TotalCount  int64       `json:"TotalCount" xml:"TotalCount"`
-	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
-	PageSize    int64       `json:"PageSize" xml:"PageSize"`
 	DomainType  string      `json:"DomainType" xml:"DomainType"`
+	PageSize    int64       `json:"PageSize" xml:"PageSize"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
 	DnsProducts DnsProducts `json:"DnsProducts" xml:"DnsProducts"`
 }
 

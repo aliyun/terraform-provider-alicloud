@@ -71,20 +71,19 @@ func (client *Client) DescribeDomainsUsageByDayWithCallback(request *DescribeDom
 // DescribeDomainsUsageByDayRequest is the request struct for api DescribeDomainsUsageByDay
 type DescribeDomainsUsageByDayRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDomainsUsageByDayResponse is the response struct for api DescribeDomainsUsageByDay
 type DescribeDomainsUsageByDayResponse struct {
 	*responses.BaseResponse
+	EndTime      string      `json:"EndTime" xml:"EndTime"`
+	StartTime    string      `json:"StartTime" xml:"StartTime"`
 	RequestId    string      `json:"RequestId" xml:"RequestId"`
 	DomainName   string      `json:"DomainName" xml:"DomainName"`
 	DataInterval string      `json:"DataInterval" xml:"DataInterval"`
-	StartTime    string      `json:"StartTime" xml:"StartTime"`
-	EndTime      string      `json:"EndTime" xml:"EndTime"`
 	UsageTotal   UsageTotal  `json:"UsageTotal" xml:"UsageTotal"`
 	UsageByDays  UsageByDays `json:"UsageByDays" xml:"UsageByDays"`
 }

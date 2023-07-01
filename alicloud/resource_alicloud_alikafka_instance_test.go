@@ -131,13 +131,13 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":           "${var.name}",
-					"partition_num":  "50",
+					"topic_quota":    "50",
 					"disk_type":      "1",
 					"disk_size":      "500",
 					"deploy_type":    "5",
 					"io_max":         "20",
 					"vswitch_id":     "${data.alicloud_vswitches.default.ids.0}",
-					"security_group": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group": "${alicloud_security_group.default.id}",
 					"kms_key_id":     "${alicloud_kms_key.key.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -145,7 +145,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 						"name":           fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
 						"security_group": CHECKSET,
 						"kms_key_id":     CHECKSET,
-						"partition_num":  "50",
+						"partition_num":  "0",
+						"topic_quota":    "1000",
 					}),
 				),
 			},
@@ -168,11 +169,12 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"partition_num": "51",
+					"partition_num": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"partition_num": "51",
+						"partition_num": "1",
+						"topic_quota":   "1001",
 					}),
 				),
 			},
@@ -183,7 +185,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_size": "800"}),
+						"disk_size": "800",
+					}),
 				),
 			},
 
@@ -273,7 +276,7 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"partition_num":   "52",
+					"partition_num":   "2",
 					"disk_size":       "1400",
 					"deploy_type":     "4",
 					"io_max":          "60",
@@ -286,7 +289,8 @@ func TestAccAlicloudAlikafkaInstance_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            fmt.Sprintf("tf-testacc-alikafkainstancebasic%v", rand),
-						"partition_num":   "52",
+						"partition_num":   "2",
+						"topic_quota":     "1002",
 						"disk_size":       "1400",
 						"deploy_type":     "4",
 						"io_max":          "60",
@@ -319,12 +323,11 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstanceconvert%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -355,6 +358,7 @@ func TestAccAlicloudAlikafkaInstance_convert(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":            name,
 						"partition_num":   "50",
+						"topic_quota":     "1050",
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
@@ -403,12 +407,11 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstanceConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		// module name
 		IDRefreshName: resourceId,
@@ -439,6 +442,7 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":            name,
 						"partition_num":   "50",
+						"topic_quota":     "1050",
 						"disk_type":       "1",
 						"disk_size":       "500",
 						"deploy_type":     "4",
@@ -461,7 +465,8 @@ func TestAccAlicloudAlikafkaInstance_prepaid(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_size": "600"}),
+						"disk_size": "600",
+					}),
 				),
 			},
 			{
@@ -500,7 +505,7 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":            "${var.name}",
-					"partition_num":   "50",
+					"topic_quota":     "50",
 					"disk_type":       "1",
 					"disk_size":       "800",
 					"deploy_type":     "4",
@@ -515,14 +520,15 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"security_group": "${data.alicloud_security_groups.default.ids.0}",
+					"security_group": "${alicloud_security_group.default.id}",
 					"vpc_id":         "${data.alicloud_vpcs.default.ids.0}",
-					"selected_zones": []string{"eu-central-1a"},
+					"selected_zones": []string{"${data.alicloud_vswitches.default.vswitches.0.zone_id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":            name,
-						"partition_num":   "50",
+						"partition_num":   "0",
+						"topic_quota":     "1000",
 						"disk_type":       "1",
 						"disk_size":       "800",
 						"deploy_type":     "4",
@@ -541,12 +547,22 @@ func TestAccAlicloudAlikafkaInstance_VpcId(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-
 					"io_max_spec": "alikafka.hw.3xlarge",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"io_max_spec": "alikafka.hw.3xlarge",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"partition_num": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"partition_num": "1",
+						"topic_quota":   "1001",
 					}),
 				),
 			},
@@ -574,9 +590,35 @@ data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-data "alicloud_security_groups" "default" {
-	name_regex = "^default-NODELETING"
+resource "alicloud_security_group" "default" {
+  name = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_kms_key" "key" {
+	description            = var.name
+	pending_window_in_days = "7"
+	status                 = "Enabled"
+}
+`, name)
+}
+
+func resourceAlikafkaInstancePrePaidConfigDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%v"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
 	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+data "alicloud_security_groups" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_kms_key" "key" {

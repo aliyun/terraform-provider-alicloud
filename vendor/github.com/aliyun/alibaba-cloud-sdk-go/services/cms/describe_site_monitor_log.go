@@ -80,6 +80,7 @@ type DescribeSiteMonitorLogRequest struct {
 	Length     requests.Integer `position:"Query" name:"Length"`
 	EndTime    string           `position:"Query" name:"EndTime"`
 	Filter     string           `position:"Query" name:"Filter"`
+	Namespace  string           `position:"Query" name:"Namespace"`
 	Dimensions string           `position:"Query" name:"Dimensions"`
 }
 
@@ -99,7 +100,7 @@ func CreateDescribeSiteMonitorLogRequest() (request *DescribeSiteMonitorLogReque
 	request = &DescribeSiteMonitorLogRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorLog", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorLog", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -7,11 +7,11 @@ description: |-
   Provides an EDAS K8s cluster resource.
 ---
 
-# alicloud\_edas\_k8s\_application
+# alicloud_edas_k8s_application
 
 Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/doc-detail/85029.htm). 
 
--> **NOTE:** Available in 1.105.0+
+-> **NOTE:** Available since v1.105.0
 
 ## Example Usage
 
@@ -78,10 +78,12 @@ The following arguments are supported:
 * `jdk` - (Optional) The JDK version that the deployed package depends on. The optional parameter values are Open JDK 7 and Open JDK 8. Image does not support this parameter.
 * `web_container` - (Optional) The Tomcat version that the deployment package depends on. Applicable to Spring Cloud and Dubbo applications deployed through WAR packages. Image does not support this parameter.
 * `edas_container_version` - (Optional) EDAS-Container version that the deployed package depends on. Image does not support this parameter.
-* `internet_target_port` - (Optional, ForceNew) The private SLB back-end port, is also the service port of the application, ranging from 1 to 65535.
-* `internet_slb_port` - (Optional, ForceNew) The public network SLB front-end port, range 1~65535.
-* `internet_slb_protocol` - (Optional, ForceNew) The public network SLB protocol supports TCP, HTTP and HTTPS protocols.
-* `internet_slb_id` - (Optional, ForceNew) Public network SLB ID. If not configured, EDAS will automatically purchase a new SLB for the user.
+* `internet_target_port` - (Optional, ForceNew, Deprecated since v1.194.0) The private SLB back-end port, is also the service port of the application, ranging from 1 to 65535.
+  It has been deprecated, and new resource 'alicloud_edas_k8s_slb_attachment' replaces it.
+* `internet_slb_port` - (Optional, ForceNew, Deprecated since v1.194.0) The public network SLB front-end port, range 1~65535. It has been deprecated and new resource 'alicloud_edas_k8s_slb_attachment' replaces it.
+* `internet_slb_protocol` - (Optional, ForceNew, Deprecated since v1.194.0) The public network SLB protocol supports TCP, HTTP and HTTPS protocols. It has been deprecated, and new resource 'alicloud_edas_k8s_slb_attachment' replaces it.
+* `internet_slb_id` - (Optional, ForceNew, Deprecated since v1.194.0) Public network SLB ID. If not configured, EDAS will automatically purchase a new SLB for the user.
+  It has been deprecated, and new resource 'alicloud_edas_k8s_slb_attachment' replaces it.
 * `limit_mem` - (Optional) The memory limit of the application instance during application operation, unit: M.
 * `requests_mem` - (Optional) When the application is created, the memory limit of the application instance, unit: M. When set to 0, it means unlimited. 
 * `requests_m_cpu` - (Optional) When the application is created, the CPU quota of the application instance, unit: number of millcores, similar to request_cpu
@@ -104,8 +106,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of the edas k8s application.
-* `application_name` - The name of the application you want to create. Must start with character,supports numbers, letters and dashes (-), supports up to 36 characters
-* `cluster_id` - The ID of the alicloud container service kubernetes cluster that you want to import to. You can call the ListCluster operation to query.
 
 ## Import
 

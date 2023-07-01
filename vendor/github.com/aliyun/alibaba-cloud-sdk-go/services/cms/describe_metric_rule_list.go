@@ -71,17 +71,19 @@ func (client *Client) DescribeMetricRuleListWithCallback(request *DescribeMetric
 // DescribeMetricRuleListRequest is the request struct for api DescribeMetricRuleList
 type DescribeMetricRuleListRequest struct {
 	*requests.RpcRequest
-	EnableState requests.Boolean `position:"Query" name:"EnableState"`
-	RuleName    string           `position:"Query" name:"RuleName"`
-	PageSize    requests.Integer `position:"Query" name:"PageSize"`
-	MetricName  string           `position:"Query" name:"MetricName"`
-	GroupId     string           `position:"Query" name:"GroupId"`
-	GroupBy     string           `position:"Query" name:"GroupBy"`
-	RuleIds     string           `position:"Query" name:"RuleIds"`
-	Namespace   string           `position:"Query" name:"Namespace"`
-	AlertState  string           `position:"Query" name:"AlertState"`
-	Page        requests.Integer `position:"Query" name:"Page"`
-	Dimensions  string           `position:"Query" name:"Dimensions"`
+	EnableState     requests.Boolean `position:"Query" name:"EnableState"`
+	ProductCategory string           `position:"Query" name:"ProductCategory"`
+	RuleName        string           `position:"Query" name:"RuleName"`
+	PageSize        requests.Integer `position:"Query" name:"PageSize"`
+	MetricName      string           `position:"Query" name:"MetricName"`
+	RuleIdLike      string           `position:"Query" name:"RuleIdLike"`
+	GroupId         string           `position:"Query" name:"GroupId"`
+	GroupBy         string           `position:"Query" name:"GroupBy"`
+	RuleIds         string           `position:"Query" name:"RuleIds"`
+	Namespace       string           `position:"Query" name:"Namespace"`
+	AlertState      string           `position:"Query" name:"AlertState"`
+	Page            requests.Integer `position:"Query" name:"Page"`
+	Dimensions      string           `position:"Query" name:"Dimensions"`
 }
 
 // DescribeMetricRuleListResponse is the response struct for api DescribeMetricRuleList
@@ -100,7 +102,7 @@ func CreateDescribeMetricRuleListRequest() (request *DescribeMetricRuleListReque
 	request = &DescribeMetricRuleListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMetricRuleList", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMetricRuleList", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

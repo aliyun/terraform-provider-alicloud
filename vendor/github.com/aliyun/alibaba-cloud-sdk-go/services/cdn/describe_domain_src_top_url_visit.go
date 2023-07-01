@@ -71,19 +71,18 @@ func (client *Client) DescribeDomainSrcTopUrlVisitWithCallback(request *Describe
 // DescribeDomainSrcTopUrlVisitRequest is the request struct for api DescribeDomainSrcTopUrlVisit
 type DescribeDomainSrcTopUrlVisitRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
-	SortBy     string           `position:"Query" name:"SortBy"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	SortBy     string `position:"Query" name:"SortBy"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDomainSrcTopUrlVisitResponse is the response struct for api DescribeDomainSrcTopUrlVisit
 type DescribeDomainSrcTopUrlVisitResponse struct {
 	*responses.BaseResponse
+	StartTime  string                                   `json:"StartTime" xml:"StartTime"`
 	RequestId  string                                   `json:"RequestId" xml:"RequestId"`
 	DomainName string                                   `json:"DomainName" xml:"DomainName"`
-	StartTime  string                                   `json:"StartTime" xml:"StartTime"`
 	AllUrlList AllUrlListInDescribeDomainSrcTopUrlVisit `json:"AllUrlList" xml:"AllUrlList"`
 	Url200List Url200ListInDescribeDomainSrcTopUrlVisit `json:"Url200List" xml:"Url200List"`
 	Url300List Url300ListInDescribeDomainSrcTopUrlVisit `json:"Url300List" xml:"Url300List"`

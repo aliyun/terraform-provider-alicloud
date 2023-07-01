@@ -71,16 +71,15 @@ func (client *Client) DescribeUserVipsByDomainWithCallback(request *DescribeUser
 // DescribeUserVipsByDomainRequest is the request struct for api DescribeUserVipsByDomain
 type DescribeUserVipsByDomainRequest struct {
 	*requests.RpcRequest
-	Available  string           `position:"Query" name:"Available"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	Available  string `position:"Query" name:"Available"`
 }
 
 // DescribeUserVipsByDomainResponse is the response struct for api DescribeUserVipsByDomain
 type DescribeUserVipsByDomainResponse struct {
 	*responses.BaseResponse
-	RequestId  string                         `json:"RequestId" xml:"RequestId"`
 	DomainName string                         `json:"DomainName" xml:"DomainName"`
+	RequestId  string                         `json:"RequestId" xml:"RequestId"`
 	Vips       VipsInDescribeUserVipsByDomain `json:"Vips" xml:"Vips"`
 }
 

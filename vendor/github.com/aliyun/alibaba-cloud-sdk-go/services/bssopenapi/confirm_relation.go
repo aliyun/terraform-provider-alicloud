@@ -77,6 +77,7 @@ type ConfirmRelationRequest struct {
 	ChildUserId     requests.Integer `position:"Query" name:"ChildUserId"`
 	RequestId       string           `position:"Query" name:"RequestId"`
 	PermissionCodes *[]string        `position:"Query" name:"PermissionCodes"  type:"Repeated"`
+	RelationId      requests.Integer `position:"Query" name:"RelationId"`
 }
 
 // ConfirmRelationResponse is the response struct for api ConfirmRelation
@@ -94,7 +95,7 @@ func CreateConfirmRelationRequest() (request *ConfirmRelationRequest) {
 	request = &ConfirmRelationRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ConfirmRelation", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ConfirmRelation", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

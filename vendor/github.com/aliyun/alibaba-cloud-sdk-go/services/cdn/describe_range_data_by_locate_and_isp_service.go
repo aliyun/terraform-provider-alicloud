@@ -71,19 +71,18 @@ func (client *Client) DescribeRangeDataByLocateAndIspServiceWithCallback(request
 // DescribeRangeDataByLocateAndIspServiceRequest is the request struct for api DescribeRangeDataByLocateAndIspService
 type DescribeRangeDataByLocateAndIspServiceRequest struct {
 	*requests.RpcRequest
-	DomainNames   string           `position:"Query" name:"DomainNames"`
-	LocationNames string           `position:"Query" name:"LocationNames"`
-	StartTime     string           `position:"Query" name:"StartTime"`
-	IspNames      string           `position:"Query" name:"IspNames"`
-	EndTime       string           `position:"Query" name:"EndTime"`
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
+	IspNames      string `position:"Query" name:"IspNames"`
+	DomainNames   string `position:"Query" name:"DomainNames"`
+	LocationNames string `position:"Query" name:"LocationNames"`
+	EndTime       string `position:"Query" name:"EndTime"`
+	StartTime     string `position:"Query" name:"StartTime"`
 }
 
 // DescribeRangeDataByLocateAndIspServiceResponse is the response struct for api DescribeRangeDataByLocateAndIspService
 type DescribeRangeDataByLocateAndIspServiceResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	JsonResult string `json:"JsonResult" xml:"JsonResult"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeRangeDataByLocateAndIspServiceRequest creates a request to invoke DescribeRangeDataByLocateAndIspService API

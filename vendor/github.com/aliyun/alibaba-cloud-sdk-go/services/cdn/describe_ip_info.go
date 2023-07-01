@@ -71,20 +71,18 @@ func (client *Client) DescribeIpInfoWithCallback(request *DescribeIpInfoRequest,
 // DescribeIpInfoRequest is the request struct for api DescribeIpInfo
 type DescribeIpInfoRequest struct {
 	*requests.RpcRequest
-	IP            string           `position:"Query" name:"IP"`
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
-	SecurityToken string           `position:"Query" name:"SecurityToken"`
+	IP string `position:"Query" name:"IP"`
 }
 
 // DescribeIpInfoResponse is the response struct for api DescribeIpInfo
 type DescribeIpInfoResponse struct {
 	*responses.BaseResponse
-	RequestId   string `json:"RequestId" xml:"RequestId"`
 	CdnIp       string `json:"CdnIp" xml:"CdnIp"`
-	ISP         string `json:"ISP" xml:"ISP"`
-	IspEname    string `json:"IspEname" xml:"IspEname"`
-	Region      string `json:"Region" xml:"Region"`
+	RequestId   string `json:"RequestId" xml:"RequestId"`
 	RegionEname string `json:"RegionEname" xml:"RegionEname"`
+	Region      string `json:"Region" xml:"Region"`
+	IspEname    string `json:"IspEname" xml:"IspEname"`
+	ISP         string `json:"ISP" xml:"ISP"`
 }
 
 // CreateDescribeIpInfoRequest creates a request to invoke DescribeIpInfo API

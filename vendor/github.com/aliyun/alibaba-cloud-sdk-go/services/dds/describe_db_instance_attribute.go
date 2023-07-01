@@ -72,6 +72,7 @@ func (client *Client) DescribeDBInstanceAttributeWithCallback(request *DescribeD
 type DescribeDBInstanceAttributeRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
+	IsOnlyGetCluster     requests.Boolean `position:"Query" name:"IsOnlyGetCluster"`
 	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	SecurityToken        string           `position:"Query" name:"SecurityToken"`
 	Engine               string           `position:"Query" name:"Engine"`
@@ -79,6 +80,8 @@ type DescribeDBInstanceAttributeRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	ChargeType           string           `position:"Query" name:"ChargeType"`
+	IsDelete             requests.Boolean `position:"Query" name:"IsDelete"`
 }
 
 // DescribeDBInstanceAttributeResponse is the response struct for api DescribeDBInstanceAttribute

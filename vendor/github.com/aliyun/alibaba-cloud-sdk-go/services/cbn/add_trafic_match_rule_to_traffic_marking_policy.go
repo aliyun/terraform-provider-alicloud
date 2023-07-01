@@ -79,6 +79,7 @@ type AddTraficMatchRuleToTrafficMarkingPolicyRequest struct {
 	ResourceOwnerAccount   string                                                       `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount           string                                                       `position:"Query" name:"OwnerAccount"`
 	OwnerId                requests.Integer                                             `position:"Query" name:"OwnerId"`
+	Version                string                                                       `position:"Query" name:"Version"`
 }
 
 // AddTraficMatchRuleToTrafficMarkingPolicyTrafficMatchRules is a repeated param struct in AddTraficMatchRuleToTrafficMarkingPolicyRequest

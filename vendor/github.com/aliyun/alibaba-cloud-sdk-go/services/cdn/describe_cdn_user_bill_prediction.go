@@ -71,19 +71,18 @@ func (client *Client) DescribeCdnUserBillPredictionWithCallback(request *Describ
 // DescribeCdnUserBillPredictionRequest is the request struct for api DescribeCdnUserBillPrediction
 type DescribeCdnUserBillPredictionRequest struct {
 	*requests.RpcRequest
-	StartTime string           `position:"Query" name:"StartTime"`
-	Dimension string           `position:"Query" name:"Dimension"`
-	Area      string           `position:"Query" name:"Area"`
-	EndTime   string           `position:"Query" name:"EndTime"`
-	OwnerId   requests.Integer `position:"Query" name:"OwnerId"`
+	Area      string `position:"Query" name:"Area"`
+	EndTime   string `position:"Query" name:"EndTime"`
+	StartTime string `position:"Query" name:"StartTime"`
+	Dimension string `position:"Query" name:"Dimension"`
 }
 
 // DescribeCdnUserBillPredictionResponse is the response struct for api DescribeCdnUserBillPrediction
 type DescribeCdnUserBillPredictionResponse struct {
 	*responses.BaseResponse
-	RequestId          string             `json:"RequestId" xml:"RequestId"`
-	StartTime          string             `json:"StartTime" xml:"StartTime"`
 	EndTime            string             `json:"EndTime" xml:"EndTime"`
+	StartTime          string             `json:"StartTime" xml:"StartTime"`
+	RequestId          string             `json:"RequestId" xml:"RequestId"`
 	BillType           string             `json:"BillType" xml:"BillType"`
 	BillPredictionData BillPredictionData `json:"BillPredictionData" xml:"BillPredictionData"`
 }

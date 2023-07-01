@@ -71,17 +71,16 @@ func (client *Client) DescribeDcdnHttpsDomainListWithCallback(request *DescribeD
 // DescribeDcdnHttpsDomainListRequest is the request struct for api DescribeDcdnHttpsDomainList
 type DescribeDcdnHttpsDomainListRequest struct {
 	*requests.RpcRequest
-	PageNumber requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize   requests.Integer `position:"Query" name:"PageSize"`
 	Keyword    string           `position:"Query" name:"Keyword"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	PageNumber requests.Integer `position:"Query" name:"PageNumber"`
 }
 
 // DescribeDcdnHttpsDomainListResponse is the response struct for api DescribeDcdnHttpsDomainList
 type DescribeDcdnHttpsDomainListResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                 `json:"RequestId" xml:"RequestId"`
 	TotalCount int                                    `json:"TotalCount" xml:"TotalCount"`
+	RequestId  string                                 `json:"RequestId" xml:"RequestId"`
 	CertInfos  CertInfosInDescribeDcdnHttpsDomainList `json:"CertInfos" xml:"CertInfos"`
 }
 

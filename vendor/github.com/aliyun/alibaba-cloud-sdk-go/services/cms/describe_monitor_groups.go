@@ -82,6 +82,7 @@ type DescribeMonitorGroupsRequest struct {
 	GroupFounderTagValue   string                      `position:"Query" name:"GroupFounderTagValue"`
 	Tag                    *[]DescribeMonitorGroupsTag `position:"Query" name:"Tag"  type:"Repeated"`
 	Keyword                string                      `position:"Query" name:"Keyword"`
+	Types                  string                      `position:"Query" name:"Types"`
 	GroupId                string                      `position:"Query" name:"GroupId"`
 	GroupName              string                      `position:"Query" name:"GroupName"`
 	InstanceId             string                      `position:"Query" name:"InstanceId"`
@@ -112,7 +113,7 @@ func CreateDescribeMonitorGroupsRequest() (request *DescribeMonitorGroupsRequest
 	request = &DescribeMonitorGroupsRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMonitorGroups", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeMonitorGroups", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

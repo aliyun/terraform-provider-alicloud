@@ -74,6 +74,7 @@ type DescribeAvailableResourceRequest struct {
 	ResourceOwnerId      requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
+	DBClusterVersion     string           `position:"Query" name:"DBClusterVersion"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
 	AcceptLanguage       string           `position:"Query" name:"AcceptLanguage"`
 	ZoneId               string           `position:"Query" name:"ZoneId"`
@@ -83,8 +84,8 @@ type DescribeAvailableResourceRequest struct {
 // DescribeAvailableResourceResponse is the response struct for api DescribeAvailableResource
 type DescribeAvailableResourceResponse struct {
 	*responses.BaseResponse
-	RequestId         string          `json:"RequestId" xml:"RequestId"`
 	RegionId          string          `json:"RegionId" xml:"RegionId"`
+	RequestId         string          `json:"RequestId" xml:"RequestId"`
 	AvailableZoneList []AvailableZone `json:"AvailableZoneList" xml:"AvailableZoneList"`
 }
 

@@ -71,14 +71,13 @@ func (client *Client) DescribeDcdnSubListWithCallback(request *DescribeDcdnSubLi
 // DescribeDcdnSubListRequest is the request struct for api DescribeDcdnSubList
 type DescribeDcdnSubListRequest struct {
 	*requests.RpcRequest
-	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeDcdnSubListResponse is the response struct for api DescribeDcdnSubList
 type DescribeDcdnSubListResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Content   string `json:"Content" xml:"Content"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeDcdnSubListRequest creates a request to invoke DescribeDcdnSubList API

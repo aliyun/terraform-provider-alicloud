@@ -181,12 +181,12 @@ func ramGroupsDescriptionAttributes(d *schema.ResourceData, groups []interface{}
 	var ids []string
 	var s []map[string]interface{}
 	for _, v := range groups {
-		group := v.(ram.GroupInListGroups)
+		group := v.(ram.Group)
 		mapping := map[string]interface{}{
 			"name":     group.GroupName,
 			"comments": group.Comments,
 		}
-		ids = append(ids, v.(ram.GroupInListGroups).GroupName)
+		ids = append(ids, v.(ram.Group).GroupName)
 		s = append(s, mapping)
 	}
 

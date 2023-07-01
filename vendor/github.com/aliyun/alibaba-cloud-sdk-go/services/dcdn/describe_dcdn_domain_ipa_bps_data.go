@@ -71,24 +71,23 @@ func (client *Client) DescribeDcdnDomainIpaBpsDataWithCallback(request *Describe
 // DescribeDcdnDomainIpaBpsDataRequest is the request struct for api DescribeDcdnDomainIpaBpsData
 type DescribeDcdnDomainIpaBpsDataRequest struct {
 	*requests.RpcRequest
-	LocationNameEn string           `position:"Query" name:"LocationNameEn"`
-	StartTime      string           `position:"Query" name:"StartTime"`
-	IspNameEn      string           `position:"Query" name:"IspNameEn"`
-	FixTimeGap     string           `position:"Query" name:"FixTimeGap"`
-	TimeMerge      string           `position:"Query" name:"TimeMerge"`
-	DomainName     string           `position:"Query" name:"DomainName"`
-	EndTime        string           `position:"Query" name:"EndTime"`
-	OwnerId        requests.Integer `position:"Query" name:"OwnerId"`
-	Interval       string           `position:"Query" name:"Interval"`
+	FixTimeGap     string `position:"Query" name:"FixTimeGap"`
+	TimeMerge      string `position:"Query" name:"TimeMerge"`
+	DomainName     string `position:"Query" name:"DomainName"`
+	EndTime        string `position:"Query" name:"EndTime"`
+	Interval       string `position:"Query" name:"Interval"`
+	LocationNameEn string `position:"Query" name:"LocationNameEn"`
+	StartTime      string `position:"Query" name:"StartTime"`
+	IspNameEn      string `position:"Query" name:"IspNameEn"`
 }
 
 // DescribeDcdnDomainIpaBpsDataResponse is the response struct for api DescribeDcdnDomainIpaBpsData
 type DescribeDcdnDomainIpaBpsDataResponse struct {
 	*responses.BaseResponse
+	EndTime            string                                           `json:"EndTime" xml:"EndTime"`
+	StartTime          string                                           `json:"StartTime" xml:"StartTime"`
 	RequestId          string                                           `json:"RequestId" xml:"RequestId"`
 	DomainName         string                                           `json:"DomainName" xml:"DomainName"`
-	StartTime          string                                           `json:"StartTime" xml:"StartTime"`
-	EndTime            string                                           `json:"EndTime" xml:"EndTime"`
 	DataInterval       string                                           `json:"DataInterval" xml:"DataInterval"`
 	BpsDataPerInterval BpsDataPerIntervalInDescribeDcdnDomainIpaBpsData `json:"BpsDataPerInterval" xml:"BpsDataPerInterval"`
 }

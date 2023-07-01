@@ -17,10 +17,14 @@ package cbn
 
 // TransitRouterRouteTable is a nested struct in cbn response
 type TransitRouterRouteTable struct {
-	TransitRouterRouteTableStatus      string `json:"TransitRouterRouteTableStatus" xml:"TransitRouterRouteTableStatus"`
-	TransitRouterRouteTableType        string `json:"TransitRouterRouteTableType" xml:"TransitRouterRouteTableType"`
-	CreateTime                         string `json:"CreateTime" xml:"CreateTime"`
-	TransitRouterRouteTableId          string `json:"TransitRouterRouteTableId" xml:"TransitRouterRouteTableId"`
-	TransitRouterRouteTableName        string `json:"TransitRouterRouteTableName" xml:"TransitRouterRouteTableName"`
-	TransitRouterRouteTableDescription string `json:"TransitRouterRouteTableDescription" xml:"TransitRouterRouteTableDescription"`
+	TransitRouterRouteTableStatus      string            `json:"TransitRouterRouteTableStatus" xml:"TransitRouterRouteTableStatus"`
+	TransitRouterRouteTableType        string            `json:"TransitRouterRouteTableType" xml:"TransitRouterRouteTableType"`
+	CreateTime                         string            `json:"CreateTime" xml:"CreateTime"`
+	TransitRouterRouteTableId          string            `json:"TransitRouterRouteTableId" xml:"TransitRouterRouteTableId"`
+	TransitRouterRouteTableName        string            `json:"TransitRouterRouteTableName" xml:"TransitRouterRouteTableName"`
+	TransitRouterRouteTableDescription string            `json:"TransitRouterRouteTableDescription" xml:"TransitRouterRouteTableDescription"`
+	RegionId                           string            `json:"RegionId" xml:"RegionId"`
+	TransitRouterId                    string            `json:"TransitRouterId" xml:"TransitRouterId"`
+	RouteTableOptions                  RouteTableOptions `json:"RouteTableOptions" xml:"RouteTableOptions"`
+	Tags                               []Tag             `json:"Tags" xml:"Tags"`
 }

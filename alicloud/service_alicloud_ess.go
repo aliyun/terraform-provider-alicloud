@@ -287,7 +287,7 @@ func (s *EssService) DescribeEssScalingGroupSuspendProcess(id string) (object ma
 	return
 }
 
-func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfiguration, err error) {
+func (s *EssService) DescribeEssScalingConfiguration(id string) (config ess.ScalingConfigurationInDescribeScalingConfigurations, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
 	request.ScalingConfigurationId = &[]string{id}
 	request.RegionId = s.client.RegionId
@@ -615,7 +615,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	return response.ScalingInstances.ScalingInstance, nil
 }
 
-func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.ScalingConfiguration, err error) {
+func (s *EssService) DescribeEssScalingConfifurations(id string) (configs []ess.ScalingConfigurationInDescribeScalingConfigurations, err error) {
 	request := ess.CreateDescribeScalingConfigurationsRequest()
 	request.ScalingGroupId = id
 	request.PageNumber = requests.NewInteger(1)

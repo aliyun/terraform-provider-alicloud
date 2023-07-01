@@ -8,9 +8,6 @@ description: |-
 
 # Alibaba Cloud Provider
 
-~> **News:** Currently, Alibaba Cloud has published [Terraform Module Web GUI](https://api.aliyun.com/#/cli?tool=Terraform) to
- help developers to use Terraform Module more simply and conveniently. Welcome to access it and let us know your more requirements!
-
 The Alibaba Cloud provider is used to interact with the
 many resources supported by [Alibaba Cloud](https://www.alibabacloud.com). The provider needs to be configured
 with the proper credentials before it can be used.
@@ -164,7 +161,7 @@ provider "alicloud" {
 
 ### Sidecar Credentials
 
-You can deploy a sidecar to storage alibaba cloud credentials. Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument or using the `ALICLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically. The Sidecar Credentials is available in v1.141.0+.
+You can deploy a sidecar to storage alibaba cloud credentials. Then, you can optionally specify a credentials URI in the Terraform configuration by providing the `credentials_uri` argument or using the `ALICLOUD_CREDENTIALS_URI` environment variable to get the credentials automatically. The Sidecar Credentials is available since v1.141.0.
 
 Usage:
 
@@ -222,28 +219,28 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
   It can be sourced from the `ALICLOUD_ACCOUNT_ID` environment variable.
 
-* `shared_credentials_file` - (Optional, Available in 1.49.0+) This is the path to the shared credentials file. It can also be sourced from the `ALICLOUD_SHARED_CREDENTIALS_FILE` environment variable. If this is not set and a profile is specified, ~/.aliyun/config.json will be used.
+* `shared_credentials_file` - (Optional, Available since 1.49.0) This is the path to the shared credentials file. It can also be sourced from the `ALICLOUD_SHARED_CREDENTIALS_FILE` environment variable. If this is not set and a profile is specified, ~/.aliyun/config.json will be used.
 
-* `profile` - (Optional, Available in 1.49.0+) This is the Alicloud profile name as set in the shared credentials file. It can also be sourced from the `ALICLOUD_PROFILE` environment variable.
+* `profile` - (Optional, Available since 1.49.0) This is the Alicloud profile name as set in the shared credentials file. It can also be sourced from the `ALICLOUD_PROFILE` environment variable.
 
-* `assume_role` - (Optional) An `assume_role` block (documented below). Only one `assume_role` block may be in the configuration.
+* `assume_role` - (Optional) An [`assume_role`](#assume_role) block. Only one `assume_role` block may be in the configuration.
 
-* `endpoints` - (Optional) An `endpoints` block (documented below) to support custom endpoints.
+* `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
-* `skip_region_validation` - (Optional, Available in 1.52.0+) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
+* `skip_region_validation` - (Optional, Available since 1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
-* `configuration_source` - (Optional, Available in 1.56.0+) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
-The length should not more than 64. From the version 1.145.0+, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
+* `configuration_source` - (Optional, Available since 1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
+The length should not more than 64. Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
 
-* `protocol` - (Optional, Available in 1.72.0+) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
+* `protocol` - (Optional, Available since 1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
 
-* `client_read_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client read request. Default to 60000.
+* `client_read_timeout` - (Optional, Available since 1.125.0) The maximum timeout in millisecond second of the client read request. Default to 60000.
 
-* `client_connect_timeout` - (Optional, Available in 1.125.0+) The maximum timeout in millisecond second of the client connection server. Default to 60000.
+* `client_connect_timeout` - (Optional, Available since 1.125.0) The maximum timeout in millisecond second of the client connection server. Default to 60000.
 
-* `max_retry_timeout` - (Optional, Available in 1.183.0+) The maximum retry timeout in second of the request. Default to `0`.
+* `max_retry_timeout` - (Optional, Available since 1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
-The nested `assume_role` block supports the following:
+### `assume_role`
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.
   Terraform executes configuration on account with provided credentials.
@@ -255,9 +252,13 @@ The nested `assume_role` block supports the following:
 
 * `session_expiration` - (Optional) The time after which the established session for assuming role expires. Valid value range: [900-43200] seconds. Default to 3600 (in this case Alicloud use own default value). It supports environment variable `ALICLOUD_ASSUME_ROLE_SESSION_EXPIRATION`.
 
-* `credentials_uri` - (Optional, Available in 1.141.0+) The URI of sidecar credentials service. It can also be sourced from the `ALICLOUD_CREDENTIALS_URI` environment variable.
-  
-Nested `endpoints` block supports the following:
+* `credentials_uri` - (Optional, Available since 1.141.0) The URI of sidecar credentials service. It can also be sourced from the `ALICLOUD_CREDENTIALS_URI` environment variable.
+
+* `external_id` - (Optional, Available since 1.207.1) The external ID of the RAM role. 
+  This parameter is provided by an external party and is used to prevent the confused deputy problem. 
+  The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
+ 
+### `endpoints`
 
 **NOTE:** Due to certain API restrictions, the endpoints pointing to the area should be consistent with the `region_id`.
 

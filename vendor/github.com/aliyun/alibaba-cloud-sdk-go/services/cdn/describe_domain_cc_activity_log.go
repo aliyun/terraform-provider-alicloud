@@ -71,22 +71,21 @@ func (client *Client) DescribeDomainCcActivityLogWithCallback(request *DescribeD
 // DescribeDomainCcActivityLogRequest is the request struct for api DescribeDomainCcActivityLog
 type DescribeDomainCcActivityLogRequest struct {
 	*requests.RpcRequest
+	DomainName    string           `position:"Query" name:"DomainName"`
+	PageSize      requests.Integer `position:"Query" name:"PageSize"`
+	EndTime       string           `position:"Query" name:"EndTime"`
 	RuleName      string           `position:"Query" name:"RuleName"`
 	StartTime     string           `position:"Query" name:"StartTime"`
 	TriggerObject string           `position:"Query" name:"TriggerObject"`
-	PageNumber    requests.Integer `position:"Query" name:"PageNumber"`
-	PageSize      requests.Integer `position:"Query" name:"PageSize"`
 	Value         string           `position:"Query" name:"Value"`
-	DomainName    string           `position:"Query" name:"DomainName"`
-	EndTime       string           `position:"Query" name:"EndTime"`
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
+	PageNumber    requests.Integer `position:"Query" name:"PageNumber"`
 }
 
 // DescribeDomainCcActivityLogResponse is the response struct for api DescribeDomainCcActivityLog
 type DescribeDomainCcActivityLogResponse struct {
 	*responses.BaseResponse
-	RequestId   string    `json:"RequestId" xml:"RequestId"`
 	PageIndex   int64     `json:"PageIndex" xml:"PageIndex"`
+	RequestId   string    `json:"RequestId" xml:"RequestId"`
 	PageSize    int64     `json:"PageSize" xml:"PageSize"`
 	Total       int64     `json:"Total" xml:"Total"`
 	ActivityLog []LogInfo `json:"ActivityLog" xml:"ActivityLog"`

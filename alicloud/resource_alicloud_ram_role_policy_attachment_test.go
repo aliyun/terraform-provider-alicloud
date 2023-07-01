@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccAlicloudRAMRolePolicyAttachment_basic(t *testing.T) {
-	var v *ram.PolicyInListPoliciesForRole
+	var v *ram.Policy
 	resourceId := "alicloud_ram_role_policy_attachment.default"
 	ra := resourceAttrInit(resourceId, ramPolicyForRoleMap)
 	serviceFunc := func() interface{} {

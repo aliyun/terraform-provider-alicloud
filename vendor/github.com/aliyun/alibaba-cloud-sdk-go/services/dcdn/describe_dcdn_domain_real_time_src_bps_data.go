@@ -71,19 +71,18 @@ func (client *Client) DescribeDcdnDomainRealTimeSrcBpsDataWithCallback(request *
 // DescribeDcdnDomainRealTimeSrcBpsDataRequest is the request struct for api DescribeDcdnDomainRealTimeSrcBpsData
 type DescribeDcdnDomainRealTimeSrcBpsDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDcdnDomainRealTimeSrcBpsDataResponse is the response struct for api DescribeDcdnDomainRealTimeSrcBpsData
 type DescribeDcdnDomainRealTimeSrcBpsDataResponse struct {
 	*responses.BaseResponse
+	EndTime                       string                        `json:"EndTime" xml:"EndTime"`
+	StartTime                     string                        `json:"StartTime" xml:"StartTime"`
 	RequestId                     string                        `json:"RequestId" xml:"RequestId"`
 	DomainName                    string                        `json:"DomainName" xml:"DomainName"`
-	StartTime                     string                        `json:"StartTime" xml:"StartTime"`
-	EndTime                       string                        `json:"EndTime" xml:"EndTime"`
 	DataInterval                  string                        `json:"DataInterval" xml:"DataInterval"`
 	RealTimeSrcBpsDataPerInterval RealTimeSrcBpsDataPerInterval `json:"RealTimeSrcBpsDataPerInterval" xml:"RealTimeSrcBpsDataPerInterval"`
 }

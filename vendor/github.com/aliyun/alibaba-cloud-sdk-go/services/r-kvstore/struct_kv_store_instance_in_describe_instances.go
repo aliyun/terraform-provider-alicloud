@@ -46,7 +46,6 @@ type KVStoreInstanceInDescribeInstances struct {
 	InstanceType        string                  `json:"InstanceType" xml:"InstanceType"`
 	HasRenewChangeOrder bool                    `json:"HasRenewChangeOrder" xml:"HasRenewChangeOrder"`
 	RegionId            string                  `json:"RegionId" xml:"RegionId"`
-	SearchKey           string                  `json:"SearchKey" xml:"SearchKey"`
 	EndTime             string                  `json:"EndTime" xml:"EndTime"`
 	VSwitchId           string                  `json:"VSwitchId" xml:"VSwitchId"`
 	NodeType            string                  `json:"NodeType" xml:"NodeType"`
@@ -56,5 +55,8 @@ type KVStoreInstanceInDescribeInstances struct {
 	InstanceStatus      string                  `json:"InstanceStatus" xml:"InstanceStatus"`
 	ProxyCount          int                     `json:"ProxyCount" xml:"ProxyCount"`
 	CloudType           string                  `json:"CloudType" xml:"CloudType"`
+	EditionType         string                  `json:"EditionType" xml:"EditionType"`
+	ReadOnlyCount       string                  `json:"ReadOnlyCount" xml:"ReadOnlyCount"`
+	ShardClass          string                  `json:"ShardClass" xml:"ShardClass"`
 	Tags                TagsInDescribeInstances `json:"Tags" xml:"Tags"`
 }

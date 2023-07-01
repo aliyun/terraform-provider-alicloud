@@ -71,20 +71,19 @@ func (client *Client) DescribeDomainISPDataWithCallback(request *DescribeDomainI
 // DescribeDomainISPDataRequest is the request struct for api DescribeDomainISPData
 type DescribeDomainISPDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDomainISPDataResponse is the response struct for api DescribeDomainISPData
 type DescribeDomainISPDataResponse struct {
 	*responses.BaseResponse
+	EndTime      string                       `json:"EndTime" xml:"EndTime"`
+	StartTime    string                       `json:"StartTime" xml:"StartTime"`
 	RequestId    string                       `json:"RequestId" xml:"RequestId"`
 	DomainName   string                       `json:"DomainName" xml:"DomainName"`
 	DataInterval string                       `json:"DataInterval" xml:"DataInterval"`
-	StartTime    string                       `json:"StartTime" xml:"StartTime"`
-	EndTime      string                       `json:"EndTime" xml:"EndTime"`
 	Value        ValueInDescribeDomainISPData `json:"Value" xml:"Value"`
 }
 
