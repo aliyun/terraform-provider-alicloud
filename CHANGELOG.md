@@ -1,5 +1,5 @@
 ## 1.208.0 (Unreleased)
-## 1.207.0 (July 01, 2023)
+## 1.207.1 (July 01, 2023)
 
 ENHANCEMENTS:
 
@@ -18,7 +18,6 @@ ENHANCEMENTS:
 - docs: Improves the alb docs example ([#6279](https://github.com/aliyun/terraform-provider-alicloud/issues/6279))
 - docs: Improves the adb docs example ([#6274](https://github.com/aliyun/terraform-provider-alicloud/issues/6274))
 - docs: Improves the cen docs example ([#6252](https://github.com/aliyun/terraform-provider-alicloud/issues/6252))
-  
 - Update Readme ([#6278](https://github.com/aliyun/terraform-provider-alicloud/issues/6278))
 
 ## 1.207.0 (June 20, 2023)
