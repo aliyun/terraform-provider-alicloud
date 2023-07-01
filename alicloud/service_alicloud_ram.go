@@ -227,8 +227,8 @@ func (s *RamService) GetIntersection(dataMap []map[string]interface{}, allDataMa
 	return
 }
 
-func (s *RamService) DescribeRamUser(id string) (*ram.UserInGetUser, error) {
-	user := &ram.UserInGetUser{}
+func (s *RamService) DescribeRamUser(id string) (*ram.User, error) {
+	user := &ram.User{}
 	listUsersRequest := ram.CreateListUsersRequest()
 	listUsersRequest.RegionId = s.client.RegionId
 	listUsersRequest.MaxItems = requests.NewInteger(100)
@@ -385,8 +385,8 @@ func (s *RamService) WaitForRamLoginProfile(id string, status Status, timeout in
 	}
 }
 
-func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (*ram.PolicyInListPoliciesForGroup, error) {
-	response := &ram.PolicyInListPoliciesForGroup{}
+func (s *RamService) DescribeRamGroupPolicyAttachment(id string) (*ram.Policy, error) {
+	response := &ram.Policy{}
 	request := ram.CreateListPoliciesForGroupRequest()
 	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
@@ -460,8 +460,8 @@ func (s *RamService) DescribeRamAccountAlias(id string) (*ram.GetAccountAliasRes
 	return response, nil
 }
 
-func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKeyInListAccessKeys, error) {
-	key := &ram.AccessKeyInListAccessKeys{}
+func (s *RamService) DescribeRamAccessKey(id, userName string) (*ram.AccessKey, error) {
+	key := &ram.AccessKey{}
 	request := ram.CreateListAccessKeysRequest()
 	request.RegionId = s.client.RegionId
 	request.UserName = userName
@@ -661,8 +661,8 @@ func (s *RamService) WaitForRamRole(id string, status Status, timeout int) error
 	}
 }
 
-func (s *RamService) DescribeRamUserPolicyAttachment(id string) (*ram.PolicyInListPoliciesForUser, error) {
-	response := &ram.PolicyInListPoliciesForUser{}
+func (s *RamService) DescribeRamUserPolicyAttachment(id string) (*ram.Policy, error) {
+	response := &ram.Policy{}
 	request := ram.CreateListPoliciesForUserRequest()
 	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)
@@ -730,8 +730,8 @@ func (s *RamService) WaitForRamUserPolicyAttachment(id string, status Status, ti
 	}
 }
 
-func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.PolicyInListPoliciesForRole, error) {
-	response := &ram.PolicyInListPoliciesForRole{}
+func (s *RamService) DescribeRamRolePolicyAttachment(id string) (*ram.Policy, error) {
+	response := &ram.Policy{}
 	request := ram.CreateListPoliciesForRoleRequest()
 	request.RegionId = s.client.RegionId
 	parts, err := ParseResourceId(id, 4)

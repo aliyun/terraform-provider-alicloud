@@ -17,7 +17,7 @@ package cloudapi
 
 // DeployedInfo is a nested struct in cloudapi response
 type DeployedInfo struct {
-	StageName        string `json:"StageName" xml:"StageName"`
-	EffectiveVersion string `json:"EffectiveVersion" xml:"EffectiveVersion"`
 	DeployedStatus   string `json:"DeployedStatus" xml:"DeployedStatus"`
+	EffectiveVersion string `json:"EffectiveVersion" xml:"EffectiveVersion"`
+	StageName        string `json:"StageName" xml:"StageName"`
 }

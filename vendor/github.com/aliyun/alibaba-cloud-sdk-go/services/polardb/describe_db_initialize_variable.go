@@ -81,9 +81,9 @@ type DescribeDBInitializeVariableRequest struct {
 // DescribeDBInitializeVariableResponse is the response struct for api DescribeDBInitializeVariable
 type DescribeDBInitializeVariableResponse struct {
 	*responses.BaseResponse
+	DBVersion string    `json:"DBVersion" xml:"DBVersion"`
 	RequestId string    `json:"RequestId" xml:"RequestId"`
 	DBType    string    `json:"DBType" xml:"DBType"`
-	DBVersion string    `json:"DBVersion" xml:"DBVersion"`
 	Variables Variables `json:"Variables" xml:"Variables"`
 }
 

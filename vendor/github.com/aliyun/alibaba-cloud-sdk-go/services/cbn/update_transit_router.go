@@ -80,6 +80,8 @@ type UpdateTransitRouterRequest struct {
 	OwnerId                  requests.Integer `position:"Query" name:"OwnerId"`
 	TransitRouterId          string           `position:"Query" name:"TransitRouterId"`
 	TransitRouterDescription string           `position:"Query" name:"TransitRouterDescription"`
+	SupportMulticast         requests.Boolean `position:"Query" name:"SupportMulticast"`
+	Version                  string           `position:"Query" name:"Version"`
 }
 
 // UpdateTransitRouterResponse is the response struct for api UpdateTransitRouter

@@ -21,8 +21,10 @@ type DBCluster struct {
 	Category             string                      `json:"Category" xml:"Category"`
 	DBType               string                      `json:"DBType" xml:"DBType"`
 	Engine               string                      `json:"Engine" xml:"Engine"`
+	StoragePayType       string                      `json:"StoragePayType" xml:"StoragePayType"`
 	CreateTime           string                      `json:"CreateTime" xml:"CreateTime"`
 	DBClusterNetworkType string                      `json:"DBClusterNetworkType" xml:"DBClusterNetworkType"`
+	ServerlessType       string                      `json:"ServerlessType" xml:"ServerlessType"`
 	RegionId             string                      `json:"RegionId" xml:"RegionId"`
 	DeletedTime          string                      `json:"DeletedTime" xml:"DeletedTime"`
 	DBNodeNumber         int                         `json:"DBNodeNumber" xml:"DBNodeNumber"`
@@ -36,11 +38,13 @@ type DBCluster struct {
 	PayType              string                      `json:"PayType" xml:"PayType"`
 	DBClusterId          string                      `json:"DBClusterId" xml:"DBClusterId"`
 	DBClusterStatus      string                      `json:"DBClusterStatus" xml:"DBClusterStatus"`
+	StrictConsistency    string                      `json:"StrictConsistency" xml:"StrictConsistency"`
 	ZoneId               string                      `json:"ZoneId" xml:"ZoneId"`
 	StorageUsed          int64                       `json:"StorageUsed" xml:"StorageUsed"`
+	StorageSpace         int64                       `json:"StorageSpace" xml:"StorageSpace"`
 	IsDeleted            int                         `json:"IsDeleted" xml:"IsDeleted"`
 	DBClusterDescription string                      `json:"DBClusterDescription" xml:"DBClusterDescription"`
 	LockMode             string                      `json:"LockMode" xml:"LockMode"`
-	DBNodes              DBNodesInDescribeDBClusters `json:"DBNodes" xml:"DBNodes"`
 	Tags                 TagsInDescribeDBClusters    `json:"Tags" xml:"Tags"`
+	DBNodes              DBNodesInDescribeDBClusters `json:"DBNodes" xml:"DBNodes"`
 }

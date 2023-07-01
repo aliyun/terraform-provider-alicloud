@@ -81,6 +81,7 @@ type DescribeCenRouteMapsRequest struct {
 	OwnerAccount              string                        `position:"Query" name:"OwnerAccount"`
 	RouteMapId                string                        `position:"Query" name:"RouteMapId"`
 	OwnerId                   requests.Integer              `position:"Query" name:"OwnerId"`
+	Version                   string                        `position:"Query" name:"Version"`
 	Filter                    *[]DescribeCenRouteMapsFilter `position:"Query" name:"Filter"  type:"Repeated"`
 	CenRegionId               string                        `position:"Query" name:"CenRegionId"`
 }

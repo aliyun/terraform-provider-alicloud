@@ -83,6 +83,7 @@ type CreateDynamicTagGroupRequest struct {
 
 // CreateDynamicTagGroupMatchExpress is a repeated param struct in CreateDynamicTagGroupRequest
 type CreateDynamicTagGroupMatchExpress struct {
+	TagName               string `name:"TagName"`
 	TagValue              string `name:"TagValue"`
 	TagValueMatchFunction string `name:"TagValueMatchFunction"`
 }
@@ -102,7 +103,7 @@ func CreateCreateDynamicTagGroupRequest() (request *CreateDynamicTagGroupRequest
 	request = &CreateDynamicTagGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateDynamicTagGroup", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateDynamicTagGroup", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

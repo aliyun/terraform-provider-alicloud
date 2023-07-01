@@ -37,6 +37,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 )
 
 var debug utils.Debug
@@ -78,6 +80,8 @@ type Client struct {
 	Network         string
 	Domain          string
 	isOpenAsync     bool
+	isCloseTrace    bool
+	rootSpan        opentracing.Span
 }
 
 func (client *Client) Init() (err error) {
@@ -129,6 +133,22 @@ func (client *Client) SetTransport(transport http.RoundTripper) {
 	client.httpClient.Transport = transport
 }
 
+func (client *Client) SetCloseTrace(isCloseTrace bool) {
+	client.isCloseTrace = isCloseTrace
+}
+
+func (client *Client) GetCloseTrace() bool {
+	return client.isCloseTrace
+}
+
+func (client *Client) SetTracerRootSpan(rootSpan opentracing.Span) {
+	client.rootSpan = rootSpan
+}
+
+func (client *Client) GetTracerRootSpan() opentracing.Span {
+	return client.rootSpan
+}
+
 // InitWithProviderChain will get credential from the providerChain,
 // the RsaKeyPairCredential Only applicable to regionID `ap-northeast-1`,
 // if your providerChain may return a credential type with RsaKeyPairCredential,
@@ -153,6 +173,7 @@ func (client *Client) InitWithOptions(regionId string, config *Config, credentia
 	client.regionId = regionId
 	client.config = config
 	client.httpClient = &http.Client{}
+	client.isCloseTrace = false
 
 	if config.Transport != nil {
 		client.httpClient.Transport = config.Transport
@@ -596,13 +617,34 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 		client.httpClient.Transport = trans
 	}
 
+	// Set tracer
+	var span opentracing.Span
+	if ok := opentracing.IsGlobalTracerRegistered(); ok && !client.isCloseTrace {
+		tracer := opentracing.GlobalTracer()
+		var rootCtx opentracing.SpanContext
+		var rootSpan opentracing.Span
+
+		if rootSpan = client.rootSpan; rootSpan != nil {
+			rootCtx = rootSpan.Context()
+		} else if rootSpan = request.GetTracerSpan(); rootSpan != nil {
+			rootCtx = rootSpan.Context()
+		}
+
+		span = tracer.StartSpan(
+			httpRequest.URL.RequestURI(),
+			opentracing.ChildOf(rootCtx),
+			opentracing.Tag{Key: string(ext.Component), Value: "aliyunApi"},
+			opentracing.Tag{Key: "actionName", Value: request.GetActionName()})
+
+		defer span.Finish()
+		tracer.Inject(
+			span.Context(),
+			opentracing.HTTPHeaders,
+			opentracing.HTTPHeadersCarrier(httpRequest.Header))
+	}
+
 	var httpResponse *http.Response
 	for retryTimes := 0; retryTimes <= client.config.MaxRetryTime; retryTimes++ {
-		if proxy != nil && proxy.User != nil {
-			if password, passwordSet := proxy.User.Password(); passwordSet {
-				httpRequest.SetBasicAuth(proxy.User.Username(), password)
-			}
-		}
 		if retryTimes > 0 {
 			client.printLog(fieldMap, err)
 			initLogMsg(fieldMap)
@@ -632,6 +674,9 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 		// receive error
 		if err != nil {
 			debug(" Error: %s.", err.Error())
+			if span != nil {
+				ext.LogError(span, err)
+			}
 			if !client.config.AutoRetry {
 				return
 			} else if retryTimes >= client.config.MaxRetryTime {
@@ -663,6 +708,9 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 			continue
 		}
 		break
+	}
+	if span != nil {
+		ext.HTTPStatusCode.Set(span, uint16(httpResponse.StatusCode))
 	}
 
 	err = responses.Unmarshal(response, httpResponse, request.GetAcceptFormat())
@@ -723,11 +771,11 @@ func isServerError(httpResponse *http.Response) bool {
 	return httpResponse.StatusCode >= http.StatusInternalServerError
 }
 
-/**
-only block when any one of the following occurs:
-1. the asyncTaskQueue is full, increase the queue size to avoid this
-2. Shutdown() in progressing, the client is being closed
-**/
+/*
+ * only block when any one of the following occurs:
+ * 1. the asyncTaskQueue is full, increase the queue size to avoid this
+ * 2. Shutdown() in progressing, the client is being closed
+ */
 func (client *Client) AddAsyncTask(task func()) (err error) {
 	if client.asyncTaskQueue != nil {
 		if client.isOpenAsync {

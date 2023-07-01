@@ -13,7 +13,7 @@ This data source provides available scaling configuration resources.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ess_scaling_configurations" "scalingconfigurations_ds" {
   scaling_group_id = "scaling_group_id"
   ids              = ["scaling_configuration_id1", "scaling_configuration_id2"]
@@ -29,10 +29,10 @@ output "first_scaling_rule" {
 
 The following arguments are supported:
 
-* `scaling_group_id` - (Optional) Scaling group id the scaling configurations belong to.
-* `name_regex` - (Optional) A regex string to filter resulting scaling configurations by name.
-* `ids` - (Optional) A list of scaling configuration IDs.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `scaling_group_id` - (Optional, ForceNew) Scaling group id the scaling configurations belong to.
+* `name_regex` - (Optional, ForceNew) A regex string to filter resulting scaling configurations by name.
+* `ids` - (Optional, ForceNew) A list of scaling configuration IDs.
+* `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 

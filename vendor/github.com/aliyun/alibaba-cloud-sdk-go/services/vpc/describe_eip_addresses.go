@@ -72,6 +72,7 @@ func (client *Client) DescribeEipAddressesWithCallback(request *DescribeEipAddre
 type DescribeEipAddressesRequest struct {
 	*requests.RpcRequest
 	ResourceOwnerId           requests.Integer           `position:"Query" name:"ResourceOwnerId"`
+	PublicIpAddressPoolId     string                     `position:"Query" name:"PublicIpAddressPoolId"`
 	Filter2Value              string                     `position:"Query" name:"Filter.2.Value"`
 	SecurityProtectionEnabled requests.Boolean           `position:"Query" name:"SecurityProtectionEnabled"`
 	ISP                       string                     `position:"Query" name:"ISP"`
@@ -88,6 +89,7 @@ type DescribeEipAddressesRequest struct {
 	Tag                       *[]DescribeEipAddressesTag `position:"Query" name:"Tag"  type:"Repeated"`
 	SegmentInstanceId         string                     `position:"Query" name:"SegmentInstanceId"`
 	DryRun                    requests.Boolean           `position:"Query" name:"DryRun"`
+	BandwidthPackageId        string                     `position:"Query" name:"BandwidthPackageId"`
 	ResourceOwnerAccount      string                     `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount              string                     `position:"Query" name:"OwnerAccount"`
 	Filter1Value              string                     `position:"Query" name:"Filter.1.Value"`

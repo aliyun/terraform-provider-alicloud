@@ -71,22 +71,21 @@ func (client *Client) DescribeDcdnDomainQpsDataWithCallback(request *DescribeDcd
 // DescribeDcdnDomainQpsDataRequest is the request struct for api DescribeDcdnDomainQpsData
 type DescribeDcdnDomainQpsDataRequest struct {
 	*requests.RpcRequest
-	LocationNameEn string           `position:"Query" name:"LocationNameEn"`
-	StartTime      string           `position:"Query" name:"StartTime"`
-	IspNameEn      string           `position:"Query" name:"IspNameEn"`
-	DomainName     string           `position:"Query" name:"DomainName"`
-	EndTime        string           `position:"Query" name:"EndTime"`
-	OwnerId        requests.Integer `position:"Query" name:"OwnerId"`
-	Interval       string           `position:"Query" name:"Interval"`
+	DomainName     string `position:"Query" name:"DomainName"`
+	EndTime        string `position:"Query" name:"EndTime"`
+	Interval       string `position:"Query" name:"Interval"`
+	LocationNameEn string `position:"Query" name:"LocationNameEn"`
+	StartTime      string `position:"Query" name:"StartTime"`
+	IspNameEn      string `position:"Query" name:"IspNameEn"`
 }
 
 // DescribeDcdnDomainQpsDataResponse is the response struct for api DescribeDcdnDomainQpsData
 type DescribeDcdnDomainQpsDataResponse struct {
 	*responses.BaseResponse
+	EndTime            string             `json:"EndTime" xml:"EndTime"`
+	StartTime          string             `json:"StartTime" xml:"StartTime"`
 	RequestId          string             `json:"RequestId" xml:"RequestId"`
 	DomainName         string             `json:"DomainName" xml:"DomainName"`
-	StartTime          string             `json:"StartTime" xml:"StartTime"`
-	EndTime            string             `json:"EndTime" xml:"EndTime"`
 	DataInterval       string             `json:"DataInterval" xml:"DataInterval"`
 	QpsDataPerInterval QpsDataPerInterval `json:"QpsDataPerInterval" xml:"QpsDataPerInterval"`
 }

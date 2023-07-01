@@ -84,9 +84,9 @@ type DescribeAccountsRequest struct {
 // DescribeAccountsResponse is the response struct for api DescribeAccounts
 type DescribeAccountsResponse struct {
 	*responses.BaseResponse
+	PageRecordCount int         `json:"PageRecordCount" xml:"PageRecordCount"`
 	RequestId       string      `json:"RequestId" xml:"RequestId"`
 	PageNumber      int         `json:"PageNumber" xml:"PageNumber"`
-	PageRecordCount int         `json:"PageRecordCount" xml:"PageRecordCount"`
 	Accounts        []DBAccount `json:"Accounts" xml:"Accounts"`
 }
 

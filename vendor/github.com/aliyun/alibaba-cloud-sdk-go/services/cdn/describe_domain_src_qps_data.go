@@ -71,20 +71,19 @@ func (client *Client) DescribeDomainSrcQpsDataWithCallback(request *DescribeDoma
 // DescribeDomainSrcQpsDataRequest is the request struct for api DescribeDomainSrcQpsData
 type DescribeDomainSrcQpsDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
-	Interval   string           `position:"Query" name:"Interval"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	Interval   string `position:"Query" name:"Interval"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDomainSrcQpsDataResponse is the response struct for api DescribeDomainSrcQpsData
 type DescribeDomainSrcQpsDataResponse struct {
 	*responses.BaseResponse
+	EndTime               string                `json:"EndTime" xml:"EndTime"`
+	StartTime             string                `json:"StartTime" xml:"StartTime"`
 	RequestId             string                `json:"RequestId" xml:"RequestId"`
 	DomainName            string                `json:"DomainName" xml:"DomainName"`
-	StartTime             string                `json:"StartTime" xml:"StartTime"`
-	EndTime               string                `json:"EndTime" xml:"EndTime"`
 	DataInterval          string                `json:"DataInterval" xml:"DataInterval"`
 	SrcQpsDataPerInterval SrcQpsDataPerInterval `json:"SrcQpsDataPerInterval" xml:"SrcQpsDataPerInterval"`
 }

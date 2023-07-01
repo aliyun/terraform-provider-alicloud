@@ -94,19 +94,19 @@ type DescribeSecurityGroupsRequest struct {
 
 // DescribeSecurityGroupsTag is a repeated param struct in DescribeSecurityGroupsRequest
 type DescribeSecurityGroupsTag struct {
-	Value string `name:"value"`
+	Value string `name:"Value"`
 	Key   string `name:"Key"`
 }
 
 // DescribeSecurityGroupsResponse is the response struct for api DescribeSecurityGroups
 type DescribeSecurityGroupsResponse struct {
 	*responses.BaseResponse
-	PageSize       int            `json:"PageSize" xml:"PageSize"`
-	PageNumber     int            `json:"PageNumber" xml:"PageNumber"`
 	RequestId      string         `json:"RequestId" xml:"RequestId"`
-	TotalCount     int            `json:"TotalCount" xml:"TotalCount"`
 	RegionId       string         `json:"RegionId" xml:"RegionId"`
 	NextToken      string         `json:"NextToken" xml:"NextToken"`
+	TotalCount     int            `json:"TotalCount" xml:"TotalCount"`
+	PageNumber     int            `json:"PageNumber" xml:"PageNumber"`
+	PageSize       int            `json:"PageSize" xml:"PageSize"`
 	SecurityGroups SecurityGroups `json:"SecurityGroups" xml:"SecurityGroups"`
 }
 

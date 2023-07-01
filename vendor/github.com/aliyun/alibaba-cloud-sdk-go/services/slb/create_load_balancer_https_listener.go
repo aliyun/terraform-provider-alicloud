@@ -81,6 +81,7 @@ type CreateLoadBalancerHTTPSListenerRequest struct {
 	AclType                                  string                                              `position:"Query" name:"AclType"`
 	HealthCheck                              string                                              `position:"Query" name:"HealthCheck"`
 	VpcIds                                   string                                              `position:"Query" name:"VpcIds"`
+	Tag                                      *[]CreateLoadBalancerHTTPSListenerTag               `position:"Query" name:"Tag"  type:"Repeated"`
 	VServerGroupId                           string                                              `position:"Query" name:"VServerGroupId"`
 	AclId                                    string                                              `position:"Query" name:"AclId"`
 	XForwardedForClientCertClientVerify      string                                              `position:"Query" name:"XForwardedFor_ClientCertClientVerify"`
@@ -137,6 +138,12 @@ type CreateLoadBalancerHTTPSListenerServerCertificate struct {
 	StandardType  string `name:"StandardType"`
 }
 
+// CreateLoadBalancerHTTPSListenerTag is a repeated param struct in CreateLoadBalancerHTTPSListenerRequest
+type CreateLoadBalancerHTTPSListenerTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
+}
+
 // CreateLoadBalancerHTTPSListenerResponse is the response struct for api CreateLoadBalancerHTTPSListener
 type CreateLoadBalancerHTTPSListenerResponse struct {
 	*responses.BaseResponse
@@ -148,7 +155,7 @@ func CreateCreateLoadBalancerHTTPSListenerRequest() (request *CreateLoadBalancer
 	request = &CreateLoadBalancerHTTPSListenerRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Slb", "2014-05-15", "CreateLoadBalancerHTTPSListener", "Slb", "openAPI")
+	request.InitWithApiInfo("Slb", "2014-05-15", "CreateLoadBalancerHTTPSListener", "slb", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -74,7 +74,9 @@ type CreateK8sIngressRuleRequest struct {
 	Namespace   string `position:"Query" name:"Namespace"`
 	Name        string `position:"Query" name:"Name"`
 	IngressConf string `position:"Query" name:"IngressConf"`
+	Annotations string `position:"Query" name:"Annotations"`
 	ClusterId   string `position:"Query" name:"ClusterId"`
+	Labels      string `position:"Query" name:"Labels"`
 }
 
 // CreateK8sIngressRuleResponse is the response struct for api CreateK8sIngressRule

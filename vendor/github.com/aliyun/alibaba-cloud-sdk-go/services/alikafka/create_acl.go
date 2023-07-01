@@ -82,10 +82,10 @@ type CreateAclRequest struct {
 // CreateAclResponse is the response struct for api CreateAcl
 type CreateAclResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateAclRequest creates a request to invoke CreateAcl API
@@ -93,7 +93,7 @@ func CreateCreateAclRequest() (request *CreateAclRequest) {
 	request = &CreateAclRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateAcl", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateAcl", "", "")
 	request.Method = requests.POST
 	return
 }

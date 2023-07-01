@@ -74,12 +74,14 @@ type CreateNatGatewayRequest struct {
 	ResourceOwnerId           requests.Integer                    `position:"Query" name:"ResourceOwnerId"`
 	ClientToken               string                              `position:"Query" name:"ClientToken"`
 	SecurityProtectionEnabled requests.Boolean                    `position:"Query" name:"SecurityProtectionEnabled"`
+	SecurityGroupId           string                              `position:"Query" name:"SecurityGroupId"`
 	Description               string                              `position:"Query" name:"Description"`
 	NetworkType               string                              `position:"Query" name:"NetworkType"`
 	Spec                      string                              `position:"Query" name:"Spec"`
 	Duration                  string                              `position:"Query" name:"Duration"`
 	IcmpReplyEnabled          requests.Boolean                    `position:"Query" name:"IcmpReplyEnabled"`
 	NatType                   string                              `position:"Query" name:"NatType"`
+	Tag                       *[]CreateNatGatewayTag              `position:"Query" name:"Tag"  type:"Repeated"`
 	InstanceChargeType        string                              `position:"Query" name:"InstanceChargeType"`
 	BandwidthPackage          *[]CreateNatGatewayBandwidthPackage `position:"Query" name:"BandwidthPackage"  type:"Repeated"`
 	AutoPay                   requests.Boolean                    `position:"Query" name:"AutoPay"`
@@ -92,7 +94,14 @@ type CreateNatGatewayRequest struct {
 	VpcId                     string                              `position:"Query" name:"VpcId"`
 	Name                      string                              `position:"Query" name:"Name"`
 	PrivateLinkEnabled        requests.Boolean                    `position:"Query" name:"PrivateLinkEnabled"`
+	EipBindMode               string                              `position:"Query" name:"EipBindMode"`
 	PricingCycle              string                              `position:"Query" name:"PricingCycle"`
+}
+
+// CreateNatGatewayTag is a repeated param struct in CreateNatGatewayRequest
+type CreateNatGatewayTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreateNatGatewayBandwidthPackage is a repeated param struct in CreateNatGatewayRequest

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -59,40 +58,6 @@ func (s *AlikafkaService) DescribeAlikafkaInstance(instanceId string) (*alikafka
 		}
 	}
 	return alikafkaInstance, WrapErrorf(Error(GetNotFoundMessage("AlikafkaInstance", instanceId)), NotFoundMsg, ProviderERROR)
-}
-
-func (s *AlikafkaService) DescribeAlikafkaNodeStatus(instanceId string) (*alikafka.StatusList, error) {
-	alikafkaStatusList := &alikafka.StatusList{}
-	describeNodeStatusReq := alikafka.CreateDescribeNodeStatusRequest()
-	describeNodeStatusReq.RegionId = s.client.RegionId
-	describeNodeStatusReq.InstanceId = instanceId
-
-	wait := incrementalWait(2*time.Second, 1*time.Second)
-	var raw interface{}
-	var err error
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err = s.client.WithAlikafkaClient(func(client *alikafka.Client) (interface{}, error) {
-			return client.DescribeNodeStatus(describeNodeStatusReq)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
-		return nil
-	})
-
-	if err != nil {
-		return alikafkaStatusList, WrapErrorf(err, DefaultErrorMsg, instanceId, describeNodeStatusReq.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-
-	describeNodeStatusResp, _ := raw.(*alikafka.DescribeNodeStatusResponse)
-	addDebug(describeNodeStatusReq.GetActionName(), raw, describeNodeStatusReq.RpcRequest, describeNodeStatusReq)
-
-	return &describeNodeStatusResp.StatusList, nil
 }
 
 func (s *AlikafkaService) DescribeAlikafkaInstanceByOrderId(orderId string, timeout int) (*alikafka.InstanceVO, error) {
@@ -439,36 +404,6 @@ func (s *AlikafkaService) WaitForAlikafkaInstance(id string, status Status, time
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceId, id, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
-	}
-}
-
-func (s *AlikafkaService) WaitForAllAlikafkaNodeRelease(id string, status string, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeAlikafkaNodeStatus(id)
-		if err != nil {
-			if NotFoundError(err) {
-				return nil
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		// Process wait for all node become released.
-		allReleased := true
-		for _, v := range object.Status {
-			if v != status && !strings.HasSuffix(v, status) {
-				allReleased = false
-			}
-		}
-		if allReleased {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, id, ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalMedium * time.Second)
 	}
 }
 
@@ -1237,7 +1172,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceByOrderId(orderId string, time
 	}
 }
 
-func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAliKafkaInstance(id)
 		if err != nil {
@@ -1250,35 +1185,10 @@ func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id string, failStates
 
 		for _, failState := range failStates {
 
-			if fmt.Sprint(object["ServiceStatus"]) == failState {
-				return object, fmt.Sprint(object["ServiceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["ServiceStatus"])))
+			if fmt.Sprint(object[attribute]) == failState {
+				return object, fmt.Sprint(object[attribute]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[attribute])))
 			}
 		}
-		return object, fmt.Sprint(object["ServiceStatus"]), nil
-	}
-}
-
-func (s *AlikafkaService) WaitForAliKafkaInstanceUpdated(d *schema.ResourceData, paidType string, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeAliKafkaInstance(fmt.Sprint(d.Id()))
-		if err != nil {
-			return WrapError(err)
-		}
-
-		quota, err := s.GetQuotaTip(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-
-		// Wait for all variables be equal.
-		if fmt.Sprint(object["InstanceId"]) == fmt.Sprint(d.Id()) && fmt.Sprint(quota["PartitionNumOfBuy"]) == fmt.Sprint(d.Get("partition_num")) && fmt.Sprint(object["DiskSize"]) == fmt.Sprint(d.Get("disk_size")) && fmt.Sprint(object["IoMax"]) == fmt.Sprint(d.Get("io_max")) && fmt.Sprint(object["EipMax"]) == fmt.Sprint(d.Get("eip_max")) && fmt.Sprint(object["PaidType"]) == paidType && fmt.Sprint(object["SpecType"]) == d.Get("spec_type").(string) {
-			return nil
-		}
-
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, fmt.Sprint(d.Id()), GetFunc(1), timeout, fmt.Sprint(object["InstanceId"]), fmt.Sprint(d.Id()), ProviderERROR)
-		}
-		time.Sleep(DefaultIntervalShort * time.Second)
+		return object, fmt.Sprint(object[attribute]), nil
 	}
 }

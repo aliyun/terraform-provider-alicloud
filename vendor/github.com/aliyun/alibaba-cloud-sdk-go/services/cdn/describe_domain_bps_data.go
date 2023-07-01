@@ -71,24 +71,23 @@ func (client *Client) DescribeDomainBpsDataWithCallback(request *DescribeDomainB
 // DescribeDomainBpsDataRequest is the request struct for api DescribeDomainBpsData
 type DescribeDomainBpsDataRequest struct {
 	*requests.RpcRequest
-	LocationNameEn string           `position:"Query" name:"LocationNameEn"`
-	StartTime      string           `position:"Query" name:"StartTime"`
-	IspNameEn      string           `position:"Query" name:"IspNameEn"`
-	DomainName     string           `position:"Query" name:"DomainName"`
-	EndTime        string           `position:"Query" name:"EndTime"`
-	OwnerId        requests.Integer `position:"Query" name:"OwnerId"`
-	Interval       string           `position:"Query" name:"Interval"`
+	DomainName     string `position:"Query" name:"DomainName"`
+	EndTime        string `position:"Query" name:"EndTime"`
+	Interval       string `position:"Query" name:"Interval"`
+	LocationNameEn string `position:"Query" name:"LocationNameEn"`
+	StartTime      string `position:"Query" name:"StartTime"`
+	IspNameEn      string `position:"Query" name:"IspNameEn"`
 }
 
 // DescribeDomainBpsDataResponse is the response struct for api DescribeDomainBpsData
 type DescribeDomainBpsDataResponse struct {
 	*responses.BaseResponse
-	RequestId          string             `json:"RequestId" xml:"RequestId"`
-	DomainName         string             `json:"DomainName" xml:"DomainName"`
-	StartTime          string             `json:"StartTime" xml:"StartTime"`
 	EndTime            string             `json:"EndTime" xml:"EndTime"`
-	LocationNameEn     string             `json:"LocationNameEn" xml:"LocationNameEn"`
+	StartTime          string             `json:"StartTime" xml:"StartTime"`
+	RequestId          string             `json:"RequestId" xml:"RequestId"`
 	IspNameEn          string             `json:"IspNameEn" xml:"IspNameEn"`
+	LocationNameEn     string             `json:"LocationNameEn" xml:"LocationNameEn"`
+	DomainName         string             `json:"DomainName" xml:"DomainName"`
 	DataInterval       string             `json:"DataInterval" xml:"DataInterval"`
 	BpsDataPerInterval BpsDataPerInterval `json:"BpsDataPerInterval" xml:"BpsDataPerInterval"`
 }

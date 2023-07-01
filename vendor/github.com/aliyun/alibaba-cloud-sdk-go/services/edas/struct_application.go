@@ -21,6 +21,7 @@ type Application struct {
 	CreateTime           int64  `json:"CreateTime" xml:"CreateTime"`
 	Dockerize            bool   `json:"Dockerize" xml:"Dockerize"`
 	SlbInfo              string `json:"SlbInfo" xml:"SlbInfo"`
+	AppPhase             string `json:"AppPhase" xml:"AppPhase"`
 	RegionId             string `json:"RegionId" xml:"RegionId"`
 	SlbPort              int    `json:"SlbPort" xml:"SlbPort"`
 	UserId               string `json:"UserId" xml:"UserId"`
@@ -32,6 +33,7 @@ type Application struct {
 	ExtSlbIp             string `json:"ExtSlbIp" xml:"ExtSlbIp"`
 	BuildPackageId       int64  `json:"BuildPackageId" xml:"BuildPackageId"`
 	Email                string `json:"Email" xml:"Email"`
+	EnablePortCheck      bool   `json:"EnablePortCheck" xml:"EnablePortCheck"`
 	Memory               int    `json:"Memory" xml:"Memory"`
 	NameSpace            string `json:"NameSpace" xml:"NameSpace"`
 	ExtSlbId             string `json:"ExtSlbId" xml:"ExtSlbId"`
@@ -39,10 +41,12 @@ type Application struct {
 	ExtSlbName           string `json:"ExtSlbName" xml:"ExtSlbName"`
 	SlbName              string `json:"SlbName" xml:"SlbName"`
 	AppId                string `json:"AppId" xml:"AppId"`
+	EnableUrlCheck       bool   `json:"EnableUrlCheck" xml:"EnableUrlCheck"`
 	InstanceCount        int    `json:"InstanceCount" xml:"InstanceCount"`
 	HealthCheckUrl       string `json:"HealthCheckUrl" xml:"HealthCheckUrl"`
 	SlbId                string `json:"SlbId" xml:"SlbId"`
 	Cpu                  int    `json:"Cpu" xml:"Cpu"`
+	AppName              string `json:"AppName" xml:"AppName"`
 	RunningInstanceCount int    `json:"RunningInstanceCount" xml:"RunningInstanceCount"`
 	SlbIp                string `json:"SlbIp" xml:"SlbIp"`
 }

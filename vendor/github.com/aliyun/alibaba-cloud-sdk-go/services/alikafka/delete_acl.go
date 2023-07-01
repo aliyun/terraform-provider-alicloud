@@ -82,10 +82,10 @@ type DeleteAclRequest struct {
 // DeleteAclResponse is the response struct for api DeleteAcl
 type DeleteAclResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateDeleteAclRequest creates a request to invoke DeleteAcl API
@@ -93,7 +93,7 @@ func CreateDeleteAclRequest() (request *DeleteAclRequest) {
 	request = &DeleteAclRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteAcl", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteAcl", "", "")
 	request.Method = requests.POST
 	return
 }

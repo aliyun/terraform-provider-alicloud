@@ -71,6 +71,7 @@ func (client *Client) PutResourceMetricRuleWithCallback(request *PutResourceMetr
 // PutResourceMetricRuleRequest is the request struct for api PutResourceMetricRule
 type PutResourceMetricRuleRequest struct {
 	*requests.RpcRequest
+	EscalationsInfoN                      requests.Integer                         `position:"Query" name:"Escalations.Info.N"`
 	Webhook                               string                                   `position:"Query" name:"Webhook"`
 	EscalationsWarnComparisonOperator     string                                   `position:"Query" name:"Escalations.Warn.ComparisonOperator"`
 	RuleName                              string                                   `position:"Query" name:"RuleName"`
@@ -79,6 +80,8 @@ type PutResourceMetricRuleRequest struct {
 	NoEffectiveInterval                   string                                   `position:"Query" name:"NoEffectiveInterval"`
 	EmailSubject                          string                                   `position:"Query" name:"EmailSubject"`
 	Options                               string                                   `position:"Query" name:"Options"`
+	EscalationsCriticalN                  requests.Integer                         `position:"Query" name:"Escalations.Critical.N"`
+	EscalationsInfoPreCondition           string                                   `position:"Query" name:"Escalations.Info.PreCondition"`
 	MetricName                            string                                   `position:"Query" name:"MetricName"`
 	EscalationsWarnTimes                  requests.Integer                         `position:"Query" name:"Escalations.Warn.Times"`
 	Period                                string                                   `position:"Query" name:"Period"`
@@ -88,10 +91,12 @@ type PutResourceMetricRuleRequest struct {
 	GroupId                               string                                   `position:"Query" name:"GroupId"`
 	GroupName                             string                                   `position:"Query" name:"GroupName"`
 	Labels                                *[]PutResourceMetricRuleLabels           `position:"Query" name:"Labels"  type:"Repeated"`
+	EscalationsWarnN                      requests.Integer                         `position:"Query" name:"Escalations.Warn.N"`
 	Interval                              string                                   `position:"Query" name:"Interval"`
 	RuleId                                string                                   `position:"Query" name:"RuleId"`
 	EscalationsCriticalThreshold          string                                   `position:"Query" name:"Escalations.Critical.Threshold"`
 	EscalationsInfoStatistics             string                                   `position:"Query" name:"Escalations.Info.Statistics"`
+	EscalationsWarnPreCondition           string                                   `position:"Query" name:"Escalations.Warn.PreCondition"`
 	EscalationsInfoComparisonOperator     string                                   `position:"Query" name:"Escalations.Info.ComparisonOperator"`
 	SilenceTime                           requests.Integer                         `position:"Query" name:"SilenceTime"`
 	Prometheus                            PutResourceMetricRulePrometheus          `position:"Query" name:"Prometheus"  type:"Struct"`
@@ -104,6 +109,7 @@ type PutResourceMetricRuleRequest struct {
 	EscalationsInfoThreshold              string                                   `position:"Query" name:"Escalations.Info.Threshold"`
 	Namespace                             string                                   `position:"Query" name:"Namespace"`
 	EscalationsCriticalComparisonOperator string                                   `position:"Query" name:"Escalations.Critical.ComparisonOperator"`
+	EscalationsCriticalPreCondition       string                                   `position:"Query" name:"Escalations.Critical.PreCondition"`
 }
 
 // PutResourceMetricRuleLabels is a repeated param struct in PutResourceMetricRuleRequest
@@ -127,6 +133,7 @@ type PutResourceMetricRuleCompositeExpression struct {
 	Level              string                                                        `name:"Level"`
 	ExpressionRaw      string                                                        `name:"ExpressionRaw"`
 	ExpressionListJoin string                                                        `name:"ExpressionListJoin"`
+	N                  string                                                        `name:"N"`
 }
 
 // PutResourceMetricRulePrometheusAnnotationsItem is a repeated param struct in PutResourceMetricRuleRequest
@@ -159,7 +166,7 @@ func CreatePutResourceMetricRuleRequest() (request *PutResourceMetricRuleRequest
 	request = &PutResourceMetricRuleRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "PutResourceMetricRule", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "PutResourceMetricRule", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

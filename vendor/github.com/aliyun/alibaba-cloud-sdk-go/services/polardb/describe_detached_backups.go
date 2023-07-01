@@ -75,6 +75,7 @@ type DescribeDetachedBackupsRequest struct {
 	StartTime            string           `position:"Query" name:"StartTime"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
+	BackupRegion         string           `position:"Query" name:"BackupRegion"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	DBClusterId          string           `position:"Query" name:"DBClusterId"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -88,10 +89,10 @@ type DescribeDetachedBackupsRequest struct {
 // DescribeDetachedBackupsResponse is the response struct for api DescribeDetachedBackups
 type DescribeDetachedBackupsResponse struct {
 	*responses.BaseResponse
-	RequestId        string                         `json:"RequestId" xml:"RequestId"`
 	TotalRecordCount string                         `json:"TotalRecordCount" xml:"TotalRecordCount"`
-	PageNumber       string                         `json:"PageNumber" xml:"PageNumber"`
 	PageRecordCount  string                         `json:"PageRecordCount" xml:"PageRecordCount"`
+	RequestId        string                         `json:"RequestId" xml:"RequestId"`
+	PageNumber       string                         `json:"PageNumber" xml:"PageNumber"`
 	Items            ItemsInDescribeDetachedBackups `json:"Items" xml:"Items"`
 }
 

@@ -79,6 +79,7 @@ type DescribeCenAttachedChildInstanceAttributeRequest struct {
 	OwnerAccount          string           `position:"Query" name:"OwnerAccount"`
 	OwnerId               requests.Integer `position:"Query" name:"OwnerId"`
 	ChildInstanceType     string           `position:"Query" name:"ChildInstanceType"`
+	Version               string           `position:"Query" name:"Version"`
 	ChildInstanceId       string           `position:"Query" name:"ChildInstanceId"`
 }
 
@@ -95,6 +96,7 @@ type DescribeCenAttachedChildInstanceAttributeResponse struct {
 	ChildInstanceName        string                   `json:"ChildInstanceName" xml:"ChildInstanceName"`
 	Ipv6StatusInCen          string                   `json:"Ipv6StatusInCen" xml:"Ipv6StatusInCen"`
 	ChildInstanceAttachTime  string                   `json:"ChildInstanceAttachTime" xml:"ChildInstanceAttachTime"`
+	ChildInstanceAttributes  ChildInstanceAttributes  `json:"ChildInstanceAttributes" xml:"ChildInstanceAttributes"`
 	ChildInstanceRouteTables ChildInstanceRouteTables `json:"ChildInstanceRouteTables" xml:"ChildInstanceRouteTables"`
 }
 

@@ -71,21 +71,20 @@ func (client *Client) DescribeCdnReportWithCallback(request *DescribeCdnReportRe
 // DescribeCdnReportRequest is the request struct for api DescribeCdnReport
 type DescribeCdnReportRequest struct {
 	*requests.RpcRequest
-	ReportId   requests.Integer `position:"Query" name:"ReportId"`
-	StartTime  string           `position:"Query" name:"StartTime"`
 	Area       string           `position:"Query" name:"Area"`
+	ReportId   requests.Integer `position:"Query" name:"ReportId"`
+	IsOverseas string           `position:"Query" name:"IsOverseas"`
 	DomainName string           `position:"Query" name:"DomainName"`
 	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	StartTime  string           `position:"Query" name:"StartTime"`
 	HttpCode   string           `position:"Query" name:"HttpCode"`
-	IsOverseas string           `position:"Query" name:"IsOverseas"`
 }
 
 // DescribeCdnReportResponse is the response struct for api DescribeCdnReport
 type DescribeCdnReportResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Content   string `json:"Content" xml:"Content"`
+	Content   map[string]interface{} `json:"Content" xml:"Content"`
+	RequestId string                 `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeCdnReportRequest creates a request to invoke DescribeCdnReport API

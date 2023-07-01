@@ -80,6 +80,7 @@ type UpdateCenInterRegionTrafficQosQueueAttributeRequest struct {
 	ResourceOwnerAccount   string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount           string           `position:"Query" name:"OwnerAccount"`
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
+	Version                string           `position:"Query" name:"Version"`
 	QosQueueId             string           `position:"Query" name:"QosQueueId"`
 	QosQueueDescription    string           `position:"Query" name:"QosQueueDescription"`
 }

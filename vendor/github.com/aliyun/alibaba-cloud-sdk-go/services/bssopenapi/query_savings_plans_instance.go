@@ -78,6 +78,7 @@ type QuerySavingsPlansInstanceRequest struct {
 	InstanceId string                          `position:"Query" name:"InstanceId"`
 	PageSize   requests.Integer                `position:"Query" name:"PageSize"`
 	Tag        *[]QuerySavingsPlansInstanceTag `position:"Query" name:"Tag"  type:"Repeated"`
+	Status     string                          `position:"Query" name:"Status"`
 }
 
 // QuerySavingsPlansInstanceTag is a repeated param struct in QuerySavingsPlansInstanceRequest
@@ -101,7 +102,7 @@ func CreateQuerySavingsPlansInstanceRequest() (request *QuerySavingsPlansInstanc
 	request = &QuerySavingsPlansInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QuerySavingsPlansInstance", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "QuerySavingsPlansInstance", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

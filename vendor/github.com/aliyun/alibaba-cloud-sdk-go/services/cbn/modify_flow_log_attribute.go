@@ -78,6 +78,7 @@ type ModifyFlowLogAttributeRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	Version              string           `position:"Query" name:"Version"`
 	Interval             requests.Integer `position:"Query" name:"Interval"`
 	FlowLogId            string           `position:"Query" name:"FlowLogId"`
 	FlowLogName          string           `position:"Query" name:"FlowLogName"`

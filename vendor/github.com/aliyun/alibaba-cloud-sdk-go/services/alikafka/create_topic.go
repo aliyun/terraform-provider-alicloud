@@ -71,21 +71,31 @@ func (client *Client) CreateTopicWithCallback(request *CreateTopicRequest, callb
 // CreateTopicRequest is the request struct for api CreateTopic
 type CreateTopicRequest struct {
 	*requests.RpcRequest
-	Remark       string           `position:"Query" name:"Remark"`
-	InstanceId   string           `position:"Query" name:"InstanceId"`
-	Topic        string           `position:"Query" name:"Topic"`
-	CompactTopic requests.Boolean `position:"Query" name:"CompactTopic"`
-	PartitionNum string           `position:"Query" name:"PartitionNum"`
-	LocalTopic   requests.Boolean `position:"Query" name:"LocalTopic"`
+	Remark            string            `position:"Query" name:"Remark"`
+	ReplicationFactor requests.Integer  `position:"Query" name:"ReplicationFactor"`
+	MinInsyncReplicas requests.Integer  `position:"Query" name:"MinInsyncReplicas"`
+	InstanceId        string            `position:"Query" name:"InstanceId"`
+	Topic             string            `position:"Query" name:"Topic"`
+	CompactTopic      requests.Boolean  `position:"Query" name:"CompactTopic"`
+	Tag               *[]CreateTopicTag `position:"Query" name:"Tag"  type:"Repeated"`
+	PartitionNum      string            `position:"Query" name:"PartitionNum"`
+	Config            string            `position:"Query" name:"Config"`
+	LocalTopic        requests.Boolean  `position:"Query" name:"LocalTopic"`
+}
+
+// CreateTopicTag is a repeated param struct in CreateTopicRequest
+type CreateTopicTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreateTopicResponse is the response struct for api CreateTopic
 type CreateTopicResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateTopicRequest creates a request to invoke CreateTopic API
@@ -93,7 +103,7 @@ func CreateCreateTopicRequest() (request *CreateTopicRequest) {
 	request = &CreateTopicRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateTopic", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateTopic", "", "")
 	request.Method = requests.POST
 	return
 }

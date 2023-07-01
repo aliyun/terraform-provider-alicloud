@@ -18,9 +18,10 @@ package dds
 // Parameter is a nested struct in dds response
 type Parameter struct {
 	ParameterName        string `json:"ParameterName" xml:"ParameterName"`
-	ModifiableStatus     bool   `json:"ModifiableStatus" xml:"ModifiableStatus"`
+	CharacterType        string `json:"CharacterType" xml:"CharacterType"`
 	ParameterDescription string `json:"ParameterDescription" xml:"ParameterDescription"`
 	CheckingCode         string `json:"CheckingCode" xml:"CheckingCode"`
-	ForceRestart         bool   `json:"ForceRestart" xml:"ForceRestart"`
+	ModifiableStatus     string `json:"ModifiableStatus" xml:"ModifiableStatus"`
+	ForceRestart         string `json:"ForceRestart" xml:"ForceRestart"`
 	ParameterValue       string `json:"ParameterValue" xml:"ParameterValue"`
 }

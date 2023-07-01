@@ -1,11 +1,11 @@
 package alicloud
 
 import (
+	"fmt"
 	"time"
 
 	"strings"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
@@ -61,8 +61,8 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 	request := edas.CreateInsertClusterRequest()
 	request.RegionId = client.RegionId
 	request.ClusterName = d.Get("cluster_name").(string)
-	request.ClusterType = requests.NewInteger(d.Get("cluster_type").(int))
-	request.NetworkMode = requests.NewInteger(d.Get("network_mode").(int))
+	request.ClusterType = fmt.Sprint(d.Get("cluster_type"))
+	request.NetworkMode = fmt.Sprint(d.Get("network_mode"))
 	if v, ok := d.GetOk("logical_region_id"); ok {
 		request.LogicalRegionId = v.(string)
 	}
@@ -85,7 +85,7 @@ func rresourceAlicloudEdasClusterCreate(d *schema.ResourceData, meta interface{}
 
 	response, _ := raw.(*edas.InsertClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error("create cluster failed for " + response.Message))
+		return WrapError(Error(fmt.Sprint(response)))
 	}
 	d.SetId(response.Cluster.ClusterId)
 
@@ -114,7 +114,7 @@ func resourceAlicloudEdasClusterRead(d *schema.ResourceData, meta interface{}) e
 
 	response, _ := raw.(*edas.GetClusterResponse)
 	if response.Code != 200 {
-		return WrapError(Error("create cluster failed for " + response.Message))
+		return WrapError(Error(fmt.Sprint(response)))
 	}
 
 	d.Set("cluster_name", response.Cluster.ClusterName)

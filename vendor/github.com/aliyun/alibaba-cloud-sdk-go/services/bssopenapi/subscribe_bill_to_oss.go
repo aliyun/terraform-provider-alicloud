@@ -74,7 +74,9 @@ type SubscribeBillToOSSRequest struct {
 	BucketOwnerId           requests.Integer `position:"Query" name:"BucketOwnerId"`
 	SubscribeType           string           `position:"Query" name:"SubscribeType"`
 	SubscribeBucket         string           `position:"Query" name:"SubscribeBucket"`
+	BucketPath              string           `position:"Query" name:"BucketPath"`
 	BeginBillingCycle       string           `position:"Query" name:"BeginBillingCycle"`
+	RowLimitPerFile         requests.Integer `position:"Query" name:"RowLimitPerFile"`
 	MultAccountRelSubscribe string           `position:"Query" name:"MultAccountRelSubscribe"`
 }
 
@@ -92,7 +94,7 @@ func CreateSubscribeBillToOSSRequest() (request *SubscribeBillToOSSRequest) {
 	request = &SubscribeBillToOSSRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "SubscribeBillToOSS", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "SubscribeBillToOSS", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

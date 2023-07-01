@@ -71,23 +71,32 @@ func (client *Client) CreatePrePayOrderWithCallback(request *CreatePrePayOrderRe
 // CreatePrePayOrderRequest is the request struct for api CreatePrePayOrder
 type CreatePrePayOrderRequest struct {
 	*requests.RpcRequest
-	DiskSize   requests.Integer `position:"Query" name:"DiskSize"`
-	IoMax      requests.Integer `position:"Query" name:"IoMax"`
-	IoMaxSpec  string           `position:"Query" name:"IoMaxSpec"`
-	DiskType   string           `position:"Query" name:"DiskType"`
-	TopicQuota requests.Integer `position:"Query" name:"TopicQuota"`
-	EipMax     requests.Integer `position:"Query" name:"EipMax"`
-	SpecType   string           `position:"Query" name:"SpecType"`
-	DeployType requests.Integer `position:"Query" name:"DeployType"`
+	IoMax           requests.Integer        `position:"Query" name:"IoMax"`
+	EipMax          requests.Integer        `position:"Query" name:"EipMax"`
+	SpecType        string                  `position:"Query" name:"SpecType"`
+	ResourceGroupId string                  `position:"Query" name:"ResourceGroupId"`
+	Tag             *[]CreatePrePayOrderTag `position:"Query" name:"Tag"  type:"Repeated"`
+	PartitionNum    requests.Integer        `position:"Query" name:"PartitionNum"`
+	DiskSize        requests.Integer        `position:"Query" name:"DiskSize"`
+	IoMaxSpec       string                  `position:"Query" name:"IoMaxSpec"`
+	DiskType        string                  `position:"Query" name:"DiskType"`
+	TopicQuota      requests.Integer        `position:"Query" name:"TopicQuota"`
+	DeployType      requests.Integer        `position:"Query" name:"DeployType"`
+}
+
+// CreatePrePayOrderTag is a repeated param struct in CreatePrePayOrderRequest
+type CreatePrePayOrderTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreatePrePayOrderResponse is the response struct for api CreatePrePayOrder
 type CreatePrePayOrderResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 	OrderId   string `json:"OrderId" xml:"OrderId"`
 }
 
@@ -96,7 +105,7 @@ func CreateCreatePrePayOrderRequest() (request *CreatePrePayOrderRequest) {
 	request = &CreatePrePayOrderRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "CreatePrePayOrder", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "CreatePrePayOrder", "", "")
 	request.Method = requests.POST
 	return
 }

@@ -77,14 +77,18 @@ type ListTransitRouterAvailableResourceRequest struct {
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer `position:"Query" name:"OwnerId"`
+	SupportMulticast     requests.Boolean `position:"Query" name:"SupportMulticast"`
+	Version              string           `position:"Query" name:"Version"`
 }
 
 // ListTransitRouterAvailableResourceResponse is the response struct for api ListTransitRouterAvailableResource
 type ListTransitRouterAvailableResourceResponse struct {
 	*responses.BaseResponse
-	RequestId   string   `json:"RequestId" xml:"RequestId"`
-	SlaveZones  []string `json:"SlaveZones" xml:"SlaveZones"`
-	MasterZones []string `json:"MasterZones" xml:"MasterZones"`
+	RequestId        string   `json:"RequestId" xml:"RequestId"`
+	SupportMulticast bool     `json:"SupportMulticast" xml:"SupportMulticast"`
+	SlaveZones       []string `json:"SlaveZones" xml:"SlaveZones"`
+	MasterZones      []string `json:"MasterZones" xml:"MasterZones"`
+	AvailableZones   []string `json:"AvailableZones" xml:"AvailableZones"`
 }
 
 // CreateListTransitRouterAvailableResourceRequest creates a request to invoke ListTransitRouterAvailableResource API

@@ -71,24 +71,24 @@ func (client *Client) DescribeDomainMax95BpsDataWithCallback(request *DescribeDo
 // DescribeDomainMax95BpsDataRequest is the request struct for api DescribeDomainMax95BpsData
 type DescribeDomainMax95BpsDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	Cycle      string           `position:"Query" name:"Cycle"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
-	TimePoint  string           `position:"Query" name:"TimePoint"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
+	Cycle      string `position:"Query" name:"Cycle"`
+	TimePoint  string `position:"Query" name:"TimePoint"`
 }
 
 // DescribeDomainMax95BpsDataResponse is the response struct for api DescribeDomainMax95BpsData
 type DescribeDomainMax95BpsDataResponse struct {
 	*responses.BaseResponse
-	RequestId        string `json:"RequestId" xml:"RequestId"`
-	DomainName       string `json:"DomainName" xml:"DomainName"`
-	StartTime        string `json:"StartTime" xml:"StartTime"`
-	EndTime          string `json:"EndTime" xml:"EndTime"`
-	Max95Bps         string `json:"Max95Bps" xml:"Max95Bps"`
-	DomesticMax95Bps string `json:"DomesticMax95Bps" xml:"DomesticMax95Bps"`
-	OverseasMax95Bps string `json:"OverseasMax95Bps" xml:"OverseasMax95Bps"`
+	RequestId        string     `json:"RequestId" xml:"RequestId"`
+	DomainName       string     `json:"DomainName" xml:"DomainName"`
+	EndTime          string     `json:"EndTime" xml:"EndTime"`
+	StartTime        string     `json:"StartTime" xml:"StartTime"`
+	DomesticMax95Bps string     `json:"DomesticMax95Bps" xml:"DomesticMax95Bps"`
+	OverseasMax95Bps string     `json:"OverseasMax95Bps" xml:"OverseasMax95Bps"`
+	Max95Bps         string     `json:"Max95Bps" xml:"Max95Bps"`
+	DetailData       DetailData `json:"DetailData" xml:"DetailData"`
 }
 
 // CreateDescribeDomainMax95BpsDataRequest creates a request to invoke DescribeDomainMax95BpsData API

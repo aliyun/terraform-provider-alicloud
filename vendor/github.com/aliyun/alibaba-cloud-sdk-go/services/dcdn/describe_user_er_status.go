@@ -71,18 +71,17 @@ func (client *Client) DescribeUserErStatusWithCallback(request *DescribeUserErSt
 // DescribeUserErStatusRequest is the request struct for api DescribeUserErStatus
 type DescribeUserErStatusRequest struct {
 	*requests.RpcRequest
-	OwnerId       requests.Integer `position:"Query" name:"OwnerId"`
-	SecurityToken string           `position:"Query" name:"SecurityToken"`
+	OwnerId requests.Integer `position:"Query" name:"OwnerId"`
 }
 
 // DescribeUserErStatusResponse is the response struct for api DescribeUserErStatus
 type DescribeUserErStatusResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
-	Enabled       bool   `json:"Enabled" xml:"Enabled"`
-	OnService     bool   `json:"OnService" xml:"OnService"`
 	InDebt        bool   `json:"InDebt" xml:"InDebt"`
+	OnService     bool   `json:"OnService" xml:"OnService"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 	InDebtOverdue bool   `json:"InDebtOverdue" xml:"InDebtOverdue"`
+	Enabled       bool   `json:"Enabled" xml:"Enabled"`
 }
 
 // CreateDescribeUserErStatusRequest creates a request to invoke DescribeUserErStatus API

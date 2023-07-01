@@ -2,16 +2,18 @@ package alicloud
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -862,8 +864,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1030,16 +1034,63 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		d.Set("security_group_ids", v["SecurityGroupId"].([]interface{}))
 	}
 
-	if response["DataDisk"] != nil {
-		d.Set("data_disk", essService.flattenDataDiskMappings(response["DataDisk"].([]ess.DataDisk)))
+	if v := response["DataDisks"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["DataDisk"].([]interface{}) {
+			r := i.(map[string]interface{})
+			l := map[string]interface{}{
+				"size":                    r["Size"],
+				"category":                r["Category"],
+				"snapshot_id":             r["SnapshotId"],
+				"device":                  r["Device"],
+				"delete_with_instance":    r["DeleteWithInstance"],
+				"encrypted":               r["Encrypted"],
+				"kms_key_id":              r["KMSKeyId"],
+				"disk_name":               r["DiskName"],
+				"description":             r["Description"],
+				"auto_snapshot_policy_id": r["AutoSnapshotPolicyId"],
+				"performance_level":       r["PerformanceLevel"],
+			}
+			result = append(result, l)
+		}
+		d.Set("data_disk", result)
 	}
-	d.Set("tags", response["Tags"])
-	if response["SpotPriceModel"] != nil {
-		d.Set("spot_price_limit", essService.flattenSpotPriceLimitMappings(response["SpotPriceModel"].([]ess.SpotPriceModel)))
+	if v := response["Tags"]; v != nil {
+		d.Set("tags", tagsToMap(response["Tags"].(map[string]interface{})["Tag"]))
+	}
+	if v := response["SpotPriceLimit"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["SpotPriceModel"].([]interface{}) {
+			r := i.(map[string]interface{})
+			f, _ := r["PriceLimit"].(json.Number).Float64()
+			p, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
+			l := map[string]interface{}{
+				"instance_type": r["InstanceType"],
+				"price_limit":   p,
+			}
+			result = append(result, l)
+		}
+		d.Set("spot_price_limit", result)
 	}
 
-	if response["InstancePatternInfo"] != nil {
-		d.Set("instance_pattern_info", essService.flattenInstancePatternInfoMappings(response["InstancePatternInfo"].([]ess.InstancePatternInfo)))
+	if v := response["InstancePatternInfos"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["InstancePatternInfo"].([]interface{}) {
+			r := i.(map[string]interface{})
+			f, _ := r["MaxPrice"].(json.Number).Float64()
+			maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
+			l := map[string]interface{}{
+				"instance_family_level": r["InstanceFamilyLevel"],
+				"memory":                r["Memory"],
+				"cores":                 r["Cores"],
+				"max_price":             maxPrice,
+			}
+			result = append(result, l)
+		}
+		err := d.Set("instance_pattern_info", result)
+		if err != nil {
+			return WrapError(err)
+		}
 	}
 	return nil
 }
@@ -1115,7 +1166,7 @@ func resourceAliyunEssScalingConfigurationDelete(d *schema.ResourceData, meta in
 	return WrapError(essService.WaitForScalingConfiguration(d.Id(), Deleted, DefaultTimeout))
 }
 
-func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) (configures []ess.ScalingConfiguration, err error) {
+func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface{}) (configures []ess.ScalingConfigurationInDescribeScalingConfigurations, err error) {
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
 	substituteId, ok := d.GetOk("substitute")

@@ -80,6 +80,7 @@ type CreateMetricRuleTemplateRequest struct {
 type CreateMetricRuleTemplateAlertTemplates struct {
 	EscalationsWarnThreshold              string `name:"Escalations.Warn.Threshold"`
 	Period                                string `name:"Period"`
+	EscalationsInfoN                      string `name:"Escalations.Info.N"`
 	Webhook                               string `name:"Webhook"`
 	EscalationsWarnComparisonOperator     string `name:"Escalations.Warn.ComparisonOperator"`
 	EscalationsCriticalStatistics         string `name:"Escalations.Critical.Statistics"`
@@ -91,6 +92,8 @@ type CreateMetricRuleTemplateAlertTemplates struct {
 	EscalationsInfoThreshold              string `name:"Escalations.Info.Threshold"`
 	EscalationsWarnStatistics             string `name:"Escalations.Warn.Statistics"`
 	Namespace                             string `name:"Namespace"`
+	EscalationsWarnN                      string `name:"Escalations.Warn.N"`
+	EscalationsCriticalN                  string `name:"Escalations.Critical.N"`
 	Selector                              string `name:"Selector"`
 	MetricName                            string `name:"MetricName"`
 	EscalationsWarnTimes                  string `name:"Escalations.Warn.Times"`
@@ -114,7 +117,7 @@ func CreateCreateMetricRuleTemplateRequest() (request *CreateMetricRuleTemplateR
 	request = &CreateMetricRuleTemplateRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMetricRuleTemplate", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "CreateMetricRuleTemplate", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -72,13 +72,14 @@ func (client *Client) ModifyAccountRelationWithCallback(request *ModifyAccountRe
 type ModifyAccountRelationRequest struct {
 	*requests.RpcRequest
 	ChildNick         string           `position:"Query" name:"ChildNick"`
+	ParentUserId      requests.Integer `position:"Query" name:"ParentUserId"`
+	RelationId        requests.Integer `position:"Query" name:"RelationId"`
+	RoleCodes         *[]string        `position:"Query" name:"RoleCodes"  type:"Repeated"`
 	RelationOperation string           `position:"Query" name:"RelationOperation"`
 	RelationType      string           `position:"Query" name:"RelationType"`
-	ParentUserId      requests.Integer `position:"Query" name:"ParentUserId"`
 	ChildUserId       requests.Integer `position:"Query" name:"ChildUserId"`
 	RequestId         string           `position:"Query" name:"RequestId"`
 	PermissionCodes   *[]string        `position:"Query" name:"PermissionCodes"  type:"Repeated"`
-	RoleCodes         *[]string        `position:"Query" name:"RoleCodes"  type:"Repeated"`
 }
 
 // ModifyAccountRelationResponse is the response struct for api ModifyAccountRelation
@@ -96,7 +97,7 @@ func CreateModifyAccountRelationRequest() (request *ModifyAccountRelationRequest
 	request = &ModifyAccountRelationRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ModifyAccountRelation", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "ModifyAccountRelation", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

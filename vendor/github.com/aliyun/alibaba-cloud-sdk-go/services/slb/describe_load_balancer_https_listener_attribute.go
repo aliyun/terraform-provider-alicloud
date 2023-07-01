@@ -137,10 +137,12 @@ type DescribeLoadBalancerHTTPSListenerAttributeResponse struct {
 	XForwardedForSLBIP                       string                                                         `json:"XForwardedFor_SLBIP" xml:"XForwardedFor_SLBIP"`
 	StickySession                            string                                                         `json:"StickySession" xml:"StickySession"`
 	HealthCheck                              string                                                         `json:"HealthCheck" xml:"HealthCheck"`
+	LoadBalancerId                           string                                                         `json:"LoadBalancerId" xml:"LoadBalancerId"`
 	AclIds                                   AclIdsInDescribeLoadBalancerHTTPSListenerAttribute             `json:"AclIds" xml:"AclIds"`
 	Rules                                    RulesInDescribeLoadBalancerHTTPSListenerAttribute              `json:"Rules" xml:"Rules"`
 	DomainExtensions                         DomainExtensionsInDescribeLoadBalancerHTTPSListenerAttribute   `json:"DomainExtensions" xml:"DomainExtensions"`
 	ServerCertificates                       ServerCertificatesInDescribeLoadBalancerHTTPSListenerAttribute `json:"ServerCertificates" xml:"ServerCertificates"`
+	Tags                                     TagsInDescribeLoadBalancerHTTPSListenerAttribute               `json:"Tags" xml:"Tags"`
 }
 
 // CreateDescribeLoadBalancerHTTPSListenerAttributeRequest creates a request to invoke DescribeLoadBalancerHTTPSListenerAttribute API
@@ -148,7 +150,7 @@ func CreateDescribeLoadBalancerHTTPSListenerAttributeRequest() (request *Describ
 	request = &DescribeLoadBalancerHTTPSListenerAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancerHTTPSListenerAttribute", "Slb", "openAPI")
+	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancerHTTPSListenerAttribute", "slb", "openAPI")
 	request.Method = requests.POST
 	return
 }

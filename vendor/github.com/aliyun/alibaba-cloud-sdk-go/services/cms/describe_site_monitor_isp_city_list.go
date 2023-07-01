@@ -71,11 +71,13 @@ func (client *Client) DescribeSiteMonitorISPCityListWithCallback(request *Descri
 // DescribeSiteMonitorISPCityListRequest is the request struct for api DescribeSiteMonitorISPCityList
 type DescribeSiteMonitorISPCityListRequest struct {
 	*requests.RpcRequest
-	City     string           `position:"Query" name:"City"`
-	Isp      string           `position:"Query" name:"Isp"`
-	APIProbe requests.Boolean `position:"Query" name:"APIProbe"`
-	IPV4     requests.Boolean `position:"Query" name:"IPV4"`
-	IPV6     requests.Boolean `position:"Query" name:"IPV6"`
+	City        string           `position:"Query" name:"City"`
+	Isp         string           `position:"Query" name:"Isp"`
+	APIProbe    requests.Boolean `position:"Query" name:"APIProbe"`
+	MobileProbe requests.Boolean `position:"Query" name:"MobileProbe"`
+	ViewAll     requests.Boolean `position:"Query" name:"ViewAll"`
+	IPV4        requests.Boolean `position:"Query" name:"IPV4"`
+	IPV6        requests.Boolean `position:"Query" name:"IPV6"`
 }
 
 // DescribeSiteMonitorISPCityListResponse is the response struct for api DescribeSiteMonitorISPCityList
@@ -93,7 +95,7 @@ func CreateDescribeSiteMonitorISPCityListRequest() (request *DescribeSiteMonitor
 	request = &DescribeSiteMonitorISPCityListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "Cms", "openAPI")
+	request.InitWithApiInfo("Cms", "2019-01-01", "DescribeSiteMonitorISPCityList", "cms", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -42,6 +42,7 @@ type Config struct {
 	RamRoleArn               string
 	RamRoleSessionName       string
 	RamRolePolicy            string
+	RamRoleExternalId        string
 	RamRoleSessionExpiration int
 	Endpoints                *sync.Map
 	RKvstoreEndpoint         string
@@ -215,6 +216,11 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 		}
 		if c.RamRoleArn != "" {
 			log.Printf("[INFO] Assume RAM Role specified in provider block assume_role { ... }")
+			if c.RamRoleExternalId != "" {
+				return credentials.NewRamRoleArnWithPolicyAndExternalIdCredential(
+					c.AccessKey, c.SecretKey, c.RamRoleArn,
+					c.RamRoleSessionName, c.RamRolePolicy, c.RamRoleExternalId, c.RamRoleSessionExpiration)
+			}
 			return credentials.NewRamRoleArnWithPolicyCredential(
 				c.AccessKey, c.SecretKey, c.RamRoleArn,
 				c.RamRoleSessionName, c.RamRolePolicy, c.RamRoleSessionExpiration)
@@ -367,6 +373,9 @@ func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
 			credentialConfig.RoleSessionName = &c.RamRoleSessionName
 			credentialConfig.RoleSessionExpiration = &c.RamRoleSessionExpiration
 			credentialConfig.Policy = &c.RamRolePolicy
+			if c.RamRoleExternalId != "" {
+				credentialConfig.ExternalId = &c.RamRoleExternalId
+			}
 		}
 	} else if c.EcsRoleName != "" {
 		credentialType = "ecs_ram_role"

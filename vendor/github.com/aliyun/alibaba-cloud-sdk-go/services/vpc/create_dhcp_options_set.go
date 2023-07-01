@@ -75,6 +75,8 @@ type CreateDhcpOptionsSetRequest struct {
 	ResourceOwnerId           requests.Integer `position:"Query" name:"ResourceOwnerId"`
 	ClientToken               string           `position:"Query" name:"ClientToken"`
 	TFTPServerName            string           `position:"Query" name:"TFTPServerName"`
+	ResourceGroupId           string           `position:"Query" name:"ResourceGroupId"`
+	LeaseTime                 string           `position:"Query" name:"LeaseTime"`
 	DomainNameServers         string           `position:"Query" name:"DomainNameServers"`
 	DhcpOptionsSetDescription string           `position:"Query" name:"DhcpOptionsSetDescription"`
 	DryRun                    requests.Boolean `position:"Query" name:"DryRun"`
@@ -83,6 +85,7 @@ type CreateDhcpOptionsSetRequest struct {
 	DomainName                string           `position:"Query" name:"DomainName"`
 	OwnerId                   requests.Integer `position:"Query" name:"OwnerId"`
 	DhcpOptionsSetName        string           `position:"Query" name:"DhcpOptionsSetName"`
+	Ipv6LeaseTime             string           `position:"Query" name:"Ipv6LeaseTime"`
 }
 
 // CreateDhcpOptionsSetResponse is the response struct for api CreateDhcpOptionsSet
@@ -90,6 +93,7 @@ type CreateDhcpOptionsSetResponse struct {
 	*responses.BaseResponse
 	DhcpOptionsSetId string `json:"DhcpOptionsSetId" xml:"DhcpOptionsSetId"`
 	RequestId        string `json:"RequestId" xml:"RequestId"`
+	ResourceGroupId  string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateCreateDhcpOptionsSetRequest creates a request to invoke CreateDhcpOptionsSet API

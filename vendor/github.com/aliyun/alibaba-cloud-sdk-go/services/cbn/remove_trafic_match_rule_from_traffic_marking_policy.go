@@ -79,6 +79,7 @@ type RemoveTraficMatchRuleFromTrafficMarkingPolicyRequest struct {
 	OwnerAccount           string           `position:"Query" name:"OwnerAccount"`
 	TrafficMarkRuleIds     *[]string        `position:"Query" name:"TrafficMarkRuleIds"  type:"Repeated"`
 	OwnerId                requests.Integer `position:"Query" name:"OwnerId"`
+	Version                string           `position:"Query" name:"Version"`
 }
 
 // RemoveTraficMatchRuleFromTrafficMarkingPolicyResponse is the response struct for api RemoveTraficMatchRuleFromTrafficMarkingPolicy

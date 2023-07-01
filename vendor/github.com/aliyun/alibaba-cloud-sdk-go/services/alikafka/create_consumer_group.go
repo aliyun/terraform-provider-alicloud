@@ -71,18 +71,25 @@ func (client *Client) CreateConsumerGroupWithCallback(request *CreateConsumerGro
 // CreateConsumerGroupRequest is the request struct for api CreateConsumerGroup
 type CreateConsumerGroupRequest struct {
 	*requests.RpcRequest
-	ConsumerId string `position:"Query" name:"ConsumerId"`
-	Remark     string `position:"Query" name:"Remark"`
-	InstanceId string `position:"Query" name:"InstanceId"`
+	ConsumerId string                    `position:"Query" name:"ConsumerId"`
+	Remark     string                    `position:"Query" name:"Remark"`
+	InstanceId string                    `position:"Query" name:"InstanceId"`
+	Tag        *[]CreateConsumerGroupTag `position:"Query" name:"Tag"  type:"Repeated"`
+}
+
+// CreateConsumerGroupTag is a repeated param struct in CreateConsumerGroupRequest
+type CreateConsumerGroupTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreateConsumerGroupResponse is the response struct for api CreateConsumerGroup
 type CreateConsumerGroupResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateCreateConsumerGroupRequest creates a request to invoke CreateConsumerGroup API
@@ -90,7 +97,7 @@ func CreateCreateConsumerGroupRequest() (request *CreateConsumerGroupRequest) {
 	request = &CreateConsumerGroupRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateConsumerGroup", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "CreateConsumerGroup", "", "")
 	request.Method = requests.POST
 	return
 }

@@ -17,15 +17,19 @@ package edas
 
 // SecureToken is a nested struct in edas response
 type SecureToken struct {
-	Id                int64  `json:"Id" xml:"Id"`
-	UserId            string `json:"UserId" xml:"UserId"`
-	EdasId            string `json:"EdasId" xml:"EdasId"`
-	RegionId          string `json:"RegionId" xml:"RegionId"`
-	RegionName        string `json:"RegionName" xml:"RegionName"`
-	Description       string `json:"Description" xml:"Description"`
-	BelongRegion      string `json:"BelongRegion" xml:"BelongRegion"`
-	AccessKey         string `json:"AccessKey" xml:"AccessKey"`
-	SecretKey         string `json:"SecretKey" xml:"SecretKey"`
-	TenantId          string `json:"TenantId" xml:"TenantId"`
-	AddressServerHost string `json:"AddressServerHost" xml:"AddressServerHost"`
+	SecretKey          string `json:"SecretKey" xml:"SecretKey"`
+	AccessKey          string `json:"AccessKey" xml:"AccessKey"`
+	BelongRegion       string `json:"BelongRegion" xml:"BelongRegion"`
+	Description        string `json:"Description" xml:"Description"`
+	RegionName         string `json:"RegionName" xml:"RegionName"`
+	EdasId             string `json:"EdasId" xml:"EdasId"`
+	AddressServerHost  string `json:"AddressServerHost" xml:"AddressServerHost"`
+	UserId             string `json:"UserId" xml:"UserId"`
+	Id                 int64  `json:"Id" xml:"Id"`
+	TenantId           string `json:"TenantId" xml:"TenantId"`
+	RegionId           string `json:"RegionId" xml:"RegionId"`
+	MseRegistryType    string `json:"MseRegistryType" xml:"MseRegistryType"`
+	MseInstanceId      string `json:"MseInstanceId" xml:"MseInstanceId"`
+	MseInternetAddress string `json:"MseInternetAddress" xml:"MseInternetAddress"`
+	MseIntranetAddress string `json:"MseIntranetAddress" xml:"MseIntranetAddress"`
 }

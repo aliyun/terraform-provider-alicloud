@@ -75,6 +75,7 @@ type DescribeDBClustersWithBackupsRequest struct {
 	DBClusterDescription string           `position:"Query" name:"DBClusterDescription"`
 	IsDeleted            requests.Integer `position:"Query" name:"IsDeleted"`
 	PageNumber           requests.Integer `position:"Query" name:"PageNumber"`
+	ResourceGroupId      string           `position:"Query" name:"ResourceGroupId"`
 	PageSize             requests.Integer `position:"Query" name:"PageSize"`
 	ResourceOwnerAccount string           `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string           `position:"Query" name:"OwnerAccount"`
@@ -89,8 +90,8 @@ type DescribeDBClustersWithBackupsResponse struct {
 	*responses.BaseResponse
 	RequestId        string                               `json:"RequestId" xml:"RequestId"`
 	PageNumber       int                                  `json:"PageNumber" xml:"PageNumber"`
-	TotalRecordCount int                                  `json:"TotalRecordCount" xml:"TotalRecordCount"`
 	PageRecordCount  int                                  `json:"PageRecordCount" xml:"PageRecordCount"`
+	TotalRecordCount int                                  `json:"TotalRecordCount" xml:"TotalRecordCount"`
 	Items            ItemsInDescribeDBClustersWithBackups `json:"Items" xml:"Items"`
 }
 

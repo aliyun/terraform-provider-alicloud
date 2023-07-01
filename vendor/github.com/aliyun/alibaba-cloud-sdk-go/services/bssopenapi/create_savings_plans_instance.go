@@ -71,16 +71,17 @@ func (client *Client) CreateSavingsPlansInstanceWithCallback(request *CreateSavi
 // CreateSavingsPlansInstanceRequest is the request struct for api CreateSavingsPlansInstance
 type CreateSavingsPlansInstanceRequest struct {
 	*requests.RpcRequest
-	Specification string `position:"Query" name:"Specification"`
-	PoolValue     string `position:"Query" name:"PoolValue"`
-	CommodityCode string `position:"Query" name:"CommodityCode"`
-	Type          string `position:"Query" name:"Type"`
-	EffectiveDate string `position:"Query" name:"EffectiveDate"`
-	Duration      string `position:"Query" name:"Duration"`
-	SpecType      string `position:"Query" name:"SpecType"`
-	PayMode       string `position:"Query" name:"PayMode"`
-	Region        string `position:"Query" name:"Region"`
-	PricingCycle  string `position:"Query" name:"PricingCycle"`
+	Specification string            `position:"Query" name:"Specification"`
+	PoolValue     string            `position:"Query" name:"PoolValue"`
+	CommodityCode string            `position:"Query" name:"CommodityCode"`
+	Type          string            `position:"Query" name:"Type"`
+	EffectiveDate string            `position:"Query" name:"EffectiveDate"`
+	Duration      string            `position:"Query" name:"Duration"`
+	SpecType      string            `position:"Query" name:"SpecType"`
+	ExtendMap     map[string]string `position:"Query" name:"ExtendMap"  type:"Map"`
+	PayMode       string            `position:"Query" name:"PayMode"`
+	Region        string            `position:"Query" name:"Region"`
+	PricingCycle  string            `position:"Query" name:"PricingCycle"`
 }
 
 // CreateSavingsPlansInstanceResponse is the response struct for api CreateSavingsPlansInstance
@@ -98,7 +99,7 @@ func CreateCreateSavingsPlansInstanceRequest() (request *CreateSavingsPlansInsta
 	request = &CreateSavingsPlansInstanceRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateSavingsPlansInstance", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "CreateSavingsPlansInstance", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

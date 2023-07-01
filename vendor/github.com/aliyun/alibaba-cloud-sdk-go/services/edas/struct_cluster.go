@@ -19,8 +19,8 @@ package edas
 type Cluster struct {
 	SubNetCidr          string `json:"SubNetCidr" xml:"SubNetCidr"`
 	ClusterId           string `json:"ClusterId" xml:"ClusterId"`
-	NodeNum             int    `json:"NodeNum" xml:"NodeNum"`
 	CsClusterId         string `json:"CsClusterId" xml:"CsClusterId"`
+	NodeNum             int    `json:"NodeNum" xml:"NodeNum"`
 	UpdateTime          int64  `json:"UpdateTime" xml:"UpdateTime"`
 	Mem                 int    `json:"Mem" xml:"Mem"`
 	CsClusterStatus     string `json:"CsClusterStatus" xml:"CsClusterStatus"`
@@ -32,12 +32,13 @@ type Cluster struct {
 	ClusterStatus       int    `json:"ClusterStatus" xml:"ClusterStatus"`
 	RegionId            string `json:"RegionId" xml:"RegionId"`
 	ResourceGroupId     string `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	SubClusterType      string `json:"SubClusterType" xml:"SubClusterType"`
 	VswitchId           string `json:"VswitchId" xml:"VswitchId"`
 	ClusterName         string `json:"ClusterName" xml:"ClusterName"`
-	CpuUsed             int    `json:"CpuUsed" xml:"CpuUsed"`
 	IaasProvider        string `json:"IaasProvider" xml:"IaasProvider"`
-	ClusterType         int    `json:"ClusterType" xml:"ClusterType"`
+	CpuUsed             int    `json:"CpuUsed" xml:"CpuUsed"`
 	VpcId               string `json:"VpcId" xml:"VpcId"`
 	Cpu                 int    `json:"Cpu" xml:"Cpu"`
+	ClusterType         int    `json:"ClusterType" xml:"ClusterType"`
 	Description         string `json:"Description" xml:"Description"`
 }

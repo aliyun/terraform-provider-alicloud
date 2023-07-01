@@ -82,6 +82,7 @@ type CreateTrafficMarkingPolicyRequest struct {
 	OwnerId                         requests.Integer                               `position:"Query" name:"OwnerId"`
 	TransitRouterId                 string                                         `position:"Query" name:"TransitRouterId"`
 	Priority                        requests.Integer                               `position:"Query" name:"Priority"`
+	Version                         string                                         `position:"Query" name:"Version"`
 	MarkingDscp                     requests.Integer                               `position:"Query" name:"MarkingDscp"`
 }
 

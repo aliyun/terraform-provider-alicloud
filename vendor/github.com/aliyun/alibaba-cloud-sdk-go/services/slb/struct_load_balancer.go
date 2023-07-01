@@ -45,5 +45,8 @@ type LoadBalancer struct {
 	BusinessStatus               string                      `json:"BusinessStatus" xml:"BusinessStatus"`
 	DeleteProtection             string                      `json:"DeleteProtection" xml:"DeleteProtection"`
 	RegionIdAlias                string                      `json:"RegionIdAlias" xml:"RegionIdAlias"`
+	InstanceChargeType           string                      `json:"InstanceChargeType" xml:"InstanceChargeType"`
+	ServiceManagedReason         string                      `json:"ServiceManagedReason" xml:"ServiceManagedReason"`
+	IneffectiveOrderList         IneffectiveOrderList        `json:"IneffectiveOrderList" xml:"IneffectiveOrderList"`
 	Tags                         TagsInDescribeLoadBalancers `json:"Tags" xml:"Tags"`
 }

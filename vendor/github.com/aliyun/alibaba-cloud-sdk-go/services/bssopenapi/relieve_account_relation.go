@@ -75,6 +75,7 @@ type RelieveAccountRelationRequest struct {
 	ParentUserId requests.Integer `position:"Query" name:"ParentUserId"`
 	ChildUserId  requests.Integer `position:"Query" name:"ChildUserId"`
 	RequestId    string           `position:"Query" name:"RequestId"`
+	RelationId   requests.Integer `position:"Query" name:"RelationId"`
 }
 
 // RelieveAccountRelationResponse is the response struct for api RelieveAccountRelation
@@ -92,7 +93,7 @@ func CreateRelieveAccountRelationRequest() (request *RelieveAccountRelationReque
 	request = &RelieveAccountRelationRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "RelieveAccountRelation", "", "")
+	request.InitWithApiInfo("BssOpenApi", "2017-12-14", "RelieveAccountRelation", "bssopenapi", "openAPI")
 	request.Method = requests.POST
 	return
 }

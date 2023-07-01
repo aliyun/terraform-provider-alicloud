@@ -89,6 +89,8 @@ func (r *RsaKeyPairCredential) updateCredential() (err error) {
 	request.Domain = "sts.aliyuncs.com"
 	if r.runtime.Host != "" {
 		request.Domain = r.runtime.Host
+	} else if r.runtime.STSEndpoint != "" {
+		request.Domain = r.runtime.STSEndpoint
 	}
 	request.Scheme = "HTTPS"
 	request.Method = "GET"

@@ -71,18 +71,18 @@ func (client *Client) ScaleK8sApplicationWithCallback(request *ScaleK8sApplicati
 // ScaleK8sApplicationRequest is the request struct for api ScaleK8sApplication
 type ScaleK8sApplicationRequest struct {
 	*requests.RoaRequest
-	Replicas requests.Integer `position:"Query" name:"Replicas"`
-	AppId    string           `position:"Query" name:"AppId"`
-	Timeout  requests.Integer `position:"Query" name:"Timeout"`
+	Replicas string `position:"Query" name:"Replicas"`
+	AppId    string `position:"Query" name:"AppId"`
+	Timeout  string `position:"Query" name:"Timeout"`
 }
 
 // ScaleK8sApplicationResponse is the response struct for api ScaleK8sApplication
 type ScaleK8sApplicationResponse struct {
 	*responses.BaseResponse
-	RequestId     string `json:"RequestId" xml:"RequestId"`
+	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
 	Code          int    `json:"Code" xml:"Code"`
 	Message       string `json:"Message" xml:"Message"`
-	ChangeOrderId string `json:"ChangeOrderId" xml:"ChangeOrderId"`
+	RequestId     string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateScaleK8sApplicationRequest creates a request to invoke ScaleK8sApplication API

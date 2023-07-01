@@ -204,7 +204,7 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 	var names []string
 	var s []map[string]interface{}
 	for _, v := range roles {
-		role := v.(ram.RoleInListRoles)
+		role := v.(ram.Role)
 		request := ram.CreateGetRoleRequest()
 		request.RoleName = role.RoleName
 		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {

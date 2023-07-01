@@ -81,6 +81,7 @@ type DescribeDBClustersRequest struct {
 	ResourceOwnerAccount string                   `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount         string                   `position:"Query" name:"OwnerAccount"`
 	OwnerId              requests.Integer         `position:"Query" name:"OwnerId"`
+	DBVersion            string                   `position:"Query" name:"DBVersion"`
 	DBClusterIds         string                   `position:"Query" name:"DBClusterIds"`
 }
 
@@ -93,10 +94,10 @@ type DescribeDBClustersTag struct {
 // DescribeDBClustersResponse is the response struct for api DescribeDBClusters
 type DescribeDBClustersResponse struct {
 	*responses.BaseResponse
-	RequestId  string                    `json:"RequestId" xml:"RequestId"`
-	PageNumber int                       `json:"PageNumber" xml:"PageNumber"`
 	TotalCount int                       `json:"TotalCount" xml:"TotalCount"`
 	PageSize   int                       `json:"PageSize" xml:"PageSize"`
+	RequestId  string                    `json:"RequestId" xml:"RequestId"`
+	PageNumber int                       `json:"PageNumber" xml:"PageNumber"`
 	Items      ItemsInDescribeDBClusters `json:"Items" xml:"Items"`
 }
 

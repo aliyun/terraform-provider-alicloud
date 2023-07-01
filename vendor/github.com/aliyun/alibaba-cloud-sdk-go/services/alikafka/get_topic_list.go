@@ -74,18 +74,19 @@ type GetTopicListRequest struct {
 	CurrentPage string `position:"Query" name:"CurrentPage"`
 	InstanceId  string `position:"Query" name:"InstanceId"`
 	PageSize    string `position:"Query" name:"PageSize"`
+	Topic       string `position:"Query" name:"Topic"`
 }
 
 // GetTopicListResponse is the response struct for api GetTopicList
 type GetTopicListResponse struct {
 	*responses.BaseResponse
-	Success     bool                    `json:"Success" xml:"Success"`
+	CurrentPage int                     `json:"CurrentPage" xml:"CurrentPage"`
 	RequestId   string                  `json:"RequestId" xml:"RequestId"`
+	Success     bool                    `json:"Success" xml:"Success"`
 	Code        int                     `json:"Code" xml:"Code"`
 	Message     string                  `json:"Message" xml:"Message"`
-	Total       int                     `json:"Total" xml:"Total"`
 	PageSize    int                     `json:"PageSize" xml:"PageSize"`
-	CurrentPage int                     `json:"CurrentPage" xml:"CurrentPage"`
+	Total       int                     `json:"Total" xml:"Total"`
 	TopicList   TopicListInGetTopicList `json:"TopicList" xml:"TopicList"`
 }
 
@@ -94,7 +95,7 @@ func CreateGetTopicListRequest() (request *GetTopicListRequest) {
 	request = &GetTopicListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "GetTopicList", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "GetTopicList", "", "")
 	request.Method = requests.POST
 	return
 }

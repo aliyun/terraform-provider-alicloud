@@ -131,8 +131,10 @@ type DescribeLoadBalancerAttributeResponse struct {
 	RenewalStatus                  string                                        `json:"RenewalStatus" xml:"RenewalStatus"`
 	RenewalDuration                int                                           `json:"RenewalDuration" xml:"RenewalDuration"`
 	CloudInstanceUid               int64                                         `json:"CloudInstanceUid" xml:"CloudInstanceUid"`
+	InstanceChargeType             string                                        `json:"InstanceChargeType" xml:"InstanceChargeType"`
 	Labels                         Labels                                        `json:"Labels" xml:"Labels"`
 	ListenerPorts                  ListenerPorts                                 `json:"ListenerPorts" xml:"ListenerPorts"`
+	Tags                           TagsInDescribeLoadBalancerAttribute           `json:"Tags" xml:"Tags"`
 	ListenerPortsAndProtocal       ListenerPortsAndProtocal                      `json:"ListenerPortsAndProtocal" xml:"ListenerPortsAndProtocal"`
 	ListenerPortsAndProtocol       ListenerPortsAndProtocol                      `json:"ListenerPortsAndProtocol" xml:"ListenerPortsAndProtocol"`
 	BackendServers                 BackendServersInDescribeLoadBalancerAttribute `json:"BackendServers" xml:"BackendServers"`
@@ -143,7 +145,7 @@ func CreateDescribeLoadBalancerAttributeRequest() (request *DescribeLoadBalancer
 	request = &DescribeLoadBalancerAttributeRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancerAttribute", "Slb", "openAPI")
+	request.InitWithApiInfo("Slb", "2014-05-15", "DescribeLoadBalancerAttribute", "slb", "openAPI")
 	request.Method = requests.POST
 	return
 }

@@ -71,19 +71,18 @@ func (client *Client) CreateUserUsageDataExportTaskWithCallback(request *CreateU
 // CreateUserUsageDataExportTaskRequest is the request struct for api CreateUserUsageDataExportTask
 type CreateUserUsageDataExportTaskRequest struct {
 	*requests.RpcRequest
-	TaskName  string           `position:"Query" name:"TaskName"`
-	Language  string           `position:"Query" name:"Language"`
-	StartTime string           `position:"Query" name:"StartTime"`
-	EndTime   string           `position:"Query" name:"EndTime"`
-	OwnerId   requests.Integer `position:"Query" name:"OwnerId"`
+	EndTime   string `position:"Query" name:"EndTime"`
+	TaskName  string `position:"Query" name:"TaskName"`
+	Language  string `position:"Query" name:"Language"`
+	StartTime string `position:"Query" name:"StartTime"`
 }
 
 // CreateUserUsageDataExportTaskResponse is the response struct for api CreateUserUsageDataExportTask
 type CreateUserUsageDataExportTaskResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
-	StartTime string `json:"StartTime" xml:"StartTime"`
 	EndTime   string `json:"EndTime" xml:"EndTime"`
+	StartTime string `json:"StartTime" xml:"StartTime"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    string `json:"TaskId" xml:"TaskId"`
 }
 

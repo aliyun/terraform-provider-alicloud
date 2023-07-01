@@ -1,7 +1,8 @@
 package alicloud
 
 import (
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"fmt"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/edas"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -54,12 +55,10 @@ func resourceAlicloudEdasSlbAttachment() *schema.Resource {
 			"slb_status": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}
@@ -79,7 +78,7 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 	request.SlbId = slbId
 	request.SlbIp = d.Get("slb_ip").(string)
 	if v, ok := d.GetOk("listener_port"); ok {
-		request.ListenerPort = requests.NewInteger(v.(int))
+		request.ListenerPort = fmt.Sprint(v.(int))
 	}
 	if v, ok := d.GetOk("vserver_group_id"); ok {
 		request.VServerGroupId = v.(string)
@@ -103,7 +102,7 @@ func resourceAlicloudEdasSlbAttachmentCreate(d *schema.ResourceData, meta interf
 		return WrapError(Error("bind slb failed for " + response.Message))
 	}
 	d.SetId(appId + ":" + slbId)
-	return resourceAlicloudEdasInstanceApplicationAttachmentRead(d, meta)
+	return resourceAlicloudEdasSlbAttachmentRead(d, meta)
 }
 
 func resourceAlicloudEdasSlbAttachmentRead(d *schema.ResourceData, meta interface{}) error {

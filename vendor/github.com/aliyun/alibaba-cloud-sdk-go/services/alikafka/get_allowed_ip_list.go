@@ -77,10 +77,10 @@ type GetAllowedIpListRequest struct {
 // GetAllowedIpListResponse is the response struct for api GetAllowedIpList
 type GetAllowedIpListResponse struct {
 	*responses.BaseResponse
-	Success     bool        `json:"Success" xml:"Success"`
-	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	Code        int         `json:"Code" xml:"Code"`
 	Message     string      `json:"Message" xml:"Message"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	Success     bool        `json:"Success" xml:"Success"`
 	AllowedList AllowedList `json:"AllowedList" xml:"AllowedList"`
 }
 
@@ -89,7 +89,7 @@ func CreateGetAllowedIpListRequest() (request *GetAllowedIpListRequest) {
 	request = &GetAllowedIpListRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "GetAllowedIpList", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "GetAllowedIpList", "", "")
 	request.Method = requests.POST
 	return
 }

@@ -37,7 +37,6 @@ func resourceAlicloudEdasInstanceClusterAttachment() *schema.Resource {
 					Type: schema.TypeInt,
 				},
 				Computed: true,
-				ForceNew: true,
 			},
 			"ecu_map": {
 				Type: schema.TypeMap,
@@ -45,7 +44,6 @@ func resourceAlicloudEdasInstanceClusterAttachment() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Computed: true,
-				ForceNew: true,
 			},
 			"cluster_member_ids": {
 				Type: schema.TypeMap,
@@ -53,7 +51,6 @@ func resourceAlicloudEdasInstanceClusterAttachment() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Computed: true,
-				ForceNew: true,
 			},
 		},
 	}

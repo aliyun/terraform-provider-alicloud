@@ -21,7 +21,6 @@ import (
 )
 
 // CreateInstance invokes the cloudapi.CreateInstance API synchronously
-// api document: https://help.aliyun.com/api/cloudapi/createinstance.html
 func (client *Client) CreateInstance(request *CreateInstanceRequest) (response *CreateInstanceResponse, err error) {
 	response = CreateCreateInstanceResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) CreateInstance(request *CreateInstanceRequest) (response *
 }
 
 // CreateInstanceWithChan invokes the cloudapi.CreateInstance API asynchronously
-// api document: https://help.aliyun.com/api/cloudapi/createinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateInstanceWithChan(request *CreateInstanceRequest) (<-chan *CreateInstanceResponse, <-chan error) {
 	responseChan := make(chan *CreateInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) CreateInstanceWithChan(request *CreateInstanceRequest) (<-
 }
 
 // CreateInstanceWithCallback invokes the cloudapi.CreateInstance API asynchronously
-// api document: https://help.aliyun.com/api/cloudapi/createinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CreateInstanceWithCallback(request *CreateInstanceRequest, callback func(response *CreateInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,22 +71,30 @@ func (client *Client) CreateInstanceWithCallback(request *CreateInstanceRequest,
 // CreateInstanceRequest is the request struct for api CreateInstance
 type CreateInstanceRequest struct {
 	*requests.RpcRequest
-	AutoPay      requests.Boolean `position:"Query" name:"AutoPay"`
-	InstanceSpec string           `position:"Query" name:"InstanceSpec"`
-	HttpsPolicy  string           `position:"Query" name:"HttpsPolicy"`
-	Token        string           `position:"Query" name:"Token"`
-	Duration     requests.Integer `position:"Query" name:"Duration"`
-	InstanceName string           `position:"Query" name:"InstanceName"`
-	ZoneId       string           `position:"Query" name:"ZoneId"`
-	ChargeType   string           `position:"Query" name:"ChargeType"`
-	PricingCycle string           `position:"Query" name:"PricingCycle"`
+	InstanceSpec string               `position:"Query" name:"InstanceSpec"`
+	HttpsPolicy  string               `position:"Query" name:"HttpsPolicy"`
+	Duration     requests.Integer     `position:"Query" name:"Duration"`
+	Tag          *[]CreateInstanceTag `position:"Query" name:"Tag"  type:"Repeated"`
+	AutoPay      requests.Boolean     `position:"Query" name:"AutoPay"`
+	Token        string               `position:"Query" name:"Token"`
+	InstanceName string               `position:"Query" name:"InstanceName"`
+	ZoneId       string               `position:"Query" name:"ZoneId"`
+	ChargeType   string               `position:"Query" name:"ChargeType"`
+	PricingCycle string               `position:"Query" name:"PricingCycle"`
+}
+
+// CreateInstanceTag is a repeated param struct in CreateInstanceRequest
+type CreateInstanceTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreateInstanceResponse is the response struct for api CreateInstance
 type CreateInstanceResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
+	TagStatus  bool   `json:"TagStatus" xml:"TagStatus"`
 	InstanceId string `json:"InstanceId" xml:"InstanceId"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateCreateInstanceRequest creates a request to invoke CreateInstance API

@@ -71,18 +71,17 @@ func (client *Client) DescribeDomainMultiUsageDataWithCallback(request *Describe
 // DescribeDomainMultiUsageDataRequest is the request struct for api DescribeDomainMultiUsageData
 type DescribeDomainMultiUsageDataRequest struct {
 	*requests.RpcRequest
-	StartTime  string           `position:"Query" name:"StartTime"`
-	DomainName string           `position:"Query" name:"DomainName"`
-	EndTime    string           `position:"Query" name:"EndTime"`
-	OwnerId    requests.Integer `position:"Query" name:"OwnerId"`
+	DomainName string `position:"Query" name:"DomainName"`
+	EndTime    string `position:"Query" name:"EndTime"`
+	StartTime  string `position:"Query" name:"StartTime"`
 }
 
 // DescribeDomainMultiUsageDataResponse is the response struct for api DescribeDomainMultiUsageData
 type DescribeDomainMultiUsageDataResponse struct {
 	*responses.BaseResponse
-	RequestId          string             `json:"RequestId" xml:"RequestId"`
-	StartTime          string             `json:"StartTime" xml:"StartTime"`
 	EndTime            string             `json:"EndTime" xml:"EndTime"`
+	StartTime          string             `json:"StartTime" xml:"StartTime"`
+	RequestId          string             `json:"RequestId" xml:"RequestId"`
 	RequestPerInterval RequestPerInterval `json:"RequestPerInterval" xml:"RequestPerInterval"`
 	TrafficPerInterval TrafficPerInterval `json:"TrafficPerInterval" xml:"TrafficPerInterval"`
 }

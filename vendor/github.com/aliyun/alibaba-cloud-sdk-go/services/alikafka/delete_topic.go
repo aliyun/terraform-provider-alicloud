@@ -78,10 +78,10 @@ type DeleteTopicRequest struct {
 // DeleteTopicResponse is the response struct for api DeleteTopic
 type DeleteTopicResponse struct {
 	*responses.BaseResponse
-	Success   bool   `json:"Success" xml:"Success"`
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	Code      int    `json:"Code" xml:"Code"`
 	Message   string `json:"Message" xml:"Message"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateDeleteTopicRequest creates a request to invoke DeleteTopic API
@@ -89,7 +89,7 @@ func CreateDeleteTopicRequest() (request *DeleteTopicRequest) {
 	request = &DeleteTopicRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteTopic", "alikafka", "openAPI")
+	request.InitWithApiInfo("alikafka", "2019-09-16", "DeleteTopic", "", "")
 	request.Method = requests.POST
 	return
 }

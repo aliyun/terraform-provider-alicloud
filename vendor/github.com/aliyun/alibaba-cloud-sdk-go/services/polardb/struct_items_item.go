@@ -17,18 +17,32 @@ package polardb
 
 // ItemsItem is a nested struct in polardb response
 type ItemsItem struct {
-	Status          int    `json:"Status" xml:"Status"`
-	PrepareInterval string `json:"PrepareInterval" xml:"PrepareInterval"`
-	Deadline        string `json:"Deadline" xml:"Deadline"`
-	DBType          string `json:"DBType" xml:"DBType"`
-	TaskType        string `json:"TaskType" xml:"TaskType"`
-	StartTime       string `json:"StartTime" xml:"StartTime"`
-	DBVersion       string `json:"DBVersion" xml:"DBVersion"`
-	ModifiedTime    string `json:"ModifiedTime" xml:"ModifiedTime"`
-	DBClusterId     string `json:"DBClusterId" xml:"DBClusterId"`
-	Region          string `json:"Region" xml:"Region"`
-	ResultInfo      string `json:"ResultInfo" xml:"ResultInfo"`
-	CreatedTime     string `json:"CreatedTime" xml:"CreatedTime"`
-	Id              int    `json:"Id" xml:"Id"`
-	SwitchTime      string `json:"SwitchTime" xml:"SwitchTime"`
+	MemoryClass        string `json:"MemoryClass" xml:"MemoryClass"`
+	Region             string `json:"Region" xml:"Region"`
+	DBType             string `json:"DBType" xml:"DBType"`
+	ResultInfo         string `json:"ResultInfo" xml:"ResultInfo"`
+	ClassGroup         string `json:"ClassGroup" xml:"ClassGroup"`
+	Psl4MaxIOPS        string `json:"Psl4MaxIOPS" xml:"Psl4MaxIOPS"`
+	MaxStorageCapacity string `json:"MaxStorageCapacity" xml:"MaxStorageCapacity"`
+	ClassCode          string `json:"ClassCode" xml:"ClassCode"`
+	Deadline           string `json:"Deadline" xml:"Deadline"`
+	ModifiedTime       string `json:"ModifiedTime" xml:"ModifiedTime"`
+	CreatedTime        string `json:"CreatedTime" xml:"CreatedTime"`
+	SwitchTime         string `json:"SwitchTime" xml:"SwitchTime"`
+	ClassTypeLevel     string `json:"ClassTypeLevel" xml:"ClassTypeLevel"`
+	Id                 int    `json:"Id" xml:"Id"`
+	Status             int    `json:"Status" xml:"Status"`
+	DBVersion          string `json:"DBVersion" xml:"DBVersion"`
+	Cpu                string `json:"Cpu" xml:"Cpu"`
+	DBClusterId        string `json:"DBClusterId" xml:"DBClusterId"`
+	ReferencePrice     string `json:"ReferencePrice" xml:"ReferencePrice"`
+	MaxIOPS            string `json:"MaxIOPS" xml:"MaxIOPS"`
+	PrepareInterval    string `json:"PrepareInterval" xml:"PrepareInterval"`
+	Psl5MaxIOPS        string `json:"Psl5MaxIOPS" xml:"Psl5MaxIOPS"`
+	StartTime          string `json:"StartTime" xml:"StartTime"`
+	MaxConnections     string `json:"MaxConnections" xml:"MaxConnections"`
+	Pl3MaxIOPS         string `json:"Pl3MaxIOPS" xml:"Pl3MaxIOPS"`
+	Pl1MaxIOPS         string `json:"Pl1MaxIOPS" xml:"Pl1MaxIOPS"`
+	TaskType           string `json:"TaskType" xml:"TaskType"`
+	Pl2MaxIOPS         string `json:"Pl2MaxIOPS" xml:"Pl2MaxIOPS"`
 }
