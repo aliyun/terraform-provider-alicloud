@@ -1,4 +1,26 @@
 ## 1.208.0 (Unreleased)
+## 1.207.0 (July 01, 2023)
+
+ENHANCEMENTS:
+
+- provider: assume_role supports setting external_id; resource/alicloud_alikafka_instance: Fixes the attribute topic_quota diff and update error; resource/alicloud_ess_scaling_configuration: Fixes the setting instance_pattern_infos failed error ([#6277](https://github.com/aliyun/terraform-provider-alicloud/issues/6277))
+- resource/alicloud_lindorm_instance: Enlarges the cold_storage max value to 1000000 ([#6283](https://github.com/aliyun/terraform-provider-alicloud/issues/6283))
+- resource/alicloud_rds_db_instance_endpoint: add retry; resource/alicloud_rds_db_instance_endpoint_address: add retry; resource/alicloud_rds_db_node: add retry. ([#6275](https://github.com/aliyun/terraform-provider-alicloud/issues/6275))
+- resource/alicloud_ocean_base_instance: modify attribute instance_class supports more specification. ([#6270](https://github.com/aliyun/terraform-provider-alicloud/issues/6270))
+- resource/alicloud_ga_basic_accelerator: Added the field tags ([#6260](https://github.com/aliyun/terraform-provider-alicloud/issues/6260))
+- resource/alicloud_ga_acl: Added the field tags ([#6259](https://github.com/aliyun/terraform-provider-alicloud/issues/6259))
+- resource/alicloud_ga_bandwidth_package: Added the field tags ([#6257](https://github.com/aliyun/terraform-provider-alicloud/issues/6257))
+- resource/alicloud_sae_namespace: Improved resource retry strategy ([#6253](https://github.com/aliyun/terraform-provider-alicloud/issues/6253))
+- resource/alicloud_ga_endpoint_group: Added the field enable_proxy_protocol and tags ([#6250](https://github.com/aliyun/terraform-provider-alicloud/issues/6250))
+- resource/alicloud_ga_accelerator: Added the field tags ([#6249](https://github.com/aliyun/terraform-provider-alicloud/issues/6249))
+- data-source/alicloud_rds_slots: add retry;resource/alicloud_db_instance: add retry;resource/alicloud_rds_ddr_instance: add retry. ([#6263](https://github.com/aliyun/terraform-provider-alicloud/issues/6263))
+- docs: Improves the dns docs example ([#6282](https://github.com/aliyun/terraform-provider-alicloud/issues/6282))
+- docs: Improves the alb docs example ([#6279](https://github.com/aliyun/terraform-provider-alicloud/issues/6279))
+- docs: Improves the adb docs example ([#6274](https://github.com/aliyun/terraform-provider-alicloud/issues/6274))
+- docs: Improves the cen docs example ([#6252](https://github.com/aliyun/terraform-provider-alicloud/issues/6252))
+  
+- Update Readme ([#6278](https://github.com/aliyun/terraform-provider-alicloud/issues/6278))
+
 ## 1.207.0 (June 20, 2023)
 
 - **New Resource:** `alicloud_eip_segment_address` ([#6225](https://github.com/aliyun/terraform-provider-alicloud/issues/6225))
