@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RabbitMQ (AMQP) Instance resource.
 ---
 
-# alicloud\_amqp\_instance
+# alicloud_amqp_instance
 
 Provides a RabbitMQ (AMQP) Instance resource.
 
-For information about RabbitMQ (AMQP) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/doc-detail/101631.htm).
+For information about RabbitMQ (AMQP) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createinstance).
 
--> **NOTE:** Available in v1.128.0+.
+-> **NOTE:** Available since v1.128.0.
 
 ## Example Usage
 
@@ -30,17 +30,23 @@ resource "alicloud_amqp_instance" "professional" {
   period         = 1
 }
 
-resource "alicloud_amqp_instance" "vip" {
-  instance_type  = "vip"
-  max_tps        = 5000
-  queue_capacity = 50
+resource "alicloud_amqp_instance" "enterprise" {
+  instance_type  = "enterprise"
+  max_tps        = 3000
+  queue_capacity = 200
   storage_size   = 700
-  support_eip    = true
+  support_eip    = false
   max_eip_tps    = 128
   payment_type   = "Subscription"
   period         = 1
 }
 ```
+
+### Deleting `alicloud_amqp_instance` or removing it from your configuration
+
+The `alicloud_amqp_instance` resource allows you to manage `payment_type = "Subscription"` amqp instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the amqp Instance.
+You can resume managing the subscription db instance via the AlibabaCloud Console.
 
 ## Argument Reference
 
@@ -63,6 +69,7 @@ The following arguments are supported:
   
 * `storage_size` - (Optional) The storage size. It is valid when `instance_type` is vip.
 * `support_eip` - (Required) Whether to support EIP.
+* `logistics` - (Optional) The logistic information This parameter is not required when you create a ApsaraMQ for RabbitMQ instance. You do not need to specify this parameter.
 
 ## Attributes Reference
 
@@ -71,7 +78,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Instance.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

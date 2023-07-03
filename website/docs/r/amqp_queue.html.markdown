@@ -7,29 +7,49 @@ description: |-
   Provides a Alicloud RabbitMQ (AMQP) Queue resource.
 ---
 
-# alicloud\_amqp\_queue
+# alicloud_amqp_queue
 
 Provides a RabbitMQ (AMQP) Queue resource.
 
-For information about RabbitMQ (AMQP) Queue and how to use it, see [What is Queue](https://www.alibabacloud.com/help/doc-detail/101631.htm).
+For information about RabbitMQ (AMQP) Queue and how to use it, see [What is Queue](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createqueue).
 
--> **NOTE:** Available in v1.127.0+.
+-> **NOTE:** Available since v1.127.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_amqp_virtual_host" "example" {
-  instance_id       = "amqp-abc12345"
-  virtual_host_name = "my-VirtualHost"
-}
-resource "alicloud_amqp_queue" "example" {
-  instance_id       = alicloud_amqp_virtual_host.example.instance_id
-  queue_name        = "my-Queue"
-  virtual_host_name = alicloud_amqp_virtual_host.example.virtual_host_name
+resource "alicloud_amqp_instance" "default" {
+  instance_type  = "enterprise"
+  max_tps        = 3000
+  queue_capacity = 200
+  storage_size   = 700
+  support_eip    = false
+  max_eip_tps    = 128
+  payment_type   = "Subscription"
+  period         = 1
 }
 
+resource "alicloud_amqp_virtual_host" "default" {
+  instance_id       = alicloud_amqp_instance.default.id
+  virtual_host_name = "tf-example"
+}
+
+resource "alicloud_amqp_exchange" "default" {
+  auto_delete_state = false
+  exchange_name     = "tf-example"
+  exchange_type     = "DIRECT"
+  instance_id       = alicloud_amqp_instance.default.id
+  internal          = false
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+}
+
+resource "alicloud_amqp_queue" "example" {
+  instance_id       = alicloud_amqp_instance.default.id
+  queue_name        = "tf-example"
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+}
 ```
 
 ## Argument Reference
