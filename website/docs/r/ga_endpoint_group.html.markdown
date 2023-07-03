@@ -113,7 +113,7 @@ The following arguments are supported:
 * `endpoint_configurations` - (Required, Set) The endpointConfigurations of the endpoint group. See [`endpoint_configurations`](#endpoint_configurations) below.
 * `port_overrides` - (Optional, Set) Mapping between listening port and forwarding port of boarding point. See [`port_overrides`](#port_overrides) below.
 -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
-* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ### `port_overrides`
 
@@ -136,7 +136,7 @@ The endpoint_configurations supports the following:
 -> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
 -> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
-* `enable_proxy_protocol` - (Optional, Bool, Available since v1.208.0) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
+* `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
 * `enable_clientip_preservation` - (Optional, Computed, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
