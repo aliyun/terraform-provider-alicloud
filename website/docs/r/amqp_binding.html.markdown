@@ -7,42 +7,58 @@ description: |-
   Provides a Alicloud RabbitMQ (AMQP) Binding resource.
 ---
 
-# alicloud\_amqp\_binding
+# alicloud_amqp_binding
 
 Provides a RabbitMQ (AMQP) Binding resource to bind tha exchange with another exchange or queue.
 
--> **NOTE:** Available in v1.135.0+.
+For information about RabbitMQ (AMQP) Binding and how to use it, see [What is Binding](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createbinding).
+
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_amqp_virtual_host" "example" {
-  instance_id       = "amqp-abc12345"
-  virtual_host_name = "my-VirtualHost"
+resource "alicloud_amqp_instance" "default" {
+  instance_type  = "enterprise"
+  max_tps        = 3000
+  queue_capacity = 200
+  storage_size   = 700
+  support_eip    = false
+  max_eip_tps    = 128
+  payment_type   = "Subscription"
+  period         = 1
 }
-resource "alicloud_amqp_exchange" "example" {
+
+resource "alicloud_amqp_virtual_host" "default" {
+  instance_id       = alicloud_amqp_instance.default.id
+  virtual_host_name = "tf-example"
+}
+
+resource "alicloud_amqp_exchange" "default" {
   auto_delete_state = false
-  exchange_name     = "my-Exchange"
-  exchange_type     = "HEADERS"
-  instance_id       = alicloud_amqp_virtual_host.example.instance_id
+  exchange_name     = "tf-example"
+  exchange_type     = "DIRECT"
+  instance_id       = alicloud_amqp_instance.default.id
   internal          = false
-  virtual_host_name = alicloud_amqp_virtual_host.example.virtual_host_name
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
 }
-resource "alicloud_amqp_queue" "example" {
-  instance_id       = alicloud_amqp_virtual_host.example.instance_id
-  queue_name        = "my-Queue"
-  virtual_host_name = alicloud_amqp_virtual_host.example.virtual_host_name
+
+resource "alicloud_amqp_queue" "default" {
+  instance_id       = alicloud_amqp_instance.default.id
+  queue_name        = "tf-example"
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
 }
-resource "alicloud_amqp_binding" "example" {
+
+resource "alicloud_amqp_binding" "default" {
   argument          = "x-match:all"
-  binding_key       = alicloud_amqp_queue.example.queue_name
+  binding_key       = alicloud_amqp_queue.default.queue_name
   binding_type      = "QUEUE"
-  destination_name  = "binding-queue"
-  instance_id       = alicloud_amqp_exchange.example.instance_id
-  source_exchange   = alicloud_amqp_exchange.example.exchange_name
-  virtual_host_name = alicloud_amqp_exchange.example.virtual_host_name
+  destination_name  = "tf-example"
+  instance_id       = alicloud_amqp_instance.default.id
+  source_exchange   = alicloud_amqp_exchange.default.exchange_name
+  virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
 }
 ```
 
@@ -50,7 +66,7 @@ resource "alicloud_amqp_binding" "example" {
 
 The following arguments are supported:
 
-* `argument` - (Optional, Computed, ForceNew) X-match Attributes. Valid Values: 
+* `argument` - (Optional, ForceNew) X-match Attributes. Valid Values: 
   * "x-match:all": Default Value, All the Message Header of Key-Value Pairs Stored in the Must Match. 
   * "x-match:any": at Least One Pair of the Message Header of Key-Value Pairs Stored in the Must Match. 
     

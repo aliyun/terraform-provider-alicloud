@@ -11,39 +11,55 @@ description: |-
 
 Provides a Amqp Static Account resource.
 
-For information about Amqp Static Account and how to use it, see [What is Static Account](https://help.aliyun.com/document_detail/184399.html).
+For information about Amqp Static Account and how to use it, see [What is Static Account](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/create-a-pair-of-static-username-and-password).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "access_key" {
+  default = "access_key"
+}
+variable "secret_key" {
+  default = "secret_key"
+}
+resource "alicloud_amqp_instance" "default" {
+  instance_type  = "enterprise"
+  max_tps        = 3000
+  queue_capacity = 200
+  storage_size   = 700
+  support_eip    = false
+  max_eip_tps    = 128
+  payment_type   = "Subscription"
+  period         = 1
+}
 resource "alicloud_amqp_static_account" "default" {
-  instance_id = "amqp-cn-0ju2y01zs001"
-  access_key  = "LTAI5t8beMmVM1eRZtEJ6vfo"
-  secret_key  = "sample-secret-key"
+  instance_id = alicloud_amqp_instance.default.id
+  access_key  = var.access_key
+  secret_key  = var.secret_key
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `access_key` - (Required,ForceNew) Access key.
-* `instance_id` - (Required,ForceNew) Amqp instance ID.
-* `secret_key` - (Required,ForceNew) Secret key.
+* `access_key` - (Required, ForceNew) Access key.
+* `instance_id` - (Required, ForceNew) Amqp instance ID.
+* `secret_key` - (Required, ForceNew) Secret key.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The `key` of the resource supplied above.The value is formulated as `<instance_id>:<access_key>`.
-* `username` - Static user name.
+* `user_name` - Static user name.
 * `password` - Static password.
 * `create_time` - Create time stamp. Unix timestamp, to millisecond level.
 * `master_uid` - The ID of the user's primary account.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Static Account.
