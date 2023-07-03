@@ -19,7 +19,7 @@ Use the navigation on the left to read about the available resources.
 
 ## Example Usage
 
-```hcl
+```terraform
 # Configure the Alicloud Provider
 provider "alicloud" {
   access_key = "${var.access_key}"
@@ -77,7 +77,7 @@ alicloud provider block:
 
 Usage:
 
-```hcl
+```terraform
 provider "alicloud" {
   access_key = "${var.access_key}"
   secret_key = "${var.secret_key}"
@@ -91,7 +91,7 @@ You can provide your credentials via `ALICLOUD_ACCESS_KEY` and `ALICLOUD_SECRET_
 environment variables, representing your Alicloud access key and secret key respectively.
 `ALICLOUD_REGION` is also used, if applicable:
 
-```hcl
+```terraform
 provider "alicloud" {}
 ```
 
@@ -133,7 +133,7 @@ which reduces the chance of leakage.
 
 Usage:
 
-```hcl
+```terraform
 provider "alicloud" {
   ecs_role_name = "terraform-provider-alicloud"
   region        = "${var.region}"
@@ -148,7 +148,7 @@ If provided with a role ARN, Terraform will attempt to assume this role using th
 
 Usage:
 
-```hcl
+```terraform
 provider "alicloud" {
   assume_role {
     role_arn           = "acs:ram::ACCOUNT_ID:role/ROLE_NAME"
@@ -230,7 +230,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `skip_region_validation` - (Optional, Available since 1.52.0) Skip static validation of region ID. Used by users of alternative AlibabaCloud-like APIs or users w/ access to regions that are not public (yet).
 
 * `configuration_source` - (Optional, Available since 1.56.0) Use a string to mark a configuration file source, like `terraform-alicloud-modules/terraform-alicloud-ecs-instance` or `terraform-provider-alicloud/examples/vpc`.
-The length should not more than 64. Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
+The length should not more than 128(Before 1.208.0, it should not more than 64). Since the version 1.145.0, it supports to be set by environment variable `TF_APPEND_USER_AGENT`. See `Custom User-Agent Information`.
 
 * `protocol` - (Optional, Available since 1.72.0) The Protocol of used by API request. Valid values: `HTTP` and `HTTPS`. Default to `HTTPS`. 
 
