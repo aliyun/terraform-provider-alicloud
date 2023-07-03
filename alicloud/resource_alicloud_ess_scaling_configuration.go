@@ -30,6 +30,12 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"active": {
 				Type:     schema.TypeBool,
@@ -826,31 +832,24 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		}
 		update = true
 	}
-
 	if d.HasChange("data_disk") {
-		dds, ok := d.GetOk("data_disk")
-		if ok {
-			disks := dds.([]interface{})
-			createDataDisks := make([]ess.ModifyScalingConfigurationDataDisk, 0, len(disks))
-			for _, e := range disks {
-				pack := e.(map[string]interface{})
-				dataDisk := ess.ModifyScalingConfigurationDataDisk{
-					Size:                 strconv.Itoa(pack["size"].(int)),
-					Category:             pack["category"].(string),
-					SnapshotId:           pack["snapshot_id"].(string),
-					DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
-					Device:               pack["device"].(string),
-					Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
-					KMSKeyId:             pack["kms_key_id"].(string),
-					DiskName:             pack["name"].(string),
-					Description:          pack["description"].(string),
-					AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-					PerformanceLevel:     pack["performance_level"].(string),
-				}
-				createDataDisks = append(createDataDisks, dataDisk)
-			}
-			request["DataDisk"] = createDataDisks
+		disksMaps := make([]map[string]interface{}, len(d.Get("data_disk").([]interface{})))
+		for i, value := range d.Get("data_disk").([]interface{}) {
+			disksMap := value.(map[string]interface{})
+			disksMaps[i] = make(map[string]interface{})
+			disksMaps[i]["Size"] = disksMap["size"]
+			disksMaps[i]["Category"] = disksMap["category"]
+			disksMaps[i]["SnapshotId"] = disksMap["snapshot_id"]
+			disksMaps[i]["DeleteWithInstance"] = disksMap["delete_with_instance"]
+			disksMaps[i]["Device"] = disksMap["device"]
+			disksMaps[i]["Encrypted"] = disksMap["encrypted"]
+			disksMaps[i]["KMSKeyId"] = disksMap["kms_key_id"]
+			disksMaps[i]["DiskName"] = disksMap["name"]
+			disksMaps[i]["Description"] = disksMap["description"]
+			disksMaps[i]["AutoSnapshotPolicyId"] = disksMap["auto_snapshot_policy_id"]
+			disksMaps[i]["PerformanceLevel"] = disksMap["performance_level"]
 		}
+		request["DataDisk"] = disksMaps
 		update = true
 	}
 

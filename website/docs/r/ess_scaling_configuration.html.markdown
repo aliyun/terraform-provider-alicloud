@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ess_scaling_configuration"
 sidebar_current: "docs-alicloud-resource-ess-scaling-configuration"
 description: |-
-  Provides a ESS scaling configuration resource.
+  Provides an ESS scaling configuration resource.
 ---
 
 # alicloud_ess_scaling_configuration
