@@ -54,6 +54,10 @@ func resourceAliCloudEipSegmentAddress() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"public"}, false),
 			},
+			"segment_address_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -135,6 +139,7 @@ func resourceAliCloudEipSegmentAddressRead(d *schema.ResourceData, meta interfac
 	}
 
 	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("segment_address_name", objectRaw["Name"])
 	d.Set("status", objectRaw["Status"])
 
 	return nil
@@ -148,7 +153,6 @@ func resourceAliCloudEipSegmentAddressUpdate(d *schema.ResourceData, meta interf
 func resourceAliCloudEipSegmentAddressDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "ReleaseEipSegmentAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -157,7 +161,6 @@ func resourceAliCloudEipSegmentAddressDelete(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["SegmentInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 

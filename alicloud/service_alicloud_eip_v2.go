@@ -242,7 +242,6 @@ func (s *EipServiceV2) DescribeEipSegmentAddress(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["SegmentInstanceId"] = id
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)

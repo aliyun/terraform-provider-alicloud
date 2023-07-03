@@ -12,7 +12,7 @@ Provides a EIP Segment Address resource.
 
 For information about EIP Segment Address and how to use it, see [What is Segment Address](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/allocateeipsegmentaddress).
 
--> **NOTE:** Available since v1.207.0.
+-> **NOTE:** Available since v1.208.0.
 
 ## Example Usage
 
@@ -36,12 +36,12 @@ resource "alicloud_eip_segment_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Optional) The peak bandwidth of the EIP. Unit: Mbps. When the value of instancargetype is PostPaid and the value of InternetChargeType is PayByBandwidth, the range of Bandwidth is 1 to 500. If the value of instancargetype is PostPaid and the value of InternetChargeType is PayByTraffic, the range of Bandwidth is 1 to 200. When instancargetype is set to PrePaid, the range of Bandwidth is 1 to 1000. The default value is 5 Mbps.
-* `eip_mask` - (Required) Mask of consecutive EIPs. Value:28: For a single call, the system will allocate 16 consecutive EIPs.27: For a single call, the system will allocate 32 consecutive EIPs.26: For a single call, the system will allocate 64 consecutive EIPs.25: For a single call, the system will allocate 128 consecutive EIPs.24: For a single call, the system will allocate 256 consecutive EIPs.
-* `internet_charge_type` - (Optional) Continuous EIP billing method, valid values:
+* `bandwidth` - (Optional, Available since v1.207.0) The peak bandwidth of the EIP. Unit: Mbps. When the value of instancargetype is PostPaid and the value of InternetChargeType is PayByBandwidth, the range of Bandwidth is 1 to 500. If the value of instancargetype is PostPaid and the value of InternetChargeType is PayByTraffic, the range of Bandwidth is 1 to 200. When instancargetype is set to PrePaid, the range of Bandwidth is 1 to 1000. The default value is 5 Mbps.
+* `eip_mask` - (Required, Available since v1.207.0) Mask of consecutive EIPs. Value:28: For a single call, the system will allocate 16 consecutive EIPs.27: For a single call, the system will allocate 32 consecutive EIPs.26: For a single call, the system will allocate 64 consecutive EIPs.25: For a single call, the system will allocate 128 consecutive EIPs.24: For a single call, the system will allocate 256 consecutive EIPs.
+* `internet_charge_type` - (Optional, Available since v1.207.0) Continuous EIP billing method, valid values:
   - **PayByBandwidth** (default): Billing based on fixed bandwidth.
   - **PayByTraffic**: Billing by usage flow.
-* `isp` - (Optional) Line type. Valid values:
+* `isp` - (Optional, Available since v1.207.0) Line type. Valid values:
   - **BGP** (default):BGP (multi-line) line. BGP (multi-line) EIP is supported in all regions.
   - **BGP_PRO** :BGP (multi-line)_boutique line. Currently, only Hong Kong, Singapore, Japan (Tokyo), Malaysia (Kuala Lumpur), the Philippines (Manila), Indonesia (Jakarta), and Thailand (Bangkok) regions support BGP (multi-line)_boutique route EIP.
 For more information about BGP (multi-line) lines and BGP (multi-line) premium lines, see EIP line types.
@@ -53,13 +53,14 @@ If you are a whitelist user with single-line bandwidth, you can also select the 
   - **ChinaUnicom_L2** : China Unicom L2
   - **ChinaMobile_L2** : China Mobile L2
 If you are a user of Hangzhou Financial Cloud, this field is required. The value is `BGP_FinanceCloud`.
-* `netmode` - (Optional) The network type. Set the value to **public**.
+* `netmode` - (Optional, Available since v1.207.0) The network type. Set the value to **public**.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the contiguous Elastic IP address group was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `segment_address_name` - The name of the contiguous Elastic IP address group.
 * `status` - The status of the resource.
 
 ## Timeouts
