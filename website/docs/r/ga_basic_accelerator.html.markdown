@@ -50,7 +50,7 @@ The following arguments are supported:
   - `true`: enables auto-renewal.
   - `false`: disables auto-renewal.
 * `auto_renew_duration` - (Optional, Int) The auto-renewal period. Unit: months. Default value: `1`. Valid values: `1` to `12`. **NOTE:** This parameter is required only if `auto_renew` is set to `true`.
-* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 

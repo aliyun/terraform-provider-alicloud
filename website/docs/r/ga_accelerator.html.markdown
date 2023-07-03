@@ -65,7 +65,7 @@ The following arguments are supported:
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
-* `tags` - (Optional, Available since v1.208.0) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
 ## Attributes Reference
 
