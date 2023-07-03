@@ -30,6 +30,12 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"active": {
 				Type:     schema.TypeBool,
@@ -831,25 +837,24 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		dds, ok := d.GetOk("data_disk")
 		if ok {
 			disks := dds.([]interface{})
-			createDataDisks := make([]ess.ModifyScalingConfigurationDataDisk, 0, len(disks))
+			dataDisks := make([]map[string]interface{}, 0, len(disks))
 			for _, e := range disks {
 				pack := e.(map[string]interface{})
-				dataDisk := ess.ModifyScalingConfigurationDataDisk{
-					Size:                 strconv.Itoa(pack["size"].(int)),
-					Category:             pack["category"].(string),
-					SnapshotId:           pack["snapshot_id"].(string),
-					DeleteWithInstance:   strconv.FormatBool(pack["delete_with_instance"].(bool)),
-					Device:               pack["device"].(string),
-					Encrypted:            strconv.FormatBool(pack["encrypted"].(bool)),
-					KMSKeyId:             pack["kms_key_id"].(string),
-					DiskName:             pack["name"].(string),
-					Description:          pack["description"].(string),
-					AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-					PerformanceLevel:     pack["performance_level"].(string),
-				}
-				createDataDisks = append(createDataDisks, dataDisk)
+				dataDisks = append(dataDisks, map[string]interface{}{
+					"Size":                 pack["size"],
+					"Category":             pack["category"],
+					"SnapshotId":           pack["snapshot_id"],
+					"DeleteWithInstance":   pack["delete_with_instance"],
+					"Device":               pack["device"],
+					"Encrypted":            pack["encrypted"],
+					"KMSKeyId":             pack["kms_key_id"],
+					"DiskName":             pack["name"],
+					"Description":          pack["description"],
+					"AutoSnapshotPolicyId": pack["auto_snapshot_policy_id"],
+					"PerformanceLevel":     pack["performance_level"],
+				})
 			}
-			request["DataDisk"] = createDataDisks
+			request["DataDisk"] = dataDisks
 		}
 		update = true
 	}

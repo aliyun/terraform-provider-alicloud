@@ -10,8 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.ESSSupportRegions)
+func TestAccAlicloudEssScalingConfiguration_Update(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
@@ -165,27 +164,123 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"data_disk": []map[string]string{{
-						"size":                 "20",
-						"category":             "cloud_ssd",
-						"delete_with_instance": "false",
-						"encrypted":            "true",
-						"kms_key_id":           "${alicloud_kms_key.key.id}",
-						"name":                 "kms",
-						"description":          "kms",
-					},
+					"data_disk": []map[string]string{
+						{
+							"size":     "20",
+							"category": "cloud_ssd",
+							"name":     "${var.name}",
+						},
+						{
+							"size":        "30",
+							"category":    "cloud_essd",
+							"name":        "${var.name}",
+							"description": "${var.name}",
+						},
+						{
+							"size":                 "40",
+							"category":             "cloud_efficiency",
+							"delete_with_instance": "false",
+							"name":                 "${var.name}",
+							"description":          "${var.name}",
+						},
+						{
+							"size":                 "50",
+							"category":             "cloud_ssd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "${var.name}",
+							"description":          "${var.name}",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"data_disk.#":                      "1",
+						"data_disk.#":                      "4",
 						"data_disk.0.size":                 "20",
 						"data_disk.0.category":             "cloud_ssd",
-						"data_disk.0.delete_with_instance": "false",
-						"data_disk.0.encrypted":            "true",
-						"data_disk.0.kms_key_id":           CHECKSET,
-						"data_disk.0.name":                 "kms",
-						"data_disk.0.description":          "kms",
+						"data_disk.0.delete_with_instance": "true",
+						"data_disk.0.encrypted":            "false",
+						"data_disk.0.kms_key_id":           "",
+						"data_disk.0.name":                 name,
+						"data_disk.0.description":          "",
+
+						"data_disk.1.size":                 "30",
+						"data_disk.1.category":             "cloud_essd",
+						"data_disk.1.delete_with_instance": "true",
+						"data_disk.1.encrypted":            "false",
+						"data_disk.1.kms_key_id":           "",
+						"data_disk.1.name":                 name,
+						"data_disk.1.description":          name,
+
+						"data_disk.2.size":                 "40",
+						"data_disk.2.category":             "cloud_efficiency",
+						"data_disk.2.delete_with_instance": "false",
+						"data_disk.2.encrypted":            "false",
+						"data_disk.2.kms_key_id":           "",
+						"data_disk.2.name":                 name,
+						"data_disk.2.description":          name,
+
+						"data_disk.3.size":                 "50",
+						"data_disk.3.category":             "cloud_ssd",
+						"data_disk.3.delete_with_instance": "false",
+						"data_disk.3.encrypted":            "true",
+						"data_disk.3.kms_key_id":           CHECKSET,
+						"data_disk.3.name":                 name,
+						"data_disk.3.description":          name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]string{
+						{
+							"size":     "30",
+							"category": "cloud_ssd",
+							"name":     "${var.name}",
+						},
+						{
+							"size":        "40",
+							"category":    "cloud_essd",
+							"name":        "${var.name}",
+							"description": "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "30",
+						"data_disk.0.category":             "cloud_ssd",
+						"data_disk.0.delete_with_instance": "true",
+						"data_disk.0.encrypted":            "false",
+						"data_disk.0.kms_key_id":           "",
+						"data_disk.0.name":                 name,
+						"data_disk.0.description":          "",
+
+						"data_disk.1.size":                 "40",
+						"data_disk.1.category":             "cloud_essd",
+						"data_disk.1.delete_with_instance": "true",
+						"data_disk.1.encrypted":            "false",
+						"data_disk.1.kms_key_id":           "",
+						"data_disk.1.name":                 name,
+						"data_disk.1.description":          name,
+
+						"data_disk.2.size":                 REMOVEKEY,
+						"data_disk.2.category":             REMOVEKEY,
+						"data_disk.2.delete_with_instance": REMOVEKEY,
+						"data_disk.2.encrypted":            REMOVEKEY,
+						"data_disk.2.kms_key_id":           REMOVEKEY,
+						"data_disk.2.name":                 REMOVEKEY,
+						"data_disk.2.description":          REMOVEKEY,
+
+						"data_disk.3.size":                 REMOVEKEY,
+						"data_disk.3.category":             REMOVEKEY,
+						"data_disk.3.delete_with_instance": REMOVEKEY,
+						"data_disk.3.encrypted":            REMOVEKEY,
+						"data_disk.3.kms_key_id":           REMOVEKEY,
+						"data_disk.3.name":                 REMOVEKEY,
+						"data_disk.3.description":          REMOVEKEY,
 					}),
 				),
 			},
@@ -320,6 +415,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"internet_max_bandwidth_out":       REMOVEKEY,
 						"credit_specification":             REMOVEKEY,
 						"system_disk_category":             REMOVEKEY,
+						"system_disk_encrypted":            "false",
 						"key_name":                         REMOVEKEY,
 						"role_name":                        REMOVEKEY,
 						"data_disk.#":                      REMOVEKEY,
@@ -330,6 +426,13 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 						"data_disk.0.encrypted":            REMOVEKEY,
 						"data_disk.0.description":          REMOVEKEY,
 						"data_disk.0.kms_key_id":           REMOVEKEY,
+						"data_disk.1.delete_with_instance": REMOVEKEY,
+						"data_disk.1.size":                 REMOVEKEY,
+						"data_disk.1.category":             REMOVEKEY,
+						"data_disk.1.name":                 REMOVEKEY,
+						"data_disk.1.encrypted":            REMOVEKEY,
+						"data_disk.1.description":          REMOVEKEY,
+						"data_disk.1.kms_key_id":           REMOVEKEY,
 						"tags.name":                        REMOVEKEY,
 						"user_data":                        REMOVEKEY,
 						"scaling_configuration_name":       REMOVEKEY,
@@ -349,7 +452,7 @@ func TestAccAlicloudEssScalingConfigurationUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
+func TestAccAlicloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
@@ -468,39 +571,53 @@ func TestAccAlicloudEssScalingConfigurationPerformanceLevel(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"data_disk": []map[string]string{{
-			//			"size":                 "20",
-			//			"category":             "cloud_essd",
-			//			"delete_with_instance": "false",
-			//			"encrypted":            "true",
-			//			"kms_key_id":           "${alicloud_kms_key.key.id}",
-			//			"name":                 "kms",
-			//			"description":          "kms",
-			//			"performance_level":    "PL1",
-			//		},
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"data_disk.#":                      "1",
-			//			"data_disk.0.size":                 "20",
-			//			"data_disk.0.category":             "cloud_essd",
-			//			"data_disk.0.delete_with_instance": "false",
-			//			"data_disk.0.encrypted":            "true",
-			//			"data_disk.0.kms_key_id":           CHECKSET,
-			//			"data_disk.0.name":                 "kms",
-			//			"data_disk.0.description":          "kms",
-			//			"data_disk.0.performance_level":    "PL1",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "true",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":     "20",
+							"category": "cloud_ssd",
+							"name":     "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                 "20",
+						"data_disk.1.category":             "cloud_ssd",
+						"data_disk.1.delete_with_instance": "true",
+						"data_disk.1.encrypted":            "false",
+						"data_disk.1.kms_key_id":           "",
+						"data_disk.1.name":                 name,
+						"data_disk.1.description":          "",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudEssScalingConfigurationMulti(t *testing.T) {
+func TestAccAlicloudEssScalingConfiguration_Multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default.9"
@@ -611,7 +728,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}`, EcsInstanceCommonTestCase, name)
 }
 
-func TestAccAlicloudEssScalingConfigurationInstancePatternInfo(t *testing.T) {
+func TestAccAlicloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
@@ -730,35 +847,48 @@ func TestAccAlicloudEssScalingConfigurationInstancePatternInfo(t *testing.T) {
 					}),
 				),
 			},
-			// There is an error ServiceUnavailable for api ModifyScalingConfiguration, skip it temporarily
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"data_disk": []map[string]string{{
-			//			"size":                 "20",
-			//			"category":             "cloud_essd",
-			//			"delete_with_instance": "false",
-			//			"encrypted":            "true",
-			//			"kms_key_id":           "${alicloud_kms_key.key.id}",
-			//			"name":                 "kms",
-			//			"description":          "kms",
-			//			"performance_level":    "PL1",
-			//		},
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"data_disk.#":                      "1",
-			//			"data_disk.0.size":                 "20",
-			//			"data_disk.0.category":             "cloud_essd",
-			//			"data_disk.0.delete_with_instance": "false",
-			//			"data_disk.0.encrypted":            "true",
-			//			"data_disk.0.kms_key_id":           CHECKSET,
-			//			"data_disk.0.name":                 "kms",
-			//			"data_disk.0.description":          "kms",
-			//			"data_disk.0.performance_level":    "PL1",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_disk": []map[string]string{
+						{
+							"size":                 "20",
+							"category":             "cloud_essd",
+							"delete_with_instance": "false",
+							"encrypted":            "false",
+							"kms_key_id":           "${alicloud_kms_key.key.id}",
+							"name":                 "kms",
+							"description":          "kms",
+							"performance_level":    "PL1",
+						},
+						{
+							"size":     "20",
+							"category": "cloud_ssd",
+							"name":     "${var.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_disk.#":                      "2",
+						"data_disk.0.size":                 "20",
+						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.delete_with_instance": "false",
+						"data_disk.0.encrypted":            "true",
+						"data_disk.0.kms_key_id":           CHECKSET,
+						"data_disk.0.name":                 "kms",
+						"data_disk.0.description":          "kms",
+						"data_disk.0.performance_level":    "PL1",
+
+						"data_disk.1.size":                 "20",
+						"data_disk.1.category":             "cloud_ssd",
+						"data_disk.1.delete_with_instance": "true",
+						"data_disk.1.encrypted":            "false",
+						"data_disk.1.kms_key_id":           "",
+						"data_disk.1.name":                 name,
+						"data_disk.1.description":          "",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_pattern_info": []map[string]string{{
