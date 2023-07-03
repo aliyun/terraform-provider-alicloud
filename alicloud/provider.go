@@ -111,7 +111,7 @@ func Provider() terraform.ResourceProvider {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Description:  descriptions["configuration_source"],
-				ValidateFunc: validation.StringLenBetween(0, 64),
+				ValidateFunc: validation.StringLenBetween(0, 128),
 				DefaultFunc:  schema.EnvDefaultFunc("TF_APPEND_USER_AGENT", ""),
 			},
 			"protocol": {
@@ -1896,6 +1896,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			sourceName = sourceName[:64]
 		}
 		config.ConfigurationSource = sourceName
+	} else {
+		// configuration source does not come from env TF_APPEND_USER_AGENT,
+		// the final value should also contains TF_APPEND_USER_AGENT valaue
+		appendSource := strings.TrimSpace(os.Getenv("TF_APPEND_USER_AGENT"))
+		if appendSource != "" && appendSource != strings.TrimSpace(config.ConfigurationSource) {
+			config.ConfigurationSource += " " + appendSource
+		}
 	}
 	client, err := config.Client()
 	if err != nil {
