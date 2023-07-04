@@ -7,21 +7,21 @@ description: |-
   Provides a Alicloud Api Gateway Backend resource.
 ---
 
-# alicloud\_api\_gateway\_backend
+# alicloud_api_gateway_backend
 
 Provides a Api Gateway Backend resource.
 
-For information about Api Gateway Backend and how to use it, see [What is Backend](https://www.alibabacloud.com/help/zh/api-gateway/latest/api-doc-cloudapi-2016-07-14-api-doc-createbackend).
+For information about Api Gateway Backend and how to use it, see [What is Backend](https://www.alibabacloud.com/help/en/api-gateway/latest/api-doc-cloudapi-2016-07-14-api-doc-createbackend).
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "name1" {
-  default = "tf-testAccBackend"
+variable "name" {
+  default = "tf_example"
 }
 
 resource "alicloud_api_gateway_backend" "default" {

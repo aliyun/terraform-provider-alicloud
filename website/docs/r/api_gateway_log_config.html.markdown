@@ -7,22 +7,52 @@ description: |-
   Provides a Alicloud Api Gateway Log Config resource.
 ---
 
-# alicloud\_api\_gateway\_log\_config
+# alicloud_api_gateway_log_config
 
 Provides a Api Gateway Log Config resource.
 
-For information about Api Gateway Log Config and how to use it, see [What is Log Config](https://help.aliyun.com/document_detail/400392.html).
+For information about Api Gateway Log Config and how to use it, see [What is Log Config](https://www.alibabacloud.com/help/en/api-gateway/latest/api-cloudapi-2016-07-14-createlogconfig).
 
--> **NOTE:** Available in v1.185.0+.
+-> **NOTE:** Available since v1.185.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_api_gateway_log_config" "default" {
-  sls_project   = "example_value"
-  sls_log_store = "example_value"
+data "alicloud_api_gateway_log_configs" "default" {
+  log_type = "PROVIDER"
+}
+locals {
+  count = length(data.alicloud_api_gateway_log_configs.default.configs) > 0 ? 0 : 1
+}
+
+resource "random_integer" "default" {
+  count = local.count
+  max   = 99999
+  min   = 10000
+}
+
+resource "alicloud_log_project" "example" {
+  count       = local.count
+  name        = "terraform-example-${random_integer.default[0].result}"
+  description = "terraform-example"
+}
+
+resource "alicloud_log_store" "example" {
+  count                 = local.count
+  project               = alicloud_log_project.example[0].name
+  name                  = "terraform-example"
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
+
+resource "alicloud_api_gateway_log_config" "example" {
+  count         = local.count
+  sls_project   = alicloud_log_project.example[0].name
+  sls_log_store = alicloud_log_store.example[0].name
   log_type      = "PROVIDER"
 }
 ```
@@ -41,7 +71,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Log Config. Its value is same as `log_type`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
