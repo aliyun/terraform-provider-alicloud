@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Api Gateway Plugin resource.
 ---
 
-# alicloud\_api\_gateway\_plugin
+# alicloud_api_gateway_plugin
 
 Provides a Api Gateway Plugin resource.
 
 For information about Api Gateway Plugin and how to use it, see [What is Plugin](https://www.alibabacloud.com/help/en/api-gateway/latest/create-an-plugin).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
@@ -21,13 +21,13 @@ Basic Usage
 
 ```terraform
 resource "alicloud_api_gateway_plugin" "default" {
-  description = var.name
-  plugin_name = var.name
+  description = "tf_example"
+  plugin_name = "tf_example"
   plugin_data = "{\"allowOrigins\": \"api.foo.com\",\"allowMethods\": \"GET,POST,PUT,DELETE,HEAD,OPTIONS,PATCH\",\"allowHeaders\": \"Authorization,Accept,Accept-Ranges,Cache-Control,Range,Date,Content-Type,Content-Length,Content-MD5,User-Agent,X-Ca-Signature,X-Ca-Signature-Headers,X-Ca-Signature-Method,X-Ca-Key,X-Ca-Timestamp,X-Ca-Nonce,X-Ca-Stage,X-Ca-Request-Mode,x-ca-deviceid\",\"exposeHeaders\": \"Content-MD5,Server,Date,Latency,X-Ca-Request-Id,X-Ca-Error-Code,X-Ca-Error-Message\",\"maxAge\": 172800,\"allowCredentials\": true}"
   plugin_type = "cors"
   tags = {
-    Created = "TF"
-    For     = "Acceptance-test"
+    Created = "TF",
+    For     = "example",
   }
 }
 ```
@@ -54,7 +54,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Plugin.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

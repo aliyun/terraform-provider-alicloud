@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Api Gateway Model resource.
 ---
 
-# alicloud\_api\_gateway\_model
+# alicloud_api_gateway_model
 
 Provides a Api Gateway Model resource.
 
-For information about Api Gateway Model and how to use it, see [What is Model](https://help.aliyun.com/document_detail/400372.html).
+For information about Api Gateway Model and how to use it, see [What is Model](https://www.alibabacloud.com/help/en/api-gateway/latest/api-cloudapi-2016-07-14-createmodel).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
@@ -48,7 +48,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Model. The value formats as `<group_id>:<model_name>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

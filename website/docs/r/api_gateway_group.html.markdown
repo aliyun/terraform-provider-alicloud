@@ -11,7 +11,9 @@ description: |-
 
 Provides an api group resource.To create an API, you must firstly create a group which is a basic attribute of the API.
 
-For information about Api Gateway Group and how to use it, see [Create An Api Group](https://www.alibabacloud.com/help/doc-detail/43611.html)
+For information about Api Gateway Group and how to use it, see [Create An Api Group](https://www.alibabacloud.com/help/en/api-gateway/latest/api-cloudapi-2016-07-14-createapigroup)
+
+-> **NOTE:** Available since v1.19.0.
 
 -> **NOTE:** Terraform will auto build api group while it uses `alicloud_api_gateway_group` to build api group.
 
@@ -20,9 +22,9 @@ For information about Api Gateway Group and how to use it, see [Create An Api Gr
 Basic Usage
 
 ```terraform
-resource "alicloud_api_gateway_group" "apiGroup" {
-  name        = "ApiGatewayGroup"
-  description = "description of the api group"
+resource "alicloud_api_gateway_group" "default" {
+  name        = "tf_example"
+  description = "tf_example"
 }
 ```
 ## Argument Reference
@@ -31,7 +33,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the api gateway group. Defaults to null.
 * `description` - (Required) The description of the api gateway group. Defaults to null.
-* `instance_id` - (Optional, Computed, ForceNew, Available in 1.179.0+)	The id of the api gateway.
+* `instance_id` - (Optional, ForceNew, Available in 1.179.0+)	The id of the api gateway.
 
 ## Attributes Reference
 
