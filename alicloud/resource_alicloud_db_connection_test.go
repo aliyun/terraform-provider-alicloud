@@ -73,7 +73,7 @@ func TestAccAlicloudRdsDBConnectionConfigPostgreSQL(t *testing.T) {
 	name := fmt.Sprintf("tf-testAccDBconnection%s", rand)
 	var basicMap = map[string]string{
 		"instance_id":       CHECKSET,
-		"connection_string": REGEXMATCH + fmt.Sprintf("^tf-testacc%s.pg.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com", rand),
+		"connection_string": REGEXMATCH + fmt.Sprintf("^tf-testacc%s.pgsql.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com", rand),
 		"port":              "3306",
 		"ip_address":        CHECKSET,
 	}
@@ -249,8 +249,8 @@ resource "alicloud_db_instance" "default" {
 	babelfish_config {
       babelfish_enabled = "true"
 	  migration_mode = "single-db"
-	  master_username = "test"
-	  master_user_password = "test_123456"
+	  master_username = "tftest"
+	  master_user_password = "!Q2w3e4r"
     }
 }
 `, name)

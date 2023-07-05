@@ -322,7 +322,9 @@ func resourceAlicloudDBBackupPolicyDelete(d *schema.ResourceData, meta interface
 		request["ArchiveBackupKeepCount"] = "1"
 		request["ArchiveBackupKeepPolicy"] = "ByMonth"
 	}
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
