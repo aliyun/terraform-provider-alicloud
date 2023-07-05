@@ -1031,7 +1031,11 @@ func formatInt(src interface{}) int {
 	case "int":
 		return src.(int)
 	case "string":
-		v, err := strconv.Atoi(src.(string))
+		vv := fmt.Sprint(src)
+		if vv == "" {
+			return 0
+		}
+		v, err := strconv.Atoi(vv)
 		if err != nil {
 			panic(err)
 		}
@@ -1064,7 +1068,11 @@ func formatFloat64(src interface{}) float64 {
 	case "int":
 		return float64(src.(int))
 	case "string":
-		v, err := strconv.ParseFloat(src.(string), 64)
+		vv := fmt.Sprint(src)
+		if vv == "" {
+			return 0
+		}
+		v, err := strconv.ParseFloat(vv, 64)
 		if err != nil {
 			panic(err)
 		}
