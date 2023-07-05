@@ -1,4 +1,24 @@
-## 1.208.0 (Unreleased)
+## 1.207.2 (Unreleased)
+
+ENHANCEMENTS:
+
+- provider: enlarges the configure parameter configuration_source value length to 128. [GH-6286]
+- resource/alicloud_polardb_backup_policy: fix updating attribute data_level1_backup_retention_period does not work bug. [GH-6254]
+- resource/alicloud_gpdb_instance: Added the field encryption_type, encryption_key and vector_configuration_status. [GH-6268]
+- resource/alicloud_rds_clone_db_instance: add retry; resource/alicloud_rds_account: add retry; resource/alicloud_rds_backup: add retry. [GH-6271]
+- resource/alicloud_db_database: add retry; resource/alicloud_rds_upgrade_db_instance: add retry; resource/alicloud_rds_db_proxy: add retry and fix bug. [GH-6272]
+- resource/alicloud_db_backup_policy: add retry; resource/alicloud_db_connection: add retry; resource/alicloud_db_readonly_instance: add retry and added the field effective_time. [GH-6273]
+- resource/alicloud_rds_instance_cross_backup_policy: add retry and fix bug; resource/alicloud_rds_parameter_group: add retry; resource/alicloud_rds_service_linked_role: add retry. [GH-6276]
+- resource/alicloud_ess_scaling_configuration: fixes the ServiceUnavailable error when updating the data_disk. [GH-6290]
+- resource/alicloud_lindorm_instance: fixes the panic error caused by no setting instance_storage. [GH-6292]
+- resource/alicloud_redis_tair_instance: Improves shard_count modify api; testcases: Fix resource/alicloud_redis_tair_instance; Improves the docs shard_count. [GH-6296]
+- resource/alicloud_ddoscoo_domain_resource: Added the field cname. [GH-6298]
+- docs: Improves the cen docs example. [GH-6258]
+- docs: Improves the kafka docs example. [GH-6284]
+- docs: corrects available version number for the new attributes. [GH-6285]
+- docs: Improves the amqp docs example. [GH-6288]
+- docs: alicloud_alb_server_group health_check_protocol description fixed. [GH-6297]
+
 ## 1.207.1 (July 01, 2023)
 
 ENHANCEMENTS:

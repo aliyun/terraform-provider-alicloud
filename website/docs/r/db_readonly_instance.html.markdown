@@ -155,7 +155,7 @@ The following arguments are supported:
   - cloud_essd: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
-* `effective_time` - (Optional, Available in 1.208.0+) The method to change.  Default value: Immediate. Valid values:
+* `effective_time` - (Optional, Available in 1.207.2+) The method to change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
