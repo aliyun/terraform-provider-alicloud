@@ -7,9 +7,10 @@ description: |-
   Provides an RDS readonly instance resource.
 ---
 
-# alicloud\_db\_readonly\_instance
+# alicloud_db_readonly_instance
 
-Provides an RDS readonly instance resource. 
+Provides an RDS readonly instance resource.
+-> **NOTE:** Available since v1.52.1+.
 
 ## Example Usage
 
@@ -70,7 +71,7 @@ The following arguments are supported:
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range: [5, 2000] for MySQL/SQL Server HA dual node edition. Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
 * `resource_group_id` (Optional, Computed, resource_group_id, Modifiable in 1.115.0+) The ID of resource group which the DB read-only instance belongs.
-* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm).
+* `parameters` - (Optional) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm). See [`parameters`](#parameters) below.
 * `force_restart` - (Optional, Available in 1.121.0+) Set it to true to make some parameter efficient when modifying them. Default to false.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
@@ -154,6 +155,16 @@ The following arguments are supported:
   - cloud_essd: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+* `effective_time` - (Optional, Available in 1.208.0+) The method to change.  Default value: Immediate. Valid values:
+  - Immediate: The change immediately takes effect.
+  - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
+
+### `parameters`
+
+The parameters mapping supports the following:
+
+* `name` - (Required) The parameter name.
+* `value` - (Required) The parameter value.
 
 ## Attributes Reference
 
@@ -164,9 +175,7 @@ The following attributes are exported:
 * `port` - RDS database connection port.
 * `connection_string` - RDS database connection string.
 
-### Timeouts
-
--> **NOTE:** Available in 1.52.1+.
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
