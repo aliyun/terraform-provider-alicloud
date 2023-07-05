@@ -61,6 +61,7 @@ type ResourceAttribute struct {
 	ElemType    string
 	Deprecated  string
 	DocsLineNum int
+	Removed     string
 }
 
 func main() {
@@ -253,6 +254,9 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 		if strings.Contains(words[2], "Deprecated") {
 			result.Deprecated = "Deprecated since"
 		}
+		if strings.Contains(words[2], "Removed") {
+			result.Removed = "Removed since"
+		}
 		return &result
 	}
 	if phase == "Attribute" && len(words) >= 3 {
@@ -296,6 +300,13 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 			}
 			continue
 		}
+		if attributeValue.Removed != "" {
+			if attributeDocsValue.Removed == "" {
+				isConsistent = false
+				log.Errorf("'%v' should be marked as Removed in the document description", attributeKey)
+			}
+			continue
+		}
 		if attributeValue.Optional == "true" && attributeDocsValue.Optional != attributeValue.Optional {
 			isConsistent = false
 			log.Errorf("'%v' should be marked as Optional in the document", attributeKey)
@@ -333,6 +344,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 				ForceNew:   value.ForceNew,
 				Default:    fmt.Sprint(value.Default),
 				Deprecated: value.Deprecated,
+				Removed:    value.Removed,
 			}
 		}
 		if value.Type == schema.TypeSet || value.Type == schema.TypeList {

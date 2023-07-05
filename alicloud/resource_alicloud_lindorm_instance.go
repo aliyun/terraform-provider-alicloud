@@ -253,6 +253,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"arch_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"1.0", "2.0"}, false),
 			},
 			"primary_vswitch_id": {
@@ -492,24 +493,26 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("vpc_id", object["VpcId"])
 
-	if object["ServiceType"] == "lindorm_multizone" {
-		d.Set("log_num", object["LogNum"])
-		d.Set("log_single_storage", object["LogSingleStorage"])
-		d.Set("arbiter_zone_id", object["ArbiterZoneId"])
-		d.Set("multi_zone_combination", object["MultiZoneCombination"])
-		d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
-		d.Set("standby_zone_id", object["StandbyZoneId"])
-		d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
-		d.Set("log_spec", object["LogSpec"])
-		d.Set("log_disk_category", object["LogDiskCategory"])
-		d.Set("standby_vswitch_id", object["StandbyVSwitchId"])
-		d.Set("core_spec", object["CoreSpec"])
-	}
+	//if object["ServiceType"] == "lindorm_multizone" {
+	d.Set("log_num", object["LogNum"])
+	d.Set("log_single_storage", object["LogSingleStorage"])
+	d.Set("arbiter_zone_id", object["ArbiterZoneId"])
+	d.Set("multi_zone_combination", object["MultiZoneCombination"])
+	d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
+	d.Set("standby_zone_id", object["StandbyZoneId"])
+	d.Set("arbiter_vswitch_id", object["ArbiterVSwitchId"])
+	d.Set("log_spec", object["LogSpec"])
+	d.Set("log_disk_category", object["LogDiskCategory"])
+	d.Set("standby_vswitch_id", object["StandbyVSwitchId"])
+	//}
+	d.Set("arch_version", object["ArchVersion"])
+	d.Set("core_spec", object["CoreSpec"])
+	//}
 
-	if object["DiskCategory"] != "local_ssd_pro" && object["DiskCategory"] != "local_hdd_pro" {
-		d.Set("core_single_storage", object["CoreSingleStorage"])
-		d.Set("instance_storage", object["InstanceStorage"])
-	}
+	//if object["DiskCategory"] != "local_ssd_pro" && object["DiskCategory"] != "local_hdd_pro" {
+	d.Set("core_single_storage", object["CoreSingleStorage"])
+	d.Set("instance_storage", object["InstanceStorage"])
+	//}
 
 	engineType := formatInt(object["EngineType"])
 	d.Set("enabled_file_engine", engineType&0x08 == 8)
