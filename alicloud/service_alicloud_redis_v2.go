@@ -29,7 +29,6 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["InstanceId"] = id
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)

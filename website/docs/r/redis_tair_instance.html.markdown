@@ -2,7 +2,6 @@
 subcategory: "Redis And Memcache (KVStore)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_redis_tair_instance"
-sidebar_current: "docs-alicloud-resource-redis-tair-instance"
 description: |-
   Provides a Alicloud Redis Tair Instance resource.
 ---
@@ -13,7 +12,7 @@ Provides a Redis Tair Instance resource. Describe the creation, deletion and que
 
 For information about Redis Tair Instance and how to use it, see [What is Tair Instance](https://www.alibabacloud.com/help/en/tair).
 
--> **NOTE:** Available in v1.206.0+.
+-> **NOTE:** Available since v1.206.0.
 
 ## Example Usage
 
@@ -29,14 +28,14 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-rg714"
+  display_name        = "tf-example-rg714"
   resource_group_name = var.name
 }
 
 resource "alicloud_vpc" "defaultVpc" {
   vpc_name    = var.name
   enable_ipv6 = true
-  description = "tf-testacc-vpc"
+  description = "tf-example-vpc"
 }
 
 resource "alicloud_vswitch" "defaultVSwitch" {
@@ -88,7 +87,7 @@ The following arguments are supported:
 * `port` - (Optional, ForceNew, Computed) The Tair service port. The service port of the instance. Valid values: 1024 to 65535. Default value: 6379.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs.
 * `secondary_zone_id` - (Optional, ForceNew) The ID of the secondary zone.This parameter is returned only if the instance is deployed in two zones.
-* `shard_count` - (Required) The number of data nodes in the instance. When 1 is passed, it means that the instance created is a standard architecture with only one data node. You can create an instance in the standard architecture that contains only a single data node. 2 to 32: You can create an instance in the cluster architecture that contains the specified number of data nodes. Only persistent memory-optimized instances can use the cluster architecture. Therefore, you can set this parameter to an integer from 2 to 32 only if you set the InstanceType parameter to tair_scm.
+* `shard_count` - (Optional) The number of data nodes in the instance. When 1 is passed, it means that the instance created is a standard architecture with only one data node. You can create an instance in the standard architecture that contains only a single data node. 2 to 32: You can create an instance in the cluster architecture that contains the specified number of data nodes. Only persistent memory-optimized instances can use the cluster architecture. Therefore, you can set this parameter to an integer from 2 to 32 only if you set the InstanceType parameter to tair_scm.
 * `tair_instance_name` - (Optional) The name of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch to which the instance is connected.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC).
@@ -103,12 +102,12 @@ The following attributes are exported:
 * `create_time` - The time when the instance was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
 * `status` - The status of the instance. Valid values: Normal, Creating, Changing, Inactive, Flushing, Released, Transforming, Unavailable, Error, Migrating, and upgrading, networkModifying, SSLModifying, and MajorVersionUpgrading.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 15 mins) Used when create the Tair Instance.
+* `create` - (Defaults to 30 mins) Used when create the Tair Instance.
 * `delete` - (Defaults to 15 mins) Used when delete the Tair Instance.
-* `update` - (Defaults to 15 mins) Used when update the Tair Instance.
+* `update` - (Defaults to 30 mins) Used when update the Tair Instance.
 
 ## Import
 
