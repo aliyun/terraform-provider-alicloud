@@ -137,6 +137,7 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 
 var AlicloudDdoscooDomainResourceMap0 = map[string]string{
 	"https_ext":      CHECKSET,
+	"cname":          CHECKSET,
 	"instance_ids.#": "1",
 	"proxy_types.#":  "1",
 	"real_servers.#": "1",

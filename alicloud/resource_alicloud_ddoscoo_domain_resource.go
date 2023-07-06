@@ -27,22 +27,24 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"https_ext": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.ValidateJsonString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
-			},
 			"instance_ids": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"real_servers": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"rs_type": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
 			},
 			"proxy_types": {
 				Type:     schema.TypeSet,
@@ -62,17 +64,19 @@ func resourceAlicloudDdoscooDomainResource() *schema.Resource {
 					},
 				},
 			},
-			"real_servers": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+			"https_ext": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.ValidateJsonString,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
 				},
 			},
-			"rs_type": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ValidateFunc: IntInSlice([]int{0, 1}),
+			"cname": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
@@ -143,9 +147,12 @@ func resourceAlicloudDdoscooDomainResourceRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
-	d.Set("domain", d.Id())
+	d.Set("domain", object["Domain"])
 	d.Set("https_ext", object["HttpsExt"])
 	d.Set("instance_ids", object["InstanceIds"])
+	d.Set("real_servers", object["RealServers"])
+	d.Set("rs_type", formatInt(object["RsType"]))
+	d.Set("cname", object["Cname"])
 
 	proxyTypes := make([]map[string]interface{}, 0)
 	if proxyTypesList, ok := object["ProxyTypes"].([]interface{}); ok {
@@ -163,9 +170,6 @@ func resourceAlicloudDdoscooDomainResourceRead(d *schema.ResourceData, meta inte
 	if err := d.Set("proxy_types", proxyTypes); err != nil {
 		return WrapError(err)
 	}
-
-	d.Set("real_servers", object["RealServers"])
-	d.Set("rs_type", formatInt(object["RsType"]))
 
 	return nil
 }
