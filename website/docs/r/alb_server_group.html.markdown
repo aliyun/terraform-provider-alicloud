@@ -172,7 +172,7 @@ The health_check_config supports the following:
 * `health_check_http_version` - (Optional) HTTP protocol version. Valid values: `HTTP1.0` and `HTTP1.1`. Default value: `HTTP1.1`. **NOTE:** This parameter exists if the `HealthCheckProtocol` parameter is set to `HTTP`.
 * `health_check_interval` - (Optional) The time interval between two consecutive health checks. Unit: seconds. Valid values: `1` to `50`. Default value: `2`.
 * `health_check_method` - (Optional) Health check method. Valid values: `GET` and `HEAD`. Default: `GET`. **NOTE:** This parameter exists if the `HealthCheckProtocol` parameter is set to `HTTP`.
-* `health_check_protocol` - (Optional) Health check protocol. Valid values: `HTTP` and `TCP`.
+* `health_check_protocol` - (Optional) Health check protocol. Valid values: `HTTP` and `TCP`, `HTTPS`.
 * `health_check_timeout` - (Optional) The timeout period of a health check response. If a backend Elastic Compute Service (ECS) instance does not send an expected response within the specified period of time, the ECS instance is considered unhealthy. Unit: seconds. Valid values: 1 to 300. Default value: 5. **NOTE:** If the value of the `HealthCHeckTimeout` parameter is smaller than that of the `HealthCheckInterval` parameter, the value of the `HealthCHeckTimeout` parameter is ignored and the value of the `HealthCheckInterval` parameter is regarded as the timeout period.
 * `health_check_connect_port` - (Optional) The port of the backend server that is used for health checks. Valid values: `0` to `65535`. Default value: `0`. A value of 0 indicates that a backend server port is used for health checks.
 * `health_check_enabled` - (Optional) Indicates whether health checks are enabled. Valid values: `true`, `false`. Default value: `true`.
