@@ -99,7 +99,8 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			},
 			"shard_count": {
 				Type:         schema.TypeInt,
-				Required:     true,
+				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntBetween(1, 256),
 			},
 			"status": {
@@ -176,7 +177,9 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 		request["AutoRenewPeriod"] = v
 	}
 	request["AutoPay"] = "true"
-	request["ShardCount"] = d.Get("shard_count")
+	if v, ok := d.GetOk("shard_count"); ok {
+		request["ShardCount"] = v
+	}
 	if v, ok := d.GetOk("engine_version"); ok {
 		request["EngineVersion"] = v
 	}
@@ -203,7 +206,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	d.SetId(fmt.Sprint(response["InstanceId"]))
 
 	redisServiceV2 := RedisServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 0, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 20*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -255,7 +258,6 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["InstanceId"] = d.Id()
 	if !d.IsNewResource() && d.HasChange("tair_instance_name") {
 		update = true
@@ -295,7 +297,6 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -303,10 +304,6 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		update = true
 	}
 	request["InstanceClass"] = d.Get("instance_class")
-	if !d.IsNewResource() && d.HasChange("shard_count") {
-		update = true
-	}
-	request["ShardCount"] = d.Get("shard_count")
 	if v, ok := d.GetOkExists("force_upgrade"); ok {
 		request["ForceUpgrade"] = v
 	}
@@ -339,12 +336,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		redisServiceV2 := RedisServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 0, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "IsOrderCompleted", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "IsOrderCompleted", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("instance_class")
-		d.SetPartial("shard_count")
 		d.SetPartial("engine_version")
 	}
 	update = false
@@ -354,7 +350,6 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
@@ -385,6 +380,88 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("resource_group_id")
 	}
 
+	update = false
+	if !d.IsNewResource() && d.HasChange("shard_count") {
+		update = true
+		oldEntry, newEntry := d.GetChange("shard_count")
+		oldEntryValue := oldEntry.(int)
+		newEntryValue := newEntry.(int)
+		removed := oldEntryValue - newEntryValue
+		added := newEntryValue - oldEntryValue
+
+		if removed > 0 {
+			action = "DeleteShardingNode"
+			conn, err = client.NewRedisClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			request["InstanceId"] = d.Id()
+			request["ShardCount"] = removed
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			redisServiceV2 := RedisServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "IsOrderCompleted", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("shard_count")
+
+		}
+
+		if added > 0 {
+			action = "AddShardingNode"
+			conn, err = client.NewRedisClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			request["InstanceId"] = d.Id()
+			request["ClientToken"] = buildClientToken(action)
+			request["ShardCount"] = added
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				request["ClientToken"] = buildClientToken(action)
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			redisServiceV2 := RedisServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "IsOrderCompleted", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("shard_count")
+
+		}
+
+	}
 	d.Partial(false)
 	return resourceAliCloudRedisTairInstanceRead(d, meta)
 }
@@ -399,7 +476,6 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -408,7 +484,6 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["InstanceId"] = d.Id()
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
