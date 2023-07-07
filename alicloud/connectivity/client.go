@@ -3123,14 +3123,15 @@ func (client *AliyunClient) NewCasClient() (*rpc.Client, error) {
 	productCode := "cas"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		// Currently, the cas is not regional
-		//if err := client.loadEndpoint(productCode); err != nil {
-		//	endpoint = "cas.aliyuncs.com"
-		//	client.config.Endpoints.Store(productCode, endpoint)
-		//	log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		//}
-		endpoint = "cas.aliyuncs.com"
-		client.config.Endpoints.Store(productCode, endpoint)
+		if err := client.loadEndpoint(productCode); err != nil {
+			if strings.HasPrefix(client.RegionId, "cn-") {
+				endpoint = "cas.aliyuncs.com"
+			} else {
+				endpoint = fmt.Sprintf("cas.%s.aliyuncs.com", client.RegionId)
+			}
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
