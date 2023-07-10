@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud resource to grant RBAC permissions for ACK cluster.
 ---
 
-# alicloud\_cs\_kubernetes\_permissions
+# alicloud_cs_kubernetes_permissions
 
 This resource will help you implement RBAC authorization for the kubernetes cluster. 
 
@@ -18,7 +18,7 @@ For more information about how to authorize a RAM user by attaching RAM policies
 
 -> **NOTE:** This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
 
--> **NOTE:** Available in v1.122.0+.
+-> **NOTE:** Available since v1.122.0.
 
 ## Example Usage
 ### Grant RBAC permissions
@@ -27,50 +27,45 @@ If you don't have users and clusters, to perform RBAC authorization, you need to
 Step 1, create a cluster using Terraform.
 ```terraform
 variable "name" {
-  default = "custom-name"
+  default = "tf-example"
 }
-
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
 data "alicloud_instance_types" "default" {
   availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 2
-  memory_size          = 4
+  cpu_core_count       = 4
+  memory_size          = 8
   kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "10.1.0.0/21"
+  cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
-  vswitch_name      = var.name
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-# Create a managed cluster
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = var.name
-  count                        = 1
-  cluster_spec                 = "ack.pro.small"
-  is_enterprise_security_group = true
-  worker_number                = 2
-  password                     = "Hello1234"
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = [alicloud_vswitch.default.id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  name_prefix          = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  new_nat_gateway      = true
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled = true
 }
-```
-Step 2: Use Teraform to create a RAM user and authorize access to the cluster created in step 1 (at least read-only permission is required). 
-```terraform
-# Create a new RAM user.
-resource "alicloud_ram_user" "user" {
+
+resource "alicloud_ram_user" "default" {
   name         = var.name
   display_name = var.name
   mobile       = "86-18688888888"    # replace to your tel
@@ -79,8 +74,7 @@ resource "alicloud_ram_user" "user" {
   force        = true
 }
 
-# Create a new RAM Policy.
-resource "alicloud_ram_policy" "policy" {
+resource "alicloud_ram_policy" "default" {
   policy_name     = var.name
   policy_document = <<EOF
   {
@@ -93,7 +87,7 @@ resource "alicloud_ram_policy" "policy" {
         ],
         "Effect": "Allow",
         "Resource": [
-          "acs:cs:*:*:cluster/${alicloud_cs_managed_kubernetes.default.0.id}"
+          "acs:cs:*:*:cluster/${alicloud_cs_managed_kubernetes.default.id}"
         ]
       }
     ],
@@ -104,50 +98,31 @@ resource "alicloud_ram_policy" "policy" {
   force           = true
 }
 
-# Authorize the RAM user
-resource "alicloud_ram_user_policy_attachment" "attach" {
-  policy_name = alicloud_ram_policy.policy.name
-  policy_type = alicloud_ram_policy.policy.type
-  user_name   = alicloud_ram_user.user.name
+resource "alicloud_ram_user_policy_attachment" "default" {
+  policy_name = alicloud_ram_policy.default.name
+  policy_type = alicloud_ram_policy.default.type
+  user_name   = alicloud_ram_user.default.name
 }
-```
-Finally, complete the RBAC authorization.
-```terraform
-# Grant users developer permissions for the cluster.
+
 resource "alicloud_cs_kubernetes_permissions" "default" {
-  # uid
-  uid = alicloud_ram_user.user.id
-  # permissions
+  uid = alicloud_ram_user_policy_attachment.default.user_name
   permissions {
-    cluster     = alicloud_cs_managed_kubernetes.default.0.id
+    cluster     = alicloud_cs_managed_kubernetes.default.id
     role_type   = "cluster"
     role_name   = "dev"
     namespace   = ""
     is_custom   = false
     is_ram_role = false
   }
-  # If you want to grant users multiple cluster permissions, you can define multiple sets of permissions 
-  #  permissions {
-  #    cluster     = "cluster_id_2"
-  #    role_type   = "cluster"
-  #    role_name   = "ops"
-  #    namespace   =  ""
-  #    is_custom   = false
-  #    is_ram_role = false
-  #  }
-  depends_on = [
-    alicloud_ram_user_policy_attachment.attach
-  ]
-}
-```
-If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform. 
-```terraform
-# Get RAM user ID 
-data "alicloud_ram_users" "users_ds" {
-  name_regex = "your ram user name"
 }
 
-# Create a new RAM Policy.
+
+#If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform. 
+locals {
+  cluster_id = alicloud_cs_managed_kubernetes.default.id
+  user_name  = alicloud_ram_user.default.id
+}
+
 resource "alicloud_ram_policy" "policy" {
   policy_name     = "AckClusterReadOnlyAccess"
   policy_document = <<EOF
@@ -161,7 +136,7 @@ resource "alicloud_ram_policy" "policy" {
         ],
         "Effect": "Allow",
         "Resource": [
-          "acs:cs:*:*:cluster/${target_cluster_ID}"
+          "acs:cs:*:*:cluster/${local.cluster_id}"
         ]
       }
     ],
@@ -172,43 +147,27 @@ resource "alicloud_ram_policy" "policy" {
   force           = true
 }
 
-# Authorize the RAM user
 resource "alicloud_ram_user_policy_attachment" "attach" {
   policy_name = alicloud_ram_policy.policy.name
   policy_type = alicloud_ram_policy.policy.type
-  user_name   = data.alicloud_ram_users.users_ds.users.0.name
+  user_name   = local.user_name
 }
 
-# RBAC authorization for the cluster
-resource "alicloud_cs_kubernetes_permissions" "default" {
-  uid = data.alicloud_ram_users.users_ds.users.0.id
+resource "alicloud_cs_kubernetes_permissions" "already_attach" {
+  uid = alicloud_ram_user_policy_attachment.attach.user_name
   permissions {
-    cluster     = "target cluster id1"
+    cluster     = local.cluster_id
     role_type   = "cluster"
     role_name   = "ops"
     is_custom   = false
     is_ram_role = false
     namespace   = ""
   }
-  permissions {
-    cluster     = "target cluster id2"
-    role_type   = "cluster"
-    role_name   = "ops"
-    is_custom   = false
-    is_ram_role = false
-    namespace   = ""
-  }
-  depends_on = [
-    alicloud_ram_user_policy_attachment.attach
-  ]
 }
-```
-### Remove user permissions
-Remove the current user's permissions on the cluster
-```terraform
-# remove the permissions on the "cluster_id_01", "cluster_id_02".
-resource "alicloud_cs_kubernetes_permissions" "default" {
-  uid = data.alicloud_ram_users.users_ds.users.0.id
+
+# Remove user permissions,Remove the current user's permissions on the cluster
+resource "alicloud_cs_kubernetes_permissions" "remove_permissions" {
+  uid = alicloud_cs_kubernetes_permissions.already_attach.uid
 }
 ```
 
@@ -217,13 +176,18 @@ resource "alicloud_cs_kubernetes_permissions" "default" {
 The following arguments are supported.
 
 * `uid` - (Required, ForceNew) The ID of the Ram user, and it can also be the id of the Ram Role. If you use Ram Role id, you need to set `is_ram_role` to `true` during authorization.
-* `permissions` - (Optional) A list of user permission.
-  * `cluster` - (Required) The ID of the cluster that you want to manage.
-  * `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
-  * `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace`.
-  * `namespace` - (Optional) The namespace to which the permissions are scoped. This parameter is required only if you set role_type to namespace.
-  * `is_ram_role` - (Optional) Specifies whether the permissions are granted to a RAM role. When `uid` is ram role id, the value of `is_ram_role` must be `true`.
-  * `is_custom` - (Optional) Specifies whether to perform a custom authorization. To perform a custom authorization, set `role_name` to a custom cluster role.
+* `permissions` - (Optional) A list of user permission. See [`permissions`](#permissions) below.
+
+### `permissions`
+
+The permissions mapping supports the following:
+
+* `cluster` - (Required) The ID of the cluster that you want to manage.
+* `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
+* `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace`.
+* `namespace` - (Optional) The namespace to which the permissions are scoped. This parameter is required only if you set role_type to namespace.
+* `is_ram_role` - (Optional) Specifies whether the permissions are granted to a RAM role. When `uid` is ram role id, the value of `is_ram_role` must be `true`.
+* `is_custom` - (Optional) Specifies whether to perform a custom authorization. To perform a custom authorization, set `role_name` to a custom cluster role.
 
 ## Attributes Reference
 

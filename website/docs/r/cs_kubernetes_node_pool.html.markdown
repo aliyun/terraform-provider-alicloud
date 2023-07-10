@@ -7,17 +7,17 @@ description: |-
   Provides a Alicloud resource to manage container kubernetes node pool.
 ---
 
-# alicloud\_cs\_kubernetes\_node\_pool
+# alicloud_cs_kubernetes_node_pool
 
 This resource will help you to manage node pool in Kubernetes Cluster. 
 
--> **NOTE:** Available in 1.97.0+.
+-> **NOTE:** Available since v1.97.0.
 
 -> **NOTE:** From version 1.109.1, support managed node pools, but only for the professional managed clusters.
 
 -> **NOTE:** From version 1.109.1, support remove node pool nodes.
 
--> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://help.aliyun.com/document_detail/197717.htm). With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
+-> **NOTE:** From version 1.111.0, support auto scaling node pool. For more information on how to use auto scaling node pools, see [Use Terraform to create an elastic node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
 
 -> **NOTE:** ACK adds a new RamRole (AliyunCSManagedAutoScalerRole) for the permission control of the node pool with auto-scaling enabled. If you are using a node pool with auto scaling, please click [AliyunCSManagedAutoScalerRole](https://ram.console.aliyun.com/role/authorization?request=%7B%22Services%22%3A%5B%7B%22Service%22%3A%22CS%22%2C%22Roles%22%3A%5B%7B%22RoleName%22%3A%22AliyunCSManagedAutoScalerRole%22%2C%22TemplateId%22%3A%22AliyunCSManagedAutoScalerRole%22%7D%5D%7D%5D%2C%22ReturnUrl%22%3A%22https%3A%2F%2Fcs.console.aliyun.com%2F%22%7D) to complete the authorization. 
 
@@ -48,85 +48,74 @@ The managed cluster configuration,
 
 ```terraform
 variable "name" {
-  default = "tf-test"
+  default = "tf-example"
 }
-data "alicloud_zones" default {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
 }
 data "alicloud_instance_types" "default" {
   availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 2
-  memory_size          = 4
+  cpu_core_count       = 4
+  memory_size          = 8
   kubernetes_node_role = "Worker"
 }
+
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "10.1.0.0/21"
+  cidr_block = "10.4.0.0/16"
 }
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "10.1.1.0/24"
   zone_id      = data.alicloud_zones.default.zones.0.id
 }
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix          = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  new_nat_gateway      = true
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled = true
+}
+
 resource "alicloud_key_pair" "default" {
   key_pair_name = var.name
 }
-resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = var.name
-  count                        = 1
-  cluster_spec                 = "ack.pro.small"
-  is_enterprise_security_group = true
-  pod_cidr                     = "172.20.0.0/16"
-  service_cidr                 = "172.21.0.0/20"
-  worker_vswitch_ids           = [alicloud_vswitch.default.id]
-}
-```
 
-Create a node pool.
-
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name           = var.name
-  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids    = [alicloud_vswitch.default.id]
-  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
-
-  system_disk_category = "cloud_efficiency"
-  system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
-
-  # you need to specify the number of nodes in the node pool, which can be 0
-  desired_size = 1
-}
-```
-
-The parameter `node_count` are deprecated from version 1.158.0，but it can still works. If you want to use the new parameter `desired_size` instead, you can update it as follows. for more information of `desired_size`, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3). 
-
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name           = var.name
-  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids    = [alicloud_vswitch.default.id]
-  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
-
-  system_disk_category = "cloud_efficiency"
-  system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
-
-  # comment out node_count and specify a new field desired_size
-  # node_count = 1
-
-  desired_size = 1
-}
-```
-
-Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
-
-```terraform
 resource "alicloud_cs_kubernetes_node_pool" "default" {
   name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = ["ecs.c7.xlarge"]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
+}
+
+#The parameter `node_count` are deprecated from version 1.158.0，but it can still works. If you want to use the new parameter `desired_size` instead, you can update it as follows. for more information of `desired_size`, visit [Modify the expected number of nodes in a node pool](https://www.alibabacloud.com/help/en/doc-detail/160490.html#title-mpp-3jj-oo3). 
+resource "alicloud_cs_kubernetes_node_pool" "desired_size" {
+  name                 = "desired_size"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  key_name             = alicloud_key_pair.default.key_name
+  desired_size         = 2
+}
+
+#Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
+resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
+  name                 = "maintenance"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -147,14 +136,11 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   }
 
 }
-```
 
-Enable automatic scaling for the node pool. `scaling_config` is required.
-
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+#Enable automatic scaling for the node pool. `scaling_config` is required.
+resource "alicloud_cs_kubernetes_node_pool" "scaling_config" {
+  name                 = "scaling_config"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -169,14 +155,11 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   }
 
 }
-```
 
-Enable automatic scaling for managed node pool.
-
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+#Enable automatic scaling for managed node pool.
+resource "alicloud_cs_kubernetes_node_pool" "auto_scaling" {
+  name                 = "auto_scaling"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -195,16 +178,12 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     max_size = 10
     type     = "cpu"
   }
-  # Rely on auto-scaling configuration, please create auto-scaling configuration through alicloud_cs_autoscaling_config first.
-  depends_on = [alicloud_cs_autoscaling_config.default]
 }
-```
 
-Create a `PrePaid` node pool.
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+#Create a `PrePaid` node pool.
+resource "alicloud_cs_kubernetes_node_pool" "prepaid_node" {
+  name                 = "prepaid_node"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -227,16 +206,13 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     type     = "cpu"
   }
 }
-```
 
-Create a node pool with spot instance.
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name           = var.name
-  cluster_id     = alicloud_cs_managed_kubernetes.default.0.id
-  vswitch_ids    = [alicloud_vswitch.default.id]
-  instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
-
+#Create a node pool with spot instance.
+resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
+  name                 = "spot_instance"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
   key_name             = alicloud_key_pair.default.key_name
@@ -252,13 +228,11 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     price_limit = "0.70"
   }
 }
-```
 
-Use Spot instances to create a node pool with auto-scaling enabled 
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+#Use Spot instances to create a node pool with auto-scaling enabled 
+resource "alicloud_cs_kubernetes_node_pool" "spot_auto_scaling" {
+  name                 = "spot_auto_scaling"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -278,13 +252,11 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
     price_limit   = "0.70"
   }
 }
-```
 
-Create a node pool with platform as Windows 
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
+#Create a node pool with platform as Windows
+resource "alicloud_cs_kubernetes_node_pool" "window" {
   name                 = "windows-np"
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -293,20 +265,16 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   desired_size         = 1
 
   // if the instance platform is windows, the password is requered.
-  password = "Hello1234"
-  platform = "Windows"
-  image_id = "${window_image_id}"
+  password   = "Hello1234"
+  image_type = "Windows"
+  image_id   = "win2019_1809_x64_dtc_en-us_40G_alibase_20221221.vhd"
 }
-```
 
-Add an existing node to the node pool
-
-In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
-
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
+#Add an existing node to the node pool
+#In order to distinguish automatically created nodes, it is recommended that existing nodes be placed separately in a node pool for management. 
+resource "alicloud_cs_kubernetes_node_pool" "exist_node" {
   name                 = "existing-node"
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -320,13 +288,11 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   # default is true
   keep_instance_name = true
 }
-```
 
-Create a node pool with customized kubelet parameters
-```terraform
-resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
-  cluster_id           = alicloud_cs_managed_kubernetes.default.0.id
+#Create a node pool with customized kubelet parameters
+resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
+  name                 = "customized_kubelet"
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
@@ -377,103 +343,109 @@ The following arguments are supported:
 * `instance_types` (Required) The instance type of worker node.
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields. Only `key_name` is supported in the management node pool.
-* `kms_encrypted_password` - (Optional, Available in 1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `kms_encryption_context` - (Optional, Available in 1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `kms_encrypted_password` - (Optional, Available since v1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
+* `kms_encryption_context` - (Optional, Available since v1.177.0) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a cs kubernetes with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `node_count` (Optional, Deprecated) The worker node number of the node pool. From version 1.111.0, `node_count` is not required.
-* `desired_size` (Optional, Available in 1.158.0+) The desired size of nodes of the node pool. From version 1.158.0, `desired_size` is not required.
+* `desired_size` (Optional, Available since v1.158.0) The desired size of nodes of the node pool. From version 1.158.0, `desired_size` is not required.
 * `system_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_ssd`, `cloud_efficiency` and `cloud_essd`. Default to `cloud_efficiency`.
 * `system_disk_size` - (Optional) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
 * `system_disk_performance_level` - (Optional) The performance of system disk, only valid for ESSD disk. You have to specify one of `PL0` `PL1` `PL2` `PL3` fields.
-* `data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. 
-  * `category` - The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
-  * `size` - The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
-  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-  * `kms_key_id` - (Optional, Available in 1.97.0+) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
+* `data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. See [`data_disks`](#data_disks) below.
 * `security_group_id` - (Optional, Deprecated) The security group id for worker node. Field `security_group_id` has been deprecated from provider version 1.145.0. New field `security_group_ids` instead.
 * `platform` - (Optional, Deprecated from 1.145.0) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required. Field `platform` has been deprecated from provider version 1.145.0. New field `image_type` instead.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `node_name_mode` - (Optional) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 * `tags` - (Optional) A Map of tags to assign to the resource. It will be applied for ECS instances finally. Detailed below.
-* `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/).
-  * `key` - The label key.
-  * `value` - The label value.
-* `taints` - (Optional) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
-* `management` - (Optional, Available in 1.109.1+) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. Detailed below.
-* `scaling_policy` - (Optional, Available in 1.127.0+) The scaling mode. Valid values: `release`, `recycle`, default is `release`. Standard mode(release): Create and release ECS instances based on requests.Swift mode(recycle): Create, stop, and restart ECS instances based on needs. New ECS instances are only created when no stopped ECS instance is avalible. This mode further accelerates the scaling process. Apart from ECS instances that use local storage, when an ECS instance is stopped, you are only chatged for storage space.
-* `scaling_config` - (Optional, Available in 1.111.0+) Auto scaling node pool configuration. For more details, see `scaling_config`. With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
-* `instance_charge_type`- (Optional, Available in 1.119.0+) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
-* `period`- (Optional, Available in 1.119.0+) Node payment period. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
-* `period_unit`- (Optional, Available in 1.119.0+) Node payment period unit, valid value: `Month`. Default is `Month`.
-* `auto_renew`- (Optional, Available in 1.119.0+) Enable Node payment auto-renew, default is `false`.
-* `auto_renew_period`- (Optional, Available in 1.119.0+) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
-* `install_cloud_monitor`- (Optional, Available in 1.119.0+) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `true`.
-* `unschedulable`- (Optional, Available in 1.119.0+) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.123.1+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `internet_charge_type` - (Optional, Available in 1.123.1+) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
-* `internet_max_bandwidth_out` - (Optional, Available in 1.123.1+) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
-* `spot_strategy` - (Optional, Available in 1.123.1+) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`,`SpotAsPriceGo` and `NoSpot`, default is `NoSpot`.
-* `spot_price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. You could enable multiple spot instances by setting this field repeatedly.
-  * `instance_type` - (Optional, Available in 1.123.1+) Spot instance type.
-  * `price_limit` - (Optional, Available in 1.123.1+) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.
-* `instances` - (Optional, Available in 1.127.0+) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
-* `keep_instance_name` - (Optional, Available in 1.127.0+) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
-* `format_disk` - (Optional, Available in 1.127.0+) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
-* `security_group_ids` - (Optional, Available in 1.145.0+) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified. 
-* `image_type` - (Optional, Available in 1.145.0+) The image type, instead of `platform`. This field cannot be modified. One of `AliyunLinux`, `AliyunLinux3`, `AliyunLinux3Arm64`, `AliyunLinuxUEFI`, `CentOS`, `Windows`,`WindowsCore`,`AliyunLinux Qboot`,`ContainerOS`. If you select `Windows` or `WindowsCore`, the `passord` is required.
-* `runtime_name` - (Optional, ForceNew, Available in 1.145.0+) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
-* `runtime_version` - (Optional, ForceNew, Available in 1.145.0+) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
-* `deployment_set_id` - (Optional, ForceNew, Available in 1.149.0+) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
-* `system_disk_encrypted` - (Optional, Available in 1.166.0+) Whether to enable system disk encryption.
-* `system_disk_kms_key` - (Optional, Available in 1.166.0+) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
-* `system_disk_encrypt_algorithm` - (Optional, Available in 1.166.0+) The encryption Algorithm for Encrypting System Disk. It takes effect when system_disk_encrypted is true. Valid values `aes-256` and `sm4-128`.
-* `cis_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [CIS Reinforcement](https://help.aliyun.com/document_detail/223744.html).
-* `soc_enabled` - (Optional, Available in 1.173.0+) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).  
+* `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
+* `taints` - (Optional) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
+* `management` - (Optional, Available since v1.109.1) Managed node pool configuration. When using a managed node pool, the node key must use `key_name`. See [`management`](#management) below.
+* `scaling_policy` - (Optional, Available since v1.127.0) The scaling mode. Valid values: `release`, `recycle`, default is `release`. Standard mode(release): Create and release ECS instances based on requests.Swift mode(recycle): Create, stop, and restart ECS instances based on needs. New ECS instances are only created when no stopped ECS instance is avalible. This mode further accelerates the scaling process. Apart from ECS instances that use local storage, when an ECS instance is stopped, you are only chatged for storage space.
+* `scaling_config` - (Optional, Available since v1.111.0) Auto scaling node pool configuration. See [`scaling_config`](#scaling_config) below. With auto-scaling is enabled, the nodes in the node pool will be labeled with `k8s.aliyun.com=true` to prevent system pods such as coredns, metrics-servers from being scheduled to elastic nodes, and to prevent node shrinkage from causing business abnormalities.
+* `instance_charge_type`- (Optional, ForceNew, Available since v1.119.0) Node payment type. Valid values: `PostPaid`, `PrePaid`, default is `PostPaid`. If value is `PrePaid`, the arguments `period`, `period_unit`, `auto_renew` and `auto_renew_period` are required.
+* `period`- (Optional, Available since v1.119.0) Node payment period. Its valid value is one of {1, 2, 3, 6, 12, 24, 36, 48, 60}.
+* `period_unit`- (Optional, Available since v1.119.0) Node payment period unit, valid value: `Month`. Default is `Month`.
+* `auto_renew`- (Optional, Available since v1.119.0) Enable Node payment auto-renew, default is `false`.
+* `auto_renew_period`- (Optional, Available since v1.119.0) Node payment auto-renew period, one of `1`, `2`, `3`,`6`, `12`.
+* `install_cloud_monitor`- (Optional, Available since v1.119.0) Install the cloud monitoring plug-in on the node, and you can view the monitoring information of the instance through the cloud monitoring console. Default is `true`.
+* `unschedulable`- (Optional, Available since v1.119.0) Set the newly added node as unschedulable. If you want to open the scheduling option, you can open it in the node list of the console. If you are using an auto-scaling node pool, the setting will not take effect. Default is `false`.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.123.1) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `internet_charge_type` - (Optional, Available since v1.123.1) The billing method for network usage. Valid values `PayByBandwidth` and `PayByTraffic`. Conflict with `eip_internet_charge_type`, EIP and public network IP can only choose one. 
+* `internet_max_bandwidth_out` - (Optional, Available since v1.123.1) The maximum outbound bandwidth for the public network. Unit: Mbit/s. Valid values: 0 to 100.
+* `spot_strategy` - (Optional, Available since v1.123.1) The preemption policy for the pay-as-you-go instance. This parameter takes effect only when `instance_charge_type` is set to `PostPaid`. Valid value `SpotWithPriceLimit`,`SpotAsPriceGo` and `NoSpot`, default is `NoSpot`.
+* `spot_price_limit` - (Optional, Available since v1.123.1) The maximum hourly price of the instance. This parameter takes effect only when `spot_strategy` is set to `SpotWithPriceLimit`. You could enable multiple spot instances by setting this field repeatedly. See [`spot_price_limit`](#spot_price_limit) below.
+* `instances` - (Optional, Available since v1.127.0) The instance list. Add existing nodes under the same cluster VPC to the node pool. 
+* `keep_instance_name` - (Optional, Available since v1.127.0) Add an existing instance to the node pool, whether to keep the original instance name. It is recommended to set to `true`.
+* `format_disk` - (Optional, Available since v1.127.0) After you select this check box, if data disks have been attached to the specified ECS instances and the file system of the last data disk is uninitialized, the system automatically formats the last data disk to ext4 and mounts the data disk to /var/lib/docker and /var/lib/kubelet. The original data on the disk will be cleared. Make sure that you back up data in advance. If no data disk is mounted on the ECS instance, no new data disk will be purchased. Default is `false`.
+* `security_group_ids` - (Optional, Available since v1.145.0) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified. 
+* `image_type` - (Optional, Available since v1.145.0) The image type, instead of `platform`. This field cannot be modified. One of `AliyunLinux`, `AliyunLinux3`, `AliyunLinux3Arm64`, `AliyunLinuxUEFI`, `CentOS`, `Windows`,`WindowsCore`,`AliyunLinux Qboot`,`ContainerOS`. If you select `Windows` or `WindowsCore`, the `passord` is required.
+* `runtime_name` - (Optional, ForceNew, Available since v1.145.0) The runtime name of containers. If not set, the cluster runtime will be used as the node pool runtime. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm).
+* `runtime_version` - (Optional, ForceNew, Available since v1.145.0) The runtime version of containers. If not set, the cluster runtime will be used as the node pool runtime.
+* `deployment_set_id` - (Optional, ForceNew, Available since v1.149.0) The deployment set of node pool. Specify the deploymentSet to ensure that the nodes in the node pool can be distributed on different physical machines.
+* `system_disk_encrypted` - (Optional, Available since v1.166.0) Whether to enable system disk encryption.
+* `system_disk_kms_key` - (Optional, Available since v1.166.0) The kms key id used to encrypt the system disk. It takes effect when system_disk_encrypted is true.
+* `system_disk_encrypt_algorithm` - (Optional, Available since v1.166.0) The encryption Algorithm for Encrypting System Disk. It takes effect when system_disk_encrypted is true. Valid values `aes-256` and `sm4-128`.
+* `cis_enabled` - (Optional, Available since v1.173.0) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [CIS Reinforcement](https://help.aliyun.com/document_detail/223744.html).
+* `soc_enabled` - (Optional, Available since v1.173.0) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).  
   -> **NOTE:** It is forbidden to set both `cis_enabled` and `soc_enabled` to `true`at the same time.
-* `rds_instances` - (Optional, Available in 1.177.0+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
-* `polardb_ids` - (Optional, Available in 1.188.0+) PolarDB id list, You can choose which PolarDB whitelist to add instances to.
-* `system_disk_snapshot_policy_id` - (Optional, Available in 1.177.0+) The system disk snapshot policy id.
-* `cpu_policy` - (Optional, Available in 1.177.0+) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none` and modification is not supported.
-* `kubelet_configuration` - (Optional, Available in 1.180.0+) Kubelet configuration parameters for worker nodes. Detailed below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
-* `rollout_policy` - (Optional, Deprecated from 1.185.0) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when node pool updating. Please use `rolling_policy` to instead it from provider version 1.185.0.
-  * `max_unavailable` - (Optional, Deprecated from 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
-* `rolling_policy` - (Optional, Available in 1.185.0+) Rolling policy is used to specify the strategy when the node pool is rolling update. This field works when nodepool updating.
-  * `max_parallelism` - (Optional, Available in 1.185.0+) Maximum parallel number nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
+* `rds_instances` - (Optional, Available since v1.177.0) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `polardb_ids` - (Optional, Available since v1.188.0) PolarDB id list, You can choose which PolarDB whitelist to add instances to.
+* `system_disk_snapshot_policy_id` - (Optional, Available since v1.177.0) The system disk snapshot policy id.
+* `cpu_policy` - (Optional, Available since v1.177.0) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none` and modification is not supported.
+* `kubelet_configuration` - (Optional, Available since v1.180.0) Kubelet configuration parameters for worker nodes. See [`kubelet_configuration`](#kubelet_configuration) below. More information in [Kubelet Configuration](https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/).
+* `rollout_policy` - (Optional, Deprecated from 1.185.0) Rollout policy is used to specify the strategy when the node pool is rolling update. This field works when node pool updating. Please use `rolling_policy` to instead it from provider version 1.185.0. See [`rollout_policy`](#rollout_policy) below.
+* `rolling_policy` - (Optional, Available since v1.185.0) Rolling policy is used to specify the strategy when the node pool is rolling update. This field works when nodepool updating. See [`rolling_policy`](#rolling_policy) below.
+* `scaling_group_id` - (Optional) The scaling group id.
 
-#### tags
+### `data_disks`
 
-The tags example：
-```
-tags = {
-  "key-a" = "value-a"
-  "key-b" = "value-b"
-  "env"   = "prod"
-}
-```
+The data_disks mapping supports the following:
 
-#### labels
+* `category` - (Optional) The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
+* `size` - (Optional) The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
+* `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
+* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `kms_key_id` - (Optional, Available since v1.97.0) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
+* `snapshot_id` - (Optional) The snapshot id of data disk.
+* `device` - (Optional) The device of data disk.
+* `name` - (Optional) The name of data disk;
+* `auto_snapshot_policy_id` - (Optional) The auto snapshot policy id;
 
-The labels example:
-```
-labels {
-  key   = "app"
-  value = "nginx"
-}
-```
+### `spot_price_limit`
 
-#### taints
+The spot_price_limit mapping supports the following:
 
-The taints example:
-```
-taints {
-  key    = "test"
-  value  = "test"
-  effect = "NoSchedule"
-}
-```
+* `instance_type` - (Optional, Available since v1.123.1) Spot instance type.
+* `price_limit` - (Optional, Available since v1.123.1) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.
 
-#### management
+### `labels`
+
+The labels mapping supports the following:
+
+* `key` - (Required) The label key.
+* `value` - (Optional) The label value.
+
+### `taints`
+
+The taints mapping supports the following:
+
+* `key` - (Required) The key of a taint.
+* `value` - (Optional) The value of a taint.
+* `effect` - (Optional) The scheduling policy. 
+
+### `rollout_policy`
+
+The rollout_policy mapping supports the following:
+
+* `max_unavailable` - (Optional, Deprecated from 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
+
+### `rolling_policy`
+
+The rolling_policy mapping supports the following:
+
+* `max_parallelism` - (Optional, Available since v1.185.0) Maximum parallel number nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
+
+### `management`
 
 The following arguments are supported in the `management` configuration block:
 
@@ -483,47 +455,41 @@ The following arguments are supported in the `management` configuration block:
 * `surge_percentage` - (Optional) Proportion of additional nodes. You have to specify one of surge, surge_percentage.
 * `max_unavailable` - (Required) Max number of unavailable nodes. Default to `1`.
 
-#### scaling_config
+### `scaling_config`
 
 The following arguments are supported in the `scaling_config` configuration block:
 
-* `min_size` - (Required, Available in 1.111.0+) Min number of instances in a auto scaling group, its valid value range [0~1000].
-* `max_size` - (Required, Available in 1.111.0+) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
-* `type` - (Optional, Available in 1.111.0+) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
-* `is_bond_eip` - (Optional, Available in 1.111.0+) Whether to bind EIP for an instance. Default: `false`.
-* `eip_internet_charge_type` - (Optional, Available in 1.111.0+) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one. 
-* `eip_bandwidth` - (Optional, Available in 1.111.0+) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
+* `min_size` - (Required, Available since v1.111.0) Min number of instances in a auto scaling group, its valid value range [0~1000].
+* `max_size` - (Required, Available since v1.111.0) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
+* `type` - (Optional, Available since v1.111.0) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
+* `is_bond_eip` - (Optional, Available since v1.111.0) Whether to bind EIP for an instance. Default: `false`.
+* `eip_internet_charge_type` - (Optional, Available since v1.111.0) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one. 
+* `eip_bandwidth` - (Optional, Available since v1.111.0) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
 
-#### kubelet_configuration
+### `kubelet_configuration`
 
 The following arguments are supported in the `kubelet_configuration` configuration block:
 
-* `registry_pull_qps` - (Optional, Available in 1.180.0+) Same as registryPullQPS. The limit of registry pulls per second. Setting it to `0` means no limit. Valid value is `[0-50]`.
-* `registry_burst` - (Optional, Available in 1.180.0+) Same as registryBurst. The maximum size of burst pulls, temporarily allows pulls to burst to this number, while still not exceeding `registry_pull_qps`. Only used if `registry_pull_qps` is greater than 0. Valid value is `[0-100]`.
-* `event_record_qps` - (Optional, Available in 1.180.0+) Same as eventRecordQPS. The maximum event creations per second. If 0, there is no limit enforced. Valid value is `[0-50]`.
-* `event_burst` - (Optional, Available in 1.180.0+) Same as eventBurst. The maximum size of a burst of event creations, temporarily allows event creations to burst to this number, while still not exceeding `event_record_qps`. It is only used when `event_record_qps` is greater than 0. Valid value is `[0-100]`.
-* `kube_api_qps` - (Optional, Available in 1.180.0+) Same as kubeAPIQPS. The QPS to use while talking with kubernetes api-server. Valid value is `[0-50]`.
-* `kube_api_burst` - (Optional, Available in 1.180.0+) Same as kubeAPIBurst. The burst to allow while talking with kubernetes api-server. Valid value is `[0-100]`.
-* `serialize_image_pulls` - (Optional, Available in 1.180.0+) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`. 
-* `cpu_manager_policy` - (Optional, Available in 1.180.0+) Same as cpuManagerPolicy. The name of the policy to use. Requires the CPUManager feature gate to be enabled. Valid value is `none` or `static`.
-* `eviction_hard` - (Optional, Available in 1.180.0+) Same as evictionHard. The map of signal names to quantities that defines hard eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
-* `eviction_soft` - (Optional, Available in 1.180.0+) Same as evictionSoft. The map of signal names to quantities that defines soft eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
-* `eviction_soft_grace_period` - (Optional, Available in 1.180.0+) Same as evictionSoftGracePeriod. The map of signal names to quantities that defines grace periods for each soft eviction signal. For example: `{"memory.available" = "30s"}`.
-* `system_reserved` - (Optional, Available in 1.180.0+) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
-* `kube_reserved` - (Optional, Available in 1.180.0+) Same as kubeReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for kubernetes system components. Currently, cpu, memory and local storage for root file system are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
+* `registry_pull_qps` - (Optional, Available since v1.180.0) Same as registryPullQPS. The limit of registry pulls per second. Setting it to `0` means no limit. Valid value is `[0-50]`.
+* `registry_burst` - (Optional, Available since v1.180.0) Same as registryBurst. The maximum size of burst pulls, temporarily allows pulls to burst to this number, while still not exceeding `registry_pull_qps`. Only used if `registry_pull_qps` is greater than 0. Valid value is `[0-100]`.
+* `event_record_qps` - (Optional, Available since v1.180.0) Same as eventRecordQPS. The maximum event creations per second. If 0, there is no limit enforced. Valid value is `[0-50]`.
+* `event_burst` - (Optional, Available since v1.180.0) Same as eventBurst. The maximum size of a burst of event creations, temporarily allows event creations to burst to this number, while still not exceeding `event_record_qps`. It is only used when `event_record_qps` is greater than 0. Valid value is `[0-100]`.
+* `kube_api_qps` - (Optional, Available since v1.180.0) Same as kubeAPIQPS. The QPS to use while talking with kubernetes api-server. Valid value is `[0-50]`.
+* `kube_api_burst` - (Optional, Available since v1.180.0) Same as kubeAPIBurst. The burst to allow while talking with kubernetes api-server. Valid value is `[0-100]`.
+* `serialize_image_pulls` - (Optional, Available since v1.180.0) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`. 
+* `cpu_manager_policy` - (Optional, Available since v1.180.0) Same as cpuManagerPolicy. The name of the policy to use. Requires the CPUManager feature gate to be enabled. Valid value is `none` or `static`.
+* `eviction_hard` - (Optional, Available since v1.180.0) Same as evictionHard. The map of signal names to quantities that defines hard eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
+* `eviction_soft` - (Optional, Available since v1.180.0) Same as evictionSoft. The map of signal names to quantities that defines soft eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
+* `eviction_soft_grace_period` - (Optional, Available since v1.180.0) Same as evictionSoftGracePeriod. The map of signal names to quantities that defines grace periods for each soft eviction signal. For example: `{"memory.available" = "30s"}`.
+* `system_reserved` - (Optional, Available since v1.180.0) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
+* `kube_reserved` - (Optional, Available since v1.180.0) Same as kubeReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for kubernetes system components. Currently, cpu, memory and local storage for root file system are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the node pool, format cluster_id:nodepool_id.
-* `cluster_id` - The cluster id.
-* `name` - The name of the nodepool.
-* `vswitch_ids` - The vswitches used by node pool workers.
 * `vpc_id` - The VPC of the nodes in the node pool.
-* `image_id` - The image used by node pool workers.
-* `security_group_id` - The ID of security group where the current cluster worker node is located.
-* `scaling_group_id` - (Available in 1.105.0+) Id of the Scaling Group.
 
 ## Timeouts
 

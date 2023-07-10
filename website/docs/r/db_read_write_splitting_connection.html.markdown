@@ -7,9 +7,11 @@ description: |-
   Provides an RDS instance read write splitting connection resource.
 ---
 
-# alicloud\_db\_read\_write\_splitting\_connection
+# alicloud_db_read_write_splitting_connection
 
 Provides an RDS read write splitting connection resource to allocate an Intranet connection string for RDS instance.
+
+-> **NOTE:** Available since v1.48.0.
 
 ## Example Usage
 
@@ -72,10 +74,9 @@ resource "alicloud_db_readonly_instance" "example" {
 }
 
 resource "alicloud_db_read_write_splitting_connection" "example" {
-  instance_id       = alicloud_db_instance.example.id
+  instance_id       = alicloud_db_readonly_instance.example.master_db_instance_id
   connection_prefix = "example-con-123"
   distribution_type = "Standard"
-  depends_on        = [alicloud_db_readonly_instance.example]
 }
 ```
 
