@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Network Attached Storage (NAS) Data Flow resource.
 ---
 
-# alicloud\_nas\_data\_flow
+# alicloud_nas_data_flow
 
 Provides a Network Attached Storage (NAS) Data Flow resource.
 
 For information about Network Attached Storage (NAS) Data Flow and how to use it, see [What is Data Flow](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
@@ -64,8 +64,7 @@ resource "alicloud_oss_bucket" "example" {
 }
 
 resource "alicloud_nas_fileset" "example" {
-  depends_on       = [alicloud_nas_mount_target.example]
-  file_system_id   = alicloud_nas_file_system.example.id
+  file_system_id   = alicloud_nas_mount_target.example.file_system_id
   description      = "terraform-example"
   file_system_path = "/example_path/"
 }
@@ -91,7 +90,7 @@ The following arguments are supported:
 * `dry_run` - (Optional) The dry run.
 * `file_system_id` - (Required, ForceNew) The ID of the file system.
 * `fset_id` - (Required, ForceNew) The ID of the Fileset.
-* `source_security_type` - (Optional, Computed, ForceNew) The security protection type of the source storage. If the source storage must be accessed through security protection, specify the security protection type of the source storage. Value:
+* `source_security_type` - (Optional, ForceNew) The security protection type of the source storage. If the source storage must be accessed through security protection, specify the security protection type of the source storage. Value:
   - `NONE` (default): Indicates that the source storage does not need to be accessed through security protection.
   - `SSL`: Protects access through SSL certificates.
 * `source_storage` - (Required, ForceNew) The access path of the source store. Format: `<storage type>://<path>`. Among them:
@@ -101,7 +100,7 @@ The following arguments are supported:
     - `8` to `128` English characters in length.
     - Use UTF-8 coding.
     - Cannot start with `http://` and `https://`.
-* `status` - (Optional, Computed) The status of the Data flow. Valid values: `Running`, `Stopped`.
+* `status` - (Optional) The status of the Data flow. Valid values: `Running`, `Stopped`.
 * `throughput` - (Required) The maximum transmission bandwidth of data flow, unit: `MB/s`. Valid values: `1200`, `1500`, `600`. **NOTE:** The transmission bandwidth of data flow must be less than the IO bandwidth of the file system.
 
 ## Attributes Reference
@@ -111,7 +110,7 @@ The following attributes are exported:
 * `id` - The resource ID of Data Flow. The value formats as `<file_system_id>:<data_flow_id>`.
 * `data_flow_id` - The ID of the Data flow.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

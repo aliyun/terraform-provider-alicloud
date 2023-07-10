@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud resource to manage container kubernetes cluster-autoscaler.
 ---
 
-# alicloud\_cs\_kubernetes\_autoscaler
+# alicloud_cs_kubernetes_autoscaler
 
 This resource will help you to manager cluster-autoscaler in Kubernetes Cluster. 
 
@@ -17,7 +17,7 @@ This resource will help you to manager cluster-autoscaler in Kubernetes Cluster.
 
 -> **NOTE:** Add Policy to RAM role of the node to deploy cluster-autoscaler if you need.
 
--> **NOTE:** Available in 1.65.0+.
+-> **NOTE:** Available since v1.65.0.
 
 -> **NOTE:** From version v1.127.0+. Resource `alicloud_cs_kubernetes_autoscaler` is replaced by resource [alicloud_cs_autoscaling_config](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_autoscaling_config). If you have used resource `alicloud_cs_kubernetes_autoscaler`, please refer to [Use Terraform to create an auto-scaling node pool](https://www.alibabacloud.com/help/doc-detail/197717.htm) to switch to `alicloud_cs_autoscaling_config`.
 
@@ -27,68 +27,85 @@ cluster-autoscaler in Kubernetes Cluster.
 
 ```terraform
 variable "name" {
-  default = "autoscaler"
+  default = "tf-example"
 }
-
-data "alicloud_vpcs" "default" {}
-
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
 data "alicloud_images" "default" {
-  owners      = "system"
-  name_regex  = "^centos_7"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
+  owners      = "system"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
 }
 
-# If your account no running clusters, you need to create a new one
-data "alicloud_cs_managed_kubernetes_clusters" "default" {}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
 
-data "alicloud_instance_types" "default" {
-  cpu_core_count = 2
-  memory_size    = 4
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix                 = var.name
+  cluster_spec                = "ack.pro.small"
+  worker_vswitch_ids          = [alicloud_vswitch.default.id]
+  new_nat_gateway             = true
+  worker_instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  worker_number               = 2
+  node_port_range             = "30000-32767"
+  password                    = "Hello1234"
+  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 7)
+  install_cloud_monitor       = true
+  slb_internet_enabled        = true
+  worker_disk_category        = "cloud_efficiency"
+  worker_data_disk_category   = "cloud_ssd"
+  worker_data_disk_size       = 200
+  worker_disk_size            = 40
+  worker_instance_charge_type = "PostPaid"
 }
 
 resource "alicloud_security_group" "default" {
   name   = var.name
-  vpc_id = data.alicloud_vpcs.default.vpcs.0.id
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
   scaling_group_name = var.name
-
-  min_size         = var.min_size
-  max_size         = var.max_size
-  vswitch_ids      = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
-  removal_policies = ["OldestInstance", "NewestInstance"]
+  min_size           = 1
+  max_size           = 1
+  vswitch_ids        = [alicloud_vswitch.default.id]
+  removal_policies   = ["OldestInstance", "NewestInstance"]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  image_id             = data.alicloud_images.default.images.0.id
-  security_group_id    = alicloud_security_group.default.id
-  scaling_group_id     = alicloud_ess_scaling_group.default.id
-  instance_type        = data.alicloud_instance_types.default.instance_types.0.id
-  internet_charge_type = "PayByTraffic"
-  force_delete         = true
-  enable               = true
-  active               = true
-
-  # ... ignore the change about tags and user_data
-  lifecycle {
-    ignore_changes = [tags, user_data]
-  }
-
+  scaling_group_id  = alicloud_ess_scaling_group.default.id
+  image_id          = data.alicloud_images.default.images[0].id
+  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
+  security_group_id = alicloud_security_group.default.id
+  force_delete      = true
+  active            = true
 }
 
 resource "alicloud_cs_kubernetes_autoscaler" "default" {
-  cluster_id = data.alicloud_cs_managed_kubernetes_clusters.default.clusters.0.id
+  cluster_id              = alicloud_cs_managed_kubernetes.default.id
+  utilization             = "0.5"
+  cool_down_duration      = "10m"
+  defer_scale_in_duration = "10m"
   nodepools {
-    id     = alicloud_ess_scaling_group.default.id
+    id     = alicloud_ess_scaling_configuration.default.scaling_group_id
     labels = "a=b"
   }
-
-  utilization             = var.utilization
-  cool_down_duration      = var.cool_down_duration
-  defer_scale_in_duration = var.defer_scale_in_duration
-
-  depends_on = [alicloud_ess_scaling_group.defalut, alicloud_ess_scaling_configuration.default]
 }
 ```
 
@@ -97,16 +114,21 @@ resource "alicloud_cs_kubernetes_autoscaler" "default" {
 The following arguments are supported:
 
 * `cluster_id` - (Required) The id of kubernetes cluster.
-* `nodepools` - (Required) 
-* `nodepools.id` - (Required) The scaling group id of the groups configured for cluster-autoscaler.
-* `nodepools.taints` - (Required) The taints for the nodes in scaling group.
-* `nodepools.labels` - (Required) The labels for the nodes in scaling group.
+* `nodepools` - (Optional) The list of the node pools. See [`nodepools`](#nodepools) below.
 * `utilization` - (Required) The utilization option of cluster-autoscaler.
 * `cool_down_duration` (Required) The cool_down_duration option of cluster-autoscaler.  
 * `defer_scale_in_duration` (Required) The defer_scale_in_duration option of cluster-autoscaler.
-* `use_ecs_ram_role_token` (Optional, Available in 1.88.0+) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
+* `use_ecs_ram_role_token` (Optional, Available since v1.88.0) Enable autoscaler access to alibabacloud service by ecs ramrole token. default: false
 
-#### Ignoring Changes to tags and user_data
+### `nodepools`
+
+The nodepools mapping supports the following:
+
+* `id` - (Optional) The scaling group id of the groups configured for cluster-autoscaler.
+* `taints` - (Optional) The taints for the nodes in scaling group.
+* `labels` - (Optional) The labels for the nodes in scaling group.
+
+## Ignoring Changes to tags and user_data
 
 -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ignore_changes` to create a  a autoscaler group, then ignore any changes to that tags and user_data caused externally (e.g. Application Autoscaling).
 ```
@@ -116,7 +138,7 @@ The following arguments are supported:
   }
 ```
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -78,14 +78,9 @@ resource "alicloud_cen_bandwidth_package_attachment" "example" {
 }
 
 resource "alicloud_cen_bandwidth_limit" "example" {
-  instance_id     = alicloud_cen_instance.example.id
-  region_ids      = [var.region1, var.region2]
+  instance_id     = alicloud_cen_bandwidth_package_attachment.example.instance_id
+  region_ids      = [alicloud_cen_instance_attachment.example1.child_instance_region_id, alicloud_cen_instance_attachment.example2.child_instance_region_id]
   bandwidth_limit = 4
-  depends_on = [
-    alicloud_cen_bandwidth_package_attachment.example,
-    alicloud_cen_instance_attachment.example2,
-    alicloud_cen_instance_attachment.example1,
-  ]
 }
 ```
 ## Argument Reference

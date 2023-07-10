@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Cloud SSO Access Assignment resource.
 ---
 
-# alicloud\_cloud\_sso\_access\_assignment
+# alicloud_cloud_sso_access_assignment
 
 Provides a Cloud SSO Access Assignment resource.
 
@@ -15,7 +15,7 @@ For information about Cloud SSO Access Assignment and how to use it, see [What i
 
 -> **NOTE:** When you configure access assignment for the first time, access configuration will be automatically deployed.
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -24,45 +24,49 @@ For information about Cloud SSO Access Assignment and how to use it, see [What i
 Basic Usage
 
 ```terraform
-variable name {
-  default = "example-name"
+variable "name" {
+  default = "tf-example"
 }
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+data "alicloud_cloud_sso_directories" "default" {}
+data "alicloud_resource_manager_resource_directories" "default" {}
 
-data alicloud_cloud_sso_directories default {}
-
-data alicloud_resource_manager_resource_directories default {}
-
-resource alicloud_cloud_sso_directory default {
+resource "alicloud_cloud_sso_directory" "default" {
   count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
   directory_name = var.name
 }
 
-resource alicloud_cloud_sso_user default {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id[""])[0]
+locals {
+  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+}
+
+resource "alicloud_cloud_sso_user" "default" {
+  directory_id = local.directory_id
   user_name    = var.name
 }
 
-resource alicloud_cloud_sso_access_configuration default {
+resource "alicloud_cloud_sso_access_configuration" "default" {
   access_configuration_name = var.name
-  directory_id              = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id[""])[0]
+  directory_id              = local.directory_id
 }
 
-resource alicloud_cloud_sso_access_configuration_provisioning default {
-  directory_id            = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id[""])[0]
+resource "alicloud_cloud_sso_access_configuration_provisioning" "default" {
+  directory_id            = local.directory_id
   access_configuration_id = alicloud_cloud_sso_access_configuration.default.access_configuration_id
   target_type             = "RD-Account"
   target_id               = data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id
 }
 
-resource alicloud_cloud_sso_access_assignment default {
-  directory_id            = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id[""])[0]
+resource "alicloud_cloud_sso_access_assignment" "default" {
+  directory_id            = alicloud_cloud_sso_access_configuration_provisioning.default.directory_id
   access_configuration_id = alicloud_cloud_sso_access_configuration.default.access_configuration_id
   target_type             = "RD-Account"
   target_id               = data.alicloud_resource_manager_resource_directories.default.directories.0.master_account_id
   principal_type          = "User"
   principal_id            = alicloud_cloud_sso_user.default.user_id
   deprovision_strategy    = "DeprovisionForLastAccessAssignmentOnAccount"
-  depends_on              = [alicloud_cloud_sso_access_configuration_provisioning.default]
 }
 ```
 
@@ -83,6 +87,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Access Assignment. The value formats as `<directory_id>:<access_configuration_id>:<target_type>:<target_id>:<principal_type>:<principal_id>`. 
+
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

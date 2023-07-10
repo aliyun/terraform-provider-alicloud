@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Forwarding Rule resource.
 
-For information about Global Accelerator (GA) Forwarding Rule and how to use it, see [What is Forwarding Rule](https://www.alibabacloud.com/help/zh/doc-detail/205815.htm).
+For information about Global Accelerator (GA) Forwarding Rule and how to use it, see [What is Forwarding Rule](https://www.alibabacloud.com/help/en/doc-detail/205815.htm).
 
 -> **NOTE:** Available since v1.120.0.
 
@@ -20,30 +20,32 @@ For information about Global Accelerator (GA) Forwarding Rule and how to use it,
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
 resource "alicloud_ga_accelerator" "example" {
   duration            = 3
   spec                = "2"
-  accelerator_name    = "ga-tf"
+  accelerator_name    = var.name
   auto_use_coupon     = false
-  description         = "ga-tf description"
+  description         = var.name
   auto_renew_duration = "2"
   renewal_status      = "AutoRenewal"
 }
 
 resource "alicloud_ga_bandwidth_package" "example" {
-  type           = "Basic"
-  bandwidth      = 20
-  bandwidth_type = "Basic"
-  duration       = 1
-  timeouts {
-    create = "5m"
-  }
+  type                   = "Basic"
+  bandwidth              = 20
+  bandwidth_type         = "Basic"
+  duration               = 1
   auto_pay               = true
   payment_type           = "Subscription"
   auto_use_coupon        = false
-  bandwidth_package_name = "bandwidth_package_name_tf"
-  description            = "bandwidth_package_name_tf_description"
-
+  bandwidth_package_name = var.name
+  description            = var.name
 }
 
 resource "alicloud_ga_bandwidth_package_attachment" "example" {
@@ -52,23 +54,21 @@ resource "alicloud_ga_bandwidth_package_attachment" "example" {
 }
 
 resource "alicloud_ga_listener" "example" {
-  depends_on     = [alicloud_ga_bandwidth_package_attachment.example]
-  accelerator_id = alicloud_ga_accelerator.example.id
+  accelerator_id  = alicloud_ga_bandwidth_package_attachment.example.accelerator_id
+  client_affinity = "SOURCE_IP"
+  description     = var.name
+  name            = var.name
+  protocol        = "HTTP"
+  proxy_protocol  = true
   port_ranges {
     from_port = 60
     to_port   = 60
   }
-  client_affinity = "SOURCE_IP"
-  description     = "alicloud_ga_listener_description"
-  name            = "alicloud_ga_listener_tf"
-  protocol        = "HTTP"
-  proxy_protocol  = true
 }
 
 resource "alicloud_ga_ip_set" "example" {
-  depends_on           = [alicloud_ga_bandwidth_package_attachment.example]
-  accelerate_region_id = "cn-shanghai"
-  accelerator_id       = alicloud_ga_accelerator.example.id
+  accelerate_region_id = data.alicloud_regions.default.regions.0.id
+  accelerator_id       = alicloud_ga_bandwidth_package_attachment.example.accelerator_id
   bandwidth            = "20"
 }
 
@@ -85,15 +85,14 @@ resource "alicloud_ga_endpoint_group" "virtual" {
     weight                       = "20"
     enable_clientip_preservation = true
   }
-  endpoint_group_region = "cn-shanghai"
-  listener_id           = alicloud_ga_listener.example.id
-
-  description                   = "alicloud_ga_endpoint_group_description"
+  endpoint_group_region         = data.alicloud_regions.default.regions.0.id
+  listener_id                   = alicloud_ga_listener.example.id
+  description                   = var.name
   endpoint_group_type           = "virtual"
   endpoint_request_protocol     = "HTTPS"
   health_check_interval_seconds = 4
   health_check_path             = "/path"
-  name                          = "alicloud_ga_endpoint_group_name"
+  name                          = var.name
   threshold_count               = 4
   traffic_percentage            = 20
   port_overrides {
@@ -127,7 +126,7 @@ resource "alicloud_ga_forwarding_rule" "example" {
     }
   }
   priority             = 2
-  forwarding_rule_name = "forwarding_rule_name"
+  forwarding_rule_name = var.name
 }
 ```
 

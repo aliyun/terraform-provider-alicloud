@@ -109,13 +109,13 @@ resource "alicloud_dts_migration_job" "example" {
   dts_instance_id                    = alicloud_dts_migration_instance.example.id
   dts_job_name                       = var.name
   source_endpoint_instance_type      = "RDS"
-  source_endpoint_instance_id        = alicloud_db_instance.example.0.id
+  source_endpoint_instance_id        = alicloud_db_account_privilege.example.0.instance_id
   source_endpoint_engine_name        = "MySQL"
   source_endpoint_region             = data.alicloud_regions.example.regions.0.id
   source_endpoint_user_name          = alicloud_rds_account.example.0.name
   source_endpoint_password           = alicloud_rds_account.example.0.account_password
   destination_endpoint_instance_type = "RDS"
-  destination_endpoint_instance_id   = alicloud_db_instance.example.1.id
+  destination_endpoint_instance_id   = alicloud_db_account_privilege.example.1.instance_id
   destination_endpoint_engine_name   = "MySQL"
   destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
   destination_endpoint_user_name     = alicloud_rds_account.example.1.name
@@ -125,7 +125,6 @@ resource "alicloud_dts_migration_job" "example" {
   data_initialization                = true
   data_synchronization               = true
   status                             = "Migrating"
-  depends_on                         = [alicloud_db_account_privilege.example]
 }
 
 resource "alicloud_dts_job_monitor_rule" "example" {

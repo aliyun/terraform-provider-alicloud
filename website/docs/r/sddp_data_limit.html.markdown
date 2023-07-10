@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Data Security Center Data Limit resource.
 ---
 
-# alicloud\_sddp\_data\_limit
+# alicloud_sddp_data_limit
 
 Provides a Data Security Center Data Limit resource.
 
 For information about Data Security Center Data Limit and how to use it, see [What is Data Limit](https://www.alibabacloud.com/help/en/doc-detail/158987.html).
 
--> **NOTE:** Available in v1.159.0+.
+-> **NOTE:** Available since v1.159.0.
 
 ## Example Usage
 
@@ -21,60 +21,67 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tfaccxinmutes"
+  default = "tf_example"
 }
-
-variable "region" {
-  default = "cn-hangzhou"
+data "alicloud_regions" "default" {
+  current = true
 }
-
-variable "password" {
-  default = "Test12345"
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
-
-variable "database_name" {
-  default = "tftestdatabase"
-}
-
-data "alicloud_db_zones" "default" {}
 
 data "alicloud_db_instance_classes" "default" {
-  engine         = "MySQL"
-  engine_version = "5.6"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = data.alicloud_db_zones.default.zones[0].id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_db_instance" "default" {
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage = "10"
-  vswitch_id       = data.alicloud_vswitches.default.ids[0]
-  instance_name    = var.name
-}
-
-
-locals {
-  parent_id = join(".", [alicloud_db_instance.default.id, var.database_name])
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.default.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.default.id]
 }
 
 resource "alicloud_rds_account" "default" {
   db_instance_id   = alicloud_db_instance.default.id
-  account_name     = var.database_name
-  account_password = var.password
+  account_name     = var.name
+  account_password = "Example1234"
 }
 
 resource "alicloud_db_database" "default" {
   instance_id = alicloud_db_instance.default.id
-  name        = var.database_name
+  name        = var.name
 }
 
 resource "alicloud_db_account_privilege" "default" {
@@ -87,13 +94,12 @@ resource "alicloud_db_account_privilege" "default" {
 resource "alicloud_sddp_data_limit" "default" {
   audit_status      = 0
   engine_type       = "MySQL"
-  parent_id         = local.parent_id
+  parent_id         = join(".", [alicloud_db_account_privilege.default.instance_id, alicloud_db_database.default.name])
   resource_type     = "RDS"
-  user_name         = var.database_name
-  password          = var.password
+  user_name         = alicloud_db_database.default.name
+  password          = alicloud_rds_account.default.account_password
   port              = 3306
-  service_region_id = var.region
-  depends_on        = [alicloud_db_account_privilege.default]
+  service_region_id = data.alicloud_regions.default.regions.0.id
 }
 ```
 
@@ -101,10 +107,10 @@ resource "alicloud_sddp_data_limit" "default" {
 
 The following arguments are supported:
 
-* `audit_status` - (Optional, Computed)  Whether to enable the log auditing feature. Valid values: `0`, `1`.
+* `audit_status` - (Optional)  Whether to enable the log auditing feature. Valid values: `0`, `1`.
 * `engine_type` - (Optional, ForceNew) The type of the database. Valid values: `MySQL`, `SQLServer`.
 * `lang` - (Optional) The lang.
-* `log_store_day` - (Optional) The retention period of raw logs after you enable the log auditing feature. Unit: day. Valid values: `180`, `30`, `365`, `90`. **NOTE:** The`log_store_day` is valid when the `audit_status` is `1`.
+* `log_store_day` - (Optional, ForceNew) The retention period of raw logs after you enable the log auditing feature. Unit: day. Valid values: `180`, `30`, `365`, `90`. **NOTE:** The`log_store_day` is valid when the `audit_status` is `1`.
 * `parent_id` - (Optional, ForceNew) The ID of the data asset.
 * `password` - (Optional, ForceNew) The password that is used to connect to the database.
 * `port` - (Optional, ForceNew) The port that is used to connect to the database.

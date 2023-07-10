@@ -18,59 +18,66 @@ Provides an Alicloud EIP Association resource for associating Elastic IP to ECS 
 
 -> **NOTE:** One EIP can only be associated with ECS or SLB instance which in the VPC.
 
+-> **NOTE:** Available since v1.117.0.
+
 ## Example Usage
 
 ```terraform
-# Create a new EIP association and use it to associate a EIP form a instance.
-data "alicloud_zones" "default" {
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_zones" "example" {
+  available_resource_creation = "Instance"
 }
 
-resource "alicloud_vpc" "vpc" {
-  cidr_block = "10.1.0.0/21"
+data "alicloud_instance_types" "example" {
+  availability_zone = data.alicloud_zones.example.zones.0.id
+  cpu_core_count    = 1
+  memory_size       = 2
 }
 
-resource "alicloud_vswitch" "vsw" {
-  vpc_id     = alicloud_vpc.vpc.id
-  cidr_block = "10.1.1.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-
-  depends_on = [alicloud_vpc.vpc]
+data "alicloud_images" "example" {
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  owners     = "system"
 }
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
+resource "alicloud_vswitch" "example" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_zones.example.zones.0.id
 }
 
-resource "alicloud_instance" "ecs_instance" {
-  image_id          = data.alicloud_images.default.images[0].id
-  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  security_groups   = [alicloud_security_group.group.id]
-  vswitch_id        = alicloud_vswitch.vsw.id
-  instance_name     = "hello"
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
+}
+
+resource "alicloud_instance" "example" {
+  availability_zone = data.alicloud_zones.example.zones.0.id
+  instance_name     = var.name
+  image_id          = data.alicloud_images.example.images.0.id
+  instance_type     = data.alicloud_instance_types.example.instance_types.0.id
+  security_groups   = [alicloud_security_group.example.id]
+  vswitch_id        = alicloud_vswitch.example.id
   tags = {
-    Name = "TerraformTest-instance"
+    Created = "TF",
+    For     = "example",
   }
 }
 
-resource "alicloud_eip_address" "eip" {
+resource "alicloud_eip_address" "example" {
+  address_name = var.name
 }
 
-resource "alicloud_eip_association" "eip_asso" {
-  allocation_id = alicloud_eip_address.eip.id
-  instance_id   = alicloud_instance.ecs_instance.id
-}
-
-resource "alicloud_security_group" "group" {
-  name        = "terraform-test-group"
-  description = "New security group"
-  vpc_id      = alicloud_vpc.vpc.id
+resource "alicloud_eip_association" "example" {
+  allocation_id = alicloud_eip_address.example.id
+  instance_id   = alicloud_instance.example.id
 }
 ```
 

@@ -76,9 +76,8 @@ resource "alicloud_ess_scaling_configuration" "default" {
 }
 
 resource "alicloud_ess_suspend_process" "default" {
-  scaling_group_id = alicloud_ess_scaling_group.default.id
+  scaling_group_id = alicloud_ess_scaling_configuration.default.scaling_group_id
   process          = "ScaleIn"
-  depends_on       = [alicloud_ess_scaling_configuration.default]
 }
 ```
 
