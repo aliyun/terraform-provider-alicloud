@@ -45,12 +45,15 @@ The following arguments are supported:
   - `0`: IP address.
   - `1`: domain name.
 -> **NOTE:** From version 1.206.0, `rs_type` can be modified.
-* `proxy_types` - (Required, Set) Protocol type and port number information. See [`proxy_types`](#proxy_types) below.
--> **NOTE:** From version 1.206.0, `proxy_types` can be modified.
 * `https_ext` - (Optional, Computed, Set) The advanced HTTPS settings. This parameter takes effect only when the value of ProxyType includes https. This parameter is a string that contains a JSON struct. The JSON struct includes the following fields:
   - `Http2https`: specifies whether to turn on Enforce HTTPS Routing. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enforce HTTPS Routing is turned off. The value `1` indicates that Enforce HTTPS Routing is turned on. The default value is `0`. If your website supports both HTTP and HTTPS, this feature suits your needs. If you turn on the switch, all HTTP requests are redirected to HTTPS requests on port 443 by default.
   - `Https2http`: specifies whether to turn on Enable HTTP. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enable HTTP is turned off. The value `1` indicates that Enable HTTP is turned on. The default value is `0`. If your website does not support HTTPS, this feature suits your needs. If you turn on the switch, all HTTPS requests are redirected to HTTP requests and forwarded to origin servers. The feature can also redirect WebSockets requests to WebSocket requests. All requests are redirected over port 80.
   - `Http2`: specifies whether to turn on Enable HTTP/2. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enable HTTP/2 is turned off. The value `1` indicates that Enable HTTP/2 is turned on. The default value is `0`. After you turn on the switch, the protocol type is HTTP/2.
+* `ocsp_enabled` - (Optional, Bool, Available since v1.208.0) Specifies whether to enable the OCSP feature. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `proxy_types` - (Required, Set) Protocol type and port number information. See [`proxy_types`](#proxy_types) below.
+-> **NOTE:** From version 1.206.0, `proxy_types` can be modified.
 
 ### `proxy_types`
 

@@ -44,8 +44,11 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain":    name,
-					"https_ext": `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
+					"domain":       name,
+					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
+					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
+					"rs_type":      `0`,
+					"https_ext":    `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"80", "8080"},
@@ -56,35 +59,32 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 							"proxy_type":  "https",
 						},
 					},
-					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
-					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
-					"rs_type":      `0`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"domain":         name,
-						"https_ext":      CHECKSET,
-						"proxy_types.#":  "2",
 						"instance_ids.#": "1",
 						"real_servers.#": "3",
 						"rs_type":        "0",
+						"https_ext":      CHECKSET,
+						"proxy_types.#":  "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"https_ext": `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
 					"proxy_types": []map[string]interface{}{
 						{
 							"proxy_ports": []string{"443"},
 							"proxy_type":  "https",
 						},
 					},
-					"https_ext": `{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"proxy_types.#": "1",
 						"https_ext":     CHECKSET,
+						"proxy_types.#": "1",
 					}),
 				),
 			},
@@ -114,15 +114,94 @@ func TestAccAlicloudDdoscooDomainResource_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
 					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13", "177.167.32.14", "177.167.32.15"},
-					"https_ext":    `{\"Http2\":0,\"Http2https\":0,\"Https2http\":0}`,
 					"rs_type":      `0`,
+					"https_ext":    `{\"Http2\":0,\"Http2https\":0,\"Https2http\":0}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"real_servers.#": "5",
 						"instance_ids.#": "1",
-						"https_ext":      CHECKSET,
+						"real_servers.#": "5",
 						"rs_type":        "0",
+						"https_ext":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ocsp_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ocsp_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ocsp_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ocsp_enabled": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudDdoscooDomainResource_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ddoscoo_domain_resource.default"
+	ra := resourceAttrInit(resourceId, AlicloudDdoscooDomainResourceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdoscooDomainResource")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%d.alibaba.com", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdoscooDomainResourceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain":       name,
+					"instance_ids": []string{"${data.alicloud_ddoscoo_instances.default.ids.0}"},
+					"real_servers": []string{"177.167.32.11", "177.167.32.12", "177.167.32.13"},
+					"rs_type":      `0`,
+					"ocsp_enabled": "true",
+					"proxy_types": []map[string]interface{}{
+						{
+							"proxy_ports": []string{"80", "8080"},
+							"proxy_type":  "http",
+						},
+						{
+							"proxy_ports": []string{"443", "8443"},
+							"proxy_type":  "https",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain":         name,
+						"instance_ids.#": "1",
+						"real_servers.#": "3",
+						"rs_type":        "0",
+						"ocsp_enabled":   "true",
+						"proxy_types.#":  "2",
 					}),
 				),
 			},
