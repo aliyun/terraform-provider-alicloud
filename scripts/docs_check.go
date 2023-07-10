@@ -163,6 +163,14 @@ func main() {
 					}
 				}
 			}
+			if exampleBlockOpen && strings.Contains(text, "depends_on") {
+				text = strings.TrimSpace(text)
+				parts := strings.Split(text, "=")
+				if key := strings.TrimSpace(parts[0]); key == "depends_on" {
+					fmt.Printf("\nline %d: avoid using 'depends_on' as soon as possable in the example", line)
+					exitCode = 1
+				}
+			}
 			if strings.HasPrefix(text, "## Argument Reference") || strings.HasSuffix(text, "Argument Reference") {
 				exampleCheck = false
 				argumentCheck = true
