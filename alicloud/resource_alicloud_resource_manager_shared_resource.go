@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -40,7 +38,7 @@ func resourceAlicloudResourceManagerSharedResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"VSwitch", "ROSTemplate", "ServiceCatalogPortfolio", "PrefixList", "Image", "PublicIpAddressPool"}, false),
+				ValidateFunc: StringInSlice([]string{"VSwitch", "ROSTemplate", "ServiceCatalogPortfolio", "PrefixList", "Image", "PublicIpAddressPool", "KMSInstance"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -65,7 +63,7 @@ func resourceAlicloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 	request["Resources.1.ResourceType"] = d.Get("resource_type")
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -74,14 +72,17 @@ func resourceAlicloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_shared_resource", action, AlibabaCloudSdkGoERROR)
 	}
+
 	response = response["ResourceShareAssociations"].([]interface{})[0].(map[string]interface{})
 	d.SetId(fmt.Sprint(response["ResourceShareId"], ":", response["EntityId"], ":", response["EntityType"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, resourcesharingService.ResourceManagerSharedResourceStateRefreshFunc(d.Id(), []string{"Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -89,28 +90,33 @@ func resourceAlicloudResourceManagerSharedResourceCreate(d *schema.ResourceData,
 
 	return resourceAlicloudResourceManagerSharedResourceRead(d, meta)
 }
+
 func resourceAlicloudResourceManagerSharedResourceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourcesharingService := ResourcesharingService{client}
 	object, err := resourcesharingService.DescribeResourceManagerSharedResource(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_resource_manager_shared_resource resourcesharingService.DescribeResourceManagerSharedResource Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("resource_id", parts[1])
 	d.Set("resource_share_id", parts[0])
 	d.Set("resource_type", parts[2])
 	d.Set("status", object["AssociationStatus"])
+
 	return nil
 }
+
 func resourceAlicloudResourceManagerSharedResourceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	parts, err := ParseResourceId(d.Id(), 3)
@@ -131,7 +137,7 @@ func resourceAlicloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
@@ -140,15 +146,18 @@ func resourceAlicloudResourceManagerSharedResourceDelete(d *schema.ResourceData,
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{}, []string{"Disassociated"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcesharingService.ResourceManagerSharedResourceStateRefreshFunc(d.Id(), []string{"Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

@@ -34,10 +34,9 @@ func TestAccAlicloudResourceManagerSharedResource_basic(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -79,10 +78,9 @@ func TestAccAlicloudResourceManagerSharedResource_prefixList(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourcePrefixListDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -124,10 +122,9 @@ func TestAccAlicloudResourceManagerSharedResource_image(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerSharedResourceImageDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
+			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -159,97 +156,114 @@ var AlicloudResourceManagerSharedResourceMap = map[string]string{
 	"status": "Associated",
 }
 
+func AlicloudResourceManagerSharedResourceBasicDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.ids.0
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
+`, name)
+}
+
 func AlicloudResourceManagerSharedResourcePrefixListDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-resource "alicloud_vpc_prefix_list" "default" {
-	entrys {
-		cidr =  "192.168.0.0/16"
-		description = "description"
+	variable "name" {
+  		default = "%s"
 	}
-	ip_version = "IPV4"
-	max_entries = 50
-	prefix_list_name = var.name
-	prefix_list_description = "description"
-}
-resource "alicloud_resource_manager_resource_share" "default" {
-	resource_share_name = var.name
-}
+
+	resource "alicloud_vpc_prefix_list" "default" {
+  		ip_version              = "IPV4"
+  		max_entries             = 50
+  		prefix_list_name        = var.name
+  		prefix_list_description = "description"
+  		entrys {
+    		cidr        = "192.168.0.0/16"
+    		description = "description"
+  		}
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
 `, name)
 }
 
 func AlicloudResourceManagerSharedResourceImageDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 1
-	memory_size       = 2
-}
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  owners      = "system"
-}
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  vswitch_name      = var.name
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.ids[0]}"
-  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
-  security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = local.vswitch_id
-  instance_name = "${var.name}"
-}
-resource "alicloud_image" "default" {
-  instance_id = "${alicloud_instance.default.id}"
-  image_name        = "${var.name}"
-}
-resource "alicloud_resource_manager_resource_share" "default" {
-	resource_share_name = var.name
-}
-`, name)
-}
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
 
-func AlicloudResourceManagerSharedResourceBasicDependence(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-data "alicloud_vpcs" "default"{
-  name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.ids.0
-}
-resource "alicloud_resource_manager_resource_share" "default" {
-	resource_share_name = var.name
-}
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		instance_name              = var.name
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
+  		instance_charge_type       = "PostPaid"
+  		system_disk_category       = "cloud_efficiency"
+  		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+	}
+
+	resource "alicloud_image" "default" {
+  		instance_id = alicloud_instance.default.id
+  		image_name  = var.name
+	}
+
+	resource "alicloud_resource_manager_resource_share" "default" {
+  		resource_share_name = var.name
+	}
 `, name)
 }
 
