@@ -655,6 +655,132 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
+func resourceDBInstanceHighAvailabilityConfigDependenceVpcId(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "5.7"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "local_ssd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "5.7"
+ 	db_instance_storage_type = "local_ssd"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "this" {
+ count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+ vswitch_name = var.name
+ vpc_id = data.alicloud_vpcs.default.ids.0
+ zone_id = data.alicloud_db_zones.default.ids.0
+ cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
+}
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  zone_id = data.alicloud_db_zones.default.ids.0
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+	status = "OK"
+}
+
+resource "alicloud_ram_policy" "default" {
+  policy_name = "${var.name}"
+  policy_document = <<EOF
+	{
+	  "Statement": [
+		{
+          "Action": [
+              "kms:List*",
+              "kms:DescribeKey",
+              "kms:TagResource",
+              "kms:UntagResource"
+          ],
+          "Resource": [
+              "acs:kms:*:*:*"
+          ],
+          "Effect": "Allow"
+      	},
+      	{
+          "Action": [
+              "kms:Encrypt",
+              "kms:Decrypt",
+              "kms:GenerateDataKey"
+          ],
+          "Resource": [
+              "acs:kms:*:*:*"
+          ],
+          "Effect": "Allow",
+          "Condition": {
+              "StringEqualsIgnoreCase": {
+                  "kms:tag/acs:rds:instance-encryption": "true"
+              }
+          }
+      	}
+	  ],
+		"Version": "1"
+	}
+  EOF
+  description = "this is a policy test"
+  force = true
+}
+
+resource "alicloud_ram_role" "default" {
+  name = "${var.name}"
+  document = <<EOF
+	{
+	  "Statement": [
+		{
+		  "Action": "sts:AssumeRole",
+		  "Effect": "Allow",
+		  "Principal": {
+			"Service": [
+			  "rds.aliyuncs.com"
+			]
+		  }
+		}
+	  ],
+	  "Version": "1"
+	}
+  EOF
+  description = "this is a test"
+  force = true
+}
+
+resource "alicloud_ram_role_policy_attachment" "default" {
+  policy_name = "${alicloud_ram_policy.default.policy_name}"
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_type = "${alicloud_ram_policy.default.type}"
+}
+
+data "alicloud_ram_roles" "default" {
+  name_regex = "${alicloud_ram_role_policy_attachment.default.policy_name}"
+}
+
+resource "alicloud_security_group" "default" {
+	name   = var.name
+	vpc_id = data.alicloud_vpcs.default.ids.0
+}
+`, name)
+}
+
 func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
@@ -1972,8 +2098,9 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := "tf-testAccDBInstanceConfig_slave_zone"
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependence)
+	rand := acctest.RandIntRange(10000, 999999)
+	name := fmt.Sprintf("tftestaccdbcreatemysql%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependenceVpcId)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -2000,6 +2127,8 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 					"vswitch_id":               "${local.vswitch_id}",
 					"monitoring_period":        "60",
 					"security_group_ids":       "${alicloud_security_group.default.*.id}",
+					"role_arn":                 "${data.alicloud_ram_roles.default.roles.0.arn}",
+					"tde_status":               "Enabled",
 					//"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2007,6 +2136,7 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 						"engine":                   "MySQL",
 						"engine_version":           "5.7",
 						"db_instance_storage_type": "local_ssd",
+						"instance_name":            name,
 						//"vpc_id":                   CHECKSET,
 					}),
 				),
@@ -2015,7 +2145,7 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "role_arn", "tde_status"},
 			},
 		},
 	})

@@ -669,6 +669,7 @@ The following arguments are supported:
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
 
 * `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
+* `role_arn` - (ForceNew, Optional, Available in 1.208.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role.
 
 ### `parameters`
 

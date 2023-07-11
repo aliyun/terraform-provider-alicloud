@@ -570,6 +570,12 @@ func resourceAlicloudDBInstance() *schema.Resource {
 					return false
 				},
 			},
+			"role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -1068,13 +1074,18 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 
 		if "MySQL" == d.Get("engine").(string) {
+			if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+				request["RoleARN"] = v.(string)
+			}
 			if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 				request["EncryptionKey"] = v.(string)
-				roleArn, err := findKmsRoleArn(client, v.(string))
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				if ro, ok := request["RoleARN"].(string); !ok || ro == "" {
+					roleArn, err := findKmsRoleArn(client, v.(string))
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+					request["RoleARN"] = roleArn
 				}
-				request["RoleARN"] = roleArn
 			}
 		}
 
@@ -1844,14 +1855,18 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	}
 
 	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {
+		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+			request["RoleARN"] = v.(string)
+		}
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
-
-			roleArn, err := findKmsRoleArn(client, v.(string))
-			if err != nil {
-				return nil, WrapError(err)
+			if ro, ok := request["RoleARN"].(string); !ok || ro == "" {
+				roleArn, err := findKmsRoleArn(client, v.(string))
+				if err != nil {
+					return nil, WrapError(err)
+				}
+				request["RoleARN"] = roleArn
 			}
-			request["RoleARN"] = roleArn
 		}
 	}
 
