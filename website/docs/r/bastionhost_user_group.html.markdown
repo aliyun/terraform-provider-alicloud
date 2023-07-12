@@ -7,24 +7,56 @@ description: |-
   Provides a Alicloud Bastion Host User Group resource.
 ---
 
-# alicloud\_bastionhost\_user\_group
+# alicloud_bastionhost_user_group
 
 Provides a Bastion Host User Group resource.
 
 For information about Bastion Host User Group and how to use it, see [What is User Group](https://www.alibabacloud.com/help/doc-detail/204596.htm).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_bastionhost_user_group" "example" {
-  instance_id     = "example_value"
-  user_group_name = "example_value"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
+resource "alicloud_bastionhost_instance" "default" {
+  description        = var.name
+  license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
+  period             = "1"
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_bastionhost_user_group" "default" {
+  instance_id     = alicloud_bastionhost_instance.default.id
+  user_group_name = var.name
+}
 ```
 
 ## Argument Reference
