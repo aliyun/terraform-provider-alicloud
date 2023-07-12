@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Application Real-Time Monitoring Service (ARMS) Alert Contact resource.
 ---
 
-# alicloud\_arms\_alert\_contact
+# alicloud_arms_alert_contact
 
 Provides a Application Real-Time Monitoring Service (ARMS) Alert Contact resource.
 
-For information about Application Real-Time Monitoring Service (ARMS) Alert Contact and how to use it, see [What is Alert Contact](https://www.alibabacloud.com/help/en/doc-detail/42953.htm).
+For information about Application Real-Time Monitoring Service (ARMS) Alert Contact and how to use it, see [What is Alert Contact](https://www.alibabacloud.com/help/en/application-real-time-monitoring-service/latest/createalertcontact).
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
 
