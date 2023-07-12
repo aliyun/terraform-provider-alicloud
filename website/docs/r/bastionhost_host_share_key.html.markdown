@@ -7,27 +7,60 @@ description: |-
   Provides a Alicloud Bastion Host Host Share Key resource.
 ---
 
-# alicloud\_bastionhost\_host\_share\_key
+# alicloud_bastionhost_host_share_key
 
 Provides a Bastion Host Share Key resource.
 
 For information about Bastion Host Host Share Key and how to use it, see [What is Host Share Key](https://www.alibabacloud.com/help/en/bastion-host/latest/createhostsharekey).
 
--> **NOTE:** Available in v1.165.0+.
+-> **NOTE:** Available since v1.165.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_bastionhost_instances" "default" {
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
+resource "alicloud_bastionhost_instance" "default" {
+  description        = var.name
+  license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
+  period             = "1"
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+variable "private_key" {
+  default = "LS0tLS1CR*******"
+}
 resource "alicloud_bastionhost_host_share_key" "default" {
-  host_share_key_name = "example_name"
-  instance_id         = data.alicloud_bastionhost_instances.default.instances.0.id
-  pass_phrase         = "example_value"
-  private_key         = "example_value"
+  host_share_key_name = var.name
+  instance_id         = alicloud_bastionhost_instance.default.id
+  pass_phrase         = "NTIxeGlubXU="
+  private_key         = var.private_key
 }
 ```
 
@@ -48,7 +81,7 @@ The following attributes are exported:
 * `host_share_key_id` - The first ID of the resource.
 * `private_key_finger_print` - The fingerprint of the private key.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

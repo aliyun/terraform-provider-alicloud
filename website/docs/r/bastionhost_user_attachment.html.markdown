@@ -7,23 +7,69 @@ description: |-
   Provides a Alicloud Bastion Host User Attachment resource.
 ---
 
-# alicloud\_bastionhost\_user\_attachment
+# alicloud_bastionhost_user_attachment
 
 Provides a Bastion Host User Attachment resource to add user to one user group.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_bastionhost_user_attachment" "example" {
-  instance_id   = "bastionhost-cn-tl3xxxxxxx"
-  user_group_id = "10"
-  user_id       = "100"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
+resource "alicloud_bastionhost_instance" "default" {
+  description        = var.name
+  license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
+  period             = "1"
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_bastionhost_user_group" "default" {
+  instance_id     = alicloud_bastionhost_instance.default.id
+  user_group_name = var.name
+}
+
+resource "alicloud_bastionhost_user" "local_user" {
+  instance_id         = alicloud_bastionhost_instance.default.id
+  mobile_country_code = "CN"
+  mobile              = "13312345678"
+  password            = "YourPassword-123"
+  source              = "Local"
+  user_name           = "${var.name}_local_user"
+}
+
+resource "alicloud_bastionhost_user_attachment" "default" {
+  instance_id   = alicloud_bastionhost_instance.default.id
+  user_group_id = alicloud_bastionhost_user_group.default.user_group_id
+  user_id       = alicloud_bastionhost_user.local_user.user_id
+}
 ```
 
 ## Argument Reference

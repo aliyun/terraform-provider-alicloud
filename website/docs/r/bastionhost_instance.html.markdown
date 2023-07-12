@@ -25,33 +25,73 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
 resource "alicloud_bastionhost_instance" "default" {
-  description        = "Terraform-test"
+  description        = var.name
   license_code       = "bhah_ent_50_asset"
   plan_code          = "cloudbastion"
   storage            = "5"
   bandwidth          = "5"
   period             = "1"
-  vswitch_id         = "v-testVswitch"
-  security_group_ids = ["sg-test", "sg-12345"]
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
 }
 ```
 
 ```terraform
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_bastionhost_instance" "default" {
-  description        = "Terraform-test"
+  description        = var.name
   license_code       = "bhah_ent_50_asset"
   plan_code          = "cloudbastion"
   storage            = "5"
   bandwidth          = "5"
   period             = 1
-  security_group_ids = [alicloud_security_group.default.0.id, alicloud_security_group.default.1.id]
-  vswitch_id         = "v-testVswitch"
-  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  security_group_ids = [alicloud_security_group.default.id]
+  vswitch_id         = alicloud_vswitch.default.id
   ad_auth_server {
     server         = "192.168.1.1"
     standby_server = "192.168.1.3"
@@ -79,9 +119,6 @@ resource "alicloud_bastionhost_instance" "default" {
     mobile_mapping     = "mobileAttr"
     is_ssl             = false
     base_dn            = "dc=test,dc=com"
-  }
-  lifecycle {
-    ignore_changes = [ldap_auth_server.0.password, ad_auth_server.0.password]
   }
 }
 ```

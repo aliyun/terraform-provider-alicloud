@@ -7,36 +7,75 @@ description: |-
   Provides a Alicloud Bastion Host User resource.
 ---
 
-# alicloud\_bastionhost\_user
+# alicloud_bastionhost_user
 
 Provides a Bastion Host User resource.
 
 For information about Bastion Host User and how to use it, see [What is User](https://www.alibabacloud.com/help/doc-detail/204503.htm).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_bastionhost_user" "Local" {
-  instance_id         = "example_value"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
+}
+resource "alicloud_bastionhost_instance" "default" {
+  description        = var.name
+  license_code       = "bhah_ent_50_asset"
+  plan_code          = "cloudbastion"
+  storage            = "5"
+  bandwidth          = "5"
+  period             = "1"
+  vswitch_id         = alicloud_vswitch.default.id
+  security_group_ids = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_bastionhost_user" "local_user" {
+  instance_id         = alicloud_bastionhost_instance.default.id
   mobile_country_code = "CN"
   mobile              = "13312345678"
   password            = "YourPassword-123"
   source              = "Local"
-  user_name           = "my-local-user"
+  user_name           = "${var.name}_local_user"
 }
 
-resource "alicloud_bastionhost_user" "Ram" {
-  instance_id         = "example_value"
-  mobile_country_code = "CN"
-  mobile              = "13312345678"
-  password            = "YourPassword-123"
-  source              = "Ram"
-  source_user_id      = "1234567890"
-  user_name           = "my-ram-user"
+resource "alicloud_ram_user" "user" {
+  name         = "${var.name}_bastionhost_user"
+  display_name = "${var.name}_bastionhost_user"
+  mobile       = "86-18688888888"
+  email        = "hello.uuu@aaa.com"
+  comments     = "yoyoyo"
+  force        = true
+}
+data "alicloud_account" "default" {}
+resource "alicloud_bastionhost_user" "ram_user" {
+  instance_id    = alicloud_bastionhost_instance.default.id
+  source         = "Ram"
+  source_user_id = data.alicloud_account.default.id
+  user_name      = alicloud_ram_user.user.name
 }
 ```
 
@@ -45,11 +84,11 @@ resource "alicloud_bastionhost_user" "Ram" {
 The following arguments are supported:
 
 * `comment` - (Optional) Specify the New of the User That Created the Remark Information. Supports up to 500 Characters.
-* `display_name` - (Optional, Computed) Specify the New Created the User's Display Name. Supports up to 128 Characters.
+* `display_name` - (Optional) Specify the New Created the User's Display Name. Supports up to 128 Characters.
 * `email` - (Optional) Specify the New User's Mailbox.
 * `instance_id` - (Required, ForceNew) You Want to Query the User the Bastion Host ID of.
 * `mobile` - (Optional) Specify the New of the User That Created a Different Mobile Phone Number from Your.
-* `mobile_country_code` - (Optional, Computed) Specify the New Create User Mobile Phone Number of the International Domain Name. The Default Value Is the CN. Valid Values:
+* `mobile_country_code` - (Optional) Specify the New Create User Mobile Phone Number of the International Domain Name. The Default Value Is the CN. Valid Values:
   * CN: Mainland China (+86) 
   * HK: hong Kong, China (+852) 
   * MO: Macau, China (+853) 
@@ -69,7 +108,7 @@ The following arguments are supported:
   * PH: philippines (+63) 
   * CH: Switzerland (+41) 
   * SE: Sweden (+46)
-* `password` - (Optional, Sensitive) Specify the New User's Password. Supports up to 128 Characters. Description of the New User as the Source of the Local User (That Is, Source Value for Local, this Parameter Is Required.
+* `password` - (Optional, Sensitive) Specify the New User's Password. Supports up to 128 Characters. Description of the New User as the Source of the Local User That Is, Source Value for Local, this Parameter Is Required.
 * `source` - (Required, ForceNew) Specify the New of the User That Created the Source. Valid Values:
   * Local: Local User
   * Ram: Ram User
@@ -77,7 +116,7 @@ The following arguments are supported:
   * LDAP: LDAP-authenticated User
 -> **NOTE:** From version 1.199.0, `source` can be set to `AD`, `LDAP`.
 * `source_user_id` - (Optional, ForceNew) Specify the Newly Created User Is Uniquely Identified. Indicates That the Parameter Is a Bastion Host Corresponding to the User with the Ram User's Unique Identifier. The Newly Created User Source Grant Permission to a RAM User (That Is, Source Used as a Ram), this Parameter Is Required. You Can Call Access Control of Listusers Interface from the Return Data Userid to Obtain the Parameters.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `Frozen`, `Normal`.
+* `status` - (Optional) The status of the resource. Valid values: `Frozen`, `Normal`.
 * `user_name` - (Required, ForceNew) Specify the New User Name. This Parameter Is Only by Letters, Lowercase Letters, Numbers, and Underscores (_), Supports up to 128 Characters.
 
 ## Attributes Reference
@@ -87,9 +126,9 @@ The following attributes are exported:
 * `id` - The resource ID of User. The value formats as `<instance_id>:<user_id>`.
 * `user_id` - The User ID.
 
-### Timeouts
+## Timeouts
 
--> **NOTE:** Available in 1.199.0+.
+-> **NOTE:** Available since v1.199.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
