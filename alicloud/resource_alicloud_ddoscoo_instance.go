@@ -8,28 +8,28 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDdoscooInstance() *schema.Resource {
+func resourceAliCloudDdoscooInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDdoscooInstanceCreate,
-		Read:   resourceAlicloudDdoscooInstanceRead,
-		Update: resourceAlicloudDdoscooInstanceUpdate,
-		Delete: resourceAlicloudDdoscooInstanceDelete,
+		Create: resourceAliCloudDdoscooInstanceCreate,
+		Read:   resourceAliCloudDdoscooInstanceRead,
+		Update: resourceAliCloudDdoscooInstanceUpdate,
+		Delete: resourceAliCloudDdoscooInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
 			},
 			"base_bandwidth": {
 				Type:     schema.TypeString,
@@ -51,24 +51,44 @@ func resourceAlicloudDdoscooInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"period": {
-				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+			"edition_sale": {
+				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      1,
 				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"coop"}, false),
 			},
 			"product_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "ddoscoo",
-				ValidateFunc: validation.StringInSlice([]string{"ddoscoo", "ddoscoo_intl"}, false),
+				ValidateFunc: StringInSlice([]string{"ddoscoo", "ddoscoo_intl"}, false),
+			},
+			"address_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Ipv4", "Ipv6"}, false),
+			},
+			"bandwidth_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1", "2"}, false),
+			},
+			"period": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+			},
+			"ip": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
@@ -79,39 +99,85 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
-	request["Period"] = requests.NewInteger(d.Get("period").(int))
+
 	request["ProductCode"] = "ddos"
-	request["ProductType"] = d.Get("product_type").(string)
 	request["SubscriptionType"] = "Subscription"
-	request["Parameter"] = []map[string]string{
-		{
-			"Code":  "ServicePartner",
-			"Value": "coop-line-001",
-		},
-		{
-			"Code":  "Bandwidth",
-			"Value": d.Get("bandwidth").(string),
-		},
-		{
-			"Code":  "BaseBandwidth",
-			"Value": d.Get("base_bandwidth").(string),
-		},
-		{
-			"Code":  "DomainCount",
-			"Value": d.Get("domain_count").(string),
-		},
-		{
-			"Code":  "PortCount",
-			"Value": d.Get("port_count").(string),
-		},
-		{
-			"Code":  "ServiceBandwidth",
-			"Value": d.Get("service_bandwidth").(string),
-		},
+
+	parameterMapList := make([]map[string]interface{}, 0)
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "ServicePartner",
+		"Value": "coop-line-001",
+	})
+
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "BaseBandwidth",
+		"Value": d.Get("base_bandwidth").(string),
+	})
+
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Bandwidth",
+		"Value": d.Get("bandwidth").(string),
+	})
+
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "ServiceBandwidth",
+		"Value": d.Get("service_bandwidth").(string),
+	})
+
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "PortCount",
+		"Value": d.Get("port_count").(string),
+	})
+
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "DomainCount",
+		"Value": d.Get("domain_count").(string),
+	})
+
+	if v, ok := d.GetOk("edition_sale"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Edition",
+			"Value": v,
+		})
+	} else {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Edition",
+			"Value": "coop",
+		})
 	}
+
+	if v, ok := d.GetOk("address_type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "AddressType",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOk("bandwidth_mode"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "95BurstBandwidthMode",
+			"Value": v,
+		})
+	}
+
+	request["Parameter"] = parameterMapList
+	if v, ok := d.GetOk("product_type"); ok {
+		request["ProductType"] = v
+	} else {
+		request["ProductType"] = "ddoscoo"
+	}
+
+	if v, ok := d.GetOkExists("period"); ok {
+		request["Period"] = v
+	} else {
+		request["Period"] = 1
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -129,39 +195,42 @@ func resourceAlicloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if response["Code"].(string) != "Success" {
 		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_ddoscoo_instance", action, AlibabaCloudSdkGoERROR)
 	}
+
 	response = response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(response["InstanceId"]))
+
 	stateConf := BuildStateConf([]string{"Pending"}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDdoscooInstanceUpdate(d, client)
+	return resourceAliCloudDdoscooInstanceUpdate(d, client)
 }
 
-func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
 	insInfo, err := ddoscooService.DescribeDdoscooInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
-
 		return WrapError(err)
 	}
 
 	specInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -169,16 +238,19 @@ func resourceAlicloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("name", insInfo["Remark"])
-	d.Set("bandwidth", specInfo["ElasticBandwidth"])
+	d.Set("edition_sale", convertEditionResponse(formatInt(insInfo["Edition"])))
+	d.Set("address_type", insInfo["IpVersion"])
 	d.Set("base_bandwidth", specInfo["BaseBandwidth"])
-	d.Set("domain_count", specInfo["DomainLimit"])
-	d.Set("port_count", specInfo["PortLimit"])
+	d.Set("bandwidth", specInfo["ElasticBandwidth"])
 	d.Set("service_bandwidth", specInfo["BandwidthMbps"])
+	d.Set("port_count", specInfo["PortLimit"])
+	d.Set("domain_count", specInfo["DomainLimit"])
+	d.Set("ip", insInfo["Ip"])
 
 	return nil
 }
 
-func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
@@ -193,7 +265,7 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudDdoscooInstanceRead(d, meta)
+		return resourceAliCloudDdoscooInstanceRead(d, meta)
 	}
 
 	if d.HasChange("bandwidth") {
@@ -235,31 +307,37 @@ func resourceAlicloudDdoscooInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		d.SetPartial("service_bandwidth")
 	}
+
 	stateConf := BuildStateConf([]string{""}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ddoscooService.DdosStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	d.Partial(false)
-	return resourceAlicloudDdoscooInstanceRead(d, meta)
+
+	return resourceAliCloudDdoscooInstanceRead(d, meta)
 }
 
-func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDdoscooInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "ReleaseInstance"
 	var response map[string]interface{}
+
 	conn, err := client.NewDdoscooClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"InstanceId": d.Id(),
 		"RegionId":   "cn-hangzhou",
+		"InstanceId": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -267,9 +345,10 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InstanceNotFound"}) {
 			return nil
@@ -280,5 +359,14 @@ func resourceAlicloudDdoscooInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
+}
+
+func convertEditionResponse(source int) string {
+	switch source {
+	case 9:
+		return "coop"
+	}
+	return ""
 }
