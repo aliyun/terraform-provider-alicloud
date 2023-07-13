@@ -49,6 +49,10 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+   status = "OK"
+}
+
 resource "alicloud_db_instance" "default" {
   engine                   = "PostgreSQL"
   engine_version           = "13.0"
@@ -96,6 +100,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 					"instance_network_type":    "VPC",
 					"collect_stat_mode":        "After",
 					"switch_over":              "false",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -111,6 +116,17 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 						"db_instance_description":  CHECKSET,
 						"vpc_id":                   CHECKSET,
 						"vswitch_id":               CHECKSET,
+						"resource_group_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -230,6 +246,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 					"acl":                         "cert",
 					"replication_acl":             "cert",
 					"deletion_protection":         "false",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -244,6 +261,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL(t *testing.T) {
 						"server_cert":                 CHECKSET,
 						"server_key":                  CHECKSET,
 						"deletion_protection":         "false",
+						"resource_group_id":           CHECKSET,
 					}),
 				),
 			},
@@ -290,6 +308,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 					"instance_network_type":    "VPC",
 					"collect_stat_mode":        "After",
 					"switch_over":              "false",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -305,6 +324,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 						"db_instance_description":  CHECKSET,
 						"vpc_id":                   CHECKSET,
 						"vswitch_id":               CHECKSET,
+						"resource_group_id":        CHECKSET,
 					}),
 				),
 			},
@@ -384,10 +404,12 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL_PG_HBA_CONF(t *testing.T) {
 					"port":                     "3333",
 					"connection_string_prefix": "${var.name}",
 					"deletion_protection":      "false",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"deletion_protection": "false",
+						"resource_group_id":   CHECKSET,
 					}),
 				),
 			},
@@ -439,6 +461,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 					"vswitch_id":               "${alicloud_db_instance.default.vswitch_id}",
 					"zone_id":                  "${data.alicloud_db_zones.default.zones.0.id}",
 					"zone_id_slave_1":          "${data.alicloud_db_zones.default.zones.0.id}",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -455,6 +478,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 						"db_instance_description":  CHECKSET,
 						"vpc_id":                   CHECKSET,
 						"vswitch_id":               CHECKSET,
+						"resource_group_id":        CHECKSET,
 					}),
 				),
 			},
@@ -553,6 +577,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 					"client_cert_revocation_list": client_cert_revocation_list,
 					"acl":                         "cert",
 					"replication_acl":             "cert",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -566,6 +591,7 @@ func TestAccAlicloudRdsUpgradeDBInstancePostgreSQL2(t *testing.T) {
 						"replication_acl":             "cert",
 						"server_cert":                 CHECKSET,
 						"server_key":                  CHECKSET,
+						"resource_group_id":           CHECKSET,
 					}),
 				),
 			},

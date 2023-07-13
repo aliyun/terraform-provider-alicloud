@@ -504,6 +504,7 @@ func resourceAlicloudRdsUpgradeDbInstanceRead(d *schema.ResourceData, meta inter
 	d.Set("port", object["Port"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("deletion_protection", object["DeletionProtection"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	if err = rdsService.RefreshParameters(d, "parameters"); err != nil {
 		return WrapError(err)
@@ -1007,6 +1008,12 @@ func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta int
 			modifyDBInstanceSSLReq["SSLEnabled"] = v
 		}
 	}
+	instance, err := rdsService.DescribeDBInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	// When upgrading to a larger version, SSL was immediately enabled. As no instance information was queried, there was no ConnectionString information available, so the queried ConnectionString was used
+	modifyDBInstanceSSLReq["ConnectionString"] = instance["ConnectionString"]
 	if update {
 		action := "ModifyDBInstanceSSL"
 		conn, err := client.NewRdsClient()
@@ -1044,6 +1051,41 @@ func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta int
 		d.SetPartial("server_key")
 		d.SetPartial("ssl_enabled")
 	}
+	if d.HasChange("resource_group_id") {
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			conn, err := client.NewRdsClient()
+			action := "ModifyResourceGroup"
+			groupRequest := map[string]interface{}{
+				"DBInstanceId":    d.Id(),
+				"ResourceGroupId": v.(string),
+				"ClientToken":     buildClientToken(action),
+				"SourceIp":        client.SourceIp,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, groupRequest, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, groupRequest)
+			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("resource_group_id")
+		}
+	}
+
 	update = false
 	modifyDBInstanceSpecReq := map[string]interface{}{
 		"DBInstanceId": d.Id(),
@@ -1094,9 +1136,6 @@ func resourceAlicloudRdsUpgradeDbInstanceUpdate(d *schema.ResourceData, meta int
 		}
 		if v, ok := d.GetOk("effective_time"); ok {
 			modifyDBInstanceSpecReq["EffectiveTime"] = v
-		}
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			modifyDBInstanceSpecReq["ResourceGroupId"] = v
 		}
 		if v, ok := d.GetOk("source_biz"); ok {
 			modifyDBInstanceSpecReq["SourceBiz"] = v
