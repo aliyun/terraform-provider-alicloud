@@ -9,14 +9,14 @@ description: |-
 
 # alicloud_bastionhost_instance
 
--> **NOTE:** From the version 1.132.0, the resource has been renamed to `alicloud_bastionhost_instance`.
+-> **NOTE:** Since the version 1.132.0, the resource `alicloud_yundun_bastionhost_instance` has been renamed to `alicloud_bastionhost_instance`.
 
 Cloud Bastion Host instance resource ("Yundun_bastionhost" is the short term of this product). 
 For information about Resource Manager Resource Directory and how to use it, see [What is Bastionhost](https://www.alibabacloud.com/help/en/doc-detail/52922.htm).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
--> **NOTE:** Available in 1.63.0+ .
+-> **NOTE:** Available since v1.132.0.
 
 -> **NOTE:** In order to destroy Cloud Bastionhost instance , users are required to apply for white list first
 
@@ -98,11 +98,13 @@ You can resume managing the subscription bastionhost instance via the AlibabaClo
 The following arguments are supported:
 
 * `license_code` - (Required)  The package type of Cloud Bastionhost instance. You can query more supported types through the [DescribePricingModule](https://help.aliyun.com/document_detail/96469.html).
-* `plan_code` - (Required, ForceNew, Available in 1.193.0+) The plan code of Cloud Bastionhost instance. Valid values:
+* `plan_code` - (Required, ForceNew, Available since 1.193.0) The plan code of Cloud Bastionhost instance. Valid values:
   - `cloudbastion`: Basic Edition.
   - `cloudbastion_ha`: HA Edition.
-* `storage` - (Required, ForceNew, Available in 1.193.0+) The storage of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: TB.
-* `bandwidth` - (Required, ForceNew, Available in 1.193.0+) The bandwidth of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: Mbit/s.
+* `storage` - (Required, ForceNew, Available since 1.193.0) The storage of Cloud Bastionhost instance. Valid values: 0 to 500. Unit: TB.
+* `bandwidth` - (Required, ForceNew, Available since 1.193.0) The bandwidth of Cloud Bastionhost instance.
+  If [China-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-china-site-account), its valid values: 0 to 150. Unit: Mbit/s. The value must be a multiple of 5.
+  If [International-Site Account](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account#sign-up-for-an-alibaba-cloud-international-site-account), its valid values: 0 to 200. Unit: Mbit/s. The value must be a multiple of 10.
 * `description` - (Required) Description of the instance. This name can have a string of 1 to 63 characters.
 * `period` - (Optional) Duration for initially producing the instance. Valid values: [1~9], 12, 24, 36. At present, the provider does not support modify "period".
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
@@ -111,17 +113,17 @@ The following arguments are supported:
   **NOTE:** There is a potential diff error because of the order of `security_group_ids` values indefinite.
   So, from version 1.160.0, `security_group_ids` type has been updated as `set` from `list`,
   and you can use [tolist](https://www.terraform.io/language/functions/tolist) to convert it to a list.
-* `tags` - (Optional, Available in v1.67.0+) A mapping of tags to assign to the resource.
-* `resource_group_id` - (Optional, Available in v1.87.0+) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
-* `enable_public_access` - (Optional, Available in v1.143.0+)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
-* `ad_auth_server` - (Optional, Available in 1.169.0+) The AD auth server of the Instance. See the following `Block ad_auth_server`.
-* `ldap_auth_server` - (Optional, Available in 1.169.0+) The LDAP auth server of the Instance. See the following `Block ldap_auth_server`.
-* `renew_period` - (Optional, Available in 1.187.0+) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that `renewal_status` is `AutoRenewal`. From version 1.193.0, `renew_period` can be modified.
-* `renewal_status` - (Optional, Computed, Available in 1.187.0+) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`. From version 1.193.0, `renewal_status` can be modified.
-* `renewal_period_unit` - (Optional, Computed, Available in 1.193.0+) The unit of the auto-renewal period. Valid values:  **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
+* `tags` - (Optional, Available since v1.67.0) A mapping of tags to assign to the resource.
+* `resource_group_id` - (Optional, Available since v1.87.0) The Id of resource group which the Bastionhost Instance belongs. If not set, the resource is created in the default resource group.
+* `enable_public_access` - (Optional, Available since v1.143.0)  Whether to Enable the public internet access to a specified Bastionhost instance. The valid values: `true`, `false`.
+* `ad_auth_server` - (Optional, Available since 1.169.0) The AD auth server of the Instance. See [`ad_auth_server`](#ad_auth_server) below.
+* `ldap_auth_server` - (Optional, Available since 1.169.0) The LDAP auth server of the Instance. See [`ldap_auth_server`](#ldap_auth_server) below.
+* `renew_period` - (Optional, Available since 1.187.0) Automatic renewal period. Valid values: `1` to `9`, `12`, `24`, `36`. **NOTE:** The `renew_period` is required under the condition that `renewal_status` is `AutoRenewal`. From version 1.193.0, `renew_period` can be modified.
+* `renewal_status` - (Optional, Computed, Available since 1.187.0) Automatic renewal status. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`. From version 1.193.0, `renewal_status` can be modified.
+* `renewal_period_unit` - (Optional, Computed, Available since 1.193.0) The unit of the auto-renewal period. Valid values:  **NOTE:** The `renewal_period_unit` is required under the condition that `renewal_status` is `AutoRenewal`.
   - `M`: months.
   - `Y`: years.
-* `public_white_list` - (Optional, Available in 1.199.0+) The public IP address that you want to add to the whitelist.
+* `public_white_list` - (Optional, Available since 1.199.0) The public IP address that you want to add to the whitelist.
 
   -> **NOTE:** You can utilize the generic Terraform resource [lifecycle configuration block](https://www.terraform.io/docs/configuration/resources.html) with `ad_auth_server` or `ldap_auth_server` to configure auth server, then ignore any changes to that `password` caused externally (e.g. Application Autoscaling).
 ```
@@ -131,7 +133,7 @@ The following arguments are supported:
   }
 ```
 
-#### Block ad_auth_server
+### `ad_auth_server`
 
 The ad_auth_server supports the following:
 
@@ -140,7 +142,6 @@ The ad_auth_server supports the following:
 * `domain` - (Required) The domain on the AD server.
 * `email_mapping` - (Optional) The field that is used to indicate the email address of a user on the AD server.
 * `filter` - (Optional) The condition that is used to filter users.
-* `instance_id` - (Required, ForceNew) The ID of the Bastion machine instance.
 * `is_ssl` - (Required) Specifies whether to support SSL.
 * `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the AD server.
 * `name_mapping` - (Optional) The field that is used to indicate the name of a user on the AD server.
@@ -149,7 +150,7 @@ The ad_auth_server supports the following:
 * `server` - (Required) The address of the AD server.
 * `standby_server` - (Optional) The address of the secondary AD server.
 
-#### Block ldap_auth_server
+### `ldap_auth_server`
 
 The ldap_auth_server supports the following:
 
@@ -157,7 +158,6 @@ The ldap_auth_server supports the following:
 * `base_dn` - (Required) The Base distinguished name (DN).
 * `email_mapping` - (Optional) The field that is used to indicate the email address of a user on the LDAP server.
 * `filter` - (Optional) The condition that is used to filter users.
-* `instance_id` - (Required, ForceNew) The ID of the Bastion machine instance.
 * `is_ssl` - (Optional) Specifies whether to support SSL.
 * `login_name_mapping` - (Optional) The field that is used to indicate the logon name of a user on the LDAP server.
 * `mobile_mapping` - (Optional) The field that is used to indicate the mobile phone number of a user on the LDAP server.
@@ -173,7 +173,7 @@ The following attributes are exported:
 
 * `id` - The ID of the instance resource of Bastionhost.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
