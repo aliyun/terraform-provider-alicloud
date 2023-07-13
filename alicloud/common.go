@@ -1379,6 +1379,24 @@ func IsEmpty(i interface{}) bool {
 	}
 }
 
+func IsNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.String:
+		return fmt.Sprint(i) == ""
+	case reflect.Slice:
+		return len(i.([]interface{})) <= 0
+	case reflect.Map:
+		return len(i.(map[string]interface{})) <= 0
+	case reflect.Ptr:
+		return reflect.ValueOf(i).IsNil()
+	default:
+		return false
+	}
+}
+
 func GetDaysBetween2Date(format string, date1Str string, date2Str string) (int, error) {
 	var day int
 	t1, err := time.ParseInLocation(format, date1Str, time.Local)
