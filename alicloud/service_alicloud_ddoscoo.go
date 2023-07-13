@@ -24,9 +24,9 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 	if err != nil {
 		return nil, WrapError(err)
 	}
+
 	action := "DescribeInstances"
 	request := make(map[string]interface{})
-	request["RegionId"] = "cn-hangzhou"
 	request["PageSize"] = PageSizeSmall
 	request["PageNumber"] = 1
 	request["InstanceIds"] = []string{id}
@@ -46,6 +46,7 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -64,7 +65,9 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 			return object, WrapErrorf(Error(GetNotFoundMessage("Ddoscoo", id)), NotFoundWithResponse, response)
 		}
 	}
+
 	object = v.([]interface{})[0].(map[string]interface{})
+
 	return object, nil
 }
 
@@ -96,7 +99,6 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 	}
 	action := "DescribeInstanceSpecs"
 	request := make(map[string]interface{})
-	request["RegionId"] = "cn-hangzhou"
 	request["InstanceIds"] = []string{id}
 
 	runtime := util.RuntimeOptions{}
@@ -138,7 +140,6 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 
 func (s *DdoscooService) UpdateDdoscooInstanceName(instanceId string, name string) error {
 	request := ddoscoo.CreateModifyInstanceRemarkRequest()
-	request.RegionId = "cn-hangzhou"
 	request.InstanceId = instanceId
 	request.Remark = name
 
