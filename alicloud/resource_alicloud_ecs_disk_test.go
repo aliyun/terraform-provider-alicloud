@@ -135,11 +135,12 @@ func TestAccAlicloudECSDisk_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_name":  name,
-						"zone_id":    CHECKSET,
-						"encrypted":  "true",
-						"kms_key_id": CHECKSET,
-						"size":       "500",
+						"disk_name":   name,
+						"zone_id":     CHECKSET,
+						"encrypted":   "true",
+						"kms_key_id":  CHECKSET,
+						"size":        "500",
+						"instance_id": "",
 					}),
 				),
 			},
@@ -337,6 +338,96 @@ func TestAccAlicloudECSDisk_basic1(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_with_instance": `true`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_with_instance": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"advanced_features", "type", "dedicated_block_storage_cluster_id", "dry_run", "encrypt_algorithm", "storage_set_id", "storage_set_partition_number"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudECSDisk_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_disk.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsDisk")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic1Dependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_name":            name,
+					"size":                 "500",
+					"payment_type":         "Subscription",
+					"instance_id":          "${alicloud_instance.default.id}",
+					"delete_with_instance": `true`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_name":            name,
+						"zone_id":              CHECKSET,
+						"size":                 "500",
+						"instance_id":          CHECKSET,
+						"payment_type":         "Subscription",
+						"delete_with_instance": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "Subscription",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "Subscription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_with_instance": `true`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delete_with_instance": "true",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -347,14 +438,23 @@ func TestAccAlicloudECSDisk_basic1(t *testing.T) {
 }
 
 var AlicloudEcsDiskMap = map[string]string{
-	"payment_type":      "PayAsYouGo",
-	"performance_level": "",
+	"payment_type":         "PayAsYouGo",
+	"performance_level":    "",
+	"delete_with_instance": "false",
+	"disk_name":            CHECKSET,
+	"name":                 CHECKSET,
+	"enable_auto_snapshot": CHECKSET,
+	"instance_id":          CHECKSET,
+	"size":                 CHECKSET,
+	"status":               CHECKSET,
+	"zone_id":              CHECKSET,
+	"availability_zone":    CHECKSET,
 }
 
-func TestAccAlicloudECSDisk_basic2(t *testing.T) {
+func TestAccAlicloudECSDisk_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap1)
+	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -401,6 +501,7 @@ func TestAccAlicloudECSDisk_basic2(t *testing.T) {
 						"category":          "cloud_ssd",
 						"resource_group_id": CHECKSET,
 						"snapshot_id":       CHECKSET,
+						"instance_id":       "",
 						"tags.%":            "2",
 						"tags.Created":      "TF-update",
 						"tags.For":          "Test-update",
@@ -426,8 +527,6 @@ func TestAccAlicloudECSDisk_basic2(t *testing.T) {
 		},
 	})
 }
-
-var AlicloudEcsDiskMap1 = map[string]string{}
 
 func AlicloudEcsDiskBasicDependence(name string) string {
 	return fmt.Sprintf(`

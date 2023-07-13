@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudEcsDisk() *schema.Resource {
@@ -35,13 +34,13 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto"}, false),
 				Default:      "cloud_efficiency",
 			},
 			"dedicated_block_storage_cluster_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
+				Removed:  "Field 'dedicated_block_storage_cluster_id' is unavailable and it has been removed since 1.208.0.",
 			},
 			"delete_auto_snapshot": {
 				Type:     schema.TypeBool,
@@ -61,14 +60,14 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringLenBetween(2, 128),
+				ValidateFunc:  StringLenBetween(2, 128),
 				ConflictsWith: []string{"name"},
 			},
 			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringLenBetween(2, 128),
+				ValidateFunc:  StringLenBetween(2, 128),
 				Deprecated:    "Field 'name' has been deprecated from provider version 1.122.0. New field 'disk_name' instead.",
 				ConflictsWith: []string{"disk_name"},
 			},
@@ -106,7 +105,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"performance_level": {
 				Type:     schema.TypeString,
@@ -149,7 +148,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"offline", "online"}, false),
+				ValidateFunc: StringInSlice([]string{"offline", "online"}, false),
 			},
 			"zone_id": {
 				Type:          schema.TypeString,
@@ -277,7 +276,7 @@ func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	d.SetId(fmt.Sprint(response["DiskId"]))
 	// Setting instanceId aims to creating the PrePaid disk and the job is async
 	if fmt.Sprint(request["InstanceId"]) != "" {
-		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, ecsService.EcsDiskStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Available", "In_use"}, d.Timeout(schema.TimeoutCreate), 0, ecsService.EcsDiskStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -481,7 +480,11 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		update = true
 		modifyDiskAttributeReq["DeleteAutoSnapshot"] = d.Get("delete_auto_snapshot")
 	}
-	if d.HasChange("delete_with_instance") {
+	object, err := ecsService.DescribeEcsDisk(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if fmt.Sprint(object["DeleteWithInstance"]) != fmt.Sprint(d.Get("delete_with_instance")) {
 		update = true
 		modifyDiskAttributeReq["DeleteWithInstance"] = d.Get("delete_with_instance")
 	}
