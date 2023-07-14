@@ -1867,6 +1867,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 			return nil, err
 		}
 	}
+	if (config.AccessKey == "" || config.SecretKey == "") && config.EcsRoleName == "" {
+		return nil, fmt.Errorf("configuring Terraform Alibaba Cloud Provider: no valid credential sources for Terraform Alibaba Cloud Provider found.\n\n%s",
+			"Please see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication\n"+
+				"for more information about providing credentials.")
+	}
 
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
 		config.OtsInstanceName = strings.TrimSpace(ots_instance_name.(string))
