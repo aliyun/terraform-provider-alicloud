@@ -7,34 +7,40 @@ description: |-
   Provides a Alicloud Cloud Monitor Service Monitor Group Instances resource.
 ---
 
-# alicloud\_cms\_monitor\_group\_instances
+# alicloud_cms_monitor_group_instances
 
 Provides a Cloud Monitor Service Monitor Group Instances resource.
 
-For information about Cloud Monitor Service Monitor Group Instances and how to use it, see [What is Monitor Group Instances](https://www.alibabacloud.com/help/en/doc-detail/115031.htm).
+For information about Cloud Monitor Service Monitor Group Instances and how to use it, see [What is Monitor Group Instances](https://www.alibabacloud.com/help/en/cloudmonitor/latest/createmonitorgroupinstances).
 
--> **NOTE:** Available in v1.115.0+.
+-> **NOTE:** Available since v1.115.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+
 resource "alicloud_vpc" "default" {
-  vpc_name   = "tf-testacc-vpcname"
+  vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_cms_monitor_group" "default" {
-  monitor_group_name = "tf-testaccmonitorgroup"
+  monitor_group_name = var.name
 }
-
+data "alicloud_regions" "default" {
+  current = true
+}
 resource "alicloud_cms_monitor_group_instances" "example" {
   group_id = alicloud_cms_monitor_group.default.id
   instances {
     instance_id   = alicloud_vpc.default.id
-    instance_name = "tf-testacc-vpcname"
-    region_id     = "cn-hangzhou"
+    instance_name = var.name
+    region_id     = data.alicloud_regions.default.regions.0.id
     category      = "vpc"
   }
 }
@@ -45,9 +51,9 @@ resource "alicloud_cms_monitor_group_instances" "example" {
 The following arguments are supported:
 
 * `group_id` - (Required, ForceNew) The id of Cms Group.
-* `instances` - (Required) Instance information added to the Cms Group.
+* `instances` - (Required) Instance information added to the Cms Group. See [`instances`](#instances) below. 
 
-#### Block instances
+### `instances`
 
 The instances supports the following: 
 

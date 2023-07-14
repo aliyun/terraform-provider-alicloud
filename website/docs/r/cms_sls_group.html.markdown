@@ -7,27 +7,47 @@ description: |-
   Provides a Alicloud Cloud Monitor Service Sls Group resource.
 ---
 
-# alicloud\_cms\_sls\_group
+# alicloud_cms_sls_group
 
 Provides a Cloud Monitor Service Sls Group resource.
 
 For information about Cloud Monitor Service Sls Group and how to use it, see [What is Sls Group](https://www.alibabacloud.com/help/doc-detail/28608.htm).
 
--> **NOTE:** Available in v1.171.0+.
+-> **NOTE:** Available since v1.171.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_account" "this" {}
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_account" "default" {}
+data "alicloud_regions" "default" {
+  current = true
+}
+resource "random_uuid" "default" {
+}
+resource "alicloud_log_project" "default" {
+  name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+}
+
+resource "alicloud_log_store" "default" {
+  project               = alicloud_log_project.default.name
+  name                  = var.name
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
+}
 
 resource "alicloud_cms_sls_group" "default" {
   sls_group_config {
-    sls_user_id  = data.alicloud_account.this.id
-    sls_logstore = "Logstore-ECS"
-    sls_project  = "aliyun-project"
-    sls_region   = "cn-hangzhou"
+    sls_user_id  = data.alicloud_account.default.id
+    sls_logstore = alicloud_log_store.default.name
+    sls_project  = alicloud_log_project.default.name
+    sls_region   = data.alicloud_regions.default.regions.0.id
   }
   sls_group_description = var.name
   sls_group_name        = var.name
@@ -37,11 +57,11 @@ resource "alicloud_cms_sls_group" "default" {
 
 The following arguments are supported:
 
-* `sls_group_config` - (Required) The Config of the Sls Group. You can specify up to 25 Config. See the following `Block sls_group_config`.
+* `sls_group_config` - (Required) The Config of the Sls Group. You can specify up to 25 Config. See [`sls_group_config`](#sls_group_config) below. 
 * `sls_group_description` - (Optional) The Description of the Sls Group.
 * `sls_group_name` - (Required, ForceNew) The name of the resource. The name must be `2` to `32` characters in length, and can contain letters, digits and underscores (_). It must start with a letter.
 
-#### Block sls_group_config
+### `sls_group_config`
 
 The sls_group_config supports the following: 
 
@@ -56,7 +76,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Sls Group. Its value is same as `sls_group_name`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

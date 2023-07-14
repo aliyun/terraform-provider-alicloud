@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Monitor Service Dynamic Tag Group resource.
 ---
 
-# alicloud\_cms\_dynamic\_tag\_group
+# alicloud_cms_dynamic_tag_group
 
 Provides a Cloud Monitor Service Dynamic Tag Group resource.
 
-For information about Cloud Monitor Service Dynamic Tag Group and how to use it, see [What is Dynamic Tag Group](https://www.alibabacloud.com/help/doc-detail/150123.html).
+For information about Cloud Monitor Service Dynamic Tag Group and how to use it, see [What is Dynamic Tag Group](https://www.alibabacloud.com/help/en/cloudmonitor/latest/createdynamictaggroup).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -41,19 +41,17 @@ resource "alicloud_cms_dynamic_tag_group" "default" {
 The following arguments are supported:
 
 * `contact_group_list` - (Required, ForceNew) Alarm contact group. The value range of N is 1~100. The alarm notification of the application group is sent to the alarm contact in the alarm contact group.
-* `enable_install_agent` - (Optional) The enable install agent.
-* `enable_subscribe_event` - (Optional) The enable subscribe event.
-* `match_express` - (Optional, ForceNew) The label generates a matching expression that applies the grouping. See the following `Block match_express`.
+* `match_express` - (Required, ForceNew) The label generates a matching expression that applies the grouping. See [`match_express`](#match_express) below. 
 * `match_express_filter_relation` - (Optional, ForceNew) The relationship between conditional expressions. Valid values: `and`, `or`.
 * `tag_key` - (Required, ForceNew) The tag key of the tag.
 * `template_id_list` - (Optional, ForceNew) Alarm template ID list.
 
-#### Block match_express
+### `match_express`
 
 The match_express supports the following: 
 
-* `tag_value` - (Optional) The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
-* `tag_value_match_function` - (Optional) Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
+* `tag_value` - (Required, ForceNew) The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
+* `tag_value_match_function` - (Required, ForceNew) Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
 
 ## Attributes Reference
 
