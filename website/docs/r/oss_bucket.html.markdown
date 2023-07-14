@@ -371,6 +371,7 @@ The following arguments are supported:
 * `versioning` - (Optional, Available in 1.45.0+) A state of versioning. See [`versioning`](#versioning) below.
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
 * `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
+* `lifecycle_rule_allow_same_action_overlap` - (Optional, Available in 1.208.1+) A boolean that indicates lifecycle rules allow prefix overlap.
 
 ### `cors_rule`
 
