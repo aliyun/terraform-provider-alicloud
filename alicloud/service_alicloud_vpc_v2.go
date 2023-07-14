@@ -1853,3 +1853,83 @@ func (s *VpcServiceV2) VpcGatewayEndpointStateRefreshFunc(id string, field strin
 }
 
 // DescribeVpcGatewayEndpoint >>> Encapsulated.
+
+// DescribeVpcGatewayEndpointRouteTableAttachment <<< Encapsulated get interface for Vpc GatewayEndpointRouteTableAttachment.
+
+func (s *VpcServiceV2) DescribeVpcGatewayEndpointRouteTableAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "GetVpcGatewayEndpointAttribute"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["EndpointId"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.GatewayEndpoint"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("GatewayEndpointRouteTableAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.RouteTables", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouteTables", response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, item := range result {
+		if item.(string) == parts[1] {
+			return response, nil
+		}
+	}
+
+	return object, WrapErrorf(Error(GetNotFoundMessage("GatewayEndpointRouteTableAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+}
+
+func (s *VpcServiceV2) VpcGatewayEndpointRouteTableAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcGatewayEndpointRouteTableAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcGatewayEndpointRouteTableAttachment >>> Encapsulated.
