@@ -139,6 +139,12 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				MaxItems: 1,
 			},
 
+			"lifecycle_rule_allow_same_action_overlap": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
+
 			"lifecycle_rule": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1140,6 +1146,7 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 				if valStorageClass != "" {
 					i.StorageClass = oss.StorageClassType(valStorageClass)
 				}
+
 				rule.Transitions = append(rule.Transitions, i)
 			}
 		}
@@ -1194,9 +1201,13 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 		rules = append(rules, rule)
 	}
 
+	options := []oss.Option{}
+	if d.Get("lifecycle_rule_allow_same_action_overlap").(bool) {
+		options = append(options, oss.AllowSameActionOverLap(true))
+	}
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		requestInfo = ossClient
-		return nil, ossClient.SetBucketLifecycle(bucket, rules)
+		return nil, ossClient.SetBucketLifecycle(bucket, rules, options...)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketLifecycle", AliyunOssGoSdk)
