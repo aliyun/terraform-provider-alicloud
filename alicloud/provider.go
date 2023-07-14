@@ -856,6 +856,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ens_instance":                       resourceAliCloudEnsInstance(),
+			"alicloud_vpc_gateway_endpoint":               resourceAliCloudVpcGatewayEndpoint(),
 			"alicloud_eip_segment_address":                resourceAliCloudEipSegmentAddress(),
 			"alicloud_fcv2_function":                      resourceAliCloudFcv2Function(),
 			"alicloud_quotas_template_quota":              resourceAliCloudQuotasTemplateQuota(),
