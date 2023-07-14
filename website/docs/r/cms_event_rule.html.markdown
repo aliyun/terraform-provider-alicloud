@@ -7,27 +7,30 @@ description: |-
   Provides a Alicloud Cloud Monitor Service Event Rule resource.
 ---
 
-# alicloud\_cms\_event\_rule
+# alicloud_cms_event_rule
 
 Provides a Cloud Monitor Service Event Rule resource.
 
 For information about Cloud Monitor Service Event Rule and how to use it, see [What is Event Rule](https://www.alibabacloud.com/help/en/cloudmonitor/latest/puteventrule).
 
--> **NOTE:** Available in v1.182.0+.
+-> **NOTE:** Available since v1.182.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 resource "alicloud_cms_monitor_group" "default" {
-  monitor_group_name = "example_value"
+  monitor_group_name = var.name
 }
 
 resource "alicloud_cms_event_rule" "example" {
-  rule_name   = "example_value"
+  rule_name   = var.name
   group_id    = alicloud_cms_monitor_group.default.id
-  description = "example_value"
+  description = var.name
   status      = "ENABLED"
   event_pattern {
     product         = "ecs"
@@ -47,11 +50,11 @@ The following arguments are supported:
 * `rule_name` - (Required, ForceNew) The name of the event-triggered alert rule.
 * `group_id` - (Optional) The ID of the application group to which the event-triggered alert rule belongs.
 * `description` - (Optional) The description of the event-triggered alert rule.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `ENABLED`, `DISABLED`.
-* `event_pattern` - (Required) Event mode, used to describe the trigger conditions for this event. See the following `Block event_pattern`.
+* `status` - (Optional) The status of the resource. Valid values: `ENABLED`, `DISABLED`.
+* `event_pattern` - (Required) Event mode, used to describe the trigger conditions for this event. See [`event_pattern`](#event_pattern) below. 
 * `silence_time` - (Optional) The silence time.
 
-#### Block event_pattern
+### `event_pattern`
 
 The event_pattern supports the following: 
 
@@ -75,7 +78,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Event Rule. Its value is same as `rule_name`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

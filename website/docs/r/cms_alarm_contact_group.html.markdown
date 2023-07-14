@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud CMS Alarm Contact Group resource.
 ---
 
-# alicloud\_cms\_alarm\_contact\_group
+# alicloud_cms_alarm_contact_group
 
 Provides a CMS Alarm Contact Group resource.
 
-For information about CMS Alarm Contact Group and how to use it, see [What is Alarm Contact Group](https://www.alibabacloud.com/help/en/doc-detail/114929.htm).
+For information about CMS Alarm Contact Group and how to use it, see [What is Alarm Contact Group](https://www.alibabacloud.com/help/en/cloudmonitor/latest/putcontactgroup).
 
--> **NOTE:** Available in v1.101.0+.
+-> **NOTE:** Available since v1.101.0.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cms_alarm_contact_group" "example" {
-  alarm_contact_group_name = "tf-test"
+  alarm_contact_group_name = "tf-example"
 }
 ```
 
