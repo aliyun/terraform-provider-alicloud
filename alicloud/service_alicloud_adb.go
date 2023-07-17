@@ -811,7 +811,7 @@ func (s *AdbService) DescribeDBClusters(id string) (object map[string]interface{
 	return object, nil
 }
 
-func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, stateField string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAdbDbCluster(id)
 		if err != nil {
@@ -823,11 +823,11 @@ func (s *AdbService) AdbDbClusterStateRefreshFunc(id string, failStates []string
 		}
 
 		for _, failState := range failStates {
-			if object["DBClusterStatus"].(string) == failState {
-				return object, object["DBClusterStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["DBClusterStatus"].(string)))
+			if object[stateField].(string) == failState {
+				return object, object[stateField].(string), WrapError(Error(FailedToReachTargetStatus, object[stateField].(string)))
 			}
 		}
-		return object, object["DBClusterStatus"].(string), nil
+		return object, object[stateField].(string), nil
 	}
 }
 
