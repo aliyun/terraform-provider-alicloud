@@ -1295,7 +1295,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_restore_job":                                       resourceAlicloudHbrRestoreJob(),
 			"alicloud_alb_listener":                                          resourceAlicloudAlbListener(),
 			"alicloud_ens_key_pair":                                          resourceAlicloudEnsKeyPair(),
-			"alicloud_sae_application":                                       resourceAlicloudSaeApplication(),
+			"alicloud_sae_application":                                       resourceAliCloudSaeApplication(),
 			"alicloud_alb_rule":                                              resourceAlicloudAlbRule(),
 			"alicloud_cms_metric_rule_template":                              resourceAlicloudCmsMetricRuleTemplate(),
 			"alicloud_iot_device_group":                                      resourceAlicloudIotDeviceGroup(),
