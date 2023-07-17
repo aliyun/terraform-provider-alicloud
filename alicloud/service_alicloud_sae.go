@@ -208,6 +208,79 @@ func (s *SaeService) DescribeSaeApplication(id string) (object map[string]interf
 	return object, nil
 }
 
+func (s *SaeService) DescribeSaeApplicationChangeOrder(orderId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "/pop/v1/sam/changeorder/DescribeChangeOrder"
+
+	conn, err := s.client.NewServerlessClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]*string{
+		"ChangeOrderId": StringPointer(orderId),
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, orderId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if respBody, isExist := response["body"]; isExist {
+		response = respBody.(map[string]interface{})
+	} else {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", "GET "+action, response))
+	}
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", "GET "+action, response))
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, orderId, "$.Data", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *SaeService) SaeApplicationChangeOrderStateRefreshFunc(orderId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeSaeApplicationChangeOrder(orderId)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["Status"]) == failState {
+				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
+			}
+		}
+		return object, fmt.Sprint(object["Status"]), nil
+	}
+}
+
 func (s *SaeService) DescribeSaeIngress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewServerlessClient()
