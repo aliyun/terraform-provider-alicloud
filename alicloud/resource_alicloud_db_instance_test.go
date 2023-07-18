@@ -2347,6 +2347,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"instance_charge_type":     "Serverless",
 					"category":                 "serverless_basic",
+					"deletion_protection":      "true",
 					"serverless_config": []interface{}{
 						map[string]interface{}{
 							"max_capacity": "12",
@@ -2363,6 +2364,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 						"instance_name":                    CHECKSET,
 						"instance_charge_type":             CHECKSET,
 						"category":                         CHECKSET,
+						"deletion_protection":              "true",
 						"serverless_config.#":              "1",
 						"serverless_config.0.max_capacity": "12",
 						"serverless_config.0.min_capacity": "0.5",
@@ -2402,6 +2404,16 @@ func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"security_group_id":    CHECKSET,
 						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "false",
 					}),
 				),
 			},

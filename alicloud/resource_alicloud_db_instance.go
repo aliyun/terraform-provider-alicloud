@@ -634,7 +634,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if d.HasChange("deletion_protection") && d.Get("instance_charge_type") == string(Postpaid) {
+	if d.HasChange("deletion_protection") && (d.Get("instance_charge_type") == string(Postpaid) || d.Get("instance_charge_type") == string(Serverless)) {
 		err := rdsService.ModifyDBInstanceDeletionProtection(d, "deletion_protection")
 		if err != nil {
 			return WrapError(err)
