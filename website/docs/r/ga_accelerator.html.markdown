@@ -13,8 +13,6 @@ Provides a Global Accelerator (GA) Accelerator resource.
 
 For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createaccelerator).
 
--> **NOTE:** At present, The `alicloud_ga_accelerator` cannot be deleted. you need to wait until the resource is outdated and released automatically.
-
 -> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
@@ -29,40 +27,40 @@ resource "alicloud_ga_accelerator" "example" {
 }
 ```
 
-### Deleting `alicloud_ga_accelerator` or removing it from your configuration
-
-The `alicloud_ga_accelerator` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the DB Instance.
-You can resume managing the subscription db instance via the AlibabaCloud Console.
-
 ## Argument Reference
 
 The following arguments are supported:
 
-* `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance. Valid values:
+* `spec` - (Optional) The instance type of the GA instance. Specification of global acceleration instance. Valid values:
   - `1`: Small 1.
   - `2`: Small 2.
   - `3`: Small 3.
   - `5`: Medium 1.
   - `8`: Medium 2.
   - `10`: Medium 3.
-* `duration` - (Required) The subscription duration. **NOTE:** Starting from v1.150.0, the `duration` and  `pricing_cycle` are both required.
-    * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
-    * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
-* `bandwidth_billing_type` - (Optional, ForceNew, Computed, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
+* `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
   - `BandwidthPackage`: billed based on bandwidth plans.
   - `CDT`: billed based on data transfer.
-* `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value: `false`. Valid values:
-  - `true`: Use.
-  - `false`: Not used.
+* `payment_type` - (Optional, ForceNew, Available since v1.208.1) The payment type. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
+* `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `cross_border_mode` - (Optional, Available since v1.208.1) The type of cross-border acceleration. Default value: `bgpPro`. Valid values: `bgpPro`, `private`.
+* `duration` - (Optional, Int) The subscription duration.
+    * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
+    * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
 * `pricing_cycle`- (Optional, Available since v1.150.0) The billing cycle of the GA instance. Default value: `Month`. Valid values:
   - `Month`: billed on a monthly basis.
   - `Year`: billed on an annual basis.
-* `auto_renew_duration` - (Optional, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
+* `auto_use_coupon` - (Optional, Bool) Use coupons to pay bills automatically. Default value: `false`. Valid values:
+  - `true`: Use.
+  - `false`: Not used.
+* `auto_renew_duration` - (Optional, Int, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
 * `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+* `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
@@ -80,6 +78,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 1 mins) Used when creating the Ga Accelerator.
 * `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.
+* `delete` - (Defaults to 3 mins) Used when deleting the Ga Accelerator.
 
 ## Import
 
