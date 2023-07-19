@@ -7,42 +7,49 @@ description: |-
   Provides a Alicloud Cloud Config Aggregate Config Rule resource.
 ---
 
-# alicloud\_config\_aggregate\_config\_rule
+# alicloud_config_aggregate_config_rule
 
 Provides a Cloud Config Aggregate Config Rule resource.
 
-For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregate Config Rule](https://www.alibabacloud.com/help/doc-detail/154216.html).
+For information about Cloud Config Aggregate Config Rule and how to use it, see [What is Aggregate Config Rule](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createaggregateconfigrule).
 
--> **NOTE:** Available in v1.124.0+.
+-> **NOTE:** Available since v1.124.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_config_aggregator" "example" {
-  aggregator_accounts {
-    account_id   = "140278452670****"
-    account_name = "test-2"
-    account_type = "ResourceDirectory"
-  }
-  aggregator_name = "tf-testaccaggregator"
-  description     = "tf-testaccaggregator"
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_resource_manager_accounts" "default" {
+  status = "CreateSuccess"
 }
 
-resource "alicloud_config_aggregate_config_rule" "example" {
-  aggregate_config_rule_name = "tf-testaccconfig1234"
-  aggregator_id              = alicloud_config_aggregator.example.id
+resource "alicloud_config_aggregator" "default" {
+  aggregator_accounts {
+    account_id   = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
+    account_name = data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+    account_type = "ResourceDirectory"
+  }
+  aggregator_name = var.name
+  description     = var.name
+  aggregator_type = "CUSTOM"
+}
+resource "alicloud_config_aggregate_config_rule" "default" {
+  aggregate_config_rule_name = "contains-tag"
+  aggregator_id              = alicloud_config_aggregator.default.id
   config_rule_trigger_types  = "ConfigurationItemChangeNotification"
   source_owner               = "ALIYUN"
-  source_identifier          = "ecs-cpu-min-count-limit"
+  source_identifier          = "contains-tag"
   risk_level                 = 1
   resource_types_scope       = ["ACS::ECS::Instance"]
   input_parameters = {
-    cpuCount = "4",
+    key   = "example"
+    value = "example"
   }
 }
-
 ```
 
 ## Argument Reference
@@ -64,16 +71,16 @@ The following arguments are supported:
 * `risk_level` - (Required) The risk level of the resources that are not compliant with the rule. Valid values:  `1`: critical `2`: warning `3`: info.
 * `tag_key_scope` - (Optional) The rule monitors the tag key, only applies to rules created based on managed rules.
 * `tag_value_scope` - (Optional) The rule monitors the tag value, use with the `tag_key_scope` options. only applies to rules created based on managed rules.
-* `status` - (Optional, Available in v1.145.0+) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
+* `status` - (Optional, Available since v1.145.0) The rule status. The valid values: `ACTIVE`, `INACTIVE`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Aggregate Config Rule. The value is formatted `<aggregator_id>:<config_rule_id>`.
-* `config_rule_id` - (Available in 1.141.0+) The rule ID of Aggregate Config Rule.
+* `config_rule_id` - (Available since v1.141.0) The rule ID of Aggregate Config Rule.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
