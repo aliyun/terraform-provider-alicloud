@@ -221,6 +221,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 					"monitoring_period":        "60",
 					"db_instance_storage_type": "cloud_ssd",
 					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"db_is_ignore_case":        "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

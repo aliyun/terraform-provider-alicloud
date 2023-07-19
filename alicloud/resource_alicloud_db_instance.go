@@ -1945,7 +1945,7 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	if v, ok := d.GetOk("db_time_zone"); ok {
 		request["DBTimeZone"] = v
 	}
-	if v, ok := d.GetOk("db_is_ignore_case"); ok {
+	if v, ok := d.GetOkExists("db_is_ignore_case"); ok {
 		request["DBIsIgnoreCase"] = v
 	}
 
