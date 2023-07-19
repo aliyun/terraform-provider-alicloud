@@ -7,12 +7,12 @@ description: |-
   Provides a Alicloud Config Configuration Recorder resource.
 ---
 
-# alicloud\_config\_configuration\_recorder
+# alicloud_config_configuration_recorder
 
 Provides a Alicloud Config Configuration Recorder resource. Cloud Config is a specialized service for evaluating resources. Cloud Config tracks configuration changes of your resources and evaluates configuration compliance. Cloud Config can help you evaluate numerous resources and maintain the continuous compliance of your cloud infrastructure.
-For information about Alicloud Config Configuration Recorder and how to use it, see [What is Configuration Recorder.](https://www.alibabacloud.com/help/en/doc-detail/153156.html)
+For information about Alicloud Config Configuration Recorder and how to use it, see [What is Configuration Recorder.](https://www.alibabacloud.com/help/en/cloud-config/latest/startconfigurationrecorder)
 
--> **NOTE:** Available in v1.99.0+.
+-> **NOTE:** Available since v1.99.0.
 
 -> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-southeast-1`.
 
@@ -31,7 +31,7 @@ resource "alicloud_config_configuration_recorder" "example" {
 
 The following arguments are supported:
 
-* `enterprise_edition` - (Optional) - Whether to use the enterprise version configuration audit. Valid values: `true` and `false`. Default value `false`. For enterprise accounts, We recommend you to use the resource [alicloud_config_aggregator](https://www.terraform.io/docs/providers/alicloud/r/config_aggregator).
+* `enterprise_edition` - (Optional, ForceNew) - Whether to use the enterprise version configuration audit. Valid values: `true` and `false`. Default value `false`. For enterprise accounts, We recommend you to use the resource [alicloud_config_aggregator](https://www.terraform.io/docs/providers/alicloud/r/config_aggregator).
 * `resource_types` - (Optional) A list of resource types to be monitored. [Resource types that support Cloud Config.](https://www.alibabacloud.com/help/en/doc-detail/127411.htm)
   * If you use an ordinary account, the `resource_types` supports the update operation after the process of creation is completed.
   * If you use an enterprise account, the `resource_types` does not support updating. 
@@ -45,7 +45,7 @@ The following attributes are exported:
 * `organization_enable_status` - Enterprise version configuration audit enabled status. Values: `REGISTRABLE`: Not enabled, `BUILDING`: Building and `REGISTERED`: Enabled.
 * `organization_master_id` - The ID of the Enterprise management account.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
