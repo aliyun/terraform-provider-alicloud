@@ -37,6 +37,7 @@ func dataSourceAlicloudPvtzServiceRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
 		d.SetId("PvtzServiceHasNotBeenOpened")
 		d.Set("status", "")
+
 		return nil
 	}
 	var response map[string]interface{}
