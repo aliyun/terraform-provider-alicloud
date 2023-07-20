@@ -7,9 +7,9 @@ description: |-
   Provides a Alicloud resource to manage container edge kubernetes cluster.
 ---
 
-# alicloud\_cs\_edge\_kubernetes
+# alicloud_cs_edge_kubernetes
 
-This resource will help you to manage a Edge Kubernetes Cluster in Alibaba Cloud Kubernetes Service. 
+This resource will help you to manage a Edge Kubernetes Cluster in Alibaba Cloud Kubernetes Service, see [What is edge kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-an-ack-edge-cluster).
 
 -> **NOTE:** Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
@@ -24,271 +24,249 @@ after creating cluster successfully, and you can put them into the specified loc
 
 -> **NOTE:** If you want to manage Kubernetes, you can use [Kubernetes Provider](https://www.terraform.io/docs/providers/kubernetes/index.html).
 
--> **NOTE:** Available in v1.103.0+.
+-> **NOTE:** Available since v1.103.0.
 
 -> **NOTE:** From version 1.185.0+, support new fields `cluster_spec`, `runtime` and `load_balancer_spec`.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-# If vpc_id is not specified, a new one will be created
-resource "alicloud_vpc" "vpc" {
-  count      = var.vpc_id == "" ? 1 : 0
-  cidr_block = var.vpc_cidr
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Master"
 }
 
-# According to the vswitch cidr blocks to launch several vswitches
-resource "alicloud_vswitch" "vswitches" {
-  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
-  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block = element(var.vswitch_cidrs, count.index)
-  zone_id    = element(var.availability_zone, count.index)
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_cs_edge_kubernetes" "k8s" {
-  name                  = var.cluster_name
-  count                 = var.k8s_number
-  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  worker_instance_types = var.worker_instance_types
-  worker_number         = var.worker_number
-  node_cidr_mask        = var.node_cidr_mask
-  install_cloud_monitor = var.install_cloud_monitor
-  proxy_mode            = var.proxy_mode
-  password              = var.password
-  service_cidr          = var.service_cidr
-  pod_cidr              = var.pod_cidr
-  # version can not be defined in variables.tf.
-  version = "1.20.11-aliyunedge.1"
-
-  dynamic "addons" {
-    for_each = var.cluster_addons
-    content {
-      name   = lookup(addons.value, "name", var.cluster_addons)
-      config = lookup(addons.value, "config", var.cluster_addons)
-    }
+resource "alicloud_cs_edge_kubernetes" "default" {
+  name                         = var.name
+  worker_vswitch_ids           = [alicloud_vswitch.default.id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  version                      = "1.20.11-aliyunedge.1"
+  worker_number                = "1"
+  password                     = "Test12345"
+  pod_cidr                     = "10.99.0.0/16"
+  service_cidr                 = "172.16.0.0/16"
+  worker_instance_charge_type  = "PostPaid"
+  new_nat_gateway              = "true"
+  node_cidr_mask               = "24"
+  install_cloud_monitor        = "true"
+  slb_internet_enabled         = "true"
+  is_enterprise_security_group = "true"
+  worker_data_disks {
+    category  = "cloud_ssd"
+    size      = "200"
+    encrypted = "false"
   }
-  slb_internet_enabled         = var.slb_enabled
-  is_enterprise_security_group = var.enterprise_sg
 }
 ```
 
 You could create a professional kubernetes edge cluster now.
 
 ```terraform
-resource "alicloud_cs_edge_kubernetes" "k8s_pro" {
-  name                  = var.cluster_name
-  cluster_spec          = "ack.pro.small"
-  worker_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
-  worker_instance_types = var.worker_instance_types
-  worker_number         = var.worker_number
-  node_cidr_mask        = var.node_cidr_mask
-  install_cloud_monitor = var.install_cloud_monitor
-  proxy_mode            = var.proxy_mode
-  password              = var.password
-  service_cidr          = var.service_cidr
-  pod_cidr              = var.pod_cidr
-  # version can not be defined in variables.tf.
-  version = "1.20.11-aliyunedge.1"
+variable "name" {
+  default = "tf_example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Master"
+}
 
-  dynamic "addons" {
-    for_each = var.cluster_addons
-    content {
-      name   = lookup(addons.value, "name", var.cluster_addons)
-      config = lookup(addons.value, "config", var.cluster_addons)
-    }
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_cs_edge_kubernetes" "default" {
+  name                         = var.name
+  worker_vswitch_ids           = [alicloud_vswitch.default.id]
+  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  version                      = "1.20.11-aliyunedge.1"
+  cluster_spec                 = "ack.pro.small"
+  worker_number                = "1"
+  password                     = "Test12345"
+  pod_cidr                     = "10.99.0.0/16"
+  service_cidr                 = "172.16.0.0/16"
+  worker_instance_charge_type  = "PostPaid"
+  new_nat_gateway              = "true"
+  node_cidr_mask               = "24"
+  load_balancer_spec           = "slb.s2.small"
+  install_cloud_monitor        = "true"
+  slb_internet_enabled         = "true"
+  is_enterprise_security_group = "true"
+  addons {
+    name   = "alibaba-log-controller"
+    config = "{\"IngressDashboardEnabled\":\"false\"}"
   }
-  slb_internet_enabled         = var.slb_enabled
-  is_enterprise_security_group = var.enterprise_sg
-
-  # specify the runtime as containerd
+  worker_data_disks {
+    category  = "cloud_ssd"
+    size      = "200"
+    encrypted = "false"
+  }
   runtime = {
     name    = "containerd"
     version = "1.5.10"
   }
-  # specify the load balancer as slb.s2.small
-  load_balancer_spec = "slb.s2.small"
 }
 ```
 
 ## Argument Reference
 
-The following arguments are supported:
-
-### Global params
+*Global params*
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `version` - (Optional) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
 * `security_group_id` - (Optional) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `is_enterprise_security_group` - (Optional) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
-* `addons` - (Optional) The addon you want to install in cluster.
-* `rds_instances` - (Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
-* `resource_group_id` - (Optional, Available in 1.103.2+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
-* `force_update` - (Optional, ForceNew, Available in 1.113.0+) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
-* `tags` - (Optional, Available in 1.120.0+) Default nil, A map of tags assigned to the kubernetes cluster and work node.
-* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
-* `cluster_spec` - (Optional, Available in 1.185.0+) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
+* `addons` - (Optional) The addon you want to install in cluster. See [`addons`](#addons) below.
+* `rds_instances` - (Optional, Available since v1.103.2) RDS instance list, You can choose which RDS instances whitelist to add instances to.
+* `resource_group_id` - (Optional, Available since v1.103.2) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `deletion_protection` - (Optional, Available since v1.103.2)  Whether to enable cluster deletion protection.
+* `force_update` - (Optional, ForceNew, Available since v1.113.0) Default false, when you want to change `vpc_id`, you have to set this field to true, then the cluster will be recreated.
+* `tags` - (Optional, Available since v1.120.0) Default nil, A map of tags assigned to the kubernetes cluster and work node.
+* `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `cluster_spec` - (Optional, Available since v1.185.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
   * ack.standard : Standard edge clusters.
   * ack.pro.small : Professional edge clusters.
-* `runtime` - (Optional, Available in 1.185.0+) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `runtime` - (Optional, Available since v1.185.0) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `availability_zone` - (Optional) The ID of availability zone.
+* `connections` - (Map) Map of kubernetes cluster connection information.
+  * `api_server_internet` - API Server Internet endpoint.
+  * `api_server_intranet` - API Server Intranet endpoint.
+  * `master_public_ip` - Master node SSH IP address.
+  * `service_domain` - Service Access Domain.
+* `certificate_authority` - (Map, Available since v1.105.0) Nested attribute containing certificate authority data for your cluster.
+  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
+  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
+  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
 
-### Network params
+*Network params*
 
 * `pod_cidr` - (Optional) [Flannel Specific] The CIDR block for the pod network when using Flannel.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
 * `service_cidr` - (Optional) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
-* `load_balancer_spec` - (Optional, Available in 1.185.0+) The cluster api server load balance instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
-
+* `load_balancer_spec` - (Optional, Available since v1.185.0) The cluster api server load balance instance specification. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 ->NOTE: If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
 
-### Worker params
+*Worker params*
 
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password`, `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
-* `worker_number` - (**Required**) The cloud worker node number of the edge kubernetes cluster. Default to 1. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
-* `worker_vswitch_ids` - (**Required**) The vswitches used by workers.
+* `worker_number` - (Required) The cloud worker node number of the edge kubernetes cluster. Default to 1. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us.
+* `worker_vswitch_ids` - (Required) The vswitches used by workers.
 * `worker_instance_charge_type` - (Optional) Worker payment type, its valid value is `PostPaid`. Defaults to `PostPaid`. More charge details in [ACK@edge charge](https://help.aliyun.com/document_detail/178718.html).
-* `worker_instance_types` - (**Required**) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type.
+* `worker_instance_types` - (Required) The instance types of worker node, you can set multiple types to avoid NoStock of a certain type.
 * `worker_disk_category` - (Optional) The system disk category of worker node. Its valid value are `cloud_efficiency`, `cloud_ssd` and `cloud_essd` and . Default to `cloud_efficiency`.
 * `worker_disk_size` - (Optional) The system disk size of worker node. Its valid value range [20~32768] in GB. Default to 40.
-* `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size.
-  * `category` - The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
-  * `size` - The size of a data disk, at least 40. Unit: GiB.
-  * `encrypted` - Specifies whether to encrypt data disks. Valid values: true and false. Default is `false`.
-  * `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-  * `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
+* `worker_data_disks` - (Optional) The data disk configurations of worker nodes, such as the disk type and disk size. See [`worker_data_disks`](#worker_data_disks) below.
 * `install_cloud_monitor` - (Optional) Install cloud monitor agent on ECS. default: `true`.
 * `proxy_mode` - (Optional) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
-* `worker_disk_performance_level` - (Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `worker_disk_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
+* `worker_disk_performance_level` - (Optional, Available since v1.120.0) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `worker_disk_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node system disk auto snapshot policy.
 
-##### runtime
-
-The following example is the definition of runtime block:
-
-```
-  runtime = {
-    name = "containerd"
-    version = "1.5.10"
-  }
-```
-
-### Addons
-
-You can specific network plugin,log component,ingress component and so on.You can get more information about addons on [ACK](https://cs.console.aliyun.com/) web console. When you create a ACK cluster. You can get openapi-spec before creating the cluster on submission page.
-
-To create an edge cluster, you only need to install additional logging components. addons name:
-
-* `logtail-ds-docker` - Logtail addon.
-* `alibaba-log-controller` - In edge cluster, you should set the `IngressDashboardEnabled` to false in config. Detail below.
-* `alicloud-monitor-controller` - Install the cloud monitoring plug-in on the node to view monitoring information for the created ECS instance in the cloud monitoring console. Detail below.
-
-The `main.tf`:
-
-```
-resource "alicloud_cs_edg_kubernetes" "k8s" {
-  # ... other configuration ...
-
-  dynamic "addons" {
-      for_each = var.cluster_addons
-      content {
-        name          = lookup(addons.value, "name", var.cluster_addons)
-        config        = lookup(addons.value, "config", var.cluster_addons)
-      }
-  }
-}
-```
-
-The `varibales.tf`:
-
-```
-# flannel network component, Required.
-variable "cluster_addons" {
-  description = "Addon components in kubernetes cluster"
-  type = list(object({
-    name      = string
-    config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "flannel",
-      "config"   = "",
-    }
-  ]
-}
-
-# logtail and monitor component, optional
-variable "cluster_addons" {
-  type = list(object({
-      name      = string
-      config    = string
-  }))
-
-  default = [
-    {
-      "name"     = "logtail-ds-docker",
-      "config"   = "",
-    }
-    {
-      "name": "alibaba-log-controller",
-      "config": "{\"IngressDashboardEnabled\":\"false\"}"
-    }
-    {
-      "name": "alicloud-monitor-controller",
-      "config"   = "",
-    }
-  ]
-}
-```
-
-### Computed params
+*Computed params*
 
 You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
 
-* `kube_config` - (Optional, Deprecated from 1.187.0+) The path of kube config, like `~/.kube/config`.
+* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like `~/.kube/config`.
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 
-### Removed params
+*Removed params*
 
-* `log_config` - (Optional) A list of one element containing information about the associated log store. It contains the following attributes:
-  * `type` - Type of collecting logs, only `SLS` are supported currently.
-  * `project` - Log Service project name, cluster logs will output to this project.
+* `log_config` - (Optional, Deprecated) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
 
+### `addons`
+
+The addons supports the following:
+
+* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
+* `config` - (Optional) The ACK add-on configurations.
+* `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
+
+The following example is the definition of addons block, The type of this field is list:
+
+```
+# install nginx ingress, conflict with SLB ingress
+addons {
+  name = "nginx-ingress-controller"
+  # use internet
+  config = "{\"IngressSlbNetworkType\":\"internet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+  # if use intranet, detail below.
+  # config = "{\"IngressSlbNetworkType\":\"intranet",\"IngressSlbSpec\":\"slb.s2.small\"}"
+}
+```
+
+### `worker_data_disks`
+
+The worker_data_disks supports the following:
+
+* `category` - (Optional) The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
+* `size` - (Optional) The size of a data disk, at least 40. Unit: GiB.
+* `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default is `false`.
+* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `auto_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node data disk auto snapshot policy.
+* `snapshot_id` - (Optional) The id of snapshot.
+* `kms_key_id` - (Optional) The id of the kms key.
+* `name` - (Optional) The name of the data disks.
+* `device` - (Optional) The device of the data disks.
+
+### `log_config`
+
+The log_config supports the following:
+
+* `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
+* `project` - (Optional) Log Service project name, cluster logs will output to this project.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The ID of the container cluster.
-* `name` - The name of the container cluster.
-* `availability_zone` - The ID of availability zone.
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `slb_internet` - The public ip of load balancer.
-* `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_nodes` - List of cluster worker nodes.
   * `id` - ID of the node.
   * `name` - Node name.
   * `private_ip` - The private IP address of node.
-* `version` - The Kubernetes server version for the cluster.
-* `worker_ram_role_name` - The RamRole Name attached to worker node.
-* `connections` - Map of kubernetes cluster connection information.
-  * `api_server_internet` - API Server Internet endpoint.
-  * `api_server_intranet` - API Server Intranet endpoint.
-  * `master_public_ip` - Master node SSH IP address.
-  * `service_domain` - Service Access Domain.
-* `certificate_authority` - (Available in 1.105.0+) Nested attribute containing certificate authority data for your cluster.
-  * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
-  * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
-  * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
+* `worker_ram_role_name` - The RamRole Name attached to worker node.  
 
 ## Timeouts
 
