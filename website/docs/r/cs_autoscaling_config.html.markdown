@@ -7,21 +7,51 @@ description: |-
   Provides a Alicloud resource to configure auto scaling for for ACK cluster.
 ---
 
-# alicloud\_cs\_autoscaling\_config
+# alicloud_cs_autoscaling_config
 
-This resource will help you configure auto scaling for the kubernetes cluster. 
+This resource will help you configure auto scaling for the kubernetes cluster, see [What is autoscaling config](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-configure-auto-scaling).
 
--> **NOTE:** Available in v1.127.0+.
+-> **NOTE:** Available since v1.127.0.
+
 -> **NOTE:** From version 1.164.0, support for specifying whether to allow the scale-in of nodes by parameter `scale_down_enabled`.
 -> **NOTE:** From version 1.164.0, support for selecting the policy for selecting which node pool to scale by parameter `expander`.
 
 ## Example Usage
 If you do not have an existing cluster, you need to create an ACK cluster through [alicloud_cs_managed_kubernetes](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_managed_kubernetes) first, and then configure automatic scaling.
 
+Basic Usage
+
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix          = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  new_nat_gateway      = true
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled = true
+}
+
 resource "alicloud_cs_autoscaling_config" "default" {
-  cluster_id = alicloud_cs_managed_kubernetes.default.0.id
-  // configure auto scaling
+  cluster_id                = alicloud_cs_managed_kubernetes.default.id
   cool_down_duration        = "10m"
   unneeded_duration         = "10m"
   utilization_threshold     = "0.5"

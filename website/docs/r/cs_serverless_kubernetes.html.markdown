@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud resource to manage container serverless kubernetes cluster.
 ---
 
-# alicloud\_cs\_serverless_kubernetes
+# alicloud_cs_serverless_kubernetes
 
-This resource will help you to manager a Serverless Kubernetes Cluster. The cluster is same as container service created by web console.
+This resource will help you to manager a Serverless Kubernetes Cluster, see [What is serverless kubernetes](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/create-a-dedicated-kubernetes-cluster-that-supports-sandboxed-containers). The cluster is same as container service created by web console.
 
--> **NOTE:** Available in 1.58.0+
+-> **NOTE:** Available since v1.58.0.
 
 -> **NOTE:** Serverless Kubernetes cluster only supports VPC network and it can access internet while creating kubernetes cluster.
 A Nat Gateway and configuring a SNAT for it can ensure one VPC network access internet. If there is no nat gateway in the
@@ -97,43 +97,51 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
 The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
-* `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `version` - (Optional, Available since 1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
+* `name_prefix` - (Optional, ForceNew) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
+* `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
 * `vpc_id` - (Required, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC  will be built.
-* `vswitch_ids` - (Required) The vswitches where new kubernetes cluster will be located.
-* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
+* `vswitch_ids` - (Optional) The vswitches where new kubernetes cluster will be located.
+* `new_nat_gateway` - (Optional, ForceNew) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
 * `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet  eip for API Server. Default to false.
-* `service_discovery_types` - (ForceNew, Available in 1.123.1+) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
+* `service_discovery_types` - (Optional, ForceNew, Available since v1.123.1) Service discovery type. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`. 
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
     - false: Disable deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
-* `force_update` - (Optional) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
+* `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `force_update` - (Optional, ForceNew) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 * `tags` - (Optional) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
-* `kube_config` - (Optional, Deprecated from 1.187.0+) The path of kube config, like `~/.kube/config`.
-* `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
-* `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
-* `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
-* `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (Optional, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
-* `addons` - (Available in 1.91.0+)) You can specific network plugin,log component,ingress component and so on.Detailed below.
-* `time_zone` - (Optional, ForceNew, Available in 1.123.1+) The time zone of the cluster.
-* `zone_id` - (Optional, ForceNew, Available in 1.123.1+) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
-* `service_cidr` - (Optional, ForceNew, Available in 1.123.1+) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
-* `logging_type` - (ForceNew, Available in 1.123.1+) Enable log service, Valid value `SLS`. 
-* `sls_project_name` - (ForceNew, Available in 1.123.1+) If you use an existing SLS project, you must specify `sls_project_name`.
-* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
-* `cluster_spec` - (Optional, ForceNew, Available in 1.162.0+) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
+* `kube_config` - (Optional, Deprecated from v1.187.0) The path of kube config, like `~/.kube/config`.
+* `client_cert` - (Optional, ForceNew) The path of client certificate, like `~/.kube/client-cert.pem`.
+* `client_key` - (Optional, ForceNew) The path of client key, like `~/.kube/client-key.pem`.
+* `cluster_ca_cert` - (Optional, ForceNew) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
+* `security_group_id` - (Optional, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `load_balancer_spec` - (Optional, Available since v1.117.0) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `addons` - (Optional, Available since v1.91.0) You can specific network plugin,log component,ingress component and so on. See [`addons`](#addons) below.
+* `time_zone` - (Optional, ForceNew, Available since v1.123.1) The time zone of the cluster.
+* `zone_id` - (Optional, ForceNew, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
+* `service_cidr` - (Optional, ForceNew, Available since v1.123.1) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
+* `logging_type` - (Optional, ForceNew, Available since v1.123.1) Enable log service, Valid value `SLS`. 
+* `sls_project_name` - (Optional, ForceNew, Available since v1.123.1) If you use an existing SLS project, you must specify `sls_project_name`.
+* `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `cluster_spec` - (Optional, ForceNew, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
     - ack.standard: Standard serverless clusters.
     - ack.pro.small: Professional serverless clusters.
+* `rrsa_metadata` - (Optional, Available since v1.185.0) Nested attribute containing RRSA related data for your cluster. See [`rrsa_metadata`](#rrsa_metadata) below.
+* `create_v2_cluster` - (Optional) whether to create a v2 version cluster.
 
-#### addons 
-It is a new field since 1.91.0. You can specific network plugin,log component,ingress component and so on. 
-The following arguments are optional:
-* `name` - Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
-* `config` - The ACK add-on configurations.
-* `disabled` -  Disables the automatic installation of a component. Default is `false`.
+*Removed params*
+
+* `vswitch_id` - (Deprecated from version 1.91.0) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
+* `private_zone` - (Deprecated from version 1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
+
+### `addons`
+
+The addons supports the following:
+
+* `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
+* `config` - (Optional) The ACK add-on configurations.
+* `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
 
 The following example is the definition of addons block, The type of this field is list:
 
@@ -160,13 +168,18 @@ addons {
 }
 ```
 
-#### Removed params (Never Supported)
-* `vswitch_id` - (Deprecated from version 1.91.0) (Required, ForceNew) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `private_zone` - (Deprecated from version 1.123.1) (Optional, ForceNew) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
+### `rrsa_metadata`
 
-### Timeouts
+The rrsa_metadata supports the following:
 
--> **NOTE:** Available in 1.58.0+
+* `enabled` - (Optional) Whether the RRSA feature has been enabled.
+* `rrsa_oidc_issuer_url` - (Optional) The issuer URL of RRSA OIDC Token.
+* `ram_oidc_provider_name` - (Optional) The name of OIDC Provider that was registered in RAM.
+* `ram_oidc_provider_arn` - (Optional) The arn of OIDC provider that was registered in RAM.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.58.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -183,11 +196,7 @@ The following attributes are exported:
 * `vswitch_id` - The ID of VSwicth where the current cluster is located.
 * `security_group_id` - The ID of security group where the current cluster worker node is located.
 * `deletion_protection` - Whether enable the deletion protection or not.
-* `rrsa_metadata` - (Available in v1.185.0+) Nested attribute containing RRSA related data for your cluster.
-  * `enabled` - Whether the RRSA feature has been enabled.
-  * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
-  * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
-  * `ram_oidc_provider_arn` -  The arn of OIDC provider that was registered in RAM.
+
 
 ## Import
 

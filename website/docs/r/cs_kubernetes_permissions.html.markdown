@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_kubernetes_permissions
 
-This resource will help you implement RBAC authorization for the kubernetes cluster. 
+This resource will help you implement RBAC authorization for the kubernetes cluster, see [What is kubernetes permissions](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-grantpermissions).
 
 -> **NOTE:** Please make sure that the target RAM user has been granted a RAM policy with at least read-only permission of the target cluster in the RAM console. Otherwise, the `ErrorRamPolicyConfig` error will be returned. 
 For more information about how to authorize a RAM user by attaching RAM policies, see [Create a custom RAM policy](https://www.alibabacloud.com/help/doc-detail/86485.htm).
@@ -21,10 +21,7 @@ For more information about how to authorize a RAM user by attaching RAM policies
 -> **NOTE:** Available since v1.122.0.
 
 ## Example Usage
-### Grant RBAC permissions
-If you don't have users and clusters, to perform RBAC authorization, you need to complete the following steps. 
 
-Step 1, create a cluster using Terraform.
 ```terraform
 variable "name" {
   default = "tf-example"

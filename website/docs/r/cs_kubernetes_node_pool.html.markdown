@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_kubernetes_node_pool
 
-This resource will help you to manage node pool in Kubernetes Cluster. 
+This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). 
 
 -> **NOTE:** Available since v1.97.0.
 
@@ -198,13 +198,6 @@ resource "alicloud_cs_kubernetes_node_pool" "prepaid_node" {
 
   # open cloud monitor
   install_cloud_monitor = true
-
-  # enable auto-scaling
-  scaling_config {
-    min_size = 1
-    max_size = 10
-    type     = "cpu"
-  }
 }
 
 #Create a node pool with spot instance.
