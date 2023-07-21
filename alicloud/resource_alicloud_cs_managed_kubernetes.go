@@ -272,7 +272,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"install_cloud_monitor": {
 				Type:       schema.TypeBool,
 				Optional:   true,
-				Default:    true,
+				Computed:   true,
 				Deprecated: "Field 'install_cloud_monitor' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'install_cloud_monitor' to replace it",
 			},
 			"version": {
