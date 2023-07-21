@@ -13,24 +13,27 @@ Provides a Dcdn Kv Namespace resource.
 
 For information about Dcdn Kv Namespace and how to use it, see [What is Kv Namespace](https://www.alibabacloud.com/help/en/dynamic-route-for-cdn/latest/putdcdnkvnamespace).
 
--> **NOTE:** Available in v1.198.0+.
+-> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 resource "alicloud_dcdn_kv_namespace" "default" {
-  description = "wkmtest"
-  namespace   = var.namespace
+  description = var.name
+  namespace   = var.name
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Required,ForceNew) Namespace description information
-* `namespace` - (Required,ForceNew) Namespace name. The name can contain letters, digits, hyphens (-), and underscores (_).
+* `description` - (Required, ForceNew) Namespace description information
+* `namespace` - (Required, ForceNew) Namespace name. The name can contain letters, digits, hyphens (-), and underscores (_).
 
 
 ## Attributes Reference
@@ -39,7 +42,7 @@ The following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `status` - The status of the resource
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Kv Namespace.
