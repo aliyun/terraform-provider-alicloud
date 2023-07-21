@@ -7,34 +7,36 @@ description: |-
   Provides a Alicloud DCDN Ipa Domain resource.
 ---
 
-# alicloud\_dcdn\_ipa\_domain
+# alicloud_dcdn_ipa_domain
 
 Provides a DCDN Ipa Domain resource.
 
 For information about DCDN Ipa Domain and how to use it, see [What is Ipa Domain](https://www.alibabacloud.com/help/en/doc-detail/130634.html).
 
--> **NOTE:** Available in v1.158.0+.
+-> **NOTE:** Available since v1.158.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "default"
+variable "domain_name" {
+  default = "example.com"
 }
+data "alicloud_resource_manager_resource_groups" "default" {}
+
 resource "alicloud_dcdn_ipa_domain" "example" {
-  domain_name       = "example.com"
+  domain_name       = var.domain_name
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  scope             = "global"
+  status            = "online"
   sources {
-    content  = "1.1.1.1"
+    content  = "www.alicloud-provider.cn"
     port     = 80
     priority = "20"
-    type     = "ipaddr"
+    type     = "domain"
     weight   = 10
   }
-  scope  = "overseas"
-  status = "online"
 }
 ```
 
@@ -43,12 +45,12 @@ resource "alicloud_dcdn_ipa_domain" "example" {
 The following arguments are supported:
 
 * `domain_name` - (Required, ForceNew) The domain name to be added to IPA. Wildcard domain names are supported. A wildcard domain name must start with a period (.).
-* `resource_group_id` - (Optional, Computed) The ID of the resource group. If you do not set this parameter, the system automatically assigns the ID of the default resource group.
-* `scope` - (Optional, Computed, ForceNew) The accelerated region. Valid values: `domestic`, `global`, `overseas`.
-* `sources` - (Required) Sources. See the following `Block sources`.
-* `status` - (Optional, Computed) The status of DCDN Ipa Domain. Valid values: `online`, `offline`. Default to `online`.
+* `resource_group_id` - (Optional) The ID of the resource group. If you do not set this parameter, the system automatically assigns the ID of the default resource group.
+* `scope` - (Optional, ForceNew) The accelerated region. Valid values: `domestic`, `global`, `overseas`.
+* `sources` - (Required) Sources. See [`sources`](#sources) below.
+* `status` - (Optional) The status of DCDN Ipa Domain. Valid values: `online`, `offline`. Default to `online`.
 
-#### Block sources
+### `sources`
 
 The sources supports the following: 
 
@@ -64,7 +66,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Ipa Domain. Its value is same as `domain_name`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

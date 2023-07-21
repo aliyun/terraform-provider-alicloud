@@ -7,19 +7,22 @@ description: |-
   Provides a Alicloud DCDN Waf Policy resource.
 ---
 
-# alicloud\_dcdn\_waf\_policy
+# alicloud_dcdn_waf_policy
 
 Provides a DCDN Waf Policy resource.
 
 For information about DCDN Waf Policy and how to use it, see [What is Waf Policy](https://www.alibabacloud.com/help/en/dynamic-route-for-cdn/latest/set-the-protection-policies#doc-api-dcdn-CreateDcdnWafPolicy).
 
--> **NOTE:** Available in v1.184.0+.
+-> **NOTE:** Available since v1.184.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
 resource "alicloud_dcdn_waf_policy" "example" {
   defense_scene = "waf_group"
   policy_name   = var.name
@@ -43,7 +46,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Waf Policy.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

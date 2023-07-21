@@ -7,11 +7,11 @@ description: |-
   Provides an Alicloud DCDN Domain resource.
 ---
 
-# alicloud\_dcdn\_domain
+# alicloud_dcdn_domain
 
 You can use DCDN to improve the overall performance of your website and accelerate content delivery to improve user experience. For information about Alicloud DCDN Domain and how to use it, see [What is Resource Alicloud DCDN Domain](https://www.alibabacloud.com/help/en/doc-detail/130628.htm).
 
--> **NOTE:** Available in v1.94.0+.
+-> **NOTE:** Available since v1.94.0.
 
 -> **NOTE:** You must activate the Dynamic Route for CDN (DCDN) service before you create an accelerated domain.
 
@@ -24,15 +24,19 @@ You can use DCDN to improve the overall performance of your website and accelera
 Basic Usage
 
 ```terraform
+variable "domain_name" {
+  default = "example.com"
+}
 resource "alicloud_dcdn_domain" "example" {
-  domain_name = "example.com"
+  domain_name = var.domain_name
+  scope       = "overseas"
   sources {
     content  = "1.1.1.1"
     port     = "80"
     priority = "20"
     type     = "ipaddr"
+    weight   = "10"
   }
-  scope = "overseas"
 }
 ```
 ## Argument Reference
@@ -52,13 +56,16 @@ The following arguments are supported:
 * `ssl_pri` - (Optional) The private key. Specify this parameter only if you enable the SSL certificate.
 * `ssl_pub` - (Optional) Indicates the public key of the certificate if the HTTPS protocol is enabled.
 * `scope` - (Optional) The acceleration region.
-* `sources` - (Required) The origin information.
+* `sources` - (Required) The origin information. See [`sources`](#sources) below.
 * `status` - (Optional) The status of DCDN Domain. Valid values: `online`, `offline`. Default to `online`.
 * `top_level_domain` - (Optional) The top-level domain name.
 * `security_token` - (Optional) The top-level domain name.
-* `tags` - (Optional, Available in v1.204.1+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.204.1) A mapping of tags to assign to the resource.
 
-### Block sources
+### `sources`
+
+The sources supports the following:
+
 * `content` - (Required) The origin address.
 * `type` - (Required) The type of the origin. Valid values:
     `ipaddr`: The origin is configured using an IP address.
@@ -73,7 +80,7 @@ The following arguments are supported:
 * `id` -The id of the DCDN Domain. It is the same as its domain name.
 * `cname` (Available in 1.198.0+)- The canonical name (CNAME) of the accelerated domain.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
