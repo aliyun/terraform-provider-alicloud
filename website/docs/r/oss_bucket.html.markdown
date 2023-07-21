@@ -371,9 +371,9 @@ The following arguments are supported:
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
 * `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket (documented below).
 
-#### Block cors_rule
+#### cors_rule
 
-The cors_rule mapping supports the following:
+The `cors_rule` configuration block supports the following:
 
 * `allowed_headers` - (Optional) Specifies which headers are allowed.
 * `allowed_methods` - (Required) Specifies which methods are allowed. Can be GET, PUT, POST, DELETE or HEAD.
@@ -381,30 +381,30 @@ The cors_rule mapping supports the following:
 * `expose_headers` - (Optional) Specifies expose header in the response.
 * `max_age_seconds` - (Optional) Specifies time in seconds that browser can cache the response for a preflight request.
 
-#### Block website
+#### website
 
-The website mapping supports the following:
+The `website` configuration block supports the following:
 
 * `index_document` - (Required) Alicloud OSS returns this index document when requests are made to the root domain or any of the subfolders.
 * `error_document` - (Optional) An absolute path to the document to return in case of a 4XX error.
 
-#### Block logging
+#### logging
 
-The logging object supports the following:
+The `logging` configuration block supports the following:
 
 * `target_bucket` - (Required) The name of the bucket that will receive the log objects.
 * `target_prefix` - (Optional) To specify a key prefix for log objects.
 
-#### Block referer configuration
+#### referer_config
 
-The referer configuration supports the following:
+The `referer_config` configuration block supports the following:
 
 * `allow_empty` - (Optional, Type: bool) Allows referer to be empty. Defaults false.
 * `referers` - (Required, Type: list) The list of referer.
 
-#### Block lifecycle_rule
+#### lifecycle_rule
 
-The lifecycle_rule object supports the following:
+The `lifecycle_rule` configuration block supports the following:
 
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
 * `prefix` - (Optional, Available in v1.90.0+) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
@@ -417,9 +417,9 @@ The lifecycle_rule object supports the following:
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
-#### Block expiration
+#### expiration
 
-The lifecycle_rule expiration object supports the following:
+The lifecycle_rule `expiration` configuration block supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
@@ -428,9 +428,9 @@ The lifecycle_rule expiration object supports the following:
 
 `NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
 
-#### Block transitions
+#### transitions
 
-The lifecycle_rule transitions object supports the following:
+The lifecycle_rule `transitions` configuration block supports the following:
 
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
@@ -438,47 +438,46 @@ The lifecycle_rule transitions object supports the following:
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
-#### Block abort_multipart_upload
+#### abort_multipart_upload
 
-The lifecycle_rule abort_multipart_upload object supports the following:
+The lifecycle_rule `abort_multipart_upload` configuration block supports the following:
 
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that parts created before 2002-10-11T00:00:00.000Z are deleted, and parts created after this time (including this time) are not deleted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one abort_multipart_upload configuration.
 
-#### Block noncurrent_version_expiration
+#### noncurrent_version_expiration
 
-The lifecycle_rule noncurrent_version_expiration object supports the following:
+The lifecycle_rule `noncurrent_version_expiration` configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions expire.
 
-#### Block noncurrent_version_transition
+#### noncurrent_version_transition
 
-The lifecycle_rule noncurrent_version_transition object supports the following:
+The lifecycle_rule `noncurrent_version_transition` configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`. ColdArchive is available in 1.203.0+.
 
 
-#### Block server-side encryption rule
+#### server_side_encryption_rule
 
-The server-side encryption rule supports the following:
+The `server_side_encryption_rule` configuration block supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
 * `kms_master_key_id` -  (optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption. 
 
-#### Block versioning
+#### versioning
 
-The versioning supports the following:
+The `versioning` configuration block supports the following:
 
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
-`NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
 
-#### Block transfer_acceleration
+#### transfer_acceleration
 
-The transfer_acceleration supports the following:
+The `transfer_acceleration` configuration block supports the following:
 
 * `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
 
