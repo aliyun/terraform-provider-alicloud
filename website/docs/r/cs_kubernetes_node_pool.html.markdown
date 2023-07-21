@@ -354,7 +354,7 @@ The following arguments are supported:
 * `security_group_id` - (Optional, Deprecated) The security group id for worker node. Field `security_group_id` has been deprecated from provider version 1.145.0. New field `security_group_ids` instead.
 * `platform` - (Optional, Deprecated from 1.145.0) The platform. One of `AliyunLinux`, `Windows`, `CentOS`, `WindowsCore`. If you select `Windows` or `WindowsCore`, the `passord` is required. Field `platform` has been deprecated from provider version 1.145.0. New field `image_type` instead.
 * `image_id` - (Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
-* `node_name_mode` - (Optional) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
+* `node_name_mode` - (Optional) Each node name consists of a prefix, its private network IP, and a suffix, the input format is `customized,<prefix>,ip,<suffix>`. For example "customized,aliyun.com-,ip,-test", if the node private network IP address is 192.168.59.176, the prefix is aliyun.com-,and the suffix is -test, the node name will be aliyun.com-192.168.59.176-test.
 * `user_data` - (Optional) Windows instances support batch and PowerShell scripts. If your script file is larger than 1 KB, we recommend that you upload the script to Object Storage Service (OSS) and pull it through the internal endpoint of your OSS bucket.
 * `tags` - (Optional) A Map of tags to assign to the resource. It will be applied for ECS instances finally. Detailed below.
 * `labels` - (Optional) A List of Kubernetes labels to assign to the nodes . Only labels that are applied with the ACK API are managed by this argument. Detailed below. More information in [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/). See [`labels`](#labels) below.
@@ -399,51 +399,33 @@ The following arguments are supported:
 
 ### `data_disks`
 
-The data_disks mapping supports the following:
+The following arguments are supported in the `data_disks` configuration block:
 
 * `category` - (Optional) The type of the data disks. Valid values:`cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`.
 * `size` - (Optional) The size of a data disk, Its valid value range [40~32768] in GB. Default to `40`.
 * `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `kms_key_id` - (Optional, Available since v1.97.0) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
-* `snapshot_id` - (Optional) The snapshot id of data disk.
-* `device` - (Optional) The device of data disk.
-* `name` - (Optional) The name of data disk;
-* `auto_snapshot_policy_id` - (Optional) The auto snapshot policy id;
-
-### `spot_price_limit`
-
-The spot_price_limit mapping supports the following:
-
-* `instance_type` - (Optional, Available since v1.123.1) Spot instance type.
-* `price_limit` - (Optional, Available since v1.123.1) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.
+* `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `kms_key_id` - (Optional, Available in 1.97.0+) The kms key id used to encrypt the data disk. It takes effect when `encrypted` is true.
+* `snapshot_id` - (Optional) The ID of the snapshot that you want to use to create data disk N. Valid values of N: 1 to 16. If you specify this parameter, DataDisk.N.Size is ignored. The size of the disk is the same as the size of the specified snapshot. If you specify a snapshot that is created on or before July 15, 2013, the operation fails and InvalidSnapshot.TooOld is returned.
+* `auto_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy that you want to apply to the system disk.
+* `device` - (Optional) The mount target of data disk N. Valid values of N: 1 to 16. If you do not specify this parameter, the system automatically assigns a mount target when Auto Scaling creates ECS instances. The name of the mount target ranges from /dev/xvdb to /dev/xvdz.
+* `name` - (Optional) The name of data disk N. Valid values of N: 1 to 16. The name must be 2 to 128 characters in length, and can contain letters, digits, colons (:), underscores (_), and hyphens (-). The name must start with a letter but cannot start with http:// or https://.
 
 ### `labels`
 
-The labels mapping supports the following:
+The following arguments are supported in the `labels` configuration block:
 
 * `key` - (Required) The label key.
 * `value` - (Optional) The label value.
 
 ### `taints`
 
-The taints mapping supports the following:
+The following arguments are supported in the `taints` configuration block:
 
 * `key` - (Required) The key of a taint.
 * `value` - (Optional) The value of a taint.
-* `effect` - (Optional) The scheduling policy. 
+* `effect` - (Optional) The scheduling policy.
 
-### `rollout_policy`
-
-The rollout_policy mapping supports the following:
-
-* `max_unavailable` - (Optional, Deprecated from 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
-
-### `rolling_policy`
-
-The rolling_policy mapping supports the following:
-
-* `max_parallelism` - (Optional, Available since v1.185.0) Maximum parallel number nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
 
 ### `management`
 
@@ -463,8 +445,15 @@ The following arguments are supported in the `scaling_config` configuration bloc
 * `max_size` - (Required, Available since v1.111.0) Max number of instances in a auto scaling group, its valid value range [0~1000]. `max_size` has to be greater than `min_size`.
 * `type` - (Optional, Available since v1.111.0) Instance classification, not required. Vaild value: `cpu`, `gpu`, `gpushare` and `spot`. Default: `cpu`. The actual instance type is determined by `instance_types`.
 * `is_bond_eip` - (Optional, Available since v1.111.0) Whether to bind EIP for an instance. Default: `false`.
-* `eip_internet_charge_type` - (Optional, Available since v1.111.0) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one. 
+* `eip_internet_charge_type` - (Optional, Available since v1.111.0) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one.
 * `eip_bandwidth` - (Optional, Available since v1.111.0) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. Default to `5`.
+
+### `spot_price_limit`
+
+The spot_price_limit mapping supports the following:
+
+* `instance_type` - (Optional, Available since v1.123.1) Spot instance type.
+* `price_limit` - (Optional, Available since v1.123.1) The maximum hourly price of the spot instance. A maximum of three decimal places are allowed.
 
 ### `kubelet_configuration`
 
@@ -476,13 +465,25 @@ The following arguments are supported in the `kubelet_configuration` configurati
 * `event_burst` - (Optional, Available since v1.180.0) Same as eventBurst. The maximum size of a burst of event creations, temporarily allows event creations to burst to this number, while still not exceeding `event_record_qps`. It is only used when `event_record_qps` is greater than 0. Valid value is `[0-100]`.
 * `kube_api_qps` - (Optional, Available since v1.180.0) Same as kubeAPIQPS. The QPS to use while talking with kubernetes api-server. Valid value is `[0-50]`.
 * `kube_api_burst` - (Optional, Available since v1.180.0) Same as kubeAPIBurst. The burst to allow while talking with kubernetes api-server. Valid value is `[0-100]`.
-* `serialize_image_pulls` - (Optional, Available since v1.180.0) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`. 
+* `serialize_image_pulls` - (Optional, Available since v1.180.0) Same as serializeImagePulls. When enabled, it tells the Kubelet to pull images one at a time. We recommend not changing the default value on nodes that run docker daemon with version < 1.9 or an Aufs storage backend. Valid value is `true` or `false`.
 * `cpu_manager_policy` - (Optional, Available since v1.180.0) Same as cpuManagerPolicy. The name of the policy to use. Requires the CPUManager feature gate to be enabled. Valid value is `none` or `static`.
 * `eviction_hard` - (Optional, Available since v1.180.0) Same as evictionHard. The map of signal names to quantities that defines hard eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
 * `eviction_soft` - (Optional, Available since v1.180.0) Same as evictionSoft. The map of signal names to quantities that defines soft eviction thresholds. For example: `{"memory.available" = "300Mi"}`.
 * `eviction_soft_grace_period` - (Optional, Available since v1.180.0) Same as evictionSoftGracePeriod. The map of signal names to quantities that defines grace periods for each soft eviction signal. For example: `{"memory.available" = "30s"}`.
 * `system_reserved` - (Optional, Available since v1.180.0) Same as systemReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for non-kubernetes components. Currently, only cpu and memory are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
 * `kube_reserved` - (Optional, Available since v1.180.0) Same as kubeReserved. The set of ResourceName=ResourceQuantity (e.g. cpu=200m,memory=150G) pairs that describe resources reserved for kubernetes system components. Currently, cpu, memory and local storage for root file system are supported. See [compute resources](http://kubernetes.io/docs/user-guide/compute-resources) for more details.
+
+### `rollout_policy`
+
+The rollout_policy mapping supports the following:
+
+* `max_unavailable` - (Optional, Deprecated from 1.185.0) Maximum number of unavailable nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used. Please use `max_parallelism` to instead it from provider version 1.185.0.
+
+### `rolling_policy`
+
+The rolling_policy mapping supports the following:
+
+* `max_parallelism` - (Optional, Available since v1.185.0) Maximum parallel number nodes during rolling upgrade. The value of this field should be greater than `0`, and if it's set to a number less than or equal to `0`, the default setting will be used.
 
 ## Attributes Reference
 
