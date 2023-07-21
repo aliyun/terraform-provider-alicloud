@@ -191,7 +191,7 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 		request["AnycastEipAddress"] = v
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
-		request["InstanceChargeType"] = convertEipanycastAnycastEipAddressPaymentTypeRequest(v.(string))
+		request["InstanceChargeType"] = convertEipanycastInstanceChargeTypeRequest(v.(string))
 	}
 	if v, ok := d.GetOk("service_location"); ok {
 		request["ServiceLocation"] = v
@@ -273,7 +273,7 @@ func dataSourceAlicloudEipanycastAnycastEipAddressesRead(d *schema.ResourceData,
 			"description":              object["Description"],
 			"internet_charge_type":     object["InternetChargeType"],
 			"ip_address":               object["IpAddress"],
-			"payment_type":             convertEipanycastAnycastEipAddressPaymentTypeResponse(object["InstanceChargeType"].(string)),
+			"payment_type":             convertEipanycastInstanceChargeTypeResponse(object["InstanceChargeType"].(string)),
 			"service_location":         object["ServiceLocation"],
 			"status":                   object["Status"],
 		}
