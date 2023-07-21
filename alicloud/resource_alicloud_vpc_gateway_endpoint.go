@@ -48,6 +48,12 @@ func resourceAliCloudVpcGatewayEndpoint() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"route_tables": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"service_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -148,7 +154,12 @@ func resourceAliCloudVpcGatewayEndpointRead(d *schema.ResourceData, meta interfa
 	d.Set("service_name", objectRaw["ServiceName"])
 	d.Set("status", objectRaw["EndpointStatus"])
 	d.Set("vpc_id", objectRaw["VpcId"])
+	routeTables1Raw := make([]interface{}, 0)
+	if objectRaw["RouteTables"] != nil {
+		routeTables1Raw = objectRaw["RouteTables"].([]interface{})
+	}
 
+	d.Set("route_tables", routeTables1Raw)
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -249,6 +260,96 @@ func resourceAliCloudVpcGatewayEndpointUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("resource_group_id")
 	}
 
+	update = false
+	if d.HasChange("route_tables") {
+		update = true
+		oldEntry, newEntry := d.GetChange("route_tables")
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
+
+		if removed.Len() > 0 {
+			action = "DissociateRouteTablesFromVpcGatewayEndpoint"
+			conn, err = client.NewVpcClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			request["EndpointId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			localData := removed.List()
+			routeTableIdsMaps := localData
+			request["RouteTableIds"] = routeTableIdsMaps
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				request["ClientToken"] = buildClientToken(action)
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			vpcServiceV2 := VpcServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcServiceV2.VpcGatewayEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+
+		if added.Len() > 0 {
+			action = "AssociateRouteTablesWithVpcGatewayEndpoint"
+			conn, err = client.NewVpcClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			request["EndpointId"] = d.Id()
+			request["RegionId"] = client.RegionId
+			request["ClientToken"] = buildClientToken(action)
+			localData := added.List()
+			routeTableIdsMaps := localData
+			request["RouteTableIds"] = routeTableIdsMaps
+
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				request["ClientToken"] = buildClientToken(action)
+
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			vpcServiceV2 := VpcServiceV2{client}
+			stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcServiceV2.VpcGatewayEndpointStateRefreshFunc(d.Id(), "EndpointStatus", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+
+		}
+
+	}
 	update = false
 	if d.HasChange("tags") {
 		update = true
