@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Endpoint Group resource.
 
-For information about Global Accelerator (GA) Endpoint Group and how to use it, see [What is Endpoint Group](https://www.alibabacloud.com/help/en/doc-detail/153259.htm).
+For information about Global Accelerator (GA) Endpoint Group and how to use it, see [What is Endpoint Group](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createendpointgroup).
 
 -> **NOTE:** Available since v1.113.0.
 

@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Accelerator resource.
 
-For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createaccelerator).
+For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createaccelerator).
 
 -> **NOTE:** At present, The `alicloud_ga_accelerator` cannot be deleted. you need to wait until the resource is outdated and released automatically.
 
