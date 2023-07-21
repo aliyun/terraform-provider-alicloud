@@ -13,6 +13,7 @@ Provides a resource to create a oss bucket and set its attribution.
 
 -> **NOTE:** The bucket namespace is shared by all users of the OSS system. Please set bucket name as unique as possible.
 
+-> **NOTE:** Available since v1.2.0.
 
 ## Example Usage
 
@@ -356,24 +357,24 @@ The following arguments are supported:
 
 * `bucket` - (Optional, ForceNew) The name of the bucket. If omitted, Terraform will assign a random and unique name.
 * `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Can be "private", "public-read" and "public-read-write". Defaults to "private".
-* `cors_rule` - (Optional) A rule of [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm) (documented below). The items of core rule are no more than 10 for every OSS bucket.
-* `website` - (Optional) A website object(documented below).
-* `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm) (documented below).
-* `logging_isenable` - (Optional) The flag of using logging enable container. Defaults true.
-* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm) (documented below).
-* `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm) (documented below).
+* `cors_rule` - (Optional) A rule of  [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm). The items of core rule are no more than 10 for every OSS bucket. See [`cors_rule`](#cors_rule) below.
+* `website` - (Optional) A website configuration. See [`website`](#website) below.
+* `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm). See [`logging`](#logging) below.
+* `logging_isenable` - (Optional, Deprecated from 1.37.0.) The flag of using logging enable container. Defaults true.
+* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). See [`referer_config`](#referer_config) below.
+* `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm). See [`lifecycle_rule`](#lifecycle_rule) below.
 * `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA", "Archive" and "ColdArchive". Defaults to "Standard". "ColdArchive" is available in 1.203.0+.
 * `redundancy_type` - (Optional, ForceNew, Available in 1.91.0) The [redundancy type](https://www.alibabacloud.com/help/doc-detail/90589.htm) to enable. Can be "LRS", and "ZRS". Defaults to "LRS".
-* `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption (documented below).
+* `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption. See [`server_side_encryption_rule`](#server_side_encryption_rule) below.
 * `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
-* `versioning` - (Optional, Available in 1.45.0+) A state of versioning (documented below).
+* `versioning` - (Optional, Available in 1.45.0+) A state of versioning. See [`versioning`](#versioning) below.
 * `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
-* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket (documented below).
+* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
 
-#### Block cors_rule
+### `cors_rule`
 
-The cors_rule mapping supports the following:
+The cors_rule configuration block supports the following:
 
 * `allowed_headers` - (Optional) Specifies which headers are allowed.
 * `allowed_methods` - (Required) Specifies which methods are allowed. Can be GET, PUT, POST, DELETE or HEAD.
@@ -381,45 +382,45 @@ The cors_rule mapping supports the following:
 * `expose_headers` - (Optional) Specifies expose header in the response.
 * `max_age_seconds` - (Optional) Specifies time in seconds that browser can cache the response for a preflight request.
 
-#### Block website
+### `website`
 
-The website mapping supports the following:
+The website configuration block supports the following:
 
 * `index_document` - (Required) Alicloud OSS returns this index document when requests are made to the root domain or any of the subfolders.
 * `error_document` - (Optional) An absolute path to the document to return in case of a 4XX error.
 
-#### Block logging
+### `logging`
 
-The logging object supports the following:
+The logging configuration block supports the following:
 
 * `target_bucket` - (Required) The name of the bucket that will receive the log objects.
 * `target_prefix` - (Optional) To specify a key prefix for log objects.
 
-#### Block referer configuration
+### `referer_config`
 
-The referer configuration supports the following:
+The referer_config configuration block supports the following:
 
 * `allow_empty` - (Optional, Type: bool) Allows referer to be empty. Defaults false.
 * `referers` - (Required, Type: list) The list of referer.
 
-#### Block lifecycle_rule
+### `lifecycle_rule`
 
-The lifecycle_rule object supports the following:
+The lifecycle_rule configuration block supports the following:
 
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
 * `prefix` - (Optional, Available in v1.90.0+) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
-* `expiration` - (Optional, Type: set) Specifies a period in the object's expire (documented below).
-* `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. (documented below).
-* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed (documented below).
-* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire (documented below).
-* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions (documented below).
+* `expiration` - (Optional, Type: set) Specifies a period in the object's expire. See [`expiration`](#lifecycle_rule-expiration) below.
+* `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. See [`transitions`](#lifecycle_rule-transitions) below.
+* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed. See [`abort_multipart_upload`](#lifecycle_rule-abort_multipart_upload) below.
+* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire. See [`noncurrent_version_expiration`](#lifecycle_rule-noncurrent_version_expiration) below.
+* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions. See [`noncurrent_version_transition`](#lifecycle_rule-noncurrent_version_transition) below.
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
-#### Block expiration
+### `lifecycle_rule-expiration`
 
-The lifecycle_rule expiration object supports the following:
+The expiration configuration block supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
@@ -428,9 +429,9 @@ The lifecycle_rule expiration object supports the following:
 
 `NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
 
-#### Block transitions
+### `lifecycle_rule-transitions`
 
-The lifecycle_rule transitions object supports the following:
+The transitions configuration block supports the following:
 
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
@@ -438,47 +439,46 @@ The lifecycle_rule transitions object supports the following:
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
-#### Block abort_multipart_upload
+### `lifecycle_rule-abort_multipart_upload`
 
-The lifecycle_rule abort_multipart_upload object supports the following:
+The abort_multipart_upload configuration block supports the following:
 
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that parts created before 2002-10-11T00:00:00.000Z are deleted, and parts created after this time (including this time) are not deleted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one abort_multipart_upload configuration.
 
-#### Block noncurrent_version_expiration
+### `lifecycle_rule-noncurrent_version_expiration`
 
-The lifecycle_rule noncurrent_version_expiration object supports the following:
+The noncurrent_version_expiration configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions expire.
 
-#### Block noncurrent_version_transition
+### `lifecycle_rule-noncurrent_version_transition`
 
-The lifecycle_rule noncurrent_version_transition object supports the following:
+The noncurrent_version_transition configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`. ColdArchive is available in 1.203.0+.
 
 
-#### Block server-side encryption rule
+### `server_side_encryption_rule`
 
-The server-side encryption rule supports the following:
+The server_side_encryption_rule configuration block supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
-* `kms_master_key_id` -  (optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption. 
+* `kms_master_key_id` - (Optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption.
 
-#### Block versioning
+### `versioning`
 
-The versioning supports the following:
+The versioning configuration block supports the following:
 
 * `status` - (Required) Specifies the versioning state of a bucket. Valid values: `Enabled` and `Suspended`.
 
-`NOTE`: Currently, the `versioning` feature is only available in ap-south-1 and with white list. If you want to use it, please contact us.
 
-#### Block transfer_acceleration
+### `transfer_acceleration`
 
-The transfer_acceleration supports the following:
+The transfer_acceleration configuration block supports the following:
 
 * `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
 
@@ -487,7 +487,6 @@ The transfer_acceleration supports the following:
 The following attributes are exported:
 
 * `id` - The name of the bucket.
-* `acl` - The acl of the bucket.
 * `creation_date` - The creation date of the bucket.
 * `extranet_endpoint` - The extranet access endpoint of the bucket.
 * `intranet_endpoint` - The intranet access endpoint of the bucket.
