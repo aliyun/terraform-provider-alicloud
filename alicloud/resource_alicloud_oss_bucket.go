@@ -218,6 +218,14 @@ func resourceAlicloudOssBucket() *schema.Resource {
 											string(oss.StorageColdArchive),
 										}, false),
 									},
+									"is_access_time": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"return_to_std_when_visit": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -271,6 +279,14 @@ func resourceAlicloudOssBucket() *schema.Resource {
 											string(oss.StorageArchive),
 											string(oss.StorageColdArchive),
 										}, false),
+									},
+									"is_access_time": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"return_to_std_when_visit": {
+										Type:     schema.TypeBool,
+										Optional: true,
 									},
 								},
 							},
@@ -387,6 +403,25 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				},
 				MaxItems: 1,
 			},
+
+			"access_monitor": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"Enabled",
+								"Disabled",
+							}, false),
+						},
+					},
+				},
+				MaxItems: 1,
+			},
 		},
 	}
 }
@@ -497,6 +532,16 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		versioning = append(versioning, data)
 		d.Set("versioning", versioning)
 	}
+
+	if object.BucketInfo.AccessMonitor != "" {
+		data := map[string]interface{}{
+			"status": object.BucketInfo.AccessMonitor,
+		}
+		accessmonitor := make([]map[string]interface{}, 0)
+		accessmonitor = append(accessmonitor, data)
+		d.Set("access_monitor", accessmonitor)
+	}
+
 	request := map[string]string{"bucketName": d.Id()}
 	var requestInfo *oss.Client
 
@@ -655,6 +700,12 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				}
 				e["days"] = transition.Days
 				e["storage_class"] = string(transition.StorageClass)
+				if transition.IsAccessTime != nil {
+					e["is_access_time"] = *transition.IsAccessTime
+				}
+				if transition.ReturnToStdWhenVisit != nil {
+					e["return_to_std_when_visit"] = *transition.ReturnToStdWhenVisit
+				}
 				eSli = append(eSli, e)
 			}
 			rule["transitions"] = schema.NewSet(transitionsHash, eSli)
@@ -688,6 +739,12 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				e := make(map[string]interface{})
 				e["days"] = transition.NoncurrentDays
 				e["storage_class"] = string(transition.StorageClass)
+				if transition.IsAccessTime != nil {
+					e["is_access_time"] = *transition.IsAccessTime
+				}
+				if transition.ReturnToStdWhenVisit != nil {
+					e["return_to_std_when_visit"] = *transition.ReturnToStdWhenVisit
+				}
 				eSli = append(eSli, e)
 			}
 			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, eSli)
@@ -814,11 +871,28 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("referer_config")
 	}
 
+	//set access_monitor status to enable before lifecycle rule
+	accessMonitorChange := false
+	if d.HasChange("access_monitor") {
+		accessMonitorChange = true
+		if err := resourceAlicloudOssBucketAccessMonitorUpdate(client, d, true); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	if d.HasChange("lifecycle_rule") {
 		if err := resourceAlicloudOssBucketLifecycleRuleUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("lifecycle_rule")
+	}
+
+	//set access_monitor status to disable after lifecycle rule
+	if accessMonitorChange {
+		if err := resourceAlicloudOssBucketAccessMonitorUpdate(client, d, false); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("access_monitor")
 	}
 
 	if d.HasChange("policy") {
@@ -1148,6 +1222,13 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 					i.StorageClass = oss.StorageClassType(valStorageClass)
 				}
 
+				if val, ok := transition.(map[string]interface{})["is_access_time"].(bool); ok && val {
+					i.IsAccessTime = &val
+					if val1, ok := transition.(map[string]interface{})["return_to_std_when_visit"].(bool); ok {
+						i.ReturnToStdWhenVisit = &val1
+					}
+				}
+
 				rule.Transitions = append(rule.Transitions, i)
 			}
 		}
@@ -1194,6 +1275,13 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 
 				i.NoncurrentDays = valDays
 				i.StorageClass = oss.StorageClassType(valStorageClass)
+
+				if val, ok := transition.(map[string]interface{})["is_access_time"].(bool); ok && val {
+					i.IsAccessTime = &val
+					if val1, ok := transition.(map[string]interface{})["return_to_std_when_visit"].(bool); ok {
+						i.ReturnToStdWhenVisit = &val1
+					}
+				}
 
 				rule.NonVersionTransitions = append(rule.NonVersionTransitions, i)
 			}
@@ -1383,6 +1471,34 @@ func resourceAlicloudOssBucketTransferAccUpdate(client *connectivity.AliyunClien
 	return nil
 }
 
+func resourceAlicloudOssBucketAccessMonitorUpdate(client *connectivity.AliyunClient, d *schema.ResourceData, flag bool) error {
+	am := d.Get("access_monitor").([]interface{})
+	if len(am) == 1 {
+		var requestInfo *oss.Client
+		var amCfg oss.PutBucketAccessMonitor
+		c := am[0].(map[string]interface{})
+		if v, ok := c["status"]; ok {
+			amCfg.Status = v.(string)
+		}
+
+		if (flag && amCfg.Status == "Enabled") || (!flag && amCfg.Status == "Disabled") {
+			raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
+				requestInfo = ossClient
+				return nil, ossClient.PutBucketAccessMonitor(d.Id(), amCfg)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutBucketAccessMonitor", AliyunOssGoSdk)
+			}
+			addDebug("PutBucketAccessMonitor", raw, requestInfo, map[string]interface{}{
+				"bucketName":             d.Id(),
+				"PutBucketAccessMonitor": amCfg,
+			})
+		}
+	}
+
+	return nil
+}
+
 func resourceAlicloudOssBucketDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ossService := OssService{client}
@@ -1478,6 +1594,12 @@ func transitionsHash(v interface{}) int {
 	}
 	if v, ok := m["days"]; ok {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
+	}
+	if v, ok := m["is_access_time"]; ok {
+		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
+	}
+	if v, ok := m["return_to_std_when_visit"]; ok {
+		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
 	return hashcode.String(buf.String())
 }
