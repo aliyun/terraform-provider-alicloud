@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Bandwidth Package resource.
 
-For information about Global Accelerator (GA) Bandwidth Package and how to use it, see [What is Bandwidth Package](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createbandwidthpackage).
+For information about Global Accelerator (GA) Bandwidth Package and how to use it, see [What is Bandwidth Package](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createbandwidthpackage).
 
 -> **NOTE:** At present, The `alicloud_ga_bandwidth_package` created with `Subscription` cannot be deleted. you need to wait until the resource is outdated and released automatically.
 
@@ -57,6 +57,7 @@ The following arguments are supported:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+* `promotion_option_no` - (Optional, Available since v1.208.0) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
 * `bandwidth_package_name` - (Optional) The name of the bandwidth packet.
 * `description` - (Optional) The description of bandwidth package.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.

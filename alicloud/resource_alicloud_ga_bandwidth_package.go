@@ -106,6 +106,10 @@ func resourceAlicloudGaBandwidthPackage() *schema.Resource {
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
 			},
+			"promotion_option_no": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"bandwidth_package_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -176,6 +180,10 @@ func resourceAlicloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 
 	if v, ok := d.GetOk("duration"); ok {
 		request["Duration"] = v
+	}
+
+	if v, ok := d.GetOk("promotion_option_no"); ok {
+		request["PromotionOptionNo"] = v
 	}
 
 	runtime := util.RuntimeOptions{}

@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Forwarding Rule resource.
 
-For information about Global Accelerator (GA) Forwarding Rule and how to use it, see [What is Forwarding Rule](https://www.alibabacloud.com/help/en/doc-detail/205815.htm).
+For information about Global Accelerator (GA) Forwarding Rule and how to use it, see [What is Forwarding Rule](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
 
 -> **NOTE:** Available since v1.120.0.
 

@@ -233,7 +233,7 @@ func TestAccAlicloudGaBandwidthPackage_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_use_coupon", "auto_pay", "duration"},
+				ImportStateVerifyIgnore: []string{"auto_use_coupon", "auto_pay", "duration", "promotion_option_no"},
 			},
 		},
 	})
@@ -291,7 +291,7 @@ func TestAccAlicloudGaBandwidthPackage_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_use_coupon", "auto_pay", "duration"},
+				ImportStateVerifyIgnore: []string{"auto_use_coupon", "auto_pay", "duration", "promotion_option_no"},
 			},
 		},
 	})

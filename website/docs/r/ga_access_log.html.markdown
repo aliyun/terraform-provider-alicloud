@@ -11,7 +11,7 @@ description: |-
 
 Provides a Global Accelerator (GA) Access Log resource.
 
-For information about Global Accelerator (GA) Access Log and how to use it, see [What is Access Log](https://www.alibabacloud.com/help/en/global-accelerator/latest/attachlogstoretoendpointgroup).
+For information about Global Accelerator (GA) Access Log and how to use it, see [What is Access Log](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-attachlogstoretoendpointgroup).
 
 -> **NOTE:** Available since v1.187.0.
 
