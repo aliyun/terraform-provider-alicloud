@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
@@ -129,7 +130,8 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
-
+	curTime := time.Now().Add(time.Hour * 2)
+	endTime := curTime.Add(time.Hour * 48)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -188,12 +190,42 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tde_status":         "Enabled",
+					"encrypt_new_tables": "ON",
+					"encryption_key":     "${alicloud_kms_key.default.id}",
+					"role_arn":           "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
+						"encryption_key":     CHECKSET,
+						"role_arn":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "3",
 					"imci_switch":   "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "2",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+					"sub_category":  "Exclusive",
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "2",
+						"db_node_class": CHECKSET,
 					}),
 				),
 			},
@@ -209,15 +241,29 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_count": "2",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
-					"sub_category":  "Exclusive",
-					"modify_type":   "Upgrade",
+					"upgrade_type":      "ALL",
+					"from_time_service": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_node_count": "2",
-						"db_node_class": CHECKSET,
+						"upgrade_type":      "ALL",
+						"from_time_service": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upgrade_type":       "ALL",
+					"from_time_service":  "false",
+					"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+					"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upgrade_type":       "ALL",
+						"from_time_service":  "false",
+						"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+						"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
 					}),
 				),
 			},
@@ -304,22 +350,6 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 						"db_cluster_ip_array.#": "2",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tde_status":         "Enabled",
-					"encrypt_new_tables": "ON",
-					"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
-					"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tde_status":         "Enabled",
-						"encrypt_new_tables": "ON",
-						"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
-						"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
-					}),
 				),
 			},
 			{
@@ -1004,6 +1034,14 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 
+    data "alicloud_account" "current" {
+    }
+
+    resource "alicloud_kms_key" "default" {
+        description             =  var.name
+        pending_window_in_days =  7
+        status                  = "Enabled"
+   }
 `, name)
 }
 
