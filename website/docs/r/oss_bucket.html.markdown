@@ -207,6 +207,33 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
     }
   }
 }
+
+resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
+  bucket = "example-lifecycle-${random_integer.default.result}"
+  acl    = "private"
+
+  access_monitor {
+    status = "Enabled"
+  }
+
+  lifecycle_rule {
+    id      = "rule-days-transition"
+    prefix  = "path/"
+    enabled = true
+
+    transitions {
+      created_before_date      = "2022-11-11"
+      storage_class            = "IA"
+      is_access_time           = true
+      return_to_std_when_visit = true
+    }
+    transitions {
+      created_before_date = "2021-11-11"
+      storage_class       = "Archive"
+    }
+  }
+}
+
 ```
 
 Set bucket policy 
@@ -372,6 +399,7 @@ The following arguments are supported:
 * `force_destroy` - (Optional, Available since 1.45.0) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
 * `transfer_acceleration` - (Optional, Available since 1.123.1) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
 * `lifecycle_rule_allow_same_action_overlap` - (Optional, Available since 1.208.1) A boolean that indicates lifecycle rules allow prefix overlap.
+* `access_monitor` - (Optional, Available since 1.208.1) A access monitor status of a bucket. See [`access_monitor`](#access_monitor) below.
 
 ### `cors_rule`
 
@@ -437,7 +465,8 @@ The transitions configuration block supports the following:
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `ColdArchive`. ColdArchive is available since 1.203.0.
-
+* `is_access_time` - (Optional, Type: bool, Available since 1.208.1) Specifies whether the lifecycle rule applies to objects based on their last access time. If set to `true`, the rule applies to objects based on their last access time; if set to `false`, the rule applies to objects based on their last modified time. If configure the rule based on the last access time, please enable `access_monitor` first.
+* `return_to_std_when_visit` - (Optional, Type: bool, Available since 1.208.1) Specifies whether to convert the storage class of non-Standard objects back to Standard after the objects are accessed. It takes effect only when the IsAccessTime parameter is set to true. If set to `true`, converts the storage class of the objects to Standard; if set to `false`, does not convert the storage class of the objects to Standard.
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
 ### `lifecycle_rule-abort_multipart_upload`
@@ -461,7 +490,8 @@ The noncurrent_version_transition configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`. ColdArchive is available since 1.203.0.
-
+* `is_access_time` - (Optional, Type: bool, Available since 1.208.1) Specifies whether the lifecycle rule applies to objects based on their last access time. If set to `true`, the rule applies to objects based on their last access time; if set to `false`, the rule applies to objects based on their last modified time. If configure the rule based on the last access time, please enable `access_monitor` first.
+* `return_to_std_when_visit` - (Optional, Type: bool, Available since 1.208.1) Specifies whether to convert the storage class of non-Standard objects back to Standard after the objects are accessed. It takes effect only when the IsAccessTime parameter is set to true. If set to `true`, converts the storage class of the objects to Standard; if set to `false`, does not convert the storage class of the objects to Standard.
 
 ### `server_side_encryption_rule`
 
@@ -482,6 +512,12 @@ The versioning configuration block supports the following:
 The transfer_acceleration configuration block supports the following:
 
 * `enabled` - (Required, Type: bool) Specifies the accelerate status of a bucket.
+
+### `access_monitor`
+
+The access_monitor configuration block supports the following:
+
+* `status` - (Optional) The access monitor state of a bucket. If you want to manage objects based on the last access time of the objects, specifies the status to `Enabled`. Valid values: `Enabled` and `Disabled`.
 
 ## Attributes Reference
 
