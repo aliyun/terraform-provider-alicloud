@@ -674,5 +674,5 @@ var csManagedKubernetesBasicMap = map[string]string{
 	"worker_data_disk_size":       "40",
 	"worker_instance_charge_type": "PostPaid",
 	"slb_internet_enabled":        "true",
-	"install_cloud_monitor":       "true",
+	"install_cloud_monitor":       "false",
 }
