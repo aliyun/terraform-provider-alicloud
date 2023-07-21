@@ -1,33 +1,35 @@
-## 1.208.0 (Unreleased)
+## 1.209.0 (Unreleased)
+## 1.208.0 (July 21, 2023)
 
-- **New Resource:** `alicloud_ens_instance` [GH-6266]
-- **New Resource:** `alicloud_fcv2_function` [GH-6280]
-- **New Resource:** `alicloud_vpc_gateway_endpoint` [GH-6309]
-- **New Resource:** `alicloud_vpc_gateway_endpoint_route_table_attachment` [GH-6319]
+- **New Resource:** `alicloud_ens_instance` ([#6266](https://github.com/aliyun/terraform-provider-alicloud/issues/6266))
+- **New Resource:** `alicloud_fcv2_function` ([#6280](https://github.com/aliyun/terraform-provider-alicloud/issues/6280))
+- **New Resource:** `alicloud_vpc_gateway_endpoint` ([#6309](https://github.com/aliyun/terraform-provider-alicloud/issues/6309))
+- **New Resource:** `alicloud_vpc_gateway_endpoint_route_table_attachment` ([#6319](https://github.com/aliyun/terraform-provider-alicloud/issues/6319))
 
 ENHANCEMENTS:
 
-- provider: Improves the error message when missing credential. [GH-6316]
-- resource/alicloud_ssl_certificates_service_certificate: Fixes the creating bug that resource region does not match template specified. [GH-6299]
-- resource/alicloud_ddoscoo_domain_resource: Added the field ocsp_enabled. [GH-6301]
-- resource/alicloud_db_instance: Added the field role_arn. [GH-6302]
-- resource/alicloud_resource_manager_shared_resource: Supported resource_type set to KMSInstance. [GH-6306]
-- resource/alicloud_ecs_disk: Fixes the setting delete_with_instance=false does not work bug when creating a subscription disk. [GH-6308]
-- resource/alicloud_bastionhost_instance: Fixes the ResourceNotFound error when using international account. [GH-6310]
-- resource/alicloud_rds_upgrade_db_instance: fixes bugs in enabling SSL and modifying resource groups. [GH-6311]
-- resource/alicloud_kvstore_instance: Added the field shard_count. [GH-6312]
-- resource/alicloud_adb_db_cluster: Improves the setting db_cluster_version by api DescribeDBClusterAttribute. [GH-6320]
-- resource/alicloud_db_instance: fixes serverless enable disable delete protection. [GH-6325]
-- resource/alicloud_db_instance: fixes setting table name case sensitive field db_is_ignore_case invalid. [GH-6329]
-- resource/alicloud_eipanycast_anycast_eip_address: add new attributes: tags, create_time. [GH-6335]
-- resource/alicloud_ga_bandwidth_package: Added the field promotion_option_no. [GH-6336]
-- resource/alicloud_eci_container_group: Supported multiple vswitch_id for ECI. [GH-6341]
-- docs: Improves the apigateway docs example. [GH-6293]
-- docs: Improves the docs example. [GH-6303]
-- docs: Improves the arms docs example. [GH-6305]
-- docs: Improves the bastionhost docs example. [GH-6307]
-- docs: Improves the cms docs example. [GH-6326]
-- docs: Improves the config docs example. [GH-6328]
+- provider: Improves the error message when missing credential. ([#6316](https://github.com/aliyun/terraform-provider-alicloud/issues/6316))
+- resource/alicloud_ssl_certificates_service_certificate: Fixes the creating bug that resource region does not match template specified. ([#6299](https://github.com/aliyun/terraform-provider-alicloud/issues/6299))
+- resource/alicloud_ddoscoo_domain_resource: Added the field ocsp_enabled. ([#6301](https://github.com/aliyun/terraform-provider-alicloud/issues/6301))
+- resource/alicloud_db_instance: Added the field role_arn. ([#6302](https://github.com/aliyun/terraform-provider-alicloud/issues/6302))
+- resource/alicloud_resource_manager_shared_resource: Supported resource_type set to KMSInstance. ([#6306](https://github.com/aliyun/terraform-provider-alicloud/issues/6306))
+- resource/alicloud_ecs_disk: Fixes the setting delete_with_instance=false does not work bug when creating a subscription disk. ([#6308](https://github.com/aliyun/terraform-provider-alicloud/issues/6308))
+- resource/alicloud_bastionhost_instance: Fixes the ResourceNotFound error when using international account. ([#6310](https://github.com/aliyun/terraform-provider-alicloud/issues/6310))
+- resource/alicloud_rds_upgrade_db_instance: fixes bugs in enabling SSL and modifying resource groups. ([#6311](https://github.com/aliyun/terraform-provider-alicloud/issues/6311))
+- resource/alicloud_kvstore_instance: Added the field shard_count. ([#6312](https://github.com/aliyun/terraform-provider-alicloud/issues/6312))
+- resource/alicloud_adb_db_cluster: Improves the setting db_cluster_version by api DescribeDBClusterAttribute. ([#6320](https://github.com/aliyun/terraform-provider-alicloud/issues/6320))
+- resource/alicloud_db_instance: fixes serverless enable disable delete protection. ([#6325](https://github.com/aliyun/terraform-provider-alicloud/issues/6325))
+- resource/alicloud_db_instance: fixes setting table name case sensitive field db_is_ignore_case invalid. ([#6329](https://github.com/aliyun/terraform-provider-alicloud/issues/6329))
+- resource/alicloud_eipanycast_anycast_eip_address: add new attributes: tags, create_time. ([#6335](https://github.com/aliyun/terraform-provider-alicloud/issues/6335))
+- resource/alicloud_ga_bandwidth_package: Added the field promotion_option_no. ([#6336](https://github.com/aliyun/terraform-provider-alicloud/issues/6336))
+- resource/alicloud_eci_container_group: Supported multiple vswitch_id for ECI. ([#6341](https://github.com/aliyun/terraform-provider-alicloud/issues/6341))
+- resource/alicloud_cs_managed_kubernetes: change install_cloud_monitor to Computed; resource/alicloud_cs_kubernetes_node_pool: support new node name mode ([#6294](https://github.com/aliyun/terraform-provider-alicloud/issues/6294))
+- docs: Improves the apigateway docs example. ([#6293](https://github.com/aliyun/terraform-provider-alicloud/issues/6293))
+- docs: Improves the docs example. ([#6303](https://github.com/aliyun/terraform-provider-alicloud/issues/6303))
+- docs: Improves the arms docs example. ([#6305](https://github.com/aliyun/terraform-provider-alicloud/issues/6305))
+- docs: Improves the bastionhost docs example. ([#6307](https://github.com/aliyun/terraform-provider-alicloud/issues/6307))
+- docs: Improves the cms docs example. ([#6326](https://github.com/aliyun/terraform-provider-alicloud/issues/6326))
+- docs: Improves the config docs example. ([#6328](https://github.com/aliyun/terraform-provider-alicloud/issues/6328))
 
 ## 1.207.2 (July 07, 2023)
 
