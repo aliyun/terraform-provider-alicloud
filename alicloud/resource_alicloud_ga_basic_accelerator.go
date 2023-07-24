@@ -26,6 +26,23 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"bandwidth_billing_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT", "CDT95"}, false),
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+			},
+			"cross_border_status": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"duration": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -34,20 +51,6 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
-			},
-			"basic_accelerator_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"bandwidth_billing_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT", "CDT95"}, false),
 			},
 			"auto_pay": {
 				Type:     schema.TypeBool,
@@ -65,6 +68,18 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: IntBetween(1, 12),
+			},
+			"promotion_option_no": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"basic_accelerator_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"tags": tagsSchema(),
 			"status": {
@@ -89,16 +104,20 @@ func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta inter
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateBasicAccelerator")
 
-	if v, ok := d.GetOk("duration"); ok {
+	if v, ok := d.GetOk("bandwidth_billing_type"); ok {
+		request["BandwidthBillingType"] = v
+	}
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertGaBasicAcceleratorPaymentTypeRequest(v.(string))
+	}
+
+	if v, ok := d.GetOkExists("duration"); ok {
 		request["Duration"] = v
 	}
 
 	if v, ok := d.GetOk("pricing_cycle"); ok {
 		request["PricingCycle"] = v
-	}
-
-	if v, ok := d.GetOk("bandwidth_billing_type"); ok {
-		request["BandwidthBillingType"] = v
 	}
 
 	if v, ok := d.GetOkExists("auto_pay"); ok {
@@ -113,8 +132,12 @@ func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta inter
 		request["AutoRenew"] = v
 	}
 
-	if v, ok := d.GetOk("auto_renew_duration"); ok {
+	if v, ok := d.GetOkExists("auto_renew_duration"); ok {
 		request["AutoRenewDuration"] = v
+	}
+
+	if v, ok := d.GetOk("promotion_option_no"); ok {
+		request["PromotionOptionNo"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -160,9 +183,11 @@ func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
+	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
+	d.Set("payment_type", convertGaBasicAcceleratorPaymentTypeResponse(object["InstanceChargeType"]))
+	d.Set("cross_border_status", object["CrossBorderStatus"])
 	d.Set("basic_accelerator_name", object["Name"])
 	d.Set("description", object["Description"])
-	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
 	d.Set("status", object["State"])
 
 	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "basicaccelerator")
@@ -245,6 +270,55 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("description")
 	}
 
+	update = false
+	updateAcceleratorCrossBorderStatusReq := map[string]interface{}{
+		"RegionId":      client.RegionId,
+		"ClientToken":   buildClientToken("UpdateAcceleratorCrossBorderStatus"),
+		"AcceleratorId": d.Id(),
+	}
+
+	if d.HasChange("cross_border_status") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("cross_border_status"); ok {
+		updateAcceleratorCrossBorderStatusReq["CrossBorderStatus"] = v
+	}
+
+	if update {
+		action := "UpdateAcceleratorCrossBorderStatus"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateAcceleratorCrossBorderStatusReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, updateAcceleratorCrossBorderStatusReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gaService.GaBasicAcceleratorStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("cross_border_status")
+	}
+
 	d.Partial(false)
 
 	return resourceAlicloudGaBasicAcceleratorRead(d, meta)
@@ -280,9 +354,11 @@ func resourceAlicloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta inter
 		"AcceleratorId": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -304,4 +380,26 @@ func resourceAlicloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta inter
 	}
 
 	return nil
+}
+
+func convertGaBasicAcceleratorPaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "POSTPAY"
+	case "Subscription":
+		return "PREPAY"
+	}
+
+	return source
+}
+
+func convertGaBasicAcceleratorPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "POSTPAY":
+		return "PayAsYouGo"
+	case "PREPAY":
+		return "Subscription"
+	}
+
+	return source
 }
