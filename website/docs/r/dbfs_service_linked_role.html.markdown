@@ -7,13 +7,13 @@ description: |-
     Provides a resource to create the Dbfs service-linked roles(SLR).
 ---
 
-# alicloud\_dbfs\_service\_linked\_role
+# alicloud_dbfs_service_linked_role
 
 Using this data source can create Dbfs service-linked roles(SLR). Dbfs may need to access another Alibaba Cloud service to implement a specific feature. In this case, Dbfs must assume a specific service-linked role, which is a Resource Access Management (RAM) role, to obtain permissions to access another Alibaba Cloud service. 
 
 For information about Dbfs service-linked roles(SLR) and how to use it, see [What is service-linked roles](https://www.alibabacloud.com/help/doc-detail/181425.htm).
 
--> **NOTE:** Available in v1.157.0+.
+-> **NOTE:** Available since v1.157.0.
 
 
 ## Example Usage

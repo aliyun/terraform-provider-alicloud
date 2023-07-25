@@ -11,9 +11,9 @@ description: |-
 
 Provides a Dbfs Auto Snap Shot Policy resource.
 
-For information about Dbfs Auto Snap Shot Policy and how to use it, see [What is Auto Snap Shot Policy](https://help.aliyun.com/document_detail/469597.html).
+For information about Dbfs Auto Snap Shot Policy and how to use it.
 
--> **NOTE:** Available in v1.202.0+.
+-> **NOTE:** Available since v1.202.0.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ Basic Usage
 ```terraform
 resource "alicloud_dbfs_auto_snap_shot_policy" "default" {
   time_points     = ["01"]
-  policy_name     = "testTerraform"
+  policy_name     = "tf-example"
   retention_days  = 1
   repeat_weekdays = ["2"]
 }
@@ -48,7 +48,7 @@ The following attributes are exported:
 * `status` - Automatic snapshot policy status
 * `status_detail` - Automatic snapshot policy status details
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Auto Snap Shot Policy.

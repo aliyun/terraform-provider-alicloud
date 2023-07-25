@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DFS Access Rule resource.
 ---
 
-# alicloud\_dfs\_access\_rule
+# alicloud_dfs_access_rule
 
 Provides a DFS Access Rule resource.
 
 For information about DFS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/doc-detail/207144.htm).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 

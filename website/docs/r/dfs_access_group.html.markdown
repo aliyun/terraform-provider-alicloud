@@ -7,24 +7,27 @@ description: |-
   Provides a Alicloud DFS Access Group resource.
 ---
 
-# alicloud\_dfs\_access\_group
+# alicloud_dfs_access_group
 
 Provides a DFS Access Group resource.
 
 For information about DFS Access Group and how to use it, see [What is Access Group](https://www.alibabacloud.com/help/doc-detail/207144.htm).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_dfs_access_group" "example" {
-  access_group_name = "example_value"
-  network_type      = "VPC"
+variable "name" {
+  default = "tf-example"
 }
 
+resource "alicloud_dfs_access_group" "default" {
+  access_group_name = var.name
+  network_type      = "VPC"
+}
 ```
 
 ## Argument Reference
