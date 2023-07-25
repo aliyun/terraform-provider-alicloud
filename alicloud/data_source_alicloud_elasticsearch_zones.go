@@ -3,6 +3,9 @@ package alicloud
 import (
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -53,11 +56,24 @@ func dataSourceAlicloudElaticsearchZonesRead(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	multi := d.Get("multi").(bool)
 	var zoneIds []string
-
+	var raw interface{}
+	var err error
 	request := elasticsearch.CreateGetRegionConfigurationRequest()
 	request.RegionId = client.RegionId
-	raw, err := client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
-		return elasticsearchClient.GetRegionConfiguration(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = client.WithElasticsearchClient(func(elasticsearchClient *elasticsearch.Client) (interface{}, error) {
+			return elasticsearchClient.GetRegionConfiguration(request)
+		})
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 
 	if err != nil {

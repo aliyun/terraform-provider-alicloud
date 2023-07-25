@@ -16,28 +16,45 @@ import (
 )
 
 const DataNodeSpec = "elasticsearch.sn1ne.large"
-const DataNodeAmount = "2"
-const DataNodeDisk = "20"
-const DataNodeDiskType = "cloud_ssd"
-
 const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
+
+const DataNodeAmount = "2"
 const DataNodeAmountForUpdate = "3"
+
+const DataNodeDisk = "20"
 const DataNodeDiskForUpdate = "30"
+const DataNodeDiskForEssdUpdate = "461"
+
+const DataNodeSsdDiskType = "cloud_ssd"
+const DataNodeEssdDiskType = "cloud_essd"
+
+const DataNodeDiskPerformanceLevel1 = "PL1"
+const DataNodeDiskPerformanceLevel2 = "PL2"
 
 const DataNodeAmountForMultiZone = "4"
 const DefaultZoneAmount = "2"
 
-const MasterNodeSpec = "elasticsearch.sn2ne.large"
-const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
+const MasterNodeSpec = "elasticsearch.sn1ne.large"
+const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.large"
 
-const ClientNodeSpec = "elasticsearch.sn2ne.large"
+const MasterNodeDiskType = "cloud_ssd"
+const MasterNodeEssdDiskType = "cloud_essd"
+
+const ClientNodeSpec = "elasticsearch.sn1ne.large"
+const ClientNodeSpecForUpdate = "elasticsearch.sn2ne.large"
+
 const ClientNodeAmount = "2"
-
-const ClientNodeSpecForUpdate = "elasticsearch.sn2ne.xlarge"
 const ClientNodeAmountForUpdate = "3"
 
 const KibanaSpec = "elasticsearch.sn1ne.large"
 const KibanaSpecForUpdate = "elasticsearch.sn2ne.large"
+
+const AutoRenewal = "AutoRenewal"
+const NotRenewal = "NotRenewal"
+const ManualRenewal = "ManualRenewal"
+
+const Version55 = "5.5.3_with_X-Pack"
+const Version716 = "7.16.2_with_X-Pack"
 
 func init() {
 	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
@@ -170,20 +187,31 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "5.5.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          Version716,
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"kibana_node_spec":                 KibanaSpec,
+					"instance_charge_type":             string(PostPaid),
+					"zone_count":                       "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name,
-						"version":     "5.5.3_with_X-Pack",
+						"description":                      name,
+						"version":                          Version716,
+						"data_node_spec":                   DataNodeSpec,
+						"data_node_amount":                 DataNodeAmount,
+						"data_node_disk_size":              DataNodeDisk,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+						"kibana_node_spec":                 KibanaSpec,
+						"instance_charge_type":             string(PostPaid),
+						"zone_count":                       "1",
 					}),
 				),
 			},
@@ -192,128 +220,6 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"password": "Yourpassword1235",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"password": "Yourpassword1235",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name[:len(name)-1],
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name[:len(name)-1],
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"data_node_spec": DataNodeSpecForUpdate,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"data_node_spec": DataNodeSpecForUpdate,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"data_node_amount": DataNodeAmountForUpdate,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"data_node_amount": DataNodeAmountForUpdate,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"data_node_disk_size": DataNodeDiskForUpdate,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"data_node_disk_size": DataNodeDiskForUpdate,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"master_node_spec": MasterNodeSpec,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"master_node_spec": MasterNodeSpec,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"private_whitelist.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_public": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_public": "true",
-						"public_domain": CHECKSET,
-						"public_port":   CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"public_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"public_whitelist.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_whitelist.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_kibana_private_network": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_kibana_private_network": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_private_whitelist.#": "2",
-					}),
-				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -342,61 +248,95 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					}),
 				),
 			},
-		},
-	})
-}
-
-func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
-	var instance *elasticsearch.DescribeInstanceResponse
-
-	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
-
-	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
-	if len(name) > 30 {
-		name = name[:30]
-	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "5.5.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmountForMultiZone,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
-					"master_node_spec":     MasterNodeSpec,
-					"zone_count":           DefaultZoneAmount,
+					"password": "Yourpassword1235",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":      name,
-						"version":          "5.5.3_with_X-Pack",
-						"data_node_amount": DataNodeAmountForMultiZone,
-						"master_node_spec": MasterNodeSpec,
-						"zone_count":       DefaultZoneAmount,
+						"password": "Yourpassword1235",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name[:len(name)-1],
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name[:len(name)-1],
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"data_node_spec":                   DataNodeSpecForUpdate,
+					"data_node_amount":                 DataNodeAmountForUpdate,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_size":              DataNodeDiskForEssdUpdate,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel2,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"data_node_spec":                   DataNodeSpecForUpdate,
+						"data_node_amount":                 DataNodeAmountForUpdate,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_size":              DataNodeDiskForEssdUpdate,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel2,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_node_spec": KibanaSpecForUpdate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_node_spec": KibanaSpecForUpdate,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_node_spec":      MasterNodeSpec,
+					"master_node_disk_type": MasterNodeEssdDiskType,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_node_spec":      MasterNodeSpec,
+						"master_node_disk_type": MasterNodeEssdDiskType,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"client_node_spec":   ClientNodeSpec,
+					"client_node_amount": ClientNodeAmount,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"client_node_spec":   ClientNodeSpec,
+						"client_node_amount": ClientNodeAmount,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"protocol": "HTTPS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"protocol": "HTTPS",
 					}),
 				),
 			},
@@ -436,30 +376,33 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "6.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          "7.16_with_X-Pack",
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"kibana_node_spec":                 KibanaSpec,
+
 					"instance_charge_type": string(PostPaid),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description": name,
-						"version":     REGEXMATCH + "^6.3.*_with_X-Pack",
+						"version":     REGEXMATCH + "^7.16.*_with_X-Pack",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "6.7_with_X-Pack",
+					"version": "8.5_with_X-Pack",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": REGEXMATCH + "6.7.*_with_X-Pack",
+						"version": REGEXMATCH + "8.5.*_with_X-Pack",
 					}),
 				),
 			},
@@ -467,10 +410,10 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
+func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
-	resourceId := "alicloud_elasticsearch_instance.default.1"
+	resourceId := "alicloud_elasticsearch_instance.default"
 	ra := resourceAttrInit(resourceId, elasticsearchMap)
 
 	serviceFunc := func() interface{} {
@@ -486,7 +429,7 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence_multi)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -499,19 +442,34 @@ func TestAccAlicloudElasticsearchInstance_multi(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "5.5.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
-					"count":                "2",
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          Version716,
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmountForMultiZone,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"master_node_spec":                 MasterNodeSpec,
+					"master_node_disk_type":            MasterNodeEssdDiskType,
+					"instance_charge_type":             string(PostPaid),
+					"zone_count":                       DefaultZoneAmount,
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"description":                      name,
+						"version":                          Version716,
+						"data_node_spec":                   DataNodeSpec,
+						"data_node_amount":                 DataNodeAmountForMultiZone,
+						"data_node_disk_size":              DataNodeDisk,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+						"master_node_spec":                 MasterNodeSpec,
+						"master_node_disk_type":            MasterNodeEssdDiskType,
+						"instance_charge_type":             string(PostPaid),
+						"zone_count":                       DefaultZoneAmount,
+					}),
 				),
 			},
 		},
@@ -550,27 +508,22 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":              name,
-					"vswitch_id":               "${local.vswitch_id}",
-					"version":                  "5.5.3_with_X-Pack",
-					"password":                 "Yourpassword1234",
-					"data_node_spec":           DataNodeSpec,
-					"data_node_amount":         DataNodeAmountForMultiZone,
-					"data_node_disk_size":      DataNodeDisk,
-					"data_node_disk_type":      DataNodeDiskType,
-					"data_node_disk_encrypted": "true",
-					"instance_charge_type":     string(PostPaid),
-					"master_node_spec":         MasterNodeSpec,
-					"zone_count":               DefaultZoneAmount,
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          Version716,
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"data_node_disk_encrypted":         "true",
+					"instance_charge_type":             string(PostPaid),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":              name,
-						"version":                  "5.5.3_with_X-Pack",
-						"data_node_amount":         DataNodeAmountForMultiZone,
 						"data_node_disk_encrypted": "true",
-						"master_node_spec":         MasterNodeSpec,
-						"zone_count":               DefaultZoneAmount,
 					}),
 				),
 			},
@@ -578,7 +531,7 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
+func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -603,41 +556,93 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "6.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
-					"client_node_spec":     ClientNodeSpec,
-					"client_node_amount":   ClientNodeAmount,
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          "7.16_with_X-Pack",
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"kibana_node_spec":                 KibanaSpec,
+					"zone_count":                       "1",
+					"instance_charge_type":             "PrePaid",
+					"period":                           "1",
+					"renew_status":                     AutoRenewal,
+					"auto_renew_duration":              "1",
+					"renewal_duration_unit":            "M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"client_node_spec":   ClientNodeSpec,
-						"client_node_amount": ClientNodeAmount,
+						"instance_charge_type":             "PrePaid",
+						"version":                          "7.16.2_with_X-Pack",
+						"data_node_spec":                   DataNodeSpec,
+						"data_node_amount":                 DataNodeAmount,
+						"data_node_disk_size":              DataNodeDisk,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+						"kibana_node_spec":                 KibanaSpec,
+						"private_whitelist.#":              "1",
+						"zone_count":                       "1",
+						"renew_status":                     AutoRenewal,
+						"auto_renew_duration":              "1",
+						"renewal_duration_unit":            "M",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "period"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_duration":   "1",
+					"renewal_duration_unit": "Y",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_duration":   "1",
+						"renewal_duration_unit": "Y",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"client_node_spec":   ClientNodeSpecForUpdate,
-					"client_node_amount": ClientNodeAmountForUpdate,
+					"auto_renew_duration":   "3",
+					"renewal_duration_unit": "M",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"client_node_spec":   ClientNodeSpecForUpdate,
-						"client_node_amount": ClientNodeAmountForUpdate,
+						"auto_renew_duration":   "3",
+						"renewal_duration_unit": "M",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_status": ManualRenewal,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_status": ManualRenewal,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renew_status": NotRenewal,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renew_status": NotRenewal,
 					}),
 				),
 			},
@@ -645,11 +650,11 @@ func TestAccAlicloudElasticsearchInstance_client_node(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
+func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
+	ra := resourceAttrInit(resourceId, elasticsearchNetworkMap)
 
 	serviceFunc := func() interface{} {
 		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -670,39 +675,41 @@ func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "6.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
-					"kibana_node_spec":     KibanaSpec,
-					"zone_count":           "1",
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          Version716,
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"kibana_node_spec":                 KibanaSpec,
+					"instance_charge_type":             string(PostPaid),
+					"zone_count":                       "1",
+					"enable_public":                    "true",
+					"enable_kibana_private_network":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"kibana_node_spec": KibanaSpec,
-						"zone_count":       "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_node_spec": KibanaSpecForUpdate,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_node_spec": KibanaSpecForUpdate,
+						"description":                      name,
+						"version":                          Version716,
+						"password":                         "Yourpassword1234",
+						"data_node_spec":                   DataNodeSpec,
+						"data_node_amount":                 DataNodeAmount,
+						"data_node_disk_size":              DataNodeDisk,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+						"kibana_node_spec":                 KibanaSpec,
+						"instance_charge_type":             string(PostPaid),
+						"zone_count":                       "1",
+						"enable_public":                    "true",
+						"enable_kibana_private_network":    "true",
 					}),
 				),
 			},
@@ -712,131 +719,52 @@ func TestAccAlicloudElasticsearchInstance_kibana_node(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
-		},
-	})
-}
-
-func TestAccAlicloudElasticsearchInstance_https(t *testing.T) {
-	var instance *elasticsearch.DescribeInstanceResponse
-
-	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, elasticsearchMap)
-
-	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES-keepit%s%d", defaultRegionToTest, rand)
-	if len(name) > 30 {
-		name = name[:30]
-	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "6.3_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     DataNodeAmount,
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
-					"client_node_spec":     ClientNodeSpec,
-					"client_node_amount":   ClientNodeAmount,
-					"protocol":             "HTTPS",
+					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"protocol": "HTTPS",
+						"kibana_whitelist.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocol": "HTTP",
+					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"protocol": "HTTP",
+						"kibana_private_whitelist.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"protocol": "HTTPS",
+					"public_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"protocol": "HTTPS",
+						"public_whitelist.#": "2",
 					}),
 				),
 			},
-		},
-	})
-}
-
-func TestAccAlicloudElasticsearchInstance_setting_config(t *testing.T) {
-	var instance *elasticsearch.DescribeInstanceResponse
-
-	resourceId := "alicloud_elasticsearch_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudElasticsearchMap)
-
-	serviceFunc := func() interface{} {
-		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
-
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
-	if len(name) > 30 {
-		name = name[:30]
-	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":          name,
-					"vswitch_id":           "${local.vswitch_id}",
-					"version":              "6.7_with_X-Pack",
-					"password":             "Yourpassword1234",
-					"data_node_spec":       DataNodeSpec,
-					"data_node_amount":     "3",
-					"data_node_disk_size":  DataNodeDisk,
-					"data_node_disk_type":  DataNodeDiskType,
-					"instance_charge_type": string(PostPaid),
+					"private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_whitelist.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"setting_config": map[string]string{
 						"\"action.auto_create_index\"":         "+.*,-*",
 						"\"action.destructive_requires_name\"": "false",
 						"\"xpack.security.audit.enabled\"":     "true",
-						"\"xpack.security.audit.outputs\"":     "index",
 						"\"xpack.watcher.enabled\"":            "false",
 					},
 				}),
@@ -845,68 +773,33 @@ func TestAccAlicloudElasticsearchInstance_setting_config(t *testing.T) {
 						"setting_config.action.auto_create_index":         "+.*,-*",
 						"setting_config.action.destructive_requires_name": "false",
 						"setting_config.xpack.security.audit.enabled":     "true",
-						"setting_config.xpack.security.audit.outputs":     "index",
 						"setting_config.xpack.watcher.enabled":            "false",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
 }
 
 var elasticsearchMap = map[string]string{
-	"description":                   CHECKSET,
-	"data_node_spec":                DataNodeSpec,
-	"data_node_amount":              DataNodeAmount,
-	"data_node_disk_size":           DataNodeDisk,
-	"data_node_disk_type":           DataNodeDiskType,
-	"instance_charge_type":          string(PostPaid),
-	"status":                        "active",
-	"private_whitelist.#":           "0",
-	"public_whitelist.#":            "0",
-	"enable_public":                 "false",
-	"kibana_whitelist.#":            "0",
-	"enable_kibana_public_network":  "true",
-	"kibana_private_whitelist.#":    "0",
-	"enable_kibana_private_network": "false",
-	"master_node_spec":              "",
-	"id":                            CHECKSET,
-	"domain":                        CHECKSET,
-	"port":                          CHECKSET,
-	"public_domain":                 "",
-	"public_port":                   "0",
-	"kibana_domain":                 CHECKSET,
-	"kibana_port":                   CHECKSET,
-	"vswitch_id":                    CHECKSET,
+	"description":                      CHECKSET,
+	"data_node_spec":                   CHECKSET,
+	"data_node_amount":                 CHECKSET,
+	"data_node_disk_size":              CHECKSET,
+	"data_node_disk_type":              CHECKSET,
+	"data_node_disk_performance_level": CHECKSET,
+	"instance_charge_type":             CHECKSET,
+	"status":                           "active",
+	"enable_public":                    "false",
+	"enable_kibana_public_network":     "true",
+	"enable_kibana_private_network":    "false",
+	"id":                               CHECKSET,
+	"vswitch_id":                       CHECKSET,
 }
 
-var AlicloudElasticsearchMap = map[string]string{
-	"id":                   CHECKSET,
-	"domain":               CHECKSET,
-	"port":                 CHECKSET,
-	"kibana_domain":        CHECKSET,
-	"kibana_port":          CHECKSET,
-	"vswitch_id":           CHECKSET,
-	"description":          CHECKSET,
-	"instance_charge_type": string(PostPaid),
-}
+var elasticsearchNetworkMap = map[string]string{}
 
 func resourceElasticsearchInstanceConfigDependence(name string) string {
-	return fmt.Sprintf(`
-    %s
-	variable "name" {
-		default = "%s"
-	}
-	`, ElasticsearchInstanceCommonTestCase, name)
-}
-
-func resourceElasticsearchInstanceConfigDependence_multi(name string) string {
 	return fmt.Sprintf(`
     %s
 	variable "name" {

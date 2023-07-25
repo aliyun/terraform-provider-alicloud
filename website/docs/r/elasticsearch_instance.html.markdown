@@ -9,11 +9,13 @@ description: |-
 
 # alicloud\_elasticsearch\_instance
 
-Provides a Elasticsearch instance resource. It contains data nodes, dedicated master node(optional) and etc. It can be associated with private IP whitelists and kibana IP whitelist.
+Provides an Elasticsearch instance resource. It contains data nodes, dedicated master node(optional) and etc. It can be associated with private IP whitelists and kibana IP whitelist.
 
 -> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
 -> **NOTE:** At present, `version` can not be modified once instance has been created.
+
+-> **NOTE:** Available since v1.30.0.
 
 ## Example Usage
 
@@ -28,6 +30,7 @@ resource "alicloud_elasticsearch_instance" "instance" {
   data_node_disk_type  = "cloud_ssd"
   client_node_amount   = "2"
   client_node_spec     = "elasticsearch.sn2ne.large"
+  kibana_node_spec     = "elasticsearch.sn2ne.large"
   protocol             = "HTTPS"
   vswitch_id           = "some vswitch id"
   password             = "Your password"
@@ -39,7 +42,14 @@ resource "alicloud_elasticsearch_instance" "instance" {
     "key2" = "value2"
   }
 }
+
 ```
+### Deleting `alicloud_elasticsearch_instance` or removing it from your configuration
+
+The `alicloud_elasticsearch_instance` resource allows you to manage `instance_charge_type = "Prepaid"` Elasticsearch instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Elasticsearch Instance.
+You can resume managing the subscription Elasticsearch instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -53,34 +63,44 @@ The following arguments are supported:
   - `cloud_ssd`: An SSD disk, supports a maximum of 2048 GiB (2 TB).
   - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
 * `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
-* `data_node_disk_encrypted` - (Optional, ForceNew, Available in 1.86.0+) If encrypt the data node disk. Valid values are `true`, `false`. Default to `false`.
+* `data_node_disk_encrypted` - (Optional, ForceNew, Available since 1.86.0) If encrypt the data node disk. Valid values are `true`, `false`. Default to `false`.
+* `data_node_disk_performance_level` - (Optional, Available since 1.208.1) Cloud disk performance level. Valid values are `PL0`, `PL1`, `PL2`, `PL3`. The `data_node_disk_type` muse be `cloud_essd`.
 * `vswitch_id` - (Required, ForceNew) The ID of VSwitch.
 * `password` - (Optional, Sensitive) The password of the instance. The password can be 8 to 30 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (`!@#$%^&*()_+-=`).
-* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
-* `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `kms_encrypted_password` - (Optional, Available since 1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
+* `kms_encryption_context` - (Optional, MapString, Available since 1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack`, `6.7_with_X-Pack`, `6.8_with_X-Pack`, `7.4_with_X-Pack` and `7.7_with_X-Pack`.
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `public_whitelist` - (Optional) Set the instance's IP whitelist in internet network.
-* `enable_public` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can enable public network access。
+* `enable_public` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can enable public network access。
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
-* `enable_kibana_public_network` - (Optional, Available in v1.87.0+) Bool, default to true. When it set to false, the instance can enable kibana public network access。
-* `kibana_private_whitelist` - (Optional, Available in v1.87.0+) Set the Kibana's IP whitelist in private network.
-* `enable_kibana_private_network` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can close kibana private network access。
+* `enable_kibana_public_network` - (Optional, Available since v1.87.0) Bool, default to true. When it set to false, the instance can enable kibana public network access。
+* `kibana_private_whitelist` - (Optional, Available since v1.87.0) Set the Kibana's IP whitelist in private network.
+* `enable_kibana_private_network` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
-* `client_node_amount` - (Optional, Available in v1.101.0+) The Elasticsearch cluster's client node quantity, between 2 and 25.
-* `client_node_spec` - (Optional, Available in v1.101.0+) The client node spec. If specified, client node will be created.
-* `kibana_node_spec` - (Optional, Available in v1.163.0 +) The kibana node specifications of the Elasticsearch instance. Default is `elasticsearch.n4.small`.
-* `protocol` - (Optional, Available in v1.101.0+) Elasticsearch protocol. Supported values: `HTTP`, `HTTPS`.default is `HTTP`.
-* `zone_count` - (Optional, ForceNew, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
-* `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 
-  - key: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:". It cannot contain "http://" and "https://". It cannot be a null string.
-  - value: It can be up to 128 characters in length. It cannot contain "http://" and "https://". It can be a null string.
-* `resource_group_id` - (Optional, ForceNew, Computed, Available in v1.86.0+) The Id of resource group which the Elasticsearch instance belongs.
-* `setting_config` - (Optional, Computed, Available in v1.125.0+) The YML configuration of the instance.[Detailed introduction](https://www.alibabacloud.com/help/doc-detail/61336.html). 
+* `master_node_disk_type` - (Optional, Available since 1.208.1) The single master node storage space. Valid values are `PrePaid`, `PostPaid`.
+* `client_node_amount` - (Optional, Available since v1.101.0) The Elasticsearch cluster's client node quantity, between 2 and 25.
+* `client_node_spec` - (Optional, Available since v1.101.0) The client node spec. If specified, client node will be created.
+* `kibana_node_spec` - (Optional, Available since v1.163.0) The kibana node specifications of the Elasticsearch instance. Default is `elasticsearch.n4.small`.
+* `protocol` - (Optional, Available since v1.101.0) Elasticsearch protocol. Supported values: `HTTP`, `HTTPS`.default is `HTTP`.
+* `zone_count` - (Optional, ForceNew, Available since 1.44.0) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
+* `tags` - (Optional, Available since v1.73.0) A mapping of tags to assign to the resource. 
+  - `key`: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:". It cannot contain "http://" and "https://". It cannot be a null string.
+  - `value`: It can be up to 128 characters in length. It cannot contain "http://" and "https://". It can be a null string.
+* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.86.0) The ID of resource group which the Elasticsearch instance belongs.
+* `setting_config` - (Optional, Computed, Available since v1.125.0) The YML configuration of the instance.[Detailed introduction](https://www.alibabacloud.com/help/doc-detail/61336.html).
+* `renew_status` - (Optional, Available since 1.208.1) The renewal status of the specified instance. Valid values: `AutoRenewal`, `ManualRenewal`, `NotRenewal`.The `instance_charge_type` must be `PrePaid`.
+* `auto_renew_duration` - (Optional, Available since 1.208.1) Auto-renewal period of an Elasticsearch Instance, in the unit of the month. It is valid when `instance_charge_type` is `PrePaid` and `renew_status` is `AutoRenewal`.
+* `renewal_duration_unit` - (Optional, Available since 1.208.1) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years. Valid values: `M`, `Y`.
+* `domain` - (Computed, Available since 1.197.0) Instance connection domain (only VPC network access supported).
+* `port` - (Computed, Available since 1.197.0) Instance connection port.
+* `public_domain` - (Computed, Available since 1.197.0) Instance connection public domain.
+* `public_port` - (Computed, Available since 1.197.0) Instance connection public port.
+* `kibana_domain` - (Computed, Available since 1.197.0) Kibana console domain (Internet access supported).
+* `kibana_port` - (Computed, Available since 1.197.0) Kibana console port.
+* `status` - (Computed, Available since 1.197.0) The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.
 
-### Timeouts
-
--> **NOTE:** Available in 1.48.0+.
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -95,8 +115,8 @@ The following attributes are exported:
 * `id` - The ID of the Elasticsearch instance.
 * `domain` - Instance connection domain (only VPC network access supported).
 * `port` - Instance connection port.
-* `public_domain` - (Available in 1.197.0+) Instance connection public domain.
-* `public_port` - (Available in 1.197.0+) Instance connection public port.
+* `public_domain` - (Available since 1.197.0) Instance connection public domain.
+* `public_port` - (Available since 1.197.0) Instance connection public port.
 * `kibana_domain` - Kibana console domain (Internet access supported).
 * `kibana_port` - Kibana console port.
 * `status` - The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.
