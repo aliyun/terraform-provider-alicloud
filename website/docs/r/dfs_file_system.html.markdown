@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud DFS File System resource.
 ---
 
-# alicloud\_dfs\_file\_system
+# alicloud_dfs_file_system
 
 Provides a DFS File System resource.
 
 For information about DFS File System and how to use it, see [What is File System](https://www.alibabacloud.com/help/doc-detail/207144.htm).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testAccFileSystem"
+  default = "tf-example"
 }
 
 data "alicloud_dfs_zones" "default" {}

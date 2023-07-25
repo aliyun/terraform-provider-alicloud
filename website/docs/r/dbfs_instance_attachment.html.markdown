@@ -7,60 +7,76 @@ description: |-
   Provides a Alicloud DBFS Instance Attachment resource.
 ---
 
-# alicloud\_dbfs\_instance\_attachment
+# alicloud_dbfs_instance_attachment
 
 Provides a DBFS Instance Attachment resource.
 
-For information about DBFS Instance Attachment and how to use it, see [What is Instance Attachment](https://help.aliyun.com/document_detail/149726.html).
+For information about DBFS Instance Attachment and how to use it.
 
--> **NOTE:** Available in v1.156.0+.
+-> **NOTE:** Available since v1.156.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+variable "name" {
+  default = "tf-example"
 }
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 locals {
   zone_id = "cn-hangzhou-i"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = local.zone_id
-}
-resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = "tf test"
-  vpc_id      = data.alicloud_vpcs.default.ids[0]
-}
-data "alicloud_images" "default" {
-  owners      = "system"
-  name_regex  = "^centos_8"
-  most_recent = true
-}
-resource "alicloud_instance" "default" {
-  image_id             = data.alicloud_images.default.images[0].id
-  instance_name        = var.name
-  instance_type        = "ecs.g7se.large"
+data "alicloud_instance_types" "example" {
   availability_zone    = local.zone_id
-  vswitch_id           = data.alicloud_vswitches.default.ids[0]
-  system_disk_category = "cloud_essd"
-  security_groups = [
-    alicloud_security_group.default.id
-  ]
+  instance_type_family = "ecs.g7se"
 }
-resource "alicloud_dbfs_instance" "default" {
+data "alicloud_images" "example" {
+  instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
+  name_regex    = "^aliyun_2"
+  owners        = "system"
+}
+
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "example" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = local.zone_id
+}
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
+}
+
+resource "alicloud_instance" "example" {
+  availability_zone    = local.zone_id
+  instance_name        = var.name
+  image_id             = data.alicloud_images.example.images.1.id
+  instance_type        = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
+  security_groups      = [alicloud_security_group.example.id]
+  vswitch_id           = alicloud_vswitch.example.id
+  system_disk_category = "cloud_essd"
+}
+
+resource "alicloud_dbfs_instance" "example" {
   category          = "standard"
-  zone_id           = alicloud_instance.default.availability_zone
+  zone_id           = local.zone_id
   performance_level = "PL1"
   instance_name     = var.name
   size              = 100
 }
+
 resource "alicloud_dbfs_instance_attachment" "example" {
-  ecs_id      = alicloud_instance.default.id
-  instance_id = alicloud_dbfs_instance.default.id
+  ecs_id      = alicloud_instance.example.id
+  instance_id = alicloud_dbfs_instance.example.id
 }
 ```
 
@@ -78,7 +94,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Instance Attachment. The value formats as `<instance_id>:<ecs_id>`.
 * `status` -The status of Database file system. Valid values: `attached`, `attaching`, `unattached`, `detaching`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
