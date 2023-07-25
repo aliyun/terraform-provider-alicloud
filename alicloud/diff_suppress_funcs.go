@@ -295,15 +295,24 @@ func redisSecurityGroupIdDiffSuppressFunc(k, old, new string, d *schema.Resource
 }
 
 func elasticsearchEnablePublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return d.Get("enable_public").(bool) == false
+	if v, ok := d.GetOkExists("enable_public"); ok && v.(bool) == true {
+		return false
+	}
+	return true
 }
 
 func elasticsearchEnableKibanaPublicDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return d.Get("enable_kibana_public_network").(bool) == false
+	if v, ok := d.GetOkExists("enable_kibana_public_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
 }
 
 func elasticsearchEnableKibanaPrivateDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return d.Get("enable_kibana_private_network").(bool) == false
+	if v, ok := d.GetOkExists("enable_kibana_private_network"); ok && v.(bool) == true {
+		return false
+	}
+	return true
 }
 
 func ecsNotAutoRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
@@ -681,4 +690,11 @@ func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	sort.Strings(oldvlist)
 	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
 
+}
+
+func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("data_node_disk_type"); ok && v.(string) != "cloud_essd" {
+		return true
+	}
+	return false
 }

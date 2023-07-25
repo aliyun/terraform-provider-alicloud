@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -11,8 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/denverdino/aliyungo/common"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -37,7 +36,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[\w\-.]{0,30}$`), "be 0 to 30 characters in length and can contain numbers, letters, underscores, (_) and hyphens (-). It must start with a letter, a number or Chinese character."),
 				Computed:     true,
 			},
 
@@ -76,24 +75,69 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			// Life cycle
 			"instance_charge_type": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 				Optional:     true,
 			},
 
 			"period": {
-				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
-				Optional:         true,
-				Default:          1,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+				Type:         schema.TypeInt,
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				Optional:     true,
+				Default:      1,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" {
+						return false
+					}
+					return true
+				},
+			},
+
+			"renew_status": {
+				Type:         schema.TypeString,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal", "NotRenewal"}, false),
+				Optional:     true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" {
+						return false
+					}
+					return true
+				},
+			},
+
+			"auto_renew_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(1, 12),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" {
+						if v, ok := d.GetOk("renew_status"); ok && v.(string) == "AutoRenewal" {
+							return false
+						}
+					}
+					return true
+				},
+			},
+
+			"renewal_duration_unit": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"M", "Y"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" {
+						if v, ok := d.GetOk("renew_status"); ok && v.(string) == "AutoRenewal" {
+							return false
+						}
+					}
+					return true
+				},
 			},
 
 			// Data node configuration
 			"data_node_amount": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(2, 50),
+				ValidateFunc: IntBetween(2, 50),
 			},
 
 			"data_node_spec": {
@@ -116,6 +160,13 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Default:  false,
+			},
+
+			"data_node_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				DiffSuppressFunc: esDataNodeDiskPerformanceLevelDiffSuppressFunc,
 			},
 
 			"private_whitelist": {
@@ -144,11 +195,17 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			"master_node_disk_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"cloud_ssd", "cloud_essd"}, false),
+			},
+
 			// Client node configuration
 			"client_node_amount": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(2, 25),
+				ValidateFunc: IntBetween(2, 25),
 			},
 
 			"client_node_spec": {
@@ -167,7 +224,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "HTTP",
-				ValidateFunc: validation.StringInSlice([]string{"HTTP", "HTTPS"}, false),
+				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 
 			"domain": {
@@ -238,7 +295,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:         schema.TypeInt,
 				ForceNew:     true,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(1, 3),
+				ValidateFunc: IntBetween(1, 3),
 				Default:      1,
 			},
 			"resource_group_id": {
@@ -262,6 +319,9 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	action := "createInstance"
 
 	requestBody, err := buildElasticsearchCreateRequestBody(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
 	var response map[string]interface{}
 
 	// retry
@@ -296,7 +356,7 @@ func resourceAlicloudElasticsearchCreate(d *schema.ResourceData, meta interface{
 	}
 	d.SetId(resp.(string))
 
-	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 10*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
+	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
@@ -353,7 +413,9 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	d.Set("data_node_disk_size", object["nodeSpec"].(map[string]interface{})["disk"])
 	d.Set("data_node_disk_type", object["nodeSpec"].(map[string]interface{})["diskType"])
 	d.Set("data_node_disk_encrypted", object["nodeSpec"].(map[string]interface{})["diskEncryption"])
+	d.Set("data_node_disk_performance_level", object["nodeSpec"].(map[string]interface{})["performanceLevel"])
 	d.Set("master_node_spec", object["masterConfiguration"].(map[string]interface{})["spec"])
+	d.Set("master_node_disk_type", object["masterConfiguration"].(map[string]interface{})["diskType"])
 	// Client node configuration
 	d.Set("client_node_amount", object["clientNodeConfiguration"].(map[string]interface{})["amount"])
 	d.Set("client_node_spec", object["clientNodeConfiguration"].(map[string]interface{})["spec"])
@@ -370,6 +432,19 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	if esConfig != nil {
 		d.Set("setting_config", esConfig)
 	}
+
+	// paymentInfo
+	bssOpenApiService := BssOpenApiService{client}
+	queryAvailableInstancesObject, err := bssOpenApiService.QueryAvailableInstances(d.Id(), "", "elasticsearch", "elasticsearchpre", "elasticsearch", "elasticsearchpre_intl")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if v, ok := queryAvailableInstancesObject["RenewalDuration"]; ok && fmt.Sprint(v) != "0" {
+		d.Set("auto_renew_duration", formatInt(v))
+	}
+	d.Set("renewal_duration_unit", queryAvailableInstancesObject["RenewalDurationUnit"])
+	d.Set("renew_status", queryAvailableInstancesObject["RenewStatus"])
 
 	// tags
 	tags, err := elasticsearchService.DescribeElasticsearchTags(d.Id())
@@ -422,7 +497,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("enable_public")
 	}
 
-	if d.Get("enable_public").(bool) == true && d.HasChange("public_whitelist") {
+	if d.HasChange("public_whitelist") {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PUBLIC)
 		content["nodeType"] = string(WORKER)
@@ -434,7 +509,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("public_whitelist")
 	}
 
-	if d.HasChange("enable_kibana_public_network") || d.IsNewResource() {
+	if d.HasChange("enable_kibana_public_network") {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PUBLIC)
 		content["nodeType"] = string(KIBANA)
@@ -446,7 +521,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("enable_kibana_public_network")
 	}
 
-	if d.Get("enable_kibana_public_network").(bool) == true && d.HasChange("kibana_whitelist") {
+	if d.HasChange("kibana_whitelist") {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PUBLIC)
 		content["nodeType"] = string(KIBANA)
@@ -470,7 +545,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("enable_kibana_private_network")
 	}
 
-	if d.Get("enable_kibana_private_network").(bool) == true && d.HasChange("kibana_private_whitelist") {
+	if d.HasChange("kibana_private_whitelist") {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PRIVATE)
 		content["nodeType"] = string(KIBANA)
@@ -488,33 +563,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("tags")
-	}
-
-	if d.HasChange("client_node_spec") || d.HasChange("client_node_amount") {
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
-		if err := updateClientNode(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("client_node_spec")
-		d.SetPartial("client_node_amount")
-	}
-
-	if d.HasChange("kibana_node_spec") {
-
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
-		if err := updateKibanaNode(d, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("kibana_node_spec")
 	}
 
 	if d.HasChange("protocol") {
@@ -580,6 +628,16 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("setting_config")
 	}
 
+	if d.Get("instance_charge_type").(string) == string(PrePaid) && (d.HasChange("renew_status") || d.HasChange("auto_renew_duration") || d.HasChange("renewal_duration_unit")) {
+		if err := setRenewalInstance(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("renew_status")
+		d.SetPartial("auto_renew_duration")
+		d.SetPartial("renewal_duration_unit")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudElasticsearchRead(d, meta)
@@ -613,7 +671,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_amount")
 	}
 
-	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") {
+	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") || d.HasChange("data_node_disk_performance_level") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -627,9 +685,10 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_disk_size")
 		d.SetPartial("data_node_disk_type")
 		d.SetPartial("data_node_disk_encrypted")
+		d.SetPartial("data_node_disk_performance_level")
 	}
 
-	if d.HasChange("master_node_spec") {
+	if d.HasChange("master_node_spec") || d.HasChange("master_node_disk_type") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -640,6 +699,34 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("master_node_spec")
+		d.SetPartial("master_node_disk_type")
+	}
+
+	if d.HasChange("kibana_node_spec") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if err := updateKibanaNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("kibana_node_spec")
+	}
+
+	if d.HasChange("client_node_spec") || d.HasChange("client_node_amount") {
+
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		if err := updateClientNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("client_node_spec")
+		d.SetPartial("client_node_amount")
 	}
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
@@ -665,7 +752,8 @@ func resourceAlicloudElasticsearchDelete(d *schema.ResourceData, meta interface{
 	action := "DeleteInstance"
 
 	if strings.ToLower(d.Get("instance_charge_type").(string)) == strings.ToLower(string(PrePaid)) {
-		return WrapError(Error("At present, 'PrePaid' instance cannot be deleted and must wait it to be expired and release it automatically"))
+		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_elasticsearch_instance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
 	}
 	var response map[string]interface{}
 	requestQuery := map[string]*string{
@@ -761,15 +849,23 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 	dataNodeSpec["disk"] = d.Get("data_node_disk_size")
 	dataNodeSpec["diskType"] = d.Get("data_node_disk_type")
 	dataNodeSpec["diskEncryption"] = d.Get("data_node_disk_encrypted")
+	performanceLevel := d.Get("data_node_disk_performance_level")
+	if performanceLevel != "" {
+		dataNodeSpec["performanceLevel"] = performanceLevel
+	}
 	content["nodeSpec"] = dataNodeSpec
 
 	// Master node configuration
 	if v, ok := d.GetOk("master_node_spec"); ok {
+		masterDiskType, diskExits := d.GetOkExists("master_node_disk_type")
+		if !diskExits {
+			return nil, WrapError(fmt.Errorf("CreateInstance error: master_node_disk_type is null"))
+		}
 		masterNode := make(map[string]interface{})
 		masterNode["spec"] = v.(string)
 		masterNode["amount"] = "3"
 		masterNode["disk"] = "20"
-		masterNode["diskType"] = "cloud_ssd"
+		masterNode["diskType"] = masterDiskType.(string)
 		content["advancedDedicateMaster"] = true
 		content["masterConfiguration"] = masterNode
 	}
