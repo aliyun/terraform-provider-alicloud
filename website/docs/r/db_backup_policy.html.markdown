@@ -7,25 +7,24 @@ description: |-
   Provides an RDS backup policy resource.
 ---
 
-# alicloud\_db\_backup\_policy
+# alicloud_db_backup_policy
 
-Provides an RDS instance backup policy resource and used to configure instance backup policy.
+Provides an RDS instance backup policy resource and used to configure instance backup policy, see [What is DB Backup Policy](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-modifybackuppolicy).
+
 
 -> **NOTE:** Each DB instance has a backup policy and it will be set default values when destroying the resource.
+
+-> **NOTE:** Available since v1.5.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbbackuppolicybasic"
+  default = "tf-example"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
@@ -36,7 +35,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
@@ -60,30 +59,30 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
 * `backup_period` - (Deprecated) It has been deprecated from version 1.69.0, and use field 'preferred_backup_period' instead.
-* `preferred_backup_period` - (Optional, available in 1.69.0+) DB Instance backup period. Please set at least two days to ensure backing up at least twice a week. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
+* `preferred_backup_period` - (Optional, Available since v1.69.0) DB Instance backup period. Please set at least two days to ensure backing up at least twice a week. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `backup_time` - (Deprecated) It has been deprecated from version 1.69.0, and use field 'preferred_backup_time' instead.
-* `preferred_backup_time` - (Optional, available in 1.69.0+) DB instance backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
+* `preferred_backup_time` - (Optional, Available since v1.69.0) DB instance backup time, in the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. Default to "02:00Z-03:00Z". China time is 8 hours behind it.
 * `retention_period` - (Deprecated) It has been deprecated from version 1.69.0, and use field 'backup_retention_period' instead.
-* `backup_retention_period` - (Optional, available in 1.69.0+) Instance backup retention days. Valid values: [7-730]. Default to 7. But mysql local disk is unlimited.
+* `backup_retention_period` - (Optional, Available since v1.69.0) Instance backup retention days. Valid values: [7-730]. Default to 7. But mysql local disk is unlimited.
 * `log_backup` - (Deprecated) It has been deprecated from version 1.68.0, and use field 'enable_backup_log' instead.
-* `enable_backup_log` - (Optional, available in 1.68.0+) Whether to backup instance log. Valid values are `true`, `false`, Default to `true`. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
+* `enable_backup_log` - (Optional, Available since v1.68.0) Whether to backup instance log. Valid values are `true`, `false`, Default to `true`. Note: The 'Basic Edition' category Rds instance does not support setting log backup. [What is Basic Edition](https://www.alibabacloud.com/help/doc-detail/48980.htm).
 * `log_retention_period` - (Deprecated) It has been deprecated from version 1.69.0, and use field 'log_backup_retention_period' instead.
-* `log_backup_retention_period` - (Optional, available in 1.69.0+) Instance log backup retention days. Valid when the `enable_backup_log` is `1`. Valid values: [7-730]. Default to 7. It cannot be larger than `backup_retention_period`.
-* `local_log_retention_hours` - (Optional, available in 1.69.0+) Instance log backup local retention hours. Valid when the `enable_backup_log` is `true`. Valid values: [0-7*24].
-* `local_log_retention_space` - (Optional, available in 1.69.0+) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [0-50].
-* `high_space_usage_protection` - (Optional, available in 1.69.0+) Instance high space usage protection policy. Valid when the `enable_backup_log` is `true`. Valid values are `Enable`, `Disable`.
-* `log_backup_frequency` - (Optional, available in 1.69.0+) Instance log backup frequency. Valid when the instance engine is `SQLServer`. Valid values are `LogInterval`.
-* `compress_type` - (Optional, available in 1.69.0+) The compress type of instance policy. Valid values are `1`, `4`, `8`.
-* `archive_backup_retention_period` - (Optional, available in 1.69.0+) Instance archive backup retention days. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values: [30-1095], and `archive_backup_retention_period` must larger than `backup_retention_period` 730.
-* `archive_backup_keep_count` - (Optional, available in 1.69.0+) Instance archive backup keep count. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. When `archive_backup_keep_policy` is `ByMonth` Valid values: [1-31]. When `archive_backup_keep_policy` is `ByWeek` Valid values: [1-7].
-* `archive_backup_keep_policy` - (Optional, available in 1.69.0+) Instance archive backup keep policy. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values are `ByMonth`, `ByWeek`, `KeepAll`.
-* `released_keep_policy` - (Optional, available in 1.147.0+) The policy based on which ApsaraDB RDS retains archived backup files if the instance is released. Default value: None. Valid values:
+* `log_backup_retention_period` - (Optional, Available since v1.69.0) Instance log backup retention days. Valid when the `enable_backup_log` is `1`. Valid values: [7-730]. Default to 7. It cannot be larger than `backup_retention_period`.
+* `local_log_retention_hours` - (Optional, Available since v1.69.0) Instance log backup local retention hours. Valid when the `enable_backup_log` is `true`. Valid values: [0-7*24].
+* `local_log_retention_space` - (Optional, Available since v1.69.0) Instance log backup local retention space. Valid when the `enable_backup_log` is `true`. Valid values: [0-50].
+* `high_space_usage_protection` - (Optional, Available since v1.69.0) Instance high space usage protection policy. Valid when the `enable_backup_log` is `true`. Valid values are `Enable`, `Disable`.
+* `log_backup_frequency` - (Optional, Available since v1.69.0) Instance log backup frequency. Valid when the instance engine is `SQLServer`. Valid values are `LogInterval`.
+* `compress_type` - (Optional, Available since v1.69.0) The compress type of instance policy. Valid values are `1`, `4`, `8`.
+* `archive_backup_retention_period` - (Optional, Available since v1.69.0) Instance archive backup retention days. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values: [30-1095], and `archive_backup_retention_period` must larger than `backup_retention_period` 730.
+* `archive_backup_keep_count` - (Optional, Available since v1.69.0) Instance archive backup keep count. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. When `archive_backup_keep_policy` is `ByMonth` Valid values: [1-31]. When `archive_backup_keep_policy` is `ByWeek` Valid values: [1-7].
+* `archive_backup_keep_policy` - (Optional, Available since v1.69.0) Instance archive backup keep policy. Valid when the `enable_backup_log` is `true` and instance is mysql local disk. Valid values are `ByMonth`, `ByWeek`, `KeepAll`.
+* `released_keep_policy` - (Optional, Available since v1.147.0) The policy based on which ApsaraDB RDS retains archived backup files if the instance is released. Default value: None. Valid values:
   * **None**: No archived backup files are retained.
   * **Lastest**: Only the most recent archived backup file is retained.
   * **All**: All archived backup files are retained.
-* `category` - (Optional, available in 1.190.0+) Whether to enable second level backup.Valid values are `Flash`, `Standard`, Note:It only takes effect when the BackupPolicyMode parameter is DataBackupPolicy. 
+* `category` - (Optional, Available since v1.190.0) Whether to enable second level backup.Valid values are `Flash`, `Standard`, Note:It only takes effect when the BackupPolicyMode parameter is DataBackupPolicy. 
 -> **NOTE:** You can configure a backup policy by using this parameter and the PreferredBackupPeriod parameter. For example, if you set the PreferredBackupPeriod parameter to Saturday,Sunday and the BackupInterval parameter to -1, a snapshot backup is performed on every Saturday and Sunday.If the instance runs PostgreSQL, the BackupInterval parameter is supported only when the instance is equipped with standard SSDs or enhanced SSDs (ESSDs).This parameter takes effect only when you set the BackupPolicyMode parameter to DataBackupPolicy.
-* `backup_interval` - (Optional, available in 1.194.0+) The frequency at which you want to perform a snapshot backup on the instance. Valid values:
+* `backup_interval` - (Optional, Available since v1.194.0) The frequency at which you want to perform a snapshot backup on the instance. Valid values:
   - -1: No backup frequencies are specified.
   - 30: A snapshot backup is performed once every 30 minutes.
   - 60: A snapshot backup is performed once every 60 minutes.
