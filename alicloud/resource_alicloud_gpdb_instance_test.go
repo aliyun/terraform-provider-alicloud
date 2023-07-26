@@ -592,6 +592,7 @@ func TestAccAlicloudGPDBDBInstance_basic1(t *testing.T) {
 					"create_sample_data":    `false`,
 					"encryption_type":       "CloudDisk",
 					"encryption_key":        "${alicloud_kms_key.key.id}",
+					"ssl_enabled":           "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -613,6 +614,7 @@ func TestAccAlicloudGPDBDBInstance_basic1(t *testing.T) {
 						"ip_whitelist.#":        "1",
 						"encryption_type":       "CloudDisk",
 						"encryption_key":        CHECKSET,
+						"ssl_enabled":           "1",
 					}),
 				),
 			},
