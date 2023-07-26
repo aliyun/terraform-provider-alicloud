@@ -13,13 +13,17 @@ Provides a RDS Parameter Group resource.
 
 For information about RDS Parameter Group and how to use it, see [What is Parameter Group](https://www.alibabacloud.com/help/en/doc-detail/144839.htm).
 
--> **NOTE:** Available since v1.119.0+.
+-> **NOTE:** Available since v1.119.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+
 resource "alicloud_rds_parameter_group" "default" {
   engine         = "mysql"
   engine_version = "5.7"
@@ -31,8 +35,8 @@ resource "alicloud_rds_parameter_group" "default" {
     param_name  = "wait_timeout"
     param_value = "86460"
   }
-  parameter_group_desc = "rdsparameter"
-  parameter_group_name = "rds1234"
+  parameter_group_desc = var.name
+  parameter_group_name = var.name
 }
 ```
 

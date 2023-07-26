@@ -7,78 +7,92 @@ description: |-
   Provide RDS cluster instance endpoint public connection resources.
 ---
 
-# alicloud\_rds\_db\_instance\_endpoint\_address
+# alicloud_rds_db_instance_endpoint_address
 
 Provide RDS cluster instance endpoint public connection resources.
 
-Information about RDS MySQL cluster endpoint address and how to use it, see [What is RDS MySQL cluster endpoint address](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-doc-rds-2014-08-15-api-doc-createdbinstanceendpointaddress).
+Information about RDS MySQL cluster endpoint address and how to use it, see [What is RDS DB Instance Endpoint Address](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createdbinstanceendpointaddress).
 
--> **NOTE:** Available in 1.204.0+.
+-> **NOTE:** Available since v1.204.0.
 
 ## Example Usage
 
-```
-variable "creation" {
-  default = "Rds"
-}
-
+```terraform
 variable "name" {
-  default = "dbInstancevpc"
+  default = "tf-example"
+}
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.ids.0
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name       = var.name
-  cidr_block     = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.default.ids.0
+  vswitch_name = var.name
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = "172.16.0.0/24"
-  zone_id           = data.alicloud_zones.default.zones[0].id
-  vswitch_name      = var.name
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_db_instance" "default" {
-  engine                    = "MySQL"
-  engine_version            = "8.0"
-  instance_type             = "mysql.n2.medium.xc"
-  instance_storage          = "20"
-  instance_charge_type      = "Postpaid"
-  instance_name             = var.name
-  vswitch_id                = alicloud_vswitch.default.id
-  db_instance_storage_type  = "cloud_essd"
-  zone_id                   = data.alicloud_zones.default.ids.0
-  zone_id_slave_a           = data.alicloud_zones.default.ids.0
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = alicloud_vswitch.default.id
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  security_group_ids       = [alicloud_security_group.default.id]
+  zone_id                  = data.alicloud_db_zones.default.ids.0
+  zone_id_slave_a          = data.alicloud_db_zones.default.ids.0
 }
 
 resource "alicloud_rds_db_node" "default" {
   db_instance_id = alicloud_db_instance.default.id
   class_code     = alicloud_db_instance.default.instance_type
-  zone_id        = alicloud_db_instance.default.zone_id
+  zone_id        = alicloud_vswitch.default.zone_id
 }
 
 resource "alicloud_rds_db_instance_endpoint" "default" {
-  db_instance_id                   = alicloud_db_instance.default.db_instance_id                
-  vpc_id                           = alicloud_db_instance.default.vpc_id
+  db_instance_id                   = alicloud_rds_db_node.default.db_instance_id
+  vpc_id                           = alicloud_vpc.default.id
   vswitch_id                       = alicloud_db_instance.default.vswitch_id
-  connection_string_prefix         = "test001"
-  port                             = "3307"
-  db_instance_endpoint_description = "test111"
+  connection_string_prefix         = "example"
+  port                             = "3306"
+  db_instance_endpoint_description = var.name
   node_items {
-      node_id = alicloud_rds_db_node.default.node_id
-      weight = 25
+    node_id = alicloud_rds_db_node.default.node_id
+    weight  = 25
   }
 }
 
 resource "alicloud_rds_db_instance_endpoint_address" "default" {
-  db_instance_id            = alicloud_db_instance.default.db_instance_id
-  db_instance_endpoint_id   = alicloud_rds_db_instance_endpoint.default.db_instance_endpoint_id
-  connection_string_prefix  = "tf-testaddress001"
-  port                      = "3307"
+  db_instance_id           = alicloud_db_instance.default.db_instance_id
+  db_instance_endpoint_id  = alicloud_rds_db_instance_endpoint.default.db_instance_endpoint_id
+  connection_string_prefix = "tf-example-prefix"
+  port                     = "3306"
 }
 ```
 
@@ -100,7 +114,7 @@ The following attributes are exported:
 * `connection_string` - The endpoint of the instance.
 * `ip_type` - The type of the IP address.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

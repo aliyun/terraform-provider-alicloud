@@ -7,38 +7,36 @@ description: |-
   Provides an RDS database resource.
 ---
 
-# alicloud\_db\_database
+# alicloud_db_database
 
-Provides an RDS database resource. A DB database deployed in a DB instance. A DB instance can own multiple databases.
+Provides an RDS database resource. A DB database deployed in a DB instance. A DB instance can own multiple databases, see [What is DB Database](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createdatabase).
+
+-> **NOTE:** Available since v1.5.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbdatabasebasic"
+  default = "tf-example"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
-resource "alicloud_db_instance" "instance" {
+resource "alicloud_db_instance" "default" {
   engine           = "MySQL"
   engine_version   = "5.6"
   instance_type    = "rds.mysql.s1.small"
@@ -48,8 +46,8 @@ resource "alicloud_db_instance" "instance" {
 }
 
 resource "alicloud_db_database" "default" {
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tftestdatabase"
+  instance_id = alicloud_db_instance.default.id
+  name        = var.name
 }
 ```
 
@@ -58,8 +56,7 @@ resource "alicloud_db_database" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
-* `name` - (Required, ForceNew) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter
-                      and have no more than 64 characters.
+* `name` - (Required, ForceNew) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and have no more than 64 characters.
 * `character_set` - (Optional, ForceNew) Character set. The value range is limited to the following:
     - MySQL: [ utf8, gbk, latin1, utf8mb4 ] \(`utf8mb4` only supports versions 5.5 and 5.6\).
     - SQLServer: [ Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ]

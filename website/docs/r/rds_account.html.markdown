@@ -7,29 +7,31 @@ description: |-
   Provides a Alicloud RDS Account resource.
 ---
 
-# alicloud\_rds\_account
+# alicloud_rds_account
 
 Provides a RDS Account resource.
 
-For information about RDS Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/doc-detail/26263.htm).
+For information about RDS Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createaccount).
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbaccountmysql"
+  default = "tf_example"
+}
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_instance_classes" "default" {
+  zone_id        = data.alicloud_db_zones.default.ids.0
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
@@ -40,23 +42,23 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.ids.0
   vswitch_name = var.name
 }
 
-resource "alicloud_db_instance" "instance" {
+resource "alicloud_db_instance" "default" {
   engine           = "MySQL"
   engine_version   = "5.6"
-  instance_type    = "rds.mysql.s1.small"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage = "10"
   vswitch_id       = alicloud_vswitch.default.id
   instance_name    = var.name
 }
 
-resource "alicloud_rds_account" "account" {
-  db_instance_id   = alicloud_db_instance.instance.id
-  account_name     = "tftestnormal12"
-  account_password = "Test12345"
+resource "alicloud_rds_account" "default" {
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = var.name
+  account_password = "Example1234"
 }
 ```
 
@@ -67,7 +69,7 @@ The following arguments are supported:
 * `account_description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `account_name` - (Optional, ForceNew) Operation account requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letter and end with letters or numbers, The length must be 2-63 characters for PostgreSQL, otherwise the length must be 2-32 characters.
 * `account_password` - (Optional, Sensitive) Operation password. It may consist of letters, digits, or underlines, with a length of 6 to 32 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
-* `account_type` - (Optional, Computed, ForceNew) Privilege type of account. Default to `Normal`.
+* `account_type` - (Optional, ForceNew) Privilege type of account. Default to `Normal`.
     `Normal`: Common privilege.
     `Super`: High privilege. 
 * `db_instance_id` - (Optional, ForceNew) The Id of instance in which account belongs.
@@ -77,7 +79,7 @@ The following arguments are supported:
 * `instance_id` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `db_instance_id` instead.
 * `name` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_name` instead.
 * `password` - (Optional, Sensitive, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_password` instead.
-* `type` - (Optional, Computed, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
+* `type` - (Optional, ForceNew, Deprecated from v1.120.0) The attribute has been deprecated from 1.120.0 and using `account_type` instead.
 
 -> **NOTE**: Only MySQL engine is supported resets permissions of the privileged account.
 * `reset_permission_flag` - (Optional, Available in v1.198.0+) Resets permissions flag of the privileged account. Default to `false`. Set it to `true` can resets permissions of the privileged account.
@@ -90,7 +92,7 @@ The following attributes are exported:
 * `status` - The status of the resource. Valid values: `Available`, `Unavailable`.
 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -9,25 +9,23 @@ description: |-
 
 # alicloud_db_connection
 
-Provides an RDS connection resource to allocate an Internet connection string for RDS instance.
+Provides an RDS connection resource to allocate an Internet connection string for RDS instance, see [What is DB Connection](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-allocateinstancepublicconnection).
 
 -> **NOTE:** Each RDS instance will allocate a intranet connnection string automatically and its prifix is RDS instance ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
--> **NOTE:** Available since v1.5.0+.
+ 
+-> **NOTE:** Available since v1.5.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbconnectionbasic"
+  default = "tf_example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
@@ -38,11 +36,11 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
-resource "alicloud_db_instance" "instance" {
+resource "alicloud_db_instance" "default" {
   engine           = "MySQL"
   engine_version   = "5.6"
   instance_type    = "rds.mysql.t1.small"
@@ -51,8 +49,8 @@ resource "alicloud_db_instance" "instance" {
   instance_name    = var.name
 }
 
-resource "alicloud_db_connection" "foo" {
-  instance_id       = alicloud_db_instance.instance.id
+resource "alicloud_db_connection" "default" {
+  instance_id       = alicloud_db_instance.default.id
   connection_prefix = "testabc"
 }
 ```
@@ -64,7 +62,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
 * `connection_prefix` - (Optional, ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 40 characters. Default to <instance_id> + 'tf'.
 * `port` - (Optional) Internet connection port. Valid value: [1000-5999]. Default to 3306.
-* `babelfish_port` - (Optional, Computed, Available in 1.176.0+) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
+* `babelfish_port` - (Optional, Available since v1.176.0) The Tabular Data Stream (TDS) port of the instance for which Babelfish is enabled.
 
 -> **NOTE:** This parameter applies only to ApsaraDB RDS for PostgreSQL instances. For more information about Babelfish for ApsaraDB RDS for PostgreSQL, see [Introduction to Babelfish](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/babelfish-for-pg).
 

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RDS Service Linked Role.
 ---
 
-# alicloud\_rds\_service\_linked\_role
+# alicloud_rds_service_linked_role
 
 Provides a RDS Service Linked Role.
 
 For information about RDS Service Linked Role and how to use it, see [What is Service Linked Role.](https://www.alibabacloud.com/help/en/doc-detail/171226.htm).
 
--> **NOTE:** Available in v1.189.0+.
+-> **NOTE:** Available since v1.189.0.
 
 ## Example Usage
 

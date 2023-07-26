@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RDS Backup resource.
 ---
 
-# alicloud\_rds\_backup
+# alicloud_rds_backup
 
 Provides a RDS Backup resource.
 
-For information about RDS Backup and how to use it, see [What is Backup](https://www.alibabacloud.com/help/doc-detail/26272.htm).
+For information about RDS Backup and how to use it, see [What is Backup](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createbackup).
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0.
 
 ## Example Usage
 
@@ -38,11 +38,11 @@ resource "alicloud_rds_backup" "example" {
 
 The following arguments are supported:
 
-* `backup_method` - (Optional, Computed) The type of backup that you want to perform. Default value: `Physical`. Valid values: `Logical`, `Physical` and `Snapshot`.
+* `backup_method` - (Optional) The type of backup that you want to perform. Default value: `Physical`. Valid values: `Logical`, `Physical` and `Snapshot`.
 * `backup_strategy` - (Optional) The policy that you want to use for the backup task. Valid values:
   * **db**: specifies to perform a database-level backup.
   * **instance**: specifies to perform an instance-level backup.
-* `backup_type` - (Optional, Computed) The method that you want to use for the backup task. Default value: `Auto`. Valid values:
+* `backup_type` - (Optional) The method that you want to use for the backup task. Default value: `Auto`. Valid values:
   * **Auto**: specifies to automatically perform a full or incremental backup.
   * **FullBackup**: specifies to perform a full backup.
 * `db_instance_id` - (Required, ForceNew) The db instance id.
@@ -57,7 +57,7 @@ The following attributes are exported:
 * `backup_id` - The backup id.
 * `store_status` - Indicates whether the data backup file can be deleted. Valid values: `Enabled` and `Disabled`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

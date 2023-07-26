@@ -9,34 +9,35 @@ description: |-
 
 # alicloud_rds_db_proxy
 
-Information about RDS database exclusive agent and its usage, see [Dedicated proxy (read/write splitting).](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/dedicated-proxy).
--> **NOTE:** Available since v1.193.0+.
+Information about RDS database exclusive agent and its usage, see [What is RDS DB Proxy](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-modifydbproxy).
+
+-> **NOTE:** Available since v1.193.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbInstancevpc"
+  default = "tf-example"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
   vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_db_instance" "default" {
@@ -51,12 +52,12 @@ resource "alicloud_db_instance" "default" {
 }
 
 resource "alicloud_db_readonly_instance" "default" {
-  master_db_instance_id = alicloud_db_instance.default.id
   zone_id               = alicloud_db_instance.default.zone_id
+  master_db_instance_id = alicloud_db_instance.default.id
   engine_version        = alicloud_db_instance.default.engine_version
-  instance_type         = "rds.mysql.s3.large"
-  instance_storage      = "20"
-  instance_name         = "${var.name}ro"
+  instance_storage      = alicloud_db_instance.default.instance_storage
+  instance_type         = alicloud_db_instance.default.instance_type
+  instance_name         = "${var.name}readonly"
   vswitch_id            = alicloud_vswitch.default.id
 }
 
@@ -66,7 +67,7 @@ resource "alicloud_rds_db_proxy" "default" {
   vpc_id                               = alicloud_db_instance.default.vpc_id
   vswitch_id                           = alicloud_db_instance.default.vswitch_id
   db_proxy_instance_num                = 2
-  db_proxy_connection_prefix           = "ttest001"
+  db_proxy_connection_prefix           = "example"
   db_proxy_connect_string_port         = 3306
   db_proxy_endpoint_read_write_mode    = "ReadWrite"
   read_only_instance_max_delay_time    = 90

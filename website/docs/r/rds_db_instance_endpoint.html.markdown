@@ -9,63 +9,77 @@ description: |-
 
 # alicloud_rds_db_instance_endpoint
 
-Provide RDS cluster instance endpoint connection resources.
+Provide RDS cluster instance endpoint connection resources, see [What is RDS DB Instance Endpoint](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createdbinstanceendpoint).
 
--> **NOTE:** Available since v1.203.0+.
+-> **NOTE:** Available since v1.203.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbInstancevpc"
+  default = "tf-example"
+}
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.ids.0
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "cluster"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.ids.0
   vswitch_name = var.name
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
-  instance_type            = "mysql.n2.medium.xc"
-  instance_storage         = "20"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   instance_charge_type     = "Postpaid"
   instance_name            = var.name
   vswitch_id               = alicloud_vswitch.default.id
+  monitoring_period        = "60"
   db_instance_storage_type = "cloud_essd"
-  zone_id                  = data.alicloud_zones.default.ids.0
-  zone_id_slave_a          = data.alicloud_zones.default.ids.0
+  security_group_ids       = [alicloud_security_group.default.id]
+  zone_id                  = data.alicloud_db_zones.default.ids.0
+  zone_id_slave_a          = data.alicloud_db_zones.default.ids.0
 }
 
 resource "alicloud_rds_db_node" "default" {
   db_instance_id = alicloud_db_instance.default.id
   class_code     = alicloud_db_instance.default.instance_type
-  zone_id        = alicloud_db_instance.default.zone_id
+  zone_id        = alicloud_vswitch.default.zone_id
 }
 
 resource "alicloud_rds_db_instance_endpoint" "default" {
-  db_instance_id                   = alicloud_db_instance.default.db_instance_id
-  vpc_id                           = alicloud_db_instance.default.vpc_id
+  db_instance_id                   = alicloud_rds_db_node.default.db_instance_id
+  vpc_id                           = alicloud_vpc.default.id
   vswitch_id                       = alicloud_db_instance.default.vswitch_id
-  connection_string_prefix         = "test001"
-  port                             = "3307"
-  db_instance_endpoint_description = "test111"
+  connection_string_prefix         = "example"
+  port                             = "3306"
+  db_instance_endpoint_description = var.name
   node_items {
     node_id = alicloud_rds_db_node.default.node_id
     weight  = 25

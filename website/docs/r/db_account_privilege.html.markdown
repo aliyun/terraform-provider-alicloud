@@ -7,25 +7,24 @@ description: |-
   Provides an RDS account privilege resource.
 ---
 
-# alicloud\_db\_account\_privilege
+# alicloud_db_account_privilege
 
-Provides an RDS account privilege resource and used to grant several database some access privilege. A database can be granted by multiple account.
+Provides an RDS account privilege resource and used to grant several database some access privilege. A database can be granted by multiple account, see [What is DB Account Privilege](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-grantaccountprivilege).
 
 -> **NOTE:** At present, a database can only have one database owner.
+
+-> **NOTE:** Available since v1.5.0.
 
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Rds"
-}
-
 variable "name" {
-  default = "dbaccountprivilegebasic"
+  default = "tf_example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+data "alicloud_db_zones" "default" {
+  engine         = "MySQL"
+  engine_version = "5.6"
 }
 
 resource "alicloud_vpc" "default" {
@@ -36,7 +35,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
   vswitch_name = var.name
 }
 
@@ -52,15 +51,15 @@ resource "alicloud_db_instance" "instance" {
 resource "alicloud_db_database" "db" {
   count       = 2
   instance_id = alicloud_db_instance.instance.id
-  name        = "tfaccountpri_${count.index}"
+  name        = "${var.name}_${count.index}"
   description = "from terraform"
 }
 
 resource "alicloud_db_account" "account" {
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tftestprivilege"
-  password    = "Test12345"
-  description = "from terraform"
+  db_instance_id      = alicloud_db_instance.instance.id
+  account_name        = "tfexample"
+  account_password    = "Example12345"
+  account_description = "from terraform"
 }
 
 resource "alicloud_db_account_privilege" "privilege" {
@@ -77,14 +76,13 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs.
 * `account_name` - (Required, ForceNew) A specified account name.
-* `privilege` - The privilege of one account access database. Valid values: 
+* `privilege` - (Optional, ForceNew) The privilege of one account access database. Valid values: 
     - ReadOnly: This value is only for MySQL, MariaDB and SQL Server
     - ReadWrite: This value is only for MySQL, MariaDB and SQL Server
     - DDLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
     - DMLOnly: (Available in 1.64.0+) This value is only for MySQL and MariaDB
     - DBOwner: (Available in 1.64.0+) This value is only for SQL Server and PostgreSQL.
-     
-   Default to "ReadOnly". 
+      Default to "ReadOnly". 
 * `db_names` - (Required) List of specified database name.
 
 ## Attributes Reference
