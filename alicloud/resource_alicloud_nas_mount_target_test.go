@@ -8,16 +8,15 @@ import (
 	"testing"
 
 	"github.com/agiledragon/gomonkey/v2"
+	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAccAlicloudNASMountTarget_basic(t *testing.T) {
@@ -45,7 +44,7 @@ func TestAccAlicloudNASMountTarget_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
 					"file_system_id":    "${alicloud_nas_file_system.example.id}",
-					"vswitch_id":        "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":        "${alicloud_vswitch.main.id}",
 					"security_group_id": "${alicloud_security_group.example.id}",
 					"status":            "Active",
 				}),
@@ -89,7 +88,7 @@ func TestAccAlicloudNASMountTarget_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
 					"file_system_id":    "${alicloud_nas_file_system.example.id}",
-					"vswitch_id":        "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}",
+					"vswitch_id":        "${alicloud_vswitch.main.id}",
 					"security_group_id": "${alicloud_security_group.example.id}",
 					"status":            "Active",
 				}),
@@ -100,6 +99,66 @@ func TestAccAlicloudNASMountTarget_basic(t *testing.T) {
 						"vswitch_id":        CHECKSET,
 						"security_group_id": CHECKSET,
 						"status":            "Active",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudNasExtremeMountTarget_basic(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_mount_target.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasMountTarget1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasMountTarget")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudNasMountTarget%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasMountTargetBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": "${alicloud_nas_access_group.example.access_group_name}",
+					"file_system_id":    "${alicloud_nas_file_system.example.id}",
+					"vswitch_id":        "${alicloud_vswitch.main.id}",
+					"vpc_id":            "${alicloud_vpc.main.id}",
+					"network_type":      "${alicloud_nas_access_group.example.access_group_type}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_name":   name,
+						"file_system_id":      CHECKSET,
+						"vswitch_id":          CHECKSET,
+						"vpc_id":              CHECKSET,
+						"mount_target_domain": CHECKSET,
+						"status":              CHECKSET,
+						"network_type":        "Vpc",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": "${alicloud_nas_access_group.example1.access_group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_name": name + "change",
 					}),
 				),
 			},
@@ -123,13 +182,31 @@ data "alicloud_nas_protocols" "example" {
 	type = "Performance"
 }
 
-data "alicloud_vpcs" "example" {
-	name_regex = "default-NODELETING"
+data "alicloud_nas_zones" "default" {
+	file_system_type = "standard"
+}
+	
+locals {
+	count_size = length(data.alicloud_nas_zones.default.zones)
+	zone_id    = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+}
+
+
+resource "alicloud_vpc" "main" {
+	vpc_name   = "terraform-example"
+	cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "main" {
+  	vswitch_name = alicloud_vpc.main.vpc_name
+  	cidr_block   = alicloud_vpc.main.cidr_block
+  	vpc_id       = alicloud_vpc.main.id
+  	zone_id      = local.zone_id
 }
 
 resource "alicloud_security_group" "example" {
 	name = var.name
-	vpc_id = "${data.alicloud_vpcs.example.vpcs.0.id}"
+	vpc_id = "${alicloud_vpc.main.id}"
 }
 
 resource "alicloud_nas_file_system" "example" {
@@ -148,10 +225,66 @@ resource "alicloud_nas_access_group" "example1" {
 }
 
 resource "alicloud_nas_mount_target" "example" {
-	file_system_id = "${alicloud_nas_file_system.example.id}"
+	file_system_id    = "${alicloud_nas_file_system.example.id}"
 	access_group_name = "${alicloud_nas_access_group.example.access_group_name}"
-	vswitch_id = "${data.alicloud_vpcs.example.vpcs.0.vswitch_ids.0}"
+	vswitch_id        = "${alicloud_vswitch.main.id}"
 	security_group_id = "${alicloud_security_group.example.id}"
+}
+`, name, name)
+}
+
+var AlicloudNasMountTarget1 = map[string]string{}
+
+func AlicloudNasMountTargetBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+variable "name1" {
+	default = "%schange"
+}
+
+data "alicloud_nas_zones" "default" {
+	file_system_type = "extreme"
+}
+
+locals {
+	count_size = length(data.alicloud_nas_zones.default.zones)
+	zone_id    = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+}
+
+
+resource "alicloud_vpc" "main" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.17.3.0/24"
+}
+
+resource "alicloud_vswitch" "main" {
+  vswitch_name = alicloud_vpc.main.vpc_name
+  cidr_block   = alicloud_vpc.main.cidr_block
+  vpc_id       = alicloud_vpc.main.id
+  zone_id      = local.zone_id
+}
+
+resource "alicloud_nas_file_system" "example" {
+	protocol_type     = "NFS"
+	storage_type      = "advance"
+	capacity          = "100"
+	zone_id           = local.zone_id
+	file_system_type  = "extreme"
+}
+
+resource "alicloud_nas_access_group" "example" {
+	access_group_name = "${var.name}"
+	access_group_type = "Vpc"
+	file_system_type  = "extreme"
+}
+
+resource "alicloud_nas_access_group" "example1" {
+	access_group_name = "${var.name1}"
+	access_group_type = "Vpc"
+	file_system_type  = "extreme"
 }
 `, name, name)
 }
@@ -165,7 +298,8 @@ func TestUnitAlicloudNASMountTarget(t *testing.T) {
 		"access_group_name": "access_group_name",
 		"file_system_id":    "file_system_id",
 		"vswitch_id":        "vswitch_id",
-		"security_group_id": "security_group_id",
+		"vpc_id":            "vpc_id",
+		"network_type":      "network_type",
 	} {
 		err := dCreate.Set(key, value)
 		assert.Nil(t, err)
@@ -186,8 +320,10 @@ func TestUnitAlicloudNASMountTarget(t *testing.T) {
 					"AccessGroup":       "access_group_name",
 					"FileSystemId":      "file_system_id",
 					"Status":            "Active",
+					"VpcId":             "vpc_id",
 					"VswId":             "vswitch_id",
 					"MountTargetDomain": "MockMountTargetDomain",
+					"NetworkType":       "network_type",
 				},
 			},
 		},
