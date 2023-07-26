@@ -874,7 +874,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	request = map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("ssl_enabled") {
+	if d.HasChange("ssl_enabled") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("ssl_enabled"); ok {
