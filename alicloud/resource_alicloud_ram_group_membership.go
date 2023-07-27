@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -40,7 +43,7 @@ func resourceAlicloudRamGroupMembershipCreate(d *schema.ResourceData, meta inter
 	group := d.Get("group_name").(string)
 	users := expandStringList(d.Get("user_names").(*schema.Set).List())
 
-	err := addUsersToGroup(client, users, group)
+	err := addUsersToGroup(d, client, users, group, false)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -71,11 +74,11 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 		add := expandStringList(newSet.Difference(oldSet).List())
 		group := d.Id()
 
-		if err := removeUsersFromGroup(client, remove, group); err != nil {
+		if err := removeUsersFromGroup(d, client, remove, group, true); err != nil {
 			return WrapError(err)
 		}
 
-		if err := addUsersToGroup(client, add, group); err != nil {
+		if err := addUsersToGroup(d, client, add, group, true); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -113,43 +116,81 @@ func resourceAlicloudRamGroupMembershipDelete(d *schema.ResourceData, meta inter
 	users := expandStringList(d.Get("user_names").(*schema.Set).List())
 	group := d.Id()
 
-	if err := removeUsersFromGroup(client, users, group); err != nil {
+	if err := removeUsersFromGroup(d, client, users, group, false); err != nil {
 		return WrapError(err)
 	}
 	return WrapError(ramService.WaitForRamGroupMembership(d.Id(), Deleted, DefaultTimeout))
 }
 
-func addUsersToGroup(client *connectivity.AliyunClient, users []string, group string) error {
+func addUsersToGroup(d *schema.ResourceData, client *connectivity.AliyunClient, users []string, group string, isUpdate bool) error {
 	for _, u := range users {
 		request := ram.CreateAddUserToGroupRequest()
 		request.RegionId = client.RegionId
 		request.UserName = u
 		request.GroupName = group
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.AddUserToGroup(request)
+
+		timeout := schema.TimeoutCreate
+		if isUpdate {
+			timeout = schema.TimeoutUpdate
+		}
+
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *resource.RetryError {
+			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.AddUserToGroup(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	}
 	return nil
 }
 
-func removeUsersFromGroup(client *connectivity.AliyunClient, users []string, group string) error {
+func removeUsersFromGroup(d *schema.ResourceData, client *connectivity.AliyunClient, users []string, group string, isUpdate bool) error {
 	for _, u := range users {
 		request := ram.CreateRemoveUserFromGroupRequest()
 		request.RegionId = client.RegionId
 		request.UserName = u
 		request.GroupName = group
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.RemoveUserFromGroup(request)
+
+		timeout := schema.TimeoutDelete
+		if isUpdate {
+			timeout = schema.TimeoutUpdate
+		}
+
+		var err error
+		wait := incrementalWait(3*time.Second, 20*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(timeout)), func() *resource.RetryError {
+			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.RemoveUserFromGroup(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return WrapErrorf(err, DefaultErrorMsg, u, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	}
 	return nil

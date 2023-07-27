@@ -7,9 +7,11 @@ description: |-
   Provides a RAM Role Policy attachment resource.
 ---
 
-# alicloud\_ram\_role\_policy\_attachment
+# alicloud_ram_role_policy_attachment
 
 Provides a RAM Role attachment resource.
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -83,12 +85,12 @@ The following attributes are exported:
 
 * `id` - The attachment ID. Composed of policy name, policy type and role name with format `role:<policy_name>:<policy_type>:<role_name>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins, Available in 1.173.0+) Used when creating the RAM Role Policy attachment.
-* `delete` - (Defaults to 1 mins, Available in 1.173.0+) Used when deleting the RAM Role Policy attachment.
+* `create` - (Defaults to 1 mins, Available since 1.173.0+) Used when creating the RAM Role Policy attachment.
+* `delete` - (Defaults to 1 mins, Available since 1.173.0+) Used when deleting the RAM Role Policy attachment.
 
 ## Import
 

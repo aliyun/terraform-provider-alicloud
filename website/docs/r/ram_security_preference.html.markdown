@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RAM Security Preference resource.
 ---
 
-# alicloud\_ram\_security\_preference
+# alicloud_ram_security_preference
 
 Provides a RAM Security Preference resource.
 
 For information about RAM Security Preference and how to use it, see [What is Security Preference](https://www.alibabacloud.com/help/en/doc-detail/186694.htm).
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0+.
 
 ## Example Usage
 

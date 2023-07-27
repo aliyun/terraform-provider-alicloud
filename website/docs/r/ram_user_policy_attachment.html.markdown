@@ -7,9 +7,11 @@ description: |-
   Provides a RAM User Policy attachment resource.
 ---
 
-# alicloud\_ram\_user\_policy\_attachment
+# alicloud_ram_user_policy_attachment
 
 Provides a RAM User Policy attachment resource. 
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 

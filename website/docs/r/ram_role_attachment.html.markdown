@@ -7,9 +7,11 @@ description: |-
   Provides a RAM role attachment resource to bind role for several ECS instances.
 ---
 
-# alicloud\_ram\_role\_attachment
+# alicloud_ram_role_attachment
 
 Provides a RAM role attachment resource to bind role for several ECS instances.
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -77,7 +79,7 @@ resource "alicloud_instance" "foo" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = "testrole"
+  name     = "terraform-example"
   document = <<EOF
   {
     "Statement": [
@@ -113,10 +115,3 @@ The following arguments are supported:
 
 * `role_name` - (Required, ForceNew) The name of role used to bind. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-", "_", and must not begin with a hyphen.
 * `instance_ids` - (Required, ForceNew) The list of ECS instance's IDs.
-
-## Attributes Reference
-
-The following attributes are exported:
-
-* `role_name` - The name of the role.
-* `instance_ids` The list of ECS instance's IDs.

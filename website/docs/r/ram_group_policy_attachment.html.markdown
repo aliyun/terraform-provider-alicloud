@@ -7,9 +7,11 @@ description: |-
   Provides a RAM Group Policy attachment resource.
 ---
 
-# alicloud\_ram\_group\_policy\_attachment
+# alicloud_ram_group_policy_attachment
 
 Provides a RAM Group Policy attachment resource. 
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 

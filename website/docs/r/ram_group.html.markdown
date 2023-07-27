@@ -7,11 +7,13 @@ description: |-
   Provides a RAM Group resource.
 ---
 
-# alicloud\_ram\_group
+# alicloud_ram_group
 
 Provides a RAM Group resource.
 
 -> **NOTE:** When you want to destroy this resource forcefully(means remove all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully. 
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -36,8 +38,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The group ID.
-* `name` - The group name.
-* `comments` - The group comments.
 
 ## Import
 

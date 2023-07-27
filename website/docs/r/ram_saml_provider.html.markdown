@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud RAM SAML Provider resource.
 ---
 
-# alicloud\_ram\_saml\_provider
+# alicloud_ram_saml_provider
 
 Provides a RAM SAML Provider resource.
 
 For information about RAM SAML Provider and how to use it, see [What is SAML Provider](https://www.alibabacloud.com/help/doc-detail/186846.htm).
 
--> **NOTE:** Available in v1.114.0+.
+-> **NOTE:** Available since v1.114.0+.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ram_saml_provider" "example" {
-  saml_provider_name            = "tf-testAcc"
+  saml_provider_name            = "terraform-example"
   encodedsaml_metadata_document = "your encodedsaml metadata document"
   description                   = "For Terraform Test"
 }

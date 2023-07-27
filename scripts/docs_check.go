@@ -39,26 +39,26 @@ func main() {
 		if line == 1 {
 			titleCheck = true
 			if text != "---" {
-				fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "---", text)
+				fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "---", text)
 				exitCode = 1
 			}
 			continue
 		}
 		if titleCheck {
 			if strings.HasPrefix(text, "layout:") && text != "layout: \"alicloud\"" {
-				fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "layout: \"alicloud\"", text)
+				fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "layout: \"alicloud\"", text)
 				exitCode = 1
 				continue
 			}
 			if strings.HasPrefix(text, "page_title:") && text != "page_title: \"Alicloud: "+resourceName+"\"" {
-				fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "page_title: \"Alicloud: "+resourceName, text)
+				fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "page_title: \"Alicloud: "+resourceName, text)
 				exitCode = 1
 				continue
 			}
 			if strings.HasPrefix(text, "description:") {
 				titleDescriptionCheck = true
 				if text != "description: |-" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "description: |- ", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "description: |- ", text)
 					exitCode = 1
 				}
 				continue
@@ -66,7 +66,7 @@ func main() {
 			if titleDescriptionCheck {
 				titleDescriptionCheck = false
 				if !strings.HasPrefix(text, "  ") {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "  "+text, text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "  "+text, text)
 					exitCode = 1
 				}
 				continue
@@ -80,7 +80,7 @@ func main() {
 		if descriptionCheck {
 			if strings.HasPrefix(text, "# alicloud") || strings.HasSuffix(text, resourceName) {
 				if titleCheck {
-					fmt.Printf("\nline %d: docs title has not been closed.", line)
+					fmt.Printf("\n[Error] line %d: docs title has not been closed.", line)
 					exitCode = 1
 				}
 				if strings.Contains(text, "\\") {
@@ -88,13 +88,13 @@ func main() {
 					text = strings.Replace(text, "\\", "", -1)
 				}
 				if text != "# "+resourceName {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "# "+resourceName, text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "# "+resourceName, text)
 					exitCode = 1
 				}
 				continue
 			}
 			if strings.Contains(text, "https://help.aliyun.com/") {
-				fmt.Printf("\nline %d: Expected: an international site link: %s. Got: %s.", line, "https://www.alibabacloud.com/help", "https://help.aliyun.com/")
+				fmt.Printf("\n[Error] line %d: Expected: an international site link: %s. Got: %s.", line, "https://www.alibabacloud.com/help", "https://help.aliyun.com/")
 				exitCode = 1
 				continue
 			}
@@ -103,7 +103,7 @@ func main() {
 				for _, v := range []string{"Available since v", "Deprecated since v"} {
 					if strings.Contains(text, v) && !strings.HasPrefix(text, "-> **NOTE:** "+v) {
 						parts := strings.Split(text, v)
-						fmt.Printf("\nline %d: Expected: %s Got: %s", line, "-> **NOTE:** "+v+strings.Replace(parts[1], "+", "", -1), text)
+						fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, "-> **NOTE:** "+v+strings.Replace(parts[1], "+", "", -1), text)
 						exitCode = 1
 					}
 				}
@@ -115,7 +115,7 @@ func main() {
 					if strings.Contains(text, v) {
 						parts := strings.Split(text, v)
 						v = strings.Replace(strings.Replace(v, "in", "since", -1), "from", "since", -1)
-						fmt.Printf("\nline %d: Expected: %s Got: %s", line, parts[0]+v+strings.Replace(parts[1], "+", "", -1), text)
+						fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, parts[0]+v+strings.Replace(parts[1], "+", "", -1), text)
 						exitCode = 1
 					}
 				}
@@ -126,11 +126,11 @@ func main() {
 				descriptionCheck = false
 				exampleCheck = true
 				if !versionChecked {
-					fmt.Printf("\nline %d: missing available or deprecated verison info.", line)
+					fmt.Printf("\n[Error] line %d: missing available or deprecated verison info.", line)
 					exitCode = 1
 				}
 				if text != "## Example Usage" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Example Usage", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Example Usage", text)
 					exitCode = 1
 				}
 				continue
@@ -143,12 +143,12 @@ func main() {
 				} else {
 					exampleBlockOpen = false
 					if text != "```" {
-						fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "```", text)
+						fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "```", text)
 						exitCode = 1
 					}
 				}
 				if exampleBlockOpen && text != "```terraform" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "```terraform", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "```terraform", text)
 					exitCode = 1
 				}
 				continue
@@ -158,7 +158,7 @@ func main() {
 				parts := strings.Split(text, "=")
 				if key := strings.TrimSpace(parts[0]); key == "default" || strings.HasSuffix(key, "name") {
 					if value := strings.TrimSpace(parts[1]); strings.Contains(value, "test") {
-						fmt.Printf("\nline %d: avoid using 'test' as soon as possable in the example", line)
+						fmt.Printf("\n[Error] line %d: avoid using 'test' as soon as possable in the example", line)
 						exitCode = 1
 					}
 				}
@@ -167,7 +167,7 @@ func main() {
 				text = strings.TrimSpace(text)
 				parts := strings.Split(text, "=")
 				if key := strings.TrimSpace(parts[0]); key == "depends_on" {
-					fmt.Printf("\nline %d: avoid using 'depends_on' as soon as possable in the example", line)
+					fmt.Printf("\n[Error] line %d: avoid using 'depends_on' as soon as possable in the example", line)
 					exitCode = 1
 				}
 			}
@@ -175,11 +175,11 @@ func main() {
 				exampleCheck = false
 				argumentCheck = true
 				if exampleBlockOpen {
-					fmt.Printf("\nline %d: example block has not been closed.", line)
+					fmt.Printf("\n[Error] line %d: example block has not been closed.", line)
 					exitCode = 1
 				}
 				if text != "## Argument Reference" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Argument Reference", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Argument Reference", text)
 					exitCode = 1
 				}
 				continue
@@ -191,15 +191,15 @@ func main() {
 				for i, tag := range strings.Split(parts[len(parts)-1], ",") {
 					if strings.HasPrefix(tag, " ") {
 						if i == 0 {
-							fmt.Printf("\nline %d: please remove redundant space prefix for %s. ", line, tag)
+							fmt.Printf("\n[Error] line %d: please remove redundant space prefix for %s. ", line, tag)
 							exitCode = 1
 						}
 					} else if i > 0 {
-						fmt.Printf("\nline %d: missing space prefix for %s. ", line, tag)
+						fmt.Printf("\n[Error] line %d: missing space prefix for %s. ", line, tag)
 						exitCode = 1
 					}
 					if strings.HasSuffix(tag, " ") {
-						fmt.Printf("\nline %d: please remove redundant space suffix for %s.", line, tag)
+						fmt.Printf("\n[Error] line %d: please remove redundant space suffix for %s.", line, tag)
 						exitCode = 1
 					}
 				}
@@ -212,7 +212,7 @@ func main() {
 					(strings.HasPrefix(block, "`") && !strings.HasSuffix(block, "`")) ||
 					(!strings.HasPrefix(block, "`") && strings.HasSuffix(block, "`")) {
 					block = strings.Trim(block, "`")
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "### `"+block+"`", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "### `"+block+"`", text)
 					exitCode = 1
 				}
 				block = strings.Trim(block, "`")
@@ -220,10 +220,10 @@ func main() {
 				blockLink := fmt.Sprintf("[`%s`](#%s)", blockParts[len(blockParts)-1], block)
 				docsContent, err := os.ReadFile(docsFileName)
 				if err != nil {
-					fmt.Printf("\nreading docs file %s failed. Error: %s", docsFileName, err)
+					fmt.Printf("\n[Error] reading docs file %s failed. Error: %s", docsFileName, err)
 					exitCode = 1
 				} else if !strings.Contains(string(docsContent), blockLink) {
-					fmt.Printf("\nline %d: missing link for block `%s`. Expected link like: See %s below.", line, block, blockLink)
+					fmt.Printf("\n[Error] line %d: missing link for block `%s`. Expected link like: See %s below.", line, block, blockLink)
 					exitCode = 1
 				}
 				continue
@@ -232,7 +232,7 @@ func main() {
 				argumentCheck = false
 				attributesCheck = true
 				if text != "## Attributes Reference" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
 					exitCode = 1
 				}
 				continue
@@ -241,7 +241,7 @@ func main() {
 				argumentCheck = false
 				attributesCheck = true
 				if text != "## Attributes Reference" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
 					exitCode = 1
 				}
 				continue
@@ -253,7 +253,7 @@ func main() {
 				attributesCheck = false
 				timeoutCheck = true
 				if text != "## Timeouts" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Timeouts", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Timeouts", text)
 					exitCode = 1
 				}
 				continue
@@ -262,7 +262,7 @@ func main() {
 				attributesCheck = false
 				importCheck = true
 				if text != "## Import" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Import", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Import", text)
 					exitCode = 1
 				}
 				continue
@@ -274,7 +274,7 @@ func main() {
 				timeoutCheck = false
 				importCheck = true
 				if text != "## Import" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "## Import", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Import", text)
 					exitCode = 1
 				}
 				continue
@@ -283,7 +283,7 @@ func main() {
 
 		if importCheck {
 			if !importBlockOpen && strings.Contains(text, "terraform import") {
-				fmt.Printf("\nline %d: Expected: %s.", line-1, "```shell")
+				fmt.Printf("\n[Error] line %d: Expected: %s.", line-1, "```shell")
 				exitCode = 1
 				break
 			}
@@ -294,12 +294,12 @@ func main() {
 				} else {
 					importBlockOpen = false
 					if text != "```" {
-						fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "```", text)
+						fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "```", text)
 						exitCode = 1
 					}
 				}
 				if importBlockOpen && text != "```shell" {
-					fmt.Printf("\nline %d: Expected: %s. Got: %s.", line, "```shell", text)
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "```shell", text)
 					exitCode = 1
 				}
 				continue
@@ -307,7 +307,7 @@ func main() {
 		}
 	}
 	if importBlockOpen {
-		fmt.Println("\nError: import block has not been closed.")
+		fmt.Println("\n[Error] Error: import block has not been closed.")
 		exitCode = 1
 	}
 	fmt.Println("\n--- Finished!\n")

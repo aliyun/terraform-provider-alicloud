@@ -7,10 +7,11 @@ description: |-
   Provides a RAM cloud account alias.
 ---
 
-# alicloud\_ram\_account\_alias
+# alicloud_ram_account_alias
 
 Provides a RAM cloud account alias.
 
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -31,7 +32,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The account alias ID, it's set to `account_alias`.
-* `account_alias` - The account alias.
 
 ## Import
 RAM account alias can be imported using the id, e.g.

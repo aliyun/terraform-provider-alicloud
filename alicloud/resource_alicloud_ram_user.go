@@ -1,8 +1,12 @@
 package alicloud
 
 import (
+	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -68,13 +72,28 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 		request.Comments = v.(string)
 	}
 
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.CreateUser(request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var err error
+	var raw interface{}
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.CreateUser(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_user", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response, _ := raw.(*ram.CreateUserResponse)
 
 	d.SetId(response.User.UserId)
@@ -124,14 +143,25 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if update {
-
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.UpdateUser(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.UpdateUser(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	return resourceAlicloudRamUserRead(d, meta)
@@ -162,6 +192,9 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
+	var raw interface{}
+	var wait func()
+
 	ramService := &RamService{client: client}
 	object, err := ramService.DescribeRamUser(d.Id())
 	if err != nil {
@@ -178,13 +211,25 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 
 	if d.Get("force").(bool) {
 		// list and delete access keys for this user
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListAccessKeys(request)
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListAccessKeys(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		listAccessKeysResponse, _ := raw.(*ram.ListAccessKeysResponse)
 		if len(listAccessKeysResponse.AccessKeys.AccessKey) > 0 {
 			for _, v := range listAccessKeysResponse.AccessKeys.AccessKey {
@@ -192,9 +237,24 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				request.RegionId = client.RegionId
 				request.UserAccessKeyId = v.AccessKeyId
 				request.UserName = userName
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.DeleteAccessKey(request)
+
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait = incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+						return ramClient.DeleteAccessKey(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
 				})
+
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
@@ -206,13 +266,26 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		request := ram.CreateListPoliciesForUserRequest()
 		request.RegionId = client.RegionId
 		request.UserName = userName
-		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListPoliciesForUser(request)
+
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListPoliciesForUser(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		listPoliciesForUserResponse, _ := raw.(*ram.ListPoliciesForUserResponse)
 		if len(listPoliciesForUserResponse.Policies.Policy) > 0 {
 			for _, v := range listPoliciesForUserResponse.Policies.Policy {
@@ -221,9 +294,22 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				request.PolicyName = v.PolicyName
 				request.PolicyType = v.PolicyType
 				request.UserName = userName
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.DetachPolicyFromUser(request)
+
+				wait = incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+						return ramClient.DetachPolicyFromUser(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
 				})
+
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
@@ -235,13 +321,26 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		listGroupsForUserRequest := ram.CreateListGroupsForUserRequest()
 		listGroupsForUserRequest.RegionId = client.RegionId
 		listGroupsForUserRequest.UserName = userName
-		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListGroupsForUser(listGroupsForUserRequest)
+
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListGroupsForUser(listGroupsForUserRequest)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), listGroupsForUserRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(listGroupsForUserRequest.GetActionName(), raw, listGroupsForUserRequest.RpcRequest, listGroupsForUserRequest)
+
 		listGroupsForUserResponse, _ := raw.(*ram.ListGroupsForUserResponse)
 		if len(listGroupsForUserResponse.Groups.Group) > 0 {
 			for _, v := range listGroupsForUserResponse.Groups.Group {
@@ -249,8 +348,20 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 				request.RegionId = client.RegionId
 				request.UserName = userName
 				request.GroupName = v.GroupName
-				raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-					return ramClient.RemoveUserFromGroup(request)
+
+				wait = incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+					raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+						return ramClient.RemoveUserFromGroup(request)
+					})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
 				})
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -263,8 +374,20 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		deleteLoginProfileRequest := ram.CreateDeleteLoginProfileRequest()
 		deleteLoginProfileRequest.RegionId = client.RegionId
 		deleteLoginProfileRequest.UserName = userName
-		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
+
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.DeleteLoginProfile(deleteLoginProfileRequest)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.User.LoginProfile"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteLoginProfileRequest.GetActionName(), AlibabaCloudSdkGoERROR)
@@ -273,9 +396,22 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 		// unbind MFA device for this user
 		unbindMFADeviceRequest := ram.CreateUnbindMFADeviceRequest()
 		unbindMFADeviceRequest.UserName = userName
-		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
+
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.UnbindMFADevice(unbindMFADeviceRequest)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist", "EntityNotExist.User.MFADevice"}) {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), unbindMFADeviceRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
@@ -283,9 +419,21 @@ func resourceAlicloudRamUserDelete(d *schema.ResourceData, meta interface{}) err
 	}
 	deleteUserRequest := ram.CreateDeleteUserRequest()
 	deleteUserRequest.RegionId = client.RegionId
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		deleteUserRequest.UserName = userName
-		return ramClient.DeleteUser(deleteUserRequest)
+
+	wait = incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			deleteUserRequest.UserName = userName
+			return ramClient.DeleteUser(deleteUserRequest)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"DeleteConflict.User.AccessKey", "DeleteConflict.User.Group", "DeleteConflict.User.Policy", "DeleteConflict.User.LoginProfile", "DeleteConflict.User.MFADevice"}) {
