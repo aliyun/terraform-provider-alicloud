@@ -363,15 +363,15 @@ The following arguments are supported:
 * `logging_isenable` - (Optional, Deprecated from 1.37.0.) The flag of using logging enable container. Defaults true.
 * `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). See [`referer_config`](#referer_config) below.
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm). See [`lifecycle_rule`](#lifecycle_rule) below.
-* `policy` - (Optional, Available in 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
-* `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA", "Archive" and "ColdArchive". Defaults to "Standard". "ColdArchive" is available in 1.203.0+.
-* `redundancy_type` - (Optional, ForceNew, Available in 1.91.0) The [redundancy type](https://www.alibabacloud.com/help/doc-detail/90589.htm) to enable. Can be "LRS", and "ZRS". Defaults to "LRS".
-* `server_side_encryption_rule` - (Optional, Available in 1.45.0+) A configuration of server-side encryption. See [`server_side_encryption_rule`](#server_side_encryption_rule) below.
-* `tags` - (Optional, Available in 1.45.0+) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
-* `versioning` - (Optional, Available in 1.45.0+) A state of versioning. See [`versioning`](#versioning) below.
-* `force_destroy` - (Optional, Available in 1.45.0+) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
-* `transfer_acceleration` - (Optional, Available in 1.123.1+) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
-* `lifecycle_rule_allow_same_action_overlap` - (Optional, Available in 1.208.1+) A boolean that indicates lifecycle rules allow prefix overlap.
+* `policy` - (Optional, Available since 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
+* `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA", "Archive" and "ColdArchive". Defaults to "Standard". "ColdArchive" is available since 1.203.0.
+* `redundancy_type` - (Optional, ForceNew, Available since 1.91.0) The [redundancy type](https://www.alibabacloud.com/help/doc-detail/90589.htm) to enable. Can be "LRS", and "ZRS". Defaults to "LRS".
+* `server_side_encryption_rule` - (Optional, Available since 1.45.0) A configuration of server-side encryption. See [`server_side_encryption_rule`](#server_side_encryption_rule) below.
+* `tags` - (Optional, Available since 1.45.0) A mapping of tags to assign to the bucket. The items are no more than 10 for a bucket.
+* `versioning` - (Optional, Available since 1.45.0) A state of versioning. See [`versioning`](#versioning) below.
+* `force_destroy` - (Optional, Available since 1.45.0) A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable. Defaults to "false".
+* `transfer_acceleration` - (Optional, Available since 1.123.1) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
+* `lifecycle_rule_allow_same_action_overlap` - (Optional, Available since 1.208.1) A boolean that indicates lifecycle rules allow prefix overlap.
 
 ### `cors_rule`
 
@@ -409,13 +409,13 @@ The referer_config configuration block supports the following:
 The lifecycle_rule configuration block supports the following:
 
 * `id` - (Optional) Unique identifier for the rule. If omitted, OSS bucket will assign a unique name.
-* `prefix` - (Optional, Available in v1.90.0+) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
+* `prefix` - (Optional, Available since v1.90.0) Object key prefix identifying one or more objects to which the rule applies. Default value is null, the rule applies to all objects in a bucket.
 * `enabled` - (Required, Type: bool) Specifies lifecycle rule status.
 * `expiration` - (Optional, Type: set) Specifies a period in the object's expire. See [`expiration`](#lifecycle_rule-expiration) below.
-* `transitions` - (Optional, Type: set, Available in 1.62.1+) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. See [`transitions`](#lifecycle_rule-transitions) below.
-* `abort_multipart_upload` - (Optional, Type: set, Available in 1.121.2+) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed. See [`abort_multipart_upload`](#lifecycle_rule-abort_multipart_upload) below.
-* `noncurrent_version_expiration` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions expire. See [`noncurrent_version_expiration`](#lifecycle_rule-noncurrent_version_expiration) below.
-* `noncurrent_version_transition` - (Optional, Type: set, Available in 1.121.2+) Specifies when noncurrent object versions transitions. See [`noncurrent_version_transition`](#lifecycle_rule-noncurrent_version_transition) below.
+* `transitions` - (Optional, Type: set, Available since 1.62.1) Specifies the time when an object is converted to the IA or archive storage class during a valid life cycle. See [`transitions`](#lifecycle_rule-transitions) below.
+* `abort_multipart_upload` - (Optional, Type: set, Available since 1.121.2) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed. See [`abort_multipart_upload`](#lifecycle_rule-abort_multipart_upload) below.
+* `noncurrent_version_expiration` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions expire. See [`noncurrent_version_expiration`](#lifecycle_rule-noncurrent_version_expiration) below.
+* `noncurrent_version_transition` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions transitions. See [`noncurrent_version_transition`](#lifecycle_rule-noncurrent_version_transition) below.
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
@@ -425,8 +425,8 @@ The expiration configuration block supports the following:
 
 * `date` - (Optional) Specifies the date after which you want the corresponding action to take effect. The value obeys ISO8601 format like `2017-03-09`.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
-* `created_before_date` - (Optional, Available in 1.121.2+) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
-* `expired_object_delete_marker` - (Optional, Type: bool, Available in 1.121.2+) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
+* `created_before_date` - (Optional, Available since 1.121.2) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
+* `expired_object_delete_marker` - (Optional, Type: bool, Available since 1.121.2) On a versioned bucket (versioning-enabled or versioning-suspended bucket), you can add this element in the lifecycle configuration to direct OSS to delete expired object delete markers. This cannot be specified with Days, Date or CreatedBeforeDate in a Lifecycle Expiration Policy.
 
 `NOTE`: One and only one of "date", "days", "created_before_date" and "expired_object_delete_marker" can be specified in one expiration configuration.
 
@@ -436,7 +436,7 @@ The transitions configuration block supports the following:
 
 * `created_before_date` - (Optional) Specifies the time before which the rules take effect. The date must conform to the ISO8601 format and always be UTC 00:00. For example: 2002-10-11T00:00:00.000Z indicates that objects updated before 2002-10-11T00:00:00.000Z are deleted or converted to another storage class, and objects updated after this time (including this time) are not deleted or converted.
 * `days` - (Optional, Type: int) Specifies the number of days after object creation when the specific rule action takes effect.
-* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `ColdArchive`. ColdArchive is available in 1.203.0+.
+* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `ColdArchive`. ColdArchive is available since 1.203.0.
 
 `NOTE`: One and only one of "created_before_date" and "days" can be specified in one transition configuration.
 
@@ -460,7 +460,7 @@ The noncurrent_version_expiration configuration block supports the following:
 The noncurrent_version_transition configuration block supports the following:
 
 * `days` - (Required, Type: int) Specifies the number of days noncurrent object versions transition.
-* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`. ColdArchive is available in 1.203.0+.
+* `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`. ColdArchive is available since 1.203.0.
 
 
 ### `server_side_encryption_rule`
@@ -468,7 +468,7 @@ The noncurrent_version_transition configuration block supports the following:
 The server_side_encryption_rule configuration block supports the following:
 
 * `sse_algorithm` - (Required) The server-side encryption algorithm to use. Possible values: `AES256` and `KMS`.
-* `kms_master_key_id` - (Optional, Available in 1.92.0+) The alibaba cloud KMS master key ID used for the SSE-KMS encryption.
+* `kms_master_key_id` - (Optional, Available since 1.92.0) The alibaba cloud KMS master key ID used for the SSE-KMS encryption.
 
 ### `versioning`
 
