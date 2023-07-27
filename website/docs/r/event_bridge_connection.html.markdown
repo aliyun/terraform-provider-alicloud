@@ -113,82 +113,82 @@ The following arguments are supported:
 
 The network_parameters supports the following:
 
-* `network_type` (Required) The network type. Valid values: `PublicNetwork`, `PrivateNetwork`. **NOTE:** If you set `network_type` to `PrivateNetwork`, you must configure `vpc_id`, `vswitche_id`, and `security_group_id`.
-* `vpc_id` (Optional) The ID of the VPC.
-* `vswitche_id` (Optional) The ID of the VSwitch.
-* `security_group_id` (Optional) The ID of the security group.
+* `network_type` - (Required) The network type. Valid values: `PublicNetwork`, `PrivateNetwork`. **NOTE:** If you set `network_type` to `PrivateNetwork`, you must configure `vpc_id`, `vswitche_id`, and `security_group_id`.
+* `vpc_id` - (Optional) The ID of the VPC.
+* `vswitche_id` - (Optional) The ID of the VSwitch.
+* `security_group_id` - (Optional) The ID of the security group.
 
 ### `auth_parameters`
 
 The auth_parameters supports the following:
 
-* `authorization_type` (Optional) The type of the authentication. Valid values: `API_KEY_AUTH`, `BASIC_AUTH`, `OAUTH_AUTH`.
-* `api_key_auth_parameters` (Optional, Set) The parameters that are configured for API key authentication. See [`api_key_auth_parameters`](#auth_parameters-api_key_auth_parameters) below.
-* `basic_auth_parameters` (Optional, Set) The parameters that are configured for basic authentication. See [`basic_auth_parameters`](#auth_parameters-basic_auth_parameters) below.
-* `oauth_parameters` (Optional, Set) The parameters that are configured for OAuth authentication. See [`oauth_parameters`](#auth_parameters-oauth_parameters) below.
+* `authorization_type` - (Optional) The type of the authentication. Valid values: `API_KEY_AUTH`, `BASIC_AUTH`, `OAUTH_AUTH`.
+* `api_key_auth_parameters` - (Optional, Set) The parameters that are configured for API key authentication. See [`api_key_auth_parameters`](#auth_parameters-api_key_auth_parameters) below.
+* `basic_auth_parameters` - (Optional, Set) The parameters that are configured for basic authentication. See [`basic_auth_parameters`](#auth_parameters-basic_auth_parameters) below.
+* `oauth_parameters` - (Optional, Set) The parameters that are configured for OAuth authentication. See [`oauth_parameters`](#auth_parameters-oauth_parameters) below.
 
 ### `auth_parameters-api_key_auth_parameters`
 
 The api_key_auth_parameters supports the following:
 
-* `api_key_name` (Optional) The name of the API key.
-* `api_key_value` (Optional) The value of the API key.
+* `api_key_name` - (Optional) The name of the API key.
+* `api_key_value` - (Optional) The value of the API key.
 
 ### `auth_parameters-basic_auth_parameters`
 
 The basic_auth_parameters supports the following:
 
-* `username` (Optional) The username for basic authentication.
-* `password` (Optional) The password for basic authentication.
+* `username` - (Optional) The username for basic authentication.
+* `password` - (Optional) The password for basic authentication.
 
 ### `auth_parameters-oauth_parameters`
 
 The oauth_parameters supports the following:
 
-* `authorization_endpoint` (Optional) The IP address of the authorized endpoint.
-* `http_method` (Optional) The HTTP request method. Valid values: `GET`, `POST`, `HEAD`, `DELETE`, `PUT`, `PATCH`.
-* `client_parameters` (Optional, Set) The parameters that are configured for the client. See [`client_parameters`](#auth_parameters-oauth_parameters-client_parameters) below.
-* `oauth_http_parameters` (Optional, Set) The request parameters that are configured for OAuth authentication. See [`oauth_http_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters) below.
+* `authorization_endpoint` - (Optional) The IP address of the authorized endpoint.
+* `http_method` - (Optional) The HTTP request method. Valid values: `GET`, `POST`, `HEAD`, `DELETE`, `PUT`, `PATCH`.
+* `client_parameters` - (Optional, Set) The parameters that are configured for the client. See [`client_parameters`](#auth_parameters-oauth_parameters-client_parameters) below.
+* `oauth_http_parameters` - (Optional, Set) The request parameters that are configured for OAuth authentication. See [`oauth_http_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters) below.
 
 ### `auth_parameters-oauth_parameters-client_parameters`
 
 The client_parameters supports the following:
 
-* `client_id` (Optional) The ID of the client.
-* `client_secret` (Optional) The AccessKey secret of the client.
+* `client_id` - (Optional) The ID of the client.
+* `client_secret` - (Optional) The AccessKey secret of the client.
 
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters`
 
 The oauth_http_parameters supports the following:
 
-* `header_parameters` (Optional, Set) The parameters that are configured for the request header. See [`header_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-header_parameters) below.
-* `body_parameters` (Optional, Set) The parameters that are configured for the request body. See [`body_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-body_parameters) below.
-* `query_string_parameters` (Optional, Set) The parameters that are configured for the request path. See [`query_string_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-query_string_parameters) below.
+* `header_parameters` - (Optional, Set) The parameters that are configured for the request header. See [`header_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-header_parameters) below.
+* `body_parameters` - (Optional, Set) The parameters that are configured for the request body. See [`body_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-body_parameters) below.
+* `query_string_parameters` - (Optional, Set) The parameters that are configured for the request path. See [`query_string_parameters`](#auth_parameters-oauth_parameters-oauth_http_parameters-query_string_parameters) below.
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-header_parameters`
 
 The header_parameters supports the following:
 
-* `key` (Optional) The key of the request header.
-* `value` (Optional) The value of the request header.
-* `is_value_secret` (Optional) Specifies whether to enable authentication.
+* `key` - (Optional) The key of the request header.
+* `value` - (Optional) The value of the request header.
+* `is_value_secret` - (Optional) Specifies whether to enable authentication.
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-body_parameters`
 
 The body_parameters supports the following:
 
-* `key` (Optional) The key of the request body.
-* `value` (Optional) The value of the request body.
-* `is_value_secret` (Optional) Specifies whether to enable authentication.
+* `key` - (Optional) The key of the request body.
+* `value` - (Optional) The value of the request body.
+* `is_value_secret` - (Optional) Specifies whether to enable authentication.
 
 ### `auth_parameters-oauth_parameters-oauth_http_parameters-query_string_parameters`
 
 The query_string_parameters supports the following:
 
-* `key` (Optional) The key of the request path.
-* `value` (Optional) The key of the request path.
-* `is_value_secret` (Optional) Specifies whether to enable authentication.
+* `key` - (Optional) The key of the request path.
+* `value` - (Optional) The key of the request path.
+* `is_value_secret` - (Optional) Specifies whether to enable authentication.
 
 ## Attributes Reference
 
