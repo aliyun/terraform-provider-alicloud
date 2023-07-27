@@ -70,6 +70,34 @@ func resourceAlicloudCSAutoscalingConfig() *schema.Resource {
 				Optional: true,
 				Default:  "least-waste",
 			},
+			"skip_nodes_with_system_pods": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"skip_nodes_with_local_storage": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"daemonset_eviction_for_nodes": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"max_graceful_termination_sec": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"min_replica_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"recycle_node_deletion_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"scale_up_from_zero": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -116,6 +144,27 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	updateAutoscalingConfigRequest.ScaleDownEnabled = tea.Bool(enableScaleDown)
 	if v, ok := d.GetOk("expander"); ok {
 		updateAutoscalingConfigRequest.Expander = tea.String(v.(string))
+	}
+	if v, ok := d.GetOk("skip_nodes_with_system_pods"); ok {
+		updateAutoscalingConfigRequest.SkipNodesWithSystemPods = tea.Bool(v.(bool))
+	}
+	if v, ok := d.GetOk("skip_nodes_with_local_storage"); ok {
+		updateAutoscalingConfigRequest.SkipNodesWithLocalStorage = tea.Bool(v.(bool))
+	}
+	if v, ok := d.GetOk("daemonset_eviction_for_nodes"); ok {
+		updateAutoscalingConfigRequest.DaemonsetEvictionForNodes = tea.Bool(v.(bool))
+	}
+	if v, ok := d.GetOk("max_graceful_termination_sec"); ok {
+		updateAutoscalingConfigRequest.MaxGracefulTerminationSec = tea.Int32(int32(v.(int)))
+	}
+	if v, ok := d.GetOk("min_replica_count"); ok {
+		updateAutoscalingConfigRequest.MinReplicaCount = tea.Int32(int32(v.(int)))
+	}
+	if v, ok := d.GetOk("recycle_node_deletion_enabled"); ok {
+		updateAutoscalingConfigRequest.RecycleNodeDeletionEnabled = tea.Bool(v.(bool))
+	}
+	if v, ok := d.GetOk("scale_up_from_zero"); ok {
+		updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(v.(bool))
 	}
 
 	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)

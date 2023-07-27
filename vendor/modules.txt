@@ -32,7 +32,7 @@ github.com/alibabacloud-go/alibabacloud-gateway-fc-util/client
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
-# github.com/alibabacloud-go/cs-20151215/v3 v3.0.34
+# github.com/alibabacloud-go/cs-20151215/v3 v3.0.36
 ## explicit; go 1.15
 github.com/alibabacloud-go/cs-20151215/v3/client
 # github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
