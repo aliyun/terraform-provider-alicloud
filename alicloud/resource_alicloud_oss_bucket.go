@@ -7,8 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
@@ -31,7 +29,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(3, 63),
+				ValidateFunc: StringLenBetween(3, 63),
 				Default:      resource.PrefixedUniqueId("tf-oss-bucket-"),
 			},
 
@@ -39,7 +37,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Type:         schema.TypeString,
 				Default:      oss.ACLPrivate,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"private", "public-read", "public-read-write"}, false),
+				ValidateFunc: StringInSlice([]string{"private", "public-read", "public-read-write"}, false),
 			},
 
 			"cors_rule": {
@@ -154,7 +152,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validation.StringLenBetween(0, 255),
+							ValidateFunc: StringLenBetween(0, 255),
 						},
 						"prefix": {
 							Type:     schema.TypeString,
@@ -210,7 +208,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 									"storage_class": {
 										Type:     schema.TypeString,
 										Required: true,
-										ValidateFunc: validation.StringInSlice([]string{
+										ValidateFunc: StringInSlice([]string{
 											string(oss.StorageStandard),
 											string(oss.StorageIA),
 											string(oss.StorageArchive),
@@ -264,7 +262,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 									"storage_class": {
 										Type:     schema.TypeString,
 										Required: true,
-										ValidateFunc: validation.StringInSlice([]string{
+										ValidateFunc: StringInSlice([]string{
 											string(oss.StorageStandard),
 											string(oss.StorageIA),
 											string(oss.StorageArchive),
@@ -308,7 +306,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Default:  oss.StorageStandard,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(oss.StorageStandard),
 					string(oss.StorageIA),
 					string(oss.StorageArchive),
@@ -320,7 +318,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 				Default:  oss.RedundancyLRS,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(oss.RedundancyLRS),
 					string(oss.RedundancyZRS),
 				}, false),
@@ -333,7 +331,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						"sse_algorithm": {
 							Type:     schema.TypeString,
 							Required: true,
-							ValidateFunc: validation.StringInSlice([]string{
+							ValidateFunc: StringInSlice([]string{
 								ServerSideEncryptionAes256,
 								ServerSideEncryptionKMS,
 							}, false),
@@ -363,7 +361,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 						"status": {
 							Type:     schema.TypeString,
 							Required: true,
-							ValidateFunc: validation.StringInSlice([]string{
+							ValidateFunc: StringInSlice([]string{
 								"Enabled",
 								"Suspended",
 							}, false),
