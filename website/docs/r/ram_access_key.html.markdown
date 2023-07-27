@@ -7,7 +7,7 @@ description: |-
   Provides a RAM User access key resource.
 ---
 
-# alicloud\_ram\_access\_key
+# alicloud_ram_access_key
 
 Provides a RAM User access key resource.
 
@@ -15,13 +15,15 @@ Provides a RAM User access key resource.
 
 -> **NOTE:**  From version 1.98.0, if not set `pgp_key`, the resource will output the access key secret to field `secret` and please protect your backend state file judiciously
 
+-> **NOTE:** Available since v1.0.0+.
+
 ## Example Usage
 
 Output the secret to a file.
 ```terraform
 # Create a new RAM access key for user.
 resource "alicloud_ram_user" "user" {
-  name         = "user_test"
+  name         = "terraform-example"
   display_name = "user_display_name"
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
@@ -39,7 +41,7 @@ Using `pgp_key` to encrypt the secret.
 ```terraform
 # Create a new RAM access key for user.
 resource "alicloud_ram_user" "user" {
-  name         = "user_test"
+  name         = "terraform-example"
   display_name = "user_display_name"
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
@@ -64,15 +66,14 @@ The following arguments are supported:
 * `user_name` - (Optional, ForceNew) Name of the RAM user. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
 * `secret_file` - (Optional, ForceNew) The name of file that can save access key id and access key secret. Strongly suggest you to specified it when you creating access key, otherwise, you wouldn't get its secret ever.
 * `status` - (Optional) Status of access key. It must be `Active` or `Inactive`. Default value is `Active`.
-* `pgp_key` - (Optional, Available in 1.47.0+) Either a base-64 encoded PGP public key, or a keybase username in the form `keybase:some_person_that_exists`
+* `pgp_key` - (Optional, ForceNew, Available since 1.47.0+) Either a base-64 encoded PGP public key, or a keybase username in the form `keybase:some_person_that_exists`
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The access key ID.
-* `status` - The access key status.
-* `secret` (Available in 1.98.0+) - The secret access key. Note that this will be written to the state file. 
+* `secret` (Available since 1.98.0+) - The secret access key. Note that this will be written to the state file. 
 If you use this, please protect your backend state file judiciously. 
 Alternatively, you may supply a `pgp_key` instead, which will prevent the secret from being stored in plaintext, 
 at the cost of preventing the use of the secret key in automation.

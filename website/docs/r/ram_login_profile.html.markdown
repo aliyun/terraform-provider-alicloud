@@ -7,10 +7,11 @@ description: |-
   Provides a RAM User Login Profile resource.
 ---
 
-# alicloud\_ram\_login\_profile
+# alicloud_ram_login_profile
 
 Provides a RAM User Login Profile resource.
 
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
@@ -43,9 +44,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The login profile ID.
-* `user_name` - The user name.
-* `mfa_bind_required` - The parameter which indicates whether the MFA needs to be bind when the user first logs in.
-* `password_reset_required` - The parameter which indicates whether the password needs to be reset when the user first logs in.
 
 ## Import
 

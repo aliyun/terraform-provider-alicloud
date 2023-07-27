@@ -1,8 +1,11 @@
 package alicloud
 
 import (
+	"time"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -101,14 +104,27 @@ func resourceAlicloudRamAccountPasswordPolicyUpdate(d *schema.ResourceData, meta
 	request.HardExpiry = requests.NewBoolean(d.Get("hard_expiry").(bool))
 	request.MaxPasswordAge = requests.NewInteger(d.Get("max_password_age").(int))
 	request.PasswordReusePrevention = requests.NewInteger(d.Get("password_reuse_prevention").(int))
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.SetPasswordPolicy(request)
+
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.SetPasswordPolicy(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_account_password_policy", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	d.SetId("ram-account-password-policy")
 
 	return resourceAlicloudRamAccountPasswordPolicyRead(d, meta)
@@ -148,9 +164,24 @@ func resourceAlicloudRamAccountPasswordPolicyDelete(d *schema.ResourceData, meta
 	request.MaxPasswordAge = requests.NewInteger(default_max_password_age)
 	request.PasswordReusePrevention = requests.NewInteger(default_password_reuse_prevention)
 	request.MaxLoginAttemps = requests.NewInteger(default_max_login_attempts)
-	raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.SetPasswordPolicy(request)
+
+	var raw interface{}
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.SetPasswordPolicy(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}

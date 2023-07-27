@@ -52,7 +52,7 @@ func resourceAlicloudInstanceRoleAttachmentCreate(d *schema.ResourceData, meta i
 			return ecsClient.AttachInstanceRamRole(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
+			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) || NeedRetry(err) {
 				return resource.RetryableError(WrapError(Error("Please trying again.")))
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, "ram_role_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -112,7 +112,7 @@ func resourceAlicloudInstanceRoleAttachmentDelete(d *schema.ResourceData, meta i
 			return ecsClient.DetachInstanceRamRole(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) {
+			if IsExpectedErrors(err, []string{"unexpected end of JSON input"}) || NeedRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultTimeoutMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))

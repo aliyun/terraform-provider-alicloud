@@ -7,18 +7,20 @@ description: |-
   Provides a RAM User resource.
 ---
 
-# alicloud\_ram\_user
+# alicloud_ram_user
 
 Provides a RAM User resource.
 
 -> **NOTE:** When you want to destroy this resource forcefully(means release all the relationships associated with it automatically and then destroy it) without set `force`  with `true` at beginning, you need add `force = true` to configuration file and run `terraform plan`, then you can delete resource forcefully.
+
+-> **NOTE:** Available since v1.0.0+.
 
 ## Example Usage
 
 ```terraform
 # Create a new RAM user.
 resource "alicloud_ram_user" "user" {
-  name         = "user_test"
+  name         = "terraform-example"
   display_name = "user_display_name"
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
