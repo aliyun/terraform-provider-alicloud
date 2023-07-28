@@ -73,20 +73,20 @@ The following arguments are supported:
 * `access_group_name` - (Optional) The name of the permission group that applies to the mount target.
 * `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch in the VPC where the mount target resides.
 * `status` - (Optional) Whether the MountTarget is active. The status of the mount target. Valid values: `Active` and `Inactive`, Default value is `Active`. Before you mount a file system, make sure that the mount target is in the Active state.
-* `vpc_id` - (Optional, ForceNew, Available since v1.209.0.) The ID of VPC.
-* `network_type` - (Optional, ForceNew, Available since v1.209.0.) mount target network type. Valid values: `VPC`. The classic network's mount targets are not supported.
-* `security_group_id` - (Optional, ForceNew, Available in v1.95.0+.) The ID of security group.
+* `vpc_id` - (Optional, ForceNew, Available since v1.208.1) The ID of VPC.
+* `network_type` - (Optional, ForceNew, Available since v1.208.1) mount target network type. Valid values: `VPC`. The classic network's mount targets are not supported.
+* `security_group_id` - (Optional, ForceNew, Available in v1.95.0) The ID of security group.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 *`id` - This ID of this resource. It is formatted to `<file_system_id>:<mount_target_domain>`. Before version 1.95.0, the value is `<mount_target_domain>`.
-* `mount_target_domain` - The IPv4 domain name of the mount target. **NOTE:** Available in v1.161.0+.
+* `mount_target_domain` - The IPv4 domain name of the mount target. **NOTE:** Available since v1.161.0.
 
 ## Timeouts
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
