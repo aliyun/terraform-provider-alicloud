@@ -72,10 +72,11 @@ import (
 )
 
 type AliyunClient struct {
-	Region          Region
-	RegionId        string
-	SourceIp        string
-	SecureTransport string
+	Region               Region
+	RegionId             string
+	SourceIp             string
+	SecureTransport      string
+	skipRegionValidation bool
 	//In order to build ots table client, add accesskey and secretkey in aliyunclient temporarily.
 	AccessKey                    string
 	SecretKey                    string
@@ -243,6 +244,7 @@ func (c *Config) Client() (*AliyunClient, error) {
 		tablestoreconnByInstanceName: make(map[string]*tablestore.TableStoreClient),
 		otsTunnelConnByInstanceName:  make(map[string]otsTunnel.TunnelClient),
 		csprojectconnByKey:           make(map[string]*cs.ProjectClient),
+		skipRegionValidation:         c.SkipRegionValidation,
 	}, nil
 }
 
@@ -2714,12 +2716,13 @@ func (client *AliyunClient) NewImsClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 	productCode := "ram"
-	endpoint := ""
+	endpoint := "ram.aliyuncs.com"
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "ram.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+		client.config.Endpoints.Store(productCode, endpoint)
+		if client.skipRegionValidation {
+			if err := client.loadEndpoint(productCode); err != nil {
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			}
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
