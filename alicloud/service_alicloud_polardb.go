@@ -1334,11 +1334,14 @@ func (s *PolarDBService) DescribeDBClusterTDE(id string) (map[string]interface{}
 	return response, nil
 }
 
-func (s *PolarDBService) CheckKMSAuthorized(id string) (map[string]interface{}, error) {
+func (s *PolarDBService) CheckKMSAuthorized(id string, tdeRegion string) (map[string]interface{}, error) {
 	action := "CheckKMSAuthorized"
 	request := map[string]interface{}{
 		"RegionId":    s.client.RegionId,
 		"DBClusterId": id,
+	}
+	if tdeRegion != "" {
+		request["tdeRegion"] = tdeRegion
 	}
 	var response map[string]interface{}
 	conn, err := s.client.NewPolarDBClient()

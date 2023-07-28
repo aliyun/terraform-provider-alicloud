@@ -3,14 +3,18 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 var clusterConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
@@ -127,9 +131,14 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterAttribute")
 	rac := resourceAttrCheckInit(rc, ra)
 
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterConfigDependence)
+	err := deleteTDEPolicyAndRole()
+	assert.Nil(t, err)
 
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterTDEConfigDependence)
+
+	curTime := time.Now().Add(time.Hour * 2)
+	endTime := curTime.Add(time.Hour * 48)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -188,12 +197,42 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tde_status":         "Enabled",
+					"encrypt_new_tables": "ON",
+					"encryption_key":     "${alicloud_kms_key.default.id}",
+					"role_arn":           "acs:ram::${data.alicloud_account.current.id}:role/aliyunrdsinstanceencryptiondefaultrole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":         "Enabled",
+						"encrypt_new_tables": "ON",
+						"encryption_key":     CHECKSET,
+						"role_arn":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_node_count": "3",
 					"imci_switch":   "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_node_count": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_count": "2",
+					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
+					"sub_category":  "Exclusive",
+					"modify_type":   "Upgrade",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_count": "2",
+						"db_node_class": CHECKSET,
 					}),
 				),
 			},
@@ -209,15 +248,29 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_node_count": "2",
-					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.1.db_node_class}",
-					"sub_category":  "Exclusive",
-					"modify_type":   "Upgrade",
+					"upgrade_type":      "ALL",
+					"from_time_service": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_node_count": "2",
-						"db_node_class": CHECKSET,
+						"upgrade_type":      "ALL",
+						"from_time_service": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upgrade_type":       "ALL",
+					"from_time_service":  "false",
+					"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+					"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upgrade_type":       "ALL",
+						"from_time_service":  "false",
+						"planned_start_time": curTime.Format("2006-01-02T15:04:05Z"),
+						"planned_end_time":   endTime.Format("2006-01-02T15:04:05Z"),
 					}),
 				),
 			},
@@ -304,22 +357,6 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 						"db_cluster_ip_array.#": "2",
 					}),
 					testAccCheckKeyValueInMapsForPolarDB(ips, "security ip", "security_ips", "10.168.1.13,100.69.7.113"),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tde_status":         "Enabled",
-					"encrypt_new_tables": "ON",
-					"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
-					"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tde_status":         "Enabled",
-						"encrypt_new_tables": "ON",
-						"encryption_key":     "0275bd3f-fdbb-4d8c-846b-71b211ece8fa",
-						"role_arn":           "acs:ram::1910061056632513:role/aliyunrdsinstanceencryptiondefaultrole",
-					}),
 				),
 			},
 			{
@@ -973,6 +1010,75 @@ func testAccCheckKeyValueInMapsForPolarDB(ps []map[string]interface{}, propName,
 	}
 }
 
+func resourcePolarDBClusterTDEConfigDependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+	data "alicloud_vswitches" "default" {
+		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	data "alicloud_polardb_node_classes" "this" {
+	  db_type    = "MySQL"
+	  db_version = "8.0"
+      pay_type   = "PostPaid"
+	  category   = "Normal"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+		status = "OK"
+	}
+
+	resource "alicloud_security_group" "default" {
+		count = 2
+		name   = var.name
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+    data "alicloud_account" "current" {
+    }
+
+    resource "alicloud_kms_key" "default" {
+        description             =  var.name
+        pending_window_in_days =  7
+        status                  = "Enabled"
+    }
+    resource "alicloud_ram_role" "default" {
+      name        = "AliyunRDSInstanceEncryptionDefaultRole"
+	  document    = <<DEFINITION
+		{
+			"Statement": [
+				{
+					"Action": "sts:AssumeRole",
+					"Effect": "Allow",
+					"Principal": {
+						"Service": [
+							"rds.aliyuncs.com"
+						]
+					}
+				}
+			],
+			"Version": "1"
+		}
+		DEFINITION
+	  description = "RDS使用此角色来访问您在其他云产品中的资源"
+    }
+    resource "alicloud_resource_manager_policy_attachment" "default" {
+	    policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
+	    policy_type       = "System"
+	    principal_name    = "${alicloud_ram_role.default.name}@role.${data.alicloud_account.current.id}.onaliyunservice.com"
+	    principal_type    = "ServiceRole"
+	    resource_group_id = "${data.alicloud_account.current.id}"
+    }
+`, name)
+}
+
 func resourcePolarDBClusterConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -1179,4 +1285,29 @@ func resourcePolarDBClusterServerlessConfigDependence(name string) string {
 	}
 
 `, name)
+}
+
+func deleteTDEPolicyAndRole() error {
+	// 删除策略
+	p := Provider().(*schema.Provider).ResourcesMap
+	ramPolicyExisted, _ := schema.InternalMap(p["alicloud_resource_manager_role"].Schema).Data(nil, nil)
+	region := os.Getenv("ALICLOUD_REGION")
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+	accountId, err := rawClient.(*connectivity.AliyunClient).AccountId()
+	policyId := fmt.Sprintf("AliyunRDSInstanceEncryptionRolePolicy:System:AliyunRDSInstanceEncryptionDefaultRole@role.%s.onaliyunservice.com:ServiceRole:%s", accountId, accountId)
+	ramPolicyExisted.SetId(policyId)
+	err = resourceAlicloudResourceManagerPolicyAttachmentDelete(ramPolicyExisted, rawClient)
+	if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Role", "EntityNotExist.Policy"}) {
+		return err
+	}
+	ramRoleExisted, _ := schema.InternalMap(p["alicloud_ram_role"].Schema).Data(nil, nil)
+	ramRoleExisted.SetId("AliyunRDSInstanceEncryptionDefaultRole")
+	err = resourceAlicloudRamRoleDelete(ramRoleExisted, rawClient)
+	if err != nil {
+		return err
+	}
+	return nil
 }
