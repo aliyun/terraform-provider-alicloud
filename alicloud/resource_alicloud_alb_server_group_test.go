@@ -659,20 +659,20 @@ func TestAccAlicloudALBServerGroup_Ip(t *testing.T) {
 						{
 							"description":       "tf-testAcc1",
 							"port":              "80",
-							"server_id":         "127.0.0.1",
-							"server_ip":         "127.0.0.1",
+							"server_id":         "${cidrhost(data.alicloud_vpcs.default.vpcs.0.cidr_block, 2)}",
+							"server_ip":         "${cidrhost(data.alicloud_vpcs.default.vpcs.0.cidr_block, 2)}",
 							"server_type":       "Ip",
 							"weight":            "10",
-							"remote_ip_enabled": "true",
+							"remote_ip_enabled": "false",
 						},
 						{
 							"description":       "tf-testAcc1",
 							"port":              "88",
-							"server_id":         "127.0.0.2",
-							"server_ip":         "127.0.0.2",
+							"server_id":         "${cidrhost(data.alicloud_vpcs.default.vpcs.0.cidr_block, 3)}",
+							"server_ip":         "${cidrhost(data.alicloud_vpcs.default.vpcs.0.cidr_block, 3)}",
 							"server_type":       "Ip",
 							"weight":            "10",
-							"remote_ip_enabled": "true",
+							"remote_ip_enabled": "false",
 						},
 					},
 				}),
@@ -739,9 +739,10 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  cpu_core_count    = 1
-  memory_size       = 2
+  availability_zone                 = data.alicloud_zones.default.zones[0].id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
 }
 
 data "alicloud_images" "default" {
@@ -804,13 +805,14 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones[0].id
-  cpu_core_count    = 1
-  memory_size       = 2
+  availability_zone                 = data.alicloud_zones.default.zones[0].id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   most_recent = true
   owners      = "system"
 }
