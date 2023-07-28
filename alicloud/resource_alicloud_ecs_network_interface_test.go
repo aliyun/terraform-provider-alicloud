@@ -45,7 +45,6 @@ func testAlicloudEcsNetworkInterface(region string) error {
 	if err != nil {
 		return WrapError(err)
 	}
-	sweeped := false
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -88,7 +87,6 @@ func testAlicloudEcsNetworkInterface(region string) error {
 					continue
 				}
 			}
-			sweeped = true
 			if item["InstanceId"] != "" {
 				requestDetach := map[string]interface{}{
 					"InstanceId":         item["InstanceId"],
@@ -127,9 +125,7 @@ func testAlicloudEcsNetworkInterface(region string) error {
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
-	}
+
 	return nil
 }
 

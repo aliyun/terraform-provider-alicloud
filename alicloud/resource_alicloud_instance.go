@@ -22,12 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunInstance() *schema.Resource {
+func resourceAliCloudInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunInstanceCreate,
-		Read:   resourceAliyunInstanceRead,
-		Update: resourceAliyunInstanceUpdate,
-		Delete: resourceAliyunInstanceDelete,
+		Create: resourceAliCloudInstanceCreate,
+		Read:   resourceAliCloudInstanceRead,
+		Update: resourceAliCloudInstanceUpdate,
+		Delete: resourceAliCloudInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -52,13 +52,13 @@ func resourceAliyunInstance() *schema.Resource {
 			"instance_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"credit_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(CreditSpecificationStandard),
 					string(CreditSpecificationUnlimited),
 				}, false),
@@ -77,7 +77,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "ECS-Instance",
-				ValidateFunc: validation.StringLenBetween(2, 128),
+				ValidateFunc: StringLenBetween(2, 128),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -86,12 +86,12 @@ func resourceAliyunInstance() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"internet_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
+				ValidateFunc:     StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 				Default:          PayByTraffic,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
 			},
@@ -100,7 +100,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
-				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated from version v1.121.2.",
+				Deprecated:       "The attribute is invalid and no any affect for the instance. So it has been deprecated since version v1.121.2.",
 			},
 			"internet_max_bandwidth_out": {
 				Type:     schema.TypeInt,
@@ -144,17 +144,17 @@ func resourceAliyunInstance() *schema.Resource {
 				Default:      DiskCloudEfficiency,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
+				ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
 			},
 			"system_disk_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 128),
+				ValidateFunc: StringLenBetween(2, 128),
 			},
 			"system_disk_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"system_disk_size": {
 				Type:     schema.TypeInt,
@@ -166,7 +166,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				DiffSuppressFunc: ecsSystemDiskPerformanceLevelSuppressFunc,
-				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc:     StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
 			"system_disk_auto_snapshot_policy_id": {
 				Type:     schema.TypeString,
@@ -203,7 +203,7 @@ func resourceAliyunInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: validation.StringLenBetween(2, 128),
+							ValidateFunc: StringLenBetween(2, 128),
 						},
 						"size": {
 							Type:     schema.TypeInt,
@@ -213,7 +213,7 @@ func resourceAliyunInstance() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
+							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
 							Default:      DiskCloudEfficiency,
 							ForceNew:     true,
 						},
@@ -247,13 +247,13 @@ func resourceAliyunInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: validation.StringLenBetween(2, 256),
+							ValidateFunc: StringLenBetween(2, 256),
 						},
 						"performance_level": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+							ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
 						"device": {
 							Type:     schema.TypeString,
@@ -283,29 +283,29 @@ func resourceAliyunInstance() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
+					IntBetween(1, 9),
+					IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Default:          Month,
-				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
+				ValidateFunc:     StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"renewal_status": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  RenewNormal,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
@@ -315,7 +315,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Default:          1,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: ecsNotAutoRenewDiffSuppressFunc,
 			},
 			"include_data_disks": {
@@ -336,7 +336,7 @@ func resourceAliyunInstance() *schema.Resource {
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
+				ValidateFunc: StringInSlice([]string{"Running", "Stopped"}, false),
 				Computed:     true,
 			},
 			"user_data": {
@@ -361,7 +361,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Optional:         true,
 				Computed:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+				ValidateFunc:     StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 				DiffSuppressFunc: ecsSpotStrategyDiffSuppressFunc,
 			},
 			"spot_price_limit": {
@@ -386,7 +386,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(ActiveSecurityEnhancementStrategy),
 					string(DeactiveSecurityEnhancementStrategy),
 				}, false),
@@ -396,15 +396,12 @@ func resourceAliyunInstance() *schema.Resource {
 			"auto_release_time": {
 				Type:     schema.TypeString,
 				Optional: true,
+				//ValidateFunc: ValidateRFC3339TimeString(true),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					diff := d.Get("instance_charge_type").(string) == "PrePaid"
-					if diff {
-						return diff
+					if d.Get("instance_charge_type").(string) == "PrePaid" {
+						return true
 					}
-					if old != "" && new != "" && strings.HasPrefix(new, strings.Trim(old, "Z")) {
-						diff = true
-					}
-					return diff
+					return old != "" && new != "" && strings.HasPrefix(new, strings.Trim(old, ":00Z"))
 				},
 			},
 			"hpc_cluster_id": {
@@ -438,13 +435,13 @@ func resourceAliyunInstance() *schema.Resource {
 			"operator_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"upgrade", "downgrade"}, false),
+				ValidateFunc: StringInSlice([]string{"upgrade", "downgrade"}, false),
 			},
 			"stopped_mode": {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"StopCharging", "KeepCharging", "Not-applicable"}, false),
+				ValidateFunc: StringInSlice([]string{"StopCharging", "KeepCharging", "Not-applicable"}, false),
 			},
 			"maintenance_time": {
 				Type:     schema.TypeSet,
@@ -467,7 +464,7 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Stop", "AutoRecover", "AutoRedeploy"}, false),
+				ValidateFunc: StringInSlice([]string{"Stop", "AutoRecover", "AutoRedeploy"}, false),
 			},
 			"maintenance_notify": {
 				Type:     schema.TypeBool,
@@ -477,33 +474,33 @@ func resourceAliyunInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 6),
+				ValidateFunc: IntBetween(0, 6),
 			},
 			"http_tokens": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"optional", "required"}, false),
+				ValidateFunc: StringInSlice([]string{"optional", "required"}, false),
 			},
 			"http_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"enabled", "disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"enabled", "disabled"}, false),
 			},
 			"http_put_response_hop_limit": {
 				Type:         schema.TypeInt,
 				ForceNew:     true,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(1, 64),
+				ValidateFunc: IntBetween(1, 64),
 			},
 			"ipv6_address_count": {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.IntBetween(1, 10),
+				ValidateFunc:  IntBetween(1, 10),
 				ConflictsWith: []string{"ipv6_addresses"},
 			},
 			"ipv6_addresses": {
@@ -545,7 +542,7 @@ func resourceAliyunInstance() *schema.Resource {
 	}
 }
 
-func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
@@ -857,10 +854,10 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliyunInstanceUpdate(d, meta)
+	return resourceAliCloudInstanceUpdate(d, meta)
 }
 
-func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 
@@ -917,7 +914,12 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("internet_charge_type", instance.InternetChargeType)
 	d.Set("deletion_protection", instance.DeletionProtection)
 	d.Set("credit_specification", instance.CreditSpecification)
-	d.Set("auto_release_time", instance.AutoReleaseTime)
+	// There is an api bug that it returns non-RFC3339 timestamp, like "2023-07-26T23:50Z"
+	if _, err := time.Parse(time.RFC3339, instance.AutoReleaseTime); err != nil && strings.HasSuffix(instance.AutoReleaseTime, "Z") {
+		d.Set("auto_release_time", fmt.Sprintf("%s:00Z", strings.TrimSuffix(instance.AutoReleaseTime, "Z")))
+	} else {
+		d.Set("auto_release_time", instance.AutoReleaseTime)
+	}
 	d.Set("tags", ecsService.tagsToMap(instance.Tags.Tag))
 	d.Set("hpc_cluster_id", instance.HpcClusterId)
 	d.Set("deployment_set_id", instance.DeploymentSetId)
@@ -974,6 +976,8 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 			} else {
 				d.Set("user_data", userDataHashSum(userDataResponse.UserData))
 			}
+		} else {
+			d.Set("user_data", userDataResponse.UserData)
 		}
 	}
 
@@ -1092,7 +1096,7 @@ func resourceAliyunInstanceRead(d *schema.ResourceData, meta interface{}) error 
 	return nil
 }
 
-func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	conn, err := client.NewEcsClient()
@@ -1691,10 +1695,10 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Partial(false)
-	return resourceAliyunInstanceRead(d, meta)
+	return resourceAliCloudInstanceRead(d, meta)
 }
 
-func resourceAliyunInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 

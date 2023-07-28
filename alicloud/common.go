@@ -41,13 +41,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-type InstanceNetWork string
-
-const (
-	ClassicNet = InstanceNetWork("classic")
-	VpcNet     = InstanceNetWork("vpc")
-)
-
 type PayType string
 
 const (

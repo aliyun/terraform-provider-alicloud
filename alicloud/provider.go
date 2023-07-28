@@ -865,7 +865,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_vswitch_cidr_reservation":                resourceAliCloudVpcVswitchCidrReservation(),
 			"alicloud_vpc_ha_vip":                                  resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                          resourceAliCloudConfigRemediation(),
-			"alicloud_instance":                                    resourceAliyunInstance(),
+			"alicloud_instance":                                    resourceAliCloudInstance(),
 			"alicloud_image":                                       resourceAliCloudImage(),
 			"alicloud_reserved_instance":                           resourceAliCloudReservedInstance(),
 			"alicloud_copy_image":                                  resourceAliCloudImageCopy(),

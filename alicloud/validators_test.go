@@ -564,3 +564,45 @@ func TestValidateStringDoesNotContainAny(t *testing.T) {
 	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
 		"expected value of %s to not contain any of %q", k, limit)))
 }
+
+func TestValidateRFC3339TimeString(t *testing.T) {
+	resourceSchemaValidationSkipped = false
+
+	v := "2023-07-26T23:50:22Z"
+	k := "auto_release_time"
+	s, es := ValidateRFC3339TimeString(false)(v, k)
+	assert.Nil(t, es)
+	assert.Nil(t, s)
+
+	v = "2023-07-26T23:50:22Z07:09"
+	s, es = ValidateRFC3339TimeString(false)(v, k)
+	assert.NotNil(t, es)
+	assert.Nil(t, s)
+	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
+		"%q: invalid RFC3339 timestamp %s", k, skipResourceSchemaValidationWarning)))
+
+	v = ""
+	s, es = ValidateRFC3339TimeString(false)(v, k)
+	assert.NotNil(t, es)
+	assert.Nil(t, s)
+	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
+		"%q: invalid RFC3339 timestamp %s", k, skipResourceSchemaValidationWarning)))
+
+	s, es = ValidateRFC3339TimeString(true)(v, k)
+	assert.Nil(t, es)
+	assert.Nil(t, s)
+
+	v = "2023-07-26T23:50Z"
+	s, es = ValidateRFC3339TimeString(false)(v, k)
+	assert.NotNil(t, es)
+	assert.Nil(t, s)
+	assert.True(t, strings.Contains(es[0].Error(), fmt.Sprintf(
+		"%q: invalid RFC3339 timestamp %s", k, skipResourceSchemaValidationWarning)))
+
+	resourceSchemaValidationSkipped = true
+	s, es = ValidateRFC3339TimeString(false)(v, k)
+	assert.Nil(t, es)
+	assert.NotNil(t, s)
+	assert.True(t, strings.Contains(s[0], fmt.Sprintf(
+		"%q: invalid RFC3339 timestamp", k)))
+}
