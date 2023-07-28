@@ -74,15 +74,17 @@ func testSweepEcsSnapshots(region string) error {
 			name := item["SnapshotName"]
 			id := item["SnapshotId"]
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(name.(string)), strings.ToLower(prefix)) {
-					skip = false
-					break
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(name.(string)), strings.ToLower(prefix)) {
+						skip = false
+						break
+					}
 				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping snapshot: %s (%s)", name, id)
-				continue
+				if skip {
+					log.Printf("[INFO] Skipping snapshot: %s (%s)", name, id)
+					continue
+				}
 			}
 			log.Printf("[INFO] Deleting snapshot: %s (%s)", name, id)
 			action = "DeleteSnapshot"

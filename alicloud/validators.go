@@ -648,3 +648,26 @@ func StringDoesNotContainAny(chars string) schema.SchemaValidateFunc {
 		return
 	}
 }
+
+// ValidateRFC3339TimeString is a ValidateFunc that ensures a string parses
+// as time.RFC3339 format
+func ValidateRFC3339TimeString(allowEmpty bool) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		v, ok := i.(string)
+		if !ok {
+			es = append(es, fmt.Errorf("expected type of %s to be string", k))
+			return
+		}
+		if v == "" && allowEmpty {
+			return
+		}
+		if _, err := time.Parse(time.RFC3339, v); err != nil {
+			if skipResourceSchemaValidation() {
+				s = append(s, fmt.Sprintf("%q: invalid RFC3339 timestamp", k))
+			} else {
+				es = append(es, fmt.Errorf("%q: invalid RFC3339 timestamp %s", k, skipResourceSchemaValidationWarning))
+			}
+		}
+		return
+	}
+}

@@ -2,13 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -63,24 +61,23 @@ func testSweepPvtzZones(region string) error {
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	sweeped := false
-
 	for _, v := range zones {
 		v := v.(map[string]interface{})
 		name := v["ZoneName"].(string)
 		id := v["ZoneId"].(string)
 		skip := true
-		for _, prefix := range prefixes {
-			if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
-				skip = false
-				break
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Private Zone: %s (%s)", name, id)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping Private Zone: %s (%s)", name, id)
-			continue
-		}
-		sweeped = true
 		log.Printf("[INFO] Unbinding VPC from Private Zone: %s (%s)", name, id)
 		action := "BindZoneVpc"
 		request := make(map[string]interface{})
@@ -101,9 +98,6 @@ func testSweepPvtzZones(region string) error {
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Private Zone (%s (%s)): %s", name, id, err)
 		}
-	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }

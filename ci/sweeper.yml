@@ -28,15 +28,6 @@ groups:
       - ap-southeast-1-5
 
 shared:
-  - &clone-provider
-    get: terraform-provider-alicloud
-    resource: terraform-provider-alicloud
-    trigger: false
-
-  - &get-aliyun-cli
-    get: aliyun-cli
-    resource: aliyun-cli
-
   - &run
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/run.yml
@@ -47,8 +38,8 @@ shared:
       ALICLOUD_ACCOUNT_SITE: {{alicloud_account_site}}
       TEST_CASE_CODE: "-"
       SWEEPER: true
-      # NOTE: If the account is not for the integration, there should set SWEEPER_ALL to false
-      SWEEPER_ALL: true
+      # NOTE: If the account is not for the integration, there should set SWEEP_ALL to false
+      SWEEP_ALL: true
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
       ALICLOUD_ACCESS_KEY_MASTER: {{alicloud_access_key_master}}
       ALICLOUD_SECRET_KEY_MASTER: {{alicloud_secret_key_master}}
