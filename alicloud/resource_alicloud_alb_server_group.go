@@ -171,7 +171,7 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							Computed:     true,
+							Default:      100,
 							ValidateFunc: validation.IntBetween(0, 100),
 						},
 						"remote_ip_enabled": {
@@ -449,7 +449,9 @@ func resourceAlicloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		request["ResourceType"] = "servergroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
