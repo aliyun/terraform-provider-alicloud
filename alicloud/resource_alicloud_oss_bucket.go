@@ -290,6 +290,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 								},
 							},
 						},
+						"tags": tagsSchema(),
 					},
 				},
 				MaxItems: 1000,
@@ -749,6 +750,14 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 				eSli = append(eSli, e)
 			}
 			rule["noncurrent_version_transition"] = schema.NewSet(transitionsHash, eSli)
+		}
+		// Tags
+		if len(lifecycleRule.Tags) != 0 {
+			ruleTagsMap := make(map[string]string)
+			for _, t := range lifecycleRule.Tags {
+				ruleTagsMap[t.Key] = t.Value
+			}
+			rule["tags"] = ruleTagsMap
 		}
 		lrules = append(lrules, rule)
 	}
@@ -1285,6 +1294,17 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 				}
 
 				rule.NonVersionTransitions = append(rule.NonVersionTransitions, i)
+			}
+		}
+
+		// tags
+		ruleTagsMap := d.Get(fmt.Sprintf("lifecycle_rule.%d.tags", i)).(map[string]interface{})
+		if ruleTagsMap != nil {
+			for k, v := range ruleTagsMap {
+				rule.Tags = append(rule.Tags, oss.Tag{
+					Key:   k,
+					Value: v.(string),
+				})
 			}
 		}
 

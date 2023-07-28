@@ -234,6 +234,27 @@ resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
   }
 }
 
+resource "alicloud_oss_bucket" "bucket-tag-lifecycle" {
+  bucket = "example-lifecycle-${random_integer.default.result}"
+  acl    = "private"
+
+  lifecycle_rule {
+    id      = "rule-days-transition"
+    prefix  = "path/"
+    enabled = true
+
+    tags {
+      key1 = "value1"
+      key2 = "value2"
+    }
+
+    transitions {
+      created_before_date = "2022-11-11"
+      storage_class       = "IA"
+    }
+  }
+}
+
 ```
 
 Set bucket policy 
@@ -444,6 +465,7 @@ The lifecycle_rule configuration block supports the following:
 * `abort_multipart_upload` - (Optional, Type: set, Available since 1.121.2) Specifies the number of days after initiating a multipart upload when the multipart upload must be completed. See [`abort_multipart_upload`](#lifecycle_rule-abort_multipart_upload) below.
 * `noncurrent_version_expiration` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions expire. See [`noncurrent_version_expiration`](#lifecycle_rule-noncurrent_version_expiration) below.
 * `noncurrent_version_transition` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions transitions. See [`noncurrent_version_transition`](#lifecycle_rule-noncurrent_version_transition) below.
+* `tags` - (Optional, Available since 1.209.0) Key-value map of resource tags. All of these tags must exist in the object's tag set in order for the rule to apply.
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
