@@ -466,6 +466,7 @@ The lifecycle_rule configuration block supports the following:
 * `noncurrent_version_expiration` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions expire. See [`noncurrent_version_expiration`](#lifecycle_rule-noncurrent_version_expiration) below.
 * `noncurrent_version_transition` - (Optional, Type: set, Available since 1.121.2) Specifies when noncurrent object versions transitions. See [`noncurrent_version_transition`](#lifecycle_rule-noncurrent_version_transition) below.
 * `tags` - (Optional, Available since 1.209.0) Key-value map of resource tags. All of these tags must exist in the object's tag set in order for the rule to apply.
+* `filter` - (Optional, Available since 1.209.1) Configuration block used to identify objects that a Lifecycle rule applies to. See [`filter`](#lifecycle_rule-filter) below.
 
 `NOTE`: At least one of expiration, transitions, abort_multipart_upload, noncurrent_version_expiration and noncurrent_version_transition should be configured.
 
@@ -514,6 +515,28 @@ The noncurrent_version_transition configuration block supports the following:
 * `storage_class` - (Required) Specifies the storage class that objects that conform to the rule are converted into. The storage class of the objects in a bucket of the IA storage class can be converted into Archive but cannot be converted into Standard. Values: `IA`, `Archive`, `CodeArchive`, `DeepColdArchive`. ColdArchive is available since 1.203.0. DeepColdArchive is available since 1.209.0.
 * `is_access_time` - (Optional, Type: bool, Available since 1.208.1) Specifies whether the lifecycle rule applies to objects based on their last access time. If set to `true`, the rule applies to objects based on their last access time; if set to `false`, the rule applies to objects based on their last modified time. If configure the rule based on the last access time, please enable `access_monitor` first.
 * `return_to_std_when_visit` - (Optional, Type: bool, Available since 1.208.1) Specifies whether to convert the storage class of non-Standard objects back to Standard after the objects are accessed. It takes effect only when the IsAccessTime parameter is set to true. If set to `true`, converts the storage class of the objects to Standard; if set to `false`, does not convert the storage class of the objects to Standard.
+
+### `lifecycle_rule-filter`
+
+The filter configuration block supports the following:
+
+* `not`- (Optional) The condition that is matched by objects to which the lifecycle rule does not apply. See [`not`](#lifecycle_rule-filter-not) below.
+* `object_size_greater_than` - (Optional) Minimum object size (in bytes) to which the rule applies.
+* `object_size_less_than` - (Optional) Maximum object size (in bytes) to which the rule applies.
+
+### `lifecycle_rule-filter-not`
+
+The not configuration block supports the following:
+
+* `prefix` - (Optional) The prefix in the names of the objects to which the lifecycle rule does not apply.
+* `tag` - (Optional) The tag of the objects to which the lifecycle rule does not apply. See [`tag`](#lifecycle_rule-filter-not-tag) below.
+
+### `lifecycle_rule-filter-not-tag`
+
+The tag configuration block supports the following:
+
+* `key` - (Required) The key of the tag that is specified for the objects.
+* `value` - (Required) The value of the tag that is specified for the objects.
 
 ### `server_side_encryption_rule`
 
