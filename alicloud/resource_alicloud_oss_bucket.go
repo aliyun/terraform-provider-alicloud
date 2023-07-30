@@ -291,6 +291,55 @@ func resourceAlicloudOssBucket() *schema.Resource {
 							},
 						},
 						"tags": tagsSchema(),
+						"filter": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"not": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"prefix": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"tag": {
+													Type:     schema.TypeList,
+													MaxItems: 1,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"key": {
+																Type:     schema.TypeString,
+																Required: true,
+															},
+															"value": {
+																Type:     schema.TypeString,
+																Required: true,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									"object_size_greater_than": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: IntAtLeast(1),
+									},
+									"object_size_less_than": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: IntAtLeast(1),
+									},
+								},
+							},
+						},
 					},
 				},
 				MaxItems: 1000,
@@ -759,6 +808,40 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 			}
 			rule["tags"] = ruleTagsMap
 		}
+
+		// Filter
+		if lifecycleRule.Filter != nil {
+			var filterSli []interface{}
+			filterE := make(map[string]interface{})
+			//not
+			var notSli []interface{}
+			for _, not := range lifecycleRule.Filter.Not {
+				notE := make(map[string]interface{})
+				notE["prefix"] = string(not.Prefix)
+				var tagSli []interface{}
+				if not.Tag != nil {
+					tagE := make(map[string]interface{})
+					tagE["key"] = string(not.Tag.Key)
+					tagE["value"] = string(not.Tag.Value)
+					notE["tag"] = append(tagSli, tagE)
+				}
+				notSli = append(notSli, notE)
+			}
+			filterE["not"] = notSli
+
+			// object_size_greater_than
+			if lifecycleRule.Filter.ObjectSizeGreaterThan != nil {
+				filterE["object_size_greater_than"] = *lifecycleRule.Filter.ObjectSizeGreaterThan
+			}
+
+			// object_size_less_than
+			if lifecycleRule.Filter.ObjectSizeLessThan != nil {
+				filterE["object_size_less_than"] = *lifecycleRule.Filter.ObjectSizeLessThan
+			}
+
+			rule["filter"] = append(filterSli, filterE)
+		}
+
 		lrules = append(lrules, rule)
 	}
 
@@ -1306,6 +1389,42 @@ func resourceAlicloudOssBucketLifecycleRuleUpdate(client *connectivity.AliyunCli
 					Value: v.(string),
 				})
 			}
+		}
+
+		// filter
+		ruleFilter := d.Get(fmt.Sprintf("lifecycle_rule.%d.filter", i)).([]interface{})
+		if len(ruleFilter) > 0 {
+			e := ruleFilter[0].(map[string]interface{})
+			filter := oss.LifecycleFilter{}
+			filterNotElems, _ := e["not"].([]interface{})
+			for _, notElem := range filterNotElems {
+				filterNot := oss.LifecycleFilterNot{}
+				//prefix
+				filterNot.Prefix = notElem.(map[string]interface{})["prefix"].(string)
+
+				//tag
+				filterNotTagElems := notElem.(map[string]interface{})["tag"].([]interface{})
+				if len(filterNotTagElems) > 0 {
+					filterNotTagElem := filterNotTagElems[0].(map[string]interface{})
+					tag := oss.Tag{}
+					tag.Key = filterNotTagElem["key"].(string)
+					tag.Value = filterNotTagElem["value"].(string)
+					filterNot.Tag = &tag
+				}
+				filter.Not = append(filter.Not, filterNot)
+			}
+
+			if v, ok := e["object_size_greater_than"].(int); ok && v > 0 {
+				greater := int64(v)
+				filter.ObjectSizeGreaterThan = &greater
+			}
+
+			if v, ok := e["object_size_less_than"].(int); ok && v > 0 {
+				less := int64(v)
+				filter.ObjectSizeLessThan = &less
+			}
+
+			rule.Filter = &filter
 		}
 
 		rules = append(rules, rule)
