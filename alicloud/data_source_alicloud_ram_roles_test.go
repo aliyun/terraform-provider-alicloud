@@ -18,7 +18,6 @@ func TestAccAlicloudRAMRolesDataSource(t *testing.T) {
 			"policy_type": `"Custom"`,
 		}),
 	}
-
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRamRolesDataSourceConfig(rand, map[string]string{
 			"name_regex": `"${alicloud_ram_role.default.name}"`,

@@ -3,10 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -37,7 +39,7 @@ func dataSourceAlicloudRamPolicies() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"System", "Custom"}, false),
+				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
 			"group_name": {
 				Type:     schema.TypeString,
@@ -48,13 +50,13 @@ func dataSourceAlicloudRamPolicies() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 64),
+				ValidateFunc: StringLenBetween(0, 64),
 			},
 			"role_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 64),
+				ValidateFunc: StringLenBetween(0, 64),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -175,8 +177,22 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		userRequest := map[string]interface{}{
 			"UserName": userName,
 		}
-		response, err = conn.DoRequest(StringPointer(userAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, userRequest, &util.RuntimeOptions{})
 
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(userAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, userRequest, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies")
 		}
@@ -197,8 +213,22 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		groupRequest := map[string]interface{}{
 			"GroupName": groupName,
 		}
-		response, err = conn.DoRequest(StringPointer(groupAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, groupRequest, &util.RuntimeOptions{})
 
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(groupAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, groupRequest, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies")
 		}
@@ -218,8 +248,22 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		roleRequest := map[string]interface{}{
 			"RoleName": roleName,
 		}
-		response, err = conn.DoRequest(StringPointer(roleAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, roleRequest, &util.RuntimeOptions{})
 
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(roleAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, roleRequest, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies")
 		}
@@ -236,7 +280,19 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_policies", action, AlibabaCloudSdkGoERROR)
 		}
@@ -315,11 +371,23 @@ func dataSourceAlicloudRamPoliciesRead(d *schema.ResourceData, meta interface{})
 		}
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutRead), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapError(err)
 		}
-		addDebug(action, response, request)
+
 		v, err := jsonpath.Get("$", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/encryption"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudRamAccessKey() *schema.Resource {
@@ -33,7 +32,7 @@ func resourceAlicloudRamAccessKey() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      Active,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
+				ValidateFunc: StringInSlice([]string{"Active", "Inactive"}, false),
 			},
 			"secret": {
 				Type:      schema.TypeString,

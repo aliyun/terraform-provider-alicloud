@@ -7,13 +7,15 @@ description: |-
     Provides a list of ram policies available to the user.
 ---
 
-# alicloud\_ram\_policies
+# alicloud_ram_policies
 
 This data source provides a list of RAM policies in an Alibaba Cloud account according to the specified filters.
 
+-> **NOTE:** Available since v1.0.0+.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_ram_policies" "policies_ds" {
   output_file = "policies.txt"
   user_name   = "user1"
@@ -30,13 +32,14 @@ output "first_policy_name" {
 
 The following arguments are supported:
 
-* `name_regex` - (Optional) A regex string to filter resulting policies by name.
-* `type` - (Optional) Filter results by a specific policy type. Valid values are `Custom` and `System`.
-* `user_name` - (Optional) Filter results by a specific user name. Returned policies are attached to the specified user.
-* `group_name` - (Optional) Filter results by a specific group name. Returned policies are attached to the specified group.
-* `role_name` - (Optional) Filter results by a specific role name. Returned policies are attached to the specified role.
+* `name_regex` - (Optional, ForceNew) A regex string to filter resulting policies by name.
+* `ids` - (Optional, ForceNew) A list of ram group IDs. 
+* `type` - (Optional, ForceNew) Filter results by a specific policy type. Valid values are `Custom` and `System`.
+* `user_name` - (Optional, ForceNew) Filter results by a specific user name. Returned policies are attached to the specified user.
+* `group_name` - (Optional, ForceNew) Filter results by a specific group name. Returned policies are attached to the specified group.
+* `role_name` - (Optional, ForceNew) Filter results by a specific role name. Returned policies are attached to the specified role.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional, Available in 1.114.0+) Default to `true`. Set it to true can output more details.
+* `enable_details` - (Optional, Available since 1.114.0+) Default to `true`. Set it to true can output more details.
 
 ## Attributes Reference
 
@@ -44,6 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of ram group names.
 * `policies` - A list of policies. Each element contains the following attributes:
+  * `id` - ID of the policy.
   * `name` - Name of the policy.
   * `policy_name` - Name of the policy.
   * `type` - Type of the policy.
@@ -55,3 +59,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `document` - Policy document of the policy.
   * `policy_document` - Policy document of the policy.
   * `version_id` - The ID of default policy.
+  * `user_name` - The user name of  policy.

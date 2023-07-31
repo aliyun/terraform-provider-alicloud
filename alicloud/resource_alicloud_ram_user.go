@@ -8,7 +8,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudRamUser() *schema.Resource {
@@ -46,7 +45,7 @@ func resourceAlicloudRamUser() *schema.Resource {
 			"comments": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(0, 128),
+				ValidateFunc: StringLenBetween(0, 128),
 			},
 		},
 	}

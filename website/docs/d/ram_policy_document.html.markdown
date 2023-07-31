@@ -7,11 +7,11 @@ description: |-
     Generates a RAM policy document to the user.
 ---
 
-# alicloud\_ram\_policy\_document
+# alicloud_ram_policy_document
 
 This data source Generates a RAM policy document of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.184.0+.
+-> **NOTE:** Available since v1.184.0+.
 
 ## Example Usage
 
@@ -28,7 +28,7 @@ data "alicloud_ram_policy_document" "basic_example" {
 }
 
 resource "alicloud_ram_policy" "default" {
-  policy_name     = "tf-test"
+  policy_name     = "tf-example"
   policy_document = data.alicloud_ram_policy_document.basic_example.document
   force           = true
 }
@@ -85,7 +85,7 @@ data "alicloud_ram_policy_document" "multiple_condition" {
 }
 
 resource "alicloud_ram_policy" "policy" {
-  policy_name     = "tf-test-condition"
+  policy_name     = "tf-example-condition"
   policy_document = data.alicloud_ram_policy_document.multiple_condition.document
   force           = true
 }
@@ -150,7 +150,7 @@ data "alicloud_ram_policy_document" "ram_example" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = "test-role-ram"
+  name     = "tf-example-role-ram"
   document = data.alicloud_ram_policy_document.ram_example.document
   force    = true
 }
@@ -190,7 +190,7 @@ data "alicloud_ram_policy_document" "service_example" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = "test-role-service"
+  name     = "tf-example-role-service"
   document = data.alicloud_ram_policy_document.service_example.document
   force    = true
 }
@@ -235,7 +235,7 @@ data "alicloud_ram_policy_document" "federated_example" {
 }
 
 resource "alicloud_ram_role" "role" {
-  name     = "test-role-federated"
+  name     = "tf-example-role-federated"
   document = data.alicloud_ram_policy_document.federated_example.document
   force    = true
 }
@@ -270,27 +270,27 @@ resource "alicloud_ram_role" "role" {
 The following arguments are supported:
 
 * `version` - (Optional) Version of the RAM policy document. Valid value is `1`. Default value is `1`.
-* `statement` - (Optional) Statement of the RAM policy document. See the following `Block statement`.
+* `statement` - (Optional) Statement of the RAM policy document. See the following `Block statement`. See [`statement`](#statement) below.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-#### Block statement
+### `statement`
 
 The statement supports the following:
 
 * `effect` - (Optional) This parameter indicates whether or not the `action` is allowed. Valid values are `Allow` and `Deny`. Default value is `Allow`. If you want to create a RAM role policy document, it must be `Allow`.
 * `action` - (Required) Action of the RAM policy document. If you want to create a RAM role policy document, it must be `["sts:AssumeRole"]`.
 * `resource` - (Optional) List of specific objects which will be authorized. If you want to create a RAM policy document, it must be set.
-* `principal` - (Optional) Principal of the RAM policy document. If you want to create a RAM role policy document, it must be set. See the following `Block principal`.
-* `condition` - (Optional) Specifies the condition that are required for a policy to take effect. See the following `Block condition`.
+* `principal` - (Optional) Principal of the RAM policy document. If you want to create a RAM role policy document, it must be set. See [`principal`](#statement-principal) below.
+* `condition` - (Optional) Specifies the condition that are required for a policy to take effect. See [`condition`](#statement-condition) below.
 
-#### Block principal
+### `statement-principal`
 
 The principal supports the following:
 
 * `entity` - (Required) The trusted entity. Valid values: `RAM`, `Service` and `Federated`.
 * `identifiers` - (Required) The identifiers of the principal.
 
-#### Block condition
+### `statement-condition`
 
 The condition supports the following:
 

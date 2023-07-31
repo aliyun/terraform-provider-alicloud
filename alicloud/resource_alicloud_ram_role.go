@@ -6,13 +6,11 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudRamRole() *schema.Resource {
@@ -51,7 +49,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      3600,
-				ValidateFunc: validation.IntBetween(3600, 43200),
+				ValidateFunc: IntBetween(3600, 43200),
 			},
 			"services": {
 				Type:     schema.TypeSet,
@@ -85,7 +83,7 @@ func resourceAlicloudRamRole() *schema.Resource {
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				// can only be '1' so far.
-				ValidateFunc: validation.StringInSlice([]string{"1"}, false),
+				ValidateFunc: StringInSlice([]string{"1"}, false),
 				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
