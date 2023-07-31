@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea/tea"
@@ -48,9 +47,10 @@ func testSweepKmsKey(region string) error {
 	}
 
 	request := map[string]interface{}{
-		"PageSize":   PageSizeLarge,
+		"PageSize":   PageSizeXLarge,
 		"PageNumber": 1,
 		"RegionId":   client.RegionId,
+		"Filters":    "[ {\"Key\":\"KeyState\", \"Values\":[\"Enabled\",\"Disabled\",\"PendingImport\"]} ]",
 	}
 	action := "ListKeys"
 
@@ -59,7 +59,6 @@ func testSweepKmsKey(region string) error {
 	if err != nil {
 		return WrapError(err)
 	}
-	sweeped := false
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -78,37 +77,44 @@ func testSweepKmsKey(region string) error {
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			skip := true
-			if _, ok := item["Description"]; !ok {
-				continue
-			}
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Description"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				if _, ok := item["Description"]; !ok {
+					continue
+				}
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["Description"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping Kms Key: %s", item["Description"].(string))
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping Kms Key: %s", item["Description"].(string))
-				continue
-			}
-			sweeped = true
-			action = "ScheduleKeyDeletion"
+			action = "SetDeletionProtection"
 			request := map[string]interface{}{
+				"ProtectedResourceArn":     item["KeyArn"],
+				"EnableDeletionProtection": false,
+			}
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				log.Printf("[ERROR] Failed to cancel Kms Key DeletionProtection %s (%s): %s", item["Description"], item["KeyId"], err)
+			}
+
+			action = "ScheduleKeyDeletion"
+			request = map[string]interface{}{
 				"KeyId":               item["KeyId"],
 				"PendingWindowInDays": 7,
 			}
 			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				log.Printf("[ERROR] Failed to delete Kms Key (%s): %s", item["Description"], err)
+				log.Printf("[ERROR] Failed to delete Kms Key %s (%s): %s", item["Description"], item["KeyId"], err)
 			}
-			log.Printf("[INFO] Delete Kms Key success: %s ", item["Description"])
 		}
-		if len(result) < PageSizeLarge {
+		if len(result) < PageSizeXLarge {
 			break
 		}
 		request["PageNumber"] = request["PageNumber"].(int) + 1
-	}
-	if sweeped {
-		time.Sleep(5 * time.Second)
 	}
 	return nil
 }
