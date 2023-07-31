@@ -366,8 +366,8 @@ func (s *VpcServiceV2) DescribeVpcHaVip(id string) (object map[string]interface{
 	query = make(map[string]interface{})
 
 	jsonString := "{}"
-	jsonString, _ = sjson.Set(jsonString, "Filter[0].Value[0]", id)
-	jsonString, _ = sjson.Set(jsonString, "Filter[0].Key", "HaVipId")
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Value.0", id)
+	jsonString, _ = sjson.Set(jsonString, "Filter.0.Key", "HaVipId")
 	err = json.Unmarshal([]byte(jsonString), &request)
 	if err != nil {
 		return object, WrapError(err)
