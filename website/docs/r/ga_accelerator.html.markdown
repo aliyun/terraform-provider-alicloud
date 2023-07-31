@@ -2,89 +2,103 @@
 subcategory: "Global Accelerator (GA)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ga_accelerator"
-sidebar_current: "docs-alicloud-resource-ga-accelerator"
 description: |-
-  Provides a Alicloud Global Accelerator (GA) Accelerator resource.
+  Provides a Alicloud Ga Accelerator resource.
 ---
 
 # alicloud_ga_accelerator
 
-Provides a Global Accelerator (GA) Accelerator resource.
+Provides a Ga Accelerator resource. 
 
-For information about Global Accelerator (GA) Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createaccelerator).
+For information about Ga Accelerator and how to use it, see [What is Accelerator](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** At present, The `alicloud_ga_accelerator` cannot be deleted. you need to wait until the resource is outdated and released automatically.
-
--> **NOTE:** Available since v1.111.0.
+-> **NOTE:** Available since v1.209.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ga_accelerator" "example" {
-  duration        = 1
-  auto_use_coupon = true
-  spec            = "1"
+variable "name" {
+  default = "terraform-example"
+}
+
+
+resource "alicloud_ga_accelerator" "default" {
+  instance_charge_type   = "POSTPAY"
+  duration               = 1
+  auto_pay               = true
+  bandwidth_billing_type = "CDT"
+  pricing_cycle          = "Month"
 }
 ```
-
-### Deleting `alicloud_ga_accelerator` or removing it from your configuration
-
-The `alicloud_ga_accelerator` resource allows you to manage `instance_charge_type = "Prepaid"` db instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the DB Instance.
-You can resume managing the subscription db instance via the AlibabaCloud Console.
 
 ## Argument Reference
 
 The following arguments are supported:
+* `accelerator_name` - (Optional, Available since v1.111.0) The Name of the GA instance.
+* `auto_pay` - (Optional) Whether to pay automatically, value:
+  - **false** (default): automatic payment is not enabled. After generating an order, you need to complete the payment at the order center.
+  - **true**: Enable automatic payment to automatically pay for orders.
+* `auto_renew` - (Optional) Whether automatic renewal is turned on. Value:
+  - **true**: Yes.
+  - **false** (default): No.
+* `auto_renew_duration` - (Optional, Available since v1.111.0) The duration of automatic renewal. Unit: Month.
 
-* `spec` - (Required) The instance type of the GA instance. Specification of global acceleration instance. Valid values:
-  - `1`: Small 1.
-  - `2`: Small 2.
-  - `3`: Small 3.
-  - `5`: Medium 1.
-  - `8`: Medium 2.
-  - `10`: Medium 3.
-* `duration` - (Required) The subscription duration. **NOTE:** Starting from v1.150.0, the `duration` and  `pricing_cycle` are both required.
-    * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
-    * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
-* `bandwidth_billing_type` - (Optional, ForceNew, Computed, Available since v1.205.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
-  - `BandwidthPackage`: billed based on bandwidth plans.
-  - `CDT`: billed based on data transfer.
-* `auto_use_coupon` - (Optional) Use coupons to pay bills automatically. Default value: `false`. Valid values:
-  - `true`: Use.
-  - `false`: Not used.
-* `pricing_cycle`- (Optional, Available since v1.150.0) The billing cycle of the GA instance. Default value: `Month`. Valid values:
-  - `Month`: billed on a monthly basis.
-  - `Year`: billed on an annual basis.
-* `auto_renew_duration` - (Optional, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
-* `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
-  - `AutoRenewal`: Enable auto renewal.
-  - `Normal`: Disable auto renewal.
-  - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
-* `accelerator_name` - (Optional) The Name of the GA instance.
-* `description` - (Optional) Descriptive information of the global acceleration instance.
-* `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
+Valid values: **1** to **12 * *.
+-> **NOTE:**  This item takes effect only when **AutoRenew** is **true.
+* `auto_use_coupon` - (Optional, Available since v1.111.0) 当前属性没有在镇元上录入属性描述，请补充后再生成代码。.
+* `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.111.0) Bandwidth billing method.
+  - **BandwidthPackage**: Billed by bandwidth package.
+  - **CDT**: Billing by traffic.
+  - **CDT95**: billed at 95 and settled by CDT. This bandwidth billing method is available only to whitelist users.
+* `cross_border_mode` - (Optional) cross border.
+* `cross_border_status` - (Optional) Whether the cross-border line function is turned on.
+* `ddos_id` - (Optional) DDoS high-defense instance ID that is unbound from the global acceleration instance.
+* `ddos_region_id` - (Optional) The region where the DDoS pro instance is located. Value:
+  - **cn-hangzhou**: Mainland China.
+  - **ap-southeast-1**: Non-Mainland China.
+* `description` - (Optional, Available since v1.111.0) Descriptive information of the global acceleration instance.
+* `duration` - (Optional, Available since v1.111.0) Duration.
+* `instance_charge_type` - (Optional) The billing type of the Global Acceleration instance. The default value is PREPAY.
+  - PREPAY-Prepaid
+  - POSTPAY-POSTPAY.
+* `ip_set_config` - (Optional, ForceNew) Accelerate area configuration. See [`ip_set_config`](#ip_set_config) below.
+* `pricing_cycle` - (Optional, Available since v1.111.0) PricingCycle.
+* `promotion_option_no` - (Optional) Coupon number.
+-> **NOTE:**  Only the international station involves this parameter.
+* `renewal_status` - (Optional, Available since v1.111.0) Automatic renewal status.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group.
+* `spec` - (Optional, Available since v1.111.0) The instance type of the GA instance.
+* `tags` - (Optional, Map) The tag of the resource.
+
+### `ip_set_config`
+
+The ip_set_config supports the following:
+* `access_mode` - (Optional, ForceNew) Accelerated zone access mode. Value:
+  - **UserDefine**: Customize the nearest access mode. You can select an acceleration region and region based on your business needs. Global acceleration provides an independent EIP for each acceleration region.
+  - **Anycast**: uses automatic nearest access mode. You do not need to configure the acceleration area. Global acceleration provides an Anycast EIP in multiple regions around the world. Users can access the Alibaba Cloud Acceleration Network from the nearest access point through Anycast EIP.
+.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
-* `status` - The status of the GA instance.
+* `id` - The ID of the resource supplied above.
+* `create_time` - Time for global acceleration instance creation.
+* `payment_type` - The payment type of the resource.
+* `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when creating the Ga Accelerator.
-* `update` - (Defaults to 6 mins) Used when updating the Ga Accelerator.
+* `create` - (Defaults to 5 mins) Used when create the Accelerator.
+* `delete` - (Defaults to 5 mins) Used when delete the Accelerator.
+* `update` - (Defaults to 5 mins) Used when update the Accelerator.
 
 ## Import
 
 Ga Accelerator can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_accelerator.example <accelerator_id>
+$ terraform import alicloud_ga_accelerator.example <id>
 ```
