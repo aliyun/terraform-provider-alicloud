@@ -9,57 +9,77 @@ description: |-
 
 # alicloud_edas_k8s_application
 
-Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/doc-detail/85029.htm). 
+Create an EDAS k8s application.For information about EDAS K8s Application and how to use it, see [What is EDAS K8s Application](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-insertk8sapplication). 
 
--> **NOTE:** Available since v1.105.0
+-> **NOTE:** Available since v1.105.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  cpu_core_count       = 4
+  memory_size          = 8
+  kubernetes_node_role = "Worker"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+  name_prefix          = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+  new_nat_gateway      = true
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled = true
+}
+
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  name                 = var.name
+  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+  vswitch_ids          = [alicloud_vswitch.default.id]
+  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+  system_disk_category = "cloud_efficiency"
+  system_disk_size     = 40
+  desired_size         = 2
+}
+resource "alicloud_edas_k8s_cluster" "default" {
+  cs_cluster_id = alicloud_cs_kubernetes_node_pool.default.cluster_id
+}
+
 resource "alicloud_edas_k8s_application" "default" {
-  // package type is Image / FatJar / War
-  package_type            = "Image"
-  application_name        = "DemoApplication"
-  application_descriotion = "This is description of application"
-  cluster_id              = var.cluster_id
+  application_name        = var.name
+  cluster_id              = alicloud_edas_k8s_cluster.default.id
+  package_type            = "FatJar"
+  package_url             = "http://edas-bj.oss-cn-beijing.aliyuncs.com/prod/demo/SPRING_CLOUD_PROVIDER.jar"
+  jdk                     = "Open JDK 8"
   replicas                = 2
-
-  // set 'image_url' and 'repo_id' when package_type is 'image'
-  image_url = "registry-vpc.cn-beijing.aliyuncs.com/edas-demo-image/consumer:1.0"
-
-  // set 'package_url','package_version' and 'jdk' when package_type is not 'image'
-  package_url     = var.package_url
-  package_version = var.package_version
-  jdk             = var.jdk
-
-  // set 'web_container' and 'edas_container' when package_type is 'war'
-  web_container          = var.web_container
-  edas_container_version = var.edas_container_version
-
-  internet_target_port  = var.internet_target_port
-  internet_slb_port     = var.internet_slb_port
-  internet_slb_protocol = var.internet_slb_protocol
-  internet_slb_id       = var.internet_slb_id
-  limit_cpu             = 4
-  limit_mem             = 2048
-  requests_cpu          = 0
-  requests_mem          = 0
-  requests_m_cpu        = 0
-  limit_m_cpu           = 4000
-  command               = var.command
-  command_args          = var.command_args
-  envs                  = var.envs
-  pre_stop              = "{\"exec\":{\"command\":[\"ls\",\"/\"]}}"
-  post_start            = "{\"exec\":{\"command\":[\"ls\",\"/\"]}}"
-  liveness              = var.liveness
-  readiness             = var.readiness
-  nas_id                = var.nas_id
-  mount_descs           = var.mount_descs
-  local_volume          = var.local_volume
-  namespace             = "default"
-  logical_region_id     = cn-beijing
+  readiness               = "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"port\":18081}}"
+  liveness                = "{\"failureThreshold\": 3,\"initialDelaySeconds\": 5,\"successThreshold\": 1,\"timeoutSeconds\": 1,\"tcpSocket\":{\"port\":18081}}"
+  application_descriotion = var.name
 }
 ```
 
