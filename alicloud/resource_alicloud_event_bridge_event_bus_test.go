@@ -27,8 +27,9 @@ func init() {
 	resource.AddTestSweepers(
 		"alicloud_event_bridge_event_bus",
 		&resource.Sweeper{
-			Name: "alicloud_event_bridge_event_bus",
-			F:    testSweepEventBridgeEventBus,
+			Name:         "alicloud_event_bridge_event_bus",
+			F:            testSweepEventBridgeEventBus,
+			Dependencies: []string{"alicloud_event_bridge_event_source"},
 		})
 }
 
@@ -36,7 +37,7 @@ func testSweepEventBridgeEventBus(region string) error {
 	prefixes := []string{
 		"tf-testacc",
 	}
-	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.SaeSupportRegions)
+	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
@@ -47,13 +48,13 @@ func testSweepEventBridgeEventBus(region string) error {
 	request["Limit"] = PageSizeLarge
 	conn, err := client.NewEventbridgeClient()
 	if err != nil {
-		log.Error(err)
+		log.Println("new eventBridge client failed:", err)
 		return nil
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -64,12 +65,9 @@ func testSweepEventBridgeEventBus(region string) error {
 		}
 		return nil
 	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_event_bridge_event_buses", action, AlibabaCloudSdkGoERROR)
-	}
-	if fmt.Sprint(response["Success"]) == "false" {
-		return WrapError(fmt.Errorf("ListEventBuses failed, response: %v", response))
+	if err != nil || fmt.Sprint(response["Success"]) != "true" {
+		log.Println(WrapError(fmt.Errorf("ListEventBuses failed, response: %v", response)))
+		return nil
 	}
 	resp, err := jsonpath.Get("$.Data.EventBuses", response)
 	if err != nil {
@@ -77,25 +75,71 @@ func testSweepEventBridgeEventBus(region string) error {
 	}
 	result, _ := resp.([]interface{})
 	for _, v := range result {
-		// item namespace
 		item := v.(map[string]interface{})
+		eventBusName := fmt.Sprint(item["EventBusName"])
 		skip := true
-		for _, prefix := range prefixes {
-			EventBusName := ""
-			if val, exist := item["EventBusName"]; exist {
-				EventBusName = val.(string)
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.Contains(strings.ToLower(eventBusName), strings.ToLower(prefix)) {
+					skip = false
+				}
 			}
-			if strings.Contains(strings.ToLower(EventBusName), strings.ToLower(prefix)) {
-				skip = false
+			if skip {
+				log.Printf("[INFO] Skipping EventBridge Bus: %s", eventBusName)
+				continue
 			}
 		}
-		if skip {
-			log.Printf("[INFO] Skipping EventBridge Bus: %s", item["EventBusName"])
+
+		action = "ListRules"
+		request = map[string]interface{}{
+			"Limit":        PageSizeLarge,
+			"EventBusName": eventBusName,
+		}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil || fmt.Sprint(response["Success"]) != "true" {
+			log.Println(WrapError(fmt.Errorf("ListRules failed, response: %v", response)))
 			continue
 		}
+		resp, _ = jsonpath.Get("$.Data.Rules", response)
+		ruleResult, _ := resp.([]interface{})
+		for _, v := range ruleResult {
+			ruleName := v.(map[string]interface{})["RuleName"]
+			log.Printf("[INFO] Deleting EventBridge Rule: %s", ruleName)
+			action = "DeleteRule"
+			request = map[string]interface{}{
+				"RuleName":     ruleName,
+				"EventBusName": eventBusName,
+			}
+			err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil || fmt.Sprint(response["Success"]) != "true" {
+				log.Printf("\n[ERROR] Deleting EventBridge rule %s failed. Response: %v. Error: %v.", ruleName, response, err)
+			}
+		}
+
+		log.Printf("[INFO] Deleting EventBridge Bus: %s", eventBusName)
 		action = "DeleteEventBus"
 		request = map[string]interface{}{
-			"EventBusName": item["EventBusName"],
+			"EventBusName": eventBusName,
 		}
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
@@ -108,7 +152,9 @@ func testSweepEventBridgeEventBus(region string) error {
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		if err != nil || fmt.Sprint(response["Success"]) != "true" {
+			log.Printf("\n[ERROR] Deleting EventBridge bus %s failed. Response: %v. Error: %v.", eventBusName, response, err)
+		}
 	}
 	return nil
 }
