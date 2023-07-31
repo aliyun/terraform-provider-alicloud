@@ -55,7 +55,7 @@ func TestAccAlicloudVpcHaVip_basic2535(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -95,7 +95,7 @@ func TestAccAlicloudVpcHaVip_basic2535(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.changeRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -109,7 +109,7 @@ func TestAccAlicloudVpcHaVip_basic2535(t *testing.T) {
 					"vswitch_id":        "${alicloud_vswitch.defaultVswitch.id}",
 					"ha_vip_name":       name + "_update",
 					"ip_address":        "192.168.1.101",
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -199,14 +199,8 @@ resource "alicloud_vswitch" "defaultVswitch" {
   description  = "tf-testacc-vswitch"
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-rg576"
-  resource_group_name = "${var.name}2"
-}
-
-resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-changerg6"
-  resource_group_name = "${var.name}3"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 
@@ -240,7 +234,7 @@ func TestAccAlicloudVpcHaVip_basic2535_twin(t *testing.T) {
 					"vswitch_id":        "${alicloud_vswitch.defaultVswitch.id}",
 					"ha_vip_name":       name,
 					"ip_address":        "192.168.1.101",
-					"resource_group_id": "${alicloud_resource_manager_resource_group.changeRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",

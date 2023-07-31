@@ -15,6 +15,8 @@ You can use to the existing [vpc module](https://registry.terraform.io/modules/a
 
 For information about VPC Vswitch and how to use it, see [What is Vswitch](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/work-with-vswitches).
 
+-> **NOTE:** Available since v1.0.0.
+
 ## Example Usage
 
 Basic Usage
@@ -100,7 +102,7 @@ The following arguments are supported:
 * `enable_ipv6` - (Optional, Available in v1.201.1+) Whether the IPv6 function is enabled in the switch. Value:
   - **true**: enables IPv6.
   - **false** (default): IPv6 is not enabled.
-* `ipv6_cidr_block_mask` - (Optional, Available in v1.115+) The IPv6 CIDR block of the VSwitch.
+* `ipv6_cidr_block_mask` - (Optional, Computed, Available in v1.115+) The IPv6 CIDR block of the VSwitch.
 * `tags` - (Optional, Map, Available in v1.55.3+) The tags of VSwitch.
 * `vswitch_name` - (Optional, Available in v1.119.0+) The name of the VSwitch.
 * `vpc_id` - (Required, ForceNew) The VPC ID.
@@ -118,7 +120,7 @@ The following attributes are exported:
 * `ipv6_cidr_block` - The IPv6 CIDR block of the VSwitch.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Vswitch.
