@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudRamGroups() *schema.Resource {
@@ -24,20 +25,20 @@ func dataSourceAlicloudRamGroups() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 64),
+				ValidateFunc: StringLenBetween(0, 64),
 			},
 			"policy_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 128),
+				ValidateFunc: StringLenBetween(0, 128),
 			},
 			"policy_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				// must be ram.System, ram.Custom
-				ValidateFunc: validation.StringInSlice([]string{"System", "Custom"}, false),
+				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -94,13 +95,27 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 	request.RegionId = client.RegionId
 	request.MaxItems = requests.NewInteger(1000)
 	for {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListGroups(request)
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListGroups(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListGroupsResponse)
 		for _, v := range response.Groups.Group {
 			if nameRegexOk {
@@ -124,13 +139,27 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 	if userNameOk {
 		request := ram.CreateListGroupsForUserRequest()
 		request.UserName = userName.(string)
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListGroupsForUser(request)
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListGroupsForUser(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*ram.ListGroupsForUserResponse)
 
@@ -152,13 +181,27 @@ func dataSourceAlicloudRamGroupsRead(d *schema.ResourceData, meta interface{}) e
 		request := ram.CreateListEntitiesForPolicyRequest()
 		request.PolicyType = pType
 		request.PolicyName = policyName.(string)
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListEntitiesForPolicy(request)
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListEntitiesForPolicy(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_groups", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
 

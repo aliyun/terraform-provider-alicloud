@@ -11,7 +11,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudRamRoles() *schema.Resource {
@@ -28,13 +27,13 @@ func dataSourceAlicloudRamRoles() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 128),
+				ValidateFunc: StringLenBetween(0, 128),
 			},
 			"policy_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"System", "Custom"}, false),
+				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -126,7 +125,7 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		var raw interface{}
 		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
 			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 				return ramClient.ListRoles(request)
 			})
@@ -179,13 +178,28 @@ func dataSourceAlicloudRamRolesRead(d *schema.ResourceData, meta interface{}) er
 		request := ram.CreateListEntitiesForPolicyRequest()
 		request.PolicyType = pType
 		request.PolicyName = policyName.(string)
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListEntitiesForPolicy(request)
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListEntitiesForPolicy(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.ListEntitiesForPolicyResponse)
 		for _, v := range response.Roles.Role {
 			role, ok := allRolesMap[v.RoleName]
@@ -207,8 +221,23 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 		role := v.(ram.Role)
 		request := ram.CreateGetRoleRequest()
 		request.RoleName = role.RoleName
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetRole(request)
+
+		var raw interface{}
+		var err error
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.GetRole(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExist"}) {
@@ -216,7 +245,7 @@ func ramRolesDescriptionAttributes(d *schema.ResourceData, meta interface{}, rol
 			}
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_roles", request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		response, _ := raw.(*ram.GetRoleResponse)
 		mapping := map[string]interface{}{
 			"id":                          role.RoleId,

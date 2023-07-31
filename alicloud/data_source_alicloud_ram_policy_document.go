@@ -8,7 +8,6 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
@@ -19,7 +18,7 @@ func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "1",
-				ValidateFunc: validation.StringInSlice([]string{"1"}, false),
+				ValidateFunc: StringInSlice([]string{"1"}, false),
 			},
 			"statement": {
 				Type:     schema.TypeList,
@@ -30,7 +29,7 @@ func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Default:      "Allow",
-							ValidateFunc: validation.StringInSlice([]string{"Allow", "Deny"}, false),
+							ValidateFunc: StringInSlice([]string{"Allow", "Deny"}, false),
 						},
 						"action": {
 							Type:     schema.TypeList,
@@ -54,7 +53,7 @@ func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
 									"entity": {
 										Type:         schema.TypeString,
 										Required:     true,
-										ValidateFunc: validation.StringInSlice([]string{"RAM", "Service", "Federated"}, false),
+										ValidateFunc: StringInSlice([]string{"RAM", "Service", "Federated"}, false),
 									},
 									"identifiers": {
 										Type:     schema.TypeList,

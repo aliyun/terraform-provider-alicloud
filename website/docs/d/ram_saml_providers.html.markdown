@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ram Saml Providers to the user.
 ---
 
-# alicloud\_ram\_saml\_providers
+# alicloud_ram_saml_providers
 
 This data source provides the Ram Saml Providers of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.114.0+.
+-> **NOTE:** Available since v1.114.0+.
 
 ## Example Usage
 
@@ -37,7 +37,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by SAML Provider name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -11,6 +11,8 @@ description: |-
 
 This data source provides a list of RAM users in an Alibaba Cloud account according to the specified filters.
 
+-> **NOTE:** Available since v1.0.0+.
+
 ## Example Usage
 
 ```terraform
@@ -48,4 +50,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The original id is user's name, but it is user id in 1.37.0+.
   * `name` - Name of the user.
   * `create_date` - Creation date of the user.
-  * `last_login_date` - Last login date of the user. Removed from version 1.79.0.
+  * `last_login_date` - (Removed) Last login date of the user. Removed from version 1.79.0.

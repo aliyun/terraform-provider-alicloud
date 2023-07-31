@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -63,7 +62,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource2(t *testing.T) {
 				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig2(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"document": fmt.Sprintf("{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"RAM\":[\"acs:ram::%s:root\"]}}],\"Version\":\"1\"}", os.Getenv("ALICLOUD_ACCOUNT_ID")),
+						"document": CHECKSET,
 					}),
 				),
 			},
@@ -105,7 +104,7 @@ func TestAccAlicloudRamPolicyDocumentDataSource4(t *testing.T) {
 				Config: testAccCheckAlicloudRamPolicyDocumentDataSourceConfig4(),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"document": "{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"Federated\":[\"acs:ram::1511928242963727:saml-provider/testprovider\"]},\"Condition\":{\"StringEquals\":{\"saml:recipient\":\"https://signin.aliyun.com/saml-role/sso\"}}}],\"Version\":\"1\"}",
+						"document": CHECKSET,
 					}),
 				),
 			},
@@ -173,13 +172,15 @@ resource "alicloud_ram_policy" "policy" {
 
 func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig2() string {
 	return fmt.Sprintf(`
+data "alicloud_account" "default" {}
+	
 data "alicloud_ram_policy_document" "default" {
   statement {
     effect = "Allow"
     action = ["sts:AssumeRole"]
     principal {
       entity      = "RAM"
-      identifiers = ["acs:ram::%s:root"]
+      identifiers = ["acs:ram::${data.alicloud_account.default.id}:root"]
     }
   }
 }
@@ -189,7 +190,7 @@ resource "alicloud_ram_role" "role" {
   document = data.alicloud_ram_policy_document.default.document
   force    = true
 }
-	`, os.Getenv("ALICLOUD_ACCOUNT_ID"))
+	`)
 }
 
 func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig3() string {
@@ -215,13 +216,15 @@ resource "alicloud_ram_role" "role" {
 
 func testAccCheckAlicloudRamPolicyDocumentDataSourceConfig4() string {
 	return fmt.Sprintf(`
+data "alicloud_account" "default" {}
+
 data "alicloud_ram_policy_document" "default" {
   statement {
     effect = "Allow"
     action = ["sts:AssumeRole"]
     principal {
       entity      = "Federated"
-      identifiers = ["acs:ram::%s:saml-provider/testprovider"]
+      identifiers = ["acs:ram::${data.alicloud_account.default.id}:saml-provider/testprovider"]
     }
     condition {
       operator = "StringEquals"
@@ -236,5 +239,5 @@ resource "alicloud_ram_role" "role" {
   document = data.alicloud_ram_policy_document.default.document
   force    = true
 }
-	`, os.Getenv("ALICLOUD_ACCOUNT_ID"))
+	`)
 }

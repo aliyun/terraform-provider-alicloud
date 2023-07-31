@@ -77,7 +77,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "None",
-				ValidateFunc: validation.StringInSlice([]string{"DeleteOldestNonDefaultVersionWhenLimitExceeded", "None"}, false),
+				ValidateFunc: StringInSlice([]string{"DeleteOldestNonDefaultVersionWhenLimitExceeded", "None"}, false),
 			},
 			"version_id": {
 				Type:     schema.TypeString,
@@ -93,7 +93,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 						"effect": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Allow", "Deny"}, false),
+							ValidateFunc: StringInSlice([]string{"Allow", "Deny"}, false),
 						},
 						"action": {
 							Type:     schema.TypeList,
@@ -119,7 +119,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 				Default:       "1",
 				ConflictsWith: []string{"document"},
 				// can only be '1' so far.
-				ValidateFunc: validation.StringInSlice([]string{"1"}, false),
+				ValidateFunc: StringInSlice([]string{"1"}, false),
 				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
 			},
 			"force": {
