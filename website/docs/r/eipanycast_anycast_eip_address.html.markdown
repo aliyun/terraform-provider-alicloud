@@ -10,9 +10,9 @@ description: |-
 
 Provides a Eipanycast Anycast Eip Address resource. Anycast Elastic IP Address.
 
-For information about Eipanycast Anycast Eip Address and how to use it, see [What is Anycast Eip Address](https://www.alibabacloud.com/help/en/).
+For information about Eipanycast Anycast Eip Address and how to use it, see [What is Anycast Eip Address](https://www.alibabacloud.com/help/en/anycast-eip/latest/api-eipanycast-2020-03-09-allocateanycasteipaddress).
 
--> **NOTE:** Available since v1.208.0.
+-> **NOTE:** Available since v1.113.0.
 
 ## Example Usage
 
@@ -23,7 +23,6 @@ variable "name" {
   default = "terraform-example"
 }
 
-
 resource "alicloud_eipanycast_anycast_eip_address" "default" {
   anycast_eip_address_name = var.name
   description              = "test_1"
@@ -31,31 +30,20 @@ resource "alicloud_eipanycast_anycast_eip_address" "default" {
   service_location         = "international"
   internet_charge_type     = "PayByTraffic"
   payment_type             = "PayAsYouGo"
-  tags {
-    tag_key   = "k1"
-    tag_value = "v1"
-  }
-  tags {
-    tag_key   = "k2"
-    tag_value = "v2"
-  }
-  tags {
-    tag_key   = "k3"
-    tag_value = "v3"
-  }
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `anycast_eip_address_name` - (Optional, Available since v1.113.0) Anycast EIP instance name.
-* `bandwidth` - (Optional, Computed, Available since v1.113.0)  The peak bandwidth of the Anycast EIP instance, in Mbps.
-* `description` - (Optional, Available since v1.113.0) Anycast EIP instance description.
-* `internet_charge_type` - (Optional, ForceNew, Available since v1.113.0) The billing method of Anycast EIP instance. "PayByBandwidth": refers to the method of billing based on traffic.
-* `payment_type` - (Optional, ForceNew, Computed, Available since v1.113.0) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode.
-* `service_location` - (Required, ForceNew, Available since v1.113.0) Anycast EIP instance access area. "international": Refers to areas outside of Mainland China.
-* `tags` - (Optional, Map) List of resource-bound tags.
+* `anycast_eip_address_name` - (Optional) Anycast EIP instance name.
+* `bandwidth` - (Optional, Computed)  The peak bandwidth of the Anycast EIP instance, in Mbps.
+* `description` - (Optional) Anycast EIP instance description.
+* `internet_charge_type` - (Optional, ForceNew) The billing method of Anycast EIP instance. "PayByBandwidth": refers to the method of billing based on traffic.
+* `payment_type` - (Optional, ForceNew, Computed) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode.
+* `resource_group_id` - (Optional, Computed, Available since v1.208.1) The ID of the resource group to which the instance belongs.
+* `service_location` - (Required, ForceNew) Anycast EIP instance access area. "international": Refers to areas outside of Mainland China.
+* `tags` - (Optional, Map, Available since v1.208.0) List of resource-bound tags.
 
 ## Attributes Reference
 

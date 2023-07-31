@@ -512,6 +512,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ipv6_address_count"},
 			},
+			"network_interface_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"cpu": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -1063,6 +1067,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 			ipv6SetList = append(ipv6SetList, ipv6Set["Ipv6Address"])
 		}
 
+		d.Set("network_interface_id", networkInterfaceId)
 		d.Set("ipv6_addresses", ipv6SetList)
 		d.Set("ipv6_address_count", len(ipv6SetList))
 		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
