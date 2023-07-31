@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -177,7 +178,7 @@ func setVolumeTags(client *connectivity.AliyunClient, resourceType TagResourceTy
 		}
 
 		if len(response.Disks.Disk) == 0 {
-			return WrapError(Error("no specified system disk"))
+			return WrapError(Error(fmt.Sprintf("The system disk cannot be queried in this instance %s. Please check whether you have permission to access the API DescribeDisks. Last response is: %v", d.Id(), response)))
 		}
 
 		var ids []string

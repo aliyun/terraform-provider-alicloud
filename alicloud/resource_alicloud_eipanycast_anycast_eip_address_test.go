@@ -523,6 +523,16 @@ func TestAccAlicloudEipanycastAnycastEipAddress_basic3705(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"anycast_eip_address_name": name + "_update",
 					"description":              "test_1",
 					"bandwidth":                "200",
@@ -606,6 +616,7 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 `, name)
 }
@@ -639,6 +650,7 @@ func TestAccAlicloudEipanycastAnycastEipAddress_basic3705_twin(t *testing.T) {
 					"service_location":         "international",
 					"internet_charge_type":     "PayByTraffic",
 					"payment_type":             "PayAsYouGo",
+					"resource_group_id":        "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -652,6 +664,7 @@ func TestAccAlicloudEipanycastAnycastEipAddress_basic3705_twin(t *testing.T) {
 						"service_location":         "international",
 						"internet_charge_type":     "PayByTraffic",
 						"payment_type":             "PayAsYouGo",
+						"resource_group_id":        CHECKSET,
 						"tags.%":                   "2",
 						"tags.Created":             "TF",
 						"tags.For":                 "Test",

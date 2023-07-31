@@ -57,6 +57,11 @@ func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
 				Default:      "PayAsYouGo",
 				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"service_location": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -124,7 +129,7 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 	d.SetId(fmt.Sprint(response["AnycastId"]))
 
 	eipanycastServiceV2 := EipanycastServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Allocated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -152,6 +157,7 @@ func resourceAliCloudEipanycastAnycastEipAddressRead(d *schema.ResourceData, met
 	d.Set("description", objectRaw["Description"])
 	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
 	d.Set("payment_type", convertEipanycastInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("service_location", objectRaw["ServiceLocation"])
 	d.Set("status", objectRaw["Status"])
 	tagsMaps := objectRaw["Tags"]
@@ -238,16 +244,49 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		eipanycastServiceV2 := EipanycastServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Allocated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Allocated", "Associated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, eipanycastServiceV2.EipanycastAnycastEipAddressStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("bandwidth")
 	}
-
 	update = false
-	if d.HasChange("tags") {
+	action = "ChangeResourceGroup"
+	conn, err = client.NewEipanycastClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["ResourceType"] = "ANYCASTEIPADDRESS"
+	if d.HasChange("resource_group_id") {
 		update = true
+		request["NewResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
+	}
+
+	if d.HasChange("tags") {
 		eipanycastServiceV2 := EipanycastServiceV2{client}
 		if err := eipanycastServiceV2.SetResourceTags(d, "ANYCASTEIPADDRESS"); err != nil {
 			return WrapError(err)

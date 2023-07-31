@@ -1195,7 +1195,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eipanycast_anycast_eip_address":                        resourceAliCloudEipanycastAnycastEipAddress(),
 			"alicloud_brain_industrial_pid_project":                          resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                                     resourceAlicloudCmsMonitorGroup(),
-			"alicloud_eipanycast_anycast_eip_address_attachment":             resourceAlicloudEipanycastAnycastEipAddressAttachment(),
+			"alicloud_eipanycast_anycast_eip_address_attachment":             resourceAliCloudEipanycastAnycastEipAddressAttachment(),
 			"alicloud_ram_saml_provider":                                     resourceAlicloudRamSamlProvider(),
 			"alicloud_quotas_application_info":                               resourceAliCloudQuotasQuotaApplication(),
 			"alicloud_cms_monitor_group_instances":                           resourceAlicloudCmsMonitorGroupInstances(),

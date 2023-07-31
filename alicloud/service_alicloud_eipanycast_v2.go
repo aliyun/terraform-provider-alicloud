@@ -2,7 +2,10 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -179,3 +182,89 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeEipanycastAnycastEipAddressAttachment <<< Encapsulated get interface for Eipanycast AnycastEipAddressAttachment.
+
+func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddressAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 4 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 4, len(parts)))
+	}
+	action := "DescribeAnycastEipAddress"
+	conn, err := client.NewEipanycastClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AnycastId"] = parts[0]
+	query["BindInstanceId"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.AnycastInstance"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddressAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.AnycastEipBindInfoList[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AnycastEipBindInfoList[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddressAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+	}
+
+	for _, item := range v.([]interface{}) {
+		vv := item.(map[string]interface{})
+		if parts[1]+parts[2]+parts[3] == fmt.Sprint(vv["BindInstanceId"], vv["BindInstanceRegionId"], vv["BindInstanceType"]) {
+			return vv, nil
+		}
+	}
+
+	return object, WrapErrorf(Error(GetNotFoundMessage("EipanycastAnycastEipAddressAttachment", id)), NotFoundWithResponse, response)
+}
+
+func (s *EipanycastServiceV2) EipanycastAnycastEipAddressAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEipanycastAnycastEipAddressAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEipanycastAnycastEipAddressAttachment >>> Encapsulated.

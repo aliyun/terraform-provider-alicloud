@@ -265,6 +265,7 @@ The following attributes are exported:
 * `memory` - The memory size of the instance. Unit: MiB.
 * `os_type` - The type of the operating system of the instance.
 * `os_name` - The name of the operating system of the instance.
+* `network_interface_id` - The ID of the ENI.
 * `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - The group number of the instance in a deployment set when the deployment set is use.
 
