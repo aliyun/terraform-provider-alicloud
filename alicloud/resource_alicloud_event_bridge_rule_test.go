@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -235,7 +234,7 @@ func TestAccAlicloudEventBridgeRule_basic0(t *testing.T) {
 							"push_retry_strategy": "BACKOFF_RETRY",
 							"dead_letter_queue": []map[string]interface{}{
 								{
-									"arn": "acs:mns:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + "/queues/rule-deadletterqueue",
+									"arn": "acs:mns:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":/queues/rule-deadletterqueue",
 								},
 							},
 							"param_list": []map[string]interface{}{
@@ -273,7 +272,7 @@ func TestAccAlicloudEventBridgeRule_basic0(t *testing.T) {
 							"push_retry_strategy": "EXPONENTIAL_DECAY_RETRY",
 							"dead_letter_queue": []map[string]interface{}{
 								{
-									"arn": "acs:mq:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + "/instances/myinstance/topic/mytopic",
+									"arn": "acs:mq:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":/instances/myinstance/topic/mytopic",
 								},
 							},
 							"param_list": []map[string]interface{}{
@@ -290,6 +289,45 @@ func TestAccAlicloudEventBridgeRule_basic0(t *testing.T) {
 									"form":         "CONSTANT",
 									"resource_key": "Network",
 									"value":        "PublicNetwork",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"targets.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"targets": []map[string]interface{}{
+						{
+							"endpoint":            "${local.fnf_endpoint}",
+							"type":                "acs.fnf",
+							"target_id":           "tf-test1",
+							"push_retry_strategy": "BACKOFF_RETRY",
+							"dead_letter_queue": []map[string]interface{}{
+								{
+									"arn": "acs:mq:" + "${data.alicloud_regions.default.regions.0.id}" + ":" + "${data.alicloud_account.default.id}" + ":/instances/myinstance/topic/mytopic",
+								},
+							},
+							"param_list": []map[string]interface{}{
+								{
+									"form":         "CONSTANT",
+									"resource_key": "FlowName",
+									"value":        "demoFlow",
+								},
+								{
+									"form":         "JSONPATH",
+									"resource_key": "Input",
+									"value":        "$.data.name",
+								},
+								{
+									"form":         "CONSTANT",
+									"resource_key": "RoleName",
+									"value":        "roleToEB",
 								},
 							},
 						},
@@ -321,28 +359,33 @@ var AlicloudEventBridgeRuleMap0 = map[string]string{
 
 func AlicloudEventBridgeRuleBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%[1]s"
-}
+	variable "name" {
+  		default = "%[1]s"
+	}
 
-data "alicloud_account" "default" {}
+	data "alicloud_account" "default" {
+	}
 
-locals {
-  mns_endpoint_a =format("acs:mns:%[2]s:%%s:queues/%%s",data.alicloud_account.default.id,alicloud_mns_queue.queue1.name) 
-  mns_endpoint_b =format("acs:mns:%[2]s:%%s:queues/%%s",data.alicloud_account.default.id,alicloud_mns_queue.queue2.name) 
-}
+	data "alicloud_regions" "default" {
+  		current = true
+	}
 
-resource "alicloud_event_bridge_event_bus" "default" {
-	event_bus_name = var.name
-}
+	resource "alicloud_event_bridge_event_bus" "default" {
+  		event_bus_name = var.name
+	}
 
-resource "alicloud_mns_queue" "queue1" {
-  name  = var.name
-}
+	resource "alicloud_mns_queue" "queue1" {
+  		name = var.name
+	}
 
-resource "alicloud_mns_queue" "queue2" {
-  name  = format("%%schange", var.name)
-}
+	resource "alicloud_mns_queue" "queue2" {
+  		name = format("%%schange", var.name)
+	}
 
+	locals {
+  		mns_endpoint_a = format("acs:mns:%[2]s:%%s:queues/%%s", data.alicloud_account.default.id, alicloud_mns_queue.queue1.name)
+  		mns_endpoint_b = format("acs:mns:%[2]s:%%s:queues/%%s", data.alicloud_account.default.id, alicloud_mns_queue.queue2.name)
+  		fnf_endpoint   = format("acs:fnf:%[2]s:%%s:flow/$${flow}", data.alicloud_account.default.id)
+	}
 `, name, defaultRegionToTest)
 }
