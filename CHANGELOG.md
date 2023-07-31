@@ -6,12 +6,12 @@ ENHANCEMENTS:
 - resource/alicloud_elasticsearch_instance: Supported auto renewal param auto_renew and auto_renew_duration for Elasticsearch Instance;data-source/alicloud_elasticsearch_zones: Add retry request. ([#6281](https://github.com/aliyun/terraform-provider-alicloud/issues/6281))
 - resource/alicloud_ga_accelerator: Added the field payment_type, cross_border_mode, cross_border_status, promotion_option_no. ([#6330](https://github.com/aliyun/terraform-provider-alicloud/issues/6330))
 - resource/alicloud_oss_bucket: Added the filed allow_same_action_overlap. ([#6338](https://github.com/aliyun/terraform-provider-alicloud/issues/6338))
-- resource/alicloud_polardb_cluster: poladb db support upgrad minor version. ([#6348](https://github.com/aliyun/terraform-provider-alicloud/issues/6348))
+- resource/alicloud_polardb_cluster: polardb db supports upgrading minor version. ([#6348](https://github.com/aliyun/terraform-provider-alicloud/issues/6348))
 - resource/alicloud_ga_basic_accelerator: Added the field payment_type, cross_border_status, promotion_option_no. ([#6349](https://github.com/aliyun/terraform-provider-alicloud/issues/6349))
 - resource/alicloud_nas_mount_target: add parameter vpc_id, network_type for completing the API parameters. ([#6355](https://github.com/aliyun/terraform-provider-alicloud/issues/6355))
 - resource/alicloud_oss_bucket: Supports access monitor. ([#6360](https://github.com/aliyun/terraform-provider-alicloud/issues/6360))
 - resource/alicloud_eipanycast_anycast_eip_address_attachment: add new attribute association_mode, pop_locations; resource/alicloud_instance: add new attribute network_interface_id; resource/alicloud_eipanycast_anycast_eip_address: add new attribute resource_group_id. ([#6361](https://github.com/aliyun/terraform-provider-alicloud/issues/6361))
-- resource/alicloud_oss_bucket: use validation fucntions in provider. ([#6363](https://github.com/aliyun/terraform-provider-alicloud/issues/6363))
+- resource/alicloud_oss_bucket: use validation functions in provider. ([#6363](https://github.com/aliyun/terraform-provider-alicloud/issues/6363))
 - resource/alicloud_ram_*: add the retry for flow control. ([#6366](https://github.com/aliyun/terraform-provider-alicloud/issues/6366))
 - data-source/alicloud_ram_*: add the retry for flow control. ([#6373](https://github.com/aliyun/terraform-provider-alicloud/issues/6373))
 - resource/alicloud_vswitch: modify ipv6_cidr_block; resource/alicloud_eip_address: optimize resource status determination; resource/alicloud_vpc_ha_vip: optimize test case. ([#6374](https://github.com/aliyun/terraform-provider-alicloud/issues/6374))
@@ -27,7 +27,7 @@ BUG FIXES:
 - resource/alicloud_gpdb_instance: Fixed ssl_enabled invalid error during creation. ([#6357](https://github.com/aliyun/terraform-provider-alicloud/issues/6357))
 - resource/alicloud_instance: Fixes the attribute auto_release_time inconsistent issue, and Improves the user_data setting. ([#6358](https://github.com/aliyun/terraform-provider-alicloud/issues/6358))
 - resource/alicloud_alb_server_group: optimized attribute servers. ([#6367](https://github.com/aliyun/terraform-provider-alicloud/issues/6367))
-- resource/alicloud_event_bridge_event_bus: Imporves the validation for the attribute event_bus_name; resource/alicloud_event_bridge_event_source: Fixes the diff error caused by attribute linked_external_source. ([#6370](https://github.com/aliyun/terraform-provider-alicloud/issues/6370))
+- resource/alicloud_event_bridge_event_bus: Improves the validation for the attribute event_bus_name; resource/alicloud_event_bridge_event_source: Fixes the diff error caused by attribute linked_external_source. ([#6370](https://github.com/aliyun/terraform-provider-alicloud/issues/6370))
 
 ## 1.208.0 (July 21, 2023)
 
