@@ -9,28 +9,38 @@ description: |-
 
 # alicloud_edas_application
 
-Creates an EDAS ecs application on EDAS. The application will be deployed when `group_id` and `war_url` are given.
+Creates an EDAS ecs application on EDAS, see [What is EDAS Application](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-insertapplication). The application will be deployed when `group_id` and `war_url` are given.
 
--> **NOTE:** Available since v1.82.0
+-> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_edas_cluster" "default" {
+  cluster_name      = var.name
+  cluster_type      = "2"
+  network_mode      = "2"
+  logical_region_id = data.alicloud_regions.default.regions.0.id
+  vpc_id            = alicloud_vpc.default.id
+}
+
 resource "alicloud_edas_application" "default" {
-  application_name  = "xxx"
-  cluster_id        = "xxx"
-  package_type      = "JAR"
-  build_pack_id     = xxx
-  descriotion       = "xxx"
-  health_check_url  = "xxx"
-  logical_region_id = "cn-xxxx:xxx"
-  component_ids     = xxx
-  ecu_info          = ["xxx"]
-  group_id          = "xxx"
-  package_version   = "xxx"
-  war_url           = "http://xxx"
+  application_name = var.name
+  cluster_id       = alicloud_edas_cluster.default.id
+  package_type     = "JAR"
 }
 ```
 

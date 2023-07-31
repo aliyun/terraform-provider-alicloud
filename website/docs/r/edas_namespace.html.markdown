@@ -7,22 +7,31 @@ description: |-
   Provides a Alicloud EDAS Namespace resource.
 ---
 
-# alicloud\_edas\_namespace
+# alicloud_edas_namespace
 
 Provides a EDAS Namespace resource.
 
 For information about EDAS Namespace and how to use it, see [What is Namespace](https://www.alibabacloud.com/help/en/enterprise-distributed-application-service/latest/insertorupdateregion).
 
--> **NOTE:** Available in v1.173.0+.
+-> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_edas_namespace" "example" {
-  namespace_logical_id = "example_value"
-  namespace_name       = "example_value"
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
+
+resource "alicloud_edas_namespace" "default" {
+  debug_enable         = false
+  description          = var.name
+  namespace_logical_id = "${data.alicloud_regions.default.regions.0.id}:example"
+  namespace_name       = var.name
 }
 ```
 
@@ -30,12 +39,12 @@ resource "alicloud_edas_namespace" "example" {
 
 The following arguments are supported:
 
-* `debug_enable` - (Optional, Computed) Specifies whether to enable remote debugging.
-* `description` - (Optional, Computed) The description of the namespace, The description can be up to `128` characters in length.
+* `debug_enable` - (Optional) Specifies whether to enable remote debugging.
+* `description` - (Optional) The description of the namespace, The description can be up to `128` characters in length.
 * `namespace_logical_id` - (Required, ForceNew) The ID of the namespace.
   - The ID of a custom namespace is in the `region ID:namespace identifier` format. An example is `cn-beijing:tdy218`.
   - The ID of the default namespace is in the `region ID` format. An example is cn-beijing.
-* `namespace_name` - (Required, Computed) The name of the namespace, The name can be up to `63` characters in length.
+* `namespace_name` - (Required) The name of the namespace, The name can be up to `63` characters in length.
 
 ## Attributes Reference
 
@@ -43,7 +52,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Namespace.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

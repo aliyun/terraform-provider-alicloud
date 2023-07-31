@@ -7,23 +7,34 @@ description: |-
   Provides an EDAS cluster resource.
 ---
 
-# alicloud\_edas\_cluster
+# alicloud_edas_cluster
 
-Provides an EDAS cluster resource.
+Provides an EDAS cluster resource, see [What is EDAS Cluster](https://www.alibabacloud.com/help/en/edas/developer-reference/api-edas-2017-08-01-insertcluster).
 
--> **NOTE:** Available in 1.82.0+
+-> **NOTE:** Available since v1.82.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
 resource "alicloud_edas_cluster" "default" {
-  cluster_name      = var.cluster_name
-  cluster_type      = var.cluster_type
-  network_mode      = var.network_mode
-  logical_region_id = var.logical_region_id
-  vpc_id            = var.vpc_id
+  cluster_name      = var.name
+  cluster_type      = "2"
+  network_mode      = "2"
+  logical_region_id = data.alicloud_regions.default.regions.0.id
+  vpc_id            = alicloud_vpc.default.id
 }
 ```
 
