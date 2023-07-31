@@ -5,7 +5,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -18,6 +22,99 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers(
+		"alicloud_event_bridge_event_source",
+		&resource.Sweeper{
+			Name: "alicloud_event_bridge_event_source",
+			F:    testSweepEventBridgeEventSource,
+		})
+}
+
+func testSweepEventBridgeEventSource(region string) error {
+	prefixes := []string{
+		"tf-testacc",
+	}
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "Error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "ListUserDefinedEventSources"
+	request := map[string]interface{}{
+		"RegionId": client.RegionId,
+		"Limit":    PageSizeLarge,
+	}
+	conn, err := client.NewEventbridgeClient()
+	if err != nil {
+		log.Println("new eventBridge client failed:", err)
+		return nil
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil || fmt.Sprint(response["Success"]) != "true" {
+		return WrapError(fmt.Errorf("ListUserDefinedEventSources failed. Response: %v. Error: %v", response, err))
+	}
+	resp, err := jsonpath.Get("$.Data.EventSourceList", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.EventSourceList", response)
+	}
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				EventBusName := ""
+				if val, exist := item["Name"]; exist {
+					EventBusName = val.(string)
+				}
+				if strings.Contains(strings.ToLower(EventBusName), strings.ToLower(prefix)) {
+					skip = false
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping EventBridge Source: %s", item["Name"])
+				continue
+			}
+		}
+		log.Printf("[INFO] Deleting EventBridge Source: %s", item["Name"])
+		action = "DeleteEventSource"
+		request = map[string]interface{}{
+			"EventSourceName": item["Name"],
+		}
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil || fmt.Sprint(response["Success"]) != "true" {
+			log.Printf("\n[ERROR] Deleting EventBridge source %s failed. Response: %v. Error: %v.", item["Name"], response, err)
+		}
+	}
+	return nil
+}
 
 func TestAccAlicloudEventBridgeEventSource_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -114,9 +211,10 @@ func TestAccAlicloudEventBridgeEventSource_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"linked_external_source"},
 			},
 		},
 	})
@@ -127,8 +225,8 @@ var AlicloudEventBridgeEventSourceMap0 = map[string]string{
 	"event_source_name":        CHECKSET,
 	"external_source_config.%": "0",
 	"external_source_type":     "",
-	"linked_external_source":   CHECKSET,
-	"description":              "",
+	//"linked_external_source":   CHECKSET,
+	"description": "",
 }
 
 func AlicloudEventBridgeEventSourceBasicDependence0(name string) string {

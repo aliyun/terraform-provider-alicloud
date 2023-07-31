@@ -108,7 +108,7 @@ func resourceAlicloudEventBridgeEventSourceRead(d *schema.ResourceData, meta int
 	eventbridgeService := EventbridgeService{client}
 	object, err := eventbridgeService.DescribeEventBridgeEventSource(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_source eventbridgeService.DescribeEventBridgeEventSource Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -121,7 +121,10 @@ func resourceAlicloudEventBridgeEventSourceRead(d *schema.ResourceData, meta int
 	d.Set("event_bus_name", object["EventBusName"])
 	d.Set("external_source_config", object["ExternalSourceConfig"])
 	d.Set("external_source_type", object["ExternalSourceType"])
-	d.Set("linked_external_source", object["LinkedExternalSource"])
+	// the attribute no longer is returned in the api
+	if v, ok := object["LinkedExternalSource"]; ok {
+		d.Set("linked_external_source", v)
+	}
 	return nil
 }
 func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -152,7 +155,7 @@ func resourceAlicloudEventBridgeEventSourceUpdate(d *schema.ResourceData, meta i
 		update = true
 	}
 	request["LinkedExternalSource"] = d.Get("linked_external_source")
-	if d.HasChange("linked_external_source") || d.IsNewResource() {
+	if d.HasChange("linked_external_source") {
 		update = true
 	}
 

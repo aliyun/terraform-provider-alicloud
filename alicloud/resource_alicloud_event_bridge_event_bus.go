@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -31,7 +29,7 @@ func resourceAlicloudEventBridgeEventBus() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 127),
+				ValidateFunc: StringLenBetween(0, 127),
 			},
 		},
 	}
@@ -82,7 +80,7 @@ func resourceAlicloudEventBridgeEventBusRead(d *schema.ResourceData, meta interf
 	eventbridgeService := EventbridgeService{client}
 	object, err := eventbridgeService.DescribeEventBridgeEventBus(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_event_bridge_event_bus eventbridgeService.DescribeEventBridgeEventBus Failed!!! %s", err)
 			d.SetId("")
 			return nil
