@@ -137,7 +137,7 @@ github.com/aliyun/aliyun-log-go-sdk
 # github.com/aliyun/aliyun-mns-go-sdk v0.0.0-20210305050620-d1b5875bda58
 ## explicit
 github.com/aliyun/aliyun-mns-go-sdk
-# github.com/aliyun/aliyun-oss-go-sdk v2.2.7+incompatible
+# github.com/aliyun/aliyun-oss-go-sdk v2.2.8+incompatible
 ## explicit
 github.com/aliyun/aliyun-oss-go-sdk/oss
 # github.com/aliyun/aliyun-tablestore-go-sdk v1.7.6
