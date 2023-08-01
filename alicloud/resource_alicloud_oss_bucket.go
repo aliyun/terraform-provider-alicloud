@@ -213,6 +213,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 											string(oss.StorageIA),
 											string(oss.StorageArchive),
 											string(oss.StorageColdArchive),
+											string(oss.StorageDeepColdArchive),
 										}, false),
 									},
 									"is_access_time": {
@@ -275,6 +276,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 											string(oss.StorageIA),
 											string(oss.StorageArchive),
 											string(oss.StorageColdArchive),
+											string(oss.StorageDeepColdArchive),
 										}, false),
 									},
 									"is_access_time": {
@@ -327,6 +329,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 					string(oss.StorageIA),
 					string(oss.StorageArchive),
 					string(oss.StorageColdArchive),
+					string(oss.StorageDeepColdArchive),
 				}, false),
 			},
 			"redundancy_type": {

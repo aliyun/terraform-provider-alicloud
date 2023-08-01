@@ -1457,6 +1457,170 @@ func TestAccAlicloudOssBucketAccessMonitor(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudOssBucketDeepColdArchive(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketConfigBasic)
+	hashcode3 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                     3,
+		"created_before_date":      "",
+		"storage_class":            "IA",
+		"is_access_time":           false,
+		"return_to_std_when_visit": false,
+	}))
+	hashcode4 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                     30,
+		"created_before_date":      "",
+		"storage_class":            "DeepColdArchive",
+		"is_access_time":           false,
+		"return_to_std_when_visit": false,
+	}))
+	hashcode6 := strconv.Itoa(transitionsHash(map[string]interface{}{
+		"days":                     5,
+		"storage_class":            "DeepColdArchive",
+		"is_access_time":           false,
+		"return_to_std_when_visit": false,
+	}))
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.OssDeepColdArchiveSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":        name,
+					"acl":           "public-read",
+					"storage_class": "DeepColdArchive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                  name,
+						"acl":                     "public-read",
+						"storage_class":           "DeepColdArchive",
+						"access_monitor.#":        "1",
+						"access_monitor.0.status": "Disabled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy", "lifecycle_rule_allow_same_action_overlap"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lifecycle_rule": []map[string]interface{}{
+						{
+							"id":      "rule3",
+							"prefix":  "path3/",
+							"enabled": "true",
+							"transitions": []map[string]interface{}{
+								{
+									"days":          "3",
+									"storage_class": "IA",
+								},
+								{
+									"days":          "30",
+									"storage_class": "DeepColdArchive",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lifecycle_rule.#":                                             "1",
+						"lifecycle_rule.0.id":                                          "rule3",
+						"lifecycle_rule.0.prefix":                                      "path3/",
+						"lifecycle_rule.0.enabled":                                     "true",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".days":          "3",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".storage_class": string(oss.StorageIA),
+						"lifecycle_rule.0.transitions." + hashcode4 + ".days":          "30",
+						"lifecycle_rule.0.transitions." + hashcode4 + ".storage_class": string(oss.StorageDeepColdArchive),
+					}),
+				),
+			},
+			// enable versioning
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"versioning": []map[string]interface{}{
+						{
+							"status": "Enabled",
+						},
+					},
+					"lifecycle_rule": []map[string]interface{}{
+						{
+							"id":      "rule3",
+							"prefix":  "path3/",
+							"enabled": "true",
+							"transitions": []map[string]interface{}{
+								{
+									"days":          "3",
+									"storage_class": "IA",
+								},
+								{
+									"days":          "30",
+									"storage_class": "DeepColdArchive",
+								},
+							},
+						},
+						{
+							"id":      "rule4",
+							"prefix":  "path4/",
+							"enabled": "true",
+							"noncurrent_version_transition": []map[string]string{
+								{
+									"days":          "5",
+									"storage_class": "DeepColdArchive",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"versioning.#":             "1",
+						"versioning.0.status":      "Enabled",
+						"lifecycle_rule.#":         "2",
+						"lifecycle_rule.0.id":      "rule3",
+						"lifecycle_rule.0.prefix":  "path3/",
+						"lifecycle_rule.0.enabled": "true",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".days":          "3",
+						"lifecycle_rule.0.transitions." + hashcode3 + ".storage_class": string(oss.StorageIA),
+						"lifecycle_rule.0.transitions." + hashcode4 + ".days":          "30",
+						"lifecycle_rule.0.transitions." + hashcode4 + ".storage_class": string(oss.StorageDeepColdArchive),
+
+						"lifecycle_rule.1.id":      "rule4",
+						"lifecycle_rule.1.prefix":  "path4/",
+						"lifecycle_rule.1.enabled": "true",
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode6 + ".days":          "5",
+						"lifecycle_rule.1.noncurrent_version_transition." + hashcode6 + ".storage_class": string(oss.StorageDeepColdArchive),
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceOssBucketConfigBasic(name string) string {
 	return fmt.Sprintf("")
 }
