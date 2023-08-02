@@ -534,6 +534,30 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
+func resourceDBInstanceConfigDependenceDowngrade(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PrePaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+`, name)
+}
+
 func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
@@ -1031,12 +1055,12 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"target_minor_version": "rds_postgres_1200_20230430",
+					"target_minor_version": "rds_postgres_1200_20230630",
 					"upgrade_time":         "Immediate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target_minor_version": "rds_postgres_1200_20230430",
+						"target_minor_version": "rds_postgres_1200_20230630",
 						"upgrade_time":         "Immediate",
 					}),
 				),
@@ -1283,6 +1307,16 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"auto_upgrade_minor_version": "Manual",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_upgrade_minor_version": "Manual",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1444,6 +1478,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 					"acl":                         "cert",
 					"replication_acl":             "cert",
 					"deletion_protection":         "false",
+					"auto_upgrade_minor_version":  "Auto",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1470,6 +1505,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 						"server_cert":                 CHECKSET,
 						"server_key":                  CHECKSET,
 						"deletion_protection":         "false",
+						"auto_upgrade_minor_version":  "Auto",
 					}),
 				),
 			},
@@ -2129,7 +2165,6 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 					"monitoring_period":        "60",
 					"security_group_ids":       "${alicloud_security_group.default.*.id}",
 					"role_arn":                 "${data.alicloud_ram_roles.default.roles.0.arn}",
-					"tde_status":               "Enabled",
 					//"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2140,6 +2175,14 @@ func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
 						"instance_name":            name,
 						//"vpc_id":                   CHECKSET,
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -2733,6 +2776,87 @@ func TestAccAlicloudRdsDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"force_restart"},
+			},
+		},
+	})
+}
+
+func TestAccAlicloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccDBInstanceConfig%d", rand.Intn(1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceConfigDependenceDowngrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "mysql.n4.medium.2c",
+					"instance_storage":         "100",
+					"instance_charge_type":     "Prepaid",
+					"period":                   "1",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"monitoring_period":        "60",
+					"db_instance_storage_type": "cloud_ssd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                     "MySQL",
+						"engine_version":             "8.0",
+						"instance_type":              CHECKSET,
+						"instance_storage":           CHECKSET,
+						"instance_charge_type":       CHECKSET,
+						"instance_name":              name,
+						"auto_upgrade_minor_version": "Auto",
+						"db_instance_storage_type":   "cloud_ssd",
+						"resource_group_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "mysql.n2.medium.2c",
+					"direction":     "Down",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "mysql.n2.medium.2c",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "Postpaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "Postpaid",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "direction", "auto_renew", "auto_renew_period"},
 			},
 		},
 	})

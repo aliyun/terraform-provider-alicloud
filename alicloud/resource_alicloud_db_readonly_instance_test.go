@@ -539,6 +539,86 @@ func TestAccAlicloudRdsDBReadonlyInstanceMySQL_updatePayType(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudRdsDBReadonlyInstanceMySQL_downgrade(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_readonly_instance.default"
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccDBInstance_mysql_%d", rand)
+	var DBReadonlyMap = map[string]string{}
+	ra := resourceAttrInit(resourceId, DBReadonlyMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBReadonlyInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBReadonlyInstanceConfigMySQLDependence_ro_downgrade)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"master_db_instance_id": "${alicloud_db_instance.default.id}",
+					"zone_id":               "${alicloud_db_instance.default.zone_id}",
+					"engine_version":        "${alicloud_db_instance.default.engine_version}",
+					"instance_type":         "mysqlro.n4.medium.1c",
+					"instance_storage":      "${alicloud_db_instance.default.instance_storage}",
+					"instance_name":         "${var.name}",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"instance_charge_type":  "Prepaid",
+					"period":                "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_db_instance_id": CHECKSET,
+						"zone_id":               CHECKSET,
+						"engine_version":        CHECKSET,
+						"instance_type":         CHECKSET,
+						"instance_storage":      CHECKSET,
+						"instance_name":         name,
+						"vswitch_id":            CHECKSET,
+						"instance_charge_type":  CHECKSET,
+						"period":                "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "mysqlro.n2.medium.1c",
+					"direction":     "Down",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "mysqlro.n2.medium.1c",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "Postpaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "auto_renew_period", "auto_renew", "direction"},
+			},
+		},
+	})
+}
+
 func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_updatePayType(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
@@ -883,6 +963,47 @@ data "alicloud_db_instance_classes" "read" {
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PrePaid"
     commodity_code = "rds_rordspre_public_cn"
+}
+`, name)
+}
+
+func resourceDBReadonlyInstanceConfigMySQLDependence_ro_downgrade(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+data "alicloud_db_zones" "default"{
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PrePaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PrePaid"
+}
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_db_instance" "default" {
+    engine = "MySQL"
+	engine_version = "8.0"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+	vswitch_id = data.alicloud_vswitches.default.ids.0
+	instance_name = var.name
 }
 `, name)
 }

@@ -271,6 +271,11 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Immediate", "MaintainTime"}, false),
 			},
+			"direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Up", "Down", "TempUpgrade", "Serverless"}, false),
+			},
 		},
 	}
 }
@@ -561,6 +566,9 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 		if v, ok := d.GetOk("instance_type"); ok && v.(string) != "" {
 			request["DBInstanceClass"] = v
 		}
+		if v, ok := d.GetOk("direction"); ok && v.(string) != "" {
+			request["Direction"] = v
+		}
 		if v, ok := d.GetOk("instance_storage"); ok {
 			request["DBInstanceStorage"] = v
 		}
@@ -591,6 +599,7 @@ func resourceAlicloudDBReadonlyInstanceUpdate(d *schema.ResourceData, meta inter
 			addDebug(action, response, request)
 			d.SetPartial("instance_type")
 			d.SetPartial("instance_storage")
+			d.SetPartial("db_instance_storage_type")
 			d.SetPartial("db_instance_storage_type")
 			d.SetPartial("effective_time")
 			return nil

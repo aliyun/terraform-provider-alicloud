@@ -326,7 +326,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Auto", "Manual"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("engine").(string) != "MySQL"
+					return d.Get("engine").(string) != "MySQL" && d.Get("engine").(string) != "PostgreSQL"
 				},
 			},
 			"db_instance_storage_type": {
@@ -368,7 +368,7 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"Enabled"}, false),
 				Optional:     true,
-				ForceNew:     true,
+				Computed:     true,
 			},
 			"ssl_status": {
 				Type:     schema.TypeString,
@@ -575,6 +575,11 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+			},
+			"direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Up", "Down", "TempUpgrade", "Serverless"}, false),
 			},
 		},
 	}
@@ -1331,6 +1336,9 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.HasChange("instance_type") {
 		update = true
+	}
+	if v, ok := d.GetOk("direction"); ok && v.(string) != "" {
+		request["Direction"] = v
 	}
 	request["DBInstanceClass"] = d.Get("instance_type")
 

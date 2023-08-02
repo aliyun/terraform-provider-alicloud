@@ -573,7 +573,7 @@ The following arguments are supported:
 * `zone_id_slave_b`- (Optional, ForceNew, Available in 1.101.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
 * `ssl_connection_string` - (Optional, Available in v1.198.0+) The internal or public endpoint for which the server certificate needs to be created or updated.
-* `tde_status` - (Optional, ForceNew, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
+* `tde_status` - (Optional, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. After TDE is turned on, it cannot be turned off. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 * `encryption_key` - (Optional, Available in 1.109.0+) The key id of the KMS. Used for encrypting a disk if not null. Only for PostgreSQL, MySQL and SQLServer.
 * `ca_type` - (Optional, Available in 1.124.1+) The type of the server certificate. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. If you set the SSLEnabled parameter to 1, the default value of this parameter is aliyun. Value range:
   - aliyun: a cloud certificate
@@ -670,6 +670,11 @@ The following arguments are supported:
 
 * `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
 * `role_arn` - (ForceNew, Optional, Available in 1.208.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role.
+* `direction` - (Optional, Available in 1.210.0+) The instance configuration type. Valid values:
+  - Up
+  - Down
+  - TempUpgrade
+  - Serverless
 
 ### `parameters`
 
