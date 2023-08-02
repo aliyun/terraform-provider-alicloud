@@ -37,7 +37,7 @@ func TestAccAlicloudArmsRemoteWrite_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_id":        CHECKSET,
-						"remote_write_yaml": "remote_write:\n- name: ArmsRemoteWrite\n  url: http://47.96.227.137:8080/prometheus/xxx/yyy/cn-hangzhou/api/v3/write\n  basic_auth: {username: 666, password: '******'}\n  write_relabel_configs:\n  - source_labels: [instance_id]\n    separator: ;\n    regex: si-6e2ca86444db4e55a7c1\n    replacement: $1\n    action: keep\n",
+						"remote_write_yaml": "remote_write:\n- name: ArmsRemoteWrite\n  url: http://47.96.227.137:8080/prometheus/xxx/yyy/cn-hangzhou/api/v3/write\n  basic_auth:\n    username: 666\n    password: '******'\n  write_relabel_configs:\n  - source_labels:\n    - instance_id\n    separator: ;\n    regex: si-6e2ca86444db4e55a7c1\n    replacement: $1\n    action: keep\n",
 					}),
 				),
 			},
@@ -47,7 +47,7 @@ func TestAccAlicloudArmsRemoteWrite_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"remote_write_yaml": "remote_write:\n- name: ArmsRemoteWrite\n  url: http://47.96.227.137:8080/prometheus/xxx/yyy/cn-hangzhou/api/v3/write\n  basic_auth: {username: 888, password: '******'}\n  write_relabel_configs:\n  - source_labels: [instance_id]\n    separator: ;\n    regex: si-6e2ca86444db4e55a7c1\n    replacement: $1\n    action: keep\n",
+						"remote_write_yaml": "remote_write:\n- name: ArmsRemoteWrite\n  url: http://47.96.227.137:8080/prometheus/xxx/yyy/cn-hangzhou/api/v3/write\n  basic_auth:\n    username: 888\n    password: '******'\n  write_relabel_configs:\n  - source_labels:\n    - instance_id\n    separator: ;\n    regex: si-6e2ca86444db4e55a7c1\n    replacement: $1\n    action: keep\n",
 					}),
 				),
 			},
@@ -70,28 +70,34 @@ func AlicloudArmsRemoteWriteBasicDependence0(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING"
+	data "alicloud_zones" "default" {
+	  available_resource_creation = "VSwitch"
 	}
-
-	data "alicloud_vswitches" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+	
+	data "alicloud_resource_manager_resource_groups" "default" {}
+	
+	resource "alicloud_vpc" "default" {
+	  vpc_name = var.name
 	}
-
-	data "alicloud_resource_manager_resource_groups" "default" {
+	
+	resource "alicloud_vswitch" "vswitch" {
+	  vpc_id       = alicloud_vpc.default.id
+	  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+	  zone_id      = data.alicloud_zones.default.zones.1.id
+	  vswitch_name = var.name
 	}
 
 	resource "alicloud_security_group" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
+  		vpc_id = alicloud_vpc.default.id
 	}
 
 	resource "alicloud_arms_prometheus" "default" {
   		cluster_type        = "ecs"
   		grafana_instance_id = "free"
-  		vpc_id              = data.alicloud_vpcs.default.ids.0
-  		vswitch_id          = data.alicloud_vswitches.default.ids.0
+  		vpc_id              = alicloud_vpc.default.id
+  		vswitch_id          = alicloud_vswitch.vswitch.id
   		security_group_id   = alicloud_security_group.default.id
-  		cluster_name        = "${var.name}-${data.alicloud_vpcs.default.ids.0}"
+  		cluster_name        = "${var.name}-${alicloud_vpc.default.id}"
   		resource_group_id   = data.alicloud_resource_manager_resource_groups.default.groups.0.id
 	}
 `, name)
