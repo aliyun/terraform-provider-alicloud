@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Express Connect Physical Connection resource.
 ---
 
-# alicloud\_express\_connect\_physical\_connection
+# alicloud_express_connect_physical_connection
 
 Provides a Express Connect Physical Connection resource.
 
 For information about Express Connect Physical Connection and how to use it, see [What is Physical Connection](https://www.alibabacloud.com/help/doc-detail/44852.htm).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
@@ -48,7 +48,7 @@ resource "alicloud_express_connect_physical_connection" "international" {
 The following arguments are supported:
 
 * `access_point_id` - (Required, ForceNew) The Physical Leased Line Access Point ID.
-* `bandwidth` - (Optional, Computed) On the Bandwidth of the ECC Service and Physical Connection.
+* `bandwidth` - (Optional) On the Bandwidth of the ECC Service and Physical Connection.
 * `circuit_code` - (Optional) Operators for Physical Connection Circuit Provided Coding.
 * `description` - (Optional) The Physical Connection to Which the Description.
 * `line_operator` - (Required) Provides Access to the Physical Line Operator. Valid values:
@@ -73,8 +73,8 @@ The following arguments are supported:
 **NOTE:** From in v1.185.0+, The `40GBase-LR` and `100GBase-LR` is valid. and Set these values based on the water levels of background ports. For details about the water levels, contact the business manager.
 
 * `redundant_physical_connection_id` - (Optional) Redundant Physical Connection to Which the ID.
-* `status` - (Optional, Computed) Resources on Behalf of a State of the Resource Attribute Field. Valid values: `Canceled`, `Enabled`, `Terminated`.
-* `type` - (Optional, Computed, ForceNew) Physical Private Line of Type. Default Value: VPC.
+* `status` - (Optional) Resources on Behalf of a State of the Resource Attribute Field. Valid values: `Canceled`, `Enabled`, `Terminated`.
+* `type` - (Optional, ForceNew) Physical Private Line of Type. Default Value: VPC.
 
 ## Attributes Reference
 
@@ -82,7 +82,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Physical Connection.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

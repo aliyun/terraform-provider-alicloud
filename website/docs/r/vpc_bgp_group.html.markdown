@@ -7,42 +7,49 @@ description: |-
   Provides a Alicloud VPC Bgp Group resource.
 ---
 
-# alicloud\_vpc\_bgp\_group
+# alicloud_vpc_bgp_group
 
 Provides a VPC Bgp Group resource.
 
 For information about VPC Bgp Group and how to use it, see [What is Bgp Group](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
 
--> **NOTE:** Available in v1.152.0+.
+-> **NOTE:** Available since v1.152.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_express_connect_physical_connections" "example" {}
-
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_express_connect_physical_connections" "example" {
+  name_regex = "^preserved-NODELETING"
+}
+resource "random_integer" "vlan_id" {
+  max = 2999
+  min = 1
+}
 resource "alicloud_express_connect_virtual_border_router" "example" {
   local_gateway_ip           = "10.0.0.1"
   peer_gateway_ip            = "10.0.0.2"
   peering_subnet_mask        = "255.255.255.252"
   physical_connection_id     = data.alicloud_express_connect_physical_connections.example.connections.0.id
   virtual_border_router_name = var.name
-  vlan_id                    = 120
+  vlan_id                    = random_integer.vlan_id.id
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
 }
 
-resource "alicloud_vpc_bgp_group" "default" {
+resource "alicloud_vpc_bgp_group" "example" {
   auth_key       = "YourPassword+12345678"
-  bgp_group_name = "example_value"
-  description    = "example_value"
-  local_asn      = 64512
+  bgp_group_name = var.name
+  description    = var.name
   peer_asn       = 1111
   router_id      = alicloud_express_connect_virtual_border_router.example.id
+  is_fake_asn    = true
 }
-
 ```
 
 ## Argument Reference
@@ -52,8 +59,8 @@ The following arguments are supported:
 * `auth_key` - (Optional) The authentication key of the BGP group.
 * `bgp_group_name` - (Optional) The name of the BGP group. The name must be `2` to `128` characters in length and can contain digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter but cannot start with `http://` or `https://`.
 * `description` - (Optional) The description of the BGP group. The description must be `2` to `256` characters in length. It must start with a letter but cannot start with `http://` or `https://`.
-* `is_fake_asn` - (Optional, Computed) The is fake asn. A router that runs BGP typically belongs to only one AS. In some cases, for example, the AS needs to be migrated or is merged with another AS, a new AS number replaces the original one.
-* `local_asn` - (Optional, Computed) The AS number on the Alibaba Cloud side.
+* `is_fake_asn` - (Optional) The is fake asn. A router that runs BGP typically belongs to only one AS. In some cases, for example, the AS needs to be migrated or is merged with another AS, a new AS number replaces the original one.
+* `local_asn` - (Optional) The AS number on the Alibaba Cloud side.
 * `peer_asn` - (Required) The AS number of the BGP peer.
 * `router_id` - (Required, ForceNew) The ID of the VBR.
 
@@ -64,7 +71,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Bgp Group.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

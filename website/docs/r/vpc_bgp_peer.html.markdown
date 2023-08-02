@@ -7,45 +7,53 @@ description: |-
   Provides a Alicloud VPC Bgp Peer resource.
 ---
 
-# alicloud\_vpc\_bgp\_peer
+# alicloud_vpc_bgp_peer
 
 Provides a VPC Bgp Peer resource.
 
 For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
 
--> **NOTE:** Available in v1.153.0+.
+-> **NOTE:** Available since v1.153.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_express_connect_physical_connections" "default" {}
-
-resource "alicloud_express_connect_virtual_border_router" "default" {
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_express_connect_physical_connections" "example" {
+  name_regex = "^preserved-NODELETING"
+}
+resource "random_integer" "vlan_id" {
+  max = 2999
+  min = 1
+}
+resource "alicloud_express_connect_virtual_border_router" "example" {
   local_gateway_ip           = "10.0.0.1"
   peer_gateway_ip            = "10.0.0.2"
   peering_subnet_mask        = "255.255.255.252"
-  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
-  virtual_border_router_name = "example_value"
-  vlan_id                    = 120
+  physical_connection_id     = data.alicloud_express_connect_physical_connections.example.connections.0.id
+  virtual_border_router_name = var.name
+  vlan_id                    = random_integer.vlan_id.id
   min_rx_interval            = 1000
   min_tx_interval            = 1000
   detect_multiplier          = 10
 }
 
-resource "alicloud_vpc_bgp_group" "default" {
+resource "alicloud_vpc_bgp_group" "example" {
   auth_key       = "YourPassword+12345678"
-  bgp_group_name = "example_value"
-  description    = "example_value"
-  local_asn      = 64512
+  bgp_group_name = var.name
+  description    = var.name
   peer_asn       = 1111
-  router_id      = alicloud_express_connect_virtual_border_router.default.id
+  router_id      = alicloud_express_connect_virtual_border_router.example.id
+  is_fake_asn    = true
 }
 
-resource "alicloud_vpc_bgp_peer" "default" {
+resource "alicloud_vpc_bgp_peer" "example" {
   bfd_multi_hop   = "10"
-  bgp_group_id    = alicloud_vpc_bgp_group.default.id
+  bgp_group_id    = alicloud_vpc_bgp_group.example.id
   enable_bfd      = true
   ip_version      = "IPV4"
   peer_ip_address = "1.1.1.1"
@@ -59,7 +67,7 @@ The following arguments are supported:
 * `bfd_multi_hop` - (Optional) The BFD hop count. Valid values: `1` to `255`. **NOTE:** The attribute is valid when the attribute `enable_bfd` is `true`. The parameter specifies the maximum number of network devices that a packet can traverse from the source to the destination. You can set a proper value based on the factors that affect the physical connection.
 * `bgp_group_id` - (Required, ForceNew) The ID of the BGP group.
 * `enable_bfd` - (Optional) Specifies whether to enable the Bidirectional Forwarding Detection (BFD) feature.
-* `ip_version` - (Optional, ForceNew, Computed) The IP version.
+* `ip_version` - (Optional, ForceNew) The IP version.
 * `peer_ip_address` - (Optional) The IP address of the BGP peer.
 
 ## Attributes Reference
@@ -69,7 +77,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Bgp Peer.
 * `status` - The status of the BGP peer.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
