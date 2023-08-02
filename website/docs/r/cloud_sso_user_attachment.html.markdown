@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud SSO User Attachment resource.
 ---
 
-# alicloud\_cloud\_sso\_user\_attachment
+# alicloud_cloud_sso_user_attachment
 
 Provides a Cloud SSO User Attachment resource.
 
-For information about Cloud SSO User Attachment and how to use it, see [What is User Attachment](https://www.alibabacloud.com/help/en/doc-detail/264683.htm).
+For information about Cloud SSO User Attachment and how to use it, see [What is User Attachment](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-addusertogroup).
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -23,9 +23,11 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example-name"
+  default = "tf-example"
 }
-
+provider "alicloud" {
+  region = "cn-shanghai"
+}
 data "alicloud_cloud_sso_directories" "default" {}
 
 resource "alicloud_cloud_sso_directory" "default" {
@@ -33,23 +35,25 @@ resource "alicloud_cloud_sso_directory" "default" {
   directory_name = var.name
 }
 
-resource "alicloud_cloud_sso_user" "default" {
+locals {
   directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+}
+resource "alicloud_cloud_sso_user" "default" {
+  directory_id = local.directory_id
   user_name    = var.name
 }
 
 resource "alicloud_cloud_sso_group" "default" {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+  directory_id = local.directory_id
   group_name   = var.name
   description  = var.name
 }
 
 resource "alicloud_cloud_sso_user_attachment" "default" {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+  directory_id = local.directory_id
   user_id      = alicloud_cloud_sso_user.default.user_id
   group_id     = alicloud_cloud_sso_group.default.group_id
 }
-
 ```
 
 ## Argument Reference
