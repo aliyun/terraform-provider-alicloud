@@ -13,41 +13,49 @@ Provides a Express Connect Virtual Physical Connection resource.
 
 For information about Express Connect Virtual Physical Connection and how to use it, see [What is Virtual Physical Connection](https://www.alibabacloud.com/help/en/express-connect/latest/createvirtualphysicalconnection#doc-api-Vpc-CreateVirtualPhysicalConnection).
 
--> **NOTE:** Available in v1.196.0+.
+-> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_express_connect_physical_connections" "default" {
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_express_connect_physical_connections" "example" {
   name_regex = "^preserved-NODELETING"
 }
-resource "alicloud_express_connect_virtual_physical_connection" "default" {
-  virtual_physical_connection_name = "amp_resource_test"
-  description                      = "amp_resource_test"
+resource "random_integer" "vlan_id" {
+  max = 2999
+  min = 1
+}
+data "alicloud_account" "default" {}
+resource "alicloud_express_connect_virtual_physical_connection" "example" {
+  virtual_physical_connection_name = var.name
+  description                      = var.name
   order_mode                       = "PayByPhysicalConnectionOwner"
-  parent_physical_connection_id    = data.alicloud_express_connect_physical_connections.default.ids.0
+  parent_physical_connection_id    = data.alicloud_express_connect_physical_connections.example.ids.0
   spec                             = "50M"
-  vlan_id                          = 789
-  vpconn_ali_uid                   = 1234567890
+  vlan_id                          = random_integer.vlan_id.id
+  vpconn_ali_uid                   = data.alicloud_account.default.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (ForceNew,Optional) The description of the physical connection.
+* `description` - (Optional, ForceNew) The description of the physical connection.
 * `expect_spec` - (Optional) The estimated bandwidth value of the shared line. Valid values: `50M`, `100M`, `200M`, `300M`, `400M`, `500M`, `1G`, `2G`, `5G`, `8G`, and `10G`. **Note**: By default, the values of 2G, 5G, 8G, and 10G are unavailable. If you want to specify these values, contact your customer manager. Unit: **M** indicates Mbps, **G** indicates Gbps.
-* `order_mode` - (Required,ForceNew) The payment method of shared dedicated line. Value:
+* `order_mode` - (Required, ForceNew) The payment method of shared dedicated line. Value:
   - **PayByPhysicalConnectionOwner**: indicates that the owner of the physical line associated with the shared line pays.
   - **PayByVirtualPhysicalConnectionOwner**: indicates that the owner of the shared line pays.
-* `parent_physical_connection_id` - (Required,ForceNew,Computed) The ID of the instance of the physical connection.
-* `resource_group_id` - (ForceNew,Optional,) The resource group id.
-* `spec` - (Required,ForceNew) The bandwidth value of the shared line. Valid values: `50M`, `100M`, `200M`, `300M`, `400M`, `500M`, `1G`, `2G`, `5G`, `8G`, and `10G`. **Note**: By default, the values of 2G, 5G, 8G, and 10G are unavailable. If you want to specify these values, contact your customer manager. Unit: **M** indicates Mbps, **G** indicates Gbps.
-* `virtual_physical_connection_name` - (ForceNew,Optional) The name of the physical connection.
+* `parent_physical_connection_id` - (Required, ForceNew) The ID of the instance of the physical connection.
+* `resource_group_id` - (Optional, ForceNew) The resource group id.
+* `spec` - (Required, ForceNew) The bandwidth value of the shared line. Valid values: `50M`, `100M`, `200M`, `300M`, `400M`, `500M`, `1G`, `2G`, `5G`, `8G`, and `10G`. **Note**: By default, the values of 2G, 5G, 8G, and 10G are unavailable. If you want to specify these values, contact your customer manager. Unit: **M** indicates Mbps, **G** indicates Gbps.
+* `virtual_physical_connection_name` - (Optional, ForceNew) The name of the physical connection.
 * `vlan_id` - (Required) The VLAN ID of the shared leased line. Valid values: `0` to `2999`.
-* `vpconn_ali_uid` - (Required,ForceNew) The ID of the Alibaba Cloud account (primary account) of the owner of the shared line.
+* `vpconn_ali_uid` - (Required, ForceNew) The ID of the Alibaba Cloud account (primary account) of the owner of the shared line.
 * `dry_run` - (Optional) Specifies whether to precheck the API request. Valid values: `true` and `false`.
 
 
@@ -73,7 +81,7 @@ The following attributes are exported:
 * `status` - The status of the resource
 * `virtual_physical_connection_status` - The business status of the shared line. Value:-**Confirmed**: The shared line has been Confirmed to receive.-**UnConfirmed**: The shared line has not been confirmed to be received.-**Deleted**: The shared line has been Deleted.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Virtual Physical Connection.
