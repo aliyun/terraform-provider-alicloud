@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud SSO SCIM Server Credential resource.
 ---
 
-# alicloud\_cloud\_sso\_scim\_server\_credential
+# alicloud_cloud_sso_scim_server_credential
 
 Provides a Cloud SSO SCIM Server Credential resource.
 
-For information about Cloud SSO SCIM Server Credential and how to use it, see [What is Cloud SSO SCIM Server Credential](https://www.alibabacloud.com/help/doc-detail/264937.html).
+For information about Cloud SSO SCIM Server Credential and how to use it, see [What is Cloud SSO SCIM Server Credential](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-createscimservercredential).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
@@ -24,17 +24,25 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example-value"
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-shanghai"
 }
 data "alicloud_cloud_sso_directories" "default" {}
+
 resource "alicloud_cloud_sso_directory" "default" {
   count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
   directory_name = var.name
 }
-resource "alicloud_cloud_sso_scim_server_credential" "default" {
+
+locals {
   directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
 }
 
+resource "alicloud_cloud_sso_scim_server_credential" "default" {
+  directory_id = local.directory_id
+}
 ```
 
 ## Argument Reference
@@ -42,7 +50,7 @@ resource "alicloud_cloud_sso_scim_server_credential" "default" {
 The following arguments are supported:
 
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `status` - (Optional, Computed) The Status of the resource. Valid values: `Disabled`, `Enabled`.
+* `status` - (Optional) The Status of the resource. Valid values: `Disabled`, `Enabled`.
 
 ## Attributes Reference
 

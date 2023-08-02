@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Sso Group resource.
 ---
 
-# alicloud\_cloud\_sso\_group
+# alicloud_cloud_sso_group
 
 Provides a Cloud SSO Group resource.
 
-For information about Cloud SSO Group and how to use it, see [What is Group](https://www.alibabacloud.com/help/doc-detail/264683.html).
+For information about Cloud SSO Group and how to use it, see [What is Group](https://www.alibabacloud.com/help/en/cloudsso/latest/api-cloudsso-2021-05-15-creategroup).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
@@ -21,15 +21,24 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example-value"
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-shanghai"
 }
 data "alicloud_cloud_sso_directories" "default" {}
+
 resource "alicloud_cloud_sso_directory" "default" {
   count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
   directory_name = var.name
 }
-resource "alicloud_cloud_sso_group" "default" {
+
+locals {
   directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
+}
+
+resource "alicloud_cloud_sso_group" "default" {
+  directory_id = local.directory_id
   group_name   = var.name
   description  = var.name
 }
