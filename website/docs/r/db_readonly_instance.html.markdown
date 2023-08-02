@@ -159,6 +159,11 @@ The following arguments are supported:
 * `effective_time` - (Optional, Available since v1.207.2) The method to change.  Default value: Immediate. Valid values:
   - Immediate: The change immediately takes effect.
   - MaintainTime: The change takes effect during the specified maintenance window. For more information, see ModifyDBInstanceMaintainTime.
+* `direction` - (Optional, Available in 1.210.0+) The instance configuration type. Valid values:
+  - Up
+  - Down
+  - TempUpgrade
+  - Serverless
 
 ### `parameters`
 
