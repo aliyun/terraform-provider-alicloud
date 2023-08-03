@@ -856,6 +856,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_kms_instance":                                resourceAliCloudKmsInstance(),
 			"alicloud_vpc_gateway_endpoint_route_table_attachment": resourceAliCloudVpcGatewayEndpointRouteTableAttachment(),
 			"alicloud_ens_instance":                                resourceAliCloudEnsInstance(),
 			"alicloud_vpc_gateway_endpoint":                        resourceAliCloudVpcGatewayEndpoint(),
