@@ -32,59 +32,25 @@ func TestAccAlicloudKmsInstance_basic3873(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_num":      "1",
-					"key_num":      "1000",
-					"secret_num":   "0",
-					"spec":         "1000",
-					"product_type": "kms_ddi_public_cn",
+					"vpc_num":         "1",
+					"key_num":         "1000",
+					"secret_num":      "0",
+					"spec":            "1000",
+					"product_type":    "kms_ddi_public_cn",
+					"renew_status":    "AutoRenewal",
+					"product_version": "3",
+					"renew_period":    "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_num":      "1",
-						"key_num":      "1000",
-						"secret_num":   "0",
-						"spec":         "1000",
-						"product_type": "kms_ddi_public_cn",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_num": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_num": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"key_num": "1000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"key_num": "1000",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"secret_num": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"secret_num": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"spec": "1000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"spec": "1000",
+						"vpc_num":         "1",
+						"key_num":         "1000",
+						"secret_num":      "0",
+						"spec":            "1000",
+						"product_type":    "kms_ddi_public_cn",
+						"renew_status":    "AutoRenewal",
+						"product_version": "3",
+						"renew_period":    "3",
 					}),
 				),
 			},
@@ -131,7 +97,7 @@ func TestAccAlicloudKmsInstance_basic3873(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_num":         "1",
-					"key_num":         "1000",
+					"key_num":         "3000",
 					"secret_num":      "0",
 					"spec":            "1000",
 					"renew_status":    "AutoRenewal",
@@ -142,7 +108,7 @@ func TestAccAlicloudKmsInstance_basic3873(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vpc_num":         "1",
-						"key_num":         "1000",
+						"key_num":         "3000",
 						"secret_num":      "0",
 						"spec":            "1000",
 						"renew_status":    "AutoRenewal",
