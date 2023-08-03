@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -19,7 +21,11 @@ func resourceAlicloudRamUser() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
@@ -37,15 +43,15 @@ func resourceAlicloudRamUser() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"force": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
 			"comments": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringLenBetween(0, 128),
+			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 		},
 	}
@@ -58,15 +64,19 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	request := ram.CreateCreateUserRequest()
 	request.RegionId = client.RegionId
 	request.UserName = d.Get("name").(string)
+
 	if v, ok := d.GetOk("display_name"); ok {
 		request.DisplayName = v.(string)
 	}
+
 	if v, ok := d.GetOk("mobile"); ok {
 		request.MobilePhone = v.(string)
 	}
+
 	if v, ok := d.GetOk("email"); ok {
 		request.Email = v.(string)
 	}
+
 	if v, ok := d.GetOk("comments"); ok {
 		request.Comments = v.(string)
 	}
@@ -101,52 +111,79 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
+
 	return resourceAlicloudRamUserRead(d, meta)
 }
 
 func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	request := ram.CreateUpdateUserRequest()
-	request.RegionId = client.RegionId
-	request.UserName = d.Get("name").(string)
-	request.NewUserName = d.Get("name").(string)
-
+	var response map[string]interface{}
 	update := false
 
-	if d.HasChange("name") && !d.IsNewResource() {
-		ov, nv := d.GetChange("name")
-		request.UserName = ov.(string)
-		request.NewUserName = nv.(string)
+	request := map[string]interface{}{
+		"UserName":    d.Get("name"),
+		"NewUserName": d.Get("name"),
+	}
+
+	if !d.IsNewResource() && d.HasChange("name") {
 		update = true
+
+		oldName, newName := d.GetChange("name")
+		request["UserName"] = oldName.(string)
+		request["NewUserName"] = newName.(string)
 	}
 
 	if d.HasChange("display_name") {
-		request.NewDisplayName = d.Get("display_name").(string)
 		update = true
+
+		if v, ok := d.GetOk("display_name"); ok {
+			request["NewDisplayName"] = v
+		} else {
+			request["NewDisplayName"] = tea.String("")
+		}
 	}
 
 	if d.HasChange("mobile") {
-		request.NewMobilePhone = d.Get("mobile").(string)
 		update = true
+		if v, ok := d.GetOk("mobile"); ok {
+			request["NewMobilePhone"] = v
+		} else {
+			request["NewMobilePhone"] = tea.String("")
+		}
 	}
 
 	if d.HasChange("email") {
-		request.NewEmail = d.Get("email").(string)
 		update = true
+
+		if v, ok := d.GetOk("email"); ok {
+			request["NewEmail"] = v
+		} else {
+			request["NewEmail"] = tea.String("")
+		}
 	}
 
 	if d.HasChange("comments") {
-		request.NewComments = d.Get("comments").(string)
 		update = true
+
+		if v, ok := d.GetOk("comments"); ok {
+			request["NewComments"] = v
+		} else {
+			request["NewComments"] = tea.String("")
+		}
 	}
 
 	if update {
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.UpdateUser(request)
-			})
+		action := "UpdateUser"
+		conn, err := client.NewRamClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -154,12 +191,12 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
+		addDebug(action, response, request)
 
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -185,6 +222,7 @@ func resourceAlicloudRamUserRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("mobile", object.MobilePhone)
 	d.Set("email", object.Email)
 	d.Set("comments", object.Comments)
+
 	return nil
 }
 

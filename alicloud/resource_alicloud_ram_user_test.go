@@ -183,9 +183,8 @@ func TestAccAlicloudRAMUser(t *testing.T) {
 
 		// module name
 		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckRamUserDestroy,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckRamUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccRamUserNameConfig(randInt),
@@ -194,12 +193,6 @@ func TestAccAlicloudRAMUser(t *testing.T) {
 						"name": fmt.Sprintf("tf-testAcc%sRamUserConfig-%d", defaultRegionToTest, randInt),
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force"},
 			},
 			{
 				Config: testAccRamUserDisplayNameConfig(randInt),
@@ -234,6 +227,38 @@ func TestAccAlicloudRAMUser(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccRamUserEmailConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"comments": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserMobileConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"email": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserDisplayNameConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mobile": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccRamUserNameConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"display_name": REMOVEKEY,
+					}),
+				),
+			},
+			{
 				Config: testAccRamUserConfig(randInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -244,6 +269,24 @@ func TestAccAlicloudRAMUser(t *testing.T) {
 						"comments":     "yoyoyo_all",
 					}),
 				),
+			},
+			{
+				Config: testAccRamUserNameConfig(randInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":         fmt.Sprintf("tf-testAcc%sRamUserConfig-%d", defaultRegionToTest, randInt),
+						"display_name": REMOVEKEY,
+						"mobile":       REMOVEKEY,
+						"email":        REMOVEKEY,
+						"comments":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -305,55 +348,61 @@ func testAccCheckRamUserDestroy(s *terraform.State) error {
 func testAccRamUserNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d"
-	}`, defaultRegionToTest, rand)
+  		name = "tf-testAcc%sRamUserConfig-%d"
+	}
+`, defaultRegionToTest, rand)
 }
 
 func testAccRamUserDisplayNameConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d"
-	  display_name = "displayname"
-	}`, defaultRegionToTest, rand)
+  		name         = "tf-testAcc%sRamUserConfig-%d"
+  		display_name = "displayname"
+	}
+`, defaultRegionToTest, rand)
 }
 
 func testAccRamUserMobileConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	}`, defaultRegionToTest, rand)
+  		name         = "tf-testAcc%sRamUserConfig-%d"
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+	}
+`, defaultRegionToTest, rand)
 }
 
 func testAccRamUserEmailConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	}`, defaultRegionToTest, rand)
+  		name         = "tf-testAcc%sRamUserConfig-%d"
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+  		email        = "hello.uuu@aaa.com"
+	}
+`, defaultRegionToTest, rand)
 }
 
 func testAccRamUserCommentsConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}`, defaultRegionToTest, rand)
+  		name         = "tf-testAcc%sRamUserConfig-%d"
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+  		email        = "hello.uuu@aaa.com"
+  		comments     = "yoyoyo"
+	}
+`, defaultRegionToTest, rand)
 }
 
 func testAccRamUserConfig(rand int) string {
 	return fmt.Sprintf(`
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamUserConfig-%d_all"
-	  display_name = "displayname_all"
-	  mobile = "86-18888888889"
-	  email = "hello.uuu@aaa_all.com"
-	  comments = "yoyoyo_all"
-	}`, defaultRegionToTest, rand)
+  		name         = "tf-testAcc%sRamUserConfig-%d_all"
+  		display_name = "displayname_all"
+  		mobile       = "86-18888888889"
+  		email        = "hello.uuu@aaa_all.com"
+  		comments     = "yoyoyo_all"
+	}
+`, defaultRegionToTest, rand)
 }
