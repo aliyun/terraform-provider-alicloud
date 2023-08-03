@@ -202,16 +202,16 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 	request["ClientToken"] = buildClientToken(action)
-	if d.HasChange("") {
+	if d.HasChange("vpc_num") {
 		update = true
 	}
-	if d.HasChange("") {
+	if d.HasChange("spec") {
 		update = true
 	}
-	if d.HasChange("") {
+	if d.HasChange("secret_num") {
 		update = true
 	}
-	if d.HasChange("") {
+	if d.HasChange("key_num") {
 		update = true
 	}
 	request["Parameter"] = []map[string]string{
