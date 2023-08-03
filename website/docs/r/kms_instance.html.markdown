@@ -43,7 +43,6 @@ Terraform cannot destroy resource `alicloud_kms_instance`. Terraform will remove
 
 The following arguments are supported:
 * `key_num` - (Required) Maximum number of stored keys.
-* `payment_type` - (Optional, ForceNew, Computed) Payment type is Prepaid.
 * `product_type` - (Required) KMS instance type (China /International ).
 * `product_version` - (Optional) KMS Instance commodity type (software/hardware).
 * `renew_period` - (Optional) Automatic renewal period, in months.

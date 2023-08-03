@@ -40,12 +40,6 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"payment_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
 			"product_type": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -57,9 +51,8 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Default:  "3",
 			},
 			"renew_period": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringLenBetween(1, 36),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"renew_status": {
 				Type:         schema.TypeString,
@@ -68,9 +61,8 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 			},
 			"secret_num": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringLenBetween(0, 100000),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 			"spec": {
 				Type:         schema.TypeString,
@@ -78,9 +70,8 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"1000", "2000", "4000"}, false),
 			},
 			"vpc_num": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringLenBetween(1, 10000),
+				Type:     schema.TypeString,
+				Required: true,
 			},
 		},
 	}

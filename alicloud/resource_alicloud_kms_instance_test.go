@@ -29,7 +29,6 @@ func TestAccAlicloudKmsInstance_basic3873(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -166,7 +165,6 @@ func TestAccAlicloudKmsInstance_basic3873(t *testing.T) {
 var AlicloudKmsInstanceMap3873 = map[string]string{
 	"create_time":   CHECKSET,
 	"instance_name": CHECKSET,
-	"payment_type":  CHECKSET,
 }
 
 func AlicloudKmsInstanceBasicDependence3873(name string) string {
@@ -198,7 +196,6 @@ func TestAccAlicloudKmsInstance_basic3873_twin(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
