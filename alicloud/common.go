@@ -883,6 +883,15 @@ func ParseResourceId(id string, length int) (parts []string, err error) {
 	return parts, err
 }
 
+func ParseResourceIdN(id string, length int) (parts []string, err error) {
+	parts = strings.SplitN(id, ":", length)
+
+	if len(parts) != length {
+		err = WrapError(fmt.Errorf("Invalid Resource Id %s. Expected parts' length %d, got %d", id, length, len(parts)))
+	}
+	return parts, err
+}
+
 func ParseSlbListenerId(id string) (parts []string, err error) {
 	parts = strings.Split(id, ":")
 	if len(parts) != 2 && len(parts) != 3 {

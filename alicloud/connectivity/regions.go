@@ -113,6 +113,7 @@ var MongoDBMultiAzSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, EUCen
 var DdoscooSupportedRegions = []Region{Hangzhou, APSouthEast1}
 var DdosbgpSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, Qingdao, Shanghai, Zhangjiakou, Huhehaote}
 var TagPolicySupportRegions = []Region{Shanghai}
+var MetaTagSupportRegions = []Region{Hangzhou}
 
 // var NetworkAclSupportedRegions = []Region{Hangzhou, Beijing, Shanghai, Hongkong, APSouthEast5, APSouth1}
 var EssScalingConfigurationMultiSgSupportedRegions = []Region{APSouthEast1, APSouth1}
