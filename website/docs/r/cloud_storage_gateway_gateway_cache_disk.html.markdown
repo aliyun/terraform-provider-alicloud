@@ -7,65 +7,68 @@ description: |-
   Provides a Alicloud Cloud Storage Gateway Gateway Cache Disk resource.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_gateway\_cache\_disk
+# alicloud_cloud_storage_gateway_gateway_cache_disk
 
 Provides a Cloud Storage Gateway Gateway Cache Disk resource.
 
-For information about Cloud Storage Gateway Gateway Cache Disk and how to use it, see [What is Gateway Cache Disk](https://www.alibabacloud.com/help/zh/doc-detail/170294.htm).
+For information about Cloud Storage Gateway Gateway Cache Disk and how to use it, see [What is Gateway Cache Disk](https://www.alibabacloud.com/help/en/cloud-storage-gateway/latest/creategatewaycachedisk).
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available since v1.144.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_cloud_storage_gateway_stocks" "example" {
-  gateway_class = "Standard"
+variable "name" {
+  default = "tf-example"
 }
 
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "example_value"
+resource "random_uuid" "default" {
+}
+resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
+  storage_bundle_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
-
-resource "alicloud_vswitch" "example" {
-  vpc_id       = alicloud_vpc.vpc.id
+data "alicloud_cloud_storage_gateway_stocks" "default" {
+  gateway_class = "Standard"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_cloud_storage_gateway_stocks.example.stocks.0.zone_id
-  vswitch_name = "example_value"
+  zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
+  vswitch_name = var.name
 }
 
-resource "alicloud_cloud_storage_gateway_storage_bundle" "example" {
-  storage_bundle_name = "example_value"
-}
-
-resource "alicloud_cloud_storage_gateway_gateway" "example" {
-  description              = "tf-acctestDesalone"
+resource "alicloud_cloud_storage_gateway_gateway" "default" {
+  gateway_name             = var.name
+  description              = var.name
   gateway_class            = "Standard"
   type                     = "File"
   payment_type             = "PayAsYouGo"
-  vswitch_id               = alicloud_vswitch.example.id
+  vswitch_id               = alicloud_vswitch.default.id
   release_after_expiration = true
-  public_network_bandwidth = 10
-  storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.example.id
+  public_network_bandwidth = 40
+  storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
   location                 = "Cloud"
-  gateway_name             = "example_value"
 }
 
-resource "alicloud_cloud_storage_gateway_gateway_cache_disk" "example" {
+resource "alicloud_cloud_storage_gateway_gateway_cache_disk" "default" {
   cache_disk_category   = "cloud_efficiency"
-  gateway_id            = alicloud_cloud_storage_gateway_gateways.example.id
+  gateway_id            = alicloud_cloud_storage_gateway_gateway.default.id
   cache_disk_size_in_gb = 50
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `cache_disk_category` - (Optional, Computed, ForceNew) The cache disk type. Valid values: `cloud_efficiency`, `cloud_ssd`.
+* `cache_disk_category` - (Optional, ForceNew) The cache disk type. Valid values: `cloud_efficiency`, `cloud_ssd`.
 * `cache_disk_size_in_gb` - (Required) size of the cache disk. Unit: `GB`. The upper limit of the basic gateway cache disk is `1` TB (`1024` GB), that of the standard gateway is `2` TB (`2048` GB), and that of other gateway cache disks is `32` TB (`32768` GB). The lower limit for the file gateway cache disk capacity is `40` GB, and the lower limit for the block gateway cache disk capacity is `20` GB.
 * `gateway_id` - (Required, ForceNew) The ID of the gateway.
 
