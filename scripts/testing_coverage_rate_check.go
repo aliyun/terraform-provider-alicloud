@@ -420,7 +420,7 @@ func parseAttr(configIndex int, rootName string, data interface{}, attributeValu
 }
 
 var (
-	commentedRegex    = regexp.MustCompile("[\t]*//")
+	commentedRegex    = regexp.MustCompile("^[\t]*//")
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
 	unitFuncRegex     = regexp.MustCompile("^func TestUnit(.*)")
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")

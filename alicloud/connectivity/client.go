@@ -4867,6 +4867,7 @@ func (client *AliyunClient) NewComputenestClient() (*rpc.Client, error) {
 
 	return conn, nil
 }
+
 func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
 	productCode := "redisa"
 	endpoint := ""
@@ -4891,6 +4892,7 @@ func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
 func (client *AliyunClient) NewEipClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
@@ -4915,6 +4917,7 @@ func (client *AliyunClient) NewEipClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
 func (client *AliyunClient) NewCbwpClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
@@ -4939,6 +4942,7 @@ func (client *AliyunClient) NewCbwpClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
+
 func (client *AliyunClient) NewFcv2Client() (*roa.Client, error) {
 	productCode := "fc"
 	endpoint := ""
