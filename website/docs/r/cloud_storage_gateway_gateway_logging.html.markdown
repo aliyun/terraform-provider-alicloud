@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Storage Gateway Gateway Logging resource.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_gateway\_logging
+# alicloud_cloud_storage_gateway_gateway_logging
 
 Provides a Cloud Storage Gateway Gateway Logging resource.
 
-For information about Cloud Storage Gateway Gateway Logging and how to use it, see [What is Gateway Logging](https://www.alibabacloud.com/help/en/doc-detail/108299.htm).
+For information about Cloud Storage Gateway Gateway Logging and how to use it, see [What is Gateway Logging](https://www.alibabacloud.com/help/en/cloud-storage-gateway/latest/creategatewaylogging).
 
--> **NOTE:** Available in v1.144.0+.
+-> **NOTE:** Available since v1.144.0.
 
 ## Example Usage
 
@@ -21,7 +21,26 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example"
+  default = "tf-example"
+}
+
+resource "random_uuid" "default" {
+}
+resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
+  storage_bundle_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+}
+
+resource "alicloud_log_project" "default" {
+  name        = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+  description = "terraform-example"
+}
+resource "alicloud_log_store" "default" {
+  project               = alicloud_log_project.default.name
+  name                  = var.name
+  shard_count           = 3
+  auto_split            = true
+  max_split_shard_count = 60
+  append_meta           = true
 }
 
 resource "alicloud_vpc" "default" {
@@ -38,35 +57,17 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
 }
 
-resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = var.name
-}
-
 resource "alicloud_cloud_storage_gateway_gateway" "default" {
-  description              = "tf-acctestDesalone"
-  gateway_class            = "Basic"
+  gateway_name             = var.name
+  description              = var.name
+  gateway_class            = "Standard"
   type                     = "File"
   payment_type             = "PayAsYouGo"
   vswitch_id               = alicloud_vswitch.default.id
-  release_after_expiration = true
-  public_network_bandwidth = 10
+  release_after_expiration = false
+  public_network_bandwidth = 40
   storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
   location                 = "Cloud"
-  gateway_name             = var.name
-}
-
-resource "alicloud_log_project" "default" {
-  name        = var.name
-  description = "created by terraform"
-}
-
-resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
-  shard_count           = 3
-  auto_split            = true
-  max_split_shard_count = 60
-  append_meta           = true
 }
 
 resource "alicloud_cloud_storage_gateway_gateway_logging" "default" {
@@ -83,7 +84,7 @@ The following arguments are supported:
 * `gateway_id` - (Required, ForceNew) The ID of the Gateway.
 * `sls_logstore` - (Required, ForceNew) The name of the Log Store.
 * `sls_project` - (Required, ForceNew) The name of the Project.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `Enabled`, `Disable`.
+* `status` - (Optional) The status of the resource. Valid values: `Enabled`, `Disable`.
 
 ## Attributes Reference
 

@@ -7,50 +7,61 @@ description: |-
   Provides a Alicloud Cloud Storage Gateway Gateway SMB User resource.
 ---
 
-# alicloud\_cloud\_storage\_gateway\_gateway\_smb\_user
+# alicloud_cloud_storage_gateway_gateway_smb_user
 
 Provides a Cloud Storage Gateway Gateway SMB User resource.
 
-For information about Cloud Storage Gateway Gateway SMB User and how to use it, see [What is Gateway SMB User](https://www.alibabacloud.com/help/en/doc-detail/53972.htm).
+For information about Cloud Storage Gateway Gateway SMB User and how to use it, see [What is Gateway SMB User](https://www.alibabacloud.com/help/en/cloud-storage-gateway/latest/creategatewaysmbuser).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+variable "name" {
+  default = "tf-example"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "random_uuid" "default" {
+}
+resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
+  storage_bundle_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
 }
 
-resource "alicloud_cloud_storage_gateway_storage_bundle" "example" {
-  storage_bundle_name = "example_value"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/12"
+}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = data.alicloud_zones.default.zones[0].id
+  vswitch_name = var.name
 }
 
 resource "alicloud_cloud_storage_gateway_gateway" "default" {
-  description              = "tf-acctestDesalone"
+  gateway_name             = var.name
+  description              = var.name
   gateway_class            = "Standard"
   type                     = "File"
   payment_type             = "PayAsYouGo"
-  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  vswitch_id               = alicloud_vswitch.default.id
   release_after_expiration = false
   public_network_bandwidth = 40
-  storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.example.id
+  storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
   location                 = "Cloud"
-  gateway_name             = "example_value"
 }
 
 resource "alicloud_cloud_storage_gateway_gateway_smb_user" "default" {
-  username   = "your_username"
+  username   = "example_username"
   password   = "password"
   gateway_id = alicloud_cloud_storage_gateway_gateway.default.id
 }
-
 ```
 
 ## Argument Reference
@@ -67,7 +78,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Gateway SMB User. The value formats as `<gateway_id>:<username>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
