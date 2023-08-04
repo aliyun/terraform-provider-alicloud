@@ -1,5 +1,5 @@
 ---
-subcategory: "Tag Policy"
+subcategory: "TAG"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_tag_policy"
 sidebar_current: "docs-alicloud-resource-tag-policy"
@@ -14,7 +14,7 @@ Provides a Tag Policy resource.
 For information about Tag Policy and how to use it,
 see [What is Policy](https://www.alibabacloud.com/help/en/resource-management/latest/create-policy).
 
--> **NOTE:** Available in v1.203.0+.
+-> **NOTE:** Available since v1.203.0.
 
 ## Example Usage
 
@@ -22,8 +22,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_tag_policy" "example" {
-  policy_name     = "testName"
-  policy_desc     = "testDesc"
+  policy_name     = "tName"
+  policy_desc     = "tDesc"
   user_type       = "USER"
   policy_document = <<EOF
 		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
