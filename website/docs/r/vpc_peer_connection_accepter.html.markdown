@@ -13,51 +13,65 @@ Provides a Vpc Peer Connection Accepter resource.
 
 For information about Vpc Peer Connection Accepter and how to use it, see [What is Peer Connection Accepter](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/AcceptVpcPeerConnection).
 
--> **NOTE:** Available in v1.196.0+.
+-> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_account" "default" {}
-
+variable "name" {
+  default = "tf-example"
+}
 variable "accepting_region" {
   default = "cn-beijing"
+}
+# other account ak,sk
+variable "accepting_account_access_key" {
+  default = "access_key"
+}
+variable "accepting_account_secret_key" {
+  default = "secret_key"
 }
 
 provider "alicloud" {
   alias  = "local"
-  region = "hangzhou"
+  region = "cn-hangzhou"
 }
-
 provider "alicloud" {
-  alias  = "accepting"
-  region = var.accepting_region
+  alias      = "accepting"
+  region     = var.accepting_region
+  access_key = var.accepting_account_access_key
+  secret_key = var.accepting_account_secret_key
 }
 
-data "alicloud_vpcs" "default" {
+resource "alicloud_vpc" "local" {
   provider   = alicloud.local
-  name_regex = "default-NODELETING"
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-data "alicloud_vpcs" "defaultone" {
+resource "alicloud_vpc" "accepting" {
   provider   = alicloud.accepting
-  name_regex = "default-NODELETING"
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
 }
 
-
+data "alicloud_account" "accepting" {
+  provider = alicloud.accepting
+}
 resource "alicloud_vpc_peer_connection" "default" {
-  peer_connection_name = "example_value"
-  vpc_id               = data.alicloud_vpcs.default.ids.0
-  accepting_ali_uid    = data.alicloud_account.default.id
-  accepting_region_id  = var.accepting_region
-  accepting_vpc_id     = data.alicloud_vpcs.defaultone.ids.0
-  description          = "example_value"
   provider             = alicloud.local
+  peer_connection_name = var.name
+  vpc_id               = alicloud_vpc.local.id
+  accepting_ali_uid    = data.alicloud_account.accepting.id
+  accepting_region_id  = var.accepting_region
+  accepting_vpc_id     = alicloud_vpc.accepting.id
+  description          = var.name
 }
 
 resource "alicloud_vpc_peer_connection_accepter" "default" {
+  provider    = alicloud.accepting
   instance_id = alicloud_vpc_peer_connection.default.id
 }
 ```
@@ -65,7 +79,7 @@ resource "alicloud_vpc_peer_connection_accepter" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `instance_id` - (Required,ForceNew) The ID of the instance of the created VPC peer connection.
+* `instance_id` - (Required, ForceNew) The ID of the instance of the created VPC peer connection.
 * `dry_run` - (Optional) The dry run.
 
 ## Attributes Reference
@@ -81,7 +95,7 @@ The following attributes are exported:
 * `status` - The status of the resource
 * `vpc_id` - You must create a VPC ID on the initiator of a VPC peer connection.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Peer Connection Accepter.

@@ -21,13 +21,16 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "terraform-example"
+  default = "tf-example"
 }
-
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
 resource "alicloud_vpc_public_ip_address_pool" "default" {
-  public_ip_address_pool_name = var.name
   description                 = var.name
+  public_ip_address_pool_name = var.name
   isp                         = "BGP"
+  resource_group_id           = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 
 resource "alicloud_vpc_public_ip_address_pool_cidr_block" "default" {
@@ -40,7 +43,7 @@ resource "alicloud_vpc_public_ip_address_pool_cidr_block" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_block` - (Optional, ForceNew, Computed) The CIDR block.
+* `cidr_block` - (Optional, ForceNew) The CIDR block.
 * `public_ip_address_pool_id` - (Required, ForceNew) The ID of the VPC Public IP address pool.
 
 

@@ -13,7 +13,7 @@ Provides a VPC Ipv6 Egress Rule resource. IPv6 address addition only active exit
 
 For information about VPC Ipv6 Egress Rule and how to use it, see [What is Ipv6 Egress Rule](https://www.alibabacloud.com/help/doc-detail/102200.htm).
 
--> **NOTE:** Available in v1.142.0+.
+-> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
 
@@ -24,31 +24,75 @@ variable "name" {
   default = "terraform-example"
 }
 
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone                 = data.alicloud_zones.default.zones.0.id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
+}
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
+}
+
 resource "alicloud_vpc" "default" {
   vpc_name    = var.name
   enable_ipv6 = "true"
+  cidr_block  = "172.16.0.0/12"
 }
 
-resource "alicloud_vpc_ipv6_gateway" "example" {
+resource "alicloud_vswitch" "default" {
+  vpc_id               = alicloud_vpc.default.id
+  cidr_block           = "172.16.0.0/21"
+  zone_id              = data.alicloud_zones.default.zones.0.id
+  vswitch_name         = var.name
+  ipv6_cidr_block_mask = "64"
+}
+
+resource "alicloud_security_group" "default" {
+  name        = var.name
+  description = var.name
+  vpc_id      = alicloud_vpc.default.id
+}
+
+resource "alicloud_instance" "default" {
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  ipv6_address_count         = 1
+  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  system_disk_category       = "cloud_efficiency"
+  image_id                   = data.alicloud_images.default.images.0.id
+  instance_name              = var.name
+  vswitch_id                 = alicloud_vswitch.default.id
+  internet_max_bandwidth_out = 10
+  security_groups            = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_vpc_ipv6_gateway" "default" {
   ipv6_gateway_name = var.name
   vpc_id            = alicloud_vpc.default.id
 }
 
-data "alicloud_instances" "default" {
-  name_regex = "ecs_with_ipv6_address"
-  status     = "Running"
-}
-
 data "alicloud_vpc_ipv6_addresses" "default" {
-  associated_instance_id = data.alicloud_instances.default.instances.0.id
+  associated_instance_id = alicloud_instance.default.id
   status                 = "Available"
 }
 
-resource "alicloud_vpc_ipv6_egress_rule" "example" {
-  instance_id           = data.alicloud_vpc_ipv6_addresses.default.ids.0
-  ipv6_egress_rule_name = "example_value"
-  description           = "example_value"
-  ipv6_gateway_id       = alicloud_vpc_ipv6_gateway.example.id
+resource "alicloud_vpc_ipv6_internet_bandwidth" "default" {
+  ipv6_address_id      = data.alicloud_vpc_ipv6_addresses.default.addresses.0.id
+  ipv6_gateway_id      = alicloud_vpc_ipv6_gateway.default.ipv6_gateway_id
+  internet_charge_type = "PayByBandwidth"
+  bandwidth            = "20"
+}
+
+resource "alicloud_vpc_ipv6_egress_rule" "default" {
+  instance_id           = alicloud_vpc_ipv6_internet_bandwidth.default.ipv6_address_id
+  ipv6_egress_rule_name = var.name
+  description           = var.name
+  ipv6_gateway_id       = alicloud_vpc_ipv6_internet_bandwidth.default.ipv6_gateway_id
   instance_type         = "Ipv6Address"
 }
 ```
@@ -59,7 +103,7 @@ resource "alicloud_vpc_ipv6_egress_rule" "example" {
 The following arguments are supported:
 * `description` - (Optional, ForceNew) The description of the egress-only rule. The description must be `2` to `256` characters in length. It cannot start with `http://` or `https://`.
 * `instance_id` - (Required, ForceNew) The ID of the IPv6 address to which you want to apply the egress-only rule.
-* `instance_type` - (Optional, ForceNew, Computed) The type of instance to which you want to apply the egress-only rule. Valid values: `Ipv6Address`. `Ipv6Address` (default): an IPv6 address.
+* `instance_type` - (Optional, ForceNew) The type of instance to which you want to apply the egress-only rule. Valid values: `Ipv6Address`. `Ipv6Address` (default): an IPv6 address.
 * `ipv6_egress_rule_name` - (Optional, ForceNew) The name of the egress-only rule. The name must be `2` to `128` characters in length, and can contain letters, digits, underscores (_), and hyphens (-). The name must start with a letter but cannot start with `http://` or `https://`.
 * `ipv6_gateway_id` - (Required, ForceNew) The ID of the IPv6 gateway.
 
@@ -71,7 +115,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<ipv6_gateway_id>:<ipv6_egress_rule_id>`.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Ipv6 Egress Rule.
