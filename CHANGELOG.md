@@ -1,4 +1,30 @@
 ## 1.209.0 (Unreleased)
+
+- **New Resource:** `alicloud_arms_prometheus_monitoring` [GH-6351]
+- **New Resource:** `alicloud_nlb_loadbalancer_common_bandwidth_package_attachment` [GH-6365]
+- **New Resource:** `alicloud_nlb_listener_additional_certificate_attachment` [GH-6365]
+- **New Datasource:** `alicloud_vpc_flow_log_service` [GH-6354]
+- **New Datasource:** `alicloud_rds_class_details` [GH-6359]
+
+ENHANCEMENTS:
+
+- client: Improves the getting endpoint for resource manager and das. [GH-6394]
+- resource/alicloud_arms_remote_write: support remote_write_yaml yaml format. [GH-6351]
+- resource/alicloud_nlb_load_balancer: modify attribute bandwidth_package_id; resource/alicloud_nlb_listener: add retry code while removing listener. [GH-6365]
+- resource/alicloud_oss_bucket: lifecycle_rule supports tag. [GH-6372]
+- resource/alicloud_oss_bucket: Supports DeepColdArchive storage class. [GH-6377]
+- resource/alicloud_cs_autoscaling_config: support new params. [GH-6389]
+- resource/alicloud_alb_listener: Added retry stragety for error code VipStatusNotSupport. [GH-6391]
+- docs: Improves the edas docs example. [GH-6376]
+- docs: Improves the expressconnect docs example. [GH-6380]
+- docs: Improves the sso docs example. [GH-6381]
+- docs: Improves the csg docs example. [GH-6385]
+
+BUG FIXES:
+
+- resource/alicloud_ram_user: Refactored resourceAlicloudRamUserUpdate; Fixed field update diff error. [GH-6382]
+- resource/alicloud_polardb_cluster: Fixes the panic error caused by missing TDERegion. [GH-6390]
+
 ## 1.208.1 (July 31, 2023)
 
 ENHANCEMENTS:
