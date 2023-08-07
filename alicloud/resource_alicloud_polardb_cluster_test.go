@@ -107,7 +107,7 @@ func testSweepPolarDBClusters(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_Update(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	var ips []map[string]interface{}
 	name := "tf-testAccPolarDBClusterUpdate"
@@ -394,7 +394,7 @@ func TestAccAlicloudPolarDBClusterUpdate(t *testing.T) {
 
 }
 
-func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_Multi(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testaccPolarDBClusterMult"
 	resourceId := "alicloud_polardb_cluster.default.2"
@@ -447,7 +447,7 @@ func TestAccAlicloudPolarDBClusterMulti(t *testing.T) {
 
 }
 
-func TestAccAlicloudPolarDBClusterCreate(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_Create(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testAccPolarDBClusterCreate"
 	resourceId := "alicloud_polardb_cluster.default"
@@ -523,7 +523,7 @@ func TestAccAlicloudPolarDBClusterCreate(t *testing.T) {
 	})
 }
 
-func TestPolarDBClusterCreateCloneFromRDS(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testPolarDBClusterCreateCloneFromRDS"
 	resourceId := "alicloud_polardb_cluster.default"
@@ -598,7 +598,7 @@ func TestPolarDBClusterCreateCloneFromRDS(t *testing.T) {
 	})
 }
 
-func TestPolarDBClusterCreateMigrationFromRDS(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 	var v *polardb.DescribeDBClusterAttributeResponse
 	name := "tf-testPolarDBClusterMigrationFromRDS"
 	resourceId := "alicloud_polardb_cluster.default"
@@ -866,7 +866,7 @@ func SkipTestAccAlicloudPolarDBClusterSENormalCreate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudPolarDBClusterServerless(t *testing.T) {
+func TestAccAlicloudPolarDBCluster_Serverless(t *testing.T) {
 	var v map[string]interface{}
 	name := "tf-testAccPolarDBClusterServerless"
 	resourceId := "alicloud_polardb_cluster.default"

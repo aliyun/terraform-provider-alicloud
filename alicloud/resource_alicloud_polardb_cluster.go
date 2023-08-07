@@ -1017,7 +1017,11 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("encrypt_new_tables", clusterTDEStatus["EncryptNewTables"])
 	d.Set("encryption_key", clusterTDEStatus["EncryptionKey"])
 	d.Set("tde_region", clusterTDEStatus["TDERegion"])
-	roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), clusterTDEStatus["TDERegion"].(string))
+	tdeRegion := ""
+	if v, ok := clusterTDEStatus["TDERegion"]; ok {
+		tdeRegion = fmt.Sprint(v)
+	}
+	roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), tdeRegion)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -1032,7 +1036,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("storage_type", convertPolarDBStorageTypeDescribeRequest(clusterInfo["StorageType"].(string)))
+	if clusterInfo["StorageType"] != nil {
+		d.Set("storage_type", convertPolarDBStorageTypeDescribeRequest(clusterInfo["StorageType"].(string)))
+	}
 	if clusterInfo["StorageSpace"] != nil {
 		resultStorageSpace, _ := clusterInfo["StorageSpace"].(json.Number).Int64()
 		var storageSpace = resultStorageSpace / 1024 / 1024 / 1024
@@ -1044,22 +1050,12 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapError(err)
 		}
-		if scaleMin, err := strconv.Atoi(serverlessInfo["ScaleMin"].(string)); err == nil {
-			d.Set("scale_min", scaleMin)
-		}
-		if scaleMax, err := strconv.Atoi(serverlessInfo["ScaleMax"].(string)); err == nil {
-			d.Set("scale_max", scaleMax)
-		}
-		if scaleRoNumMin, err := strconv.Atoi(serverlessInfo["ScaleRoNumMin"].(string)); err == nil {
-			d.Set("scale_ro_num_min", scaleRoNumMin)
-		}
-		if scaleRoNumMax, err := strconv.Atoi(serverlessInfo["ScaleRoNumMax"].(string)); err == nil {
-			d.Set("scale_ro_num_max", scaleRoNumMax)
-		}
-		d.Set("allow_shut_down", serverlessInfo["AllowShutDown"].(string))
-		if secondsUntilAutoPause, err := strconv.Atoi(serverlessInfo["SecondsUntilAutoPause"].(string)); err == nil {
-			d.Set("seconds_until_auto_pause", secondsUntilAutoPause)
-		}
+		d.Set("scale_min", formatInt(serverlessInfo["ScaleMin"]))
+		d.Set("scale_max", formatInt(serverlessInfo["ScaleMax"]))
+		d.Set("scale_ro_num_min", formatInt(serverlessInfo["ScaleRoNumMin"]))
+		d.Set("scale_ro_num_max", formatInt(serverlessInfo["ScaleRoNumMax"]))
+		d.Set("allow_shut_down", serverlessInfo["AllowShutDown"])
+		d.Set("seconds_until_auto_pause", formatInt(serverlessInfo["SecondsUntilAutoPause"]))
 	}
 	return nil
 }

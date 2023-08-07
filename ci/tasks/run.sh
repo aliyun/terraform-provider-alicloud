@@ -57,7 +57,7 @@ export ALICLOUD_SWEEP_ALL_RESOURCES=${SWEEP_ALL}
 
 echo -e "Account Site: ${ALICLOUD_ACCOUNT_SITE}"
 echo -e "Sweeper: ${SWEEPER}"
-echo -e "Sweep ALL: ${SWEEPER_SWEEP_ALL}"
+echo -e "Sweep ALL: ${ALICLOUD_SWEEP_ALL_RESOURCES}"
 
 export ALICLOUD_CMS_CONTACT_GROUP=tf-testAccCms
 
