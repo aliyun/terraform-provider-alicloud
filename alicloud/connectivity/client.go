@@ -2742,12 +2742,13 @@ func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewResourcemanagerClient() (*rpc.Client, error) {
 	productCode := "resourcemanager"
-	endpoint := ""
+	endpoint := "resourcemanager.aliyuncs.com"
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "resourcemanager.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+		client.config.Endpoints.Store(productCode, endpoint)
+		if client.skipRegionValidation {
+			if err := client.loadEndpoint(productCode); err != nil {
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+			}
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
@@ -4634,12 +4635,14 @@ func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewDasClient() (*rpc.Client, error) {
 	productCode := "das"
-	endpoint := ""
+	endpoint := "das.cn-shanghai.aliyuncs.com"
+	// missing das endpoint setting in the location
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "das.cn-shanghai.aliyuncs.com"
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		client.config.Endpoints.Store(productCode, endpoint)
+		if client.skipRegionValidation {
+			if err := client.loadEndpoint(productCode); err != nil {
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+			}
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {

@@ -72,16 +72,18 @@ func testSweepResourceManagerResourceGroup(region string) error {
 				continue
 			}
 			skip := true
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
-					skip = false
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["Name"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping resource manager group: %s ", item["Name"])
+					continue
 				}
 			}
-			if skip {
-				log.Printf("[INFO] Skipping resource manager group: %s ", item["Name"])
-			} else {
-				groupIds = append(groupIds, item["Id"].(string))
-			}
+			groupIds = append(groupIds, item["Id"].(string))
 		}
 
 		if len(result) < PageSizeLarge {
