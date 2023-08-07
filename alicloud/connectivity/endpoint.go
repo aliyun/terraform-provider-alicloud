@@ -233,7 +233,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 		args.Domain = loadEndpoint(client.RegionId, LOCATIONCode)
 	}
 	if args.Domain == "" {
-		args.Domain = "location-readonly.aliyuncs.com"
+		args.Domain = "location.aliyuncs.com"
 	}
 
 	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
@@ -253,6 +253,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 			re := regexp.MustCompile("^Post [\"]*https://.*")
 			if err.Error() != "" && re.MatchString(err.Error()) {
 				wait()
+				args.Domain = "location-readonly.aliyuncs.com"
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
