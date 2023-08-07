@@ -14,51 +14,53 @@ Provides a VPC Network Acl resource.
 
 For information about VPC Network Acl and how to use it, see [What is Network Acl](https://www.alibabacloud.com/help/en/ens/latest/createnetworkacl).
 
--> **NOTE:** Available in v1.43.0+.
+-> **NOTE:** Available since v1.43.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
-  vpc_name   = "VpcConfig"
+resource "alicloud_vpc" "example" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  vswitch_name = "vswitch"
-  cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 4, 4)
-  zone_id      = data.alicloud_zones.default.ids.0
+resource "alicloud_vswitch" "example" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.example.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_network_acl" "default" {
-  vpc_id           = alicloud_vpc.default.id
-  network_acl_name = "network_acl"
-  description      = "network_acl"
+resource "alicloud_network_acl" "example" {
+  vpc_id           = alicloud_vpc.example.id
+  network_acl_name = var.name
+  description      = var.name
   ingress_acl_entries {
-    description            = "tf-testacc"
-    network_acl_entry_name = "tcp23"
+    description            = "${var.name}-ingress"
+    network_acl_entry_name = "${var.name}-ingress"
     source_cidr_ip         = "196.168.2.0/21"
     policy                 = "accept"
     port                   = "22/80"
     protocol               = "tcp"
   }
   egress_acl_entries {
-    description            = "tf-testacc"
-    network_acl_entry_name = "tcp23"
+    description            = "${var.name}-egress"
+    network_acl_entry_name = "${var.name}-egress"
     destination_cidr_ip    = "0.0.0.0/0"
     policy                 = "accept"
     port                   = "-1/-1"
     protocol               = "all"
   }
   resources {
-    resource_id   = alicloud_vswitch.default.id
+    resource_id   = alicloud_vswitch.example.id
     resource_type = "VSwitch"
   }
 }
@@ -69,19 +71,20 @@ resource "alicloud_network_acl" "default" {
 
 The following arguments are supported:
 * `description` - (Optional) The description of the network ACL.The description must be 1 to 256 characters in length and cannot start with http:// or https.
-* `egress_acl_entries` - (Optional, Computed) Out direction rule information. See the following `Block EgressAclEntries`.
-* `ingress_acl_entries` - (Optional, Computed) Inward direction rule information. See the following `Block IngressAclEntries`.
+* `egress_acl_entries` - (Optional) Out direction rule information. See [`egress_acl_entries`](#egress_acl_entries) below.
+* `ingress_acl_entries` - (Optional) Inward direction rule information. See [`ingress_acl_entries`](#ingress_acl_entries) below.
 * `network_acl_name` - (Optional) The name of the network ACL.The name must be 1 to 128 characters in length and cannot start with http:// or https.
-* `resources` - (Optional, Computed) The associated resource. See the following `Block Resources`.
-* `tags` - (Optional, Map, Available in v1.206.0+) The tags of this resource.
+* `resources` - (Optional) The associated resource. See [`resources`](#resources) below.
+* `tags` - (Optional, Map, Available since v1.206.0) The tags of this resource.
 * `vpc_id` - (Required, ForceNew) The ID of the associated VPC.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated from v1.122.0+) Field 'name' has been deprecated from provider version 1.122.0. New field 'network_acl_name' instead.
 
-#### Block EgressAclEntries
+### `egress_acl_entries`
 
-The EgressAclEntries supports the following:
+The egress_acl_entries supports the following:
+
 * `description` - (Optional) The description of the outbound rule.The description must be 1 to 256 characters in length and cannot start with http:// or https.
 * `destination_cidr_ip` - (Optional) The network of the destination address.
 * `network_acl_entry_name` - (Optional) Name of the outbound rule entry.The name must be 1 to 128 characters in length and cannot start with http:// or https.
@@ -96,9 +99,10 @@ The EgressAclEntries supports the following:
   - udp: User Datagram Protocol.
   - all: Supports all protocols.
 
-#### Block IngressAclEntries
+### `ingress_acl_entries`
 
-The IngressAclEntries supports the following:
+The ingress_acl_entries supports the following:
+
 * `description` - (Optional) Description of the inbound rule.The description must be 1 to 256 characters in length and cannot start with http:// or https.
 * `network_acl_entry_name` - (Optional) The name of the inbound rule entry.The name must be 1 to 128 characters in length and cannot start with http:// or https.
 * `policy` - (Optional) Authorization policy. Value:
@@ -113,12 +117,13 @@ The IngressAclEntries supports the following:
   - all: Supports all protocols.
 * `source_cidr_ip` - (Optional) Source address network segment.
 
-#### Block Resources
+### `resources`
 
-The Resources supports the following:
+The resources supports the following:
+
 * `resource_id` - (Required) The ID of the associated resource.
 * `resource_type` - (Required) The type of the associated resource.
-
+* `status` - (Required) The status of the associated resource.
 
 ## Attributes Reference
 
@@ -127,7 +132,7 @@ The following attributes are exported:
 * `create_time` - The creation time of the resource.
 * `status` - The state of the network ACL.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Network Acl.
