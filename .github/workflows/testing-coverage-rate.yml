@@ -1,0 +1,30 @@
+name: Testing Coverage Rate Checks
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    pull_request_target:
+      types:
+        - opened
+      paths:
+        - .github/workflows/testing-coverage-rate.yml
+        - .go-version
+        - alicloud/*.go
+
+jobs:
+  TestingCoverageRate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.19.x'
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      - name: Checking testing coverage rate
+        run: |
+          git diff HEAD^ HEAD > diff.out
+          go run scripts/testing_coverage_rate_check.go -fileNames="diff.out"
