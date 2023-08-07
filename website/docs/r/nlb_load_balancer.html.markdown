@@ -13,7 +13,7 @@ Provides a NLB Load Balancer resource.
 
 For information about NLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createloadbalancer).
 
--> **NOTE:** Available in v1.191.0+.
+-> **NOTE:** Available since v1.191.0.
 
 ## Example Usage
 
@@ -80,7 +80,7 @@ The following arguments are supported:
 * `load_balancer_type` - (Optional, Computed, ForceNew) The type of the instance. Set the value to `Network`, which specifies an NLB instance.
 * `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC where the NLB instance is deployed.
-* `zone_mappings` - (Required) Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones. See the following `Block zone_mappings`.
+* `zone_mappings` - (Required) Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones. See [`zone_mappings`](#zone_mappings) below.
 * `bandwidth_package_id` - (Optional) The ID of the EIP bandwidth plan that is associated with the NLB instance if the NLB instance uses a public IP address.
 * `deletion_protection_enabled` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable deletion protection. Default value: `false`. Valid values:
   - `true`: Enable deletion protection.
@@ -92,7 +92,7 @@ The following arguments are supported:
 * `modification_protection_reason` - (Optional, Available in 1.206.0+) The reason why the configuration read-only mode is enabled. The `modification_protection_reason` takes effect only when `modification_protection_status` is set to `ConsoleProtection`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-#### Block zone_mappings
+### `zone_mappings`
 
 The zone_mappings supports the following: 
 
@@ -115,7 +115,7 @@ The following attributes are exported:
 * `create_time` - The time when the resource was created. The time is displayed in UTC in `yyyy-MM-ddTHH:mm:ssZ` format.
 * `dns_name` - The domain name of the NLB instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

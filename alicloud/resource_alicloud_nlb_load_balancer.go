@@ -43,6 +43,7 @@ func resourceAlicloudNlbLoadBalancer() *schema.Resource {
 			"bandwidth_package_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,

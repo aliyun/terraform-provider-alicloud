@@ -500,7 +500,7 @@ func resourceAlicloudNlbListenerDelete(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

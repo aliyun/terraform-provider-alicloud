@@ -13,7 +13,7 @@ Provides a NLB Listener resource.
 
 For information about NLB Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createlistener-nl).
 
--> **NOTE:** Available in v1.191.0+.
+-> **NOTE:** Available since v1.191.0.
 
 ## Example Usage
 
@@ -135,7 +135,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Listener.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
