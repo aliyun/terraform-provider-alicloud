@@ -1413,7 +1413,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mongodb_sharding_network_public_address":               resourceAlicloudMongodbShardingNetworkPublicAddress(),
 			"alicloud_ga_acl":                                                resourceAlicloudGaAcl(),
 			"alicloud_ga_acl_attachment":                                     resourceAlicloudGaAclAttachment(),
-			"alicloud_ga_additional_certificate":                             resourceAlicloudGaAdditionalCertificate(),
+			"alicloud_ga_additional_certificate":                             resourceAliCloudGaAdditionalCertificate(),
 			"alicloud_alidns_custom_line":                                    resourceAlicloudAlidnsCustomLine(),
 			"alicloud_vpc_vbr_ha":                                            resourceAlicloudVpcVbrHa(),
 			"alicloud_ros_template_scratch":                                  resourceAlicloudRosTemplateScratch(),
