@@ -341,7 +341,7 @@ func parseConfig(resourceTest ResourceTest, testMustSet, testModifySet *mapset.S
 
 			f.stepAttributes[configIndex] = data
 
-			parseAttr("", data, attributeValueMap, testMustSet, testModifySet)
+			parseAttr(configIndex, "", data, attributeValueMap, testMustSet, testModifySet)
 		}
 	}
 	return true
@@ -380,7 +380,7 @@ func bracketMatch(s []rune) bool {
 	return true
 }
 
-func parseAttr(rootName string, data interface{}, attributeValueMap map[string]string,
+func parseAttr(configIndex int, rootName string, data interface{}, attributeValueMap map[string]string,
 	testMustSet, testModifySet *mapset.Set) {
 	if d, ok := data.(map[string]interface{}); ok {
 		for key, value := range d {
@@ -393,14 +393,16 @@ func parseAttr(rootName string, data interface{}, attributeValueMap map[string]s
 				if fmt.Sprintf("%v", value) != v {
 					(*testModifySet).Add(key)
 				}
+			} else if configIndex > 0 {
+				(*testModifySet).Add(key)
 			}
 			attributeValueMap[key] = fmt.Sprintf("%v", value)
-			parseAttr(key, value, attributeValueMap, testMustSet, testModifySet)
+			parseAttr(configIndex, key, value, attributeValueMap, testMustSet, testModifySet)
 		}
 	} else if d, ok := data.([]interface{}); ok {
 		for _, v := range d {
 			attributeValueMap[rootName] = fmt.Sprintf("%v", data)
-			parseAttr(rootName, v, attributeValueMap, testMustSet, testModifySet)
+			parseAttr(configIndex, rootName, v, attributeValueMap, testMustSet, testModifySet)
 		}
 	}
 }
