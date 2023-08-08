@@ -200,7 +200,7 @@ func resourceAlicloudOssBucketObjectRead(d *schema.ResourceData, meta interface{
 
 	object, err := bucket.GetObjectDetailedMeta(d.Get("key").(string), options...)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"404 Not Found"}) {
+		if IsExpectedErrors(err, []string{"404 Not Found", "NoSuchKey"}) {
 			d.SetId("")
 			return WrapError(Error("To get the Object: %#v but it is not exist in the specified bucket %s.", d.Get("key").(string), d.Get("bucket").(string)))
 		}
