@@ -857,6 +857,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_flow_log_service":                             dataSourceAliCloudVpcFlowLogService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ecs_saving_plan":                                      resourceAliCloudEcsSavingPlan(),
 			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),
 			"alicloud_nlb_loadbalancer_common_bandwidth_package_attachment": resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment(),
 			"alicloud_arms_prometheus_monitoring":                           resourceAliCloudArmsPrometheusMonitoring(),
