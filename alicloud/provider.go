@@ -29,7 +29,7 @@ import (
 
 // Provider returns a schema.Provider for alicloud
 func Provider() terraform.ResourceProvider {
-	return &schema.Provider{
+	provider := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"access_key": {
 				Type:        schema.TypeString,
@@ -1618,15 +1618,17 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_subnet":                                           resourceAlicloudEfloSubnet(),
 			"alicloud_compute_nest_service_instance":                         resourceAlicloudComputeNestServiceInstance(),
 		},
-
-		ConfigureFunc: providerConfigure,
 	}
+	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
+		return providerConfigure(d, provider)
+	}
+	return provider
 }
 
 var providerConfig map[string]interface{}
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-
+func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{}, error) {
+	log.Println("using terraform version:", p.TerraformVersion)
 	var getProviderConfig = func(str string, key string) string {
 		if str == "" {
 			value, err := getConfigFromProfile(d, key)
@@ -1674,6 +1676,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SecureTransport:      strings.TrimSpace(d.Get("secure_transport").(string)),
 		MaxRetryTimeout:      d.Get("max_retry_timeout").(int),
 		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
+		TerraformVersion:     p.TerraformVersion,
 	}
 	log.Println("alicloud provider trace id:", config.TerraformTraceId)
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {

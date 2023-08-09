@@ -105,6 +105,6 @@ alpha:
 	rm -rf bin/$(RELEASE_ALPHA_NAME)
 
 macarm:
-	GOOS=darwin GOARCH=arm64 go build -o ~/.terraform.d/plugins/registry.terraform.io/aliyun/alicloud/1.0.0/darwin_arm64/terraform-provider-alicloud_v1.0.0*
-#	tar czvf bin/terraform-provider-alicloud_darwin-arm64.tgz bin/terraform-provider-alicloud
-#	rm -rf bin/terraform-provider-alicloud
+	GOOS=darwin GOARCH=arm64 go build -o bin/terraform-provider-alicloud_v1.0.0
+	cp bin/terraform-provider-alicloud_v1.0.0* ~/.terraform.d/plugins/registry.terraform.io/aliyun/alicloud/1.0.0/darwin_arm64/
+	mv bin/terraform-provider-alicloud_v1.0.0* ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/1.0.0/darwin_arm64/

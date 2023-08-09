@@ -242,7 +242,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 
 	}
 	defer locationClient.Shutdown()
-	locationClient.AppendUserAgent(Terraform, terraformVersion)
+	locationClient.AppendUserAgent(Terraform, client.config.TerraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
 	wait := incrementalWait(3*time.Second, 5*time.Second)

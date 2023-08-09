@@ -1,6 +1,7 @@
 package connectivity
 
 import (
+	"fmt"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v3/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
@@ -53,9 +54,6 @@ import (
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/denverdino/aliyungo/cdn"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -178,7 +176,6 @@ var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
 var providerVersion = "1.209.0"
-var terraformVersion = strings.TrimSuffix(schema.Provider{}.TerraformVersion, "-dev")
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{
@@ -283,7 +280,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		ecsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ecsconn.SourceIp = client.config.SourceIp
 		ecsconn.SecureTransport = client.config.SecureTransport
-		ecsconn.AppendUserAgent(Terraform, terraformVersion)
+		ecsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		ecsconn.AppendUserAgent(Provider, providerVersion)
 		ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ecsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -315,7 +312,7 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 		csconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		csconn.SourceIp = client.config.SourceIp
 		csconn.SecureTransport = client.config.SecureTransport
-		csconn.AppendUserAgent(Terraform, terraformVersion)
+		csconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		csconn.AppendUserAgent(Provider, providerVersion)
 		csconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		csconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -346,7 +343,7 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 		polarDBconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		polarDBconn.SourceIp = client.config.SourceIp
 		polarDBconn.SecureTransport = client.config.SecureTransport
-		polarDBconn.AppendUserAgent(Terraform, terraformVersion)
+		polarDBconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		polarDBconn.AppendUserAgent(Provider, providerVersion)
 		polarDBconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		polarDBconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -375,7 +372,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		slbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		slbconn.SourceIp = client.config.SourceIp
 		slbconn.SecureTransport = client.config.SecureTransport
-		slbconn.AppendUserAgent(Terraform, terraformVersion)
+		slbconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		slbconn.AppendUserAgent(Provider, providerVersion)
 		slbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		slbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -404,7 +401,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		vpcconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		vpcconn.SourceIp = client.config.SourceIp
 		vpcconn.SecureTransport = client.config.SecureTransport
-		vpcconn.AppendUserAgent(Terraform, terraformVersion)
+		vpcconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		vpcconn.AppendUserAgent(Provider, providerVersion)
 		vpcconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		vpcconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -541,7 +538,7 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 		cenconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cenconn.SourceIp = client.config.SourceIp
 		cenconn.SecureTransport = client.config.SecureTransport
-		cenconn.AppendUserAgent(Terraform, terraformVersion)
+		cenconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cenconn.AppendUserAgent(Provider, providerVersion)
 		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cenconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -570,7 +567,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 		essconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		essconn.SourceIp = client.config.SourceIp
 		essconn.SecureTransport = client.config.SecureTransport
-		essconn.AppendUserAgent(Terraform, terraformVersion)
+		essconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		essconn.AppendUserAgent(Provider, providerVersion)
 		essconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		essconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -705,7 +702,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 		dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dnsconn.SourceIp = client.config.SourceIp
 		dnsconn.SecureTransport = client.config.SecureTransport
-		dnsconn.AppendUserAgent(Terraform, terraformVersion)
+		dnsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		dnsconn.AppendUserAgent(Provider, providerVersion)
 		dnsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		dnsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -737,7 +734,7 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 		ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ramconn.SourceIp = client.config.SourceIp
 		ramconn.SecureTransport = client.config.SecureTransport
-		ramconn.AppendUserAgent(Terraform, terraformVersion)
+		ramconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		ramconn.AppendUserAgent(Provider, providerVersion)
 		ramconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ramconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -823,7 +820,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		crconn.SourceIp = client.config.SourceIp
 		crconn.SecureTransport = client.config.SecureTransport
-		crconn.AppendUserAgent(Terraform, terraformVersion)
+		crconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		crconn.AppendUserAgent(Provider, providerVersion)
 		crconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		crconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -854,7 +851,7 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 		creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		creeconn.SourceIp = client.config.SourceIp
 		creeconn.SecureTransport = client.config.SecureTransport
-		creeconn.AppendUserAgent(Terraform, terraformVersion)
+		creeconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		creeconn.AppendUserAgent(Provider, providerVersion)
 		creeconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		creeconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -904,7 +901,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 		cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cdnconn.SourceIp = client.config.SourceIp
 		cdnconn.SecureTransport = client.config.SecureTransport
-		cdnconn.AppendUserAgent(Terraform, terraformVersion)
+		cdnconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cdnconn.AppendUserAgent(Provider, providerVersion)
 		cdnconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cdnconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -933,7 +930,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 		otsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		otsconn.SourceIp = client.config.SourceIp
 		otsconn.SecureTransport = client.config.SecureTransport
-		otsconn.AppendUserAgent(Terraform, terraformVersion)
+		otsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		otsconn.AppendUserAgent(Provider, providerVersion)
 		otsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		otsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -972,7 +969,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 		cmsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cmsconn.SourceIp = client.config.SourceIp
 		cmsconn.SecureTransport = client.config.SecureTransport
-		cmsconn.AppendUserAgent(Terraform, terraformVersion)
+		cmsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cmsconn.AppendUserAgent(Provider, providerVersion)
 		cmsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cmsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1001,7 +998,7 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 		stsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		stsconn.SourceIp = client.config.SourceIp
 		stsconn.SecureTransport = client.config.SecureTransport
-		stsconn.AppendUserAgent(Terraform, terraformVersion)
+		stsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		stsconn.AppendUserAgent(Provider, providerVersion)
 		stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		stsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1022,7 +1019,7 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 		logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		logpopconn.SourceIp = client.config.SourceIp
 		logpopconn.SecureTransport = client.config.SecureTransport
-		logpopconn.AppendUserAgent(Terraform, terraformVersion)
+		logpopconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		logpopconn.AppendUserAgent(Provider, providerVersion)
 		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		logpopconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1081,7 +1078,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 		drdsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		drdsconn.SourceIp = client.config.SourceIp
 		drdsconn.SecureTransport = client.config.SecureTransport
-		drdsconn.AppendUserAgent(Terraform, terraformVersion)
+		drdsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		drdsconn.AppendUserAgent(Provider, providerVersion)
 		drdsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		drdsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1110,7 +1107,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 		ddsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ddsconn.SourceIp = client.config.SourceIp
 		ddsconn.SecureTransport = client.config.SecureTransport
-		ddsconn.AppendUserAgent(Terraform, terraformVersion)
+		ddsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		ddsconn.AppendUserAgent(Provider, providerVersion)
 		ddsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ddsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1138,7 +1135,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 		gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		gpdbconn.SourceIp = client.config.SourceIp
 		gpdbconn.SecureTransport = client.config.SecureTransport
-		gpdbconn.AppendUserAgent(Terraform, terraformVersion)
+		gpdbconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		gpdbconn.AppendUserAgent(Provider, providerVersion)
 		gpdbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		gpdbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1192,7 +1189,7 @@ func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{
 		rkvconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		rkvconn.SourceIp = client.config.SourceIp
 		rkvconn.SecureTransport = client.config.SecureTransport
-		rkvconn.AppendUserAgent(Terraform, terraformVersion)
+		rkvconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		rkvconn.AppendUserAgent(Provider, providerVersion)
 		rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		rkvconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1261,7 +1258,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 		cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cloudapiconn.SourceIp = client.config.SourceIp
 		cloudapiconn.SecureTransport = client.config.SecureTransport
-		cloudapiconn.AppendUserAgent(Terraform, terraformVersion)
+		cloudapiconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cloudapiconn.AppendUserAgent(Provider, providerVersion)
 		cloudapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cloudapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1384,7 +1381,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 		elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		elasticsearchconn.SourceIp = client.config.SourceIp
 		elasticsearchconn.SecureTransport = client.config.SecureTransport
-		elasticsearchconn.AppendUserAgent(Terraform, terraformVersion)
+		elasticsearchconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		elasticsearchconn.AppendUserAgent(Provider, providerVersion)
 		elasticsearchconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		elasticsearchconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1536,7 +1533,7 @@ func (client *AliyunClient) NewCommonRequest(product, serviceCode, schema string
 	request.Scheme = schema
 	request.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 	request.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-	request.AppendUserAgent(Terraform, terraformVersion)
+	request.AppendUserAgent(Terraform, client.config.TerraformVersion)
 	request.AppendUserAgent(Provider, providerVersion)
 	request.AppendUserAgent(Module, client.config.ConfigurationSource)
 	request.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1574,7 +1571,7 @@ func (client *AliyunClient) getSdkConfig() *sdk.Config {
 }
 
 func (client *AliyunClient) getUserAgent() string {
-	return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, terraformVersion, Provider, providerVersion, Module, client.config.ConfigurationSource)
+	return fmt.Sprintf("%s/%s %s/%s %s/%s", Terraform, client.config.TerraformVersion, Provider, providerVersion, Module, client.config.ConfigurationSource)
 }
 
 func (client *AliyunClient) getTransport() *http.Transport {
@@ -1646,7 +1643,7 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	stsClient.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 	stsClient.SourceIp = client.config.SourceIp
 	stsClient.SecureTransport = client.config.SecureTransport
-	stsClient.AppendUserAgent(Terraform, terraformVersion)
+	stsClient.AppendUserAgent(Terraform, client.config.TerraformVersion)
 	stsClient.AppendUserAgent(Provider, providerVersion)
 	stsClient.AppendUserAgent(Module, client.config.ConfigurationSource)
 	stsClient.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1680,7 +1677,7 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 		ddoscooconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ddoscooconn.SourceIp = client.config.SourceIp
 		ddoscooconn.SecureTransport = client.config.SecureTransport
-		ddoscooconn.AppendUserAgent(Terraform, terraformVersion)
+		ddoscooconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		ddoscooconn.AppendUserAgent(Provider, providerVersion)
 		ddoscooconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ddoscooconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1710,7 +1707,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 		ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		ddosbgpconn.SourceIp = client.config.SourceIp
 		ddosbgpconn.SecureTransport = client.config.SecureTransport
-		ddosbgpconn.AppendUserAgent(Terraform, terraformVersion)
+		ddosbgpconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		ddosbgpconn.AppendUserAgent(Provider, providerVersion)
 		ddosbgpconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ddosbgpconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1741,7 +1738,7 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 		bssopenapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		bssopenapiconn.SourceIp = client.config.SourceIp
 		bssopenapiconn.SecureTransport = client.config.SecureTransport
-		bssopenapiconn.AppendUserAgent(Terraform, terraformVersion)
+		bssopenapiconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		bssopenapiconn.AppendUserAgent(Provider, providerVersion)
 		bssopenapiconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		bssopenapiconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1777,7 +1774,7 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		alikafkaconn.SourceIp = client.config.SourceIp
 		alikafkaconn.SecureTransport = client.config.SecureTransport
-		alikafkaconn.AppendUserAgent(Terraform, terraformVersion)
+		alikafkaconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		alikafkaconn.AppendUserAgent(Provider, providerVersion)
 		alikafkaconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		alikafkaconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1804,7 +1801,7 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 		emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		emrConn.SourceIp = client.config.SourceIp
 		emrConn.SecureTransport = client.config.SecureTransport
-		emrConn.AppendUserAgent(Terraform, terraformVersion)
+		emrConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		emrConn.AppendUserAgent(Provider, providerVersion)
 		emrConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		emrConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1832,7 +1829,7 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 		sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		sagconn.SourceIp = client.config.SourceIp
 		sagconn.SecureTransport = client.config.SecureTransport
-		sagconn.AppendUserAgent(Terraform, terraformVersion)
+		sagconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		sagconn.AppendUserAgent(Provider, providerVersion)
 		sagconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		sagconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1853,7 +1850,7 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 		dbauditconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dbauditconn.SourceIp = client.config.SourceIp
 		dbauditconn.SecureTransport = client.config.SecureTransport
-		dbauditconn.AppendUserAgent(Terraform, terraformVersion)
+		dbauditconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		dbauditconn.AppendUserAgent(Provider, providerVersion)
 		dbauditconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		dbauditconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1873,7 +1870,7 @@ func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Cl
 		bastionhostconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		bastionhostconn.SourceIp = client.config.SourceIp
 		bastionhostconn.SecureTransport = client.config.SecureTransport
-		bastionhostconn.AppendUserAgent(Terraform, terraformVersion)
+		bastionhostconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		bastionhostconn.AppendUserAgent(Provider, providerVersion)
 		bastionhostconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		bastionhostconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1901,7 +1898,7 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		marketconn.SourceIp = client.config.SourceIp
 		marketconn.SecureTransport = client.config.SecureTransport
-		marketconn.AppendUserAgent(Terraform, terraformVersion)
+		marketconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		marketconn.AppendUserAgent(Provider, providerVersion)
 		marketconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		marketconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1929,7 +1926,7 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 		hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		hbaseconn.SourceIp = client.config.SourceIp
 		hbaseconn.SecureTransport = client.config.SecureTransport
-		hbaseconn.AppendUserAgent(Terraform, terraformVersion)
+		hbaseconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		hbaseconn.AppendUserAgent(Provider, providerVersion)
 		hbaseconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		hbaseconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -1988,7 +1985,7 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 		adbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		adbconn.SourceIp = client.config.SourceIp
 		adbconn.SecureTransport = client.config.SecureTransport
-		adbconn.AppendUserAgent(Terraform, terraformVersion)
+		adbconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		adbconn.AppendUserAgent(Provider, providerVersion)
 		adbconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		adbconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2046,7 +2043,7 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 		cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cbnConn.SourceIp = client.config.SourceIp
 		cbnConn.SecureTransport = client.config.SecureTransport
-		cbnConn.AppendUserAgent(Terraform, terraformVersion)
+		cbnConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cbnConn.AppendUserAgent(Provider, providerVersion)
 		cbnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cbnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2073,7 +2070,7 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		edasconn.SourceIp = client.config.SourceIp
 		edasconn.SecureTransport = client.config.SecureTransport
-		edasconn.AppendUserAgent(Terraform, terraformVersion)
+		edasconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		edasconn.AppendUserAgent(Provider, providerVersion)
 		edasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		edasconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2104,7 +2101,7 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 		alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		alidnsConn.SourceIp = client.config.SourceIp
 		alidnsConn.SecureTransport = client.config.SecureTransport
-		alidnsConn.AppendUserAgent(Terraform, terraformVersion)
+		alidnsConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		alidnsConn.AppendUserAgent(Provider, providerVersion)
 		alidnsConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		alidnsConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2128,7 +2125,7 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		cassandraConn.SourceIp = client.config.SourceIp
 		cassandraConn.SecureTransport = client.config.SecureTransport
-		cassandraConn.AppendUserAgent(Terraform, terraformVersion)
+		cassandraConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		cassandraConn.AppendUserAgent(Provider, providerVersion)
 		cassandraConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cassandraConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2158,7 +2155,7 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 		eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		eciConn.SourceIp = client.config.SourceIp
 		eciConn.SecureTransport = client.config.SecureTransport
-		eciConn.AppendUserAgent(Terraform, terraformVersion)
+		eciConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		eciConn.AppendUserAgent(Provider, providerVersion)
 		eciConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		eciConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2188,7 +2185,7 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 		dcdnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		dcdnConn.SourceIp = client.config.SourceIp
 		dcdnConn.SecureTransport = client.config.SecureTransport
-		dcdnConn.AppendUserAgent(Terraform, terraformVersion)
+		dcdnConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		dcdnConn.AppendUserAgent(Provider, providerVersion)
 		dcdnConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		dcdnConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
@@ -2218,7 +2215,7 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 		r_kvstoreConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
 		r_kvstoreConn.SourceIp = client.config.SourceIp
 		r_kvstoreConn.SecureTransport = client.config.SecureTransport
-		r_kvstoreConn.AppendUserAgent(Terraform, terraformVersion)
+		r_kvstoreConn.AppendUserAgent(Terraform, client.config.TerraformVersion)
 		r_kvstoreConn.AppendUserAgent(Provider, providerVersion)
 		r_kvstoreConn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		r_kvstoreConn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
