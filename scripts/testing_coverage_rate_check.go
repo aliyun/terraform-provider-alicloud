@@ -217,7 +217,12 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 		} else if text == "}" {
 			inFunc = false
 
-		} else if funcRegex.MatchString(text) {
+		} else if normalFuncRegex.MatchString(text) {
+			if !standardFuncRegex.MatchString(text) {
+				name := text[strings.Index(text, "T"):strings.Index(text, "(")]
+				log.Errorf("testcase %s should start with TestAccAliCloud", name)
+				return false
+			}
 			inFunc = true
 			funcName = text[strings.Index(text, "T"):strings.Index(text, "(")]
 			stepNumber = 0
@@ -408,15 +413,16 @@ func parseAttr(configIndex int, rootName string, data interface{}, attributeValu
 }
 
 var (
-	commentedRegex = regexp.MustCompile("[\t]*//")
-	funcRegex      = regexp.MustCompile("^func TestAccAlicloud(.*)")
-	configRegex    = regexp.MustCompile("(.*)Config:(.*)")
-	checkRegex     = regexp.MustCompile("(.*)Check:(.*)")
-	attrRegex      = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-]+)\":(.*)")
-	symbolRegex    = regexp.MustCompile(`\s`)
-	variableRegex  = regexp.MustCompile("(^[a-zA-Z_0-9]+)|([+])")
-	valueFuncRegex = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
-	bracket        = map[string]string{
+	commentedRegex    = regexp.MustCompile("[\t]*//")
+	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
+	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
+	configRegex       = regexp.MustCompile("(.*)Config:(.*)")
+	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
+	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-]+)\":(.*)")
+	symbolRegex       = regexp.MustCompile(`\s`)
+	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|([+])")
+	valueFuncRegex    = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
+	bracket           = map[string]string{
 		"{": "}",
 		"[": "]",
 	}
@@ -453,10 +459,10 @@ func checkAttributeSet(resourceName string, fileType string,
 		schemaCount := float64(len(schemaMustSet.ToSlice()))
 		notCoverCount := float64(len(notCoverSet.ToSlice()))
 		coverageRate := 1 - (notCoverCount / schemaCount)
-		log.Infof("resource %s attributes has %.2f%%  testing coverage rate ", resourceName, coverageRate*100)
+		log.Infof("resource %s attributes has %.2f%% testing coverage rate ", resourceName, coverageRate*100)
 		log.Errorf("resource %s attributes %v missing test cases", resourceName, string(notCoverStr))
 	} else {
-		log.Infof("resource %s attributes has 100%%  testing coverage rate ", resourceName)
+		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
 
 	}
 
@@ -466,10 +472,10 @@ func checkAttributeSet(resourceName string, fileType string,
 		schemaCount := float64(len(schemaModifySet.ToSlice()))
 		notCoverCount := float64(len(notModifySet.ToSlice()))
 		coverageRate := 1 - (notCoverCount / schemaCount)
-		log.Infof("resource %s attributes has %.2f%%  modified coverage rate ", resourceName, coverageRate*100)
+		log.Infof("resource %s attributes has %.2f%% modified coverage rate ", resourceName, coverageRate*100)
 		log.Errorf("resource %s attributes %v missing modification in test cases", resourceName, string(notModifyStr))
 	} else {
-		log.Infof("resource %s attributes has 100%%  modified coverage rate ", resourceName)
+		log.Infof("resource %s attributes has 100%% modified coverage rate ", resourceName)
 	}
 
 	return isFullCover && isAllModified
