@@ -7,33 +7,41 @@ description: |-
   Provides a Alicloud Serverless App Engine (SAE) Config Map resource.
 ---
 
-# alicloud\_sae\_config\_map
+# alicloud_sae_config_map
 
 Provides a Serverless App Engine (SAE) Config Map resource.
 
-For information about Serverless App Engine (SAE) Config Map and how to use it, see [What is Config Map](https://help.aliyun.com/document_detail/97792.html).
+For information about Serverless App Engine (SAE) Config Map and how to use it, see [What is Config Map](https://www.alibabacloud.com/help/en/sae/latest/create-configmap).
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "ConfigMapName" {
-  default = "examplename"
+variable "name" {
+  default = "tf-example"
 }
-resource "alicloud_sae_config_map" "example" {
-  data         = jsonencode({ "env.home" : "/root", "env.shell" : "/bin/sh" })
-  name         = var.ConfigMapName
-  namespace_id = alicloud_sae_namespace.example.namespace_id
+data "alicloud_regions" "default" {
+  current = true
 }
-resource "alicloud_sae_namespace" "example" {
-  namespace_id          = "cn-hangzhou:yourname"
-  namespace_name        = "example_value"
-  namespace_description = "your_description"
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+resource "alicloud_sae_namespace" "default" {
+  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example${random_integer.default.result}"
+  namespace_name            = var.name
+  namespace_description     = var.name
+  enable_micro_registration = false
 }
 
+resource "alicloud_sae_config_map" "default" {
+  data         = jsonencode({ "env.home" : "/root", "env.shell" : "/bin/sh" })
+  name         = var.name
+  namespace_id = alicloud_sae_namespace.default.namespace_id
+}
 ```
 
 ## Argument Reference
