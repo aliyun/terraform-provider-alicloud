@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Serverless App Engine (SAE) Application resource.
 ---
 
-# alicloud\_sae\_application
+# alicloud_sae_application
 
 Provides a Serverless App Engine (SAE) Application resource.
 
-For information about Serverless App Engine (SAE) Application and how to use it, see [What is Application](https://help.aliyun.com/document_detail/97792.html).
+For information about Serverless App Engine (SAE) Application and how to use it, see [What is Application](https://www.alibabacloud.com/help/en/sae/latest/createapplication).
 
--> **NOTE:** Available in v1.161.0+.
+-> **NOTE:** Available since v1.161.0.
 
 ## Example Usage
 
@@ -21,41 +21,54 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testacc"
+  default = "tf-example"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
 }
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_testacc"
-  cidr_block = "172.16.0.0/12"
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "vsw" {
-  vpc_id       = alicloud_vpc.vpc.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+resource "alicloud_security_group" "default" {
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_sae_namespace" "default" {
-  namespace_description = var.name
-  namespace_id          = "cn-hangzhou:tfacctest"
-  namespace_name        = var.name
+  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example${random_integer.default.result}"
+  namespace_name            = var.name
+  namespace_description     = var.name
+  enable_micro_registration = false
 }
 
 resource "alicloud_sae_application" "default" {
-  app_description = "tf-testaccDescription"
-  app_name        = "tf-testaccAppName"
-  namespace_id    = alicloud_sae_namespace.default.id
-  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
-  package_type    = "Image"
-  vpc_id          = alicloud_vswitch.vsw.vpc_id
-  vswitch_id      = alicloud_vswitch.vsw.id
-  timezone        = "Asia/Beijing"
-  replicas        = "5"
-  cpu             = "500"
-  memory          = "2048"
+  app_description   = var.name
+  app_name          = var.name
+  namespace_id      = alicloud_sae_namespace.default.id
+  image_url         = "registry-vpc.${data.alicloud_regions.default.regions.0.id}.aliyuncs.com/sae-demo-image/consumer:1.0"
+  package_type      = "Image"
+  security_group_id = alicloud_security_group.default.id
+  vpc_id            = alicloud_vpc.default.id
+  vswitch_id        = alicloud_vswitch.default.id
+  timezone          = "Asia/Beijing"
+  replicas          = "5"
+  cpu               = "500"
+  memory            = "2048"
 }
 ```
 
@@ -105,10 +118,10 @@ The following arguments are supported:
 * `pre_stop` - (Optional) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}.
 * `readiness` - (Optional) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
 * `replicas` - (Required) Initial number of instances.
-* `security_group_id` - (Optional, Computed) Security group ID.
+* `security_group_id` - (Optional) Security group ID.
 * `sls_configs` - (Optional) SLS  configuration.
-* `status` - (Optional, Computed) The status of the resource. Valid values: `RUNNING`, `STOPPED`.
-* `termination_grace_period_seconds` - (Optional, Computed) Graceful offline timeout, the default is 30, the unit is seconds. The value range is 1~60. Valid values: [1,60].
+* `status` - (Optional) The status of the resource. Valid values: `RUNNING`, `STOPPED`.
+* `termination_grace_period_seconds` - (Optional) Graceful offline timeout, the default is 30, the unit is seconds. The value range is 1~60. Valid values: [1,60].
 * `timezone` - (Optional) Time zone, the default value is Asia/Shanghai.
 * `tomcat_config` - (Optional) Tomcat file configuration, set to "{}" means to delete the configuration:  useDefaultConfig: Whether to use a custom configuration, if it is true, it means that the custom configuration is not used; if it is false, it means that the custom configuration is used. If you do not use custom configuration, the following parameter configuration will not take effect.  contextInputType: Select the access path of the application.  war: No need to fill in the custom path, the access path of the application is the WAR package name. root: No need to fill in the custom path, the access path of the application is /. custom: You need to fill in the custom path in the custom path below. contextPath: custom path, this parameter only needs to be configured when the contextInputType type is custom.  httpPort: The port range is 1024~65535. Ports less than 1024 need Root permission to operate. Because the container is configured with Admin permissions, please fill in a port greater than 1024. If not configured, the default is 8080. maxThreads: Configure the number of connections in the connection pool, the default size is 400. uriEncoding: Tomcat encoding format, including UTF-8, ISO-8859-1, GBK and GB2312. If not set, the default is ISO-8859-1. useBodyEncoding: Whether to use BodyEncoding for URL. Valid values: `contextInputType`, `contextPath`, `httpPort`, `maxThreads`, `uriEncoding`, `useBodyEncoding`, `useDefaultConfig`.
 * `update_strategy` - (Optional) The update strategy.
