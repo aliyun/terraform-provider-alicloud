@@ -859,6 +859,14 @@ func resourceAliyunInstanceCreate(d *schema.ResourceData, meta interface{}) erro
 	})
 	addDebug(action, response, request)
 	if err != nil {
+		// 如果是机器库存不足，则查询机器可用区库存
+		if IsExpectedErrors(err, []string{"OperationDenied.NoStock"}) {
+			_, validZones, _, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
+			if err != nil {
+				return WrapErrorf(err, "查询机型可用区失败: "+DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
+			}
+			return WrapErrorf(err, "当前机型[%s]在可用区[%s]库存不足，可用区[%s]库存充足", d.Get("instance_type"), d.Get("zone_id").(string), validZones)
+		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(fmt.Sprint(response["InstanceIdSets"].(map[string]interface{})["InstanceIdSet"].([]interface{})[0]))
