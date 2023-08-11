@@ -2,69 +2,68 @@
 subcategory: "ECS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecs_auto_snapshot_policy"
-sidebar_current: "docs-alicloud-resource-ecs-auto-snapshot-policy"
 description: |-
   Provides a Alicloud ECS Auto Snapshot Policy resource.
 ---
 
-# alicloud\_ecs\_auto\_snapshot\_policy
+# alicloud_ecs_auto_snapshot_policy
 
-Provides a ECS Auto Snapshot Policy resource.
+Provides a ECS Auto Snapshot Policy resource. Automatic snapshot policy.
 
-For information about ECS Auto Snapshot Policy and how to use it, see [What is Auto Snapshot Policy](https://www.alibabacloud.com/help/en/doc-detail/25527.htm).
+For information about ECS Auto Snapshot Policy and how to use it, see [What is Auto Snapshot Policy](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available in v1.117.0+.
+-> **NOTE:** Available since v1.210.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ecs_auto_snapshot_policy" "example" {
-  name            = "tf-testAcc"
-  repeat_weekdays = ["1", "2", "3"]
-  retention_days  = -1
-  time_points     = ["1", "22", "23"]
+variable "name" {
+  default = "terraform-example"
 }
 
+resource "alicloud_resource_manager_resource_group" "ResourceGroup" {
+  display_name        = "test"
+  resource_group_name = var.name
+}
+
+
+resource "alicloud_ecs_auto_snapshot_policy" "default" {
+  time_points               = ["1"]
+  resource_group_id         = alicloud_resource_manager_resource_group.ResourceGroup.id
+  retention_days            = 1
+  repeat_weekdays           = ["1"]
+  auto_snapshot_policy_name = var.name
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `name` - (Optional) The snapshot policy name.
-* `repeat_weekdays` - (Required) The automatic snapshot repetition dates. The unit of measurement is day and the repeating cycle is a week. Value range: [1, 7], which represents days starting from Monday to Sunday, for example 1  indicates Monday. When you want to schedule multiple automatic snapshot tasks for a disk in a week, you can set the RepeatWeekdays to an array.
-    - A maximum of seven time points can be selected.
-    - The format is  an JSON array of ["1", "2", … "7"]  and the time points are separated by commas (,).
-* `retention_days` - (Required) The snapshot retention time, and the unit of measurement is day. Optional values:
-    - -1: The automatic snapshots are retained permanently.
-    - [1, 65536]: The number of days retained.
-    Default value: -1.
-* `time_points` - (Required) The automatic snapshot creation schedule, and the unit of measurement is hour. Value range: [0, 23], which represents from 00:00 to 24:00,  for example 1 indicates 01:00. When you want to schedule multiple automatic snapshot tasks for a disk in a day, you can set the TimePoints to an array.
-    - A maximum of 24 time points can be selected.
-    - The format is  an JSON array of ["0", "1", … "23"] and the time points are separated by commas (,).
-* `target_copy_regions` - (Optional) The destination region to which the snapshot is copied. You can set a destination region.
-* `copied_snapshots_retention_days` - (Optional) The retention period of the snapshot copied across regions.
-    - -1: The snapshot is permanently retained.
-    - [1, 65535]: The automatic snapshot is retained for the specified number of days.     
-    Default value: -1.
-* `enable_cross_region_copy` - (Optional) Specifies whether to enable the system to automatically copy snapshots across regions.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `auto_snapshot_policy_name` - (Optional) AutoSnapshotPolicyName.
+* `copied_snapshots_retention_days` - (Optional, Available since v1.117.0) CopiedSnapshotsRetentionDays.
+* `enable_cross_region_copy` - (Optional, Available since v1.117.0) EnableCrossRegionCopy.
+* `repeat_weekdays` - (Required, Available since v1.117.0) RepeatWeekdays.
+* `resource_group_id` - (Optional, ForceNew, Computed) The ID of the resource group.
+* `retention_days` - (Required, Available since v1.117.0) RetentionDays.
+* `tags` - (Optional, Map, Available since v1.117.0) Tags.
+* `target_copy_regions` - (Optional, Available since v1.117.0) TargetCopyRegions.
+* `time_points` - (Required, Available since v1.117.0) TimePoints.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - CreationTime.
+* `status` - Status.
 
-* `id` - The resource ID in terraform of Auto Snapshot Policy.
-* `status` - The status of Auto Snapshot Policy.
-
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 2 mins) Used when create the Auto Snapshot Policy.
-* `delete` - (Defaults to 3 mins) Used when delete the Auto Snapshot Policy.
+* `create` - (Defaults to 5 mins) Used when create the Auto Snapshot Policy.
+* `delete` - (Defaults to 5 mins) Used when delete the Auto Snapshot Policy.
+* `update` - (Defaults to 5 mins) Used when update the Auto Snapshot Policy.
 
 ## Import
 
