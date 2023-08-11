@@ -218,6 +218,9 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 			inFunc = false
 
 		} else if normalFuncRegex.MatchString(text) {
+			if unitFuncRegex.MatchString(text) {
+				continue
+			}
 			if !standardFuncRegex.MatchString(text) {
 				name := text[strings.Index(text, "T"):strings.Index(text, "(")]
 				log.Errorf("testcase %s should start with TestAccAliCloud", name)
@@ -415,6 +418,7 @@ func parseAttr(configIndex int, rootName string, data interface{}, attributeValu
 var (
 	commentedRegex    = regexp.MustCompile("[\t]*//")
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
+	unitFuncRegex     = regexp.MustCompile("^func TestUnit(.*)")
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
 	configRegex       = regexp.MustCompile("(.*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
