@@ -7,14 +7,14 @@ description: |-
   Provides a Sag Qos Policy resource.
 ---
 
-# alicloud\_sag\_qos\_policy
+# alicloud_sag_qos_policy
 
 Provides a Sag qos policy resource. 
 You need to create a QoS policy to set priorities, rate limits, and quintuple rules for different messages.
 
-For information about Sag Qos Policy and how to use it, see [What is Qos Policy](https://www.alibabacloud.com/help/doc-detail/140065.htm).
+For information about Sag Qos Policy and how to use it, see [What is Qos Policy](https://www.alibabacloud.com/help/en/smart-access-gateway/latest/createqospolicy).
 
--> **NOTE:** Available in 1.60.0+
+-> **NOTE:** Available since v1.60.0.
 
 -> **NOTE:** Only the following regions support. [`cn-shanghai`, `cn-shanghai-finance-1`, `cn-hongkong`, `ap-southeast-1`, `ap-southeast-2`, `ap-southeast-3`, `ap-southeast-5`, `ap-northeast-1`, `eu-central-1`]
 
@@ -23,21 +23,28 @@ For information about Sag Qos Policy and how to use it, see [What is Qos Policy]
 Basic Usage
 
 ```terraform
-resource "alicloud_sag_qos" "default" {
-  name = "tf-testAccSagQosName"
+variable "name" {
+  default = "tf-example"
 }
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+resource "alicloud_sag_qos" "default" {
+  name = var.name
+}
+
 resource "alicloud_sag_qos_policy" "default" {
   qos_id            = alicloud_sag_qos.default.id
-  name              = "tf-testSagQosPolicyName"
-  description       = "tf-testSagQosPolicyDescription"
+  name              = var.name
+  description       = var.name
   priority          = "1"
   ip_protocol       = "ALL"
   source_cidr       = "192.168.0.0/24"
   source_port_range = "-1/-1"
   dest_cidr         = "10.10.0.0/24"
   dest_port_range   = "-1/-1"
-  start_time        = "2019-10-25T16:41:33+0800"
-  end_time          = "2019-10-26T16:41:33+0800"
+  start_time        = replace(timestamp(), "Z", "+0800")
+  end_time          = replace(timeadd(timestamp(), "24h"), "Z", "+0800")
 }
 ```
 ## Argument Reference

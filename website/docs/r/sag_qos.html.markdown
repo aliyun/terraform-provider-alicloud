@@ -7,13 +7,13 @@ description: |-
   Provides a Sag Qos resource.
 ---
 
-# alicloud\_sag\_qos
+# alicloud_sag_qos
 
 Provides a Sag Qos resource. Smart Access Gateway (SAG) supports quintuple-based QoS functions to differentiate traffic of different services and ensure high-priority traffic bandwidth.
 
-For information about Sag Qos and how to use it, see [What is Qos](https://www.alibabacloud.com/help/doc-detail/131306.htm).
+For information about Sag Qos and how to use it, see [What is Qos](https://www.alibabacloud.com/help/en/smart-access-gateway/latest/createqos).
 
--> **NOTE:** Available in 1.60.0+
+-> **NOTE:** Available since v1.60.0.
 
 -> **NOTE:** Only the following regions support. [`cn-shanghai`, `cn-shanghai-finance-1`, `cn-hongkong`, `ap-southeast-1`, `ap-southeast-2`, `ap-southeast-3`, `ap-southeast-5`, `ap-northeast-1`, `eu-central-1`]
 
@@ -22,8 +22,11 @@ For information about Sag Qos and how to use it, see [What is Qos](https://www.a
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
 resource "alicloud_sag_qos" "default" {
-  name = "tf-testAccSagQosName"
+  name = "terraform-example"
 }
 ```
 ## Argument Reference
