@@ -35,6 +35,7 @@ data "alicloud_ecd_desktop_types" "default" {
   cpu_count            = 4
   memory_size          = 8192
 }
+
 resource "alicloud_ecd_bundle" "default" {
   description                 = var.name
   desktop_type                = data.alicloud_ecd_desktop_types.default.ids.0
@@ -51,17 +52,17 @@ resource "alicloud_ecd_bundle" "default" {
 
 The following arguments are supported:
 
-* `bundle_name` - (Optional) The name of the bundle.
-* `description` - (Optional)  The description of the bundle.
-* `desktop_type` - (Required, ForceNew) The desktop type. You can call `alicloud_ecd_desktop_types` to query desktop type.
 * `image_id` - (Required) The ID of the image.
-* `language` - (Optional) The language. Valid values: `zh-CN`, `zh-HK`, `en-US`, `ja-JP`.
-* `root_disk_performance_level` - (Optional, ForceNew) The root disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `desktop_type` - (Required, ForceNew) The desktop type. You can call `alicloud_ecd_desktop_types` to query desktop type.
 * `root_disk_size_gib` - (Required, ForceNew) The root disk size gib.
-* `user_disk_performance_level` - (Optional, ForceNew) The user disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
-* `user_disk_size_gib` - (Required, ForceNew) The size of the data disk. Currently, only one data disk can be set. Unit: GiB. 
+* `user_disk_size_gib` - (Required, ForceNew) The size of the data disk. Currently, only one data disk can be set. Unit: GiB.
   - The size of the data disk that supports the setting corresponds to the specification. For more information, see [Overview of Desktop Specifications](https://help.aliyun.com/document_detail/188609.htm?spm=a2c4g.11186623.0.0.6406297bE0U5DG).
   - The data disk size (user_disk_size_gib) set in the template must be greater than the data disk size (data_disk_size) in the mirror.
+* `root_disk_performance_level` - (Optional, ForceNew) The root disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `user_disk_performance_level` - (Optional, ForceNew) The user disk performance level. Valid values: `PL0`, `PL1`, `PL2`, `PL3`.
+* `language` - (Optional) The language. Valid values: `zh-CN`, `zh-HK`, `en-US`, `ja-JP`.
+* `bundle_name` - (Optional) The name of the bundle.
+* `description` - (Optional)  The description of the bundle.
 
 ## Attributes Reference
 
@@ -74,8 +75,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 1 mins) Used when create the Bundle.
-* `delete` - (Defaults to 1 mins) Used when delete the Bundle.
 * `update` - (Defaults to 1 mins) Used when update the Bundle.
+* `delete` - (Defaults to 1 mins) Used when delete the Bundle.
 
 ## Import
 

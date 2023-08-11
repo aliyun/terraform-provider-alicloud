@@ -120,7 +120,7 @@ func testSweepEcdBundle(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECDBundle_basic0(t *testing.T) {
+func TestAccAliCloudECDBundle_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_bundle.default"
 	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
@@ -143,25 +143,37 @@ func TestAccAlicloudECDBundle_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":                 "${var.name}",
-					"desktop_type":                "${data.alicloud_ecd_desktop_types.default.ids.0}",
-					"bundle_name":                 "${var.name}",
-					"image_id":                    "${data.alicloud_ecd_images.default.ids.0}",
-					"user_disk_size_gib":          []string{"70"},
-					"root_disk_size_gib":          "80",
-					"root_disk_performance_level": "PL1",
-					"user_disk_performance_level": "PL1",
+					"image_id":           "${data.alicloud_ecd_images.default.ids.0}",
+					"desktop_type":       "${data.alicloud_ecd_desktop_types.default.ids.0}",
+					"root_disk_size_gib": "80",
+					"user_disk_size_gib": []string{"70"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":                 name,
-						"desktop_type":                CHECKSET,
-						"bundle_name":                 name,
-						"image_id":                    CHECKSET,
-						"user_disk_size_gib.#":        "1",
-						"root_disk_size_gib":          "80",
-						"root_disk_performance_level": "PL1",
-						"user_disk_performance_level": "PL1",
+						"image_id":             CHECKSET,
+						"desktop_type":         CHECKSET,
+						"root_disk_size_gib":   "80",
+						"user_disk_size_gib.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id": "${data.alicloud_ecd_images.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"language": "zh-HK",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"language": "zh-HK",
 					}),
 				),
 			},
@@ -186,20 +198,65 @@ func TestAccAlicloudECDBundle_basic0(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECDBundle_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecd_bundle.default"
+	checkoutSupportedRegions(t, true, connectivity.EcdSupportRegions)
+	ra := resourceAttrInit(resourceId, AlicloudECDBundleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcdService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcdBundle")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secdbundle%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudECDBundleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id": "${data.alicloud_ecd_images.default.ids.1}",
+					"image_id":                    "${data.alicloud_ecd_images.default.ids.0}",
+					"desktop_type":                "${data.alicloud_ecd_desktop_types.default.ids.0}",
+					"root_disk_size_gib":          "80",
+					"user_disk_size_gib":          []string{"70"},
+					"root_disk_performance_level": "PL1",
+					"user_disk_performance_level": "PL1",
+					"language":                    "zh-CN",
+					"bundle_name":                 name,
+					"description":                 name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_id": CHECKSET,
+						"image_id":                    CHECKSET,
+						"desktop_type":                CHECKSET,
+						"root_disk_size_gib":          "80",
+						"user_disk_size_gib.#":        "1",
+						"root_disk_performance_level": "PL1",
+						"user_disk_performance_level": "PL1",
+						"language":                    "zh-CN",
+						"bundle_name":                 name,
+						"description":                 name,
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"language"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -211,21 +268,21 @@ var AlicloudECDBundleMap0 = map[string]string{
 
 func AlicloudECDBundleBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_ecd_images" "default" {	
-	image_type = "SYSTEM"
-	os_type = "Windows"
-	desktop_instance_type = "eds.hf.4c8g"
-}
+	data "alicloud_ecd_images" "default" {
+  		image_type            = "SYSTEM"
+  		os_type               = "Windows"
+  		desktop_instance_type = "eds.hf.4c8g"
+	}
 
-data "alicloud_ecd_desktop_types" "default"{
-	instance_type_family = "eds.hf"
-	cpu_count = 4
-	memory_size = 8192
-}
+	data "alicloud_ecd_desktop_types" "default" {
+  		instance_type_family = "eds.hf"
+  		cpu_count            = 4
+  		memory_size          = 8192
+	}
 `, name)
 }
 
