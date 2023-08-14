@@ -107,7 +107,7 @@ func main() {
 		if check {
 			log.Infof("==> checking %s %s attributes' coverage rate", fileType, resourceName)
 			if checkAttributeSet(resourceName, fileType,
-				schemaMustSet, testMustSet, schemaModifySet, testModifySet) {
+				schemaMustSet, testMustSet, schemaModifySet, testModifySet) && isNameCorrect {
 				log.Infof("--- PASS!\n\n")
 				continue
 			}
@@ -131,6 +131,10 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 	getSchemaAttributes("", schemaAttributes, schema)
 
 	for key, value := range schemaAttributes {
+		// "dry_run" or removed
+		if key == "dry_run" || len(value.Removed) != 0 {
+			continue
+		}
 		if value.Optional || value.Required {
 			(*schemaMustSet).Add(key)
 			if !value.ForceNew {
@@ -224,7 +228,7 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 			if !standardFuncRegex.MatchString(text) {
 				name := text[strings.Index(text, "T"):strings.Index(text, "(")]
 				log.Errorf("testcase %s should start with TestAccAliCloud", name)
-				return false
+				isNameCorrect = false
 			}
 			inFunc = true
 			funcName = text[strings.Index(text, "T"):strings.Index(text, "(")]
@@ -440,6 +444,8 @@ var (
 		6: []string{"\\n", ""},
 		7: []string{"\\", ""},
 	}
+
+	isNameCorrect = true
 )
 
 type ResourceTest struct {
