@@ -19,10 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudHBRVault_basic0(t *testing.T) {
+func TestAccAliCloudHBRVault_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_vault.default"
-	ra := resourceAttrInit(resourceId, AlicloudHBRVaultMap0)
+	ra := resourceAttrInit(resourceId, AliCloudHBRVaultMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrVault")
@@ -30,7 +30,7 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHBRVaultBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHBRVaultBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -41,13 +41,11 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vault_name":      name,
-					"redundancy_type": "LRS",
+					"vault_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vault_name":      name,
-						"redundancy_type": "LRS",
+						"vault_name": name,
 					}),
 				),
 			},
@@ -118,10 +116,10 @@ func TestAccAlicloudHBRVault_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRVault_basic1(t *testing.T) {
+func TestAccAliCloudHBRVault_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_vault.default"
-	ra := resourceAttrInit(resourceId, AlicloudHBRVaultMap0)
+	ra := resourceAttrInit(resourceId, AliCloudHBRVaultMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeHbrVault")
@@ -129,7 +127,7 @@ func TestAccAlicloudHBRVault_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%shbrvault%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHBRVaultBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudHBRVaultBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -169,12 +167,12 @@ func TestAccAlicloudHBRVault_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudHBRVaultMap0 = map[string]string{
+var AliCloudHBRVaultMap0 = map[string]string{
 	"status":     CHECKSET,
 	"vault_name": CHECKSET,
 }
 
-func AlicloudHBRVaultBasicDependence0(name string) string {
+func AliCloudHBRVaultBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -182,7 +180,7 @@ variable "name" {
 `, name)
 }
 
-func AlicloudHBRVaultBasicDependence1(name string) string {
+func AliCloudHBRVaultBasicDependence1(name string) string {
 	return fmt.Sprintf(` 
 variable "name" {
   default = "%s"
@@ -194,7 +192,7 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
-func TestUnitAlicloudHBRVault(t *testing.T) {
+func TestUnitAliCloudHBRVault(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_hbr_vault"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_hbr_vault"].Schema).Data(nil, nil)
@@ -204,7 +202,6 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 		"vault_name":          "CreateVaultValue",
 		"vault_storage_class": "CreateVaultValue",
 		"vault_type":          "CreateVaultValue",
-		"redundancy_type":     "CreateVaultValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -272,7 +269,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrVaultCreate(dInit, rawClient)
+	err = resourceAliCloudHbrVaultCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -299,7 +296,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrVaultCreate(dInit, rawClient)
+		err := resourceAliCloudHbrVaultCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -326,7 +323,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrVaultUpdate(dExisted, rawClient)
+	err = resourceAliCloudHbrVaultUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateVault
@@ -368,7 +365,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrVaultUpdate(dExisted, rawClient)
+		err := resourceAliCloudHbrVaultUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -407,7 +404,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrVaultRead(dExisted, rawClient)
+		err := resourceAliCloudHbrVaultRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -426,7 +423,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudHbrVaultDelete(dExisted, rawClient)
+	err = resourceAliCloudHbrVaultDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "CannotDeleteReplicationSourceVault", "nil"}
@@ -448,7 +445,7 @@ func TestUnitAlicloudHBRVault(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudHbrVaultDelete(dExisted, rawClient)
+		err := resourceAliCloudHbrVaultDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
