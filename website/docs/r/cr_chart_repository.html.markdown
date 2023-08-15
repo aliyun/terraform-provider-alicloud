@@ -7,37 +7,41 @@ description: |-
   Provides a Alicloud CR Chart Repository resource.
 ---
 
-# alicloud\_cr\_chart\_repository
+# alicloud_cr_chart_repository
 
 Provides a CR Chart Repository resource.
 
-For information about CR Chart Repository and how to use it, see [What is Chart Repository](https://www.alibabacloud.com/help/doc-detail/145318.htm).
+For information about CR Chart Repository and how to use it, see [What is Chart Repository](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createchartrepository).
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_cr_ee_instance" "default" {
-  payment_type  = "Subscription"
-  period        = 1
-  instance_type = "Advanced"
-  instance_name = "name"
+variable "name" {
+  default = "tf-example"
+}
+resource "alicloud_cr_ee_instance" "example" {
+  payment_type   = "Subscription"
+  period         = 1
+  renew_period   = 0
+  renewal_status = "ManualRenewal"
+  instance_type  = "Advanced"
+  instance_name  = var.name
 }
 
-resource "alicloud_cr_chart_namespace" "default" {
-  instance_id    = alicloud_cr_ee_instance.default.id
-  namespace_name = "name"
+resource "alicloud_cr_chart_namespace" "example" {
+  instance_id    = alicloud_cr_ee_instance.example.id
+  namespace_name = var.name
 }
 
-resource "alicloud_cr_chart_repository" "default" {
-  repo_namespace_name = alicloud_cr_chart_namespace.default.namespace_name
-  instance_id         = local.instance
-  repo_name           = "repo_name"
+resource "alicloud_cr_chart_repository" "example" {
+  repo_namespace_name = alicloud_cr_chart_namespace.example.namespace_name
+  instance_id         = alicloud_cr_chart_namespace.example.instance_id
+  repo_name           = var.name
 }
-
 ```
 
 ## Argument Reference

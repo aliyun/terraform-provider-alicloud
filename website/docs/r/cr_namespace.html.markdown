@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud resource to manage Container Registry namespaces.
 ---
 
-# alicloud\_cr\_namespace
+# alicloud_cr_namespace
 
-This resource will help you to manager Container Registry namespaces.
+This resource will help you to manager Container Registry namespaces, see [What is Namespace](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createnamespace).
 
--> **NOTE:** Available in v1.34.0+.
+-> **NOTE:** Available since v1.34.0.
 
 -> **NOTE:** You need to set your registry password in Container Registry console before use this resource.
 
@@ -20,8 +20,11 @@ This resource will help you to manager Container Registry namespaces.
 Basic Usage
 
 ```terraform
-resource "alicloud_cr_namespace" "my-namespace" {
-  name               = "my-namespace"
+variable "name" {
+  default = "terraform-example"
+}
+resource "alicloud_cr_namespace" "example" {
+  name               = var.name
   auto_create        = false
   default_visibility = "PUBLIC"
 }

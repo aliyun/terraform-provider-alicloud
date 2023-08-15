@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud resource to manage Container Registry Enterprise Edition repositories.
 ---
 
-# alicloud\_cr\_ee\_repo
+# alicloud_cr_ee_repo
 
 This resource will help you to manager Container Registry Enterprise Edition repositories.
 
-For information about Container Registry Enterprise Edition repository and how to use it, see [Create a Repository](https://www.alibabacloud.com/help/doc-detail/145291.htm)
+For information about Container Registry Enterprise Edition repository and how to use it, see [Create a Repository](https://www.alibabacloud.com/help/en/acr/developer-reference/api-cr-2018-12-01-createrepository)
 
--> **NOTE:** Available in v1.86.0+.
+-> **NOTE:** Available since v1.86.0.
 
 -> **NOTE:** You need to set your registry password in Container Registry Enterprise Edition console before use this resource.
 
@@ -22,17 +22,29 @@ For information about Container Registry Enterprise Edition repository and how t
 Basic Usage
 
 ```terraform
-resource "alicloud_cr_ee_namespace" "my-namespace" {
-  instance_id        = "cri-xxx"
-  name               = "my-namespace"
+variable "name" {
+  default = "terraform-example"
+}
+resource "alicloud_cr_ee_instance" "example" {
+  payment_type   = "Subscription"
+  period         = 1
+  renew_period   = 0
+  renewal_status = "ManualRenewal"
+  instance_type  = "Advanced"
+  instance_name  = var.name
+}
+
+resource "alicloud_cr_ee_namespace" "example" {
+  instance_id        = alicloud_cr_ee_instance.example.id
+  name               = var.name
   auto_create        = false
   default_visibility = "PUBLIC"
 }
 
-resource "alicloud_cr_ee_repo" "my-repo" {
-  instance_id = alicloud_cr_ee_namespace.my-namespace.instance_id
-  namespace   = alicloud_cr_ee_namespace.my-namespace.name
-  name        = "my-repo"
+resource "alicloud_cr_ee_repo" "example" {
+  instance_id = alicloud_cr_ee_instance.example.id
+  namespace   = alicloud_cr_ee_namespace.example.name
+  name        = var.name
   summary     = "this is summary of my new repo"
   repo_type   = "PUBLIC"
   detail      = "this is a public repo"
