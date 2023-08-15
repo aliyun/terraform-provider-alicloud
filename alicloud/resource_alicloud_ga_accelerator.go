@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaAccelerator() *schema.Resource {
+func resourceAliCloudGaAccelerator() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaAcceleratorCreate,
-		Read:   resourceAlicloudGaAcceleratorRead,
-		Update: resourceAlicloudGaAcceleratorUpdate,
-		Delete: resourceAlicloudGaAcceleratorDelete,
+		Create: resourceAliCloudGaAcceleratorCreate,
+		Read:   resourceAliCloudGaAcceleratorRead,
+		Update: resourceAliCloudGaAcceleratorUpdate,
+		Delete: resourceAliCloudGaAcceleratorDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -70,8 +70,9 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 				Optional: true,
 			},
 			"auto_renew_duration": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(1, 12),
 			},
 			"renewal_status": {
 				Type:     schema.TypeString,
@@ -86,6 +87,11 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"accelerator_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -94,7 +100,26 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ip_set_config": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"access_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"tags": tagsSchema(),
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -103,7 +128,7 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -167,10 +192,10 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAcceleratorUpdate(d, meta)
+	return resourceAliCloudGaAcceleratorUpdate(d, meta)
 }
 
-func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -214,7 +239,7 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -436,10 +461,10 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	d.Partial(false)
 
-	return resourceAlicloudGaAcceleratorRead(d, meta)
+	return resourceAliCloudGaAcceleratorRead(d, meta)
 }
 
-func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteAccelerator"
@@ -460,7 +485,7 @@ func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{
 	}
 
 	if fmt.Sprint(object["InstanceChargeType"]) == "PREPAY" {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudGaAccelerator. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resourceAliCloudGaAccelerator. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 

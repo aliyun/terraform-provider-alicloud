@@ -70,6 +70,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Accelerator. Value as `accelerator_id`.
+* `create_time` - Time for global acceleration instance creation.
 * `status` - The status of the GA instance.
 
 ## Timeouts
