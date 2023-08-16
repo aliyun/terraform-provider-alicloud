@@ -1,14 +1,10 @@
 package alicloud
 
 import (
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudOtsInstance() *schema.Resource {
@@ -64,41 +60,56 @@ func resourceAliyunOtsInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
-	instanceType := d.Get("instance_type").(string)
-	request := ots.CreateInsertInstanceRequest()
-	request.RegionId = client.RegionId
-	request.ClusterType = convertInstanceType(OtsInstanceType(instanceType))
-	types, err := otsService.DescribeOtsInstanceTypes()
+	instanceTypeStr := d.Get("instance_type").(string)
+	instanceType, err := parseAndCheckInstanceType(instanceTypeStr, otsService)
 	if err != nil {
 		return WrapError(err)
 	}
+
+	actionPath, instanceName, request := buildCreateInstanceRoaRequest(d, client.RegionId, instanceType)
+
+	_, err = OtsRestApiPostWithRetry(d, client, "tablestore", "2020-12-09", actionPath, request)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.SetId(instanceName)
+	if err := otsService.WaitForOtsInstance(instanceName, Running, DefaultTimeout); err != nil {
+		return WrapError(err)
+	}
+	return resourceAliyunOtsInstanceUpdate(d, meta)
+}
+
+func parseAndCheckInstanceType(instanceTypeStr string, otsService OtsService) (string, error) {
+	instanceType := convertInstanceType(OtsInstanceType(instanceTypeStr))
+	types, err := otsService.DescribeOtsInstanceTypes()
+	if err != nil {
+		return "", WrapError(err)
+	}
 	valid := false
 	for _, t := range types {
-		if request.ClusterType == t {
+		if instanceType == t {
 			valid = true
 			break
 		}
 	}
-	if !valid {
-		return WrapError(Error("The instance type %s is not available in the region %s.", instanceType, client.RegionId))
+	if valid {
+		return instanceType, nil
 	}
-	request.InstanceName = d.Get("name").(string)
-	request.Description = d.Get("description").(string)
-	request.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
+	return instanceType, WrapError(Error("The instance type %s is not available in the region %s.", instanceTypeStr, otsService.client.RegionId))
 
-	raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.InsertInstance(request)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+}
 
-	d.SetId(request.InstanceName)
-	if err := otsService.WaitForOtsInstance(request.InstanceName, Running, DefaultTimeout); err != nil {
-		return WrapError(err)
-	}
-	return resourceAliyunOtsInstanceUpdate(d, meta)
+func buildCreateInstanceRoaRequest(d *schema.ResourceData, regionId string, instanceType string) (string, string, map[string]*string) {
+	actionPath := "/v2/openapi/createinstance"
+	request := make(map[string]*string)
+	request["RegionId"] = StringPointer(regionId)
+	request["ClusterType"] = StringPointer(instanceType)
+	instanceName := d.Get("name").(string)
+	request["InstanceName"] = StringPointer(instanceName)
+	request["InstanceDescription"] = StringPointer(d.Get("description").(string))
+	request["Network"] = StringPointer(convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string))))
+	return actionPath, instanceName, request
 }
 
 func resourceAliyunOtsInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -128,17 +139,18 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 	d.Partial(true)
 
 	if !d.IsNewResource() && d.HasChange("accessed_by") {
-		request := ots.CreateUpdateInstanceRequest()
-		request.RegionId = client.RegionId
-		request.InstanceName = d.Id()
-		request.Network = convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string)))
-		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.UpdateInstance(request)
-		})
+		actionPath := "/v2/openapi/updateinstance"
+		request := make(map[string]*string)
+		request["RegionId"] = StringPointer(client.RegionId)
+		// id is instanceName
+		request["InstanceName"] = StringPointer(d.Id())
+		request["Network"] = StringPointer(convertInstanceAccessedBy(InstanceAccessedByType(d.Get("accessed_by").(string))))
+
+		response, err := OtsRestApiPostWithRetry(d, client, "tablestore", "2020-12-09", actionPath, request)
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(actionPath, response, request)
 		d.SetPartial("accessed_by")
 	}
 
@@ -200,28 +212,20 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 
 func resourceAliyunOtsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	otsService := OtsService{client}
-	request := ots.CreateDeleteInstanceRequest()
-	request.RegionId = client.RegionId
-	request.InstanceName = d.Id()
-	err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.DeleteInstance(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"AuthFailed", "InvalidStatus"}) {
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
+	actionPath := "/v2/openapi/deleteinstance"
+	request := make(map[string]*string)
+	request["RegionId"] = StringPointer(client.RegionId)
+	// id is instanceName
+	request["InstanceName"] = StringPointer(d.Id())
+
+	_, err := OtsRestApiPostWithRetry(d, client, "tablestore", "2020-12-09", actionPath, request)
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
 	}
+
+	otsService := OtsService{client}
 	return WrapError(otsService.WaitForOtsInstance(d.Id(), Deleted, DefaultLongTimeout))
 }

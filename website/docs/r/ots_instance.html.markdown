@@ -47,11 +47,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID. The value is same as the "name".
-* `name` - The instance name.
-* `description` - The instance description.
-* `accessed_by` - TThe network limitation of accessing instance.
-* `instance_type` - The instance type.
-* `tags` - The instance tags.
 
 ## Import
 
