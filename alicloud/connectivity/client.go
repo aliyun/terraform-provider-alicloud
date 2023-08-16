@@ -912,6 +912,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 	return do(client.cdnconn_new)
 }
 
+// WithOtsClient init ots openapi publish sdk client(if necessary), and exec do func by client
 func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the OTS client if necessary
 	if client.otsconn == nil {
@@ -939,6 +940,35 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 	}
 
 	return do(client.otsconn)
+}
+
+// NewOtsRoaClient rpc client for common sdk
+func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, error) {
+	// first, load endpoint by user setting
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		// second,  load endpoint by serverside rule
+		if err := client.loadEndpoint(productCode); err != nil {
+			return nil, err
+		}
+	}
+	// set endpoint
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint", productCode)
+	}
+
+	sdkConfig := client.teaRoaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+
+	conn, err := roa.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+
+	return conn, nil
 }
 
 func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, error)) (interface{}, error) {

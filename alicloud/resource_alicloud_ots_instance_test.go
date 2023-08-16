@@ -147,7 +147,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 	}
 }
 
-func TestAccAlicloudOtsInstance_basic(t *testing.T) {
+func TestAccAliCloudOtsInstance_basic(t *testing.T) {
 	var v ots.InstanceInfo
 
 	resourceId := "alicloud_ots_instance.default"
@@ -255,7 +255,7 @@ func TestAccAlicloudOtsInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsInstanceHighPerformance(t *testing.T) {
+func TestAccAliCloudOtsInstanceHighPerformance(t *testing.T) {
 	var v ots.InstanceInfo
 
 	resourceId := "alicloud_ots_instance.default"
@@ -363,7 +363,7 @@ func TestAccAlicloudOtsInstanceHighPerformance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsInstance_multi(t *testing.T) {
+func TestAccAliCloudOtsInstance_multi(t *testing.T) {
 	var v ots.InstanceInfo
 
 	resourceId := "alicloud_ots_instance.default.4"

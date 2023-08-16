@@ -4,6 +4,9 @@ import (
 	"regexp"
 	"strings"
 
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
@@ -913,4 +916,50 @@ func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, in
 		return nil
 	})
 	return err
+}
+
+// OtsRestApiPostWithRetry send POST request by CommonSDK(roa/restful) with retry.
+// This method directly passes OpenAPI parameters such as product and version, without relying on SDK version upgrades.
+// Retry policy: 3, 3+5, 3+5+5.., retry timeout: d.Timeout(schema.TimeoutCreate)
+// product is openapi product code, version is openapi version, actionPath is restful openapi backend api path, requestBody is request body content
+func OtsRestApiPostWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, requestBody map[string]*string) (map[string]interface{}, error) {
+	return invokeOtsRestApiWithRetry(d, client, product, version, actionPath, "POST", nil, nil, requestBody)
+}
+
+// OtsRestApiGetWithRetry send GET request by CommonSDK(roa/restful) with retry.
+// This method directly passes OpenAPI parameters such as product and version, without relying on SDK version upgrades.
+// Retry policy: 3, 3+5, 3+5+5.., retry timeout: d.Timeout(schema.TimeoutCreate)
+// product is openapi product code, version is openapi version, actionPath is restful openapi backend api path, urlQuery is url param
+func OtsRestApiGetWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, urlQuery map[string]*string) (map[string]interface{}, error) {
+	return invokeOtsRestApiWithRetry(d, client, product, version, actionPath, "GET", urlQuery, nil, nil)
+}
+
+func invokeOtsRestApiWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, httpMethod string, urlQuery map[string]*string, headers map[string]*string, requestBody map[string]*string) (map[string]interface{}, error) {
+	var response map[string]interface{}
+	otsClient, err := client.NewOtsRoaClient(product)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = otsClient.DoRequest(StringPointer(version), nil, StringPointer(httpMethod), StringPointer("AK"), StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
+		if err != nil {
+			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) ||
+				IsExpectedErrors(err, OtsTunnelIsTemporarilyUnavailable) ||
+				IsExpectedErrors(err, OtsSecondaryIndexIsTemporarilyUnavailable) ||
+				IsExpectedErrors(err, OtsSearchIndexIsTemporarilyUnavailable) ||
+				NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(actionPath, response, requestBody)
+		return nil
+	})
+
+	if err != nil {
+		return nil, WrapErrorf(err, DefaultErrorMsg, product, actionPath, AlibabaCloudSdkGoERROR)
+	}
+	return response, nil
 }
