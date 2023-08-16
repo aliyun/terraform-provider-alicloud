@@ -1491,7 +1491,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_custom_property":                                   resourceAlicloudEcdCustomProperty(),
 			"alicloud_ecd_ad_connector_office_site":                          resourceAlicloudEcdAdConnectorOfficeSite(),
 			"alicloud_ecs_activation":                                        resourceAlicloudEcsActivation(),
-			"alicloud_cloud_firewall_address_book":                           resourceAlicloudCloudFirewallAddressBook(),
+			"alicloud_cloud_firewall_address_book":                           resourceAliCloudCloudFirewallAddressBook(),
 			"alicloud_sms_short_url":                                         resourceAlicloudSmsShortUrl(),
 			"alicloud_hbr_hana_instance":                                     resourceAlicloudHbrHanaInstance(),
 			"alicloud_cms_hybrid_monitor_sls_task":                           resourceAlicloudCmsHybridMonitorSlsTask(),
