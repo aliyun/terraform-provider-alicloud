@@ -1213,7 +1213,7 @@ func mapMerge(target, merged map[string]interface{}) map[string]interface{} {
 
 func mapSort(target map[string]string) []string {
 	result := make([]string, 0)
-	for key, _ := range target {
+	for key := range target {
 		result = append(result, key)
 	}
 	sort.Strings(result)

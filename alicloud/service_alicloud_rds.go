@@ -568,7 +568,7 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 				}
 			}
 			if len(forceRestartMap) > 0 {
-				for key, _ := range config {
+				for key := range config {
 					if _, ok := forceRestartMap[key]; ok {
 						return WrapError(fmt.Errorf("Modifying RDS instance's parameter '%s' requires setting 'force_restart = true'.", key))
 					}

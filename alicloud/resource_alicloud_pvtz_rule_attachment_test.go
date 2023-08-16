@@ -310,7 +310,7 @@ func TestUnitAlicloudPvtzRuleAttachment(t *testing.T) {
 				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
 				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
 					ipConfigArg := ipConfig.(map[string]interface{})
-					for field, _ := range p["alicloud_pvtz_rule_attachment"].Schema[key].Elem.(*schema.Resource).Schema {
+					for field := range p["alicloud_pvtz_rule_attachment"].Schema[key].Elem.(*schema.Resource).Schema {
 						diff.SetAttribute(fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
 					}
 				}
@@ -353,7 +353,7 @@ func TestUnitAlicloudPvtzRuleAttachment(t *testing.T) {
 				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
 				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
 					ipConfigArg := ipConfig.(map[string]interface{})
-					for field, _ := range p["alicloud_pvtz_rule_attachment"].Schema[key].Elem.(*schema.Resource).Schema {
+					for field := range p["alicloud_pvtz_rule_attachment"].Schema[key].Elem.(*schema.Resource).Schema {
 						diff.SetAttribute(fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
 					}
 				}

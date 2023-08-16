@@ -225,7 +225,7 @@ func (s *ElasticsearchService) tagsToMap(tagSet []elasticsearch.TagResourceItem)
 }
 
 func (s *ElasticsearchService) diffElasticsearchTags(oldTags, newTags map[string]interface{}) (remove []string, add []map[string]string) {
-	for k, _ := range oldTags {
+	for k := range oldTags {
 		remove = append(remove, k)
 	}
 	for k, v := range newTags {

@@ -520,15 +520,15 @@ func DeployAutoscaler(options autoscalerOptions, clientSet *kubernetes.Clientset
 									Image:   options.Image,
 									Command: options.Args,
 									Env: []v1.EnvVar{
-										v1.EnvVar{
+										{
 											Name:  "REGION_ID",
 											Value: options.RegionId,
 										},
-										v1.EnvVar{
+										{
 											Name:  "ACCESS_KEY_ID",
 											Value: ak,
 										},
-										v1.EnvVar{
+										{
 											Name:  "ACCESS_KEY_SECRET",
 											Value: sk,
 										},

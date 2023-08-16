@@ -84,7 +84,7 @@ func (s *R_kvstoreService) SetResourceTags(d *schema.ResourceData, resourceType 
 		})
 	}
 	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
+	for key := range oldItems.(map[string]interface{}) {
 		removed = append(removed, key)
 	}
 	// 对系统 Tag 进行过滤

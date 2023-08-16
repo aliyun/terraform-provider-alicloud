@@ -109,7 +109,7 @@ func (s *AlidnsService) SetResourceTags(d *schema.ResourceData, resourceType str
 		})
 	}
 	removed := make([]string, 0)
-	for key, _ := range oldItems.(map[string]interface{}) {
+	for key := range oldItems.(map[string]interface{}) {
 		removed = append(removed, key)
 	}
 	if len(removed) > 0 {
