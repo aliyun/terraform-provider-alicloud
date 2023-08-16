@@ -7,35 +7,37 @@ description: |-
   Provides a Alicloud ApsaraDB for MyBase Dedicated Host Group resource.
 ---
 
-# alicloud\_cddc\_dedicated\_host\_group
+# alicloud_cddc_dedicated_host_group
 
 Provides a ApsaraDB for MyBase Dedicated Host Group resource.
 
-For information about ApsaraDB for MyBase Dedicated Host Group and how to use it, see [What is Dedicated Host Group](https://www.alibabacloud.com/help/doc-detail/141455.htm).
+For information about ApsaraDB for MyBase Dedicated Host Group and how to use it, see [What is Dedicated Host Group](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/creatededicatedhostgroup).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_vpc" "vpc" {
-  vpc_name   = "tf_test_foo"
-  cidr_block = "172.16.0.0/12"
+variable "name" {
+  default = "terraform-example"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
 resource "alicloud_cddc_dedicated_host_group" "default" {
-  engine                    = "MongoDB"
-  vpc_id                    = alicloud_vpc.vpc.id
+  engine                    = "MySQL"
+  vpc_id                    = alicloud_vpc.default.id
   cpu_allocation_ratio      = 101
   mem_allocation_ratio      = 50
   disk_allocation_ratio     = 200
   allocation_policy         = "Evenly"
   host_replace_policy       = "Manual"
-  dedicated_host_group_desc = "tf-testaccDesc"
+  dedicated_host_group_desc = var.name
 }
-
 ```
 
 ## Argument Reference
@@ -50,7 +52,7 @@ The following arguments are supported:
 * `host_replace_policy` - (Optional) The policy based on which the system handles host failures. Valid values:`Auto`,`Manual`
 * `mem_allocation_ratio` - (Optional) The Memory Allocation Ratio of the Dedicated Host Group.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID of the dedicated cluster.
-* `open_permission` - (Optional, Computed, ForceNew, Available in v1.148.0+) Whether to enable the feature that allows you to have OS permissions on the hosts in the dedicated cluster. Valid values: `true` and `false`.
+* `open_permission` - (Optional, ForceNew, Available since v1.148.0) Whether to enable the feature that allows you to have OS permissions on the hosts in the dedicated cluster. Valid values: `true` and `false`.
 **NOTE:** The `open_permission` should be `true` when `engine = "SQLServer"`
 
 ## Attributes Reference

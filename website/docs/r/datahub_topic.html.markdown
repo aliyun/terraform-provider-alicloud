@@ -7,32 +7,37 @@ description: |-
   Provides a Alicloud datahub topic resource.
 ---
 
-# alicloud\_datahub\_topic
+# alicloud_datahub_topic
 
-The topic is the basic unit of Datahub data source and is used to define one kind of data or stream. It contains a set of subscriptions. You can manage the datahub source of an application by using topics. [Refer to details](https://help.aliyun.com/document_detail/47440.html).
+The topic is the basic unit of Datahub data source and is used to define one kind of data or stream. It contains a set of subscriptions. You can manage the datahub source of an application by using topics. [Refer to details](https://www.alibabacloud.com/help/en/datahub/latest/nerbcz).
+
+-> **NOTE:** Available since v1.19.0.
 
 ## Example Usage
 
 Basic Usage
 
-- BLob Topic
-
 ```terraform
-resource "alicloud_datahub_topic" "example" {
-  name         = "tf_datahub_topic"
-  project_name = "tf_datahub_project"
+variable "name" {
+  default = "tf_example"
+}
+resource "alicloud_datahub_project" "example" {
+  name    = var.name
+  comment = "created by terraform"
+}
+
+resource "alicloud_datahub_topic" "example_blob" {
+  name         = "${var.name}_blob"
+  project_name = alicloud_datahub_project.example.name
   record_type  = "BLOB"
   shard_count  = 3
   life_cycle   = 7
   comment      = "created by terraform"
 }
-```
-- Tuple Topic
 
-```
-resource "alicloud_datahub_topic" "example" {
-  name         = "tf_datahub_topic"
-  project_name = "tf_datahub_project"
+resource "alicloud_datahub_topic" "example_tuple" {
+  name         = "${var.name}_tuple"
+  project_name = alicloud_datahub_project.example.name
   record_type  = "TUPLE"
   record_schema = {
     bigint_field    = "BIGINT"
