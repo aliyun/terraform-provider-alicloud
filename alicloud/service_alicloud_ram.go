@@ -896,14 +896,17 @@ func (s *RamService) DescribeRamSecurityPreference(id string) (object map[string
 }
 
 func (s *RamService) DescribeRamServiceLinkedRole(id string) (*ram.GetRoleResponse, error) {
-	parts, _ := ParseResourceId(id, 2)
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapErrorf(err, "invalid service linked role id: %s", id)
+	}
 	id = parts[1]
 
 	response := &ram.GetRoleResponse{}
 	request := ram.CreateGetRoleRequest()
 	request.RegionId = s.client.RegionId
 	request.RoleName = id
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.GetRole(request)
 		})

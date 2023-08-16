@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerServiceLinkedRole_basic0(t *testing.T) {
+func TestAccAliCloudResourceManagerServiceLinkedRole_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_service_linked_role.default"
 	ra := resourceAttrInit(resourceId, AlicloudResourceManagerServiceLinkedRoleMap0)
@@ -31,7 +31,7 @@ func TestAccAlicloudResourceManagerServiceLinkedRole_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"service_name": "csb.aliyuncs.com",
+					"service_name": "engine.dataworks.aliyuncs.com",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
