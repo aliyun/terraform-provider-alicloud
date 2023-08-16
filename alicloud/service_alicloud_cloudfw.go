@@ -70,16 +70,19 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 
 func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeAddressBook"
+	idExist := false
+
 	conn, err := s.client.NewCloudfwClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeAddressBook"
+
 	request := map[string]interface{}{
 		"PageSize":    PageSizeLarge,
 		"CurrentPage": 1,
 	}
-	idExist := false
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -93,35 +96,51 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 				}
 				return resource.NonRetryableError(err)
 			}
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+
+			}
+
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.Acls", response)
+
+		resp, err := jsonpath.Get("$.Acls", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Acls", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:AddressBook", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
+
+		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["GroupUuid"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
+
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:AddressBook", id)), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
+
 func (s *CloudfwService) DescribeCloudFirewallInstanceMember(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewCloudfirewallClient()
 	if err != nil {
@@ -166,6 +185,7 @@ func (s *CloudfwService) DescribeCloudFirewallInstanceMember(id string) (object 
 	}
 	return members[0].(map[string]interface{}), nil
 }
+
 func (s *CloudfwService) CloudFirewallInstanceMemberStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCloudFirewallInstanceMember(d.Id())

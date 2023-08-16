@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Firewall Address Book resource.
 ---
 
-# alicloud\_cloud\_firewall\_address\_book
+# alicloud_cloud_firewall_address_book
 
 Provides a Cloud Firewall Address Book resource.
 
-For information about Cloud Firewall Address Book and how to use it, see [What is Address Book](https://www.alibabacloud.com/help/en/cloud-firewall/latest/describeaddressbook).
+For information about Cloud Firewall Address Book and how to use it, see [What is Address Book](https://www.alibabacloud.com/help/en/cloud-firewall/developer-reference/api-cloudfw-2017-12-07-addaddressbook).
 
--> **NOTE:** Available in v1.178.0+.
+-> **NOTE:** Available since v1.178.0.
 
 ## Example Usage
 
@@ -36,19 +36,18 @@ resource "alicloud_cloud_firewall_address_book" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `address_list` - (Optional) The list of addresses.
-* `description` - (Required) The description of the Address Book.
 * `group_name` - (Required) The name of the Address Book.
-* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values:  `ip`, `tag`.
-* `ecs_tags` - (Optional) A list of ECS tags. See the following `Block ecs_tags`.
-* `tag_relation` - (Optional) The logical relation among the ECS tags that to be matched. Valid values:
-  - **and**: Only the public IP addresses of ECS instances that match all the specified tags can be added to the Address Book. This is the default value.
-  - **or**: The public IP addresses of ECS instances that match one of the specified tags can be added to the Address Book.
-* `auto_add_tag_ecs` - (Optional) Whether you want to automatically add new matching tags of the ECS IP address to the Address Book. Valid values: `0`, `1`.
-* `lang` - (Optional) The language of the content within the request and response. Valid values: `en`, `zh`.
+* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `tag`.
+* `description` - (Required) The description of the Address Book.
+* `auto_add_tag_ecs` - (Optional, Int) Whether you want to automatically add new matching tags of the ECS IP address to the Address Book. Valid values: `0`, `1`.
+* `tag_relation` - (Optional) The logical relation among the ECS tags that to be matched. Default value: `and`. Valid values:
+  - `and`: Only the public IP addresses of ECS instances that match all the specified tags can be added to the Address Book.
+  - `or`: The public IP addresses of ECS instances that match one of the specified tags can be added to the Address Book.
+* `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.
+* `address_list` - (Optional, List) The list of addresses.
+* `ecs_tags` - (Optional, Set) A list of ECS tags. See [`ecs_tags`](#ecs_tags) below.
 
-### Block ecs_tags
+### `ecs_tags`
 
 The ecs_tags supports the following:
 
