@@ -439,7 +439,7 @@ func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName
 		}
 		for _, failState := range failStates {
 			if object.Status == failState {
-				return object, object.Status, WrapError(Error(FailedToReachTargetStatusWithResponse, object.Status, object.ErrMessage))
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatusWithResponse, clusterId, object.ErrMessage))
 			}
 		}
 		return object, object.Status, nil

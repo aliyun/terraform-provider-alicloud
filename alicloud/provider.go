@@ -1441,7 +1441,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_migration_instance":                                resourceAlicloudDtsMigrationInstance(),
 			"alicloud_mse_gateway":                                           resourceAlicloudMseGateway(),
 			"alicloud_dbfs_service_linked_role":                              resourceAlicloudDbfsServiceLinkedRole(),
-			"alicloud_resource_manager_service_linked_role":                  resourceAlicloudResourceManagerServiceLinkedRole(),
+			"alicloud_resource_manager_service_linked_role":                  resourceAliCloudResourceManagerServiceLinkedRole(),
 			"alicloud_rds_service_linked_role":                               resourceAlicloudRdsServiceLinkedRole(),
 			"alicloud_mongodb_sharding_network_private_address":              resourceAlicloudMongodbShardingNetworkPrivateAddress(),
 			"alicloud_ecp_instance":                                          resourceAlicloudEcpInstance(),
