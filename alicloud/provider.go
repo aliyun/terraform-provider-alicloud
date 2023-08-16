@@ -1230,7 +1230,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_auto_snapshot_policy_attachment":                   resourceAlicloudEcsAutoSnapshotPolicyAttachment(),
 			"alicloud_ddoscoo_domain_resource":                               resourceAlicloudDdoscooDomainResource(),
 			"alicloud_ddoscoo_port":                                          resourceAlicloudDdoscooPort(),
-			"alicloud_slb_load_balancer":                                     resourceAlicloudSlbLoadBalancer(),
+			"alicloud_slb_load_balancer":                                     resourceAliCloudSlbLoadBalancer(),
 			"alicloud_ecs_network_interface":                                 resourceAlicloudEcsNetworkInterface(),
 			"alicloud_ecs_network_interface_attachment":                      resourceAlicloudEcsNetworkInterfaceAttachment(),
 			"alicloud_config_aggregator":                                     resourceAlicloudConfigAggregator(),

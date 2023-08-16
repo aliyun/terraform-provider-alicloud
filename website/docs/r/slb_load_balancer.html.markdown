@@ -1,123 +1,137 @@
 ---
-subcategory: "Classic Load Balancer (SLB)"
+subcategory: "SLB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_load_balancer"
-sidebar_current: "docs-alicloud-resource-slb-load-balancer"
 description: |-
-  Provides an Application Load Balancer resource.
+  Provides a Alicloud SLB Load Balancer resource.
 ---
 
-# alicloud\_slb\_load\_balancer
+# alicloud_slb_load_balancer
 
-Provides an Application Load Balancer resource.
+Provides a SLB Load Balancer resource. The load balancing service that distributes traffic to multiple cloud servers can expand the external service capability of the application system through traffic distribution and improve the availability of the application system by eliminating single points of failure.
 
--> **NOTE:** Available in 1.123.1+
+For information about SLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create `PayByBandwidth` instance.
-
--> **NOTE:** The supported specifications vary by region. Currently, not all regions support guaranteed-performance instances.
-For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createloadbalancer-2#t4182.html).
+-> **NOTE:** Available since v1.210.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-# Create a intranet SLB instance
-variable "slb_load_balancer_name" {
-  default = "forSlbLoadBalancer"
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_zones" "load_balancer" {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "load_balancer" {
-  vpc_name = var.slb_load_balancer_name
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
 }
 
-resource "alicloud_vswitch" "load_balancer" {
-  vpc_id       = alicloud_vpc.load_balancer.id
-  cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_zones.load_balancer.zones[0].id
-  vswitch_name = var.slb_load_balancer_name
+resource "alicloud_vswitch" "vsw1" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  cidr_block   = "10.0.10.0/24"
+  vswitch_name = "${var.name}1"
 }
 
-resource "alicloud_slb_load_balancer" "load_balancer" {
-  load_balancer_name = var.slb_load_balancer_name
-  address_type       = "intranet"
-  load_balancer_spec = "slb.s2.small"
-  vswitch_id         = alicloud_vswitch.load_balancer.id
-  tags = {
-    info = "create for internet"
+resource "alicloud_resource_manager_resource_group" "rg1" {
+  display_name        = "slb01"
+  resource_group_name = "${var.name}2"
+}
+
+
+resource "alicloud_slb_load_balancer" "default" {
+  status                         = "active"
+  address_ip_version             = "ipv4"
+  address                        = "10.0.10.1"
+  instance_charge_type           = "PayByCLCU"
+  vswitch_id                     = "vsw-bp1fpj92chcwmdla73oxg"
+  slave_zone_id                  = "cn-hangzhou-h"
+  modification_protection_status = "ConsoleProtection"
+  load_balancer_name             = var.name
+  delete_protection              = "off"
+  vpc_id                         = "vpc-bp18uccoyc62e4gk6033e"
+  payment_type                   = "PayAsYouGo"
+  modification_protection_reason = "test"
+  address_type                   = "intranet"
+  master_zone_id                 = "cn-hangzhou-j"
+  tags {
+    tag_key   = "k1"
+    tag_value = "v1"
   }
-  instance_charge_type = "PayBySpec"
+  resource_group_id = alicloud_resource_manager_resource_group.rg1.id
 }
 ```
 
 ### Deleting `alicloud_slb_load_balancer` or removing it from your configuration
 
-The `alicloud_slb_load_balancer` resource allows you to manage `payment_type = "Subscription"` load balancer, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Load Balancer.
-You can resume managing the subscription load balancer via the AlibabaCloud Console.
+The `alicloud_slb_load_balancer` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
+You can resume managing the subscription instance via the AlibabaCloud Console.
 
 ## Argument Reference
 
 The following arguments are supported:
+* `address` - (Optional, ForceNew, Available since v1.123.1) The service address of the load balancing instance.
+* `address_ip_version` - (Optional, ForceNew, Available since v1.123.1) IP version.
+* `address_type` - (Optional, ForceNew, Available since v1.123.1) The address type of the load balancing instance.
+* `auto_pay` - (Optional) Whether the bill for a prepaid public network instance is automatically paid. Value:
+  - **true:** automatic payment. Immediately after calling the API, an SLB instance is generated.
+  - **false** (default): The SLB order was created after the API was called, but no payment was made. You can see unpaid orders in the console. The SLB instance will not be created because the order is not paid.
+-> **NOTE:**  This parameter is only applicable to China site and is only valid for subscription instances, that is, it is valid when the **PayType** parameter value is **PrePay.
 
-* `load_balancer_name` - (Optional) The name of the SLB. This name must be unique within your AliCloud account, can have a maximum of 80 characters,
-must contain only alphanumeric characters or hyphens, such as "-","/",".","_", and must not begin or end with a hyphen. If not specified,
-Terraform will autogenerate a name beginning with `tf-lb`.
-* `address_type` - (Optional, ForceNew) The network type of the SLB instance. Valid values: ["internet", "intranet"]. If load balancer launched in VPC, this value must be `intranet`.
-    - internet: After an Internet SLB instance is created, the system allocates a public IP address so that the instance can forward requests from the Internet.
-    - intranet: After an intranet SLB instance is created, the system allocates an intranet IP address so that the instance can only forward intranet requests.
-* `internet_charge_type` - (Optional) Valid values are `PayByBandwidth`, `PayByTraffic`. If this value is `PayByBandwidth`, then argument `address_type` must be `internet`. Default is `PayByTraffic`. If load balancer launched in VPC, this value must be `PayByTraffic`. Before version 1.10.1, the valid values are `paybybandwidth` and `paybytraffic`.
-* `bandwidth` - (Optional) Valid value is between 1 and 5120, If argument `internet_charge_type` is `PayByTraffic`, then this value will be ignored.
-* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in. **Note:** Required for a VPC SLB. If `address_type` is internet, it will be ignored.
-* `load_balancer_spec` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
- Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/doc-detail/27657.htm)" instance, it must be specified. Valid values: `slb.s1.small`, `slb.s2.small`, `slb.s2.medium`,
- `slb.s3.small`, `slb.s3.medium`, `slb.s3.large` and `slb.s4.large`. It will be ignored when `instance_charge_type = "PayByCLCU"`.
-* `tags` - (Optional) A mapping of tags to assign to the resource. The `tags` can have a maximum of 10 tag for every load balancer instance.
-* `payment_type` - (Optional) The billing method of the load balancer. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.
-* `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `PaymentType` is `Subscription`. Default to 1. Valid values: [1-9, 12, 24, 36]. This attribute is only used to create `Subscription` instance or modify the `PayAsYouGo` instance to `Subscription`. Once effect, it will not be modified that means running `terraform apply` will not affect the resource.
-* `master_zone_id` - (Optional, ForceNew) The primary zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the [DescribeZone](https://help.aliyun.com/document_detail/27585.htm) API.
-* `slave_zone_id` - (Optional, ForceNew) The standby zone ID of the SLB instance. If not specified, the system will be randomly assigned. You can query the primary and standby zones in a region by calling the DescribeZone API.
-* `delete_protection` - (Optional) Whether enable the deletion protection or not. on: Enable deletion protection. off: Disable deletion protection. Default to off. Only postpaid instance support this function.   
-* `address_ip_version` - (Optional) The IP version of the SLB instance to be created, which can be set to `ipv4` or `ipv6` . Default to `ipv4`. Now, only internet instance support `ipv6` address.
-* `address` - (Optional) Specify the IP address of the private network for the SLB instance, which must be in the destination CIDR block of the corresponding switch.
-* `resource_group_id` - (Optional, ForceNew) The id of resource group which the SLB belongs.
-* `modification_protection_reason` - (Optional) The reason of modification protection. It's effective when `modification_protection_status` is `ConsoleProtection`.
-* `modification_protection_status` - (Optional) The status of modification protection. Valid values: `ConsoleProtection` and `NonProtection`. Default value is `NonProtection`.
-* `status` - (Optional) The status of slb load balancer. Valid values: `active` and `inactice`. The system default value is `active`.
-* `name` - (Optional, Deprecated from v1.123.1) Field `name` has been deprecated from provider version 1.123.1 New field `load_balancer_name` instead.
-* `instance_charge_type` - (Optional, V1.193.0+) Support `PayBySpec` (default) and `PayByCLCU`, This parameter takes effect when the value of **payment_type** (instance payment mode) is **PayAsYouGo** (pay-as-you-go).
-* `specification` - (Optional, Deprecated from v1.123.1) Field `specification` has been deprecated from provider version 1.123.1 New field `load_balancer_spec` instead.
-* `internet` - (Optional, Deprecated from v1.124.0) Field `internet` has been deprecated from provider version 1.124.0 New field `address_type` instead.
 
--> **NOTE:** A "Shared-Performance" instance can be changed to "Performance-guaranteed", but the change is irreversible.
+.
+* `bandwidth` - (Optional, Available since v1.123.1) Peak bandwidth of a public networked instance billed by bandwidth.
+* `delete_protection` - (Optional, Available since v1.123.1) Whether to enable instance deletion protection.
+* `duration` - (Optional) The purchase duration of the prepaid public network instance. Valid values:
 
--> **NOTE:** To change a "Shared-Performance" instance to a "Performance-guaranteed" instance, the SLB will have a short probability of business interruption (10 seconds-30 seconds). Advise to change it during the business downturn, or migrate business to other SLB Instances by using GSLB before changing.
+* If **PricingCycle** is **month**, the value is **1 to 9 * *.
 
--> **NOTE:** Currently, the alibaba cloud international account does not support creating a `Subscription` SLB instance.
-
--> **NOTE:** This parameter `instance_charge_type` is only valid for China sites and only if the `payment_type` value is `PayAsYouGo`.
+* If **PricingCycle** is **year**, the value is **1 to 3 * *.
+-> **NOTE:**  This parameter is only applicable to China site and is only valid for subscription instances, that is, it is valid when the **PayType** parameter value is **PrePay.
+* `instance_charge_type` - (Optional, Available since v1.123.1) Instance billing method. Value:
+  - **PayBySpec (default)**: billed by specification.
+  - **PayByCLCU**: Billed by usage.
+-> **NOTE:**  This parameter takes effect when the value of **PayType** (instance payment mode) is **PayOnDemand** (pay-as-you-go).
+.
+* `internet_charge_type` - (Optional, Available since v1.123.1) Public network type instance payment method.
+* `load_balancer_name` - (Optional, Available since v1.123.1) Name of the load balancing instance.
+* `load_balancer_spec` - (Optional, Available since v1.123.1) Specifications for instances.
+* `master_zone_id` - (Optional, ForceNew, Available since v1.123.1) ID of the primary available area of the load balancing instance.
+* `modification_protection_reason` - (Optional, Available since v1.123.1) Sets the reason for modifying the protected state.
+* `modification_protection_status` - (Optional, Available since v1.123.1) Load balancing modifies the protection state.
+* `payment_type` - (Optional, Computed, Available since v1.123.1) Load balancing instance payment type.
+* `pricing_cycle` - (Optional) Billing cycle.
+* `resource_group_id` - (Optional, Computed, Available since v1.123.1) Resource group id.
+* `slave_zone_id` - (Optional, ForceNew, Available since v1.123.1) ID of the ready-to-use zone of the load balancing instance.
+* `status` - (Optional, Computed, Available since v1.123.1) The status of SLB.
+* `tags` - (Optional, Map, Available since v1.123.1) The tags of VSwitch.
+* `vswitch_id` - (Optional, ForceNew, Available since v1.123.1) The ID of the switch.
+* `vpc_id` - (Optional, ForceNew) VPC ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the load balancing instance.
 
-* `id` - The ID of the load balancer.
-* `address` - The IP address of the load balancer.
-
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when creating the SLB load balancer.(until it reaches the initial `active` status). 
-* `delete` - (Defaults to 9 mins) Used when terminating the SLB load balancer.
+* `create` - (Defaults to 5 mins) Used when create the Load Balancer.
+* `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.
+* `update` - (Defaults to 5 mins) Used when update the Load Balancer.
 
 ## Import
 
-Load balancer can be imported using the id, e.g.
+SLB Load Balancer can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_slb_load_balancer.example lb-abc123456
+$ terraform import alicloud_slb_load_balancer.example <id>
 ```
