@@ -158,6 +158,13 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 	return ""
 }
 
+// irregularProductCode specially records those product codes that
+// cannot be parsed out by the location service.
+// The priority of this configuration is higher than location service, lower than user environment variable configuration
+var irregularProductCode = map[string]string{
+	"tablestore": "tablestore.%s.aliyuncs.com",
+}
+
 // NOTE: The productCode must be lower.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Firstly, load endpoint from environment variables
@@ -168,11 +175,10 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	}
 
 	// Secondly, load endpoint from known rules
-	// Currently, this way is not pass.
-	// if _, ok := irregularProductCode[productCode]; !ok {
-	// 	client.config.Endpoints[productCode] = regularEndpoint
-	// 	return nil
-	// }
+	if endpointFmt, ok := irregularProductCode[productCode]; ok {
+		client.config.Endpoints.Store(productCode, fmt.Sprintf(endpointFmt, client.RegionId))
+		return nil
+	}
 
 	// Thirdly, load endpoint from location
 	serviceCode := serviceCodeMapping[productCode]
