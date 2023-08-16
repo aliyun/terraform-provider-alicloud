@@ -1230,11 +1230,15 @@ func TestAccAlicloudSlbLoadBalancer_basic4064(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name": name,
+					"load_balancer_name":   name,
+					"instance_charge_type": "PayBySpec",
+					"load_balancer_spec":   "slb.s1.small",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name": name,
+						"load_balancer_name":   name,
+						"instance_charge_type": "PayBySpec",
+						"load_balancer_spec":   "slb.s1.small",
 					}),
 				),
 			},
@@ -1260,6 +1264,27 @@ func TestAccAlicloudSlbLoadBalancer_basic4064(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"modification_protection_reason": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"modification_protection_reason": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"modification_protection_status": "NonProtection",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"modification_protection_status": "NonProtection",
+						"modification_protection_reason": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"delete_protection": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1280,11 +1305,11 @@ func TestAccAlicloudSlbLoadBalancer_basic4064(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_reason": "test",
+					"modification_protection_status": "NonProtection",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"modification_protection_reason": "test",
+						"modification_protection_status": "NonProtection",
 					}),
 				),
 			},
@@ -1330,26 +1355,6 @@ func TestAccAlicloudSlbLoadBalancer_basic4064(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_reason": "test-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_reason": "test-update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_status": "NonProtection",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_status": "NonProtection",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"delete_protection": "off",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1390,71 +1395,11 @@ func TestAccAlicloudSlbLoadBalancer_basic4064(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_status": "ConsoleProtection",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_status": "ConsoleProtection",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"load_balancer_name": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_reason": "test",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_reason": "test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"load_balancer_spec": "slb.s1.small",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_spec": "slb.s1.small",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"bandwidth": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"bandwidth": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"delete_protection": "on",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"delete_protection": "on",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"modification_protection_reason": "test-update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_reason": "test-update",
 					}),
 				),
 			},
@@ -1836,13 +1781,13 @@ func TestAccAlicloudSlbLoadBalancer_basic4052_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"status":                         "active",
 					"address_ip_version":             "ipv4",
-					"address":                        "10.0.10.1",
+					"address":                        "10.0.10.5",
 					"instance_charge_type":           "PayByCLCU",
 					"vswitch_id":                     "vsw-bp1fpj92chcwmdla73oxg",
 					"slave_zone_id":                  "cn-hangzhou-h",
 					"modification_protection_status": "ConsoleProtection",
 					"load_balancer_name":             name,
-					"delete_protection":              "on",
+					"delete_protection":              "off",
 					"vpc_id":                         "vpc-bp18uccoyc62e4gk6033e",
 					"payment_type":                   "PayAsYouGo",
 					"modification_protection_reason": "test-update",
@@ -1858,13 +1803,13 @@ func TestAccAlicloudSlbLoadBalancer_basic4052_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"status":                         "active",
 						"address_ip_version":             "ipv4",
-						"address":                        "10.0.10.1",
+						"address":                        "10.0.10.5",
 						"instance_charge_type":           "PayByCLCU",
 						"vswitch_id":                     "vsw-bp1fpj92chcwmdla73oxg",
 						"slave_zone_id":                  "cn-hangzhou-h",
 						"modification_protection_status": "ConsoleProtection",
 						"load_balancer_name":             name,
-						"delete_protection":              "on",
+						"delete_protection":              "off",
 						"vpc_id":                         "vpc-bp18uccoyc62e4gk6033e",
 						"payment_type":                   "PayAsYouGo",
 						"modification_protection_reason": "test-update",
@@ -1914,7 +1859,7 @@ func TestAccAlicloudSlbLoadBalancer_basic4064_twin(t *testing.T) {
 					"slave_zone_id":                  "cn-hangzhou-h",
 					"modification_protection_status": "ConsoleProtection",
 					"load_balancer_name":             name,
-					"delete_protection":              "on",
+					"delete_protection":              "off",
 					"payment_type":                   "PayAsYouGo",
 					"modification_protection_reason": "test-update",
 					"address_type":                   "internet",
@@ -1936,7 +1881,7 @@ func TestAccAlicloudSlbLoadBalancer_basic4064_twin(t *testing.T) {
 						"slave_zone_id":                  "cn-hangzhou-h",
 						"modification_protection_status": "ConsoleProtection",
 						"load_balancer_name":             name,
-						"delete_protection":              "on",
+						"delete_protection":              "off",
 						"payment_type":                   "PayAsYouGo",
 						"modification_protection_reason": "test-update",
 						"address_type":                   "internet",

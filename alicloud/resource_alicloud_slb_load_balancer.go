@@ -31,16 +31,19 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			"address": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"address_ip_version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"address_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"auto_pay": {
@@ -49,6 +52,7 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			},
 			"bandwidth": {
 				Type:     schema.TypeInt,
+				Computed: true,
 				Optional: true,
 			},
 			"create_time": {
@@ -58,6 +62,7 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			"delete_protection": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"duration": {
@@ -72,6 +77,7 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"paybybandwidth", "paybytraffic"}, false),
 			},
 			"load_balancer_name": {
@@ -81,18 +87,27 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			"load_balancer_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"master_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"modification_protection_reason": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("modification_protection_status"); ok && v.(string) == "NonProtection" {
+						return true
+					}
+					return false
+				},
 			},
 			"modification_protection_status": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
 			},
 			"payment_type": {
@@ -113,6 +128,7 @@ func resourceAliCloudSlbLoadBalancer() *schema.Resource {
 			"slave_zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -460,8 +476,8 @@ func resourceAliCloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("modification_protection_status") {
 		update = true
-		request["ModificationProtectionStatus"] = d.Get("modification_protection_status")
 	}
+	request["ModificationProtectionStatus"] = d.Get("modification_protection_status")
 
 	if !d.IsNewResource() && d.HasChange("modification_protection_reason") {
 		update = true
@@ -592,8 +608,8 @@ func resourceAliCloudSlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 	if !d.IsNewResource() && d.HasChange("instance_charge_type") {
 		update = true
-		request["InstanceChargeType"] = d.Get("instance_charge_type")
 	}
+	request["InstanceChargeType"] = d.Get("instance_charge_type")
 
 	if !d.IsNewResource() && d.HasChange("load_balancer_spec") {
 		update = true
@@ -755,6 +771,61 @@ func convertSlbInternetChargeTypeRequest(source interface{}) interface{} {
 		return "paybybandwidth"
 	case "PayByTraffic":
 		return "paybytraffic"
+	}
+	return source
+}
+
+func convertSlbLoadBalancerInternetChargeTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayByBandwidth":
+		return "paybybandwidth"
+	case "PayByTraffic":
+		return "paybytraffic"
+	}
+	return source
+}
+func convertSlbLoadBalancerPaymentTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PayOnDemand"
+	case "Subscription":
+		return "PrePay"
+	}
+	return source
+}
+func convertSlbLoadBalancerInstanceChargeTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayOnDemand"
+	case "PrePaid":
+		return "PrePay"
+	}
+	return source
+}
+func convertSlbLoadBalancerInternetChargeTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "paybybandwidth":
+		return "PayByBandwidth"
+	case "paybytraffic":
+		return "PayByTraffic"
+	}
+	return source
+}
+func convertSlbLoadBalancerPaymentTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PayOnDemand":
+		return "PayAsYouGo"
+	case "PrePay":
+		return "Subscription"
+	}
+	return source
+}
+func convertSlbLoadBalancerInstanceChargeTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "PayOnDemand":
+		return "PostPaid"
+	case "PrePay":
+		return "PrePaid"
 	}
 	return source
 }
