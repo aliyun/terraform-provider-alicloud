@@ -122,7 +122,7 @@ func testSweepVpcPublicIpAddressPool(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpcPublicIpAddressPool_basic0(t *testing.T) {
+func TestAccAliCloudVpcPublicIpAddressPool_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_public_ip_address_pool.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolMap)
@@ -467,7 +467,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 
 // Test Vpc PublicIpAddressPool. >>> Resource test cases, automatically generated.
 // Case 2534
-func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
+func TestAccAliCloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_public_ip_address_pool.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPublicIpAddressPoolMap2534)
@@ -511,7 +511,7 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -551,7 +551,7 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.changeRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -564,7 +564,7 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 					"description":                 "rdk-test",
 					"public_ip_address_pool_name": name + "_update",
 					"isp":                         "BGP",
-					"resource_group_id":           "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -635,16 +635,9 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-test-acc-publicaddresspool-916"
-  resource_group_name = "tf-test-acc-publicaddresspool-688"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
-
-resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-publicaddresspool-change-1"
-  resource_group_name = "tf-testacc-publicaddresspool-change-512"
-}
-
 
 `, name)
 }

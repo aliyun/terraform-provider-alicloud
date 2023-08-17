@@ -116,7 +116,7 @@ func testSweepVpcPrefixList(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCPrefixList_basic0(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap0)
@@ -183,7 +183,7 @@ variable "name" {
 `, name)
 }
 
-func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
@@ -276,7 +276,7 @@ func TestAccAlicloudVPCPrefixList_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCPrefixList_basic2(t *testing.T) {
+func TestAccAliCloudVPCPrefixList_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPrefixListMap1)
@@ -639,7 +639,7 @@ func TestUnitAccAlicloudVpcPrefixList(t *testing.T) {
 
 // Test Vpc PrefixList. >>> Resource test cases, automatically generated.
 // Case 3120
-func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
+func TestAccAliCloudVpcPrefixList_basic3120(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPrefixListMap3120)
@@ -681,7 +681,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -726,7 +726,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.changeRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -782,7 +782,7 @@ func TestAccAlicloudVpcPrefixList_basic3120(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"max_entries":             "50",
-					"resource_group_id":       "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"prefix_list_description": "test",
 					"ip_version":              "IPV4",
 					"prefix_list_name":        name + "_update",
@@ -864,22 +864,15 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-chenyi"
-  resource_group_name = var.name
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
-
-resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-chenyi-change"
-  resource_group_name = "${var.name}1"
-}
-
 
 `, name)
 }
 
 // Case 3120  twin
-func TestAccAlicloudVpcPrefixList_basic3120_twin(t *testing.T) {
+func TestAccAliCloudVpcPrefixList_basic3120_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_prefix_list.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPrefixListMap3120)
@@ -902,7 +895,7 @@ func TestAccAlicloudVpcPrefixList_basic3120_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"max_entries":             "40",
-					"resource_group_id":       "${alicloud_resource_manager_resource_group.changeRg.id}",
+					"resource_group_id":       "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"prefix_list_description": "testupdate",
 					"ip_version":              "IPV4",
 					"prefix_list_name":        name,

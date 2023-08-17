@@ -119,7 +119,7 @@ func testSweepVpcIpv6Gateway(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCIpv6Gateway_basic0(t *testing.T) {
+func TestAccAliCloudVPCIpv6Gateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
@@ -619,7 +619,7 @@ func TestUnitAlicloudVPCIpv6Gateway(t *testing.T) {
 
 // Test Vpc Ipv6Gateway. >>> Resource test cases, automatically generated.
 // Case 1897
-func TestAccAlicloudVpcIpv6Gateway_basic1897(t *testing.T) {
+func TestAccAliCloudVpcIpv6Gateway_basic1897(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6GatewayMap1897)
@@ -663,7 +663,7 @@ func TestAccAlicloudVpcIpv6Gateway_basic1897(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -746,7 +746,7 @@ func TestAccAlicloudVpcIpv6Gateway_basic1897(t *testing.T) {
 					"description":       "test",
 					"ipv6_gateway_name": name + "_update",
 					"vpc_id":            "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -822,22 +822,15 @@ resource "alicloud_vpc" "defaultVpc" {
   enable_ipv6 = true
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-testacc-ipv6gateway258"
-  resource_group_name = "${var.name}1"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
-
-resource "alicloud_resource_manager_resource_group" "changeRg" {
-  display_name        = "tf-testacc-ipv6gateway463"
-  resource_group_name = "${var.name}2"
-}
-
 
 `, name)
 }
 
 // Case 1897  twin
-func TestAccAlicloudVpcIpv6Gateway_basic1897_twin(t *testing.T) {
+func TestAccAliCloudVpcIpv6Gateway_basic1897_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6GatewayMap1897)
@@ -862,7 +855,7 @@ func TestAccAlicloudVpcIpv6Gateway_basic1897_twin(t *testing.T) {
 					"description":       "test-update",
 					"ipv6_gateway_name": name,
 					"vpc_id":            "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",

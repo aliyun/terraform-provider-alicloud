@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCFlowLog_basic0(t *testing.T) {
+func TestAccAliCloudVPCFlowLog_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
@@ -122,7 +122,7 @@ func TestAccAlicloudVPCFlowLog_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCFlowLog_basic1(t *testing.T) {
+func TestAccAliCloudVPCFlowLog_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap0)
@@ -718,7 +718,7 @@ func TestUnitAlicloudVPCFlowLog(t *testing.T) {
 
 // Test Vpc FlowLog. >>> Resource test cases, automatically generated.
 // Case 3246
-func TestAccAlicloudVpcFlowLog_basic3246(t *testing.T) {
+func TestAccAliCloudVpcFlowLog_basic3246(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap3246)
@@ -770,7 +770,7 @@ func TestAccAlicloudVpcFlowLog_basic3246(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -820,7 +820,7 @@ func TestAccAlicloudVpcFlowLog_basic3246(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.ModifyRG.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -847,7 +847,7 @@ func TestAccAlicloudVpcFlowLog_basic3246(t *testing.T) {
 						"all"},
 					"project_name":         "${alicloud_log_project.default.name}",
 					"resource_type":        "VPC",
-					"resource_group_id":    "${alicloud_resource_manager_resource_group.defaultRg.id}",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"resource_id":          "${alicloud_vpc.defaultVpc.id}",
 					"aggregation_interval": "1",
 					"traffic_type":         "All",
@@ -927,19 +927,13 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  resource_group_name = var.name
-  display_name        = "tf-testAcc-rg356"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_vpc" "defaultVpc" {
   vpc_name   = "${var.name}1"
   cidr_block = "10.0.0.0/8"
-}
-
-resource "alicloud_resource_manager_resource_group" "ModifyRG" {
-  display_name        = "tf-testAcc-rg439"
-  resource_group_name = "${var.name}2"
 }
 
 resource "alicloud_log_project" "default" {
@@ -956,7 +950,7 @@ resource "alicloud_log_store" "default" {
 }
 
 // Case 3246  twin
-func TestAccAlicloudVpcFlowLog_basic3246_twin(t *testing.T) {
+func TestAccAliCloudVpcFlowLog_basic3246_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_flow_log.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcFlowLogMap3246)
@@ -985,7 +979,7 @@ func TestAccAlicloudVpcFlowLog_basic3246_twin(t *testing.T) {
 						"all"},
 					"project_name":         "${alicloud_log_project.default.name}",
 					"resource_type":        "VPC",
-					"resource_group_id":    "${alicloud_resource_manager_resource_group.ModifyRG.id}",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"resource_id":          "${alicloud_vpc.defaultVpc.id}",
 					"aggregation_interval": "5",
 					"traffic_type":         "All",

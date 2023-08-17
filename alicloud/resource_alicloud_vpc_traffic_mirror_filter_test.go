@@ -116,7 +116,7 @@ func testSweepVPCTrafficMirrorFilter(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCTrafficMirrorFilter_basic0(t *testing.T) {
+func TestAccAliCloudVPCTrafficMirrorFilter_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
@@ -191,7 +191,7 @@ func TestAccAlicloudVPCTrafficMirrorFilter_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCTrafficMirrorFilter_basic1(t *testing.T) {
+func TestAccAliCloudVPCTrafficMirrorFilter_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
@@ -580,7 +580,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilter(t *testing.T) {
 
 // Test Vpc TrafficMirrorFilter. >>> Resource test cases, automatically generated.
 // Case 3269
-func TestAccAlicloudVpcTrafficMirrorFilter_basic3269(t *testing.T) {
+func TestAccAliCloudVpcTrafficMirrorFilter_basic3269(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcTrafficMirrorFilterMap3269)
@@ -622,7 +622,7 @@ func TestAccAlicloudVpcTrafficMirrorFilter_basic3269(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.default3iXhoa.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -652,7 +652,7 @@ func TestAccAlicloudVpcTrafficMirrorFilter_basic3269(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.defaultdNz2qk.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -664,7 +664,7 @@ func TestAccAlicloudVpcTrafficMirrorFilter_basic3269(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"traffic_mirror_filter_description": "test",
 					"traffic_mirror_filter_name":        name + "_update",
-					"resource_group_id":                 "${alicloud_resource_manager_resource_group.default3iXhoa.id}",
+					"resource_group_id":                 "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"egress_rules": []map[string]interface{}{
 						{
 							"priority":               "1",
@@ -761,22 +761,15 @@ variable "name" {
     default = "%s"
 }
 
-resource "alicloud_resource_manager_resource_group" "default3iXhoa" {
-  display_name        = "testname03"
-  resource_group_name = var.name
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
-
-resource "alicloud_resource_manager_resource_group" "defaultdNz2qk" {
-  display_name        = "testname04"
-  resource_group_name = "${var.name}1"
-}
-
 
 `, name)
 }
 
 // Case 3269  twin
-func TestAccAlicloudVpcTrafficMirrorFilter_basic3269_twin(t *testing.T) {
+func TestAccAliCloudVpcTrafficMirrorFilter_basic3269_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_traffic_mirror_filter.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcTrafficMirrorFilterMap3269)
@@ -800,7 +793,7 @@ func TestAccAlicloudVpcTrafficMirrorFilter_basic3269_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"traffic_mirror_filter_description": "testupdate",
 					"traffic_mirror_filter_name":        name,
-					"resource_group_id":                 "${alicloud_resource_manager_resource_group.defaultdNz2qk.id}",
+					"resource_group_id":                 "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"egress_rules": []map[string]interface{}{
 						{
 							"priority":               "1",
