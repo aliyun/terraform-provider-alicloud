@@ -7,19 +7,22 @@ description: |-
   Provides a Alicloud DdosCoo Scheduler Rule resource.
 ---
 
-# alicloud\_ddoscoo\_scheduler\_rule
+# alicloud_ddoscoo_scheduler_rule
 
-Provides a DdosCoo Scheduler Rule resource. For information about DdosCoo Scheduler Rule and how to use it, see[What is DdosCoo Scheduler Rule](https://www.alibabacloud.com/help/en/doc-detail/157481.htm).
+Provides a DdosCoo Scheduler Rule resource. For information about DdosCoo Scheduler Rule and how to use it, see[What is DdosCoo Scheduler Rule](https://www.alibabacloud.com/help/en/ddos-protection/latest/api-ddoscoo-2020-01-01-createschedulerrule).
 
--> **NOTE:** Available in 1.86.0+
+-> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 resource "alicloud_ddoscoo_scheduler_rule" "example" {
-  rule_name = "tf-testacc7929727"
+  rule_name = var.name
   rule_type = 3
   rules {
     priority   = 100
@@ -49,9 +52,9 @@ The following arguments are supported:
     `2`: tiered protection.
     `3`: globalization acceleration.
     `6`: Cloud product interaction.
-* `rules` - (Required) The information about the scheduling rules. See the following `Block rules`.
+* `rules` - (Required) The information about the scheduling rules. See [`rules`](#rules) below.
 
-### Block rules
+### `rules`
 
 The rules supports the following:
 
@@ -66,6 +69,7 @@ The rules supports the following:
     `3`: the IP address used to accelerate access (in the network acceleration scenario)
     `6` the IP address of the interaction resource (in the cloud service interaction scenario)
 * `region_id` - (Optional) The region where the interaction resource that is used in the scheduling rule is deployed. **NOTE:** This parameter is returned only if the RuleType parameter is set to 2.
+* `status` - (Optional) The status of the scheduling rule.
 
 ## Attributes Reference
 
@@ -73,10 +77,8 @@ The following attributes are exported:
 
 * `id` - The resource ID of scheduler rule. The value is `<rule_name>`.
 * `cname` - The cname is the traffic scheduler corresponding to rules.
-* `rules` - The information about the scheduling rules.
-  * `status` - The status of the scheduling rule.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.163.0+
 

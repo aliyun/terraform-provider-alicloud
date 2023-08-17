@@ -7,54 +7,63 @@ description: |-
   Provides a Alicloud Ddos Basic Threshold resource.
 ---
 
-# alicloud\_ddos\_basic\_threshold
+# alicloud_ddos_basic_threshold
 
 Provides a Ddos Basic Threshold resource.
 
 For information about Ddos Basic Threshold and how to use it, see [What is Threshold](https://www.alibabacloud.com/help/en/ddos-protection/latest/describe-ip-ddosthreshold).
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_zones" default {
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_zones" "default" {
   available_resource_creation = "Instance"
 }
 data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  availability_zone = data.alicloud_zones.default.zones.0.id
   cpu_core_count    = 1
   memory_size       = 2
 }
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-resource "alicloud_security_group" "default" {
-  name        = "${var.name}"
-  description = "New security group"
-  vpc_id      = data.alicloud_vpcs.default.ids.0
-}
 data "alicloud_images" "default" {
-  owners      = "system"
-  name_regex  = "^centos_8"
-  most_recent = true
+  owners     = "system"
+  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
 }
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name        = var.name
+  description = "New security group"
+  vpc_id      = alicloud_vpc.default.id
+}
+
 resource "alicloud_instance" "default" {
-  availability_zone          = "${data.alicloud_zones.default.zones.0.id}"
-  instance_name              = "${var.name}"
-  host_name                  = "tf-testAcc"
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  instance_name              = var.name
+  host_name                  = var.name
   internet_max_bandwidth_out = 10
   image_id                   = data.alicloud_images.default.images.0.id
   instance_type              = data.alicloud_instance_types.default.instance_types.0.id
   security_groups            = [alicloud_security_group.default.id]
-  vswitch_id                 = data.alicloud_vswitches.default.ids.0
+  vswitch_id                 = alicloud_vswitch.default.id
 }
+
 resource "alicloud_ddos_basic_threshold" "example" {
   pps           = 60000
   bps           = 100
@@ -82,7 +91,7 @@ The following attributes are exported:
 * `max_bps` - Maximum flow cleaning threshold. Unit: Mbps.
 * `max_pps` - The maximum number of messages cleaning threshold. Unit: pps.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

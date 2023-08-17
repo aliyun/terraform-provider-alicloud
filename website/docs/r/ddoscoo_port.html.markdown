@@ -7,35 +7,40 @@ description: |-
   Provides a Alicloud Anti-DDoS Pro Port resource.
 ---
 
-# alicloud\_ddoscoo\_port
+# alicloud_ddoscoo_port
 
 Provides a Anti-DDoS Pro Port resource.
 
-For information about Anti-DDoS Pro Port and how to use it, see [What is Port](https://www.alibabacloud.com/help/en/doc-detail/157482.htm).
+For information about Anti-DDoS Pro Port and how to use it, see [What is Port](https://www.alibabacloud.com/help/en/ddos-protection/latest/api-ddoscoo-2020-01-01-createport).
 
--> **NOTE:** Available in v1.123.0+.
+-> **NOTE:** Available since v1.123.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_ddoscoo_instance" "example" {
-  name              = "yourDdoscooInstanceName"
+variable "name" {
+  default = "tf-example"
+}
+resource "alicloud_ddoscoo_instance" "default" {
+  name              = var.name
   bandwidth         = "30"
   base_bandwidth    = "30"
   service_bandwidth = "100"
   port_count        = "50"
   domain_count      = "50"
+  period            = "1"
+  product_type      = "ddoscoo"
 }
 
-resource "alicloud_ddoscoo_port" "example" {
-  instance_id       = alicloud_ddoscoo_instance.example.id
+resource "alicloud_ddoscoo_port" "default" {
+  instance_id       = alicloud_ddoscoo_instance.default.id
   frontend_port     = "7001"
+  backend_port      = "7002"
   frontend_protocol = "tcp"
   real_servers      = ["1.1.1.1", "2.2.2.2"]
 }
-
 ```
 
 ## Argument Reference

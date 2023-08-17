@@ -13,21 +13,18 @@ Anti-DDoS Advanced instance resource. "Ddosbgp" is the short term of this produc
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
--> **NOTE:** Available in 1.183.0+ .
+-> **NOTE:** Available since v1.183.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  endpoints {
-    bssopenapi = "business.aliyuncs.com"
-  }
+variable "name" {
+  default = "tf-example"
 }
-
 resource "alicloud_ddosbgp_instance" "instance" {
-  name             = "yourDdosbgpInstanceName"
+  name             = var.name
   base_bandwidth   = 20
   bandwidth        = -1
   ip_count         = 100
