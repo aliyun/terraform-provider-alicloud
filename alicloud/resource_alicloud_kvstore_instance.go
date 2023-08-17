@@ -482,7 +482,6 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		request.InstanceType = v.(string)
 	}
 
-	request.NetworkType = "CLASSIC"
 	if v, ok := d.GetOk("node_type"); ok {
 		request.NodeType = v.(string)
 	}
