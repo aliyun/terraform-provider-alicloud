@@ -120,7 +120,7 @@ func testSweepLindormInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -135,6 +135,7 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -144,7 +145,7 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_efficiency",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":             "${var.name}",
 					"file_engine_specification": "lindorm.c.xlarge",
@@ -234,7 +235,7 @@ func TestAccAlicloudLindormInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -249,6 +250,7 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -258,7 +260,7 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_efficiency",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":             "${var.name}",
 					"file_engine_specification": "lindorm.c.xlarge",
@@ -322,7 +324,7 @@ func TestAccAlicloudLindormInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_2"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -337,6 +339,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -346,7 +349,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":              "cloud_efficiency",
 					"payment_type":               "PayAsYouGo",
-					"zone_id":                    "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                 "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":              "${var.name}",
 					"table_engine_specification": "lindorm.g.4xlarge",
@@ -396,7 +399,7 @@ func TestAccAlicloudLindormInstance_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_3"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -411,6 +414,7 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -420,7 +424,7 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_efficiency",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":             "${var.name}",
 					"file_engine_specification": "lindorm.c.xlarge",
@@ -484,7 +488,7 @@ func TestAccAlicloudLindormInstance_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -499,6 +503,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -508,7 +513,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_essd_pl0",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":             "${var.name}",
 					"file_engine_specification": "lindorm.c.xlarge",
@@ -560,7 +565,7 @@ func TestAccAlicloudLindormInstance_basic4(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic5(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic5(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_5"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -575,6 +580,7 @@ func TestAccAlicloudLindormInstance_basic5(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -584,7 +590,7 @@ func TestAccAlicloudLindormInstance_basic5(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_efficiency",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":             "${var.name}",
 					"file_engine_specification": "lindorm.c.xlarge",
@@ -648,7 +654,7 @@ func TestAccAlicloudLindormInstance_basic5(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic6(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.LindormInstanceRegions)
 	resourceId := "alicloud_lindorm_instance.default_1"
@@ -770,7 +776,7 @@ func TestAccAlicloudLindormInstance_basic6(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_basic7(t *testing.T) {
+func TestAccAliCloudLindormInstance_basic7(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_0"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -785,6 +791,7 @@ func TestAccAlicloudLindormInstance_basic7(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -794,7 +801,7 @@ func TestAccAlicloudLindormInstance_basic7(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":           "local_ssd_pro",
 					"payment_type":            "PayAsYouGo",
-					"zone_id":                 "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                 "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":              "${data.alicloud_vswitches.default.ids[0]}",
 					"instance_name":           "${var.name}",
 					"core_spec":               "lindorm.i2.4xlarge",
@@ -873,7 +880,7 @@ func TestAccAlicloudLindormInstance_basic7(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLindormInstance_VpcId(t *testing.T) {
+func TestAccAliCloudLindormInstance_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_lindorm_instance.default_1"
 	ra := resourceAttrInit(resourceId, AlicloudLindormInstanceMap0)
@@ -888,6 +895,7 @@ func TestAccAlicloudLindormInstance_VpcId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.LindormEndpointSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -897,7 +905,7 @@ func TestAccAlicloudLindormInstance_VpcId(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"disk_category":             "cloud_efficiency",
 					"payment_type":              "PayAsYouGo",
-					"zone_id":                   "${data.alicloud_zones.default.zones.0.id}",
+					"zone_id":                   "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids[0]}",
 					"vpc_id":                    "${data.alicloud_vpcs.default.ids.0}",
 					"instance_name":             "${var.name}",
@@ -978,7 +986,7 @@ func AlicloudLindormInstanceBasicDependence0(name string) string {
 	
 	data "alicloud_vswitches" "default" {
 		vpc_id = data.alicloud_vpcs.default.ids.0
-		zone_id = data.alicloud_zones.default.zones.0.id
+		zone_id = "cn-hangzhou-h"
 	}
 	
 	data "alicloud_resource_manager_resource_groups" "default" {
