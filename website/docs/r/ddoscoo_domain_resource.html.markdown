@@ -11,7 +11,7 @@ description: |-
 
 Provides a Anti-DDoS Pro Domain Resource resource.
 
-For information about Anti-DDoS Pro Domain Resource and how to use it, see [What is Domain Resource](https://www.alibabacloud.com/help/en/doc-detail/157463.htm).
+For information about Anti-DDoS Pro Domain Resource and how to use it, see [What is Domain Resource](https://www.alibabacloud.com/help/en/ddos-protection/latest/api-ddoscoo-2020-01-01-createwebrule).
 
 -> **NOTE:** Available since v1.123.0.
 
@@ -20,12 +20,30 @@ For information about Anti-DDoS Pro Domain Resource and how to use it, see [What
 Basic Usage
 
 ```terraform
-resource "alicloud_ddoscoo_domain_resource" "example" {
-  domain       = "tftestacc1234.abc"
+variable "name" {
+  default = "tf-example"
+}
+variable "domain" {
+  default = "tf-example.alibaba.com"
+}
+
+resource "alicloud_ddoscoo_instance" "default" {
+  name              = var.name
+  bandwidth         = "30"
+  base_bandwidth    = "30"
+  service_bandwidth = "100"
+  port_count        = "50"
+  domain_count      = "50"
+  period            = "1"
+  product_type      = "ddoscoo"
+}
+
+resource "alicloud_ddoscoo_domain_resource" "default" {
+  domain       = var.domain
   rs_type      = 0
-  instance_ids = ["ddoscoo-cn-6ja1rl4j****"]
+  instance_ids = [alicloud_ddoscoo_instance.default.id]
   real_servers = ["177.167.32.11"]
-  https_ext    = "{\"Http2\":1,\"Http2https\":0，\"Https2http\":0}"
+  https_ext    = "{\"Http2\":1,\"Http2https\":0,\"Https2http\":0}"
   proxy_types {
     proxy_ports = [443]
     proxy_type  = "https"
@@ -45,7 +63,7 @@ The following arguments are supported:
   - `0`: IP address.
   - `1`: domain name.
 -> **NOTE:** From version 1.206.0, `rs_type` can be modified.
-* `https_ext` - (Optional, Computed, Set) The advanced HTTPS settings. This parameter takes effect only when the value of ProxyType includes https. This parameter is a string that contains a JSON struct. The JSON struct includes the following fields:
+* `https_ext` - (Optional, Set) The advanced HTTPS settings. This parameter takes effect only when the value of ProxyType includes https. This parameter is a string that contains a JSON struct. The JSON struct includes the following fields:
   - `Http2https`: specifies whether to turn on Enforce HTTPS Routing. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enforce HTTPS Routing is turned off. The value `1` indicates that Enforce HTTPS Routing is turned on. The default value is `0`. If your website supports both HTTP and HTTPS, this feature suits your needs. If you turn on the switch, all HTTP requests are redirected to HTTPS requests on port 443 by default.
   - `Https2http`: specifies whether to turn on Enable HTTP. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enable HTTP is turned off. The value `1` indicates that Enable HTTP is turned on. The default value is `0`. If your website does not support HTTPS, this feature suits your needs. If you turn on the switch, all HTTPS requests are redirected to HTTP requests and forwarded to origin servers. The feature can also redirect WebSockets requests to WebSocket requests. All requests are redirected over port 80.
   - `Http2`: specifies whether to turn on Enable HTTP/2. This field is optional and must be an integer. Valid values: `0` and `1`. The value `0` indicates that Enable HTTP/2 is turned off. The value `1` indicates that Enable HTTP/2 is turned on. The default value is `0`. After you turn on the switch, the protocol type is HTTP/2.

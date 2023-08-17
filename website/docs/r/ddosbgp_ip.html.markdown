@@ -7,29 +7,39 @@ description: |-
   Provides a Alicloud Ddos Bgp Ip resource.
 ---
 
-# alicloud\_ddos\_bgp\_ip
+# alicloud_ddosbgp_ip
 
 Provides a Ddos Bgp Ip resource.
 
 For information about Ddos Bgp Ip and how to use it, see [What is Ip](https://www.alibabacloud.com/help/en/ddos-protection/latest/addip).
 
--> **NOTE:** Available in v1.180.0+.
+-> **NOTE:** Available since v1.180.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
-
-resource "alicloud_eip_address" "default" {
-  address_name = "${var.name}"
+resource "alicloud_ddosbgp_instance" "instance" {
+  name             = var.name
+  base_bandwidth   = 20
+  bandwidth        = -1
+  ip_count         = 100
+  ip_type          = "IPv4"
+  normal_bandwidth = 100
+  type             = "Enterprise"
 }
 
-data "alicloud_ddosbgp_instances" default {}
+resource "alicloud_eip_address" "default" {
+  address_name = var.name
+}
 
 resource "alicloud_ddosbgp_ip" "default" {
-  instance_id       = data.alicloud_ddosbgp_instances.default.ids.0
+  instance_id       = alicloud_ddosbgp_instance.instance.id
   ip                = alicloud_eip_address.default.ip_address
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
 }
@@ -50,7 +60,7 @@ The following attributes are exported:
 * `id` - The resource ID of Ip. The value formats as `<instance_id>:<ip>`.
 * `status` - The current state of the IP address. Valid Value: `normal`, `hole_begin`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

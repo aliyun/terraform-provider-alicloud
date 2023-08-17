@@ -9,27 +9,24 @@ description: |-
 
 # alicloud_ddoscoo_instance
 
-BGP-Line Anti-DDoS instance resource. "Ddoscoo" is the short term of this product. See [What is Anti-DDoS Pro](https://www.alibabacloud.com/help/doc-detail/69319.htm).
+BGP-Line Anti-DDoS instance resource. "Ddoscoo" is the short term of this product. See [What is Anti-DDoS Pro](https://www.alibabacloud.com/help/en/ddos-protection/latest/api-ddoscoo-2020-01-01-describeinstances).
 
 -> **NOTE:** The product region only support cn-hangzhou.
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
--> **NOTE:** Available in 1.37.0+ .
+-> **NOTE:** Available since v1.37.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  endpoints {
-    bssopenapi = "business.aliyuncs.com"
-  }
+variable "name" {
+  default = "tf-example"
 }
-
-resource "alicloud_ddoscoo_instance" "newInstance" {
-  name              = "yourDdoscooInstanceName"
+resource "alicloud_ddoscoo_instance" "default" {
+  name              = var.name
   bandwidth         = "30"
   base_bandwidth    = "30"
   service_bandwidth = "100"
@@ -50,7 +47,7 @@ The following arguments are supported:
 * `port_count` - (Required) Port retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `domain_count` - (Required) Domain retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `period` - (Optional, ForceNew) The duration that you will buy Ddoscoo instance (in month). Valid values: [1~9], 12, 24, 36. Default to 1. At present, the provider does not support modify "period".
-* `product_type` - (Optional,Available in 1.125.0+ ) The product type for purchasing DDOSCOO instances used to differ different account type. Valid values:
+* `product_type` - (Optional, Available since v1.125.0) The product type for purchasing DDOSCOO instances used to differ different account type. Valid values:
   - ddoscoo: Only supports domestic account.
   - ddoscoo_intl: Only supports to international account.
   Default to ddoscoo.

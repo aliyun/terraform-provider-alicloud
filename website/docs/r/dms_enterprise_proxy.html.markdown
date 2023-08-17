@@ -7,20 +7,30 @@ description: |-
   Provides a Alicloud DMS Enterprise Proxy resource.
 ---
 
-# alicloud\_dms\_enterprise\_proxy
+# alicloud_dms_enterprise_proxy
 
 Provides a DMS Enterprise Proxy resource.
 
 For information about DMS Enterprise Proxy and how to use it, see [What is Proxy](https://www.alibabacloud.com/help/en/data-management-service/latest/createproxy).
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 data "alicloud_account" "current" {}
+data "alicloud_regions" "default" {
+  current = true
+}
+data "alicloud_dms_user_tenants" "default" {
+  status = "ACTIVE"
+}
 
 data "alicloud_db_zones" "default" {
   engine                   = "MySQL"
@@ -39,69 +49,67 @@ data "alicloud_db_instance_classes" "default" {
   instance_charge_type     = "PostPaid"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
   name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 
-resource "alicloud_db_instance" "instance" {
+resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
   db_instance_storage_type = "cloud_essd"
   instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-  vswitch_id               = data.alicloud_vswitches.default.ids.0
+  vswitch_id               = alicloud_vswitch.default.id
   instance_name            = var.name
   security_ips             = ["100.104.5.0/24", "192.168.0.6"]
   tags = {
-    "key1" = "value1"
-    "key2" = "value2"
+    Created = "TF",
+    For     = "example",
   }
 }
 
-resource "alicloud_db_account" "account" {
-  db_instance_id   = "${alicloud_db_instance.instance.id}"
-  account_name     = "tftestnormal"
-  account_password = "Test12345"
+resource "alicloud_db_account" "default" {
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = "tfexamplename"
+  account_password = "Example12345"
   account_type     = "Normal"
 }
 
-data "alicloud_dms_user_tenants" "default" {
-  status = "ACTIVE"
-}
 resource "alicloud_dms_enterprise_instance" "default" {
-  dba_uid           = tonumber(data.alicloud_account.current.id)
-  host              = "${alicloud_db_instance.instance.connection_string}"
-  port              = "3306"
-  network_type      = "VPC"
-  safe_rule         = "自由操作"
   tid               = data.alicloud_dms_user_tenants.default.ids.0
-  instance_type     = "mysql"
+  instance_type     = "MySQL"
   instance_source   = "RDS"
-  env_type          = "test"
-  database_user     = alicloud_db_account.account.name
-  database_password = alicloud_db_account.account.password
+  network_type      = "VPC"
+  env_type          = "dev"
+  host              = alicloud_db_instance.default.connection_string
+  port              = 3306
+  database_user     = alicloud_db_account.default.account_name
+  database_password = alicloud_db_account.default.account_password
   instance_name     = var.name
-  query_timeout     = "70"
-  export_timeout    = "2000"
-  ecs_region        = "%s"
-  ddl_online        = "0"
-  use_dsql          = "0"
-  data_link_name    = ""
+  dba_uid           = data.alicloud_account.current.id
+  safe_rule         = "自由操作"
+  query_timeout     = 60
+  export_timeout    = 600
+  ecs_region        = data.alicloud_regions.default.regions.0.id
 }
 
 resource "alicloud_dms_enterprise_proxy" "default" {
   instance_id = alicloud_dms_enterprise_instance.default.instance_id
-  password    = "Test12345"
-  username    = "tftestnormal"
+  password    = "Example12345"
+  username    = "tfexamplename"
   tid         = data.alicloud_dms_user_tenants.default.ids.0
 }
 ```
@@ -121,7 +129,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Proxy.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,32 +7,101 @@ description: |-
   Provides a DMS Enterprise Instance resource.
 ---
 
-# alicloud\_dms\_enterprise\_instance
+# alicloud_dms_enterprise_instance
 
 Provides a DMS Enterprise Instance resource.
 
 -> **NOTE:** API users must first register in DMS.
--> **NOTE:** Available in 1.81.0+.
+
+-> **NOTE:** Available since v1.81.0.
 
 ## Example Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_account" "current" {}
+data "alicloud_regions" "default" {
+  current = true
+}
+data "alicloud_dms_user_tenants" "default" {
+  status = "ACTIVE"
+}
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+  instance_charge_type     = "PostPaid"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_db_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_db_instance" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "cloud_essd"
+  instance_type            = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id               = alicloud_vswitch.default.id
+  instance_name            = var.name
+  security_ips             = ["100.104.5.0/24", "192.168.0.6"]
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
+
+resource "alicloud_db_account" "default" {
+  db_instance_id   = alicloud_db_instance.default.id
+  account_name     = "tfexamplename"
+  account_password = "Example12345"
+  account_type     = "Normal"
+}
+
 resource "alicloud_dms_enterprise_instance" "default" {
-  tid               = "12345"
+  tid               = data.alicloud_dms_user_tenants.default.ids.0
   instance_type     = "MySQL"
   instance_source   = "RDS"
   network_type      = "VPC"
-  env_type          = "test"
-  host              = "rm-uf648hgsxxxxxx.mysql.rds.aliyuncs.com"
+  env_type          = "dev"
+  host              = alicloud_db_instance.default.connection_string
   port              = 3306
-  database_user     = "your_user_name"
-  database_password = "Yourpassword123"
-  instance_name     = "your_alias_name"
-  dba_uid           = "1182725234xxxxxxx"
+  database_user     = alicloud_db_account.default.account_name
+  database_password = alicloud_db_account.default.account_password
+  instance_name     = var.name
+  dba_uid           = data.alicloud_account.current.id
   safe_rule         = "自由操作"
   query_timeout     = 60
   export_timeout    = 600
-  ecs_region        = "cn-shanghai"
+  ecs_region        = data.alicloud_regions.default.regions.0.id
 }
 ```
 ## Argument Reference
@@ -49,23 +118,25 @@ The following arguments are supported:
 * `database_user` - (Required) Database access account.
 * `database_password` - (Required) Database access password.
 * `instance_alias` - It has been deprecated from provider version 1.100.0 and 'instance_name' instead.
-* `instance_name` - (Optional, Computed, Available in v1.100.0+) Instance name, to help users quickly distinguish positioning.
+* `instance_name` - (Optional, Available since v1.100.0) Instance name, to help users quickly distinguish positioning.
 * `dba_uid` - (Required, ForceNew)  The DBA of the instance is passed into the Alibaba Cloud uid of the DBA.
 * `safe_rule` - (Required, ForceNew) The security rule of the instance is passed into the name of the security rule in the enterprise.
 * `query_timeout` - (Required) Query timeout time, unit: s (seconds).
 * `export_timeout` - (Required) Export timeout, unit: s (seconds).
-* `ecs_instance_id` - (Optional, Computed) ECS instance ID. The value of InstanceSource is the ECS self-built library. This value must be passed.
+* `ecs_instance_id` - (Optional) ECS instance ID. The value of InstanceSource is the ECS self-built library. This value must be passed.
 * `vpc_id` - (Optional) VPC ID. This value must be passed when the value of InstanceSource is VPC dedicated line IDC.
 * `ecs_region` - (Optional) The region where the instance is located. This value must be passed when the value of InstanceSource is RDS, ECS self-built library, and VPC dedicated line IDC.
 * `sid` - (Optional) The SID. This value must be passed when InstanceType is PostgreSQL or Oracle.
-* `data_link_name` - (Optional, Computed) Cross-database query datalink name.
+* `data_link_name` - (Optional) Cross-database query datalink name.
 * `ddl_online` - (Optional) Whether to use online services, currently only supports MySQL and PolarDB. Valid values: `0` Not used, `1` Native online DDL priority, `2` DMS lock-free table structure change priority.
 * `use_dsql` - (Optional) Whether to enable cross-instance query. Valid values: `0` not open, `1` open.
-* `instance_id` - (Optional, Computed) The instance id of the database instance. 
-* `dba_id` - (Optional, Computed) The dba id of the database instance.
+* `instance_id` - (Optional) The instance id of the database instance. 
+* `dba_id` - (Optional) The dba id of the database instance.
 * `skip_test` - (Optional) Whether the instance ignores test connectivity. Valid values: `true`, `false`.
-* `safe_rule_id` - (Optional, Computed) The safe rule id of the database instance.
-* `instance_alias` - (Optional, Computed, Deprecated from v1.100.0) Field `instance_alias` has been deprecated from version 1.100.0. Use `instance_name` instead.
+* `safe_rule_id` - (Optional) The safe rule id of the database instance.
+* `instance_alias` - (Optional, Deprecated from v1.100.0) Field `instance_alias` has been deprecated from version 1.100.0. Use `instance_name` instead.
+* `state` - (Deprecated) It has been deprecated from provider version 1.100.0 and 'status' instead.
+
                             
 ## Attributes Reference
 
@@ -73,12 +144,11 @@ The following attributes are exported:
 
 * `id` - The id of the DMS enterprise instance and format as `<host>:<port>`.
 * `dba_nick_name` - The instance dba nickname.
-* `state` - It has been deprecated from provider version 1.100.0 and 'status' instead.
 * `status` - The instance status.
 
-### Timeouts
+## Timeouts
 
--> **NOTE:** Available in 1.100.0+.
+-> **NOTE:** Available since v1.100.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
