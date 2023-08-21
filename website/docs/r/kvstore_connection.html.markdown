@@ -7,20 +7,60 @@ description: |-
   Operate the public network ip of the specified resource.
 ---
 
-# alicloud\_kvstore\_connection
+# alicloud_kvstore_connection
 
 Operate the public network ip of the specified resource. How to use it, see [What is Resource Alicloud KVStore Connection](https://www.alibabacloud.com/help/doc-detail/125795.htm).
 
--> **NOTE:** Available in v1.101.0+.
+-> **NOTE:** Available since v1.101.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_kvstore_zones" "default" {
+
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "default" {
+  db_instance_name  = var.name
+  vswitch_id        = alicloud_vswitch.default.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+  instance_class    = "redis.master.large.default"
+  instance_type     = "Redis"
+  engine_version    = "5.0"
+  security_ips      = ["10.23.12.24"]
+  config = {
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
+  }
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
+
 resource "alicloud_kvstore_connection" "default" {
-  connection_string_prefix = "allocatetestupdate"
-  instance_id              = "r-abc123456"
+  connection_string_prefix = "exampleconnection"
+  instance_id              = alicloud_kvstore_instance.default.id
   port                     = "6370"
 }
 ```
@@ -29,7 +69,7 @@ resource "alicloud_kvstore_connection" "default" {
 
 The following arguments are supported:
 * `connection_string_prefix` - (Required) The prefix of the public endpoint. The prefix can be 8 to 64 characters in length, and can contain lowercase letters and digits. It must start with a lowercase letter.
-* `instance_id`- (Required) The ID of the instance.
+* `instance_id`- (Required, ForceNew) The ID of the instance.
 * `port` - (Required) The service port number of the instance.
 
 ## Attributes Reference
@@ -39,7 +79,7 @@ The following attributes are exported:
 * `id` - The ID of KVStore DBInstance.
 * `connection_string` - The public connection string of KVStore DBInstance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

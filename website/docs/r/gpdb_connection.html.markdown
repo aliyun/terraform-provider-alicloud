@@ -7,11 +7,11 @@ description: |-
   Provides an AnalyticDB for PostgreSQL instance connection resource.
 ---
 
-# alicloud\_gpdb\_connection
+# alicloud_gpdb_connection
 
 Provides a connection resource to allocate an Internet connection string for instance.
 
--> **NOTE:**  Available in 1.48.0+
+-> **NOTE:** Available since v1.48.0.
 
 -> **NOTE:** Each instance will allocate a intranet connection string automatically and its prefix is instance ID.
  To avoid unnecessary conflict, please specified a internet connection prefix before applying the resource.
@@ -19,42 +19,49 @@ Provides a connection resource to allocate an Internet connection string for ins
 ## Example Usage
 
 ```terraform
-variable "creation" {
-  default = "Gpdb"
-}
-
 variable "name" {
-  default = "gpdbConnectionBasic"
+  default = "tf-example"
 }
-
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
-}
+data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_gpdb_zones" "default" {}
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_gpdb_zones.default.ids.0
 }
 
 resource "alicloud_gpdb_instance" "default" {
-  vswitch_id           = alicloud_vswitch.default.id
-  engine               = "gpdb"
-  engine_version       = "4.3"
-  instance_class       = "gpdb.group.segsdx2"
-  instance_group_count = "2"
-  description          = var.name
+  db_instance_category  = "HighAvailability"
+  db_instance_class     = "gpdb.group.segsdx1"
+  db_instance_mode      = "StorageElastic"
+  description           = var.name
+  engine                = "gpdb"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  instance_network_type = "VPC"
+  instance_spec         = "2C16G"
+  master_node_num       = 1
+  payment_type          = "PayAsYouGo"
+  private_ip_address    = "1.1.1.1"
+  seg_storage_type      = "cloud_essd"
+  seg_node_num          = 4
+  storage_size          = 50
+  vpc_id                = alicloud_vpc.default.id
+  vswitch_id            = alicloud_vswitch.default.id
+  ip_whitelist {
+    security_ip_list = "127.0.0.1"
+  }
 }
 
 resource "alicloud_gpdb_connection" "default" {
   instance_id       = alicloud_gpdb_instance.default.id
-  connection_prefix = "testAbc"
+  connection_prefix = "exampelcon"
 }
 ```
 
@@ -63,12 +70,14 @@ resource "alicloud_gpdb_connection" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The Id of instance that can run database.
-* `connection_prefix` - (ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + '-tf'.
+* `connection_prefix` - (Optional, ForceNew) Prefix of an Internet connection string. It must be checked for uniqueness. It may consist of lowercase letters, numbers, and underlines, and must start with a letter and have no more than 30 characters. Default to <instance_id> + '-tf'.
 * `port` - (Optional) Internet connection port. Valid value: [3200-3999]. Default to 3306.
+* `connection_string` - (Optional) Connection instance string.
+* `ip_address` - (Optional) The ip address of connection string.
 
-### Timeouts
+## Timeouts
 
--> **NOTE:** Available in 1.53.0+.
+-> **NOTE:** Available since v1.53.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -81,8 +90,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 The following attributes are exported:
 
 * `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<instance_id>:<connection_prefix>`.
-* `connection_string` - Connection instance string.
-* `ip_address` - The ip address of connection string.
 
 ## Import
 
