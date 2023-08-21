@@ -11,82 +11,149 @@ description: |-
 
 Provides an ApsaraDB Redis / Memcache instance resource. A DB instance is an isolated database environment in the cloud. It support be associated with IP whitelists and backup configuration which are separate resource providers. For information about Alicloud KVStore DBInstance more and how to use it, see [What is Resource Alicloud KVStore DBInstance](https://www.alibabacloud.com/help/en/tair/latest/api-r-kvstore-2015-01-01-createinstance).
 
--> **NOTE:** Available since v1.14.1.
+-> **NOTE:** Available since v1.14.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_kvstore_instance" "example" {
-  db_instance_name = "tf-basic-redis"
-  vswitch_id       = "vsw-123456"
-  security_ips = [
-  "10.23.12.24"]
-  instance_type  = "Redis"
-  engine_version = "4.0"
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_kvstore_zones" "default" {}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "default" {
+  db_instance_name  = var.name
+  vswitch_id        = alicloud_vswitch.default.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+  instance_class    = "redis.master.large.default"
+  instance_type     = "Redis"
+  engine_version    = "5.0"
+  security_ips      = ["10.23.12.24"]
   config = {
-    appendonly             = "yes",
-    lazyfree-lazy-eviction = "yes",
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
   }
   tags = {
     Created = "TF",
-    For     = "Test",
+    For     = "example",
   }
-  resource_group_id = "rg-123456"
-  zone_id           = "cn-beijing-h"
-  instance_class    = "redis.master.large.default"
 }
 ```
 
 Transform To PrePaid
 
 ```terraform
-resource "alicloud_kvstore_instance" "example" {
-  db_instance_name = "tf-basic-redis"
-  vswitch_id       = "vsw-123456"
-  security_ips = [
-  "10.23.12.24"]
-  instance_type  = "Redis"
-  engine_version = "4.0"
+variable "name" {
+  default = "tf-example-prepaid"
+}
+data "alicloud_kvstore_zones" "default" {
+  instance_charge_type = "PrePaid"
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "default" {
+  db_instance_name  = var.name
+  vswitch_id        = alicloud_vswitch.default.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+  secondary_zone_id = data.alicloud_kvstore_zones.default.zones.1.id
+  instance_class    = "redis.master.large.default"
+  instance_type     = "Redis"
+  engine_version    = "5.0"
+  payment_type      = "PrePaid"
+  period            = "12"
+  security_ips      = ["10.23.12.24"]
   config = {
-    appendonly             = "yes",
-    lazyfree-lazy-eviction = "yes",
+    appendonly             = "no"
+    lazyfree-lazy-eviction = "no"
+    EvictionPolicy         = "volatile-lru"
   }
   tags = {
     Created = "TF",
-    For     = "Test",
+    For     = "example",
   }
-  resource_group_id = "rg-123456"
-  zone_id           = "cn-beijing-h"
-  instance_class    = "redis.master.large.default"
-  payment_type      = "PrePaid"
-  period            = "12"
 }
 ```
 
 Modify Private Connection String
 
 ```terraform
-resource "alicloud_kvstore_instance" "example" {
-  db_instance_name = "tf-basic-redis"
-  vswitch_id       = "vsw-123456"
-  security_ips = [
-  "10.23.12.24"]
-  instance_type  = "Redis"
-  engine_version = "4.0"
+variable "name" {
+  default = "tf-example-version"
+}
+data "alicloud_kvstore_zones" "default" {
+  product_type = "OnECS"
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "default" {
+  db_instance_name          = var.name
+  vswitch_id                = alicloud_vswitch.default.id
+  resource_group_id         = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id                   = data.alicloud_kvstore_zones.default.zones.0.id
+  secondary_zone_id         = data.alicloud_kvstore_zones.default.zones.1.id
+  instance_class            = "redis.shard.small.ce"
+  instance_type             = "Redis"
+  engine_version            = "7.0"
+  maintain_start_time       = "04:00Z"
+  maintain_end_time         = "06:00Z"
+  backup_period             = ["Wednesday"]
+  backup_time               = "11:00Z-12:00Z"
+  private_connection_prefix = "exampleconnectionprefix"
+  private_connection_port   = 4011
+  security_ips              = ["10.23.12.24"]
   config = {
-    appendonly             = "yes",
-    lazyfree-lazy-eviction = "yes",
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
+    EvictionPolicy         = "volatile-lru"
   }
   tags = {
     Created = "TF",
-    For     = "Test",
+    For     = "example",
   }
-  resource_group_id         = "rg-123456"
-  zone_id                   = "cn-beijing-h"
-  instance_class            = "redis.master.large.default"
-  private_connection_prefix = "privateconnectionstringprefix"
 }
 ```
 
@@ -170,6 +237,7 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `encryption_key`- (Optional, Available since v1.200.0) The Custom key ID, which you can get by calling DescribeEncryptionKeyList.If this parameter is not passed, the key is automatically generated by the key management service. To create a custom key, you can call the CreateKey interface of the key management service.
 * `role_arn`- (Optional, Available since v1.200.0) The Specify the global resource descriptor ARN (Alibaba Cloud Resource Name) information of the role to be authorized, and use the related key management services after the authorization is completed, in the format: `acs:ram::$accountID:role/$roleName`.
 * `shard_count`- (Optional, ForceNew, Int, Available since v1.208.0) The number of data shards. This parameter is available only if you create a cluster instance that uses cloud disks. You can use this parameter to specify a custom number of data shards.
+* `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -195,7 +263,6 @@ The following attributes are exported:
 * `end_time` - The expiration time of the prepaid instance.
 * `qps` - Theoretical maximum QPS value.
 * `connection_domain`- Intranet connection address of the KVStore instance.
-* `connection_string`- (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 * `status` - The status of KVStore DBInstance.
 
 ## Timeouts

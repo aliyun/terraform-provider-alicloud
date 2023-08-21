@@ -7,55 +7,61 @@ description: |-
   Provides a Alicloud KVStore Account resource.
 ---
 
-# alicloud\_kvstore\_account
+# alicloud_kvstore_account
 
 Provides a KVStore Account resource.
 
 For information about KVStore Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/doc-detail/95973.htm).
 
--> **NOTE:** Available in 1.66.0+
+-> **NOTE:** Available since v1.66.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-variable "creation" {
-  default = "KVStore"
-}
-
 variable "name" {
-  default = "kvstoreinstancevpc"
+  default = "tf-example"
 }
+data "alicloud_kvstore_zones" "default" {
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
-  cidr_block = "172.16.0.0/16"
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
   vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
 }
 
 resource "alicloud_kvstore_instance" "default" {
-  instance_class = "redis.master.small.default"
-  instance_name  = var.name
-  vswitch_id     = alicloud_vswitch.default.id
-  private_ip     = "172.16.0.10"
-  security_ips   = ["10.0.0.1"]
-  instance_type  = "Redis"
-  engine_version = "4.0"
+  db_instance_name  = var.name
+  vswitch_id        = alicloud_vswitch.default.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+  instance_class    = "redis.master.large.default"
+  instance_type     = "Redis"
+  engine_version    = "5.0"
+  security_ips      = ["10.23.12.24"]
+  config = {
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
+  }
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
 }
 
-resource "alicloud_kvstore_account" "example" {
-  account_name     = "tftestnormal"
+resource "alicloud_kvstore_account" "default" {
+  account_name     = "tfexamplename"
   account_password = "YourPassword_123"
   instance_id      = alicloud_kvstore_instance.default.id
 }
@@ -74,7 +80,6 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The Id of instance in which account belongs (The engine version of instance must be 4.0 or 4.0+).
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a KVStore account. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a KVStore account with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `description` - (Optional) Database description. It cannot begin with https://. It must start with a Chinese character or English letter. It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length may be 2-256 characters.
 * `account_type` - (Optional, ForceNew) Privilege type of account.
     - Normal: Common privilege.
     Default to Normal.
@@ -89,7 +94,7 @@ The following attributes are exported:
 * `id` - The resource ID of Account. The value is formatted `<instance_id>:<account_name>`.
 * `status` - The status of KVStore Account.
 
-### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.102.0+.
 

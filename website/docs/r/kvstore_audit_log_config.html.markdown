@@ -7,23 +7,62 @@ description: |-
   Provides a Alicloud Redis And Memcache (KVStore) Audit Log Config resource.
 ---
 
-# alicloud\_kvstore\_audit\_log\_config
+# alicloud_kvstore_audit_log_config
 
 Provides a Redis And Memcache (KVStore) Audit Log Config resource.
 
--> **NOTE:** Available in v1.130.0+.
+-> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+data "alicloud_kvstore_zones" "default" {
+
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+}
+
+resource "alicloud_kvstore_instance" "default" {
+  db_instance_name  = var.name
+  vswitch_id        = alicloud_vswitch.default.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  zone_id           = data.alicloud_kvstore_zones.default.zones.0.id
+  instance_class    = "redis.master.large.default"
+  instance_type     = "Redis"
+  engine_version    = "5.0"
+  security_ips      = ["10.23.12.24"]
+  config = {
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
+  }
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
+
 resource "alicloud_kvstore_audit_log_config" "example" {
-  instance_id = "r-abc123455"
+  instance_id = alicloud_kvstore_instance.default.id
   db_audit    = true
   retention   = 1
 }
-
 ```
 
 ## Argument Reference
@@ -49,7 +88,7 @@ The following attributes are exported:
 * `create_time` - Instance Creation Time.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,30 +7,33 @@ description: |-
   Provides a Alicloud Graph Database Db Instance resource.
 ---
 
-# alicloud\_graph\_database\_db\_instance
+# alicloud_graph_database_db_instance
 
 Provides a Graph Database Db Instance resource.
 
-For information about Graph Database Db Instance and how to use it, see [What is Db Instance](https://help.aliyun.com/document_detail/102865.html).
+For information about Graph Database Db Instance and how to use it, see [What is Db Instance](https://www.alibabacloud.com/help/en/graph-compute/latest/placeholder).
 
--> **NOTE:** Available in v1.136.0+.
+-> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 resource "alicloud_graph_database_db_instance" "example" {
   db_node_class            = "gdb.r.2xlarge"
   db_instance_network_type = "vpc"
   db_version               = "1.0"
   db_instance_category     = "HA"
   db_instance_storage_type = "cloud_ssd"
-  db_node_storage          = "example_value"
+  db_node_storage          = "50"
   payment_type             = "PayAsYouGo"
-  db_instance_description  = "example_value"
+  db_instance_description  = var.name
 }
-
 ```
 
 ## Argument Reference
@@ -40,17 +43,17 @@ The following arguments are supported:
 * `db_instance_category` - (Required, ForceNew) The category of the db instance. Valid values: `HA`, `SINGLE`(Available in 1.173.0+).
 * `db_instance_description` - (Optional) According to the practical example or notes.
 * `db_instance_network_type` - (Required, ForceNew) The network type of the db instance. Valid values: `vpc`.
-* `db_instance_storage_type` - (Required) Disk storage type. Valid values: `cloud_essd`, `cloud_ssd`. Modification is not supported.
+* `db_instance_storage_type` - (Required, ForceNew) Disk storage type. Valid values: `cloud_essd`, `cloud_ssd`. Modification is not supported.
 * `db_node_class` - (Required) The class of the db node. Valid values: `gdb.r.xlarge`, `gdb.r.2xlarge`, `gdb.r.4xlarge`, `gdb.r.8xlarge`, `gdb.r.16xlarge`, `gdb.r.xlarge_basic`, `gdb.r.2xlarge_basic`, `gdb.r.4xlarge_basic`, `gdb.r.8xlarge_basic`, `gdb.r.16xlarge_basic`.
 * `db_node_storage` - (Required) Instance storage space, which is measured in GB.
 * `db_version` - (Required, ForceNew) Kernel Version. Valid values: `1.0` or `1.0-OpenCypher`. `1.0`: represented as gremlin, `1.0-OpenCypher`: said opencypher.
 * `payment_type` - (Required, ForceNew) The paymen type of the resource. Valid values: `PayAsYouGo`.
-* `db_instance_ip_array` - (Optional, Computed) IP ADDRESS whitelist for the instance group list. See the following `Block db_instance_ip_array`.
-* `vswitch_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The ID of attaching vswitch to instance.
-* `vpc_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) ID of the VPC.
-* `zone_id` - (Optional, Computed, ForceNew, Available in 1.171.0+) The zone ID of the resource.
+* `db_instance_ip_array` - (Optional) IP ADDRESS whitelist for the instance group list. See [`db_instance_ip_array`](#db_instance_ip_array) below.
+* `vswitch_id` - (Optional, ForceNew, Available since v1.171.0) The ID of attaching vswitch to instance.
+* `vpc_id` - (Optional, ForceNew, Available since v1.171.0) ID of the VPC.
+* `zone_id` - (Optional, ForceNew, Available since v1.171.0) The zone ID of the resource.
 
-#### Block db_instance_ip_array
+### `db_instance_ip_array`
 
 The db_instance_ip_array supports the following:
 
@@ -67,7 +70,7 @@ The following attributes are exported:
 * `connection_string` - (Available in 1.196.0+)  The connection string of the instance.
 * `port` - (Available in 1.196.0+) The connection port of the instance.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
