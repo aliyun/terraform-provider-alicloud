@@ -111,14 +111,14 @@ The following arguments are supported:
 
 * `endpoint_id` - (Required, ForceNew) The ID of the Custom Routing Endpoint.
 * `address` - (Required) The IP address of the destination to which traffic is allowed.
-* `port_ranges` - (Optional) Port rangeSee the following. See [`port_ranges`](#port_ranges) below.
+* `port_ranges` - (Optional, Set) Port rangeSee the following. See [`port_ranges`](#port_ranges) below.
 
 ### `port_ranges`
 
 The port_ranges supports the following:
 
-* `from_port` - (Optional) The start port of the port range of the traffic destination. The specified port must fall within the port range of the specified endpoint group.
-* `to_port` - (Optional) The end port of the port range of the traffic destination. The specified port must fall within the port range of the specified endpoint group.
+* `from_port` - (Optional, Int) The start port of the port range of the traffic destination. The specified port must fall within the port range of the specified endpoint group.
+* `to_port` - (Optional, Int) The end port of the port range of the traffic destination. The specified port must fall within the port range of the specified endpoint group.
 
 ## Attributes Reference
 

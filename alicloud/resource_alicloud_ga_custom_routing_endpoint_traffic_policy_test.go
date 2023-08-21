@@ -9,11 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaCustomRoutingEndpointTrafficPolicy_basic0(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpointTrafficPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_custom_routing_endpoint_traffic_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaCustomRoutingEndpointTrafficPolicyMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaCustomRoutingEndpointTrafficPolicyMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaCustomRoutingEndpointTrafficPolicy")
@@ -21,7 +21,7 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPolicy_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sGaCustomRoutingEndpointTrafficPolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -87,7 +87,7 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPolicy_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudGaCustomRoutingEndpointTrafficPolicyMap = map[string]string{
+var AliCloudGaCustomRoutingEndpointTrafficPolicyMap = map[string]string{
 	"accelerator_id":    CHECKSET,
 	"listener_id":       CHECKSET,
 	"endpoint_group_id": CHECKSET,
@@ -95,23 +95,29 @@ var AlicloudGaCustomRoutingEndpointTrafficPolicyMap = map[string]string{
 	"status": CHECKSET,
 }
 
-func AlicloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0(name string) string {
+func AliCloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING-Ipv6"
-	}
-
-	data "alicloud_vswitches" "default" {
-  		name_regex = "default-zone-g_28"
-  		vpc_id     = data.alicloud_vpcs.default.ids.0
+	data "alicloud_zones" "default" {
 	}
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name       = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.ids.0
 	}
 
 	resource "alicloud_ga_bandwidth_package" "default" {
@@ -154,7 +160,7 @@ func AlicloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0(name string) s
 
 	resource "alicloud_ga_custom_routing_endpoint" "default" {
   		endpoint_group_id          = alicloud_ga_custom_routing_endpoint_group_destination.default.endpoint_group_id
-  		endpoint                   = data.alicloud_vswitches.default.ids.0
+  		endpoint                   = alicloud_vswitch.default.id
   		type                       = "PrivateSubNet"
   		traffic_to_endpoint_policy = "AllowAll"
 	}

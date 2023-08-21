@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaCustomRoutingEndpointTrafficPolicy() *schema.Resource {
+func resourceAliCloudGaCustomRoutingEndpointTrafficPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaCustomRoutingEndpointTrafficPolicyCreate,
-		Read:   resourceAlicloudGaCustomRoutingEndpointTrafficPolicyRead,
-		Update: resourceAlicloudGaCustomRoutingEndpointTrafficPolicyUpdate,
-		Delete: resourceAlicloudGaCustomRoutingEndpointTrafficPolicyDelete,
+		Create: resourceAliCloudGaCustomRoutingEndpointTrafficPolicyCreate,
+		Read:   resourceAliCloudGaCustomRoutingEndpointTrafficPolicyRead,
+		Update: resourceAliCloudGaCustomRoutingEndpointTrafficPolicyUpdate,
+		Delete: resourceAliCloudGaCustomRoutingEndpointTrafficPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -75,7 +75,7 @@ func resourceAlicloudGaCustomRoutingEndpointTrafficPolicy() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -149,16 +149,16 @@ func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyCreate(d *schema.Resour
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaCustomRoutingEndpointTrafficPolicyRead(d, meta)
+	return resourceAliCloudGaCustomRoutingEndpointTrafficPolicyRead(d, meta)
 }
 
-func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
 	object, err := gaService.DescribeGaCustomRoutingEndpointTrafficPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -197,7 +197,7 @@ func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyRead(d *schema.Resource
 	return nil
 }
 
-func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -282,10 +282,10 @@ func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyUpdate(d *schema.Resour
 		}
 	}
 
-	return resourceAlicloudGaCustomRoutingEndpointTrafficPolicyRead(d, meta)
+	return resourceAliCloudGaCustomRoutingEndpointTrafficPolicyRead(d, meta)
 }
 
-func resourceAlicloudGaCustomRoutingEndpointTrafficPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteCustomRoutingEndpointTrafficPolicies"
