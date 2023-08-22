@@ -1547,7 +1547,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_basic_endpoint_group":                               resourceAlicloudGaBasicEndpointGroup(),
 			"alicloud_cms_metric_rule_black_list":                            resourceAlicloudCmsMetricRuleBlackList(),
 			"alicloud_ga_basic_ip_set":                                       resourceAlicloudGaBasicIpSet(),
-			"alicloud_cloud_firewall_vpc_firewall_cen":                       resourceAlicloudCloudFirewallVpcFirewallCen(),
+			"alicloud_cloud_firewall_vpc_firewall_cen":                       resourceAliCloudCloudFirewallVpcFirewallCen(),
 			"alicloud_cloud_firewall_vpc_firewall":                           resourceAlicloudCloudFirewallVpcFirewall(),
 			"alicloud_cloud_firewall_instance_member":                        resourceAlicloudCloudFirewallInstanceMember(),
 			"alicloud_ga_basic_accelerate_ip":                                resourceAlicloudGaBasicAccelerateIp(),
