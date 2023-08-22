@@ -7,44 +7,38 @@ description: |-
   Provides an OTS (Open Table Service) secondary index resource.
 ---
 
-# alicloud\_ots\_secondary_index
+# alicloud_ots_secondary_index
 
 Provides an OTS secondary index resource.
 
 For information about OTS secondary index and how to use it, see [Secondary index overview](https://www.alibabacloud.com/help/en/tablestore/latest/secondary-index-overview).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
 ```terraform
 variable "name" {
-  default = "terraformtest"
+  default = "tf-example"
 }
 
-variable "pks" {
-  default = ["pk1", "pk2", "pk3"]
-  type    = list(string)
-}
-
-variable "defined_cols" {
-  default = ["col1", "col2", "col3"]
-  type    = list(string)
-}
-
-resource "alicloud_ots_instance" "instance1" {
+resource "alicloud_ots_instance" "default" {
   name        = var.name
   description = var.name
   accessed_by = "Any"
   tags = {
-    Created = "TF"
-    For     = "acceptance test"
+    Created = "TF",
+    For     = "example",
   }
 }
 
-resource "alicloud_ots_table" "table1" {
-  instance_name = alicloud_ots_instance.instance1.name
-  table_name    = var.name
+resource "alicloud_ots_table" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  table_name    = "tf_example"
+  time_to_live  = -1
+  max_version   = 1
+  enable_sse    = true
+  sse_key_type  = "SSE_KMS_SERVICE"
   primary_key {
     name = "pk1"
     type = "Integer"
@@ -57,37 +51,28 @@ resource "alicloud_ots_table" "table1" {
     name = "pk3"
     type = "Binary"
   }
-
   defined_column {
     name = "col1"
     type = "Integer"
   }
-
   defined_column {
     name = "col2"
     type = "String"
   }
-
   defined_column {
     name = "col3"
     type = "Binary"
   }
-
-
-  time_to_live                  = -1
-  max_version                   = 1
-  deviation_cell_version_in_sec = 1
 }
 
-resource "alicloud_ots_secondary_index" "index1" {
-  instance_name = alicloud_ots_instance.instance1.name
-  table_name    = alicloud_ots_table.table1.table_name
-
-  index_name        = var.name
+resource "alicloud_ots_secondary_index" "default" {
+  instance_name     = alicloud_ots_instance.default.name
+  table_name        = alicloud_ots_table.default.table_name
+  index_name        = "example_index"
   index_type        = "Global"
   include_base_data = true
-  primary_keys      = var.pks
-  defined_columns   = var.defined_cols
+  primary_keys      = ["pk1", "pk2", "pk3"]
+  defined_columns   = ["col1", "col2", "col3"]
 }
 ```
 
@@ -107,14 +92,8 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID. The value is `<instance_name>:<table_name>:<indexName>:<indexType>`.
-* `primary_keys` - The primary keys of OTS secondary index. Each element contains the following attributes:
-    * `name` - The name of the key.
-    * `type` - The type of the key, valid values: `Integer`, `Binary`, `String`.
-* `defined_columns` - The defined columns of OTS secondary index. Each element contains the following attributes:
-  * `name` - The name of the defined columns.
-  * `type` - The type of the defined columns, valid values: `Integer`, `Binary`, `String`, `Double`, `Boolean`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

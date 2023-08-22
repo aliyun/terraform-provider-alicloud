@@ -20,12 +20,18 @@ For information about Ocean Base Instance and how to use it, see [What is Instan
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+variable "zones" {
+  default = ["cn-hangzhou-h", "cn-hangzhou-i", "cn-hangzhou-j"]
+}
 resource "alicloud_ocean_base_instance" "default" {
   instance_name  = var.name
   series         = "normal"
   disk_size      = 200
   instance_class = "14C70GB"
-  zones          = ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]
+  zones          = var.zones
   payment_type   = "PayAsYouGo"
 }
 ```
