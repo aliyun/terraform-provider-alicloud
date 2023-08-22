@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCloudFirewallVpcFirewallCen() *schema.Resource {
+func resourceAliCloudCloudFirewallVpcFirewallCen() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCloudFirewallVpcFirewallCenCreate,
-		Read:   resourceAlicloudCloudFirewallVpcFirewallCenRead,
-		Update: resourceAlicloudCloudFirewallVpcFirewallCenUpdate,
-		Delete: resourceAlicloudCloudFirewallVpcFirewallCenDelete,
+		Create: resourceAliCloudCloudFirewallVpcFirewallCenCreate,
+		Read:   resourceAliCloudCloudFirewallVpcFirewallCenRead,
+		Update: resourceAliCloudCloudFirewallVpcFirewallCenUpdate,
+		Delete: resourceAliCloudCloudFirewallVpcFirewallCenDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -27,189 +27,186 @@ func resourceAlicloudCloudFirewallVpcFirewallCen() *schema.Resource {
 			Delete: schema.DefaultTimeout(31 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"vpc_firewall_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
 			"cen_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
-			"connect_type": {
-				Computed: true,
+			"vpc_region": {
 				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"member_uid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"lang": {
-				Optional: true,
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
 			},
 			"local_vpc": {
+				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeList,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"attachment_id": {
-							Computed: true,
+						"network_instance_id": {
 							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						"network_instance_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_instance_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpc_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"attachment_id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"attachment_name": {
-							Computed: true,
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"manual_vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"owner_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"region_no": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"route_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"support_manual_mode": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_type": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"defend_cidr_list": {
-							Computed: true,
 							Type:     schema.TypeList,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"eni_list": {
-							Computed: true,
 							Type:     schema.TypeList,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"eni_id": {
-										Computed: true,
 										Type:     schema.TypeString,
+										Computed: true,
 									},
 									"eni_private_ip_address": {
-										Computed: true,
 										Type:     schema.TypeString,
+										Computed: true,
 									},
 								},
 							},
 						},
-						"manual_vswitch_id": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"network_instance_id": {
-							Required: true,
-							Type:     schema.TypeString,
-						},
-						"network_instance_name": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"network_instance_type": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"owner_id": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"region_no": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"route_mode": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"support_manual_mode": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"transit_router_id": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"transit_router_type": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
 						"vpc_cidr_table_list": {
-							Computed: true,
 							Type:     schema.TypeList,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"route_entry_list": {
+									"route_table_id": {
+										Type:     schema.TypeString,
 										Computed: true,
+									},
+									"route_entry_list": {
 										Type:     schema.TypeSet,
+										Computed: true,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
-												"destination_cidr": {
-													Computed: true,
-													Type:     schema.TypeString,
-												},
 												"next_hop_instance_id": {
-													Computed: true,
 													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"destination_cidr": {
+													Type:     schema.TypeString,
+													Computed: true,
 												},
 											},
 										},
 									},
-									"route_table_id": {
-										Computed: true,
-										Type:     schema.TypeString,
-									},
 								},
 							},
-						},
-						"vpc_id": {
-							Computed: true,
-							Type:     schema.TypeString,
-						},
-						"vpc_name": {
-							Computed: true,
-							Type:     schema.TypeString,
 						},
 					},
 				},
 			},
-			"member_uid": {
-				Optional: true,
-				Type:     schema.TypeString,
-			},
-			"status": {
-				Required: true,
-				Type:     schema.TypeString,
-			},
 			"vpc_firewall_id": {
+				Type:     schema.TypeString,
 				Computed: true,
-				Type:     schema.TypeString,
 			},
-			"vpc_firewall_name": {
-				Required: true,
+			"connect_type": {
 				Type:     schema.TypeString,
-			},
-			"vpc_region": {
-				Required: true,
-				ForceNew: true,
-				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudfwService := CloudfwService{client}
+	var response map[string]interface{}
+	action := "CreateVpcFirewallCenConfigure"
 	request := make(map[string]interface{})
 	conn, err := client.NewCloudfwClient()
 	if err != nil {
 		return WrapError(err)
 	}
 
-	if v, ok := d.GetOk("cen_id"); ok {
-		request["CenId"] = v
-	}
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
+	request["VpcFirewallName"] = d.Get("vpc_firewall_name")
+	request["CenId"] = d.Get("cen_id")
+	request["VpcRegion"] = d.Get("vpc_region")
+	request["FirewallSwitch"] = d.Get("status")
+
 	if v, ok := d.GetOk("member_uid"); ok {
 		request["MemberUid"] = v
 	}
-	if v, ok := d.GetOk("status"); ok {
-		request["FirewallSwitch"] = v
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
 	}
-	if v, ok := d.GetOk("vpc_firewall_name"); ok {
-		request["VpcFirewallName"] = v
-	}
-	if v, ok := d.GetOk("vpc_region"); ok {
-		request["VpcRegion"] = v
-	}
+
 	if v, ok := d.GetOk("local_vpc"); ok {
 		networkInstanceId, err := jsonpath.Get("$[0].network_instance_id", v)
 		if err != nil {
@@ -218,11 +215,11 @@ func resourceAlicloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, m
 		request["NetworkInstanceId"] = networkInstanceId
 	}
 
-	var response map[string]interface{}
-	action := "CreateVpcFirewallCenConfigure"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -230,10 +227,16 @@ func resourceAlicloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, m
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
+
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
+
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_vpc_firewall_cen", action, AlibabaCloudSdkGoERROR)
 	}
@@ -243,35 +246,39 @@ func resourceAlicloudCloudFirewallVpcFirewallCenCreate(d *schema.ResourceData, m
 	} else {
 		d.SetId(fmt.Sprint(v))
 	}
-	stateConf := BuildStateConf([]string{}, []string{"closed", "opened"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudfwService.CloudFirewallVpcFirewallCenStateRefreshFunc(d, []string{}))
+
+	stateConf := BuildStateConf([]string{}, []string{"opened", "closed"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cloudfwService.CloudFirewallVpcFirewallCenStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudCloudFirewallVpcFirewallCenRead(d, meta)
+
+	return resourceAliCloudCloudFirewallVpcFirewallCenRead(d, meta)
 }
 
-func resourceAlicloudCloudFirewallVpcFirewallCenRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallVpcFirewallCenRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudfwService := CloudfwService{client}
 
 	object, err := cloudfwService.DescribeCloudFirewallVpcFirewallCen(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_vpc_firewall_cen cloudfwService.DescribeCloudFirewallVpcFirewallCen Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	objectExtra, err := cloudfwService.DescribeVpcFirewallCenList(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_vpc_firewall_cen cloudfwService.DescribeVpcFirewallCenList Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("member_uid", objectExtra["MemberUid"])
 	d.Set("cen_id", objectExtra["CenId"])
 	vpcRegion, err := jsonpath.Get("$.LocalVpc.RegionNo", objectExtra)
@@ -336,36 +343,42 @@ func resourceAlicloudCloudFirewallVpcFirewallCenRead(d *schema.ResourceData, met
 	return nil
 }
 
-func resourceAlicloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
-	conn, err := client.NewCloudfwClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	cloudfwService := CloudfwService{client}
+	var response map[string]interface{}
 	d.Partial(true)
+
 	update := false
 	request := map[string]interface{}{
 		"VpcFirewallId": d.Id(),
 	}
 
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
-	if v, ok := d.GetOk("member_uid"); ok {
-		request["MemberUid"] = v
-	}
-	if !d.IsNewResource() && d.HasChange("vpc_firewall_name") {
+	if d.HasChange("vpc_firewall_name") {
 		update = true
 	}
 	request["VpcFirewallName"] = d.Get("vpc_firewall_name")
 
+	if v, ok := d.GetOk("member_uid"); ok {
+		request["MemberUid"] = v
+	}
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+
 	if update {
 		action := "ModifyVpcFirewallCenConfigure"
+		conn, err := client.NewCloudfwClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -373,15 +386,23 @@ func resourceAlicloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("lang")
-		d.SetPartial("member_uid")
+
 		d.SetPartial("vpc_firewall_name")
+		d.SetPartial("member_uid")
+		d.SetPartial("lang")
 	}
 
 	update = false
@@ -389,22 +410,31 @@ func resourceAlicloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 		"VpcFirewallId": d.Id(),
 	}
 
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
-	if v, ok := d.GetOk("member_uid"); ok {
-		request["MemberUid"] = v
-	}
-	if !d.IsNewResource() && d.HasChange("status") {
+	if d.HasChange("status") {
 		update = true
 	}
 	request["FirewallSwitch"] = d.Get("status")
 
+	if v, ok := d.GetOk("member_uid"); ok {
+		request["MemberUid"] = v
+	}
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+
 	if update {
 		action := "ModifyVpcFirewallCenSwitchStatus"
+		conn, err := client.NewCloudfwClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -412,49 +442,63 @@ func resourceAlicloudCloudFirewallVpcFirewallCenUpdate(d *schema.ResourceData, m
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"opened", "closed"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, cloudfwService.CloudFirewallVpcFirewallCenStateRefreshFunc(d, []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("lang")
-		d.SetPartial("member_uid")
+
 		d.SetPartial("status")
+		d.SetPartial("member_uid")
+		d.SetPartial("lang")
 	}
 
 	d.Partial(false)
-	return resourceAlicloudCloudFirewallVpcFirewallCenRead(d, meta)
+
+	return resourceAliCloudCloudFirewallVpcFirewallCenRead(d, meta)
 }
 
-func resourceAlicloudCloudFirewallVpcFirewallCenDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallVpcFirewallCenDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cloudfwService := CloudfwService{client}
+	action := "DeleteVpcFirewallCenConfigure"
+	var response map[string]interface{}
+
 	conn, err := client.NewCloudfwClient()
 	if err != nil {
 		return WrapError(err)
 	}
 
 	request := map[string]interface{}{
-
 		"VpcFirewallIdList.1": d.Id(),
+	}
+
+	if v, ok := d.GetOk("member_uid"); ok {
+		request["MemberUid"] = v
 	}
 
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
-	if v, ok := d.GetOk("member_uid"); ok {
-		request["MemberUid"] = v
-	}
 
-	action := "DeleteVpcFirewallCenConfigure"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -462,19 +506,28 @@ func resourceAlicloudCloudFirewallVpcFirewallCenDelete(d *schema.ResourceData, m
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
+
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cloudfwService.CloudFirewallVpcFirewallCenStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 func convertCloudFirewallVpcFirewallCenStatusRequest(source interface{}) interface{} {

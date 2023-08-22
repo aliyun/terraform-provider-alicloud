@@ -13,7 +13,7 @@ Provides a Cloud Firewall Vpc Firewall Cen resource.
 
 For information about Cloud Firewall Vpc Firewall Cen and how to use it, see [What is Vpc Firewall Cen](https://www.alibabacloud.com/help/en/cloud-firewall/latest/createvpcfirewallcenconfigure).
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
@@ -28,7 +28,7 @@ resource "alicloud_cloud_firewall_vpc_firewall_cen" "default" {
   status            = "open"
   member_uid        = "1415189284827022"
   vpc_region        = "ap-south-1"
-  vpc_firewall_name = "tf-test"
+  vpc_firewall_name = "tf-vpc-firewall-name"
 }
 ```
 
@@ -36,21 +36,21 @@ resource "alicloud_cloud_firewall_vpc_firewall_cen" "default" {
 
 The following arguments are supported:
 
-* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
-* `lang` - (Optional) The language type of the requested and received messages. Value:**zh** (default): Chinese.**en**: English.
-* `local_vpc` - (Required,Computed) The details of the VPC.See the following `Block LocalVpc`.
-* `member_uid` - (Optional) The UID of the member account (other Alibaba Cloud account) of the current Alibaba cloud account.
-* `status` - (Required) Firewall switch status
 * `vpc_firewall_name` - (Required) The name of the VPC firewall instance.
+* `cen_id` - (Required, ForceNew) The ID of the CEN instance.
 * `vpc_region` - (Required, ForceNew) The ID of the region to which the VPC is created.
+* `status` - (Required) Firewall switch status.
+* `member_uid` - (Optional, ForceNew) The UID of the member account (other Alibaba Cloud account) of the current Alibaba cloud account.
+* `lang` - (Optional, ForceNew) The language type of the requested and received messages. Valid values:
+  - `zh`: Chinese.
+  - `en`: English.
+* `local_vpc` - (Required, ForceNew) The details of the VPC. See [`local_vpc`](#local_vpc) below.
 
-### Block LocalVpc
+### `local_vpc`
 
-The LocalVpc supports the following:
+The local_vpc supports the following:
 
-* `network_instance_id` - (Required,ForceNew) The ID of the VPC instance that created the VPC firewall.
-
-
+* `network_instance_id` - (Required, ForceNew) The ID of the VPC instance that created the VPC firewall.
 
 ## Attributes Reference
 
@@ -65,7 +65,7 @@ The following attributes are exported:
     * `eni_list` - List of elastic network cards.
         * `eni_id` - The ID of the instance of the ENI in the VPC.
         * `eni_private_ip_address` - The private IP address of the ENI in the VPC.
-    * `manual_v_switch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
+    * `manual_vswitch_id` - The ID of the vSwitch specified when the routing mode is manual mode.
     * `network_instance_name` - The name of the network instance.
     * `network_instance_type` - The type of the network instance. Value: **VPC * *.
     * `owner_id` - The UID of the Alibaba Cloud account to which the VPC belongs.
@@ -83,12 +83,13 @@ The following attributes are exported:
     * `vpc_name` - The instance name of the VPC.
 * `vpc_firewall_id` - VPC firewall ID
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 31 mins) Used when create the Vpc Firewall Cen.
-* `delete` - (Defaults to 31 mins) Used when delete the Vpc Firewall Cen.
 * `update` - (Defaults to 31 mins) Used when update the Vpc Firewall Cen.
+* `delete` - (Defaults to 31 mins) Used when delete the Vpc Firewall Cen.
 
 ## Import
 
