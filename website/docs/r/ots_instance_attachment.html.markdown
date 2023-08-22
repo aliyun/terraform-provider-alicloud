@@ -7,44 +7,47 @@ description: |-
   Provides an OTS (Open Table Service) resource to attach VPC to instance.
 ---
 
-# alicloud\_ots\_instance\_attachment
+# alicloud_ots_instance_attachment
 
 This resource will help you to bind a VPC to an OTS instance.
+
+-> **NOTE:** Available since v1.10.0.
 
 ## Example Usage
 
 ```terraform
-# Create an OTS instance
-resource "alicloud_ots_instance" "foo" {
-  name        = "my-ots-instance"
-  description = "for table"
+variable "name" {
+  default = "tf-example"
+}
+
+resource "alicloud_ots_instance" "default" {
+  name        = var.name
+  description = var.name
   accessed_by = "Vpc"
   tags = {
-    Created = "TF"
-    For     = "Building table"
+    Created = "TF",
+    For     = "example",
   }
 }
 
-data "alicloud_zones" "foo" {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-
-resource "alicloud_vpc" "foo" {
-  cidr_block = "172.16.0.0/16"
-  name       = "for-ots-instance"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "foo" {
-  vpc_id       = alicloud_vpc.foo.id
-  vswitch_name = "for-ots-instance"
-  cidr_block   = "172.16.1.0/24"
-  zone_id      = data.alicloud_zones.foo.zones[0].id
-}
-
-resource "alicloud_ots_instance_attachment" "foo" {
-  instance_name = alicloud_ots_instance.foo.name
-  vpc_name      = "attachment1"
-  vswitch_id    = alicloud_vswitch.foo.id
+resource "alicloud_ots_instance_attachment" "default" {
+  instance_name = alicloud_ots_instance.default.name
+  vpc_name      = "examplename"
+  vswitch_id    = alicloud_vswitch.default.id
 }
 ```
 
@@ -53,7 +56,7 @@ resource "alicloud_ots_instance_attachment" "foo" {
 The following arguments are supported:
 
 * `instance_name` - (Required, ForceNew) The name of the OTS instance.
-* `vpc_name` - (Required, ForceNew) The name of attaching VPC to instance.
+* `vpc_name` - (Required, ForceNew) The name of attaching VPC to instance. It can only contain letters and numbers, must start with a letter, and is limited to 3-16 characters in length.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching VSwitch to instance.
 
 ## Attributes Reference
@@ -61,9 +64,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID. The value is same as "instance_name".
-* `instance_name` - The instance name.
-* `vpc_name` - The name of attaching VPC to instance.
-* `vswitch_id` - The ID of attaching VSwitch to instance.
 * `vpc_id` - The ID of attaching VPC to instance.
 
 

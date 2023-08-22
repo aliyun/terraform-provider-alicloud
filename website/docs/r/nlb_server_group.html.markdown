@@ -7,31 +7,37 @@ description: |-
   Provides a Alicloud NLB Server Group resource.
 ---
 
-# alicloud\_nlb\_server\_group
+# alicloud_nlb_server_group
 
 Provides a NLB Server Group resource.
 
 For information about NLB Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createservergroup-nlb).
 
--> **NOTE:** Available in v1.186.0+.
+-> **NOTE:** Available since v1.186.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 resource "alicloud_nlb_server_group" "default" {
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
-  server_group_name = var.name
-  server_group_type = "Instance"
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  scheduler         = "Wrr"
-  protocol          = "TCP"
+  resource_group_id        = data.alicloud_resource_manager_resource_groups.default.ids.0
+  server_group_name        = var.name
+  server_group_type        = "Instance"
+  vpc_id                   = alicloud_vpc.default.id
+  scheduler                = "Wrr"
+  protocol                 = "TCP"
+  connection_drain         = true
+  connection_drain_timeout = 60
+  address_ip_version       = "Ipv4"
   health_check {
     health_check_enabled         = true
     health_check_type            = "TCP"
@@ -43,12 +49,10 @@ resource "alicloud_nlb_server_group" "default" {
     http_check_method            = "GET"
     health_check_http_code       = ["http_2xx", "http_3xx", "http_4xx"]
   }
-  connection_drain         = true
-  connection_drain_timeout = 60
   tags = {
-    Created = "TF"
+    Created = "TF",
+    For     = "example",
   }
-  address_ip_version = "Ipv4"
 }
 ```
 
@@ -56,27 +60,27 @@ resource "alicloud_nlb_server_group" "default" {
 
 The following arguments are supported:
 
-* `address_ip_version` - (Optional, Computed, ForceNew) The protocol version. Valid values: `Ipv4` (default), `DualStack`.
-* `connection_drain` - (Optional, Computed) Specifies whether to enable connection draining.
-* `connection_drain_timeout` - (Optional, Computed) The timeout period of connection draining. Unit: seconds. Valid values: 10 to 900.
-* `health_check` - (Required) HealthCheck. See the following `Block health_check`.
-* `protocol` - (Optional, Computed, ForceNew) The backend protocol. Valid values: `TCP` (default), `UDP`, and `TCPSSL`.
-* `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group to which the security group belongs.
-* `scheduler` - (Optional, Computed) The routing algorithm. Valid values:
+* `address_ip_version` - (Optional, ForceNew) The protocol version. Valid values: `Ipv4` (default), `DualStack`.
+* `connection_drain` - (Optional) Specifies whether to enable connection draining.
+* `connection_drain_timeout` - (Optional) The timeout period of connection draining. Unit: seconds. Valid values: 10 to 900.
+* `health_check` - (Required) HealthCheck. See [`health_check`](#health_check) below.
+* `protocol` - (Optional, ForceNew) The backend protocol. Valid values: `TCP` (default), `UDP`, and `TCPSSL`.
+* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the security group belongs.
+* `scheduler` - (Optional) The routing algorithm. Valid values:
   - `Wrr` (default): The Weighted Round Robin algorithm is used. Backend servers with higher weights receive more requests than backend servers with lower weights.
   - `Rr`: The round-robin algorithm is used. Requests are forwarded to backend servers in sequence.
   - `Sch`: Source IP hashing is used. Requests from the same source IP address are forwarded to the same backend server.
   - `Tch`: Four-element hashing is used. It specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are forwarded to the same backend server.
   - `Qch`: QUIC ID hashing is used. Requests that contain the same QUIC ID are forwarded to the same backend server.
 * `server_group_name` - (Required) The name of the server group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `server_group_type` - (Optional, Computed, ForceNew) The type of the server group. Valid values:
+* `server_group_type` - (Optional, ForceNew) The type of the server group. Valid values:
   - `Instance` (default): allows you to specify `Ecs`, `Ens`, or `Eci`.
   - `Ip`: allows you to specify IP addresses.
 * `vpc_id` - (Required, ForceNew) The id of the vpc.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `preserve_client_ip_enabled` - (Optional, Computed) Indicates whether client address retention is enabled.
+* `preserve_client_ip_enabled` - (Optional) Indicates whether client address retention is enabled.
 
-#### Block health_check
+### `health_check`
 
 The health_check supports the following: 
 
@@ -101,7 +105,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Server Group.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

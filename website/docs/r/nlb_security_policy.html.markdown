@@ -7,19 +7,22 @@ description: |-
   Provides a Alicloud NLB Security Policy resource.
 ---
 
-# alicloud\_nlb\_security\_policy
+# alicloud_nlb_security_policy
 
 Provides a NLB Security Policy resource.
 
 For information about NLB Security Policy and how to use it, see [What is Security Policy](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createsecuritypolicy-nlb).
 
--> **NOTE:** Available in v1.187.0+.
+-> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
 resource "alicloud_nlb_security_policy" "default" {
   resource_group_id    = data.alicloud_resource_manager_resource_groups.default.ids.0
@@ -28,7 +31,7 @@ resource "alicloud_nlb_security_policy" "default" {
   tls_versions         = ["TLSv1.0", "TLSv1.1", "TLSv1.2"]
   tags = {
     Created = "TF"
-    For     = "Acceptance-test"
+    For     = "example"
   }
 }
 ```
@@ -42,7 +45,7 @@ The following arguments are supported:
   - TLS 1.2 supports the following cipher suites: `ECDHE-ECDSA-AES128-SHA`, `ECDHE-ECDSA-AES256-SHA`, `ECDHE-RSA-AES128-SHA`, `ECDHE-RSA-AES256-SHA`, `AES128-SHA`, `AES256-SHA, DES-CBC3-SHA`, `ECDHE-ECDSA-AES128-GCM-SHA256`, `ECDHE-ECDSA-AES256-GCM-SHA384`, `ECDHE-ECDSA-AES128-SHA256`, `ECDHE-ECDSA-AES256-SHA384`, `ECDHE-RSA-AES128-GCM-SHA256`, `ECDHE-RSA-AES256-GCM-SHA384`, `ECDHE-RSA-AES128-SHA256`, `ECDHE-RSA-AES256-SHA384`, `AES128-GCM-SHA256`, `AES256-GCM-SHA384`, `AES128-SHA256`, `AES256-SHA256`
   - TLS 1.3 supports the following cipher suites: `TLS_AES_128_GCM_SHA256`, `TLS_AES_256_GCM_SHA384`, `TLS_CHACHA20_POLY1305_SHA256`, `TLS_AES_128_CCM_SHA256`, `TLS_AES_128_CCM_8_SHA256`
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `security_policy_name` - (Optional, Computed) The name of the security policy. The name must be 1 to 200 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-).
+* `security_policy_name` - (Optional) The name of the security policy. The name must be 1 to 200 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-).
 * `tls_versions` - (Required) The supported versions of the Transport Layer Security (TLS) protocol. Valid values: `TLSv1.0`, `TLSv1.1`, `TLSv1.2`, and `TLSv1.3`. You can specify at most four TLS versions.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
@@ -53,7 +56,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Security Policy. 
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
