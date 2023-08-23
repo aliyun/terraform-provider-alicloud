@@ -300,6 +300,7 @@ func resourceAliCloudFcv2Function() *schema.Resource {
 }
 
 func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	serviceName := d.Get("service_name")
@@ -507,7 +508,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -974,7 +975,7 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 			response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
 
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -986,8 +987,8 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
 	}
+
 	return resourceAliCloudFcv2FunctionRead(d, meta)
 }
 

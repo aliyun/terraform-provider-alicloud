@@ -53,6 +53,7 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"FunctionNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Function", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
