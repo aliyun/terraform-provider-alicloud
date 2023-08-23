@@ -2205,7 +2205,6 @@ func TestAccAlicloudRdsDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccDBInstance_MysqlServerlessBasic_%d", rand)

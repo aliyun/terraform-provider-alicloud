@@ -2,23 +2,24 @@
 subcategory: "RDS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_db_instances"
-sidebar_current: "docs-alicloud-datasource-db-instances"
 description: |-
     Provides a collection of RDS instances according to the specified filters.
 ---
 
-# alicloud\_db\_instances
+# alicloud_db_instances
 
 The `alicloud_db_instances` data source provides a collection of RDS instances available in Alibaba Cloud account.
 Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
 
+-> **NOTE:** Available since v1.7.0+
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_db_instances" "db_instances_ds" {
   name_regex = "data-\\d+"
   status     = "Running"
-  tags       = {
+  tags = {
     "type" = "database",
     "size" = "tiny"
   }
@@ -98,6 +99,7 @@ The following attributes are exported in addition to the arguments listed above:
       - custom: a custom certificate
   * `client_ca_cert` - (Available in 1.124.1+) The public key of the CA that issues client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
   * `client_cert_revocation_list` - (Available in 1.124.1+) The certificate revocation list (CRL) that contains revoked client certificates. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs.
+  * `client_ca_cert_expire_time` - (Available in 1.124.1+) The content of the server certificate. This parameter is supported only when the instance runs PostgreSQL with cloud disks. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC. This parameter is not supported now.
   * `last_modify_status` - (Available in 1.124.1+) The status of the SSL link. This parameter is supported only when the instance runs PostgreSQL with standard or enhanced SSDs. Valid values:
       - success
       - setting
@@ -138,3 +140,13 @@ The following attributes are exported in addition to the arguments listed above:
   * `deletion_protection` - (Available in 1.167.0+) Indicates whether the release protection feature is enabled for the instance. Valid values:
       * **true**: The release protection feature is enabled.
       * **false**: The release protection feature is disabled.
+  * `ha_mode` - (Available in 1.210.0+) The high availability mode of the instance.
+  * `sync_mode` - (Available in 1.210.0+) The data replication mode of the instance.
+  * `host_instance_infos` - (Available in 1.210.0+) An array that consists of the information of the primary and secondary instances.
+      * `log_sync_time` - The time when the secondary instance received logs from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+      * `node_type` - The type of the node.
+      * `zone_id` - The ID of the zone.
+      * `sync_status` - The synchronization status.
+      * `data_sync_time` - The time when the secondary instance completed the synchronization of data from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+      * `node_id` - The ID of the instance.
+      * `region_id` - The region ID of the instance.
