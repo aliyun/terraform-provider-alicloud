@@ -26,97 +26,42 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_slb_zones" "default" {
+  available_slb_address_type = "vpc"
 }
-
-resource "alicloud_vpc" "defaultlnZlvA" {
+resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "192.168.0.0/16"
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_slb_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "defaultdsRCp1" {
-  vpc_id     = alicloud_vpc.defaultlnZlvA.id
-  cidr_block = "192.168.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
+resource "alicloud_slb_load_balancer" "default" {
+  address_type       = "intranet"
+  vswitch_id         = alicloud_vswitch.default.id
+  load_balancer_name = var.name
+  load_balancer_spec = "slb.s1.small"
+  master_zone_id     = data.alicloud_slb_zones.default.zones.0.id
 }
 
-resource "alicloud_security_group" "defaultuBsECI" {
-  vpc_id = alicloud_vpc.defaultlnZlvA.id
+resource "alicloud_eipanycast_anycast_eip_address" "default" {
+  anycast_eip_address_name = var.name
+  service_location         = "ChineseMainland"
 }
 
-resource "alicloud_ecs_instance" "default9KDlN7" {
-  system_disk {
-    category = "cloud_efficiency"
-  }
-  image_id = "aliyun_2_1903_x64_20G_alibase_20230308.vhd"
-  vpc_attributes {
-    vswitch_id = alicloud_vswitch.defaultdsRCp1.id
-  }
-  payment_type       = "PayAsYouGo"
-  instance_type      = "ecs.g5ne.xlarge"
-  spot_strategy      = "NoSpot"
-  zone_id            = alicloud_vswitch.defaultdsRCp1.zone_id
-  security_group_ids = ["${alicloud_security_group.defaultuBsECI.id}"]
+data "alicloud_regions" "default" {
+  current = true
 }
-
-resource "alicloud_eipanycast_anycast_eip_address" "defaultXkpFRs" {
-  service_location = "ChineseMainland"
-}
-
-resource "alicloud_eipanycast_anycast_eip_address_attachment" "defaultEfYBJY" {
-  bind_instance_id        = alicloud_ecs_instance.default9KDlN7.network_interface_id
-  bind_instance_type      = "NetworkInterface"
-  bind_instance_region_id = alicloud_ecs_instance.default9KDlN7.region_id
-  anycast_id              = alicloud_eipanycast_anycast_eip_address.defaultXkpFRs.anycast_id
-  association_mode        = "Default"
-}
-
-resource "alicloud_vpc" "defaultVpc2" {
-  vpc_name   = "${var.name}6"
-  cidr_block = "192.168.0.0/16"
-}
-
-resource "alicloud_vswitch" "defaultdsVsw2" {
-  vpc_id     = alicloud_vpc.defaultVpc2.id
-  cidr_block = "192.168.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones.1.id
-}
-
-resource "alicloud_security_group" "defaultuBsECI2" {
-  vpc_id = alicloud_vpc.defaultVpc2.id
-}
-
-resource "alicloud_ecs_instance" "defaultEcs2" {
-  system_disk {
-    category = "cloud_efficiency"
-  }
-  image_id = "aliyun_2_1903_x64_20G_alibase_20230308.vhd"
-  vpc_attributes {
-    vswitch_id = alicloud_vswitch.defaultdsVsw2.id
-  }
-  payment_type       = "PayAsYouGo"
-  instance_type      = "ecs.g5ne.xlarge"
-  spot_strategy      = "NoSpot"
-  zone_id            = alicloud_vswitch.defaultdsVsw2.zone_id
-  security_group_ids = ["${alicloud_security_group.defaultuBsECI2.id}"]
-}
-
 
 resource "alicloud_eipanycast_anycast_eip_address_attachment" "default" {
-  bind_instance_id   = alicloud_ecs_instance.defaultEcs2.network_interface_id
-  bind_instance_type = "NetworkInterface"
-  pop_locations {
-    pop_location = "cn-guangzhou-pop"
-  }
-  pop_locations {
-    pop_location = "cn-shanghai-pop"
-  }
-  pop_locations {
-    pop_location = "cn-beijing-pop"
-  }
-  anycast_id              = alicloud_eipanycast_anycast_eip_address.defaultXkpFRs.anycast_id
-  bind_instance_region_id = alicloud_ecs_instance.defaultEcs2.region_id
+  bind_instance_id        = alicloud_slb_load_balancer.default.id
+  bind_instance_type      = "SlbInstance"
+  bind_instance_region_id = data.alicloud_regions.default.regions.0.id
+  anycast_id              = alicloud_eipanycast_anycast_eip_address.default.id
 }
 ```
 
@@ -266,7 +211,7 @@ resource "alicloud_eipanycast_anycast_eip_address_attachment" "normal" {
 
 The following arguments are supported:
 * `anycast_id` - (Required, ForceNew, Available since v1.113.0) The ID of the Anycast EIP instance.
-* `association_mode` - (Optional, Computed) Binding mode, value:
+* `association_mode` - (Optional) Binding mode, value:
   - **Default**: The Default mode. The cloud resource instance to be bound is set as the Default origin.
   - **Normal**: In Normal mode, the cloud resource instance to be bound is set to the common source station.
 * `bind_instance_id` - (Required, ForceNew, Available since v1.113.0) The ID of the cloud resource instance to be bound.
@@ -274,7 +219,7 @@ The following arguments are supported:
 * `bind_instance_type` - (Required, ForceNew, Available since v1.113.0) The type of the cloud resource instance to be bound. Value:
   - **SlbInstance**: a private network SLB instance.
   - **NetworkInterface**: ENI.
-* `pop_locations` - (Optional, Computed) The access point information of the associated access area when the cloud resource instance is bound.If you are binding for the first time, this parameter does not need to be configured, and the system automatically associates all access areas. See [`pop_locations`](#pop_locations) below.
+* `pop_locations` - (Optional) The access point information of the associated access area when the cloud resource instance is bound.If you are binding for the first time, this parameter does not need to be configured, and the system automatically associates all access areas. See [`pop_locations`](#pop_locations) below.
 * `private_ip_address` - (Optional, ForceNew) The secondary private IP address of the elastic network card to be bound.This parameter takes effect only when **BindInstanceType** is set to **NetworkInterface. When you do not enter, this parameter is the primary private IP of the ENI by default.
 
 ### `pop_locations`

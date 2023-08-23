@@ -20,15 +20,36 @@ For information about ECI Container Group and how to use it, see [What is Contai
 Basic Usage
 
 ```terraform
-resource "alicloud_eci_container_group" "example" {
-  container_group_name = "tf-eci-gruop"
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_eci_zones" "default" {}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_eci_zones.default.zones.0.zone_ids.0
+}
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_eci_container_group" "default" {
+  container_group_name = var.name
   cpu                  = 8.0
   memory               = 16.0
   restart_policy       = "OnFailure"
-  security_group_id    = alicloud_security_group.group.id
-  vswitch_id           = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
+  security_group_id    = alicloud_security_group.default.id
+  vswitch_id           = alicloud_vswitch.default.id
   tags = {
-    TF = "create"
+    Created = "TF",
+    For     = "example",
   }
 
   containers {
@@ -38,7 +59,7 @@ resource "alicloud_eci_container_group" "example" {
     image_pull_policy = "IfNotPresent"
     commands          = ["/bin/sh", "-c", "sleep 9999"]
     volume_mounts {
-      mount_path = "/tmp/test"
+      mount_path = "/tmp/example"
       read_only  = false
       name       = "empty1"
     }
@@ -47,7 +68,7 @@ resource "alicloud_eci_container_group" "example" {
       protocol = "TCP"
     }
     environment_vars {
-      key   = "test"
+      key   = "name"
       value = "nginx"
     }
     liveness_probe {
@@ -219,6 +240,8 @@ The init_containers supports the following:
 * `ports` - (Optional, ForceNew, Set) The structure of port. See [`ports`](#init_containers-ports) below.
 * `environment_vars` - (Optional, Set) The structure of environmentVars. See [`environment_vars`](#init_containers-environment_vars) below.
 * `volume_mounts` - (Optional, Set) The structure of volumeMounts. See [`volume_mounts`](#init_containers-volume_mounts) below.
+* `ready` - (Optional, Available since v1.208.0) Indicates whether the container passed the readiness probe.
+* `restart_count` - (Optional, Available since v1.208.0) The number of times that the container restarted.
 
 ### `init_containers-ports`
 
@@ -260,6 +283,8 @@ The containers supports the following:
 * `volume_mounts` - (Optional, Set) The structure of volumeMounts. See [`volume_mounts`](#containers-volume_mounts) below.
 * `liveness_probe` - (Optional, Set, Available since v1.189.0) The health check of the container. See [`liveness_probe`](#containers-liveness_probe) below.
 * `readiness_probe` - (Optional, Set, Available since v1.189.0) The health check of the container. See [`readiness_probe`](#containers-readiness_probe) below.
+* `ready` - (Optional, Available since v1.208.0) Indicates whether the container passed the readiness probe.
+* `restart_count` - (Optional, Available since v1.208.0) The number of times that the container restarted.
 
 ### `containers-ports`
 
@@ -356,12 +381,6 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Container Group. Value as `container_group_id`.
 * `internet_ip` - (Available since v1.170.0) The Public IP of the container group.
 * `intranet_ip` - (Available since v1.170.0) The Private IP of the container group.
-* `containers` - The list of containers.
-  * `ready` - (Available since v1.208.0) Indicates whether the container passed the readiness probe.
-  * `restart_count` - (Available since v1.208.0) The number of times that the container restarted.
-* `init_containers` - The list of initContainers.
-  * `ready` - (Available since v1.208.0) Indicates whether the container passed the readiness probe.
-  * `restart_count` - (Available since v1.208.0) The number of times that the container restarted.
 * `status` - The status of container group.
 
 ## Timeouts

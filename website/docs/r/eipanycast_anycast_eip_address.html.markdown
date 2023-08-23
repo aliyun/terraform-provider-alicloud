@@ -20,12 +20,12 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "terraform-example"
+  default = "tf-example"
 }
 
 resource "alicloud_eipanycast_anycast_eip_address" "default" {
   anycast_eip_address_name = var.name
-  description              = "test_1"
+  description              = var.name
   bandwidth                = 200
   service_location         = "international"
   internet_charge_type     = "PayByTraffic"
@@ -37,11 +37,11 @@ resource "alicloud_eipanycast_anycast_eip_address" "default" {
 
 The following arguments are supported:
 * `anycast_eip_address_name` - (Optional) Anycast EIP instance name.
-* `bandwidth` - (Optional, Computed)  The peak bandwidth of the Anycast EIP instance, in Mbps.
+* `bandwidth` - (Optional)  The peak bandwidth of the Anycast EIP instance, in Mbps.
 * `description` - (Optional) Anycast EIP instance description.
 * `internet_charge_type` - (Optional, ForceNew) The billing method of Anycast EIP instance. "PayByBandwidth": refers to the method of billing based on traffic.
-* `payment_type` - (Optional, ForceNew, Computed) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode.
-* `resource_group_id` - (Optional, Computed, Available since v1.208.1) The ID of the resource group to which the instance belongs.
+* `payment_type` - (Optional, ForceNew) The payment model of Anycast EIP instance. "PayAsYouGo": Refers to the post-paid mode.
+* `resource_group_id` - (Optional, Available since v1.208.1) The ID of the resource group to which the instance belongs.
 * `service_location` - (Required, ForceNew) Anycast EIP instance access area. "international": Refers to areas outside of Mainland China.
 * `tags` - (Optional, Map, Available since v1.208.0) List of resource-bound tags.
 

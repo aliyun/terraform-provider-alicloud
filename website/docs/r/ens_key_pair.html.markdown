@@ -7,22 +7,25 @@ description: |-
   Provides a Alicloud ENS Key Pair resource.
 ---
 
-# alicloud\_ens\_key\_pair
+# alicloud_ens_key_pair
 
 Provides a ENS Key Pair resource.
 
-For information about ENS Key Pair and how to use it, see [What is Key Pair](https://help.aliyun.com/product/62684.html).
+For information about ENS Key Pair and how to use it, see [What is Key Pair](https://www.alibabacloud.com/help/en/ens/latest/createkeypair).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 resource "alicloud_ens_key_pair" "example" {
-  key_pair_name = "example_value"
-  version       = "example_value"
+  key_pair_name = var.name
+  version       = "2017-11-10"
 }
 ```
 

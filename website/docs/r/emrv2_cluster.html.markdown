@@ -13,45 +13,42 @@ Provides a EMR cluster resource. This resource is based on EMR's new version Ope
 
 For information about EMR New and how to use it, see [Add a domain](https://www.alibabacloud.com/help/doc-detail/28068.htm).
 
--> **NOTE:** Available in v1.199.0+.
+-> **NOTE:** Available since v1.199.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a new E-MapReduce (EMR) cluster.
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+variable "name" {
+  default = "terraform-example"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
 data "alicloud_zones" "default" {
   available_instance_type = "ecs.g7.xlarge"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = "TF-VPC"
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
-
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/21"
   zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = "TF_VSwitch"
+  vswitch_name = var.name
 }
-
 resource "alicloud_ecs_key_pair" "default" {
-  key_pair_name = "terraform-kp"
+  key_pair_name = var.name
 }
-
 resource "alicloud_security_group" "default" {
-  name   = "TF_SECURITY_GROUP"
+  name   = var.name
   vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ram_role" "default" {
-  name     = "tftest"
+  name     = "tfexampleroleemrv2"
   document = <<EOF
     {
         "Statement": [
@@ -70,7 +67,7 @@ resource "alicloud_ram_role" "default" {
     }
     EOF
 
-  description = "this is a role test."
+  description = "this is a role example."
   force       = true
 }
 
@@ -78,7 +75,7 @@ resource "alicloud_emrv2_cluster" "default" {
   payment_type    = "PayAsYouGo"
   cluster_type    = "DATALAKE"
   release_version = "EMR-5.10.0"
-  cluster_name    = "terraform-emr-cluster-v2"
+  cluster_name    = var.name
   deploy_mode     = "NORMAL"
   security_mode   = "NORMAL"
 
@@ -163,22 +160,22 @@ resource "alicloud_emrv2_cluster" "default" {
 
 The following arguments are supported:
 
-* `resource_group_id` - (Optional, Computed) The Id of resource group which the emr-cluster belongs.
-* `payment_type` - (Optional, Computed, ForceNew) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
-* `subscription_config` - (Optional) The detail configuration of subscription payment type.
+* `resource_group_id` - (Optional) The Id of resource group which the emr-cluster belongs.
+* `payment_type` - (Optional, ForceNew) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
+* `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#subscription_config) below.
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. DATALAKE, OLAP, DATAFLOW, DATASERVING, CUSTOM etc. You can find all valid EMR cluster type in emr web console.
 * `release_version` - (Required, ForceNew) EMR Version, e.g. EMR-5.10.0. You can find the all valid EMR Version in emr web console.
 * `cluster_name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
-* `deploy_mode` - (Optional, Computed, ForceNew) The deploy mode of EMR cluster. Supported value: NORMAL or HA.
-* `security_mode` - (Optional, Computed) The security mode of EMR cluster. Supported value: NORMAL or KERBEROS.
+* `deploy_mode` - (Optional, ForceNew) The deploy mode of EMR cluster. Supported value: NORMAL or HA.
+* `security_mode` - (Optional) The security mode of EMR cluster. Supported value: NORMAL or KERBEROS.
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
-* `application_configs` - (Optional) The application configurations of EMR cluster.
-* `node_attributes` - (Required) The node attributes of ecs instances which the emr-cluster belongs.
-* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example).
-* `bootstrap_scripts` (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster.
+* `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
+* `node_attributes` - (Required, ForceNew) The node attributes of ecs instances which the emr-cluster belongs. See [`node_attributes`](#node_attributes) below.
+* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below.
+* `bootstrap_scripts` (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster. See [`bootstrap_scripts`](#bootstrap_scripts) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
-### Block subscription_config
+### `subscription_config`
 
 The `subscription_config` block supports the following:
 
@@ -188,7 +185,7 @@ The `subscription_config` block supports the following:
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
 
-### Block application_configs
+### `application_configs`
 
 The `application_configs` block supports the following:
 
@@ -201,7 +198,7 @@ The `application_configs` block supports the following:
 * `node_group_name` - (Optional) The configuration effected which node group name of emr cluster.
 * `node_group_id` - (Optional) The configuration effected which node group id of emr cluster.
 
-### Block node_attributes
+### `node_attributes`
 
 The `node_attributes` block supports the following:
 
@@ -210,37 +207,47 @@ The `node_attributes` block supports the following:
 * `security_group_id` - (Required) Security Group ID for Cluster.
 * `ram_role` - (Required) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
 * `key_pair_name` - (Required) The name of the key pair.
-* `data_disk_encrypted` - (Optional, Computed, Available in 1.204.0+) Whether to enable data disk encryption.
-* `data_disk_kms_key_id` - (Optional, Computed, Available in 1.204.0+) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
+* `data_disk_encrypted` - (Optional, ForceNew, Available since v1.204.0) Whether to enable data disk encryption.
+* `data_disk_kms_key_id` - (Optional, ForceNew, Available since v1.204.0) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
 
-#### Block node_groups
+### `node_groups`
 
 The node_groups mapping supports the following: 
 
 * `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK.
 * `node_group_name` - (Required) The node group name of emr cluster.
-* `payment_type` - (Required) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
-* `subscription_config` - (Optional) The detail configuration of subscription payment type.
-* `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance.
+* `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
+* `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
+* `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance. See [`spot_bid_prices`](#node_groups-spot_bid_prices) below.
 * `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group.
 * `with_public_ip` - (Optional) Whether the node has a public IP address enabled.
 * `additional_security_group_ids` - (Optional) Additional security Group IDS for Cluster, you can also specify this key for each node group.
 * `instance_types` - (Required) Host Ecs instance types.
 * `node_count` - (Required) Host Ecs number in this node group.
-* `system_disk` - (Required) Host Ecs system disk information in this node group.
-* `data_disks` - (Required) Host Ecs data disks information in this node group.
+* `system_disk` - (Required) Host Ecs system disk information in this node group. See [`system_disk`](#node_groups-system_disk) below.
+* `data_disks` - (Required) Host Ecs data disks information in this node group. See [`data_disks`](#node_groups-data_disks) below.
 * `graceful_shutdown` - (Optional) Enable emr cluster of task node graceful decommission, ’true’ or ‘false’ .
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
-* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster.
+* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below.
 
-#### Block spot_bid_prices
+### `node_groups-subscription_config`
+
+The subscription_config mapping supports the following: 
+
+* `payment_duration_unit` - (Required) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
+* `payment_duration` - (Required) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
+* `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
+* `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
+* `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
+
+### `node_groups-spot_bid_prices`
 
 The spot_bid_prices mapping supports the following: 
 
 * `instance_type` - (Required) Host Ecs instance type.
 * `bid_price` - (Required) The spot bid price of a PayAsYouGo instance.
 
-#### Block system_disk
+### `node_groups-system_disk`
 
 The system_disk mapping supports the following: 
 
@@ -249,7 +256,7 @@ The system_disk mapping supports the following:
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
 
-#### Block data_disks
+### `node_groups-data_disks`
 
 The data_disks mapping supports the following: 
 
@@ -258,7 +265,7 @@ The data_disks mapping supports the following:
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
 
-#### Block cost_optimized_config
+### `node_groups-cost_optimized_config`
 
 The cost_optimized_config mapping supports the following: 
 
@@ -266,7 +273,7 @@ The cost_optimized_config mapping supports the following:
 * `on_demand_percentage_above_base_capacity` - (Required) The cost optimized configuration which on demand percentage above based capacity.
 * `spot_instance_pools` - (Required) The cost optimized configuration with spot instance pools.
 
-#### Block bootstrap_scripts
+### `bootstrap_scripts`
 
 The bootstrap_scripts mapping supports the following: 
 
@@ -276,9 +283,9 @@ The bootstrap_scripts mapping supports the following:
 * `priority` - (Optional) The bootstrap scripts priority.
 * `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ .
 * `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ .
-* `node_selector` - (Required) The bootstrap scripts execution target.
+* `node_selector` - (Required) The bootstrap scripts execution target. See [`node_selector`](#bootstrap_scripts-node_selector) below.
 
-#### Block node_selector
+### `bootstrap_scripts-node_selector`
 
 The node_selector mapping supports the following: 
 
@@ -294,7 +301,7 @@ The following attributes are exported:
 
 * `id` - The emr cluster ID.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
