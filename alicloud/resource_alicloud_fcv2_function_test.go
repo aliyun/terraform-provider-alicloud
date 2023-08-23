@@ -18,7 +18,7 @@ import (
 
 // Test Fcv2 Function. >>> Resource test cases, automatically generated.
 // Case 3393
-func TestAccAlicloudFcv2Function_basic3393(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3393(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
@@ -327,6 +327,16 @@ func TestAccAlicloudFcv2Function_basic3393(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"handler": "index.handler",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"handler": "index.handler1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"handler": "index.handler1",
 					}),
 				),
 			},
@@ -760,7 +770,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3270
-func TestAccAlicloudFcv2Function_basic3270(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3270(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
@@ -890,8 +900,8 @@ func TestAccAlicloudFcv2Function_basic3270(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"code": []map[string]interface{}{
 						{
-							"oss_bucket_name": "code-sample-cn-hangzhou",
-							"oss_object_name": "quick-start-sample-codes/quick-start-sample-codes-nodejs/RocketMQ-producer-nodejs14-event/code.zip",
+							"oss_bucket_name": "function-template-code-cn-hangzhou",
+							"oss_object_name": "alimebot-nodejs-code.zip",
 						},
 					},
 				}),
@@ -1297,7 +1307,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3395
-func TestAccAlicloudFcv2Function_basic3395(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3395(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)
@@ -1531,13 +1541,18 @@ func TestAccAlicloudFcv2Function_basic3395(t *testing.T) {
 							"args":              "[\\\"--debug\\\"]",
 							"command":           "[\\\"python\\\",\\\"app.py\\\"]",
 							"image":             "registry-vpc.cn-hangzhou.aliyuncs.com/fc-stable-diffusion/stable-diffusion:v1",
-							"acceleration_type": "Default",
-							"web_server_mode":   "true",
+							"acceleration_type": "None",
+							"web_server_mode":   "false",
 						},
 					},
+					"instance_concurrency": "1",
+					"ca_port":              "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"instance_concurrency": "1",
+						"ca_port":              "0",
+					}),
 				),
 			},
 			{
@@ -1905,7 +1920,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3393  twin
-func TestAccAlicloudFcv2Function_basic3393_twin(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3393_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
@@ -2044,7 +2059,7 @@ func TestAccAlicloudFcv2Function_basic3393_twin(t *testing.T) {
 }
 
 // Case 3270  twin
-func TestAccAlicloudFcv2Function_basic3270_twin(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3270_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
@@ -2140,7 +2155,7 @@ func TestAccAlicloudFcv2Function_basic3270_twin(t *testing.T) {
 }
 
 // Case 3395  twin
-func TestAccAlicloudFcv2Function_basic3395_twin(t *testing.T) {
+func TestAccAliCloudcv2Function_basic3395_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)
