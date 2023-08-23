@@ -7,11 +7,11 @@ description: |-
   Provides an Alicloud ECI Image Cache resource.
 ---
 
-# alicloud\_eci\_image\_cache
+# alicloud_eci_image_cache
 
 An ECI Image Cache can help user to solve the time-consuming problem of image pull. For information about Alicloud ECI Image Cache and how to use it, see [What is Resource Alicloud ECI Image Cache](https://www.alibabacloud.com/help/doc-detail/146891.htm).
 
--> **NOTE:** Available in v1.89.0+.
+-> **NOTE:** Available since v1.89.0.
 
 -> **NOTE:** Each image cache corresponds to a snapshot, and the user does not delete the snapshot directly, otherwise the cache will fail.
 
@@ -20,12 +20,45 @@ An ECI Image Cache can help user to solve the time-consuming problem of image pu
 Basic Usage
 
 ```terraform
-resource "alicloud_eci_image_cache" "example" {
-  image_cache_name  = "tf-test"
-  images            = ["registry.cn-beijing.aliyuncs.com/sceneplatform/sae-image-xxxx:latest"]
-  security_group_id = "sg-2zeef68b66fxxxx"
-  vswitch_id        = "vsw-2zef9k7ng82xxxx"
-  eip_instance_id   = "eip-uf60c7cqb2pcrkgxhxxxx"
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_eci_zones" "default" {}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_eci_zones.default.zones.0.zone_ids.0
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_eip_address" "default" {
+  isp                       = "BGP"
+  address_name              = var.name
+  netmode                   = "public"
+  bandwidth                 = "1"
+  security_protection_types = ["AntiDDoS_Enhanced"]
+  payment_type              = "PayAsYouGo"
+}
+data "alicloud_regions" "default" {
+  current = true
+}
+
+resource "alicloud_eci_image_cache" "default" {
+  image_cache_name  = var.name
+  images            = ["registry-vpc.${data.alicloud_regions.default.regions.0.id}.aliyuncs.com/eci_open/nginx:alpine"]
+  security_group_id = alicloud_security_group.default.id
+  vswitch_id        = alicloud_vswitch.default.id
+  eip_instance_id   = alicloud_eip_address.default.id
 }
 ```
 ## Argument Reference
@@ -41,9 +74,9 @@ The following arguments are supported:
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
 * `retention_days` - (Optional, ForceNew) The retention days of the image cache. Once the image cache expires, it will be cleared. By default, the image cache never expires. Note: The image cache that fails to be created is retained for only one day.
 * `zone_id` - (Optional, ForceNew) The zone id to cache image.
-* `image_registry_credential` - (Optional, ForceNew) The Image Registry parameters about the image to be cached.
+* `image_registry_credential` - (Optional, ForceNew) The Image Registry parameters about the image to be cached. See [`image_registry_credential`](#image_registry_credential) below.
 
-### Block image_registry_credential
+### `image_registry_credential`
 * `server` - (Optional) The address of Image Registry without `http://` or `https://`.
 * `user_name` - (Optional) The user name of Image Registry.
 * `password` - (Optional) The password of the Image Registry.

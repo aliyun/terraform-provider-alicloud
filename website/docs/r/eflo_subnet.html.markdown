@@ -11,17 +11,23 @@ description: |-
 
 Provides a Eflo Subnet resource.
 
-For information about Eflo Subnet and how to use it, see [What is Subnet](https://help.aliyun.com/document_detail/604977.html).
+For information about Eflo Subnet and how to use it, see [What is Subnet](https://www.alibabacloud.com/help/en/pai/user-guide/overview-of-intelligent-computing-lingjun).
 
--> **NOTE:** Available in v1.204.0+.
+-> **NOTE:** Available since v1.204.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_zones" "default" {}
+variable "name" {
+  default = "tf-example"
+}
 
+provider "alicloud" {
+  region = "cn-wulanchabu"
+}
+data "alicloud_zones" "default" {}
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_eflo_vpd" "default" {
@@ -41,14 +47,14 @@ resource "alicloud_eflo_subnet" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr` - (ForceNew,Required) CIDR network segment
+* `cidr` - (Required, ForceNew) CIDR network segment.
 * `subnet_name` - (Required) The Subnet name.
-* `type` - (ForceNew,Optional) Eflo subnet usage type. optional value:
+* `type` - (Optional, ForceNew) Eflo subnet usage type. optional value:
   - General type is not filled in
   - OOB:OOB type
   - LB: LB type
-* `zone_id` - (Required,ForceNew) The zone ID  of the resource
-* `vpd_id` - (Required,ForceNew) The Eflo VPD ID.
+* `zone_id` - (Required, ForceNew) The zone ID  of the resource.
+* `vpd_id` - (Required, ForceNew) The Eflo VPD ID.
 
 
 ## Attributes Reference
@@ -62,7 +68,7 @@ The following attributes are exported:
 * `status` - The status of the resource.
 * `subnet_id` - The id of the subnet.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Subnet.
