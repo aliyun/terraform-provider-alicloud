@@ -54,7 +54,7 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Computed, Available since v1.207.0) Whether the delete protection function is turned on.
   - **true**: enabled.
   - **false**: not enabled.
-* `description` - (Optional) The description of the EIP.
+* `description` - (Optional, Computed) The description of the EIP.
 * `high_definition_monitor_log_status` - (Optional, ForceNew, Computed) Whether the second-level monitoring is enabled for the EIP.
   - **OFF**: not enabled.
   - **ON**: enabled.

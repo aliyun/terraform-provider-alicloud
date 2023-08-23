@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudNLBListener_basic0(t *testing.T) {
+func TestAccAliCloudNLBListener_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudNlbListenerMap0)
@@ -77,7 +77,7 @@ func TestAccAlicloudNLBListener_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNLBListener_TCPSSL(t *testing.T) {
+func TestAccAliCloudNLBListener_TCPSSL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudNlbListenerMap0)
@@ -295,7 +295,7 @@ resource "alicloud_nlb_server_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudNLBListener_basic1(t *testing.T) {
+func TestAccAliCloudNLBListener_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_listener.default"
 	ra := resourceAttrInit(resourceId, AlicloudNlbListenerMap1)
@@ -602,7 +602,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbListenerCreate(dInit, rawClient)
+	err = resourceAliCloudNlbListenerCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -628,7 +628,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerCreate(dInit, rawClient)
+		err := resourceAliCloudNlbListenerCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -654,7 +654,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbListenerUpdate(dExisted, rawClient)
+	err = resourceAliCloudNlbListenerUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateListenerAttribute
@@ -716,7 +716,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbListenerUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -765,7 +765,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbListenerUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -814,7 +814,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbListenerUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -853,7 +853,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerRead(dExisted, rawClient)
+		err := resourceAliCloudNlbListenerRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -871,7 +871,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbListenerDelete(dExisted, rawClient)
+	err = resourceAliCloudNlbListenerDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -893,7 +893,7 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbListenerDelete(dExisted, rawClient)
+		err := resourceAliCloudNlbListenerDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -901,3 +901,694 @@ func TestUnitAlicloudNlbListener(t *testing.T) {
 		}
 	}
 }
+
+// Test Nlb Listener. >>> Resource test cases, automatically generated.
+// Case 3868
+func TestAccAliCloudNlbListener_basic3868(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudNlbListenerMap3868)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlblistener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbListenerBasicDependence3868)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled":             "true",
+					"proxy_protocol_enabled": "true",
+					"sec_sensor_enabled":     "true",
+					"alpn_enabled":           "true",
+					"load_balancer_id":       "${alicloud_nlb_load_balancer.default.id}",
+					"server_group_id":        "${alicloud_nlb_server_group.default.0.id}",
+					"listener_protocol":      "TCPSSL",
+					"certificate_ids": []string{
+						"10793882-cn-hangzhou"},
+					"listener_description": "test",
+					"security_policy_id":   "tls_cipher_policy_1_0",
+					"alpn_policy":          "HTTP1Only",
+					"start_port":           "244",
+					"end_port":             "566",
+					"idle_timeout":         "1",
+					"listener_port":        "0",
+					"ca_certificate_ids": []string{
+						"1ee31045-0d28-64c5-9ccf-6b50b7c1bd22"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":  CHECKSET,
+						"server_group_id":   CHECKSET,
+						"listener_protocol": "TCPSSL",
+						"listener_port":     "0",
+						"start_port":        "244",
+						"end_port":          "566",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proxy_protocol_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proxy_protocol_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sec_sensor_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sec_sensor_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_ids": []string{
+						"10793882-cn-hangzhou"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"certificate_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"listener_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_id": "tls_cipher_policy_1_0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_id": "tls_cipher_policy_1_0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_policy": "HTTP1Only",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_policy": "HTTP1Only",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cps": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cps": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mss": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mss": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"idle_timeout": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"idle_timeout": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_certificate_ids": []string{
+						"1ee31045-0d28-64c5-9ccf-6b50b7c1bd22"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_certificate_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_id": "${alicloud_nlb_server_group.default.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"server_group_id": "${alicloud_nlb_server_group.default.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"server_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_description": "testupdate",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"listener_description": "testupdate",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_id": "tls_cipher_policy_1_1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_id": "tls_cipher_policy_1_1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_policy": "HTTP2Only",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_policy": "HTTP2Only",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cps": "43",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cps": "43",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mss": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mss": "20",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"idle_timeout": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"idle_timeout": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Stopped",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled":         "false",
+					"ca_certificate_ids": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_enabled":           "false",
+						"ca_certificate_ids.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled": "true",
+					"ca_certificate_ids": []string{
+						"1ee3cb65-d2e9-64e0-831b-a568e2794ac6"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_enabled":           "true",
+						"ca_certificate_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proxy_protocol_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proxy_protocol_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sec_sensor_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sec_sensor_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"certificate_ids": []string{"10897876-cn-hangzhou"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"certificate_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"listener_description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"listener_description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_id": "tls_cipher_policy_1_0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_id": "tls_cipher_policy_1_0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alpn_policy": "HTTP1Only",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alpn_policy": "HTTP1Only",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cps": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cps": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mss": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mss": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"idle_timeout": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"idle_timeout": "1",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"ca_certificate_ids": []string{},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"ca_certificate_ids.#": "0",
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled":             "true",
+					"proxy_protocol_enabled": "true",
+					"sec_sensor_enabled":     "true",
+					"alpn_enabled":           "true",
+					"load_balancer_id":       "${alicloud_nlb_load_balancer.default.id}",
+					"server_group_id":        "${alicloud_nlb_server_group.default.0.id}",
+					"listener_protocol":      "TCPSSL",
+					"certificate_ids": []string{
+						"10793882-cn-hangzhou"},
+					"listener_description": "test",
+					"security_policy_id":   "tls_cipher_policy_1_0",
+					"alpn_policy":          "HTTP1Only",
+					"start_port":           "244",
+					"cps":                  "0",
+					"mss":                  "0",
+					"end_port":             "566",
+					"idle_timeout":         "1",
+					"listener_port":        "0",
+					"ca_certificate_ids": []string{
+						"1ee3cb65-d2e9-64e0-831b-a568e2794ac6"},
+					"status": "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_enabled":             "true",
+						"proxy_protocol_enabled": "true",
+						"sec_sensor_enabled":     "true",
+						"alpn_enabled":           "true",
+						"load_balancer_id":       CHECKSET,
+						"server_group_id":        CHECKSET,
+						"listener_protocol":      "TCPSSL",
+						"certificate_ids.#":      "1",
+						"listener_description":   "test",
+						"security_policy_id":     "tls_cipher_policy_1_0",
+						"alpn_policy":            "HTTP1Only",
+						"start_port":             "244",
+						"cps":                    "0",
+						"mss":                    "0",
+						"end_port":               "566",
+						"idle_timeout":           "1",
+						"listener_port":          "0",
+						"ca_certificate_ids.#":   "1",
+						"status":                 "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNlbListenerMap3868 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudNlbListenerBasicDependence3868(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_nlb_zones" "default" {}
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_vswitches" "default_1" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_nlb_zones.default.zones.0.id
+}
+data "alicloud_vswitches" "default_2" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_nlb_zones.default.zones.1.id
+}
+locals {
+  zone_id_1    = data.alicloud_nlb_zones.default.zones.0.id
+  vswitch_id_1 = data.alicloud_vswitches.default_1.ids[0]
+  zone_id_2    = data.alicloud_nlb_zones.default.zones.1.id
+  vswitch_id_2 = data.alicloud_vswitches.default_2.ids[0]
+}
+resource "alicloud_nlb_load_balancer" "default" {
+  load_balancer_name = var.name
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  load_balancer_type = "Network"
+  address_type       = "Internet"
+  address_ip_version = "Ipv4"
+  tags               = {
+    Created = "tfTestAcc0"
+    For     = "Tftestacc 0"
+  }
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_mappings {
+    vswitch_id = local.vswitch_id_1
+    zone_id    = local.zone_id_1
+  }
+  zone_mappings {
+    vswitch_id = local.vswitch_id_2
+    zone_id    = local.zone_id_2
+  }
+}
+
+resource "alicloud_nlb_server_group" "default" {
+  count = 2
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  server_group_name = var.name
+  server_group_type = "Instance"
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  scheduler         = "Wrr"
+  protocol          = "TCPSSL"
+  health_check {
+    health_check_enabled         = false
+  }
+  any_port_enabled = true
+  connection_drain           = false
+  tags = {
+    Created = "TF"
+  }
+  address_ip_version = "Ipv4"
+}
+
+`, name)
+}
+
+// Case 3868  twin
+func TestAccAliCloudNlbListener_basic3868_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_listener.default"
+	ra := resourceAttrInit(resourceId, AlicloudNlbListenerMap3868)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlblistener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbListenerBasicDependence3868)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ca_enabled":             "true",
+					"proxy_protocol_enabled": "true",
+					"sec_sensor_enabled":     "true",
+					"alpn_enabled":           "true",
+					"load_balancer_id":       "${alicloud_nlb_load_balancer.default.id}",
+					"server_group_id":        "${alicloud_nlb_server_group.default.0.id}",
+					"listener_protocol":      "TCPSSL",
+					"certificate_ids": []string{
+						"10793882-cn-hangzhou"},
+					"listener_description": "test",
+					"security_policy_id":   "tls_cipher_policy_1_0",
+					"alpn_policy":          "HTTP1Only",
+					"start_port":           "244",
+					"cps":                  "0",
+					"mss":                  "0",
+					"end_port":             "566",
+					"idle_timeout":         "1",
+					"listener_port":        "0",
+					"ca_certificate_ids": []string{
+						"1ee31045-0d28-64c5-9ccf-6b50b7c1bd22"},
+					"status": "Running",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ca_enabled":             "true",
+						"proxy_protocol_enabled": "true",
+						"sec_sensor_enabled":     "true",
+						"alpn_enabled":           "true",
+						"load_balancer_id":       CHECKSET,
+						"server_group_id":        CHECKSET,
+						"listener_protocol":      "TCPSSL",
+						"certificate_ids.#":      "1",
+						"listener_description":   "test",
+						"security_policy_id":     "tls_cipher_policy_1_0",
+						"alpn_policy":            "HTTP1Only",
+						"start_port":             "244",
+						"cps":                    "0",
+						"mss":                    "0",
+						"end_port":               "566",
+						"idle_timeout":           "1",
+						"listener_port":          "0",
+						"ca_certificate_ids.#":   "1",
+						"status":                 "Running",
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Nlb Listener. <<< Resource test cases, automatically generated.
