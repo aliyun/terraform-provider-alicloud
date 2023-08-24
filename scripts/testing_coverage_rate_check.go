@@ -90,24 +90,26 @@ func main() {
 				continue
 			}
 		}
-		schemaMustSet, schemaModifySet := mapset.NewSet(), mapset.NewSet()
-		getSchemaAttr(false, resource.Schema, &schemaMustSet, &schemaModifySet)
+		schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet :=
+			mapset.NewSet(), mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
+		getSchemaAttr(false, resource.Schema, &schemaAllSet, &schemaMustSet, &schemaModifySet, &schemaForceNewSet)
 
 		log.Infof("==> Getting %s %s attributes in test cases...", fileType, resourceName)
-		testMustSet, testModifySet := mapset.NewSet(), mapset.NewSet()
+		testMustSet, testModifySet, testIgnoreSet :=
+			mapset.NewSet(), mapset.NewSet(), mapset.NewSet()
 		filePath := "alicloud/"
 		if isResource {
 			filePath += "resource_" + resourceName + "_test.go"
 		} else {
 			filePath += "data_source_" + resourceName + "_test.go"
 		}
-		check := getTestCaseAttr(filePath, resourceName, &testMustSet, &testModifySet)
+		check := getTestCaseAttr(filePath, resourceName, &testMustSet, &testModifySet, &testIgnoreSet)
 
 		// "check" denotes the test code is using a standard template
 		if check {
 			log.Infof("==> checking %s %s attributes' coverage rate", fileType, resourceName)
-			if checkAttributeSet(resourceName, fileType,
-				schemaMustSet, testMustSet, schemaModifySet, testModifySet) && isNameCorrect {
+			if checkAttributeSet(resourceName, fileType, schemaMustSet, testMustSet,
+				schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet) && isNameCorrect {
 				log.Infof("--- PASS!\n\n")
 				continue
 			}
@@ -124,7 +126,7 @@ func main() {
 
 // get the schema
 func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
-	schemaMustSet, schemaModifySet *mapset.Set) {
+	schemaAllSet, schemaMustSet, schemaModifySet, schemaForceNewSet *mapset.Set) {
 
 	schemaAttributes := make(map[string]SchemaAttribute)
 
@@ -135,11 +137,15 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 		if key == "dry_run" || len(value.Removed) != 0 {
 			continue
 		}
+		(*schemaAllSet).Add(key)
 		if value.Optional || value.Required {
 			(*schemaMustSet).Add(key)
 			if !value.ForceNew {
 				(*schemaModifySet).Add(key)
 			}
+		}
+		if value.ForceNew {
+			(*schemaForceNewSet).Add(key)
 		}
 
 	}
@@ -193,7 +199,8 @@ type SchemaAttribute struct {
 }
 
 // get the attribute which have been tested
-func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModifySet *mapset.Set) bool {
+func getTestCaseAttr(filePath string, resourceName string,
+	testMustSet, testModifySet, testIgnoreSet *mapset.Set) bool {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Errorf("fail to open test file %s. Error: %s", filePath, err)
@@ -212,6 +219,8 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 	configStr := ""
 	inConfig := false
 	inFunc := false
+	ignoreStr := ""
+	inIgnore := false
 	for scanner.Scan() {
 		line += 1
 		text := scanner.Text()
@@ -259,6 +268,24 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 					configStr += text + "\n"
 				}
 			}
+			if ignoreRegex.MatchString(text) {
+				inIgnore = true
+				ignoreStr += text
+				continue
+			}
+			if inIgnore {
+				ignoreStr += text
+				if strings.Contains(text, "}") {
+					inIgnore = false
+					ignoreStr = strings.ReplaceAll(ignoreStr, "\"", "")
+					ignoreStr = symbolRegex.ReplaceAllString(ignoreStr, "")
+					attrSlice := strings.Split(ignoreStr[strings.Index(ignoreStr, "{")+1:strings.Index(ignoreStr, "}")], ",")
+					for _, v := range attrSlice {
+						(*testIgnoreSet).Add(v)
+					}
+					ignoreStr = ""
+				}
+			}
 		}
 
 	}
@@ -267,7 +294,8 @@ func getTestCaseAttr(filePath string, resourceName string, testMustSet, testModi
 
 }
 
-func parseConfig(resourceTest ResourceTest, testMustSet, testModifySet *mapset.Set) (toCheck bool) {
+func parseConfig(resourceTest ResourceTest,
+	testMustSet, testModifySet *mapset.Set) (toCheck bool) {
 	for funcName, f := range resourceTest.funcs {
 		// attribute-value map in a test func
 		attributeValueMap := map[string]string{}
@@ -426,6 +454,7 @@ var (
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
 	configRegex       = regexp.MustCompile("(.*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
+	ignoreRegex       = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
 	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-]+)\":(.*)")
 	symbolRegex       = regexp.MustCompile(`\s`)
 	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|([+])")
@@ -458,35 +487,51 @@ type FuncTest struct {
 	stepAttributes map[int]map[string]interface{}
 }
 
-func checkAttributeSet(resourceName string, fileType string,
-	schemaMustSet, testMustSet, schemaModifySet, testModifySet mapset.Set) bool {
+func checkAttributeSet(resourceName string, fileType string, schemaMustSet, testMustSet,
+	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet mapset.Set) bool {
 
-	isFullCover, isAllModified := true, true
+	isFullCover, isIgnoreLegal, isAllModified := true, true, true
 
-	notCoverSet := schemaMustSet.Difference(testMustSet)
-	notCoverStr, _ := json.Marshal(notCoverSet.ToSlice())
-	if isFullCover = schemaMustSet.IsSubset(testMustSet); !isFullCover {
+	notCoverSlice := schemaMustSet.Difference(testMustSet).ToSlice()
+	if len(notCoverSlice) != 0 {
+		isFullCover = false
 		schemaCount := float64(len(schemaMustSet.ToSlice()))
-		notCoverCount := float64(len(notCoverSet.ToSlice()))
+		notCoverCount := float64(len(notCoverSlice))
 		coverageRate := 1 - (notCoverCount / schemaCount)
 		log.Infof("resource %s attributes has %.2f%% testing coverage rate ", resourceName, coverageRate*100)
+		notCoverStr, _ := json.Marshal(notCoverSlice)
 		log.Errorf("resource %s attributes %v missing test cases", resourceName, string(notCoverStr))
 	} else {
 		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
-
 	}
 
-	notModifySet := schemaModifySet.Difference(testModifySet)
-	notModifyStr, _ := json.Marshal(notModifySet.ToSlice())
-	if isAllModified = schemaModifySet.IsSubset(testModifySet); !isAllModified {
+	forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).ToSlice()
+	if len(forceNewButIgnore) != 0 {
+		isIgnoreLegal = false
+		forceNewButIgnoreStr, _ := json.Marshal(forceNewButIgnore)
+		// TODO: 从READ方法区分是否是私有属性，从而区分应该修改ignore数组还是应该修改资源属性
+		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
+	}
+	redundantAttr := testIgnoreSet.Difference(schemaAllSet).ToSlice()
+	if len(redundantAttr) != 0 {
+		isIgnoreLegal = false
+		redundantAttrStr, _ := json.Marshal(redundantAttr)
+		log.Errorf("resource %s attributes %v should not in ImportStateVerifyIgnore array", resourceName, string(redundantAttrStr))
+	}
+	schemaModifySet = schemaModifySet.Difference(testIgnoreSet)
+
+	notModifySlice := schemaModifySet.Difference(testModifySet).ToSlice()
+	if len(notModifySlice) != 0 {
+		isAllModified = false
 		schemaCount := float64(len(schemaModifySet.ToSlice()))
-		notCoverCount := float64(len(notModifySet.ToSlice()))
+		notCoverCount := float64(len(notModifySlice))
 		coverageRate := 1 - (notCoverCount / schemaCount)
 		log.Infof("resource %s attributes has %.2f%% modified coverage rate ", resourceName, coverageRate*100)
+		notModifyStr, _ := json.Marshal(notModifySlice)
 		log.Errorf("resource %s attributes %v missing modification in test cases", resourceName, string(notModifyStr))
 	} else {
 		log.Infof("resource %s attributes has 100%% modified coverage rate ", resourceName)
 	}
 
-	return isFullCover && isAllModified
+	return isFullCover && isIgnoreLegal && isAllModified
 }
