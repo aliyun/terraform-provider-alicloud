@@ -37,14 +37,17 @@ resource "alicloud_cloud_firewall_address_book" "example" {
 
 The following arguments are supported:
 * `group_name` - (Required) The name of the Address Book.
-* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `tag`.
+* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `domain`, `port`, `tag`. **NOTE:** From version 1.209.1, `group_type` can be set to `domain`, `port`.
 * `description` - (Required) The description of the Address Book.
 * `auto_add_tag_ecs` - (Optional, Int) Whether you want to automatically add new matching tags of the ECS IP address to the Address Book. Valid values: `0`, `1`.
 * `tag_relation` - (Optional) The logical relation among the ECS tags that to be matched. Default value: `and`. Valid values:
   - `and`: Only the public IP addresses of ECS instances that match all the specified tags can be added to the Address Book.
   - `or`: The public IP addresses of ECS instances that match one of the specified tags can be added to the Address Book.
 * `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.
-* `address_list` - (Optional, List) The list of addresses.
+* `address_list` - (Optional, List) The list of addresses. **NOTE:** If you set `group_type` to `ip`, `port` or `domain`, you must specify the `address_list`.
+  - When `group_type` is `ip`, you must add IP addresses to the address book. Example: `["192.0.XX.XX/32", "192.0.XX.XX/24"]`.
+  - When `group_type` is `domain`, you must add port numbers or port ranges to the address book. Example: `["80/80", "100/200"]`.
+  - When `group_type` is `port`, you must add domain names to the address book. Example: `["example.com", "aliyundoc.com"]`.
 * `ecs_tags` - (Optional, Set) A list of ECS tags. See [`ecs_tags`](#ecs_tags) below.
 
 ### `ecs_tags`

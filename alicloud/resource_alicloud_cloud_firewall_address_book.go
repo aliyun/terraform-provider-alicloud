@@ -30,7 +30,7 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip", "tag"}, false),
+				ValidateFunc: StringInSlice([]string{"ip", "domain", "port", "tag"}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -151,7 +151,8 @@ func resourceAliCloudCloudFirewallAddressBookRead(d *schema.ResourceData, meta i
 	client := meta.(*connectivity.AliyunClient)
 	cloudfwService := CloudfwService{client}
 
-	object, err := cloudfwService.DescribeCloudFirewallAddressBook(d.Id())
+	groupType := d.Get("group_type").(string)
+	object, err := cloudfwService.DescribeCloudFirewallAddressBook(d.Id(), groupType)
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_address_book cloudfwService.DescribeCloudFirewallAddressBook Failed!!! %s", err)

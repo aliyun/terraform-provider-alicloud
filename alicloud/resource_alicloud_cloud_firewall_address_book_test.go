@@ -16,7 +16,7 @@ func TestAccAliCloudCloudFirewallAddressBook_basic0(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallAddressBook")
+	}, "DescribeCloudFirewallAddressBook", []string{"group_type"}...)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -113,7 +113,7 @@ func TestAccAliCloudCloudFirewallAddressBook_basic1(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallAddressBook")
+	}, "DescribeCloudFirewallAddressBook", []string{"group_type"}...)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -234,7 +234,7 @@ func TestAccAliCloudCloudFirewallAddressBook_basic2(t *testing.T) {
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallAddressBook")
+	}, "DescribeCloudFirewallAddressBook", []string{"group_type"}...)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -349,6 +349,150 @@ func TestAccAliCloudCloudFirewallAddressBook_basic2(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ecs_tags.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallAddressBook_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallSupportRegions)
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallAddressBook", []string{"group_type"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewalladdressbook%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "port",
+					"description":  name,
+					"address_list": []string{"80/80", "80/81", "80/82"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name":     name,
+						"group_type":     "port",
+						"description":    name,
+						"address_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"lang": "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"lang": "en",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"address_list": []string{"80/81"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"address_list.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"lang", "group_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallAddressBook_basic4(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_address_book.default"
+	checkoutSupportedRegions(t, true, connectivity.CloudFirewallSupportRegions)
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallAddressBookMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallAddressBook", []string{"group_type"}...)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewalladdressbook%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallAddressBookBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"group_name":   name,
+					"group_type":   "port",
+					"description":  name,
+					"address_list": []string{"80/80", "80/81", "80/82"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"group_name":     name,
+						"group_type":     "port",
+						"description":    name,
+						"address_list.#": "3",
 					}),
 				),
 			},

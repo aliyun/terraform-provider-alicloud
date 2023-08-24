@@ -68,7 +68,7 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 	return object, nil
 }
 
-func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map[string]interface{}, err error) {
+func (s *CloudfwService) DescribeCloudFirewallAddressBook(id, groupId string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeAddressBook"
 	idExist := false
@@ -79,6 +79,7 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 	}
 
 	request := map[string]interface{}{
+		"GroupType":   groupId,
 		"PageSize":    PageSizeLarge,
 		"CurrentPage": 1,
 	}
