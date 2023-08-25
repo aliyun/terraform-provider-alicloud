@@ -10,58 +10,58 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ga_custom_routing_endpoint_traffic_policy.default.id}"]`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"ids": `["${alicloud_ga_custom_routing_endpoint_traffic_policy.default.id}_fake"]`,
 		}),
 	}
 	listenerIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"listener_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.listener_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"listener_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.listener_id}_fake"`,
 		}),
 	}
 	endpointGroupIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_group_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_group_id}_fake"`,
 		}),
 	}
 	endpointIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"endpoint_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"endpoint_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_id}_fake"`,
 		}),
 	}
 	addressConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"address": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.address}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"address": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.address}_fake"`,
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		existConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ga_custom_routing_endpoint_traffic_policy.default.id}"]`,
 			"listener_id":       `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.listener_id}"`,
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_group_id}"`,
 			"endpoint_id":       `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_id}"`,
 			"address":           `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.address}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand, map[string]string{
 			"ids":               `["${alicloud_ga_custom_routing_endpoint_traffic_policy.default.id}_fake"]`,
 			"listener_id":       `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.listener_id}_fake"`,
 			"endpoint_group_id": `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.endpoint_group_id}_fake"`,
@@ -69,7 +69,7 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.
 			"address":           `"${alicloud_ga_custom_routing_endpoint_traffic_policy.default.address}_fake"`,
 		}),
 	}
-	var existAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var existAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#": "1",
 			"custom_routing_endpoint_traffic_policies.#":                                           "1",
@@ -85,7 +85,7 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.
 			"custom_routing_endpoint_traffic_policies.0.port_ranges.0.to_port":                     "2",
 		}
 	}
-	var fakeAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"ids.#": "0",
 			"custom_routing_endpoint_traffic_policies.#": "0",
@@ -93,8 +93,8 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.
 	}
 	var alicloudGaCustomRoutingEndpointTrafficPoliciesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_ga_custom_routing_endpoint_traffic_policies.default",
-		existMapFunc: existAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc,
-		fakeMapFunc:  fakeAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc,
+		existMapFunc: existAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc,
+		fakeMapFunc:  fakeAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceNameMapFunc,
 	}
 	preCheck := func() {
 		testAccPreCheck(t)
@@ -102,7 +102,7 @@ func TestAccAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSource(t *testing.
 	alicloudGaCustomRoutingEndpointTrafficPoliciesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, listenerIdConf, endpointGroupIdConf, endpointIdConf, addressConf, allConf)
 }
 
-func testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand int, attrMap map[string]string) string {
+func testAccCheckAliCloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -113,17 +113,23 @@ func testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(ra
   		default = "tf-testAccGaCustomRoutingEndpointTrafficPolicy-%d"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "default-NODELETING-Ipv6"
-	}
-
-	data "alicloud_vswitches" "default" {
-  		name_regex = "default-zone-g_28"
-  		vpc_id     = data.alicloud_vpcs.default.ids.0
+	data "alicloud_zones" "default" {
 	}
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name       = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.ids.0
 	}
 
 	resource "alicloud_ga_bandwidth_package" "default" {
@@ -166,7 +172,7 @@ func testAccCheckAlicloudGaCustomRoutingEndpointTrafficPoliciesDataSourceName(ra
 
 	resource "alicloud_ga_custom_routing_endpoint" "default" {
   		endpoint_group_id          = alicloud_ga_custom_routing_endpoint_group_destination.default.endpoint_group_id
-  		endpoint                   = data.alicloud_vswitches.default.ids.0
+  		endpoint                   = alicloud_vswitch.default.id
   		type                       = "PrivateSubNet"
   		traffic_to_endpoint_policy = "AllowAll"
 	}
