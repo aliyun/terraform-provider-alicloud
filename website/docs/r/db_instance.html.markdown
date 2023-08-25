@@ -670,7 +670,7 @@ The following arguments are supported:
 
 * `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
 * `role_arn` - (ForceNew, Optional, Available in 1.208.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role.
-* `direction` - (Optional, Available in 1.210.0+) The instance configuration type. Valid values:
+* `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values:
   - Up
   - Down
   - TempUpgrade
