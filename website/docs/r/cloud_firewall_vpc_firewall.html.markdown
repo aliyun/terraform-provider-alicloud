@@ -11,18 +11,21 @@ description: |-
 
 Provides a Cloud Firewall Vpc Firewall resource.
 
-For information about Cloud Firewall Vpc Firewall and how to use it, see [What is Vpc Firewall](https://help.aliyun.com/document_detail/342893.html).
+For information about Cloud Firewall Vpc Firewall and how to use it, see [What is Vpc Firewall](https://www.alibabacloud.com/help/en/cloud-firewall/developer-reference/api-cloudfw-2017-12-07-createvpcfirewallconfigure).
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+data "alicloud_account" "current" {
+}
+
 resource "alicloud_cloud_firewall_vpc_firewall" "default" {
-  vpc_firewall_name = "tf-test"
-  member_uid        = "1415189284827022"
+  vpc_firewall_name = "tf-example"
+  member_uid        = data.alicloud_account.current.id
   local_vpc {
     vpc_id    = "vpc-bp1d065m6hzn1xbw8ibfd"
     region_no = "cn-hangzhou"
@@ -47,83 +50,93 @@ resource "alicloud_cloud_firewall_vpc_firewall" "default" {
   }
   status = "open"
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `lang` - (Optional) The language type of the requested and received messages. Value:**zh** (default): Chinese.**en**: English.
-* `local_vpc` - (Required) The details of the local VPC. See the following `Block LocalVpc`.
-* `member_uid` - (Optional) The UID of the Alibaba Cloud member account.
-* `peer_vpc` - (Required) The details of the peer VPC. See the following `Block PeerVpc`.
-* `status` - (Required) The status of the resource
-  - `open` (default): protection is automatically enabled after the VPC boundary firewall is created.
-  - `close`: Do not automatically enable protection after creating VPC boundary firewall
+
 * `vpc_firewall_name` - (Required) The name of the VPC firewall instance.
+* `status` - (Required) The status of the resource. Valid values:
+  - `open`: protection is automatically enabled after the VPC boundary firewall is created.
+  - `close`: Do not automatically enable protection after creating VPC boundary firewall.
+* `member_uid` - (Optional, ForceNew) The UID of the Alibaba Cloud member account.
+* `lang` - (Optional) The language type of the requested and received messages. Valid values:
+  - `zh`: Chinese.
+  - `en`: English.
+* `local_vpc` - (Required, ForceNew, Set) The details of the local VPC. See [`local_vpc`](#local_vpc) below.
+* `peer_vpc` - (Required, ForceNew, Set) The details of the peer VPC. See [`peer_vpc`](#peer_vpc) below.
 
+### `local_vpc`
 
-#### Block LocalVpc
+The local_vpc supports the following:
 
-The LocalVpc supports the following:
-* `eni_id` - (Computed) The ID of the instance of the Eni in the local VPC.
-* `eni_private_ip_address` - (Computed) The private IP address of the elastic network card in the local VPC.
-* `local_vpc_cidr_table_list` - (Required) The network segment list of the local VPC.See the following `Block LocalVpcCidrTableList`.
-* `region_no` - (Required,ForceNew) The region ID of the local VPC.
-* `router_interface_id` - (Computed) The ID of the router interface in the local VPC.
-* `vpc_id` - (Required,ForceNew) The ID of the local VPC instance.
-* `vpc_name` - (Computed) The instance name of the local VPC.
+* `vpc_id` - (Required, ForceNew) The ID of the local VPC instance.
+* `region_no` - (Required, ForceNew) The region ID of the local VPC.
+* `local_vpc_cidr_table_list` - (Required, ForceNew, Set) The network segment list of the local VPC. See [`local_vpc_cidr_table_list`](#local_vpc-local_vpc_cidr_table_list) below.
 
-#### Block LocalVpcCidrTableList
+### `local_vpc-local_vpc_cidr_table_list`
 
-The LocalVpcCidrTableList supports the following:
-* `local_route_entry_list` - (Required) The list of route entries of the local VPC.See the following `Block LocalRouteEntryList`.
-* `local_route_table_id` - (Required) The ID of the route table of the local VPC.
+The local_vpc_cidr_table_list supports the following:
 
-#### Block LocalRouteEntryList
+* `local_route_table_id` - (Required, ForceNew) The ID of the route table of the local VPC.
+* `local_route_entry_list` - (Required, ForceNew, Set) The list of route entries of the local VPC. See [`local_route_entry_list`](#local_vpc-local_vpc_cidr_table_list-local_route_entry_list) below.
 
-The LocalRouteEntryList supports the following:
-* `local_destination_cidr` - (Required) The target network segment of the local VPC.
-* `local_next_hop_instance_id` - (Required) The ID of the next-hop instance in the local VPC.
+### `local_vpc-local_vpc_cidr_table_list-local_route_entry_list`
 
-#### Block PeerVpc
+The local_route_entry_list supports the following:
 
-The PeerVpc supports the following:
-* `eni_id` - (Computed) The ID of the instance of the ENI in the peer VPC.
-* `eni_private_ip_address` - (Computed) The private IP address of the elastic network card in the peer VPC.
-* `peer_vpc_cidr_table_list` - (Required) The network segment list of the peer VPC.See the following `Block PeerVpcCidrTableList`.
-* `region_no` - (Required,ForceNew) The region ID of the peer VPC.
-* `router_interface_id` - (Computed) The ID of the router interface in the peer VPC.
-* `vpc_id` - (Required,ForceNew) The ID of the peer VPC instance.
-* `vpc_name` - (Computed) The instance name of the peer VPC.
+* `local_next_hop_instance_id` - (Required, ForceNew) The ID of the next-hop instance in the local VPC.
+* `local_destination_cidr` - (Required, ForceNew) The target network segment of the local VPC.
 
-#### Block PeerVpcCidrTableList
+### `peer_vpc`
 
-The PeerVpcCidrTableList supports the following:
-* `peer_route_entry_list` - (Required) Peer VPC route entry list information.See the following `Block PeerRouteEntryList`.
-* `peer_route_table_id` - (Required) The ID of the route table of the peer VPC.
+The peer_vpc supports the following:
 
-#### Block PeerRouteEntryList
+* `vpc_id` - (Required, ForceNew) The ID of the peer VPC instance.
+* `region_no` - (Required, ForceNew) The region ID of the peer VPC.
+* `peer_vpc_cidr_table_list` - (Required, ForceNew, Set) The network segment list of the peer VPC. See [`peer_vpc_cidr_table_list`](#peer_vpc-peer_vpc_cidr_table_list) below.
 
-The PeerRouteEntryList supports the following:
-* `peer_destination_cidr` - (Required) The target network segment of the peer VPC.
-* `peer_next_hop_instance_id` - (Required) The ID of the next-hop instance in the peer VPC.
+### `peer_vpc-peer_vpc_cidr_table_list`
+
+The peer_vpc_cidr_table_list supports the following:
+
+* `peer_route_table_id` - (Required, ForceNew) The ID of the route table of the peer VPC.
+* `peer_route_entry_list` - (Required, ForceNew, Set) Peer VPC route entry list information. See [`peer_route_entry_list`](#peer_vpc-peer_vpc_cidr_table_list-peer_route_entry_list) below.
+
+### `peer_vpc-peer_vpc_cidr_table_list-peer_route_entry_list`
+
+The peer_route_entry_list supports the following:
+
+* `peer_next_hop_instance_id` - (Required, ForceNew) The ID of the next-hop instance in the peer VPC.
+* `peer_destination_cidr` - (Required, ForceNew) The target network segment of the peer VPC.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the VPC firewall instance and the value same as `vpc_firewall_id`.
+* `id` - The resource ID of the Vpc Firewall. The value formats as `vpc_firewall_id`.
 * `vpc_firewall_id` - The ID of the VPC firewall instance.
+* `connect_type` - The communication type of the VPC firewall.
 * `bandwidth` - Bandwidth specifications for high-speed channels. Unit: Mbps.
-* `connect_type` - The communication type of the VPC firewall. Valid value: **expressconnect**, which indicates Express Connect.
-* `region_status` - The region is open. Value:-**enable**: is enabled, indicating that VPC firewall can be configured in this region.-**disable**: indicates that VPC firewall cannot be configured in this region.
+* `region_status` - The region is open.
+* `local_vpc` - The details of the Local VPC.
+  * `vpc_name` - The instance name of the local VPC.
+  * `eni_id` - The ID of the instance of the Eni in the local VPC.
+  * `eni_private_ip_address` - The private IP address of the elastic network card in the local VPC.
+  * `router_interface_id` - The ID of the router interface in the local VPC.
+* `peer_vpc` - The details of the Peer VPC.
+  * `vpc_name` - The instance name of the peer VPC.
+  * `eni_id` - The ID of the instance of the ENI in the peer VPC.
+  * `eni_private_ip_address` - The private IP address of the elastic network card in the peer VPC.
+  * `router_interface_id` - The ID of the router interface in the peer VPC.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 31 mins) Used when create the Vpc Firewall.
-* `delete` - (Defaults to 31 mins) Used when delete the Vpc Firewall.
 * `update` - (Defaults to 31 mins) Used when update the Vpc Firewall.
+* `delete` - (Defaults to 31 mins) Used when delete the Vpc Firewall.
 
 ## Import
 

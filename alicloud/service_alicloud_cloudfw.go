@@ -334,6 +334,9 @@ func (s *CloudfwService) CloudFirewallVpcFirewallCenStateRefreshFunc(d *schema.R
 }
 
 func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeVpcFirewallDetail"
+
 	conn, err := s.client.NewCloudfwClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -343,13 +346,11 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 		"VpcFirewallId": id,
 	}
 
-	var response map[string]interface{}
-	action := "DescribeVpcFirewallDetail"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -357,30 +358,46 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
+
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
+
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorFirewallNotFound"}) {
 			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	switchStatus, _ := jsonpath.Get("$.FirewallSwitchStatus", response)
-	switchStatusString := switchStatus.(string)
-	if switchStatusString == "notconfigured" {
-		err = WrapErrorf(Error(GetNotFoundMessage("Cloudfirewall", id)), NotFoundMsg, ProviderERROR)
-		return object, err
+
+	switchStatus, err := jsonpath.Get("$.FirewallSwitchStatus", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.FirewallSwitchStatus", response)
 	}
+
+	if fmt.Sprint(switchStatus) == "notconfigured" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewall", id)), NotFoundWithResponse, response)
+	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
-	return v.(map[string]interface{}), nil
+
+	object = v.(map[string]interface{})
+
+	return object, nil
 }
 
 func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeVpcFirewallList"
+
 	conn, err := s.client.NewCloudfwClient()
 	if err != nil {
 		return object, WrapError(err)
@@ -390,13 +407,11 @@ func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]i
 		"VpcFirewallId": id,
 	}
 
-	var response map[string]interface{}
-	action := "DescribeVpcFirewallList"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -404,26 +419,34 @@ func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]i
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
+
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
+
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorFirewallNotFound"}) {
 			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	totalCount, _ := jsonpath.Get("$.TotalCount", response)
 	total, _ := totalCount.(json.Number).Int64()
 	if err != nil && total == 0 {
-		err = WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundMsg, ProviderERROR)
-		return object, err
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:VpcFirewall", id)), NotFoundWithResponse, response)
 	}
+
 	v, err := jsonpath.Get("$.VpcFirewalls[0]", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	return v.(map[string]interface{}), nil
 }
 
