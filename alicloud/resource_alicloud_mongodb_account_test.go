@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMongoDBAccount_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_account.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBAccountMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBAccountMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongodbAccount")
@@ -31,7 +31,7 @@ func TestAccAlicloudMongoDBAccount_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%smongodbaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongoDBAccountBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBAccountBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -92,48 +92,53 @@ func TestAccAlicloudMongoDBAccount_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudMongoDBAccountMap0 = map[string]string{
+var AliCloudMongoDBAccountMap0 = map[string]string{
 	"account_name": CHECKSET,
 	"instance_id":  CHECKSET,
 	"status":       CHECKSET,
 }
 
-func AlicloudMongoDBAccountBasicDependence0(name string) string {
+func AliCloudMongoDBAccountBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_mongodb_zones" "default" {}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_mongodb_zones.default.zones.0.id
-  vswitch_name      = "subnet-for-local-test"
-}
-resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
-  db_instance_class   = "dds.mongo.mid"
-  db_instance_storage = 10
-  name                = var.name
-  vswitch_id          = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
+	data "alicloud_mongodb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	}
+
+	resource "alicloud_vswitch" "vswitch" {
+  		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  		zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
+  		vswitch_name = "subnet-for-local-test"
+	}
+
+	resource "alicloud_mongodb_instance" "default" {
+  		engine_version      = "4.2"
+  		db_instance_class   = "dds.mongo.mid"
+  		db_instance_storage = 10
+  		name                = var.name
+  		vswitch_id          = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+  		tags = {
+    		Created = "TF"
+    		For     = "acceptance test"
+  		}
+	}
 `, name)
 }
 
-func TestUnitAlicloudMongoDBAccount(t *testing.T) {
+func TestUnitAliCloudMongoDBAccount(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mongodb_account"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mongodb_account"].Schema).Data(nil, nil)
@@ -202,7 +207,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAccountCreate(dInit, rawClient)
+	err = resourceAliCloudMongodbAccountCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -237,7 +242,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountCreate(dInit, rawClient)
+		err := resourceAliCloudMongodbAccountCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -264,7 +269,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+	err = resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyAccountDescription
@@ -304,7 +309,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -352,7 +357,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountUpdate(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -391,7 +396,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAccountRead(dExisted, rawClient)
+		err := resourceAliCloudMongodbAccountRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -402,7 +407,7 @@ func TestUnitAlicloudMongoDBAccount(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudMongodbAccountDelete(dExisted, rawClient)
+	err = resourceAliCloudMongodbAccountDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }

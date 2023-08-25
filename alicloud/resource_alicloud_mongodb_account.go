@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongodbAccount() *schema.Resource {
+func resourceAliCloudMongodbAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongodbAccountCreate,
-		Read:   resourceAlicloudMongodbAccountRead,
-		Update: resourceAlicloudMongodbAccountUpdate,
-		Delete: resourceAlicloudMongodbAccountDelete,
+		Create: resourceAliCloudMongodbAccountCreate,
+		Read:   resourceAliCloudMongodbAccountRead,
+		Update: resourceAliCloudMongodbAccountUpdate,
+		Delete: resourceAliCloudMongodbAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -57,7 +57,7 @@ func resourceAlicloudMongodbAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongodbAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ResetAccountPassword"
@@ -92,9 +92,9 @@ func resourceAlicloudMongodbAccountCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudMongodbAccountUpdate(d, meta)
+	return resourceAliCloudMongodbAccountUpdate(d, meta)
 }
-func resourceAlicloudMongodbAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongodbAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	MongoDBService := MongoDBService{client}
 	object, err := MongoDBService.DescribeMongodbAccount(d.Id())
@@ -112,7 +112,7 @@ func resourceAlicloudMongodbAccountRead(d *schema.ResourceData, meta interface{}
 	d.Set("status", object["AccountStatus"])
 	return nil
 }
-func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongodbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	MongoDBService := MongoDBService{client}
 	conn, err := client.NewDdsClient()
@@ -189,9 +189,9 @@ func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 	}
 
 	d.Partial(false)
-	return resourceAlicloudMongodbAccountRead(d, meta)
+	return resourceAliCloudMongodbAccountRead(d, meta)
 }
-func resourceAlicloudMongodbAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resource Alicloud Mongodb Account. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudMongodbAccountDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Mongodb Account. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }

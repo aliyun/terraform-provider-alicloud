@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBAuditPolicyMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBAuditPolicyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongodbAuditPolicy")
@@ -31,7 +31,7 @@ func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-mongodbauditpolicy-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongoDBAuditPolicyBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBAuditPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -81,43 +81,44 @@ func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudMongoDBAuditPolicyMap0 = map[string]string{
+var AliCloudMongoDBAuditPolicyMap0 = map[string]string{
 	"storage_period": NOSET,
 	"db_instance_id": CHECKSET,
 }
 
-func AlicloudMongoDBAuditPolicyBasicDependence0(name string) string {
+func AliCloudMongoDBAuditPolicyBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_mongodb_zones" "default" {}
+	data "alicloud_mongodb_zones" "default" {
+	}
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
+	}
 
-resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
-  db_instance_class   = "dds.mongo.mid"
-  db_instance_storage = 10
-  name                = var.name
-  vswitch_id          = data.alicloud_vswitches.default.ids[0]
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
+	resource "alicloud_mongodb_instance" "default" {
+  		engine_version      = "4.2"
+  		db_instance_class   = "dds.mongo.mid"
+  		db_instance_storage = 10
+  		name                = var.name
+  		vswitch_id          = data.alicloud_vswitches.default.ids[0]
+  		tags = {
+    		Created = "TF"
+    		For     = "acceptance test"
+  		}
+	}
 `, name)
 }
 
-func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
+func TestUnitAliCloudMongoDBAuditPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_mongodb_audit_policy"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_mongodb_audit_policy"].Schema).Data(nil, nil)
@@ -186,7 +187,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAuditPolicyCreate(dInit, rawClient)
+	err = resourceAliCloudMongodbAuditPolicyCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -221,7 +222,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAuditPolicyCreate(dInit, rawClient)
+		err := resourceAliCloudMongodbAuditPolicyCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -248,7 +249,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMongodbAuditPolicyUpdate(dExisted, rawClient)
+	err = resourceAliCloudMongodbAuditPolicyUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyAccountDescription
@@ -283,7 +284,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAuditPolicyUpdate(dExisted, rawClient)
+		err := resourceAliCloudMongodbAuditPolicyUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -322,7 +323,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMongodbAuditPolicyRead(dExisted, rawClient)
+		err := resourceAliCloudMongodbAuditPolicyRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -333,7 +334,7 @@ func TestUnitAlicloudMongoDBAuditPolicy(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudMongodbAuditPolicyDelete(dExisted, rawClient)
+	err = resourceAliCloudMongodbAuditPolicyDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }

@@ -27,7 +27,7 @@ func testSweepMongoDBShardingInstances(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -144,7 +144,7 @@ func resourceMongodbShardingInstanceClassicConfig(name string) string {
 `, name)
 }
 
-func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
+func TestAccAliCloudMongoDBShardingInstance_classic(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	serverFunc := func() interface{} {
@@ -401,7 +401,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
+func TestAccAliCloudMongoDBShardingInstance_vpc(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	serverFunc := func() interface{} {
@@ -662,28 +662,32 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 func resourceMongodbShardingInstanceVpcConfig(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+  		default = "%s"
 	}
+
 	data "alicloud_resource_manager_resource_groups" "default" {
   		status = "OK"
 	}
-	data "alicloud_mongodb_zones" "default" {}
+
+	data "alicloud_mongodb_zones" "default" {
+	}
+	
 	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+  		name_regex = "^default-NODELETING$"
 	}
 
 	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
-	  zone_id = "${data.alicloud_mongodb_zones.default.zones.0.id}"
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 	}
 `, name)
 }
 
-func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
+func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	checkoutSupportedRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBShardingInstanceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongoDBShardingInstance")
@@ -776,11 +780,11 @@ func TestAccAlicloudMongoDBShardingInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBShardingInstance_basic2(t *testing.T) {
+func TestAccAliCloudMongoDBShardingInstance_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_sharding_instance.default"
 	checkoutSupportedRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBShardingInstanceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongoDBShardingInstance")
@@ -867,4 +871,4 @@ func TestAccAlicloudMongoDBShardingInstance_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudMongoDBShardingInstanceMap0 = map[string]string{}
+var AliCloudMongoDBShardingInstanceMap0 = map[string]string{}

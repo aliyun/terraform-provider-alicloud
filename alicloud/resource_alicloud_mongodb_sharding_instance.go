@@ -17,22 +17,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
+func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongoDBShardingInstanceCreate,
-		Read:   resourceAlicloudMongoDBShardingInstanceRead,
-		Update: resourceAlicloudMongoDBShardingInstanceUpdate,
-		Delete: resourceAlicloudMongoDBShardingInstanceDelete,
+		Create: resourceAliCloudMongoDBShardingInstanceCreate,
+		Read:   resourceAliCloudMongoDBShardingInstanceRead,
+		Update: resourceAliCloudMongoDBShardingInstanceUpdate,
+		Delete: resourceAliCloudMongoDBShardingInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"engine_version": {
 				Type:     schema.TypeString,
@@ -66,8 +64,9 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"name": {
 				Type:         schema.TypeString,
@@ -262,7 +261,7 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateShardingDBInstance"
@@ -407,10 +406,10 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongoDBShardingInstanceUpdate(d, meta)
+	return resourceAliCloudMongoDBShardingInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
@@ -538,7 +537,7 @@ func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 	conn, err := client.NewDdsClient()
@@ -617,7 +616,7 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
+		return resourceAliCloudMongoDBShardingInstanceRead(d, meta)
 	}
 
 	if d.HasChange("resource_group_id") {
@@ -758,12 +757,12 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		d.SetPartial("period")
 	}
 	d.Partial(false)
-	return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
+	return resourceAliCloudMongoDBShardingInstanceRead(d, meta)
 }
 
-func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("instance_charge_type").(string) == string(PrePaid) {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBShardingInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resourceAliCloudMongoDBShardingInstance. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 	client := meta.(*connectivity.AliyunClient)
