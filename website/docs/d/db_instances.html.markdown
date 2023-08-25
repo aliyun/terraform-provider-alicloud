@@ -140,9 +140,9 @@ The following attributes are exported in addition to the arguments listed above:
   * `deletion_protection` - (Available in 1.167.0+) Indicates whether the release protection feature is enabled for the instance. Valid values:
       * **true**: The release protection feature is enabled.
       * **false**: The release protection feature is disabled.
-  * `ha_mode` - (Available in 1.210.0+) The high availability mode of the instance.
-  * `sync_mode` - (Available in 1.210.0+) The data replication mode of the instance.
-  * `host_instance_infos` - (Available in 1.210.0+) An array that consists of the information of the primary and secondary instances.
+  * `ha_mode` - (Available since v1.209.1) The high availability mode of the instance.
+  * `sync_mode` - (Available since v1.209.1) The data replication mode of the instance.
+  * `host_instance_infos` - (Available since v1.209.1) An array that consists of the information of the primary and secondary instances.
       * `log_sync_time` - The time when the secondary instance received logs from the primary instance. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
       * `node_type` - The type of the node.
       * `zone_id` - The ID of the zone.

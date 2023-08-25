@@ -1,4 +1,35 @@
-## 1.210.0 (Unreleased)
+## 1.209.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_db_instance: Added the field direction and pg set kernel small version upgrade method and fixed enable TDE; resource/alicloud_db_readonly_instance: Added the field direction. [GH-6379]
+- resource/alicloud_ga_additional_certificate: Removed the ForceNew for field certificate_id; Supported for new action UpdateAdditionalCertificateWithListener. [GH-6401]
+- resource/alicloud_resource_manager_service_linked_role: Waiting for the resource deleting finished. [GH-6410]
+- resource/alicloud_hbr_vault: Removed the field redundancy_type. [GH-6412]
+- resource/alicloud_fcv2_function: Adds a retry error code for concurrency. [GH-6430]
+- resource/alicloud_oss_bucket: lifecycle_rule supports filter. [GH-6445]
+- data-source/alicloud_db_instances: Adds attribute host_instance_infos is used to display high availability modes and data replication methods. [GH-6435]
+- data-source/alicloud_ga_custom_routing_endpoint_traffic_policies: Fixed test cases. [GH-6446]
+- docs: add log index for fc service/function doc. [GH-6368]
+- docs: Improves the vpc docs example. [GH-6392]
+- docs: Improves the sae docs example. [GH-6405]
+- docs: Improves the sag docs example. [GH-6411]
+- docs: Improves the cr docs example. [GH-6416]
+- docs: Improves the cddc docs example. [GH-6417]
+- docs: Improves the ddos docs example. [GH-6424]
+- docs: Improves the db docs example. [GH-6429]
+- docs: Improves the docs example. [GH-6441]
+
+BUG FIXES:
+
+- resource/alicloud_oss_bucket_object: Fixed double check error. [GH-6399]
+- resource/alicloud_ecd_bundle: Fixed the description no value error caused by modify other field. [GH-6408]
+- resource/alicloud_cloud_firewall_address_book: Fixed the create, read, update, delete invalid error when using an international account. [GH-6419]
+- resource/alicloud_ga_custom_routing_endpoint_traffic_policy: Fixed test cases. [GH-6431]
+- resource/alicloud_cloud_firewall_vpc_firewall_cen: Fixed the create, read, update, delete invalid error when using an international account. [GH-6433]
+- resource/alicloud_cloud_firewall_vpc_firewall_control_policy: Fixed the create, read, update, delete invalid error when using an international account. [GH-6437]
+- resource/alicloud_cloud_firewall_vpc_firewall: Fixed the create, read, update, delete invalid error when using an international account. [GH-6448]
+
 ## 1.209.0 (August 08, 2023)
 
 - **New Resource:** `alicloud_tag_meta_tag` ([#6384](https://github.com/aliyun/terraform-provider-alicloud/issues/6384))
