@@ -13,7 +13,7 @@ Provides a Wafv3 Domain resource.
 
 For information about Wafv3 Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-doc-waf-openapi-2021-10-01-api-doc-createdomain).
 
--> **NOTE:** Available in v1.200.0+.
+-> **NOTE:** Available since v1.200.0.
 
 ## Example Usage
 
@@ -23,7 +23,7 @@ Basic Usage
 data "alicloud_wafv3_instances" "default" {}
 
 resource "alicloud_ssl_certificates_service_certificate" "default" {
-  certificate_name = "test"
+  certificate_name = "example-value"
   cert             = file("${path.module}/test.crt")
   key              = file("${path.module}/test.key")
 }
@@ -77,14 +77,14 @@ resource "alicloud_wafv3_domain" "default" {
 
 The following arguments are supported:
 * `access_type` - (Optional) The access type of the WAF instance. Value: **share** (default): CNAME access.
-* `domain` - (Required,ForceNew) The name of the domain name to query.
-* `instance_id` - (Required,ForceNew) WAF instance ID
-* `listen` - (Required) Configure listening information. See the following `Block Listen`.
-* `redirect` - (Required) Configure forwarding information. See the following `Block Redirect`.
+* `domain` - (Required, ForceNew) The name of the domain name to query.
+* `instance_id` - (Required, ForceNew) WAF instance ID
+* `listen` - (Required) Configure listening information. See [`listen`](#listen) below.
+* `redirect` - (Required) Configure forwarding information. See [`redirect`](#redirect) below.
 
-#### Block Listen
+### `listen`
 
-The Listen supports the following:
+The listen supports the following:
 * `cert_id` - (Optional) The ID of the certificate to be added. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol).
 * `cipher_suite` - (Optional) The type of encryption suite to add. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
 		- **1**: indicates that all encryption suites are added.
@@ -118,13 +118,7 @@ The Listen supports the following:
 		- **2**: indicates that the custom field value set by you in the WAF read request header is used as the client IP address.
 * `xff_headers` - (Optional) Set the list of custom fields used to obtain the client IP address.
 
-#### Block RequestHeaders
-
-The RequestHeaders supports the following:
-* `key` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
-* `value` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
-
-#### Block Redirect
+### `redirect`
 
 The Redirect supports the following:
 * `backends` - (Optional) The IP address of the origin server corresponding to the domain name or the back-to-origin domain name of the server.
@@ -141,7 +135,13 @@ The Redirect supports the following:
 		- **leastTime**: indicates the Least Time algorithm.
 		- This value can be selected only if the value of **protection_resource** is **gslb** (indicating that the protected resource type uses shared cluster intelligent load balancing).
 * `read_timeout` - (Optional) Read timeout duration. **Unit**: seconds, **Value range**: 5~1800.
-* `request_headers` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is `[{" k ":"_key_"," v ":"_value_"}]`. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.See the following `Block RequestHeaders`.
+* `request_headers` - (Optional) The traffic tag field and value of the domain name which used to mark the traffic processed by WAF. 
+  It formats as `[{" k ":"_key_"," v ":"_value_"}]`. Where the `k` represents the specified custom request header field, 
+  and the `v` represents the value set for this field. By specifying the custom request header field and the corresponding value, 
+  when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value
+  to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the
+  custom header field already exists in the request, the system will overwrite the value of the custom field in the
+  request with the set traffic tag value. See [`request_headers`](#redirect-request_headers) below.
 * `retry` - (Optional) Back to Source Retry. default: true, retry 3 times by default.
 * `sni_enabled` - (Optional) Whether to enable back-to-source SNI. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol). Value:
 		- **true**: indicates that the back-to-source SNI is enabled.
@@ -149,6 +149,11 @@ The Redirect supports the following:
 * `sni_host` - (Optional) Sets the value of the custom SNI extension field. If this parameter is not set, the value of the **Host** field in the request header is used as the value of the SNI extension field by default.In general, you do not need to customize SNI unless your business has special configuration requirements. You want WAF to use SNI that is inconsistent with the actual request Host in the back-to-origin request (that is, the custom SNI set here).> This parameter is required only when **sni_enalbed** is set to **true** (indicating that back-to-source SNI is enabled).
 * `write_timeout` - (Optional) Write timeout duration> **Unit**: seconds, **Value range**: 5~1800.
 
+### `redirect-request_headers`
+
+The request headers supports the following:
+* `key` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
+* `value` - (Optional) The traffic tag field and value of the domain name, which is used to mark the traffic processed by WAF. the format of this parameter value is **[{" k ":"_key_"," v ":"_value_"}]**. where_key_represents the specified custom request header field, and_value_represents the value set for this field.By specifying the custom request header field and the corresponding value, when the access traffic of the domain name passes through WAF, WAF automatically adds the specified custom field value to the request header as the traffic mark, which is convenient for backend service statistics.Explain that if the custom header field already exists in the request, the system will overwrite the value of the custom field in the request with the set traffic tag value.
 
 ## Attributes Reference
 
@@ -157,7 +162,7 @@ The following attributes are exported:
 * `resource_manager_resource_group_id` - The ID of the resource group.
 * `status` - The status of the resource.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Domain.
