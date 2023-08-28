@@ -1279,7 +1279,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dcdn_domain_config":                                    resourceAlicloudDcdnDomainConfig(),
 			"alicloud_scdn_domain_config":                                    resourceAlicloudScdnDomainConfig(),
 			"alicloud_cloud_storage_gateway_gateway":                         resourceAlicloudCloudStorageGatewayGateway(),
-			"alicloud_lindorm_instance":                                      resourceAlicloudLindormInstance(),
+			"alicloud_lindorm_instance":                                      resourceAliCloudLindormInstance(),
 			"alicloud_cddc_dedicated_host_group":                             resourceAlicloudCddcDedicatedHostGroup(),
 			"alicloud_hbr_ecs_backup_client":                                 resourceAlicloudHbrEcsBackupClient(),
 			"alicloud_msc_sub_contact":                                       resourceAlicloudMscSubContact(),
