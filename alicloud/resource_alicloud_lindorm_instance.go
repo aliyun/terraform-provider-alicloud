@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudLindormInstance() *schema.Resource {
+func resourceAliCloudLindormInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudLindormInstanceCreate,
-		Read:   resourceAlicloudLindormInstanceRead,
-		Update: resourceAlicloudLindormInstanceUpdate,
-		Delete: resourceAlicloudLindormInstanceDelete,
+		Create: resourceAliCloudLindormInstanceCreate,
+		Read:   resourceAliCloudLindormInstanceRead,
+		Update: resourceAliCloudLindormInstanceUpdate,
+		Delete: resourceAliCloudLindormInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -54,11 +54,12 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"core_num": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Removed:  "Field 'core_num' has been deprecated from provider version 1.188.0, and it has been removed from provider version 1.207.0.",
+				Removed:  "Field `core_num` has been deprecated from provider version 1.188.0, and it has been removed from provider version 1.207.0.",
 			},
 			"core_spec": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				Computed: true,
 			},
 			"deletion_proection": {
@@ -67,9 +68,8 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Computed: true,
 			},
 			"duration": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: IntBetween(1, 9),
+				Type:     schema.TypeString,
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("payment_type").(string) != "Subscription"
 				},
@@ -89,6 +89,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Removed:  "Field `group_name` has been removed from provider version 1.210.1.",
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
@@ -113,17 +114,17 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.xlarge"}, false),
+				ValidateFunc: StringInSlice([]string{"lindorm.g.xlarge", "lindorm.g.2xlarge"}, false),
 			},
 			"phoenix_node_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
+				Removed:  "Field `phoenix_node_count` has been removed from provider version 1.210.1.",
 			},
 			"phoenix_node_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
+				Removed:  "Field `phoenix_node_specification` has been removed from provider version 1.210.1.",
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
@@ -143,7 +144,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge", "lindorm.g.xlarge"}, false),
+				ValidateFunc: StringInSlice([]string{"lindorm.g.xlarge", "lindorm.g.2xlarge", "lindorm.g.4xlarge", "lindorm.g.8xlarge"}, false),
 			},
 			"table_engine_node_count": {
 				Type:         schema.TypeInt,
@@ -167,7 +168,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"time_series_engine_specification"},
-				Deprecated:    "Field 'time_serires_engine_specification' has been deprecated from provider version 1.182.0. New field 'time_series_engine_specification' instead.",
+				Deprecated:    "Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.",
 			},
 			"time_series_engine_specification": {
 				Type:          schema.TypeString,
@@ -175,10 +176,20 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"time_serires_engine_specification"},
 			},
+			"stream_engine_node_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"stream_engine_specification": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"upgrade_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'upgrade_type' has been deprecated from provider version 1.163.0, and it has been removed from provider version 1.207.0.",
+				Removed:  "Field `upgrade_type` has been deprecated from provider version 1.163.0, and it has been removed from provider version 1.207.0.",
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -253,6 +264,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 			"arch_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"1.0", "2.0"}, false),
 			},
@@ -291,6 +303,10 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"enabled_stream_engine": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -299,7 +315,7 @@ func resourceAlicloudLindormInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudLindormInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateLindormInstance"
@@ -351,6 +367,14 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		request["TsdbSpec"] = v
 	} else if v, ok := d.GetOk("time_series_engine_specification"); ok {
 		request["TsdbSpec"] = v
+	}
+
+	if v, ok := d.GetOkExists("stream_engine_node_count"); ok {
+		request["StreamNum"] = v
+	}
+
+	if v, ok := d.GetOk("stream_engine_specification"); ok {
+		request["StreamSpec"] = v
 	}
 
 	if v, ok := d.GetOk("zone_id"); ok {
@@ -438,9 +462,12 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -461,10 +488,10 @@ func resourceAlicloudLindormInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudLindormInstanceUpdate(d, meta)
+	return resourceAliCloudLindormInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudLindormInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	hitsdbService := HitsdbService{client}
 	object, err := hitsdbService.DescribeLindormInstance(d.Id())
@@ -520,6 +547,8 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("enabled_table_engine", engineType&0x04 == 4)
 	d.Set("enabled_search_engine", engineType&0x01 == 1)
 	d.Set("enabled_lts_engine", object["EnableBDS"])
+	d.Set("enabled_stream_engine", object["EnableStream"])
+
 	ipWhite, err := hitsdbService.GetInstanceIpWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -537,10 +566,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("lts_node_count", formatInt(v))
 	}
 	d.Set("lts_node_specification", getLindormInstanceEngineInfoObject["LtsNodeSpecification"])
-	if v, ok := getLindormInstanceEngineInfoObject["PhoenixNodeCount"]; ok {
-		d.Set("phoenix_node_count", formatInt(v))
-	}
-	d.Set("phoenix_node_specification", getLindormInstanceEngineInfoObject["PhoenixNodeSpecification"])
+
 	if v, ok := getLindormInstanceEngineInfoObject["SearchEngineNodeCount"]; ok {
 		d.Set("search_engine_node_count", formatInt(v))
 	}
@@ -555,6 +581,11 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("time_serires_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
 	d.Set("time_series_engine_specification", getLindormInstanceEngineInfoObject["TimeSeriesSpecification"])
 
+	if v, ok := getLindormInstanceEngineInfoObject["StreamNodeCount"]; ok {
+		d.Set("stream_engine_node_count", formatInt(v))
+	}
+	d.Set("stream_engine_specification", getLindormInstanceEngineInfoObject["StreamSpecification"])
+
 	listTagResourcesObject, err := hitsdbService.ListTagResources(d.Id(), "INSTANCE")
 	if err != nil {
 		return WrapError(err)
@@ -565,7 +596,7 @@ func resourceAlicloudLindormInstanceRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	hitsdbService := HitsdbService{client}
 	var response map[string]interface{}
@@ -588,17 +619,17 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 	if update {
-		if v, ok := d.GetOk("group_name"); ok {
-			request["GroupName"] = v
-		}
 		action := "UpdateInstanceIpWhiteList"
 		conn, err := client.NewHitsdbClient()
 		if err != nil {
 			return WrapError(err)
 		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
 					wait()
@@ -636,9 +667,12 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapError(err)
 		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, updateLindormInstanceAttributeReq, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, updateLindormInstanceAttributeReq, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
 					wait()
@@ -925,7 +959,7 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if enabled && d.HasChange("lts_node_count") {
 			upgradeLindormInstanceLtsNumReq := map[string]interface{}{}
-			upgradeLindormInstanceLtsNumReq["UpgradeType"] = "upgrade-Lts-core-num"
+			upgradeLindormInstanceLtsNumReq["UpgradeType"] = "upgrade-bds-core-num"
 			upgradeLindormInstanceLtsNumReq["LtsCoreNum"] = newLtsCoreNum
 			upgradeLindormInstanceLtsNumReq["ClusterStorage"] = currentInstanceStorage
 			err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceLtsNumReq)
@@ -938,27 +972,50 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("lts_node_count")
 	}
 
-	update = false
-	upgradeLindormInstanceReq := map[string]interface{}{}
-	if d.HasChange("phoenix_node_count") {
-		update = true
-		if v, ok := d.GetOk("phoenix_node_count"); ok {
-			upgradeLindormInstanceReq["PhoenixCoreNum"] = v
+	if (d.HasChange("stream_engine_node_count") || d.HasChange("stream_engine_specification")) && !d.IsNewResource() {
+		newStreamCoreNum := d.Get("stream_engine_node_count")
+		newStreamCoreSpec := d.Get("stream_engine_specification")
+		enabled := d.Get("enabled_stream_engine").(bool)
+		currentInstanceStorage := formatInt(d.Get("instance_storage"))
+
+		if !enabled {
+			openStreamEngineReq := map[string]interface{}{}
+			openStreamEngineReq["UpgradeType"] = "open-stream-engine"
+			openStreamEngineReq["StreamNum"] = newStreamCoreNum
+			openStreamEngineReq["StreamSpec"] = newStreamCoreSpec
+			openStreamEngineReq["ClusterStorage"] = currentInstanceStorage
+
+			err := UpgradeLindormInstance(d, meta, openStreamEngineReq)
+			if err != nil {
+				return WrapError(err)
+			}
 		}
-	}
-	if d.HasChange("phoenix_node_specification") {
-		update = true
-		if v, ok := d.GetOk("phoenix_node_specification"); ok {
-			upgradeLindormInstanceReq["PhoenixCoreSpec"] = v
+
+		if enabled && d.HasChange("stream_engine_node_count") {
+			upgradeStreamCoreNumReq := map[string]interface{}{}
+			upgradeStreamCoreNumReq["UpgradeType"] = "upgrade-stream-core-num"
+			upgradeStreamCoreNumReq["StreamNum"] = newStreamCoreNum
+			upgradeStreamCoreNumReq["ClusterStorage"] = currentInstanceStorage
+
+			err := UpgradeLindormInstance(d, meta, upgradeStreamCoreNumReq)
+			if err != nil {
+				return WrapError(err)
+			}
 		}
-	}
-	if update {
-		err := UpgradeLindormInstance(d, meta, upgradeLindormInstanceReq)
-		if err != nil {
-			return WrapError(err)
+
+		if enabled && d.HasChange("stream_engine_specification") {
+			upgradeStreamEngineReq := map[string]interface{}{}
+			upgradeStreamEngineReq["UpgradeType"] = "upgrade-stream-engine"
+			upgradeStreamEngineReq["StreamSpec"] = newStreamCoreSpec
+
+			err := UpgradeLindormInstance(d, meta, upgradeStreamEngineReq)
+			if err != nil {
+				return WrapError(err)
+			}
 		}
-		d.SetPartial("phoenix_node_count")
-		d.SetPartial("phoenix_node_specification")
+
+		d.SetPartial("stream_engine_node_count")
+		d.SetPartial("stream_engine_specification")
 	}
 
 	update = false
@@ -988,24 +1045,44 @@ func resourceAlicloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	d.Partial(false)
-	return resourceAlicloudLindormInstanceRead(d, meta)
+
+	return resourceAliCloudLindormInstanceRead(d, meta)
 }
 
-func resourceAlicloudLindormInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudLindormInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	hitsdbService := HitsdbService{client}
 	action := "ReleaseLindormInstance"
 	var response map[string]interface{}
+
 	conn, err := client.NewHitsdbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
+	object, err := hitsdbService.DescribeLindormInstance(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	if fmt.Sprint(object["PayType"]) == "PREPAY" {
+		log.Printf("[WARN] Cannot destroy resource alicloud_lindorm_instance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1016,12 +1093,14 @@ func resourceAlicloudLindormInstanceDelete(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Lindorm.Errorcode.InstanceNotFound", "Instance.IsDeleted"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
 
@@ -1057,9 +1136,12 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 	if err != nil {
 		return WrapError(err)
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 30*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
 				wait()
