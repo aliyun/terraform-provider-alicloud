@@ -381,13 +381,14 @@ func resourceAlicloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 	redirect81Map["loadbalance"] = redirect81Raw["Loadbalance"]
 	redirect81Map["read_timeout"] = redirect81Raw["ReadTimeout"]
 	requestHeaders81Maps := make([]map[string]interface{}, 0)
-	requestHeaders81Raw := redirect81Raw["RequestHeaders"]
-	for _, value1 := range requestHeaders81Raw.([]interface{}) {
-		requestHeaders81 := value1.(map[string]interface{})
-		requestHeaders81Map := make(map[string]interface{})
-		requestHeaders81Map["key"] = requestHeaders81["Key"]
-		requestHeaders81Map["value"] = requestHeaders81["Value"]
-		requestHeaders81Maps = append(requestHeaders81Maps, requestHeaders81Map)
+	if v, ok := redirect81Raw["RequestHeaders"]; ok && v != nil {
+		for _, value1 := range v.([]interface{}) {
+			requestHeaders81 := value1.(map[string]interface{})
+			requestHeaders81Map := make(map[string]interface{})
+			requestHeaders81Map["key"] = requestHeaders81["Key"]
+			requestHeaders81Map["value"] = requestHeaders81["Value"]
+			requestHeaders81Maps = append(requestHeaders81Maps, requestHeaders81Map)
+		}
 	}
 	redirect81Map["request_headers"] = requestHeaders81Maps
 	redirect81Map["retry"] = redirect81Raw["Retry"]
@@ -395,11 +396,7 @@ func resourceAlicloudWafv3DomainRead(d *schema.ResourceData, meta interface{}) e
 	redirect81Map["sni_host"] = redirect81Raw["SniHost"]
 	redirect81Map["write_timeout"] = redirect81Raw["WriteTimeout"]
 	redirect81Maps = append(redirect81Maps, redirect81Map)
-	err = d.Set("redirect", redirect81Maps)
-	if err != nil {
-		panic(err)
-	}
-
+	d.Set("redirect", redirect81Maps)
 	resourceManagerResourceGroupId52 := object["ResourceManagerResourceGroupId"]
 	d.Set("resource_manager_resource_group_id", resourceManagerResourceGroupId52)
 	d.Set("status", fmt.Sprint(object["Status"]))
