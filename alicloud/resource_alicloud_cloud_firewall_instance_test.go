@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudFirewallInstance_basic0(t *testing.T) {
+func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallInstanceMap0)
@@ -34,7 +34,6 @@ func TestAccAlicloudCloudFirewallInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{30})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -42,51 +41,37 @@ func TestAccAlicloudCloudFirewallInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"payment_type":    "Subscription",
-					"spec":            "premium_version",
-					"ip_number":       "20",
-					"band_width":      "10",
-					"cfw_log":         "false",
-					"cfw_log_storage": "1000",
-					"cfw_service":     "false",
-					"period":          "6",
+					"payment_type": "Subscription",
+					"spec":         "premium_version",
+					"ip_number":    "20",
+					"band_width":   "10",
+					"cfw_log":      "false",
+					"period":       "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"payment_type":    "Subscription",
-						"spec":            "premium_version",
-						"ip_number":       "20",
-						"band_width":      "10",
-						"cfw_log":         "false",
-						"cfw_log_storage": "1000",
-						"cfw_service":     "false",
-						"period":          "6",
+						"payment_type": "Subscription",
+						"spec":         "premium_version",
+						"ip_number":    "20",
+						"band_width":   "10",
+						"cfw_log":      "false",
+						"period":       "1",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cfw_service": "true",
-					"modify_type": "Upgrade",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cfw_service": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"fw_vpc_number": "3",
-					"modify_type":   "Upgrade",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"fw_vpc_number": "3",
-						"modify_type":   "Upgrade",
-					}),
-				),
-			},
+			// premium_version does not support fw_vpc_number
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"fw_vpc_number": "3",
+			//		"modify_type":   "Upgrade",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"fw_vpc_number": "3",
+			//			"modify_type":   "Upgrade",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"band_width":  "20",
@@ -101,43 +86,100 @@ func TestAccAlicloudCloudFirewallInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log_storage": "1200",
-					"modify_type":     "Upgrade",
+					"cfw_log":         "true",
+					"cfw_log_storage": "1000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log_storage": "1200",
-						"modify_type":     "Upgrade",
+						"cfw_log":         "true",
+						"cfw_log_storage": "1000",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log":     "true",
-					"modify_type": "Upgrade",
+					"cfw_log_storage": "2000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log":     "true",
-						"modify_type": "Upgrade",
+						"cfw_log_storage": "2000",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"renew_period": "6",
+					"renewal_duration":      "1",
+					"renewal_duration_unit": "Month",
+					"renewal_status":        "AutoRenewal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"renew_period": "6",
+						"renewal_duration":      "1",
+						"renew_period":          "1",
+						"renewal_duration_unit": "Month",
+						"renewal_status":        "AutoRenewal",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"band_width", "cfw_log", "cfw_log_storage", "cfw_service", "ip_number", "payment_type", "period", "modify_type", "spec"},
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "ManualRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":        "ManualRenewal",
+						"renewal_duration":      REMOVEKEY,
+						"renew_period":          REMOVEKEY,
+						"renewal_duration_unit": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_duration": REMOVEKEY,
+					"renew_period":     "2",
+					"renewal_status":   "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_duration":      "2",
+						"renew_period":          "2",
+						"renewal_duration_unit": "Month",
+						"renewal_status":        "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "NotRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":        "NotRenewal",
+						"renewal_duration":      REMOVEKEY,
+						"renew_period":          REMOVEKEY,
+						"renewal_duration_unit": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cfw_account":    "true",
+					"account_number": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cfw_account":    "true",
+						"account_number": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"band_width", "cfw_log", "cfw_log_storage", "ip_number", "period",
+					"modify_type", "spec", "cfw_account", "account_number"},
 			},
 		},
 	})
