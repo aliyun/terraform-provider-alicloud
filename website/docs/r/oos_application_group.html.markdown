@@ -7,35 +7,41 @@ description: |-
   Provides a Alicloud OOS Application Group resource.
 ---
 
-# alicloud\_oos\_application\_group
+# alicloud_oos_application_group
 
 Provides a OOS Application Group resource.
 
-For information about OOS Application Group and how to use it, see [What is Application Group](https://www.alibabacloud.com/help/en/doc-detail/120556.html).
+For information about OOS Application Group and how to use it, see [What is Application Group](https://www.alibabacloud.com/help/en/operation-orchestration-service/latest/api-oos-2019-06-01-createapplicationgroup).
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_oos_application" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  application_name  = "terraform-example"
-  description       = "terraform-example"
+  application_name  = var.name
+  description       = var.name
   tags = {
     Created = "TF"
   }
 }
+data "alicloud_regions" "default" {
+  current = true
+}
 
 resource "alicloud_oos_application_group" "default" {
-  application_group_name = "terraform-example"
+  application_group_name = var.name
   application_name       = alicloud_oos_application.default.id
-  deploy_region_id       = "cn-beijing"
-  description            = "terraform-example"
+  deploy_region_id       = data.alicloud_regions.default.regions.0.id
+  description            = var.name
   import_tag_key         = "example_key"
   import_tag_value       = "example_value"
 }
