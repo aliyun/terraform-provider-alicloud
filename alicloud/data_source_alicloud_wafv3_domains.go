@@ -11,44 +11,43 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudWafv3Domains() *schema.Resource {
+func dataSourceAliCloudWafv3Domains() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudWafv3DomainsRead,
+		Read: dataSourceAliCloudWafv3DomainsRead,
 		Schema: map[string]*schema.Schema{
-			"backend": {
+			"ids": {
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
-			},
-			"domain": {
-				Optional: true,
-				ForceNew: true,
-				Type:     schema.TypeString,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"instance_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
-			"ids": {
+			"domain": {
+				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				ForceNew: true,
+			},
+			"backend": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"enable_details": {
-				Optional: true,
 				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"output_file": {
-				Optional: true,
 				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"page_number": {
-				Optional: true,
 				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"page_size": {
 				Optional: true,
@@ -61,171 +60,161 @@ func dataSourceAlicloudWafv3Domains() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
-							Computed: true,
 							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"domain": {
-							Computed: true,
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_manager_resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"status": {
-							Computed: true,
 							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"listen": {
-							Computed: true,
 							Type:     schema.TypeList,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cert_id": {
-										Computed: true,
 										Type:     schema.TypeString,
+										Computed: true,
 									},
 									"cipher_suite": {
-										Computed: true,
 										Type:     schema.TypeInt,
-									},
-									"custom_ciphers": {
 										Computed: true,
-										Type:     schema.TypeList,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
 									},
 									"enable_tlsv3": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"exclusive_ip": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"focus_https": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"http2_enabled": {
-										Computed: true,
 										Type:     schema.TypeBool,
-									},
-									"http_ports": {
 										Computed: true,
-										Type:     schema.TypeList,
-										Elem: &schema.Schema{
-											Type: schema.TypeInt,
-										},
-									},
-									"https_ports": {
-										Computed: true,
-										Type:     schema.TypeList,
-										Elem: &schema.Schema{
-											Type: schema.TypeInt,
-										},
 									},
 									"ipv6_enabled": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"protection_resource": {
-										Computed: true,
 										Type:     schema.TypeString,
+										Computed: true,
 									},
 									"tls_version": {
-										Computed: true,
 										Type:     schema.TypeString,
+										Computed: true,
 									},
 									"xff_header_mode": {
-										Computed: true,
 										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"http_ports": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeInt},
+									},
+									"https_ports": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeInt},
+									},
+									"custom_ciphers": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"xff_headers": {
-										Computed: true,
 										Type:     schema.TypeList,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 								},
 							},
 						},
 						"redirect": {
-							Computed: true,
 							Type:     schema.TypeList,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"backends": {
+									"loadbalance": {
+										Type:     schema.TypeString,
 										Computed: true,
-										Type:     schema.TypeList,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
-									},
-									"connect_timeout": {
-										Computed: true,
-										Type:     schema.TypeInt,
 									},
 									"focus_http_backend": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"keepalive": {
-										Computed: true,
 										Type:     schema.TypeBool,
+										Computed: true,
 									},
 									"keepalive_requests": {
-										Computed: true,
 										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"retry": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"sni_enabled": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"sni_host": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"connect_timeout": {
+										Type:     schema.TypeInt,
+										Computed: true,
 									},
 									"keepalive_timeout": {
-										Computed: true,
 										Type:     schema.TypeInt,
-									},
-									"loadbalance": {
 										Computed: true,
-										Type:     schema.TypeString,
 									},
 									"read_timeout": {
-										Computed: true,
 										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"write_timeout": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
+									"backends": {
+										Type:     schema.TypeList,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"request_headers": {
-										Computed: true,
 										Type:     schema.TypeList,
+										Computed: true,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"key": {
-													Computed: true,
 													Type:     schema.TypeString,
+													Computed: true,
 												},
 												"value": {
-													Computed: true,
 													Type:     schema.TypeString,
+													Computed: true,
 												},
 											},
 										},
 									},
-									"retry": {
-										Computed: true,
-										Type:     schema.TypeBool,
-									},
-									"sni_enabled": {
-										Computed: true,
-										Type:     schema.TypeBool,
-									},
-									"sni_host": {
-										Computed: true,
-										Type:     schema.TypeString,
-									},
-									"write_timeout": {
-										Computed: true,
-										Type:     schema.TypeInt,
-									},
 								},
 							},
-						},
-						"resource_manager_resource_group_id": {
-							Computed: true,
-							Type:     schema.TypeString,
 						},
 					},
 				},
@@ -234,22 +223,25 @@ func dataSourceAlicloudWafv3Domains() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	request := map[string]interface{}{
-		"RegionId": client.RegionId,
+	action := "DescribeDomains"
+	request := make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["InstanceId"] = d.Get("instance_id")
+	setPagingRequest(d, request, PageSizeLarge)
+
+	if v, ok := d.GetOk("domain"); ok {
+		request["Domain"] = v
 	}
 
 	if v, ok := d.GetOk("backend"); ok {
 		request["Backend"] = v
 	}
-	if v, ok := d.GetOk("domain"); ok {
-		request["Domain"] = v
-	}
-	request["InstanceId"] = d.Get("instance_id")
-	setPagingRequest(d, request, PageSizeLarge)
 
+	var objects []map[string]interface{}
+	wafOpenapiService := WafOpenapiService{client}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -260,20 +252,18 @@ func dataSourceAlicloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	var response map[string]interface{}
 	conn, err := client.NewWafClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var objects []interface{}
-	var response map[string]interface{}
 
 	for {
-		action := "DescribeDomains"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -281,22 +271,20 @@ func dataSourceAlicloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
-			response = resp
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_wafv3_domains", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Domains", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains", response)
 		}
+
 		result, _ := resp.([]interface{})
-		if isPagingRequest(d) {
-			objects = result
-			break
-		}
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
@@ -304,90 +292,180 @@ func dataSourceAlicloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 					continue
 				}
 			}
+
 			objects = append(objects, item)
 		}
+
 		if len(result) < request["PageSize"].(int) {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
 
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
-	wafOpenapiService := WafOpenapiService{client}
-	for _, v := range objects {
-		object := v.(map[string]interface{})
-
+	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id": fmt.Sprint(request["InstanceId"], ":", object["Domain"]),
+			"id":                                 fmt.Sprintf("%v:%v", request["InstanceId"], object["Domain"]),
+			"domain":                             object["Domain"],
+			"resource_manager_resource_group_id": object["ResourceManagerResourceGroupId"],
+			"status":                             fmt.Sprint(object["Status"]),
 		}
-
-		resource85 := object["Domain"]
-		mapping["domain"] = resource85
-		mapping["status"] = fmt.Sprint(object["Status"])
-
-		resourceManagerResourceGroupId10 := object["ResourceManagerResourceGroupId"]
-		mapping["resource_manager_resource_group_id"] = resourceManagerResourceGroupId10
-
-		ids = append(ids, fmt.Sprint(request["InstanceId"], ":", object["Domain"]))
 
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
 			s = append(s, mapping)
 			continue
 		}
-		id := fmt.Sprint(request["InstanceId"], ":", object["Domain"])
-		object, err = wafOpenapiService.DescribeWafv3Domain(id)
+
+		object, err = wafOpenapiService.DescribeWafv3Domain(fmt.Sprint(mapping["id"]))
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["domain"] = object["Domain"]
-		listen87Maps := make([]map[string]interface{}, 0)
-		listen87Map := make(map[string]interface{})
-		listen87Raw := object["Listen"].(map[string]interface{})
-		listen87Map["cert_id"] = listen87Raw["CertId"]
-		listen87Map["cipher_suite"] = listen87Raw["CipherSuite"]
-		listen87Map["custom_ciphers"] = listen87Raw["CustomCiphers"].([]interface{})
-		listen87Map["enable_tlsv3"] = listen87Raw["EnableTLSv3"]
-		listen87Map["exclusive_ip"] = listen87Raw["ExclusiveIp"]
-		listen87Map["focus_https"] = listen87Raw["FocusHttps"]
-		listen87Map["http2_enabled"] = listen87Raw["Http2Enabled"]
-		listen87Map["http_ports"] = listen87Raw["HttpsPorts"].([]interface{})
-		listen87Map["https_ports"] = listen87Raw["HttpPorts"].([]interface{})
-		listen87Map["ipv6_enabled"] = listen87Raw["IPv6Enabled"]
-		listen87Map["protection_resource"] = listen87Raw["ProtectionResource"]
-		listen87Map["tls_version"] = listen87Raw["TLSVersion"]
-		listen87Map["xff_header_mode"] = listen87Raw["XffHeaderMode"]
-		listen87Map["xff_headers"] = listen87Raw["XffHeaders"].([]interface{})
-		listen87Maps = append(listen87Maps, listen87Map)
-		mapping["listen"] = listen87Maps
-		redirect49Maps := make([]map[string]interface{}, 0)
-		redirect49Map := make(map[string]interface{})
-		redirect49Raw := object["Redirect"].(map[string]interface{})
-		redirect49Map["backends"] = redirect49Raw["AllBackends"].([]interface{})
-		redirect49Map["connect_timeout"] = redirect49Raw["ConnectTimeout"]
-		redirect49Map["focus_http_backend"] = redirect49Raw["FocusHttpBackend"]
-		redirect49Map["keepalive"] = redirect49Raw["Keepalive"]
-		redirect49Map["keepalive_requests"] = redirect49Raw["KeepaliveRequests"]
-		redirect49Map["keepalive_timeout"] = redirect49Raw["KeepaliveTimeout"]
-		redirect49Map["loadbalance"] = redirect49Raw["Loadbalance"]
-		redirect49Map["read_timeout"] = redirect49Raw["ReadTimeout"]
-		requestHeaders49Maps := make([]map[string]interface{}, 0)
-		requestHeaders49Raw := redirect49Raw["RequestHeaders"]
-		for _, value1 := range requestHeaders49Raw.([]interface{}) {
-			requestHeaders49 := value1.(map[string]interface{})
-			requestHeaders49Map := make(map[string]interface{})
-			requestHeaders49Map["key"] = requestHeaders49["Key"]
-			requestHeaders49Map["value"] = requestHeaders49["Value"]
-			requestHeaders49Maps = append(requestHeaders49Maps, requestHeaders49Map)
+
+		if listen, ok := object["Listen"]; ok {
+			listenMaps := make([]map[string]interface{}, 0)
+			listenArg := listen.(map[string]interface{})
+			listenMap := map[string]interface{}{}
+
+			if certId, ok := listenArg["CertId"]; ok {
+				listenMap["cert_id"] = certId
+			}
+
+			if cipherSuite, ok := listenArg["CipherSuite"]; ok {
+				listenMap["cipher_suite"] = cipherSuite
+			}
+
+			if enableTLSv3, ok := listenArg["EnableTLSv3"]; ok {
+				listenMap["enable_tlsv3"] = enableTLSv3
+			}
+
+			if exclusiveIp, ok := listenArg["ExclusiveIp"]; ok {
+				listenMap["exclusive_ip"] = exclusiveIp
+			}
+
+			if focusHttps, ok := listenArg["FocusHttps"]; ok {
+				listenMap["focus_https"] = focusHttps
+			}
+
+			if http2Enabled, ok := listenArg["Http2Enabled"]; ok {
+				listenMap["http2_enabled"] = http2Enabled
+			}
+
+			if iPv6Enabled, ok := listenArg["IPv6Enabled"]; ok {
+				listenMap["ipv6_enabled"] = iPv6Enabled
+			}
+
+			if protectionResource, ok := listenArg["ProtectionResource"]; ok {
+				listenMap["protection_resource"] = protectionResource
+			}
+
+			if tlsVersion, ok := listenArg["TLSVersion"]; ok {
+				listenMap["tls_version"] = tlsVersion
+			}
+
+			if xffHeaderMode, ok := listenArg["XffHeaderMode"]; ok {
+				listenMap["xff_header_mode"] = xffHeaderMode
+			}
+
+			if httpPorts, ok := listenArg["HttpPorts"]; ok {
+				listenMap["http_ports"] = httpPorts
+			}
+
+			if httpsPorts, ok := listenArg["HttpsPorts"]; ok {
+				listenMap["https_ports"] = httpsPorts
+			}
+
+			if customCiphers, ok := listenArg["CustomCiphers"]; ok {
+				listenMap["custom_ciphers"] = customCiphers
+			}
+
+			if xffHeaders, ok := listenArg["XffHeaders"]; ok {
+				listenMap["xff_headers"] = xffHeaders
+			}
+
+			listenMaps = append(listenMaps, listenMap)
+			mapping["listen"] = listenMaps
 		}
-		redirect49Map["request_headers"] = requestHeaders49Maps
-		redirect49Map["retry"] = redirect49Raw["Retry"]
-		redirect49Map["sni_enabled"] = redirect49Raw["SniEnabled"]
-		redirect49Map["sni_host"] = redirect49Raw["SniHost"]
-		redirect49Map["write_timeout"] = redirect49Raw["WriteTimeout"]
-		redirect49Maps = append(redirect49Maps, redirect49Map)
-		mapping["redirect"] = redirect49Maps
-		mapping["resource_manager_resource_group_id"] = object["ResourceManagerResourceGroupId"]
+
+		if redirect, ok := object["Redirect"]; ok {
+			redirectMaps := make([]map[string]interface{}, 0)
+			redirectArg := redirect.(map[string]interface{})
+			redirectMap := map[string]interface{}{}
+
+			if loadBalance, ok := redirectArg["Loadbalance"]; ok {
+				redirectMap["loadbalance"] = loadBalance
+			}
+
+			if focusHttpBackend, ok := redirectArg["FocusHttpBackend"]; ok {
+				redirectMap["focus_http_backend"] = focusHttpBackend
+			}
+
+			if keepalive, ok := redirectArg["Keepalive"]; ok {
+				redirectMap["keepalive"] = keepalive
+			}
+
+			if keepaliveRequests, ok := redirectArg["KeepaliveRequests"]; ok {
+				redirectMap["keepalive_requests"] = keepaliveRequests
+			}
+
+			if retry, ok := redirectArg["Retry"]; ok {
+				redirectMap["retry"] = retry
+			}
+
+			if sniEnabled, ok := redirectArg["SniEnabled"]; ok {
+				redirectMap["sni_enabled"] = sniEnabled
+			}
+
+			if sniHost, ok := redirectArg["SniHost"]; ok {
+				redirectMap["sni_host"] = sniHost
+			}
+
+			if connectTimeout, ok := redirectArg["ConnectTimeout"]; ok {
+				redirectMap["connect_timeout"] = connectTimeout
+			}
+
+			if keepaliveTimeout, ok := redirectArg["KeepaliveTimeout"]; ok {
+				redirectMap["keepalive_timeout"] = keepaliveTimeout
+			}
+
+			if readTimeout, ok := redirectArg["ReadTimeout"]; ok {
+				redirectMap["read_timeout"] = readTimeout
+			}
+
+			if writeTimeout, ok := redirectArg["WriteTimeout"]; ok {
+				redirectMap["write_timeout"] = writeTimeout
+			}
+
+			if allBackends, ok := redirectArg["AllBackends"]; ok {
+				redirectMap["backends"] = allBackends
+			}
+
+			if requestHeadersList, ok := redirectArg["RequestHeaders"]; ok {
+				requestHeadersMaps := make([]map[string]interface{}, 0)
+				for _, requestHeaders := range requestHeadersList.([]interface{}) {
+					requestHeadersArg := requestHeaders.(map[string]interface{})
+					requestHeadersMap := map[string]interface{}{}
+
+					if key, ok := requestHeadersArg["Key"]; ok {
+						requestHeadersMap["key"] = key
+					}
+
+					if value, ok := requestHeadersArg["Value"]; ok {
+						requestHeadersMap["value"] = value
+					}
+
+					requestHeadersMaps = append(requestHeadersMaps, requestHeadersMap)
+				}
+
+				redirectMap["request_headers"] = requestHeadersMaps
+			}
+
+			redirectMaps = append(redirectMaps, redirectMap)
+			mapping["redirect"] = redirectMaps
+		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
@@ -403,5 +481,6 @@ func dataSourceAlicloudWafv3DomainsRead(d *schema.ResourceData, meta interface{}
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
+
 	return nil
 }
