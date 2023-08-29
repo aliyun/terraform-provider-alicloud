@@ -840,7 +840,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_vpc_endpoint_linked_vpcs":                      dataSourceAlicloudCrVpcEndpointLinkedVpcs(),
 			"alicloud_express_connect_router_interfaces":                dataSourceAlicloudExpressConnectRouterInterfaces(),
 			"alicloud_wafv3_instances":                                  dataSourceAlicloudWafv3Instances(),
-			"alicloud_wafv3_domains":                                    dataSourceAlicloudWafv3Domains(),
+			"alicloud_wafv3_domains":                                    dataSourceAliCloudWafv3Domains(),
 			"alicloud_eflo_vpds":                                        dataSourceAlicloudEfloVpds(),
 			"alicloud_dcdn_waf_rules":                                   dataSourceAlicloudDcdnWafRules(),
 			"alicloud_actiontrail_global_events_storage_region":         dataSourceAlicloudActiontrailGlobalEventsStorageRegion(),

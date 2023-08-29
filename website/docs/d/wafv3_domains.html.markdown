@@ -7,21 +7,35 @@ description: |-
   Provides a list of Wafv3 Domain owned by an Alibaba Cloud account.
 ---
 
-# alicloud_waf_domains
+# alicloud_wafv3_domains
 
-This data source provides Wafv3 Domain available to the user.[What is Domain](https://www.alibabacloud.com/help/en/web-application-firewall/latest/api-doc-waf-openapi-2021-10-01-api-doc-createdomain)
+This data source provides the Wafv3 Domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.200.0+
+-> **NOTE:** Available since v1.200.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-data "alicloud_wafv3_domains" "default" {
-  domain      = "zctest12.wafqax.top"
-  instance_id = "waf_v3prepaid_public_cn-*****"
+data "alicloud_wafv3_instances" "default" {
 }
 
-output "alicloud_wafv3_domain_example_id" {
+data "alicloud_wafv3_domains" "ids" {
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
+  ids         = ["example_id"]
+}
+
+output "wafv3_domains_id_1" {
+  value = data.alicloud_wafv3_domains.ids.domains.0.id
+}
+
+data "alicloud_wafv3_domains" "default" {
+  instance_id = data.alicloud_wafv3_instances.default.ids.0
+  domain      = "zctest12.wafqax.top"
+}
+
+output "wafv3_domains_id_2" {
   value = data.alicloud_wafv3_domains.default.domains.0.id
 }
 ```
@@ -29,20 +43,23 @@ output "alicloud_wafv3_domain_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `ids` - (Optional, ForceNew, Computed)  A list of domain IDs.
-* `domain` - (ForceNew, Optional) The name of the domain name to query.
-* `backend` - (ForceNew, Optional) The address type of the origin server. The address can be an IP address or a domain name. You can specify only one type of address.
-* `instance_id` - (Required, ForceNew) The WAF instance ID.
-* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
-* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
+* `ids` - (Optional, ForceNew, List) A list of domain IDs.
+* `instance_id` - (Required, ForceNew) The WAF instance ID.
+* `domain` - (Optional, ForceNew) The name of the domain name to query.
+* `backend` - (Optional, ForceNew) The address type of the origin server. The address can be an IP address or a domain name. You can specify only one type of address.
+* `enable_details` - (Optional, Bool) Default to `false`. Set it to `true` can output more details about resource attributes.
+* `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
+
 * `domains` - A list of Domain Entries. Each element contains the following attributes:
-  * `id` - The ID of the domain. The value is formulated as `<instance_id>:<domain>`.
+  * `id` - The ID of the domain. It formats as `<instance_id>:<domain>`.
   * `domain` - The name of the domain.
+  * `resource_manager_resource_group_id` - The ID of the resource group.
+  * `status` - The status of the domain.
   * `listen` - Configure listening information
     * `cert_id` - The ID of the certificate to be added. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol).
     * `cipher_suite` - The type of encryption suite to add. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol).
@@ -74,5 +91,3 @@ The following attributes are exported in addition to the arguments listed above:
     * `sni_enabled` - Whether to enable back-to-source SNI. This parameter is used only if the value of **https_ports** is not empty (indicating that the domain name uses the HTTPS protocol).
     * `sni_host` - Sets the value of the custom SNI extension field. If this parameter is not set, the value of the **Host** field in the request header is used as the value of the SNI extension field by default.In general, you do not need to customize SNI unless your business has special configuration requirements. You want WAF to use SNI that is inconsistent with the actual request Host in the back-to-origin request (that is, the custom SNI set here).> This parameter is required only when **sni_enalbed** is set to **true** (indicating that back-to-source SNI is enabled).
     * `write_timeout` - Write timeout duration. **Unit**: seconds, **Value range**:5~1800.
-  * `resource_manager_resource_group_id` - The ID of the resource group
-  * `status` - The status of the domain.
