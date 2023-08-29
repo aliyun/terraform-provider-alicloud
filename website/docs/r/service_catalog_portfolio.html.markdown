@@ -13,16 +13,19 @@ Provides a Service Catalog Portfolio resource.
 
 For information about Service Catalog Portfolio and how to use it, see [What is Portfolio](https://www.alibabacloud.com/help/en/servicecatalog/latest/api-doc-servicecatalog-2021-09-01-api-doc-createportfolio).
 
--> **NOTE:** Available in v1.204.0+.
+-> **NOTE:** Available since v1.204.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
 resource "alicloud_service_catalog_portfolio" "default" {
-  portfolio_name = "example_value"
-  provider_name  = "example_value"
+  portfolio_name = var.name
+  provider_name  = var.name
 }
 ```
 
@@ -41,7 +44,7 @@ The following attributes are exported:
 * `create_time` - The creation time of the portfolio.
 * `portfolio_arn` - The ARN of the portfolio.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Portfolio.

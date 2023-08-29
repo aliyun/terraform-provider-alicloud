@@ -7,27 +7,29 @@ description: |-
   Provides a Alicloud Data Security Center Rule resource.
 ---
 
-# alicloud\_sddp\_rule
+# alicloud_sddp_rule
 
 Provides a Data Security Center Rule resource.
 
-For information about Data Security Center Rule and how to use it, see [What is Rule](https://help.aliyun.com/product/88674.html).
+For information about Data Security Center Rule and how to use it, see [What is Rule](https://www.alibabacloud.com/help/en/data-security-center/latest/api-sddp-2019-01-03-createrule).
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example_name"
+}
 resource "alicloud_sddp_rule" "default" {
   category      = "0"
   content       = "content"
-  rule_name     = "rule_name"
+  rule_name     = var.name
   risk_level_id = "4"
-  product_code  = "ODPS"
+  product_code  = "OSS"
 }
-
 ```
 
 ## Argument Reference

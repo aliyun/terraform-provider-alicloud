@@ -7,40 +7,40 @@ description: |-
   Provides a Alicloud Simple Application Server Firewall Rule resource.
 ---
 
-# alicloud\_simple\_application\_server\_firewall\_rule
+# alicloud_simple_application_server_firewall_rule
 
 Provides a Simple Application Server Firewall Rule resource.
 
 For information about Simple Application Server Firewall Rule and how to use it, see [What is Firewall Rule](https://www.alibabacloud.com/help/doc-detail/190449.htm).
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_simple_application_server_instances" "default" {}
+variable "name" {
+  default = "tf_example"
+}
 
 data "alicloud_simple_application_server_images" "default" {}
-
 data "alicloud_simple_application_server_plans" "default" {}
 
 resource "alicloud_simple_application_server_instance" "default" {
-  count          = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? 0 : 1
   payment_type   = "Subscription"
   plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
-  instance_name  = "tf-testaccswas-firewallrule"
+  instance_name  = var.name
   image_id       = data.alicloud_simple_application_server_images.default.images.0.id
   period         = 1
   data_disk_size = 100
 }
 
 resource "alicloud_simple_application_server_firewall_rule" "default" {
-  instance_id   = length(data.alicloud_simple_application_server_instances.default.ids) > 0 ? data.alicloud_simple_application_server_instances.default.ids.0 : alicloud_simple_application_server_instance.default.0.id
+  instance_id   = alicloud_simple_application_server_instance.default.id
   rule_protocol = "Tcp"
   port          = "9999"
-  remark        = "example_value"
+  remark        = var.name
 }
 ```
 ## Argument Reference
