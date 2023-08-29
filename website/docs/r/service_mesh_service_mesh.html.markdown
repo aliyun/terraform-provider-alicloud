@@ -7,123 +7,131 @@ description: |-
   Provides a Alicloud Service Mesh Service Mesh resource.
 ---
 
-# alicloud\_service\_mesh\_service\_mesh
+# alicloud_service_mesh_service_mesh
 
 Provides a Service Mesh Service Mesh resource.
 
-For information about Service Mesh Service Mesh and how to use it, see [What is Service Mesh](https://help.aliyun.com/document_detail/171559.html).
+For information about Service Mesh Service Mesh and how to use it, see [What is Service Mesh](https://www.alibabacloud.com/help/en/alibaba-cloud-service-mesh/latest/api-servicemesh-2020-01-11-createservicemesh).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
-}
-resource "alicloud_vpc" "default" {
-  count    = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-  vpc_name = "example_value"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-}
-resource "alicloud_vswitch" "default" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id      = data.alicloud_zones.default.zones.0.id
-  vswitch_name = "example_value"
-}
-resource "alicloud_service_mesh_service_mesh" "example" {
-  service_mesh_name = "example_value"
-  network {
-    vpc_id        = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-    vswitche_list = [length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id]
-  }
+data "alicloud_service_mesh_versions" "default" {
+  edition = "Default"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_service_mesh_service_mesh" "default" {
+  service_mesh_name = var.name
+  edition           = "Default"
+  version           = data.alicloud_service_mesh_versions.default.versions.0.version
+  cluster_spec      = "standard"
+  network {
+    vpc_id        = alicloud_vpc.default.id
+    vswitche_list = [alicloud_vswitch.default.id]
+  }
+  load_balancer {
+    pilot_public_eip      = false
+    api_server_public_eip = false
+  }
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `load_balancer` - (Optional, ForceNew) The configuration of the Load Balancer. See the following `Block load_balancer`.
-* `mesh_config` - (Optional) The configuration of the Service grid. See the following `Block mesh_config`.
-* `network` - (Required, ForceNew) The network configuration of the Service grid. See the following `Block network`.
-* `service_mesh_name` - (Optional, ForceNew, Computed) The name of the resource.
+* `load_balancer` - (Optional, ForceNew) The configuration of the Load Balancer. See [`load_balancer`](#load_balancer) below.
+* `mesh_config` - (Optional) The configuration of the Service grid. See [`mesh_config`](#mesh_config) below.
+* `network` - (Required, ForceNew) The network configuration of the Service grid. See [`network`](#network) below.
+* `service_mesh_name` - (Optional, ForceNew) The name of the resource.
 * `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
 * `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
-* `cluster_spec` - (Optional,Available in v1.166.0+.) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
-* `cluster_ids` - (Optional,Available in v1.166.0+.) The array of the cluster ids.
-* `extra_configuration` - (Optional, Available in v1.169.0+.) The configurations of additional features for the ASM instance. See the following `Block extra_configuration`.
+* `cluster_spec` - (Optional, Available since v1.166.0) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
+* `cluster_ids` - (Optional, Available since v1.166.0) The array of the cluster ids.
+* `extra_configuration` - (Optional, Available since v1.169.0) The configurations of additional features for the ASM instance. See [`extra_configuration`](#extra_configuration) below.
 
 
-#### Block network
+### `network`
 
 The network supports the following: 
 
 * `vpc_id` - (Required) The ID of the VPC.
 * `vswitche_list` - (Required) The list of Virtual Switch.
 
-#### Block extra_configuration
+### `extra_configuration`
 
 The extra_configuration supports the following:
 
-* `cr_aggregation_enabled` - (Optional, Available in v1.169.0+.) Indicates whether the Kubernetes API of clusters on the data plane is used to access Istio resources. A value of `true` indicates that the Kubernetes API is used.
+* `cr_aggregation_enabled` - (Optional, Available since v1.169.0) Indicates whether the Kubernetes API of clusters on the data plane is used to access Istio resources. A value of `true` indicates that the Kubernetes API is used.
 
 
-#### Block mesh_config
+### `mesh_config`
 
 The mesh_config supports the following: 
 
-* `access_log` - (Optional) The configuration of the access logging.
-* `control_plane_log` - (Optional, ForceNew, Computed, Available in 1.174.0+) The configuration of the control plane logging. 
-* `audit` - (Optional, Computed) The configuration of the audit. See the following `Block audit`.
+* `access_log` - (Optional) The configuration of the access logging. See [`access_log`](#mesh_config-access_log) below.
+* `control_plane_log` - (Optional, ForceNew, Available since v1.174.0) The configuration of the control plane logging. See [`control_plane_log`](#mesh_config-control_plane_log) below.
+* `audit` - (Optional) The configuration of the audit. See [`audit`](#mesh_config-audit) below.
 * `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional) The enable locality lb.
-* `kiali` - (Optional, Computed) The configuration of the Kiali. See the following `Block kiali`.
-* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See the following `Block opa`.
+* `kiali` - (Optional) The configuration of the Kiali. See [`kiali`](#mesh_config-kiali) below.
+* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See [`opa`](#mesh_config-opa) below.
 * `outbound_traffic_policy` - (Optional) The policy of the Out to the traffic. Valid values: `ALLOW_ANY` and `REGISTRY_ONLY`.
-* `pilot` - (Optional, ForceNew) The configuration of the Link trace sampling. See the following `Block pilot`.
-* `proxy` - (Optional) The configuration of the Proxy. See the following `Block proxy`.
-* `sidecar_injector` - (Optional)The configuration of the Sidecar injector. See the following `Block sidecar_injector`.
-* `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
-* `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
+* `pilot` - (Optional, ForceNew) The configuration of the Link trace sampling. See [`pilot`](#mesh_config-pilot) below.
+* `proxy` - (Optional) The configuration of the Proxy. See [`proxy`](#mesh_config-proxy) below.
+* `sidecar_injector` - (Optional)The configuration of the Sidecar injector. See [`sidecar_injector`](#mesh_config-sidecar_injector) below.
+* `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
+* `tracing` - (Optional) Whether to enable link trace you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
 
-#### Block access_log
+### `mesh_config-access_log`
 
 The access_log supports the following:
 
-* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the access logging. Valid values: `true` and `false`.
-* `project` - (Optional, Available in 1.174.0+) The SLS Project of the access logging.
+* `enabled` - (Optional, Available since v1.174.0) Whether to enable of the access logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available since v1.174.0) The SLS Project of the access logging.
 
-#### Block control_plane_log
+### `mesh_config-control_plane_log`
 
 The control_plane_log supports the following:
 
-* `enabled` - (Optional, Available in 1.174.0+) Whether to enable of the control plane logging. Valid values: `true` and `false`.
-* `project` - (Optional, Available in 1.174.0+) The SLS Project of the control plane logging.
+* `enabled` - (Optional, Available since v1.174.0) Whether to enable of the control plane logging. Valid values: `true` and `false`.
+* `project` - (Optional, Available since v1.174.0) The SLS Project of the control plane logging.
 
-#### Block sidecar_injector
+### `mesh_config-sidecar_injector`
 
 The sidecar_injector supports the following: 
 
 * `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
 * `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
-* `limit_cpu` - (Optional, Computed) The limit cpu of the Sidecar injector Pods.
-* `limit_memory` - (Optional, Computed) Sidecar injector Pods on the throttle.
-* `request_cpu` - (Optional, Computed) The requested cpu the Sidecar injector Pods.
-* `request_memory` - (Optional, Computed) The requested memory the Sidecar injector Pods.
+* `limit_cpu` - (Optional) The limit cpu of the Sidecar injector Pods.
+* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
+* `request_cpu` - (Optional) The requested cpu the Sidecar injector Pods.
+* `request_memory` - (Optional) The requested memory the Sidecar injector Pods.
 
-#### Block proxy
+### `mesh_config-proxy`
 
 The proxy supports the following: 
 
@@ -132,20 +140,20 @@ The proxy supports the following:
 * `request_cpu` - (Optional) The request cpu of the resource.
 * `request_memory` - (Optional) The request memory of the resource.
 
-#### Block pilot
+### `mesh_config-pilot`
 
 The pilot supports the following: 
 
 * `http10_enabled` - (Optional) Whether to support the HTTP1.0.
 * `trace_sampling` - (Optional) The  percentage of the Link trace sampling.
 
-#### Block kiali
+### `mesh_config-kiali`
 
 The kiali supports the following: 
 
-* `enabled` - (Optional, Computed) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
+* `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
 
-#### Block opa
+### `mesh_config-opa`
 
 The opa supports the following:
 
@@ -156,19 +164,21 @@ The opa supports the following:
 * `request_cpu` - (Optional) The CPU resource request of the OPA proxy container.
 * `request_memory` - (Optional) The memory resource request of the OPA proxy container.
 
-#### Block audit
+### `mesh_config-audit`
 
 The audit supports the following: 
 
 * `enabled` - (Optional) Whether to enable Service grid audit.
 * `project` - (Optional) The Service grid audit that to the project.
 
-#### Block load_balancer
+### `load_balancer`
 
 The load_balancer supports the following: 
 
 * `api_server_public_eip` - (Optional)  Whether to use the IP address of a public network exposed the API Server.
 * `pilot_public_eip` - (Optional) Whether to use the IP address of a public network exposure the Istio Pilot.
+* `pilot_public_loadbalancer_id` - (Optional) The ID of the Server Load Balancer (SLB) instance that is used when Istio Pilot is exposed to the Internet.
+* `api_server_loadbalancer_id` - (Optional)  The ID of the SLB instance that is used when the API server is exposed to the Internet.
 
 ## Attributes Reference
 
@@ -177,7 +187,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Service Mesh.
 * `status` - The status of the resource. Valid values: `running` or `initial`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

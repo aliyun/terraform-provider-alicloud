@@ -7,13 +7,13 @@ description: |-
   Provides an Alicloud Service Mesh User Permission resource.
 ---
 
-# alicloud\_service\_mesh\_user\_permission
+# alicloud_service_mesh_user_permission
 
 Provides a Service Mesh UserPermission resource.
 
-For information about Service Mesh User Permission and how to use it, see [What is User Permission](https://help.aliyun.com/document_detail/171622.html).
+For information about Service Mesh User Permission and how to use it, see [What is User Permission](https://www.alibabacloud.com/help/en/alibaba-cloud-service-mesh/latest/api-servicemesh-2020-01-11-grantuserpermissions).
 
--> **NOTE:** Available in v1.174.0+.
+-> **NOTE:** Available since v1.174.0.
 
 ## Example Usage
 
@@ -21,35 +21,35 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "servicemesh"
+  default = "tfexample"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 data "alicloud_service_mesh_versions" "default" {
   edition = "Default"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
 }
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_ram_user" "default" {
-  name = var.name
-}
-
-resource "alicloud_service_mesh_service_mesh" "default1" {
+resource "alicloud_service_mesh_service_mesh" "default" {
   service_mesh_name = var.name
   edition           = "Default"
   version           = data.alicloud_service_mesh_versions.default.versions.0.version
   cluster_spec      = "standard"
   network {
-    vpc_id        = data.alicloud_vpcs.default.ids.0
-    vswitche_list = [data.alicloud_vswitches.default.ids.0]
+    vpc_id        = alicloud_vpc.default.id
+    vswitche_list = [alicloud_vswitch.default.id]
   }
   load_balancer {
     pilot_public_eip      = false
@@ -57,17 +57,20 @@ resource "alicloud_service_mesh_service_mesh" "default1" {
   }
 }
 
-resource "alicloud_service_mesh_user_permission" "example" {
+resource "alicloud_ram_user" "default" {
+  name = var.name
+}
+
+resource "alicloud_service_mesh_user_permission" "default" {
   sub_account_user_id = alicloud_ram_user.default.id
   permissions {
     role_name       = "istio-admin"
-    service_mesh_id = alicloud_service_mesh_service_mesh.default1.id
+    service_mesh_id = alicloud_service_mesh_service_mesh.default.id
     role_type       = "custom"
     is_custom       = true
     is_ram_role     = false
   }
 }
-
 ```
 
 ## Argument Reference
@@ -75,10 +78,9 @@ resource "alicloud_service_mesh_user_permission" "example" {
 The following arguments are supported:
 
 * `sub_account_user_id` - (Required, ForceNew) The configuration of the Load Balancer. See the following `Block load_balancer`.
-* `permissions` - (Optional) List of permissions. **Warning:** The list requires the full amount of permission information to be passed. Adding permissions means adding items to the list, and deleting them or inputting nothing means removing items. See the following `Block permissions`.
+* `permissions` - (Optional) List of permissions. **Warning:** The list requires the full amount of permission information to be passed. Adding permissions means adding items to the list, and deleting them or inputting nothing means removing items. See [`permissions`](#permissions) below.
 
-
-#### Block permissions
+### `permissions`
 
 The permissions supports the following:
 
@@ -99,7 +101,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of User Permission. The value is same as `sub_account_user_id`.
 
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

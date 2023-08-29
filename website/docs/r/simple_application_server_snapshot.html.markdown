@@ -7,43 +7,43 @@ description: |-
   Provides a Alicloud Simple Application Server Snapshot resource.
 ---
 
-# alicloud\_simple\_application\_server\_snapshot
+# alicloud_simple_application_server_snapshot
 
 Provides a Simple Application Server Snapshot resource.
 
 For information about Simple Application Server Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/doc-detail/190452.htm).
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_simple_application_server_instances" "example" {}
-
-data "alicloud_simple_application_server_images" "example" {}
-
-data "alicloud_simple_application_server_plans" "example" {}
-
-resource "alicloud_simple_application_server_instance" "example" {
-  count         = length(data.alicloud_simple_application_server_instances.example.ids) > 0 ? 0 : 1
-  payment_type  = "Subscription"
-  plan_id       = data.alicloud_simple_application_server_plans.example.plans.0.id
-  instance_name = "example_value"
-  image_id      = data.alicloud_simple_application_server_images.example.images.0.id
-  period        = 1
+variable "name" {
+  default = "tf_example"
 }
 
-data "alicloud_simple_application_server_disks" "example" {
-  instance_id = length(data.alicloud_simple_application_server_instances.example.ids) > 0 ? data.alicloud_simple_application_server_instances.example.ids.0 : alicloud_simple_application_server_instance.example.0.id
+data "alicloud_simple_application_server_images" "default" {}
+data "alicloud_simple_application_server_plans" "default" {}
+
+resource "alicloud_simple_application_server_instance" "default" {
+  payment_type   = "Subscription"
+  plan_id        = data.alicloud_simple_application_server_plans.default.plans.0.id
+  instance_name  = var.name
+  image_id       = data.alicloud_simple_application_server_images.default.images.0.id
+  period         = 1
+  data_disk_size = 100
 }
 
-resource "alicloud_simple_application_server_snapshot" "example" {
-  disk_id       = data.alicloud_simple_application_server_disks.example.ids.0
-  snapshot_name = "example_value"
+data "alicloud_simple_application_server_disks" "default" {
+  instance_id = alicloud_simple_application_server_instance.default.id
 }
 
+resource "alicloud_simple_application_server_snapshot" "default" {
+  disk_id       = data.alicloud_simple_application_server_disks.default.ids.0
+  snapshot_name = var.name
+}
 ```
 
 ## Argument Reference
@@ -60,7 +60,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Snapshot.
 * `status` - The status of the snapshot. Valid values: `Progressing`, `Accomplished` and `Failed`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
