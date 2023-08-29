@@ -7,25 +7,28 @@ description: |-
   Provides a Alicloud Private Link Vpc Endpoint Service resource.
 ---
 
-# alicloud\_privatelink\_vpc\_endpoint\_service
+# alicloud_privatelink_vpc_endpoint_service
 
 Provides a Private Link Vpc Endpoint Service resource.
 
-For information about Private Link Vpc Endpoint Service and how to use it, see [What is Vpc Endpoint Service](https://help.aliyun.com/document_detail/183540.html).
+For information about Private Link Vpc Endpoint Service and how to use it, see [What is Vpc Endpoint Service](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-createvpcendpointservice).
 
--> **NOTE:** Available in v1.109.0+.
+-> **NOTE:** Available since v1.109.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
+
 resource "alicloud_privatelink_vpc_endpoint_service" "example" {
-  service_description    = "tftest"
+  service_description    = var.name
   connect_bandwidth      = 103
   auto_accept_connection = false
 }
-
 ```
 
 ## Argument Reference
@@ -49,7 +52,7 @@ The following attributes are exported:
 * `service_domain` - Service Domain.
 * `status` - The status of Vpc Endpoint Service.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

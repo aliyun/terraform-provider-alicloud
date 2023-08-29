@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud PrivateZone Rule resource.
 ---
 
-# alicloud\_pvtz\_rule
+# alicloud_pvtz_rule
 
 Provides a Private Zone Rule resource.
 
-For information about Private Zone Rule and how to use it, see [What is Rule](https://www.alibabacloud.com/help/en/doc-detail/177601.htm).
+For information about Private Zone Rule and how to use it, see [What is Rule](https://www.alibabacloud.com/help/en/privatezone/latest/add-forwarding-rule).
 
--> **NOTE:** Available in v1.143.0+.
+-> **NOTE:** Available since v1.143.0.
 
 ## Example Usage
 
@@ -26,6 +26,9 @@ variable "name" {
 
 data "alicloud_pvtz_resolver_zones" "default" {
   status = "NORMAL"
+}
+data "alicloud_regions" "default" {
+  current = true
 }
 
 resource "alicloud_vpc" "default" {
@@ -49,7 +52,7 @@ resource "alicloud_pvtz_endpoint" "default" {
   endpoint_name     = var.name
   security_group_id = alicloud_security_group.default.id
   vpc_id            = alicloud_vpc.default.id
-  vpc_region_id     = "vpc_region_id"
+  vpc_region_id     = data.alicloud_regions.default.regions.0.id
   ip_configs {
     zone_id    = alicloud_vswitch.default[0].zone_id
     cidr_block = alicloud_vswitch.default[0].cidr_block
@@ -80,12 +83,12 @@ resource "alicloud_pvtz_rule" "default" {
 The following arguments are supported:
 
 * `endpoint_id` - (Required, ForceNew) The ID of the Endpoint.
-* `forward_ips` - (Required) Forwarding target. See the following `Block forward_ip`.
+* `forward_ips` - (Required) Forwarding target. See [`forward_ips`](#forward_ips) below.
 * `rule_name` - (Required, ForceNew) The name of the resource.
 * `type` - (Optional, ForceNew) The type of the rule. Valid values: `OUTBOUND`.
 * `zone_name` - (Required, ForceNew) The name of the forwarding zone.
 
-#### Block forward_ips
+### `forward_ips`
 
 The forward_ips supports the following:
 

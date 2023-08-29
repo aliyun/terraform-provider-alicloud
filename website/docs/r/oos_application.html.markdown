@@ -7,25 +7,28 @@ description: |-
   Provides a Alicloud OOS Application resource.
 ---
 
-# alicloud\_oos\_application
+# alicloud_oos_application
 
 Provides a OOS Application resource.
 
-For information about OOS Application and how to use it, see [What is Application](https://www.alibabacloud.com/help/en/doc-detail/120556.html).
+For information about OOS Application and how to use it, see [What is Application](https://www.alibabacloud.com/help/en/operation-orchestration-service/latest/api-oos-2019-06-01-createapplication).
 
--> **NOTE:** Available in v1.145.0+.
+-> **NOTE:** Available since v1.145.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_oos_application" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  application_name  = "terraform-example"
-  description       = "terraform-example"
+  application_name  = var.name
+  description       = var.name
   tags = {
     Created = "TF"
   }
