@@ -61,6 +61,7 @@ func resourceAliCloudEipAddress() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"high_definition_monitor_log_status": {

@@ -2,125 +2,159 @@
 subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_load_balancer"
-sidebar_current: "docs-alicloud-resource-nlb-load-balancer"
 description: |-
   Provides a Alicloud NLB Load Balancer resource.
 ---
 
-# alicloud\_nlb\_load\_balancer
+# alicloud_nlb_load_balancer
 
-Provides a NLB Load Balancer resource.
+Provides a NLB Load Balancer resource. 
 
-For information about NLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createloadbalancer).
+For information about NLB Load Balancer and how to use it, see [What is Load Balancer](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createloadbalancer).
 
--> **NOTE:** Available since v1.191.0.
+-> **NOTE:** Available since v1.210.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_nlb_zones" "default" {}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "default-NODELETING"
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
 
-data "alicloud_vswitches" "default_1" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nlb_zones.default.zones.0.id
+resource "alicloud_common_bandwidth_package" "cbwp" {
+  internet_charge_type = "PayByBandwidth"
+  bandwidth            = "1000"
 }
-data "alicloud_vswitches" "default_2" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_nlb_zones.default.zones.1.id
+
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = "${var.name}1"
+  cidr_block = "192.168.0.0/16"
 }
-locals {
-  zone_id_1    = data.alicloud_nlb_zones.default.zones.0.id
-  vswitch_id_1 = data.alicloud_vswitches.default_1.ids[0]
-  zone_id_2    = data.alicloud_nlb_zones.default.zones.1.id
-  vswitch_id_2 = data.alicloud_vswitches.default_2.ids[0]
+
+resource "alicloud_vswitch" "vsj" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  cidr_block   = "192.168.10.0/24"
+  vswitch_name = "${var.name}2"
 }
+
+resource "alicloud_vswitch" "vsk" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.1.id
+  cidr_block   = "192.168.20.0/24"
+  vswitch_name = "${var.name}3"
+}
+
+resource "alicloud_security_group" "defaultLkkjal" {
+  vpc_id = alicloud_vpc.vpc.id
+}
+
+resource "alicloud_resource_manager_resource_group" "rg1" {
+  display_name        = "nlb1"
+  resource_group_name = "${var.name}5"
+}
+
+resource "alicloud_resource_manager_resource_group" "rg2" {
+  display_name        = "nlb2"
+  resource_group_name = "${var.name}6"
+}
+
+resource "alicloud_vswitch" "vsg" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.2.id
+  cidr_block   = "192.168.30.0/24"
+  vswitch_name = "${var.name}7"
+}
+
 
 resource "alicloud_nlb_load_balancer" "default" {
   load_balancer_name = var.name
-  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
-  load_balancer_type = "Network"
-  address_type       = "Internet"
-  address_ip_version = "Ipv4"
-  tags = {
-    Created = "tfTestAcc0"
-    For     = "Tftestacc 0"
-  }
-  vpc_id = data.alicloud_vpcs.default.ids.0
   zone_mappings {
-    vswitch_id = local.vswitch_id_1
-    zone_id    = local.zone_id_1
+    vswitch_id           = alicloud_vswitch.vsj.id
+    zone_id              = "cn-hangzhou-j"
+    private_ipv4_address = "192.168.10.4"
   }
   zone_mappings {
-    vswitch_id = local.vswitch_id_2
-    zone_id    = local.zone_id_2
+    vswitch_id           = alicloud_vswitch.vsk.id
+    zone_id              = "cn-hangzhou-k"
+    private_ipv4_address = "192.168.20.4"
   }
+  address_type                   = "Intranet"
+  address_ip_version             = "Ipv4"
+  modification_protection_status = "ConsoleProtection"
+  load_balancer_type             = "Network"
+  vpc_id                         = alicloud_vpc.vpc.id
+  modification_protection_reason = "test"
+  resource_group_id              = alicloud_resource_manager_resource_group.rg1.id
+  bandwidth_package_id           = alicloud_common_bandwidth_package.cbwp.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `address_ip_version` - (Optional, Computed, ForceNew) The protocol version. Valid values:
-  - ipv4 (default): IPv4
-  - DualStack: dual stack
-* `address_type` - (Required) The type of IPv4 address used by the NLB instance. Valid values:
-  - Internet: The NLB instance uses a public IP address. The domain name of the NLB instance is resolved to the public IP address. Therefore, the NLB instance can be accessed over the Internet.
-  - Intranet: The NLB instance uses a private IP address. The domain name of the NLB instance is resolved to the private IP address. Therefore, the NLB instance can be accessed over the virtual private cloud (VPC) where the NLB instance is deployed.
-* `cross_zone_enabled` - (Optional, Computed) Specifies whether to enable cross-zone load balancing for the NLB instance.
-* `load_balancer_name` - (Optional, Computed) The name of the NLB instance. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `load_balancer_type` - (Optional, Computed, ForceNew) The type of the instance. Set the value to `Network`, which specifies an NLB instance.
-* `resource_group_id` - (Optional, Computed, ForceNew) The ID of the resource group.
-* `vpc_id` - (Required, ForceNew) The ID of the VPC where the NLB instance is deployed.
-* `zone_mappings` - (Required) Available Area Configuration List. You must add at least two zones. You can add a maximum of 10 zones. See [`zone_mappings`](#zone_mappings) below.
-* `bandwidth_package_id` - (Optional) The ID of the EIP bandwidth plan that is associated with the NLB instance if the NLB instance uses a public IP address.
-* `deletion_protection_enabled` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable deletion protection. Default value: `false`. Valid values:
-  - `true`: Enable deletion protection.
-  - `false`: Disable deletion protection. You cannot set the `deletion_protection_reason`. If the `deletion_protection_reason` is set, the value is cleared.
-* `deletion_protection_reason` - (Optional, Available in 1.206.0+) The reason why the deletion protection feature is enabled or disabled. The `deletion_protection_reason` takes effect only when `deletion_protection_enabled` is set to `true`.
-* `modification_protection_status` - (Optional, Computed, Available in 1.206.0+) Specifies whether to enable the configuration read-only mode. Default value: `NonProtection`. Valid values:
-  - `NonProtection`: Does not enable the configuration read-only mode. You cannot set the `modification_protection_reason`. If the `modification_protection_reason` is set, the value is cleared.
-  - `ConsoleProtection`: Enables the configuration read-only mode. You can set the `modification_protection_reason`.
-* `modification_protection_reason` - (Optional, Available in 1.206.0+) The reason why the configuration read-only mode is enabled. The `modification_protection_reason` takes effect only when `modification_protection_status` is set to `ConsoleProtection`.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `address_ip_version` - (Optional, ForceNew, Computed, Available since v1.191.0) Protocol version. Value:
+  - **Ipv4**:IPv4 type.
+  - **DualStack**: Double Stack type.
+* `address_type` - (Required, Available since v1.191.0) The network address type of IPv4 for network load balancing. Value:
+  - **Internet**: public network. Load balancer has a public network IP address, and the DNS domain name is resolved to a public network IP address, so it can be accessed in a public network environment.
+  - **Intranet**: private network. The server load balancer only has a private IP address, and the DNS domain name is resolved to the private IP address, so it can only be accessed by the intranet environment of the VPC where the server load balancer is located.
+* `bandwidth_package_id` - (Optional, Computed, Available since v1.191.0) The ID of the EIP bandwidth plan that is associated with the NLB instance if the NLB instance uses a public IP address.
+* `cross_zone_enabled` - (Optional, Computed, Available since v1.191.0) Whether cross-zone is enabled for a network-based load balancing instance. Value:
+  - **true**: on.
+  - **false**: closed.
+* `deletion_protection_enabled` - (Optional, Computed, Available since v1.191.0) Whether to enable deletion protection. Value:
+  - **true**: enabled.
+  - **false**: Closed.
+* `deletion_protection_reason` - (Optional, Computed, Available since v1.191.0) Enter the reason why delete protection is turned on. It must be 2 to 128 English or Chinese characters in length. It must start with a letter or a Chinese character and can contain digits, half-width periods (.), underscores (_), and dashes (-).
+-> **NOTE:**  This parameter is valid and legal only when **DeletionProtectionEnabled** is **true.
+* `ipv6_address_type` - (Optional, Computed, Available since v1.191.0) The IPv6 address type of network load balancing. Value:
+  - **Internet**: Server Load Balancer has a public IP address, and the DNS domain name is resolved to a public IP address, so it can be accessed in a public network environment.
+  - **Intranet**: SLB only has the private IP address, and the DNS domain name is resolved to the private IP address, so it can only be accessed by the Intranet environment of the VPC where SLB is located.
+* `load_balancer_name` - (Optional, Available since v1.191.0) The name of the network-based load balancing instance. 2 to 128 English or Chinese characters in length, which must start with a letter or Chinese, and can contain numbers, half-width periods (.), underscores (_), and dashes (-).
+* `load_balancer_type` - (Optional, ForceNew, Computed, Available since v1.191.0) Load balancing type. Only value: **Network**, which indicates network-based load balancing.
+* `modification_protection_reason` - (Optional, Computed, Available since v1.191.0) Enter the reason for turning on modification protection. It must be 2 to 128 English or Chinese characters in length. It must start with a letter or a Chinese character and can contain digits, half-width periods (.), underscores (_), and dashes (-).
+-> **NOTE:**  This parameter is valid and valid only when **Status** is set to **ConsoleProtection**.
+* `modification_protection_status` - (Optional, Computed, Available since v1.191.0) Network-based load balancing modifies the protection status. Value:
+  - **NonProtection**: indicates that **ModificationProtectionReason** is not allowed * *. If The **ModificationProtectionReason** of the protection configuration is configured, its configuration information is cleared.
+  - **ConsoleProtection**: allows the **ModificationProtectionReason** to be passed in the console to modify protection * *.
+-> **NOTE:**  When the value is **ConsoleProtection**, that is, after modification protection is enabled, users cannot modify the instance configuration through the load balancing console, but can modify the instance configuration by calling API.
+* `resource_group_id` - (Optional, Computed, Available since v1.191.0) The ID of the resource group.
+* `security_group_ids` - (Optional) The security group to which the network-based SLB instance belongs.
+* `tags` - (Optional, Map, Available since v1.191.0) List of labels.
+* `vpc_id` - (Required, ForceNew, Available since v1.191.0) The ID of the network-based SLB instance.
+* `zone_mappings` - (Required, Available since v1.191.0) The list of zones and vSwitch mappings. You must add at least two zones and a maximum of 10 zones. See [`zone_mappings`](#zone_mappings) below.
 
 ### `zone_mappings`
 
-The zone_mappings supports the following: 
-
-* `allocation_id` - (Optional, Computed) The ID of the EIP associated with the Internet-facing NLB instance.
-* `public_ipv4_address` - (Computed) The public IPv4 address of the NLB instance.
-* `vswitch_id` - (Required) The vSwitch in the zone. You can specify only one vSwitch (subnet) in each zone of an NLB instance.
+The zone_mappings supports the following:
+* `allocation_id` - (Optional) The ID of the elastic IP address.
+* `private_ipv4_address` - (Optional, Computed) The private IPv4 address of a network-based server load balancer instance.
+* `vswitch_id` - (Required) The switch corresponding to the zone. Each zone uses one switch and one subnet by default.
 * `zone_id` - (Required) The ID of the zone of the NLB instance.
-* `eni_id` - (Computed) The ID of the elastic network interface (ENI).
-* `ipv6_address` - (Computed) The IPv6 address of the NLB instance.
-* `private_ipv4_address` - (Optional, Computed) The private IPv4 address of the NLB instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Load Balancer.
-* `status` - The status of the NLB instance.
-* `load_balancer_business_status` - The business status of the NLB instance.
-* `ipv6_address_type` - The type of IPv6 address used by the NLB instance.
-* `create_time` - The time when the resource was created. The time is displayed in UTC in `yyyy-MM-ddTHH:mm:ssZ` format.
-* `dns_name` - The domain name of the NLB instance.
+* `id` - The ID of the resource supplied above.
+* `create_time` - Resource creation time, using Greenwich Mean Time, formating' yyyy-MM-ddTHH:mm:ssZ '.
+* `status` - The status of the network-based load balancing instance. Value:, indicating that the instance listener will no longer forward traffic.
+* `zone_mappings` - The list of zones and vSwitch mappings. You must add at least two zones and a maximum of 10 zones.
+  * `eni_id` - The ID of the elastic network interface (ENI).
+  * `ipv6_address` - The IPv6 address of a network-based server load balancer instance.
+  * `public_ipv4_address` - Public IPv4 address of a network-based server load balancer instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer.
-* `delete` - (Defaults to 1 mins) Used when delete the Load Balancer.
+* `delete` - (Defaults to 5 mins) Used when delete the Load Balancer.
 * `update` - (Defaults to 5 mins) Used when update the Load Balancer.
 
 ## Import
