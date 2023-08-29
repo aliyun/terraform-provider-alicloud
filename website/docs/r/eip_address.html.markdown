@@ -54,14 +54,14 @@ The following arguments are supported:
 * `deletion_protection` - (Optional, Computed, Available since v1.207.0) Whether the delete protection function is turned on.
   - **true**: enabled.
   - **false**: not enabled.
-* `description` - (Optional) The description of the EIP.
+* `description` - (Optional, Computed) The description of the EIP.
 * `high_definition_monitor_log_status` - (Optional, ForceNew, Computed) Whether the second-level monitoring is enabled for the EIP.
   - **OFF**: not enabled.
   - **ON**: enabled.
 * `internet_charge_type` - (Optional, ForceNew, Computed) Renewal Payment type.
   - **PayByBandwidth**: billed by fixed bandwidth.
   - **PayByTraffic**: Billing by traffic.
-* `isp` - (Optional, ForceNew, Computed) The line type. You can set this parameter only when you create a `PayAsYouGo` EIP. Valid values: 
+* `isp` - (Optional, ForceNew, Computed) The line type. You can set this parameter only when you create a `PayAsYouGo` EIP. Valid values:
   - `BGP`: BGP (Multi-ISP) lines.Up to 89 high-quality BGP lines are available worldwide. Direct connections with multiple Internet Service Providers (ISPs), including Telecom, Unicom, Mobile, Railcom, Netcom, CERNET, China Broadcast Network, Dr. Peng, and Founder, can be established in all regions in mainland China.
   - `BGP_PRO`: BGP (Multi-ISP) Pro lines optimize data transmission to mainland China and improve connection quality for international services. Compared with BGP (Multi-ISP), when BGP (Multi-ISP) Pro provides services to clients in mainland China (excluding data centers), cross-border connections are established without using international ISP services. This reduces network latency.
   - `ChinaTelecom`: China Telecom.
@@ -72,7 +72,7 @@ The following arguments are supported:
   - `ChinaMobile_L2`: China Mobile L2.
   - `BGP_FinanceCloud`: If your services are deployed in China East 1 Finance, this parameter is required and you must set the value to `BGP_FinanceCloud`.
   - `BGP_International`: BGP_International.
--> **NOTE:** From version 1.203.0, `isp` can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`, `BGP_International`.
+  -> **NOTE:** From version 1.203.0, `isp` can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`, `BGP_International`.
 * `log_project` - (Optional) The Name of the logging service LogProject. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
 * `log_store` - (Optional) The Name of the logging service LogStore. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
 * `netmode` - (Optional, ForceNew, Computed) The type of the network. Valid value is `public` (Internet).
