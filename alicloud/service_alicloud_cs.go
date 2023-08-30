@@ -352,14 +352,35 @@ func (s *CsClient) DescribeCsKubernetesAllAvailableAddons(clusterId string) (map
 		return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
 	}
 
+	addonInstances := make(map[string]*Component)
+	for name := range availableAddons {
+		addonInstance, err := s.DescribeCsKubernetesAddonInstance(clusterId, name)
+		if err != nil {
+			if e, ok := err.(*ComplexError); ok {
+				if sdkError, ok := e.Cause.(*tea.SDKError); ok && regexp.MustCompile(NotFound).MatchString(tea.StringValue(sdkError.Code)) {
+					log.Printf("[DEBUG] %s addon instance %s not found.", clusterId, name)
+					continue
+				}
+			}
+			return nil, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesExistedAddons", err)
+		}
+		addonInstances[name] = addonInstance
+	}
+
 	for name, addon := range availableAddons {
 		if _, ok := status[name]; !ok {
 			continue
 		}
 		addon.Version = status[name].Version
-		addon.Status = status[name].Status
 		addon.CanUpgrade = status[name].CanUpgrade
 		addon.ErrMessage = status[name].ErrMessage
+		if _, ok := addonInstances[name]; ok {
+			addon.Config = addonInstances[name].Config
+			addon.Status = addonInstances[name].Status
+		} else {
+			addon.Config = status[name].Config
+			addon.Status = status[name].Status
+		}
 	}
 
 	return availableAddons, nil
