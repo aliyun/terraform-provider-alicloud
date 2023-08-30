@@ -7,22 +7,27 @@ description: |-
   Provides a Alicloud Msc Sub Webhook resource.
 ---
 
-# alicloud\_msc\_sub\_webhook
+# alicloud_msc_sub_webhook
 
 Provides a Msc Sub Webhook resource.
 
--> **NOTE:** Available in v1.141.0+.
+-> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_msc_sub_webhook" "example" {
-  server_url   = "example_value"
-  webhook_name = "example_value"
+variable "name" {
+  default = "tfexample"
 }
-
+variable "token" {
+  default = "abcd****"
+}
+resource "alicloud_msc_sub_webhook" "example" {
+  server_url   = format("https://oapi.dingtalk.com/robot/send?access_token=%s", var.token)
+  webhook_name = var.name
+}
 ```
 
 ## Argument Reference

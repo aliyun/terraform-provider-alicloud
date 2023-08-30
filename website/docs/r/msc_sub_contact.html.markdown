@@ -7,22 +7,26 @@ description: |-
   Provides a Alicloud Message Center Contact resource.
 ---
 
-# alicloud\_msc\_sub\_contact
+# alicloud_msc_sub_contact
 
 Provides a Msc Sub Contact resource.
 
--> **NOTE:** Available in v1.132.0+.
+-> **NOTE:** Available since v1.132.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tfexample"
+}
+
 resource "alicloud_msc_sub_contact" "default" {
-  contact_name = example_value
+  contact_name = var.name
   position     = "CEO"
   email        = "123@163.com"
-  mobile       = "153xxxxx906"
+  mobile       = "15388888888"
 }
 ```
 

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud EAIS Instance resource.
 ---
 
-# alicloud\_eais\_instance
+# alicloud_eais_instance
 
 Provides a EAIS Instance resource.
 
-For information about EAIS Instance and how to use it, see [What is Instance](https://help.aliyun.com/document_detail/185066.html).
+For information about EAIS Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/document_detail/185066.html).
 
--> **NOTE:** Available in v1.137.0+.
+-> **NOTE:** Available since v1.137.0.
 
 ## Example Usage
 
@@ -21,37 +21,40 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "%v"
+  default = "tf-example"
 }
-data "alicloud_vpcs" "default" {
-  cidr_block = "172.16.0.0/12"
+
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
-resource "alicloud_vpc" "default" {
-  count      = length(data.alicloud_vpcs.default.ids) > 0 ? 0 : 1
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+locals {
   zone_id = "cn-hangzhou-h"
 }
-resource "alicloud_vswitch" "default" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id      = "cn-hangzhou-h"
-  vswitch_name = var.name
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = local.zone_id
+}
+
+
 resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = "tf test"
-  vpc_id      = length(data.alicloud_vpcs.default.ids) > 0 ? data.alicloud_vpcs.default.ids[0] : alicloud_vpc.default[0].id
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 resource "alicloud_eais_instance" "default" {
-  instance_type     = "eais.ei-a6.4xlarge"
+  instance_type     = "eais.ei-a6.2xlarge"
   instance_name     = var.name
   security_group_id = alicloud_security_group.default.id
-  vswitch_id        = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : alicloud_vswitch.default[0].id
+  vswitch_id        = alicloud_vswitch.default.id
 }
 ```
 
@@ -72,7 +75,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Instance.
 * `status` - The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

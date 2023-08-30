@@ -11,20 +11,23 @@ description: |-
 
 Provides a Max Compute Project resource.
 
-For information about Max Compute Project and how to use it, see [What is Project](https://help.aliyun.com/document_detail/473237.html).
+For information about Max Compute Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/maxcompute).
 
--> **NOTE:** Available in v1.77.0+.
+-> **NOTE:** Available since v1.77.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
 resource "alicloud_maxcompute_project" "default" {
   default_quota = "默认后付费Quota"
-  project_name  = "test_create_spec_one"
-  comment       = "test_for_terraform"
-  product_type  = "PAYASYOUGO"
+  project_name  = var.name
+  comment       = var.name
+  product_type  = "PayAsYouGo"
 }
 ```
 
@@ -34,79 +37,68 @@ The following arguments are supported:
 * `project_name` - (Required, ForceNew) The name of the project
 * `comment` - (Optional) Comments of project
 * `default_quota` - (Optional) Default Computing Resource Group
-* `ip_white_list` - (Computed,Optional) IP whitelistSee the following `Block IpWhiteList`.
-* `properties` - (Computed,Optional) Project base attributesSee the following `Block Properties`.
-* `security_properties` - (Computed,Optional) Security-related attributesSee the following `Block SecurityProperties`.
+* `ip_white_list` - (Optional) IP whitelist. See [`ip_white_list`](#ip_white_list) below.
+* `properties` - (Optional) Project base attributes. See [`properties`](#properties) below.
+* `security_properties` - (Optional) Security-related attributes. See [`security_properties`](#security_properties) below.
 * `product_type` - (Optional) Quota payment type, support `PayAsYouGo`, `Subscription`, `Dev`.
-* `name` - (Optional, Remove from v1.196.0+) It has been deprecated from provider version 1.110.0 and `project_name` instead.
-* `specification_type` - (Optional, Remove from v1.196.0+)  The type of resource Specification, only `OdpsStandard` supported currently.
-* `order_type` - (Optional, Remove from v1.196.0+) The type of payment, only `PayAsYouGo` supported currently.
+* `name` - (Removed from v1.196.0) It has been deprecated from provider version 1.110.0 and `project_name` instead.
+* `specification_type` - (Removed from v1.196.0)  The type of resource Specification, only `OdpsStandard` supported currently.
+* `order_type` - (Removed from v1.196.0) The type of payment, only `PayAsYouGo` supported currently.
 
 
-#### Block IpWhiteList
+### `ip_white_list`
 
-The IpWhiteList supports the following:
-* `ip_list` - (Computed,Optional) Classic network IP white list.
-* `vpc_ip_list` - (Computed,Optional) VPC network whitelist.
+The ip_white_list supports the following:
+* `ip_list` - (Optional) Classic network IP white list.
+* `vpc_ip_list` - (Optional) VPC network whitelist.
 
-#### Block Encryption
+### `properties`
 
-The Encryption supports the following:
-* `algorithm` - (Optional, ForceNew, Computed) Algorithm.
-* `enable` - (Optional, ForceNew, Computed) Whether to open.
-* `key` - (Optional, ForceNew, Computed) Encryption algorithm key.
+The properties support the following:
+* `allow_full_scan` - (Optional) Whether to allow full table scan.
+* `enable_decimal2` - (Optional) Whether to turn on Decimal2.0.
+* `encryption` - (Optional, ForceNew) Whether encryption is turned on. See [`encryption`](#properties-encryption) below.
+* `retention_days` - (Optional) Job default retention time.
+* `sql_metering_max` - (Optional) SQL charge limit.
+* `table_lifecycle` - (Optional) Life cycle of tables. See [`table_lifecycle`](#properties-table_lifecycle) below.
+* `timezone` - (Optional) Project time zone.
+* `type_system` - (Optional) Type system.
 
-#### Block Properties
+### `properties-encryption`
 
-The Properties support the following:
-* `allow_full_scan` - (Computed,Optional) Whether to allow full table scan.
-* `enable_decimal2` - (Computed,Optional) Whether to turn on Decimal2.0.
-* `encryption` - (Optional, ForceNew, Computed) Whether encryption is turned on.See the following `Block Encryption`.
-* `retention_days` - (Computed,Optional) Job default retention time.
-* `sql_metering_max` - (Optional, Computed) SQL charge limit.
-* `table_lifecycle` - (Computed,Optional) Life cycle of tables.See the following `Block TableLifecycle`.
-* `timezone` - (Computed,Optional) Project time zone.
-* `type_system` - (Optional, Computed) Type system.
+The encryption supports the following:
+* `algorithm` - (Optional, ForceNew) Algorithm.
+* `enable` - (Optional, ForceNew) Whether to open.
+* `key` - (Optional, ForceNew) Encryption algorithm key.
 
-#### Block TableLifecycle
+### `properties-table_lifecycle`
 
-The TableLifecycle supports the following:
-* `type` - (Computed,Optional) Life cycle type.
-* `value` - (Computed,Optional) The value of the life cycle.
+The table_lifecycle supports the following:
+* `type` - (Optional) Life cycle type.
+* `value` - (Optional) The value of the life cycle.
 
-#### Block SecurityProperties
+### `security_properties`
 
-The SecurityProperties supports the following:
-* `enable_download_privilege` - (Computed,Optional) Whether to enable download permission check.
-* `label_security` - (Computed,Optional) Label authorization.
-* `object_creator_has_access_permission` - (Computed,Optional) Project creator permissions.
-* `object_creator_has_grant_permission` - (Computed,Optional) Does the project creator have authorization rights.
-* `project_protection` - (Computed,Optional) Project protection.See the following `Block ProjectProtection`.
-* `using_acl` - (Computed,Optional) Whether to turn on ACL.
-* `using_policy` - (Computed,Optional) Whether to enable Policy.
+The security_properties supports the following:
+* `enable_download_privilege` - (Optional) Whether to enable download permission check.
+* `label_security` - (Optional) Label authorization.
+* `object_creator_has_access_permission` - (Optional) Project creator permissions.
+* `object_creator_has_grant_permission` - (Optional) Does the project creator have authorization rights.
+* `project_protection` - (Optional) Project protection. See [`project_protection`](#security_properties-project_protection) below.
+* `using_acl` - (Optional) Whether to turn on ACL.
+* `using_policy` - (Optional) Whether to enable Policy.
 
-#### Block ProjectProtection
+### `security_properties-project_protection`
 
-The ProjectProtection supports the following:
-* `exception_policy` - (Computed,Optional) Exclusion policy.
-* `protected` - (Computed,Optional) Is it turned on.
+The project_protection supports the following:
+* `exception_policy` - (Optional) Exclusion policy.
+* `protected` - (Optional) Is it turned on.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The `key` of the resource supplied above. The value is the same as `project_name`.
-* `ip_white_list` - IP whitelist
-  * `ip_list` - Classic network IP white list.
-  * `vpc_ip_list` - VPC network whitelist.
 * `owner` - Project owner
-* `properties` - Project base attributes
-  * `allow_full_scan` - Whether to allow full table scan.
-  * `enable_decimal2` - Whether to turn on Decimal2.0.
-  * `retention_days` - Job default retention time.
-  * `table_lifecycle` - Life cycle of tables.
-    * `type` - Life cycle type.
-    * `value` - The value of the life cycle.
-  * `timezone` - Project time zone.
 * `security_properties` - Security-related attributes
   * `enable_download_privilege` - Whether to enable download permission check.
   * `label_security` - Label authorization.
@@ -120,7 +112,7 @@ The following attributes are exported:
 * `status` - The status of the resource
 * `type` - Project type
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Project.

@@ -7,31 +7,34 @@ description: |-
   Provides a Alicloud Message Notification Service Subscription resource.
 ---
 
-# alicloud\_message\_service\_subscription
+# alicloud_message_service_subscription
 
 Provides a Message Notification Service Subscription resource.
 
 For information about Message Notification Service Subscription and how to use it, see [What is Subscription](https://www.alibabacloud.com/help/en/message-service/latest/subscribe-1).
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 resource "alicloud_message_service_topic" "default" {
-  topic_name       = "tf-example-value"
+  topic_name       = var.name
   max_message_size = 12357
   logging_enabled  = true
 }
 
 resource "alicloud_message_service_subscription" "default" {
   topic_name            = alicloud_message_service_topic.default.topic_name
-  subscription_name     = "tf-example-value"
-  endpoint              = "http://www.test.com/test"
+  subscription_name     = var.name
+  endpoint              = "http://example.com"
   push_type             = "http"
-  filter_tag            = "tf-test"
+  filter_tag            = "tf-example"
   notify_content_format = "XML"
   notify_strategy       = "BACKOFF_RETRY"
 }
@@ -50,7 +53,7 @@ The following arguments are supported:
 * `push_type` - (Required, ForceNew) The Push type of Subscription. The Valid values: `http`, `queue`, `mpush`, `alisms` and `email`.
 * `filter_tag` - (Optional, ForceNew) The tag that is used to filter messages. Only the messages that have the same tag can be pushed. A tag is a string that can be up to 16 characters in length. By default, no tag is specified to filter messages.
 * `notify_content_format` - (Optional, Computed, ForceNew) The NotifyContentFormat attribute of Subscription. This attribute specifies the content format of the messages pushed to users. Valid values: `XML`, `JSON` and `SIMPLIFIED`. Default value: `XML`.
-* `notify_strategy` - (Optional, Computed) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. Default value: `BACKOFF_RETRY`. Valid values:
+* `notify_strategy` - (Optional) The NotifyStrategy attribute of Subscription. This attribute specifies the retry strategy when message sending fails. Default value: `BACKOFF_RETRY`. Valid values:
   - `BACKOFF_RETRY`: retries with a fixed backoff interval.
   - `EXPONENTIAL_DECAY_RETRY`: retries with exponential backoff.
 
@@ -60,7 +63,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Subscription. The value formats as `<topic_name>:<subscription_name>`.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

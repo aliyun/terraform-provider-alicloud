@@ -7,23 +7,28 @@ description: |-
   Provides a Alicloud Direct Mail Domain resource.
 ---
 
-# alicloud\_direct\_mail\_domain
+# alicloud_direct_mail_domain
 
 Provides a Direct Mail Domain resource.
 
 For information about Direct Mail Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/doc-detail/29414.htm).
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_direct_mail_domain" "example" {
-  domain_name = "example_value"
+variable "domain_name" {
+  default = "alicloud-provider.online"
 }
-
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+resource "alicloud_direct_mail_domain" "example" {
+  domain_name = var.domain_name
+}
 ```
 
 ## Argument Reference
