@@ -7,21 +7,24 @@ description: |-
   Provides a Alicloud Message Notification Service Topic resource.
 ---
 
-# alicloud\_message\_service\_topic
+# alicloud_message_service_topic
 
 Provides a Message Notification Service Topic resource.
 
 For information about Message Notification Service Topic and how to use it, see [What is Topic](https://www.alibabacloud.com/help/en/message-service/latest/createtopic).
 
--> **NOTE:** Available in v1.188.0+.
+-> **NOTE:** Available since v1.188.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
 resource "alicloud_message_service_topic" "default" {
-  topic_name       = "tf-example-value"
+  topic_name       = var.name
   max_message_size = 12357
   logging_enabled  = true
 }
@@ -32,7 +35,7 @@ resource "alicloud_message_service_topic" "default" {
 The following arguments are supported:
 
 * `topic_name` - (Required, ForceNew) Two topics on a single account in the same region cannot have the same name. A topic name must start with an English letter or a digit, and can contain English letters, digits, and hyphens, with the length not exceeding 255 characters.
-* `max_message_size` - (Optional, Computed) The maximum size of a message body that can be sent to the topic. Unit: bytes. Valid values: 1024-65536. Default value: 65536.
+* `max_message_size` - (Optional) The maximum size of a message body that can be sent to the topic. Unit: bytes. Valid values: 1024-65536. Default value: 65536.
 * `logging_enabled` - (Optional) Specifies whether to enable the log management feature. Default value: false. Valid values:
   - `true`: enables the log management feature.
   - `false`: disables the log management feature.
@@ -43,7 +46,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Topic. Its value is same as `topic_name`.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

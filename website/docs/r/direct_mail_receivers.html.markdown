@@ -7,24 +7,30 @@ description: |-
   Provides a Alicloud Direct Mail Receivers resource.
 ---
 
-# alicloud\_direct\_mail\_receivers
+# alicloud_direct_mail_receivers
 
 Provides a Direct Mail Receivers resource.
 
 For information about Direct Mail Receivers and how to use it, see [What is Direct Mail Receivers](https://www.alibabacloud.com/help/en/doc-detail/29414.htm).
 
--> **NOTE:** Available in v1.125.0+.
+-> **NOTE:** Available since v1.125.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_direct_mail_receivers" "example" {
-  receivers_alias = "tf-vme8@onaliyun.com"
-  receivers_name  = "vme8"
+variable "name" {
+  default = "tfexample"
 }
-
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+resource "alicloud_direct_mail_receivers" "example" {
+  receivers_alias = format("%s@onaliyun.com", var.name)
+  receivers_name  = var.name
+  description     = var.name
+}
 ```
 
 ## Argument Reference

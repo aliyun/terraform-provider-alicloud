@@ -7,21 +7,34 @@ description: |-
   Provides a Alicloud Direct Mail Mail Address resource.
 ---
 
-# alicloud\_direct\_mail\_mail\_address
+# alicloud_direct_mail_mail_address
 
 Provides a Direct Mail Mail Address resource.
 
-For information about Direct Mail Mail Address and how to use it, see [What is Mail Address](https://www.aliyun.com/product/directmail).
+For information about Direct Mail Mail Address and how to use it, see [What is Mail Address](https://www.alibabacloud.com/help/en/directmail/latest/set-up-sender-addresses).
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "account_name" {
+  default = "tfexample"
+}
+variable "domain_name" {
+  default = "alicloud-provider.online"
+}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_direct_mail_domain" "example" {
+  domain_name = var.domain_name
+}
 resource "alicloud_direct_mail_mail_address" "example" {
-  account_name = "example_value@email.com"
+  account_name = format("%s@%s", var.account_name, alicloud_direct_mail_domain.example.domain_name)
   sendtype     = "batch"
 }
 ```

@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud Msc Sub Subscription resource.
 ---
 
-# alicloud\_msc\_sub\_subscription
+# alicloud_msc_sub_subscription
 
 Provides a Msc Sub Subscription resource.
 
--> **NOTE:** Available in v1.135.0+.
+-> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
 
