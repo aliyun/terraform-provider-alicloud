@@ -1194,7 +1194,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_listener":                                           resourceAliCloudGaListener(),
 			"alicloud_tsdb_instance":                                         resourceAlicloudTsdbInstance(),
 			"alicloud_ga_bandwidth_package":                                  resourceAlicloudGaBandwidthPackage(),
-			"alicloud_ga_endpoint_group":                                     resourceAlicloudGaEndpointGroup(),
+			"alicloud_ga_endpoint_group":                                     resourceAliCloudGaEndpointGroup(),
 			"alicloud_brain_industrial_pid_organization":                     resourceAlicloudBrainIndustrialPidOrganization(),
 			"alicloud_ga_bandwidth_package_attachment":                       resourceAlicloudGaBandwidthPackageAttachment(),
 			"alicloud_ga_ip_set":                                             resourceAlicloudGaIpSet(),

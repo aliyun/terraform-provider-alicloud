@@ -11,19 +11,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaEndpointGroup() *schema.Resource {
+func resourceAliCloudGaEndpointGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaEndpointGroupCreate,
-		Read:   resourceAlicloudGaEndpointGroupRead,
-		Update: resourceAlicloudGaEndpointGroupUpdate,
-		Delete: resourceAlicloudGaEndpointGroupDelete,
+		Create: resourceAliCloudGaEndpointGroupCreate,
+		Read:   resourceAliCloudGaEndpointGroupRead,
+		Update: resourceAliCloudGaEndpointGroupUpdate,
+		Delete: resourceAliCloudGaEndpointGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -51,6 +51,7 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 			"endpoint_request_protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
 			"health_check_interval_seconds": {
@@ -144,7 +145,7 @@ func resourceAlicloudGaEndpointGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -251,10 +252,10 @@ func resourceAlicloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaEndpointGroupUpdate(d, meta)
+	return resourceAliCloudGaEndpointGroupUpdate(d, meta)
 }
 
-func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaEndpointGroup(d.Id())
@@ -329,7 +330,7 @@ func resourceAlicloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewGaplusClient()
 	if err != nil {
@@ -466,10 +467,10 @@ func resourceAlicloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("port_overrides")
 	}
 
-	return resourceAlicloudGaEndpointGroupRead(d, meta)
+	return resourceAliCloudGaEndpointGroupRead(d, meta)
 }
 
-func resourceAlicloudGaEndpointGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaEndpointGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteEndpointGroup"

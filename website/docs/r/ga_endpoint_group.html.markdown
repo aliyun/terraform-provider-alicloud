@@ -16,6 +16,7 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 -> **NOTE:** Available since v1.113.0.
 
 -> **NOTE:** Listeners that use different protocols support different types of endpoint groups:
+
 * For a TCP or UDP listener, you can create only one default endpoint group. 
 * For an HTTP or HTTPS listener, you can create one default endpoint group and one virtual endpoint group. By default, you can create only one virtual endpoint group. 
   * A default endpoint group refers to the endpoint group that you configure when you create an HTTP or HTTPS listener. 
@@ -98,7 +99,7 @@ The following arguments are supported:
 * `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance to which the endpoint group will be added.
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
-* `endpoint_group_type` - (Optional, ForceNew, Computed) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
+* `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
 -> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
 * `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid values: `HTTP`, `HTTPS`.
 -> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
@@ -106,7 +107,7 @@ The following arguments are supported:
 * `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
 * `health_check_port` - (Optional, Int) The port that is used for health checks.
 * `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
-* `threshold_count` - (Optional, Computed, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
+* `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
 * `name` - (Optional) The name of the endpoint group.
 * `description` - (Optional) The description of the endpoint group.
@@ -139,7 +140,7 @@ The endpoint_configurations supports the following:
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
-* `enable_clientip_preservation` - (Optional, Computed, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
+* `enable_clientip_preservation` - (Optional, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
   - `true`: Client IP addresses are reserved.
   - `false`: Client IP addresses are not reserved.
 
@@ -154,9 +155,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when create the Endpoint Group.
+* `create` - (Defaults to 15 mins) Used when create the Endpoint Group.
 * `update` - (Defaults to 2 mins) Used when update the Endpoint Group.
-* `delete` - (Defaults to 6 mins) Used when delete the Endpoint Group.
+* `delete` - (Defaults to 10 mins) Used when delete the Endpoint Group.
 
 ## Import
 
