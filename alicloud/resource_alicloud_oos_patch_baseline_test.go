@@ -117,7 +117,7 @@ func testSweepOosPatchBaseline(region string) error {
 	return nil
 }
 
-func TestAccAlicloudOOSPatchBaseline_basic0(t *testing.T) {
+func TestAccAliCloudOOSPatchBaseline_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_patch_baseline.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -193,7 +193,7 @@ func TestAccAlicloudOOSPatchBaseline_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOOSPatchBaseline_basic1(t *testing.T) {
+func TestAccAliCloudOOSPatchBaseline_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_oos_patch_baseline.default"
 	checkoutSupportedRegions(t, true, connectivity.OOSSupportRegions)
@@ -336,7 +336,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudOosPatchBaselineCreate(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -353,7 +353,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineCreate(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -370,7 +370,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineCreate(dCreate, rawClient)
+		err := resourceAliCloudOosPatchBaselineCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -389,7 +389,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudOosPatchBaselineUpdate(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -424,7 +424,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineUpdate(resourceData1, rawClient)
+		err := resourceAliCloudOosPatchBaselineUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -459,7 +459,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineUpdate(resourceData1, rawClient)
+		err := resourceAliCloudOosPatchBaselineUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -474,7 +474,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudOosPatchBaselineDelete(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -491,7 +491,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineDelete(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -508,7 +508,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineDelete(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -525,7 +525,7 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineRead(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -541,8 +541,181 @@ func TestUnitAlicloudOOSPatchBaseline(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudOosPatchBaselineRead(d, rawClient)
+		err := resourceAliCloudOosPatchBaselineRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Oos PatchBaseline. >>> Resource test cases, automatically generated.
+// Case 1763
+func TestAccAliCloudOosPatchBaseline_basic1763(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap1763)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soospatchbaseline%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence1763)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"patch_baseline_name": name,
+					"operation_system":    "Windows",
+					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"patch_baseline_name": name,
+						"operation_system":    "Windows",
+						"approval_rules":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"approval_rules": "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"approval_rules": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "ALLOW_AS_DEPENDENCY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches_action": "BLOCK",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches_action": "BLOCK",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{"KB1", "MS2"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rejected_patches": []string{"KB1", "KB5", "KB6"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rejected_patches.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"patch_baseline_name": name + "_update",
+					"operation_system":    "Windows",
+					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"patch_baseline_name": name + "_update",
+						"operation_system":    "Windows",
+						"approval_rules":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudOosPatchBaselineMap1763 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudOosPatchBaselineBasicDependence1763(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 1763  twin
+func TestAccAliCloudOosPatchBaseline_basic1763_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_oos_patch_baseline.default"
+	ra := resourceAttrInit(resourceId, AlicloudOosPatchBaselineMap1763)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &OosServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeOosPatchBaseline")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%soospatchbaseline%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOosPatchBaselineBasicDependence1763)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"patch_baseline_name": name,
+					"operation_system":    "Windows",
+					"approval_rules":      "{\\\"PatchRules\\\":[{\\\"EnableNonSecurity\\\":true,\\\"PatchFilterGroup\\\":[{\\\"Values\\\":[\\\"*\\\"],\\\"Key\\\":\\\"Product\\\"},{\\\"Values\\\":[\\\"Security\\\",\\\"Bugfix\\\"],\\\"Key\\\":\\\"Classification\\\"},{\\\"Values\\\":[\\\"Critical\\\",\\\"Important\\\"],\\\"Key\\\":\\\"Severity\\\"}],\\\"ApproveAfterDays\\\":7,\\\"ComplianceLevel\\\":\\\"Unspecified\\\"}]}",
+					"description":         "test-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"patch_baseline_name": name,
+						"operation_system":    "Windows",
+						"approval_rules":      CHECKSET,
+						"description":         "test-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Oos PatchBaseline. <<< Resource test cases, automatically generated.
