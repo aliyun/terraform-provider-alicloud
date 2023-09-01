@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
+func TestAccAliCloudGaForwardingRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_forwarding_rule.default"
@@ -31,8 +31,8 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaForwardingRuleBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaForwardingRuleBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,17 +43,18 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"accelerator_id": "${alicloud_ga_endpoint_group.default.accelerator_id}",
+					"listener_id":    "${alicloud_ga_listener.default.id}",
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Host",
-							"host_config": []map[string]interface{}{
+							"rule_condition_type": "Path",
+							"path_config": []map[string]interface{}{
 								{
-									"values": []string{"www.test.com"},
+									"values": []string{"/test"},
 								},
 							},
 						},
 					},
-					"priority": "1000",
 					"rule_actions": []map[string]interface{}{
 						{
 							"order":            "20",
@@ -69,16 +70,13 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 							},
 						},
 					},
-					"accelerator_id": "${alicloud_ga_endpoint_group.default.accelerator_id}",
-					"listener_id":    "${alicloud_ga_listener.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rule_conditions.#": "1",
-						"priority":          "1000",
-						"rule_actions.#":    "1",
 						"accelerator_id":    CHECKSET,
 						"listener_id":       CHECKSET,
+						"rule_conditions.#": "1",
+						"rule_actions.#":    "1",
 					}),
 				),
 			},
@@ -94,27 +92,44 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"forwarding_rule_name": name + "update",
+					"priority": "2000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "2000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Host",
-							"host_config": []map[string]interface{}{
+							"rule_condition_type": "Path",
+							"path_config": []map[string]interface{}{
 								{
-									"values": []string{"www.test3.com"},
+									"values": []string{"/test1"},
 								},
 							},
 						},
 					},
-					"priority": "2000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule_actions": []map[string]interface{}{
 						{
-							"order":            "30",
+							"order":            "25",
 							"rule_action_type": "ForwardGroup",
 							"forward_group_config": []map[string]interface{}{
 								{
 									"server_group_tuples": []map[string]interface{}{
 										{
-											"endpoint_group_id": "${alicloud_ga_endpoint_group.default.id}",
+											"endpoint_group_id": "${alicloud_ga_endpoint_group.update.id}",
 										},
 									},
 								},
@@ -124,10 +139,41 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"forwarding_rule_name": name + "update",
-						"rule_conditions.#":    "1",
-						"priority":             "2000",
-						"rule_actions.#":       "1",
+						"rule_actions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_conditions": []map[string]interface{}{
+						{
+							"rule_condition_type": "Host",
+							"host_config": []map[string]interface{}{
+								{
+									"values": []string{"www.test.com"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"order":            "30",
+							"rule_action_type": "Redirect",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "1",
 					}),
 				),
 			},
@@ -140,7 +186,7 @@ func TestAccAlicloudGaForwardingRule_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaForwardingRule_basic1(t *testing.T) {
+func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_forwarding_rule.default"
@@ -151,8 +197,8 @@ func TestAccAlicloudGaForwardingRule_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaForwardingRuleBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaForwardingRuleBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -222,7 +268,8 @@ func TestAccAlicloudGaForwardingRule_basic1(t *testing.T) {
 						{
 							"order":             "30",
 							"rule_action_type":  "ForwardGroup",
-							"rule_action_value": `[{\"type\":\"endpointgroup\", \"value\":\"` + "${alicloud_ga_endpoint_group.default.id}" + `\"}]`},
+							"rule_action_value": `[{\"type\":\"endpointgroup\", \"value\":\"` + "${alicloud_ga_endpoint_group.update.id}" + `\"}]`,
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -243,7 +290,7 @@ func TestAccAlicloudGaForwardingRule_basic1(t *testing.T) {
 	})
 }
 
-func AlicloudGaForwardingRuleBasicDependence(name string) string {
+func AliCloudGaForwardingRuleBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -312,10 +359,35 @@ func AlicloudGaForwardingRuleBasicDependence(name string) string {
   		endpoint_group_type       = "virtual"
   		endpoint_request_protocol = "HTTP"
 	}
-`, name, defaultRegionToTest)
+
+	resource "alicloud_ga_endpoint_group" "update" {
+  		accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  		endpoint_configurations {
+    		endpoint = alicloud_eip_address.default.ip_address
+    		type     = "PublicIp"
+    		weight   = "20"
+  		}
+  		description                   = "${var.name}-update"
+  		name                          = "${var.name}-update"
+  		threshold_count               = 4
+  		endpoint_group_region         = "%s"
+  		health_check_interval_seconds = "3"
+  		health_check_path             = "/healthcheck"
+  		health_check_port             = "9999"
+  		health_check_protocol         = "http"
+  		port_overrides {
+    		endpoint_port = "10"
+    		listener_port = "70"
+  		}
+  		traffic_percentage        = 20
+  		listener_id               = alicloud_ga_listener.default.id
+  		endpoint_group_type       = "virtual"
+  		endpoint_request_protocol = "HTTP"
+	}
+`, name, defaultRegionToTest, defaultRegionToTest)
 }
 
-func TestUnitAlicloudGaForwardingRule(t *testing.T) {
+func TestUnitAliCloudGaForwardingRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_forwarding_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_forwarding_rule"].Schema).Data(nil, nil)
@@ -438,7 +510,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaForwardingRuleCreate(dInit, rawClient)
+	err = resourceAliCloudGaForwardingRuleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -469,7 +541,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaForwardingRuleCreate(dInit, rawClient)
+		err := resourceAliCloudGaForwardingRuleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -496,7 +568,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaForwardingRuleUpdate(dExisted, rawClient)
+	err = resourceAliCloudGaForwardingRuleUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateForwardingRules
@@ -586,7 +658,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaForwardingRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudGaForwardingRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -631,7 +703,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaForwardingRuleRead(dExisted, rawClient)
+		err := resourceAliCloudGaForwardingRuleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -650,7 +722,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaForwardingRuleDelete(dExisted, rawClient)
+	err = resourceAliCloudGaForwardingRuleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -678,7 +750,7 @@ func TestUnitAlicloudGaForwardingRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaForwardingRuleDelete(dExisted, rawClient)
+		err := resourceAliCloudGaForwardingRuleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

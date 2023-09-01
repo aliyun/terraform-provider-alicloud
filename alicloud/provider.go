@@ -1198,7 +1198,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_organization":                     resourceAlicloudBrainIndustrialPidOrganization(),
 			"alicloud_ga_bandwidth_package_attachment":                       resourceAlicloudGaBandwidthPackageAttachment(),
 			"alicloud_ga_ip_set":                                             resourceAlicloudGaIpSet(),
-			"alicloud_ga_forwarding_rule":                                    resourceAlicloudGaForwardingRule(),
+			"alicloud_ga_forwarding_rule":                                    resourceAliCloudGaForwardingRule(),
 			"alicloud_eipanycast_anycast_eip_address":                        resourceAliCloudEipanycastAnycastEipAddress(),
 			"alicloud_brain_industrial_pid_project":                          resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                                     resourceAlicloudCmsMonitorGroup(),

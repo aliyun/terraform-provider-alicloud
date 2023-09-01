@@ -65,7 +65,7 @@ resource "alicloud_instance" "instance" {
   instance_name              = var.name
   vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
-  description = "test"
+  description                = "test"
   data_disks {
     name        = "disk2"
     size        = 20
@@ -103,8 +103,8 @@ Terraform will autogenerate a default name is `ECS-Instance`.
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available since 1.73.0, Modifiable in 1.169.0) The ID of the automatic snapshot policy applied to the system disk.
 * `system_disk_storage_cluster_id` - (Optional, ForceNew, Available 1.177.0) The ID of the dedicated block storage cluster. If you want to use disks in a dedicated block storage cluster as system disks when you create instances, you must specify this parameter. For more information about dedicated block storage clusters, see [What is Dedicated Block Storage Cluster?](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/dedicated-block-storage-clusters-overview).
 * `system_disk_encrypted` - (Optional, ForceNew, Available 1.177.0) Specifies whether to encrypt the system disk. Valid values: `true`,`false`. Default value: `false`.
-    - `true`: encrypts the system disk.
-    - `false`: does not encrypt the system disk.
+  - `true`: encrypts the system disk.
+  - `false`: does not encrypt the system disk.
 * `system_disk_kms_key_id` - (Optional, ForceNew, Available 1.177.0) The ID of the Key Management Service (KMS) key to be used for the system disk.
 * `system_disk_encrypt_algorithm` - (Optional, ForceNew, Available 1.177.0) The algorithm to be used to encrypt the system disk. Valid values are `aes-256`, `sm4-128`. Default value is `aes-256`.
 * `description` - (Optional) Description of the instance, This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
@@ -116,6 +116,7 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encrypted_password` - (Optional, Available since 1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encryption_context` - (Optional, MapString, Available since 1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
+* `subnet_id` - (Optional, Deprecated since v1.177.0) Field `subnet_id` has been deprecated from version 1.177.0, and use field `vswitch_id` to replace.
 * `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
   **NOTE:** Since 1.9.6, it can be changed each other between `PostPaid` and `PrePaid`. 
@@ -130,9 +131,9 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
 * `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
-    - `AutoRenewal`: Enable auto renewal.
-    - `Normal`: Disable auto renewal.
-    - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+  - `AutoRenewal`: Enable auto renewal.
+  - `Normal`: Disable auto renewal.
+  - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 
 * `auto_renew_period` - (Optional) Auto renewal period of an instance, in the unit of month. It is valid when `instance_charge_type` is `PrePaid`. Default to 1. Valid value:
     - [1, 2, 3, 6, 12] when `period_unit` in "Month"
@@ -229,18 +230,18 @@ The data_disks supports the following:
     - cloud_essd：[20, 32768]
     - ephemeral_ssd: [5, 800]
 * `category` - (Optional, ForceNew) The category of the disk:
-    - `cloud`: The general cloud disk.
-    - `cloud_efficiency`: The efficiency cloud disk.
-    - `cloud_ssd`: The SSD cloud disk.
-    - `cloud_essd`: The ESSD cloud disk.
-    - `ephemeral_ssd`: The local SSD disk.
-    - `cloud_auto`: The AutoPL cloud disk.
+  - `cloud`: The general cloud disk.
+  - `cloud_efficiency`: The efficiency cloud disk.
+  - `cloud_ssd`: The SSD cloud disk.
+  - `cloud_essd`: The ESSD cloud disk.
+  - `ephemeral_ssd`: The local SSD disk.
+  - `cloud_auto`: The AutoPL cloud disk.
     Default to `cloud_efficiency`.
 * `performance_level` - (Optional, ForceNew) The performance level of the ESSD used as data disk:
-    - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
-    - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
-    - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
-    - `PL3`: A single ESSD can deliver up to 1,000,000 random read/write IOPS.
+  - `PL0`: A single ESSD can deliver up to 10,000 random read/write IOPS.
+  - `PL1`: A single ESSD can deliver up to 50,000 random read/write IOPS.
+  - `PL2`: A single ESSD can deliver up to 100,000 random read/write IOPS.
+  - `PL3`: A single ESSD can deliver up to 1,000,000 random read/write IOPS.
     Default to `PL1`.
 * `encrypted` -(Optional, Bool, ForceNew) Encrypted the data in this disk. Default value: `false`.
 * `kms_key_id` - (Optional, Available since 1.90.1) The KMS key ID corresponding to the Nth data disk.
