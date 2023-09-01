@@ -20,12 +20,22 @@ For information about Global Accelerator (GA) Forwarding Rule and how to use it,
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = var.region
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
+
 data "alicloud_regions" "default" {
   current = true
 }
+
 resource "alicloud_ga_accelerator" "example" {
   duration            = 3
   spec                = "2"
@@ -64,12 +74,6 @@ resource "alicloud_ga_listener" "example" {
     from_port = 60
     to_port   = 60
   }
-}
-
-resource "alicloud_ga_ip_set" "example" {
-  accelerate_region_id = data.alicloud_regions.default.regions.0.id
-  accelerator_id       = alicloud_ga_bandwidth_package_attachment.example.accelerator_id
-  bandwidth            = "20"
 }
 
 resource "alicloud_eip_address" "example" {
@@ -136,7 +140,7 @@ The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance.
 * `listener_id` - (Required, ForceNew) The ID of the listener.
-* `priority` - (Optional, Computed, Int) Forwarding policy priority.
+* `priority` - (Optional, Int) Forwarding policy priority.
 * `forwarding_rule_name` - (Optional) Forwarding policy name. The length of the name is 2-128 English or Chinese characters. It must start with uppercase and lowercase letters or Chinese characters. It can contain numbers, half width period (.), underscores (_) And dash (-).
 * `rule_conditions` - (Required, Set) Forwarding condition list. See [`rule_conditions`](#rule_conditions) below.
 * `rule_actions` - (Required, Set) Forward action. See [`rule_actions`](#rule_actions) below.
@@ -195,14 +199,14 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 3 mins) Used when create the Endpoint Forwarding Rule.
+* `create` - (Defaults to 10 mins) Used when create the Endpoint Forwarding Rule.
 * `update` - (Defaults to 3 mins) Used when update the Endpoint Forwarding Rule.
-* `delete` - (Defaults to 3 mins) Used when delete the Endpoint Forwarding Rule.
+* `delete` - (Defaults to 10 mins) Used when delete the Endpoint Forwarding Rule.
 
 ## Import
 
 Ga Forwarding Rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_forwarding_rule.example <id>
+$ terraform import alicloud_ga_forwarding_rule.example <accelerator_id>:<listener_id>:<forwarding_rule_id>
 ```

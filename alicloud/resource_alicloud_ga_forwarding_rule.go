@@ -13,19 +13,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaForwardingRule() *schema.Resource {
+func resourceAliCloudGaForwardingRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaForwardingRuleCreate,
-		Read:   resourceAlicloudGaForwardingRuleRead,
-		Update: resourceAlicloudGaForwardingRuleUpdate,
-		Delete: resourceAlicloudGaForwardingRuleDelete,
+		Create: resourceAliCloudGaForwardingRuleCreate,
+		Read:   resourceAliCloudGaForwardingRuleRead,
+		Update: resourceAliCloudGaForwardingRuleUpdate,
+		Delete: resourceAliCloudGaForwardingRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -55,7 +55,7 @@ func resourceAlicloudGaForwardingRule() *schema.Resource {
 						"rule_condition_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Host", "Path"}, false),
+							ValidateFunc: StringInSlice([]string{"Path", "Host"}, false),
 						},
 						"path_config": {
 							Type:     schema.TypeSet,
@@ -145,7 +145,7 @@ func resourceAlicloudGaForwardingRule() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -155,50 +155,80 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("CreateForwardingRules")
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	request["ListenerId"] = d.Get("listener_id")
-	forwardingRule := make(map[string]interface{})
+
+	forwardingRulesMaps := make([]map[string]interface{}, 0)
+	forwardingRulesMap := map[string]interface{}{}
 
 	if v, ok := d.GetOk("priority"); ok {
-		forwardingRule["Priority"] = v
+		forwardingRulesMap["Priority"] = v
+	}
+
+	if v, ok := d.GetOk("forwarding_rule_name"); ok {
+		forwardingRulesMap["ForwardingRuleName"] = v
 	}
 
 	ruleConditions := d.Get("rule_conditions").(*schema.Set).List()
-	ruleConditionsMap := make([]map[string]interface{}, 0)
-	for _, ruleCondition := range ruleConditions {
-		ruleCondition := ruleCondition.(map[string]interface{})
-		ruleConditionMap := map[string]interface{}{}
-		ruleConditionMap["RuleConditionType"] = ruleCondition["rule_condition_type"]
-		if len(ruleCondition["path_config"].(*schema.Set).List()) > 0 {
-			ruleConditionMap["PathConfig"] = map[string]interface{}{
-				"Values": ruleCondition["path_config"].(*schema.Set).List()[0].(map[string]interface{})["values"],
+	ruleConditionsMaps := make([]map[string]interface{}, 0)
+	for _, ruleConditionsList := range ruleConditions {
+		ruleConditionsMap := map[string]interface{}{}
+		ruleConditionsArg := ruleConditionsList.(map[string]interface{})
+
+		ruleConditionsMap["RuleConditionType"] = ruleConditionsArg["rule_condition_type"]
+
+		if pathConfig, ok := ruleConditionsArg["path_config"]; ok {
+			pathConfigMap := map[string]interface{}{}
+			for _, pathConfigList := range pathConfig.(*schema.Set).List() {
+				pathConfigArg := pathConfigList.(map[string]interface{})
+
+				if values, ok := pathConfigArg["values"]; ok {
+					pathConfigMap["Values"] = values
+				}
 			}
+
+			ruleConditionsMap["PathConfig"] = pathConfigMap
 		}
-		if len(ruleCondition["host_config"].(*schema.Set).List()) > 0 {
-			ruleConditionMap["HostConfig"] = map[string]interface{}{
-				"Values": ruleCondition["host_config"].(*schema.Set).List()[0].(map[string]interface{})["values"],
+
+		if hostConfig, ok := ruleConditionsArg["host_config"]; ok {
+			hostConfigMap := map[string]interface{}{}
+			for _, hostConfigList := range hostConfig.(*schema.Set).List() {
+				hostConfigArg := hostConfigList.(map[string]interface{})
+
+				if values, ok := hostConfigArg["values"]; ok {
+					hostConfigMap["Values"] = values
+				}
 			}
+
+			ruleConditionsMap["HostConfig"] = hostConfigMap
 		}
-		ruleConditionsMap = append(ruleConditionsMap, ruleConditionMap)
+
+		ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 	}
-	forwardingRule["RuleConditions"] = ruleConditionsMap
+
+	forwardingRulesMap["RuleConditions"] = ruleConditionsMaps
 
 	ruleActions := d.Get("rule_actions").(*schema.Set).List()
-	ruleActionsMap := make([]map[string]interface{}, 0)
-	for _, ruleAction := range ruleActions {
-		ruleAction := ruleAction.(map[string]interface{})
-		ruleActionMap := map[string]interface{}{}
-		ruleActionMap["Order"] = ruleAction["order"]
-		ruleActionMap["RuleActionType"] = ruleAction["rule_action_type"]
+	ruleActionsMaps := make([]map[string]interface{}, 0)
+	for _, ruleActionsList := range ruleActions {
+		ruleActionsMap := map[string]interface{}{}
+		ruleActionsArg := ruleActionsList.(map[string]interface{})
 
-		if v, ok := ruleAction["rule_action_value"]; ok {
-			ruleActionMap["RuleActionValue"] = v
+		ruleActionsMap["Order"] = ruleActionsArg["order"]
+		ruleActionsMap["RuleActionType"] = ruleActionsArg["rule_action_type"]
+
+		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok {
+			ruleActionsMap["RuleActionValue"] = ruleActionValue
 		}
 
-		if v, ok := ruleAction["forward_group_config"]; ok {
+		if forwardGroupConfig, ok := ruleActionsArg["forward_group_config"]; ok {
 			forwardGroupConfigMap := map[string]interface{}{}
-			for _, forwardGroupConfigList := range v.(*schema.Set).List() {
+			for _, forwardGroupConfigList := range forwardGroupConfig.(*schema.Set).List() {
 				forwardGroupConfigArg := forwardGroupConfigList.(map[string]interface{})
+
 				if serverGroupTuples, ok := forwardGroupConfigArg["server_group_tuples"]; ok {
 					serverGroupTuplesMaps := make([]map[string]interface{}, 0)
 					for _, serverGroupTuplesList := range serverGroupTuples.(*schema.Set).List() {
@@ -215,27 +245,25 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 					forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
 				}
 			}
-			ruleActionMap["ForwardGroupConfig"] = forwardGroupConfigMap
+
+			ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 		}
 
-		ruleActionsMap = append(ruleActionsMap, ruleActionMap)
-	}
-	forwardingRule["RuleActions"] = ruleActionsMap
-
-	if v, ok := d.GetOk("forwarding_rule_name"); ok {
-		forwardingRule["ForwardingRuleName"] = v
+		ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 	}
 
-	request["ForwardingRules"] = []interface{}{forwardingRule}
-	request["RegionId"] = client.RegionId
+	forwardingRulesMap["RuleActions"] = ruleActionsMaps
+
+	forwardingRulesMaps = append(forwardingRulesMaps, forwardingRulesMap)
+	request["ForwardingRules"] = forwardingRulesMaps
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -262,10 +290,10 @@ func resourceAlicloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaForwardingRuleRead(d, meta)
+	return resourceAliCloudGaForwardingRuleRead(d, meta)
 }
 
-func resourceAlicloudGaForwardingRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaForwardingRule(d.Id())
@@ -361,119 +389,146 @@ func resourceAlicloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
+	update := false
+
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
+
 	request := map[string]interface{}{
+		"RegionId":      client.RegionId,
+		"ClientToken":   buildClientToken("UpdateForwardingRules"),
 		"AcceleratorId": parts[0],
 		"ListenerId":    parts[1],
 	}
 
-	forwardingRule := make(map[string]interface{})
-	forwardingRule["ForwardingRuleId"] = parts[2]
+	forwardingRulesMaps := make([]map[string]interface{}, 0)
+	forwardingRulesMap := map[string]interface{}{}
+
+	forwardingRulesMap["ForwardingRuleId"] = parts[2]
 
 	if d.HasChange("priority") {
 		update = true
 	}
-	forwardingRule["Priority"] = d.Get("priority")
+	forwardingRulesMap["Priority"] = d.Get("priority")
 
 	if d.HasChange("forwarding_rule_name") {
 		update = true
 	}
 	if v, ok := d.GetOk("forwarding_rule_name"); ok {
-		forwardingRule["ForwardingRuleName"] = v
+		forwardingRulesMap["ForwardingRuleName"] = v
 	}
 
 	if d.HasChange("rule_conditions") {
 		update = true
-		ruleConditions := d.Get("rule_conditions").(*schema.Set).List()
-		ruleConditionsMap := make([]map[string]interface{}, 0)
-		for _, ruleCondition := range ruleConditions {
-			ruleCondition := ruleCondition.(map[string]interface{})
-			ruleConditionMap := map[string]interface{}{}
-			ruleConditionMap["RuleConditionType"] = ruleCondition["rule_condition_type"]
-			if len(ruleCondition["path_config"].(*schema.Set).List()) > 0 {
-				ruleConditionMap["PathConfig"] = map[string]interface{}{
-					"Values": ruleCondition["path_config"].(*schema.Set).List()[0].(map[string]interface{})["values"],
-				}
-			}
-			if len(ruleCondition["host_config"].(*schema.Set).List()) > 0 {
-				ruleConditionMap["HostConfig"] = map[string]interface{}{
-					"Values": ruleCondition["host_config"].(*schema.Set).List()[0].(map[string]interface{})["values"],
-				}
-			}
-			ruleConditionsMap = append(ruleConditionsMap, ruleConditionMap)
-		}
-		forwardingRule["RuleConditions"] = ruleConditionsMap
 	}
+	ruleConditions := d.Get("rule_conditions").(*schema.Set).List()
+	ruleConditionsMaps := make([]map[string]interface{}, 0)
+	for _, ruleConditionsList := range ruleConditions {
+		ruleConditionsMap := map[string]interface{}{}
+		ruleConditionsArg := ruleConditionsList.(map[string]interface{})
+
+		ruleConditionsMap["RuleConditionType"] = ruleConditionsArg["rule_condition_type"]
+
+		if pathConfig, ok := ruleConditionsArg["path_config"]; ok {
+			pathConfigMap := map[string]interface{}{}
+			for _, pathConfigList := range pathConfig.(*schema.Set).List() {
+				pathConfigArg := pathConfigList.(map[string]interface{})
+
+				if values, ok := pathConfigArg["values"]; ok {
+					pathConfigMap["Values"] = values
+				}
+			}
+
+			ruleConditionsMap["PathConfig"] = pathConfigMap
+		}
+
+		if hostConfig, ok := ruleConditionsArg["host_config"]; ok {
+			hostConfigMap := map[string]interface{}{}
+			for _, hostConfigList := range hostConfig.(*schema.Set).List() {
+				hostConfigArg := hostConfigList.(map[string]interface{})
+
+				if values, ok := hostConfigArg["values"]; ok {
+					hostConfigMap["Values"] = values
+				}
+			}
+
+			ruleConditionsMap["HostConfig"] = hostConfigMap
+		}
+
+		ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
+	}
+
+	forwardingRulesMap["RuleConditions"] = ruleConditionsMaps
 
 	if d.HasChange("rule_actions") {
 		update = true
-		ruleActions := d.Get("rule_actions").(*schema.Set).List()
-		ruleActionsMap := make([]map[string]interface{}, 0)
-		for _, ruleAction := range ruleActions {
-			ruleAction := ruleAction.(map[string]interface{})
-			ruleActionMap := map[string]interface{}{}
-			ruleActionMap["Order"] = ruleAction["order"]
-			ruleActionMap["RuleActionType"] = ruleAction["rule_action_type"]
+	}
+	ruleActions := d.Get("rule_actions").(*schema.Set).List()
+	ruleActionsMaps := make([]map[string]interface{}, 0)
+	for _, ruleActionsList := range ruleActions {
+		ruleActionsMap := map[string]interface{}{}
+		ruleActionsArg := ruleActionsList.(map[string]interface{})
 
-			if v, ok := ruleAction["rule_action_value"]; ok {
-				ruleActionMap["RuleActionValue"] = v
-			}
+		ruleActionsMap["Order"] = ruleActionsArg["order"]
+		ruleActionsMap["RuleActionType"] = ruleActionsArg["rule_action_type"]
 
-			if v, ok := ruleAction["forward_group_config"]; ok {
-				forwardGroupConfigMap := map[string]interface{}{}
-				for _, forwardGroupConfigList := range v.(*schema.Set).List() {
-					forwardGroupConfigArg := forwardGroupConfigList.(map[string]interface{})
-					if serverGroupTuples, ok := forwardGroupConfigArg["server_group_tuples"]; ok {
-						serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-						for _, serverGroupTuplesList := range serverGroupTuples.(*schema.Set).List() {
-							serverGroupTuplesArg := serverGroupTuplesList.(map[string]interface{})
-							serverGroupTuplesMap := map[string]interface{}{}
+		if ruleActionValue, ok := ruleActionsArg["rule_action_value"]; ok {
+			ruleActionsMap["RuleActionValue"] = ruleActionValue
+		}
 
-							if endpointGroupId, ok := serverGroupTuplesArg["endpoint_group_id"]; ok {
-								serverGroupTuplesMap["EndpointGroupId"] = endpointGroupId
-							}
+		if forwardGroupConfig, ok := ruleActionsArg["forward_group_config"]; ok {
+			forwardGroupConfigMap := map[string]interface{}{}
+			for _, forwardGroupConfigList := range forwardGroupConfig.(*schema.Set).List() {
+				forwardGroupConfigArg := forwardGroupConfigList.(map[string]interface{})
 
-							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+				if serverGroupTuples, ok := forwardGroupConfigArg["server_group_tuples"]; ok {
+					serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+					for _, serverGroupTuplesList := range serverGroupTuples.(*schema.Set).List() {
+						serverGroupTuplesArg := serverGroupTuplesList.(map[string]interface{})
+						serverGroupTuplesMap := map[string]interface{}{}
+
+						if endpointGroupId, ok := serverGroupTuplesArg["endpoint_group_id"]; ok {
+							serverGroupTuplesMap["EndpointGroupId"] = endpointGroupId
 						}
 
-						forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+						serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 					}
+
+					forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
 				}
-				ruleActionMap["ForwardGroupConfig"] = forwardGroupConfigMap
 			}
 
-			ruleActionsMap = append(ruleActionsMap, ruleActionMap)
+			ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
 		}
-		forwardingRule["RuleActions"] = ruleActionsMap
+
+		ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 	}
 
-	request["ForwardingRules"] = []interface{}{forwardingRule}
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("UpdateForwardingRules")
+	forwardingRulesMap["RuleActions"] = ruleActionsMaps
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	forwardingRulesMaps = append(forwardingRulesMaps, forwardingRulesMap)
+	request["ForwardingRules"] = forwardingRulesMaps
 
 	if update {
 		action := "UpdateForwardingRules"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken(action)
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -493,35 +548,40 @@ func resourceAlicloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	return resourceAlicloudGaForwardingRuleRead(d, meta)
+	return resourceAliCloudGaForwardingRuleRead(d, meta)
 }
 
-func resourceAlicloudGaForwardingRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaForwardingRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	gaService := GaService{client}
 	action := "DeleteForwardingRules"
 	var response map[string]interface{}
+
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"AcceleratorId": parts[0],
-		"ListenerId":    parts[1],
+		"RegionId":          client.RegionId,
+		"ClientToken":       buildClientToken("DeleteForwardingRules"),
+		"AcceleratorId":     parts[0],
+		"ListenerId":        parts[1],
+		"ForwardingRuleIds": []string{parts[2]},
 	}
-	request["ForwardingRuleIds"] = []string{parts[2]}
-	request["RegionId"] = client.RegionId
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken(action)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -533,6 +593,11 @@ func resourceAlicloudGaForwardingRuleDelete(d *schema.ResourceData, meta interfa
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaForwardingRuleStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return nil
