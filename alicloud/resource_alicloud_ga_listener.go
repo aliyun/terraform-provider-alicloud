@@ -11,19 +11,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaListener() *schema.Resource {
+func resourceAliCloudGaListener() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaListenerCreate,
-		Read:   resourceAlicloudGaListenerRead,
-		Update: resourceAlicloudGaListenerUpdate,
-		Delete: resourceAlicloudGaListenerDelete,
+		Create: resourceAliCloudGaListenerCreate,
+		Read:   resourceAliCloudGaListenerRead,
+		Update: resourceAliCloudGaListenerUpdate,
+		Delete: resourceAliCloudGaListenerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(6 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -139,7 +139,7 @@ func resourceAlicloudGaListener() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -243,10 +243,10 @@ func resourceAlicloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaListenerRead(d, meta)
+	return resourceAliCloudGaListenerRead(d, meta)
 }
 
-func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaListener(d.Id())
@@ -335,7 +335,7 @@ func resourceAlicloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	conn, err := client.NewGaplusClient()
@@ -455,10 +455,10 @@ func resourceAlicloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	return resourceAlicloudGaListenerRead(d, meta)
+	return resourceAliCloudGaListenerRead(d, meta)
 }
 
-func resourceAlicloudGaListenerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteListener"
