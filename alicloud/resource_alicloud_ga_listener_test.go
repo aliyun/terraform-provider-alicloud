@@ -19,19 +19,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaListener_basic(t *testing.T) {
+func TestAccAliCloudGaListener_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaListenerMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaListenerBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaListenerBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -209,19 +209,19 @@ func TestAccAlicloudGaListener_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaListener_basic1(t *testing.T) {
+func TestAccAliCloudGaListener_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaListenerMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaListenerBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaListenerBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -264,19 +264,19 @@ func TestAccAlicloudGaListener_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaListener_basic2(t *testing.T) {
+func TestAccAliCloudGaListener_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaListenerMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaListener%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaListenerBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaListener%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaListenerBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -347,13 +347,13 @@ func TestAccAlicloudGaListener_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudGaListenerMap = map[string]string{
+var AliCloudGaListenerMap = map[string]string{
 	"client_affinity": "NONE",
 	"protocol":        "TCP",
 	"status":          CHECKSET,
 }
 
-func AlicloudGaListenerBasicDependence(name string) string {
+func AliCloudGaListenerBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -390,7 +390,7 @@ func AlicloudGaListenerBasicDependence(name string) string {
 `, name, defaultRegionToTest)
 }
 
-func TestUnitAlicloudGaListener(t *testing.T) {
+func TestUnitAliCloudGaListener(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_listener"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_listener"].Schema).Data(nil, nil)
@@ -480,7 +480,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudGaListenerCreate(dInit, rawClient)
+	err = resourceAliCloudGaListenerCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -506,7 +506,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaListenerCreate(dInit, rawClient)
+		err := resourceAliCloudGaListenerCreate(dInit, rawClient)
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -531,7 +531,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudGaListenerUpdate(dExisted, rawClient)
+	err = resourceAliCloudGaListenerUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateListener
@@ -596,7 +596,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaListenerUpdate(dExisted, rawClient)
+		err := resourceAliCloudGaListenerUpdate(dExisted, rawClient)
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -634,7 +634,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaListenerRead(dExisted, rawClient)
+		err := resourceAliCloudGaListenerRead(dExisted, rawClient)
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
@@ -651,7 +651,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudGaListenerDelete(dExisted, rawClient)
+	err = resourceAliCloudGaListenerDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "StateError.Accelerator", "nil"}
@@ -676,7 +676,7 @@ func TestUnitAlicloudGaListener(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaListenerDelete(dExisted, rawClient)
+		err := resourceAliCloudGaListenerDelete(dExisted, rawClient)
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
