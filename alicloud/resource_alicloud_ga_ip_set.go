@@ -12,19 +12,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaIpSet() *schema.Resource {
+func resourceAliCloudGaIpSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaIpSetCreate,
-		Read:   resourceAlicloudGaIpSetRead,
-		Update: resourceAlicloudGaIpSetUpdate,
-		Delete: resourceAlicloudGaIpSetDelete,
+		Create: resourceAliCloudGaIpSetCreate,
+		Read:   resourceAliCloudGaIpSetRead,
+		Update: resourceAliCloudGaIpSetUpdate,
+		Delete: resourceAliCloudGaIpSetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(15 * time.Minute),
 			Update: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accelerator_id": {
@@ -67,7 +67,7 @@ func resourceAlicloudGaIpSet() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	request := map[string]interface{}{
@@ -130,10 +130,10 @@ func resourceAlicloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaIpSetRead(d, meta)
+	return resourceAliCloudGaIpSetRead(d, meta)
 }
 
-func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -158,7 +158,7 @@ func resourceAlicloudGaIpSetRead(d *schema.ResourceData, meta interface{}) error
 	return nil
 }
 
-func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	conn, err := client.NewGaplusClient()
@@ -205,10 +205,10 @@ func resourceAlicloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudGaIpSetRead(d, meta)
+	return resourceAliCloudGaIpSetRead(d, meta)
 }
 
-func resourceAlicloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	conn, err := client.NewGaplusClient()

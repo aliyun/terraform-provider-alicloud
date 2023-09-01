@@ -64,8 +64,8 @@ The following arguments are supported:
 * `accelerate_region_id` - (Required, ForceNew) The ID of an acceleration region.
 * `bandwidth` - (Optional, Int) The bandwidth allocated to the acceleration region.
 -> **NOTE:** The minimum bandwidth of each accelerated region is 2Mbps. The total bandwidth of the acceleration region should be less than or equal to the bandwidth of the basic bandwidth package you purchased.
-* `ip_version` - (Optional, ForceNew, Computed) The IP protocol used by the GA instance. Valid values: `IPv4`, `IPv6`. Default value: `IPv4`.
-* `isp_type` - (Optional, ForceNew, Computed, Available since v1.207.0) The line type of the elastic IP address (EIP) in the acceleration region. Valid values: `BGP`, `BGP_PRO`.
+* `ip_version` - (Optional, ForceNew) The IP protocol used by the GA instance. Valid values: `IPv4`, `IPv6`. Default value: `IPv4`.
+* `isp_type` - (Optional, ForceNew, Available since v1.207.0) The line type of the elastic IP address (EIP) in the acceleration region. Valid values: `BGP`, `BGP_PRO`.
 
 ## Attributes Reference
 
@@ -79,9 +79,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when create the Ip Set.
+* `create` - (Defaults to 15 mins) Used when create the Ip Set.
 * `update` - (Defaults to 2 mins) Used when update the Ip Set.
-* `delete` - (Defaults to 1 mins) Used when delete the Ip Set.
+* `delete` - (Defaults to 10 mins) Used when delete the Ip Set.
 
 ## Import
 
