@@ -129,7 +129,7 @@ func testSweepMessageServiceQueue(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMessageServiceQueue_basic0(t *testing.T) {
+func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_message_service_queue.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudMessageServiceQueueMap)
@@ -324,7 +324,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueCreate(dInit, rawClient)
+	err = resourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -347,7 +347,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueCreate(dInit, rawClient)
+		err := resourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -374,7 +374,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueUpdate(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -421,7 +421,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueUpdate(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -465,7 +465,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueRead(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -484,7 +484,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueDelete(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -512,7 +512,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueDelete(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -522,3 +522,255 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 		}
 	}
 }
+
+// Test MessageService Queue. >>> Resource test cases, automatically generated.
+// Case 2402
+func TestAccAliCloudMessageServiceQueue_basic2402(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceQueueMap2402)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceQueue")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicequeue%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceQueueBasicDependence2402)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"queue_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"queue_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "566",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "566",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "1123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "1123",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds": "22",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds": "22",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"polling_wait_seconds": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"polling_wait_seconds": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"message_retention_period": "1203",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"message_retention_period": "1203",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maximum_message_size": "10242",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maximum_message_size": "10242",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"visibility_timeout": "603",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"visibility_timeout": "603",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logging_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logging_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds":            "2",
+					"polling_wait_seconds":     "2",
+					"message_retention_period": "566",
+					"maximum_message_size":     "1123",
+					"visibility_timeout":       "30",
+					"queue_name":               name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds":            "2",
+						"polling_wait_seconds":     "2",
+						"message_retention_period": "566",
+						"maximum_message_size":     "1123",
+						"visibility_timeout":       "30",
+						"queue_name":               name + "update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMessageServiceQueueMap2402 = map[string]string{
+	"polling_wait_seconds":     "0",
+	"maximum_message_size":     "65536",
+	"create_time":              CHECKSET,
+	"visibility_timeout":       "30",
+	"delay_seconds":            "0",
+	"message_retention_period": "345600",
+}
+
+func AlicloudMessageServiceQueueBasicDependence2402(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 2402  twin
+func TestAccAliCloudMessageServiceQueue_basic2402_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_queue.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceQueueMap2402)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceQueue")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicequeue%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceQueueBasicDependence2402)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delay_seconds":            "22",
+					"polling_wait_seconds":     "7",
+					"message_retention_period": "1203",
+					"maximum_message_size":     "10242",
+					"visibility_timeout":       "603",
+					"queue_name":               name,
+					"logging_enabled":          "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delay_seconds":            "22",
+						"polling_wait_seconds":     "7",
+						"message_retention_period": "1203",
+						"maximum_message_size":     "10242",
+						"visibility_timeout":       "603",
+						"queue_name":               name,
+						"logging_enabled":          "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test MessageService Queue. <<< Resource test cases, automatically generated.
