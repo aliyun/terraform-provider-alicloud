@@ -438,7 +438,7 @@ resources:
   - name: sweeper1
     type: time
     source:
-      start: 01:00 AM
+      start: 04:00 PM
       stop: 10:00 PM
       days: [Sunday, Saturday]
       location: {{time_location}}
@@ -446,7 +446,7 @@ resources:
   - name: sweeper2
     type: time
     source:
-      start: 02:00 AM
+      start: 05:00 PM
       stop: 10:00 PM
       days: [Sunday, Saturday]
       location: {{time_location}}
@@ -454,7 +454,7 @@ resources:
   - name: sweeper3
     type: time
     source:
-      start: 03:00 AM
+      start: 06:00 PM
       stop: 10:00 PM
       days: [Sunday, Saturday]
       location: {{time_location}}
@@ -462,7 +462,7 @@ resources:
   - name: sweeper4
     type: time
     source:
-      start: 04:00 AM
+      start: 07:00 PM
       stop: 10:00 PM
       days: [Sunday, Saturday]
       location: {{time_location}}
@@ -470,7 +470,7 @@ resources:
   - name: sweeper5
     type: time
     source:
-      start: 05:00 AM
+      start: 08:00 PM
       stop: 10:00 PM
       days: [Sunday, Saturday]
       location: {{time_location}}
