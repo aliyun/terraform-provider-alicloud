@@ -52,6 +52,7 @@ func testSweepResourceManagerResourceGroup(region string) error {
 	var groupIds []string
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	defaultGroupId := ""
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -67,6 +68,10 @@ func testSweepResourceManagerResourceGroup(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			if item["Name"].(string) == "default" {
+				defaultGroupId = item["Id"].(string)
+				continue
+			}
 			// Skip Invalid resource group.
 			if item["Status"].(string) != "OK" {
 				continue
@@ -94,14 +99,68 @@ func testSweepResourceManagerResourceGroup(region string) error {
 	}
 
 	for _, groupId := range groupIds {
+		request = map[string]interface{}{
+			"ResourceGroupId": groupId,
+			"PageSize":        100,
+		}
+		action = "ListResources"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed to list resources for manager group (%s): %s", groupId, err)
+		}
+		if v, ok := response["Resources"]; ok {
+			log.Printf("[INFO] Move resource for resource manager group: %s ", groupId)
+			resources := make([]interface{}, 0)
+			for i, item := range v.(map[string]interface{})["Resource"].([]interface{}) {
+				r := item.(map[string]interface{})
+				delete(r, "CreateDate")
+				delete(r, "ResourceGroupId")
+				if len(resources) >= 10 {
+					resources = []interface{}{r}
+				} else {
+					resources = append(resources, r)
+				}
+				if len(resources) != 10 && i != len(v.(map[string]interface{})["Resource"].([]interface{}))-1 {
+					continue
+				}
+				request = map[string]interface{}{
+					"ResourceGroupId": defaultGroupId,
+					"Resources":       resources,
+				}
+				action = "MoveResources"
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					log.Printf("[INFO] moving resource group %s %d resources got an error: %v", groupId, len(resources), err)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+			}
+		}
 		log.Printf("[INFO] Delete resource manager group: %s ", groupId)
-
-		request := map[string]interface{}{
+		action = "DeleteResourceGroup"
+		request = map[string]interface{}{
 			"ResourceGroupId": groupId,
 		}
-
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
