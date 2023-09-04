@@ -19,12 +19,6 @@ shared:
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
       OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
       GITHUB_TOKEN: {{github_token}}
-      CONCOURSE_TARGET: {{alicloud_concourse_target}}
-      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
-      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
-      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
-      CONCOURSE_FLY_VERSION: {{alicloud_concourse_fly_version}}
-      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
 
   - &run-example
     task: terraformci
@@ -51,12 +45,7 @@ jobs:
         source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
-    - get: fly
-      resource: fly
   - <<: *run
-    params:
-      <<: *run-params
-      CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "pull-request-docs-example"
 
 - name: pull-request-integration-test-comment
   plan:
@@ -69,12 +58,7 @@ jobs:
             source_path: .
         - get: aliyun-cli
           resource: aliyun-cli
-        - get: fly
-          resource: fly
     - <<: *run
-      params:
-        <<: *run-params
-        CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "pull-request-docs-example-comment"
 
 - name: pull-request-docs-example
   plan:
