@@ -2,25 +2,22 @@
 
 : ${ALICLOUD_ACCESS_KEY:?}
 : ${ALICLOUD_SECRET_KEY:?}
+: ${ALICLOUD_REGION:?}
 : ${ALICLOUD_ACCOUNT_ID:?}
 : ${DING_TALK_TOKEN:=""}
 : ${OSS_BUCKET_NAME:=?}
 : ${OSS_BUCKET_REGION:=?}
 : ${GITHUB_TOKEN:?}
-: ${ALICLOUD_ACCESS_KEY_TEST:?}
-: ${ALICLOUD_SECRET_KEY_TEST:?}
-: ${ALICLOUD_ACCOUNT_ID_TEST:?}
-: ${ALICLOUD_REGION_TEST:?}
+: ${ALICLOUD_ACCESS_KEY_FOR_SERVICE:?}
+: ${ALICLOUD_SECRET_KEY_FOR_SERVICE:?}
 
 repo=terraform-provider-alicloud
 export GITHUB_TOKEN=${GITHUB_TOKEN}
 export GH_REPO=aliyun/${repo}
-export ALICLOUD_ACCESS_KEY_FOR_SERVICE=${ALICLOUD_ACCESS_KEY}
-export ALICLOUD_SECRET_KEY_FOR_SERVICE=${ALICLOUD_SECRET_KEY}
-export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY_TEST}
-export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY_TEST}
-export ALICLOUD_REGION=${ALICLOUD_REGION_TEST}
-export ALICLOUD_ACCOUNT_ID=${ALICLOUD_ACCOUNT_ID_TEST}
+export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY}
+export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY}
+export ALICLOUD_REGION=${ALICLOUD_REGION}
+export ALICLOUD_ACCOUNT_ID=${ALICLOUD_ACCOUNT_ID}
 
 my_dir="$(cd $(dirname $0) && pwd)"
 release_dir="$(cd ${my_dir} && cd ../.. && pwd)"
@@ -161,6 +158,7 @@ for fileName in ${changeFiles[@]}; do
     fi
 
     if [[ ${fileName} == *".go" ]]; then
+      fileName=(${fileName/_test.go/.html.markdown})
       fileName=(${fileName/.go/.html.markdown})
       fileName=(${fileName#*resource_alicloud_})
       fileName=(${fileName#*data_source_alicloud_})

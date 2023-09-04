@@ -11,9 +11,9 @@ shared:
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/pull-request.yml
     params:
-      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
-      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
-      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key_for_service}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key_for_service}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id_for_service}}
       FC_SERVICE: {{alicloud_fc_service_name}}
       FC_REGION: {{alicloud_fc_region}}
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
@@ -24,13 +24,12 @@ shared:
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/docs-example.yml
     params:
-      ALICLOUD_ACCESS_KEY_TEST: {{alicloud_access_key_test}}
-      ALICLOUD_SECRET_KEY_TEST: {{alicloud_secret_key_test}}
-      ALICLOUD_ACCOUNT_ID_TEST: {{alicloud_accound_id_test}}
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key_test}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key_test}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id_test}}
       ALICLOUD_REGION_TEST: {{alicloud_region_test}}
-      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
-      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
-      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      ALICLOUD_ACCESS_KEY_FOR_SERVICE: {{alicloud_access_key_for_service}}
+      ALICLOUD_SECRET_KEY_FOR_SERVICE: {{alicloud_secret_key_for_service}}
       FC_SERVICE: {{alicloud_fc_service_name}}
       FC_REGION: {{alicloud_fc_region}}
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
