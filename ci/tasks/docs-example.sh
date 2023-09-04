@@ -7,10 +7,18 @@
 : ${OSS_BUCKET_NAME:=?}
 : ${OSS_BUCKET_REGION:=?}
 : ${GITHUB_TOKEN:?}
+: ${ALICLOUD_ACCESS_KEY_TEST:?}
+: ${ALICLOUD_SECRET_KEY_TEST:?}
+: ${ALICLOUD_ACCOUNT_ID_TEST:?}
+: ${ALICLOUD_REGION_TEST:?}
 
 repo=terraform-provider-alicloud
 export GITHUB_TOKEN=${GITHUB_TOKEN}
 export GH_REPO=aliyun/${repo}
+export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY_TEST}
+export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY_TEST}
+export ALICLOUD_REGION=${ALICLOUD_REGION_TEST}
+export ALICLOUD_ACCOUNT_ID=${ALICLOUD_ACCOUNT_ID_TEST}
 
 my_dir="$(cd $(dirname $0) && pwd)"
 release_dir="$(cd ${my_dir} && cd ../.. && pwd)"
