@@ -102,10 +102,10 @@ if [[ "${noNeedRun}" = "true" ]]; then
   exit 0
 fi
 
-exampleCheck=$(gh pr checks ${prNum} | grep "^ExampleTest")
+exampleCheck=$(gh pr checks ${prNum} | grep "^DocsExampleTest")
 
 if [[ ${exampleCheck} == "" ]]; then
-  echo -e "\033[31m the pr ${prNum} missing ExampleTest action checks and please checking it.\033[0m"
+  echo -e "\033[31m the pr ${prNum} missing DocsExampleTest action checks and please checking it.\033[0m"
   exit 0
 fi
 arrIN=(${exampleCheck//"actions"/ })
@@ -139,8 +139,8 @@ echo -e "finished!"
 
 exampleTerraformErrorTmpLog=terraform-example.error.temp.log
 exampleTerraformDoubleCheckTmpLog=terraform-example.double.check.log
-exampleTestRunLog=terraform-example.run.log
-exampleTestRunResultLog=terraform-example.run.result.log
+docsExampleTestRunLog=terraform-example.run.log
+docsExampleTestRunResultLog=terraform-example.run.result.log
 declare -A allExample
 allExample["init"]=1
 for fileName in ${changeFiles[@]}; do
@@ -194,55 +194,55 @@ for fileName in ${changeFiles[@]}; do
       #  end
       if [[ $line == '```' && "${begin}" = "true" ]]; then
         begin=false
-        echo "=== RUN   ${exampleFileName} APPLY" | tee -a ${exampleTestRunLog} ${exampleTestRunResultLog}
+        echo "=== RUN   ${exampleFileName} APPLY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
         #    terraform apply
-        { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan && terraform -chdir=${exampleFileName} apply -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${exampleTestRunLog}
+        { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan && terraform -chdir=${exampleFileName} apply -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
 
         if [ $? -ne 0 ]; then
-          cat ${exampleTerraformErrorTmpLog} | tee -a ${exampleTestRunLog}
+          cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
           sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
           if [[ ${sdkError} == "" ]]; then
-            cat ${exampleTerraformErrorTmpLog} | tee -a ${exampleTestRunResultLog}
+            cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "--- FAIL: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+          echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
         else
           if [[ $docsDir =~ "website/docs/r" ]]; then
             { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
             haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
             if [[ ${haveDiff} == "" ]]; then
-              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${exampleTestRunResultLog} ${exampleTestRunLog}
+              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
               echo "--Check again. Resource diff information exists in the template and status file."
-              echo "--- FAIL: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+              echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
             else
-              echo "--- PASS: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+              echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
             fi
           else
-            echo "--- PASS: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+            echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           fi
         fi
         #data source example not need to run destory
         if [[ $docsDir =~ "website/docs/r" ]]; then
-          echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${exampleTestRunLog} ${exampleTestRunResultLog}
+          echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
           # check diff
-          { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${exampleTestRunLog}
+          { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
 
           if [ $? -ne 0 ]; then
-            cat ${exampleTerraformErrorTmpLog} | tee -a ${exampleTestRunLog}
+            cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
             sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
             if [[ ${sdkError} == "" ]]; then
-              cat ${exampleTerraformErrorTmpLog} | tee -a ${exampleTestRunResultLog}
+              cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
             fi
-            echo "--- FAIL: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+            echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           else
             # check diff
             { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
             haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
             if [[ ${haveDiff} == "" ]]; then
-              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${exampleTestRunResultLog} ${exampleTestRunLog}
+              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
               echo "--Check again. Resource diff information exists in the template and status file."
-              echo "--- FAIL: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+              echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
             else
-              echo "--- PASS: ${exampleFileName}" | tee -a ${exampleTestRunResultLog}
+              echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
             fi
           fi
 
@@ -263,18 +263,18 @@ if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} provider package to oss failed, please checking it.\033[0m"
   exit 1
 fi
-aliyun oss cp ${exampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
+aliyun oss cp ${docsExampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check result log  to oss failed, please checking it.\033[0m"
   exit 1
 fi
-aliyun oss cp ${exampleTestRunLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTestRunLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${docsExampleTestRunLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION}
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check log  to oss failed, please checking it.\033[0m"
   exit 1
 fi
-exampleTestRunResult=$(cat ${exampleTestRunResultLog} | grep "FAIL")
-if [[ ${exampleTestRunResult} != "" ]]; then
+docsExampleTestRunResult=$(cat ${docsExampleTestRunResultLog} | grep "FAIL")
+if [[ ${docsExampleTestRunResult} != "" ]]; then
   echo -e "\033[33m the pr ${prNum} example test check job has failed!\033[0m"
   exit 1
 fi
