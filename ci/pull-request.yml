@@ -10,7 +10,7 @@ shared:
   - &run
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/pull-request.yml
-    params:
+    params: &run-params
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
       ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
@@ -19,6 +19,13 @@ shared:
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
       OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
       GITHUB_TOKEN: {{github_token}}
+      CONCOURSE_TARGET: {{alicloud_concourse_target}}
+      CONCOURSE_TARGET_URL: {{alicloud_concourse_target_url}}
+      CONCOURSE_TARGET_USER: {{alicloud_concourse_target_user}}
+      CONCOURSE_TARGET_PASSWORD: {{alicloud_concourse_target_password}}
+      CONCOURSE_FLY_VERSION: {{alicloud_concourse_fly_version}}
+      TRIGGER_TARGET_PIPELINE: {{alicloud_trigger_target_pipeline}}
+
   - &run-example
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/docs-example.yml
@@ -45,6 +52,9 @@ jobs:
     - get: aliyun-cli
       resource: aliyun-cli
   - <<: *run
+    params:
+      <<: *run-params
+      CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "pull-request-docs-example"
 
 - name: pull-request-integration-test-comment
   plan:
@@ -58,13 +68,16 @@ jobs:
         - get: aliyun-cli
           resource: aliyun-cli
     - <<: *run
+      params:
+        <<: *run-params
+        CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME: "pull-request-docs-example-comment"
 
 - name: pull-request-docs-example
   plan:
     - in_parallel:
         - get: terraform-provider-alicloud
           resource: github-pr-approve-docs
-          trigger: true
+          trigger: false
           version: every
           params:
             source_path: .
@@ -77,7 +90,7 @@ jobs:
     - in_parallel:
         - get: terraform-provider-alicloud
           resource: github-pr-comment-docs
-          trigger: true
+          trigger: false
           version: every
           params:
             source_path: .

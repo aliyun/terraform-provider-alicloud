@@ -9,6 +9,24 @@
 : ${FC_SERVICE:?}
 : ${FC_REGION:?}
 : ${GITHUB_TOKEN:?}
+: ${CONCOURSE_TARGET:=""}
+: ${CONCOURSE_TARGET_URL:=""}
+: ${CONCOURSE_TARGET_USER:=""}
+: ${CONCOURSE_TARGET_PASSWORD:=""}
+: ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME:=""}
+: ${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME:=""}
+: ${CONCOURSE_FLY_VERSION:=""}
+: ${TRIGGER_TARGET_PIPELINE:=true}
+
+# trigger docs job
+if [[ ${TRIGGER_TARGET_PIPELINE} = true ]]; then
+  echo -e "\nDownloading the fly ..."
+  wget https://github.com/concourse/concourse/releases/download/v${CONCOURSE_FLY_VERSION}/fly-${CONCOURSE_FLY_VERSION}-linux-amd64.tgz
+  tar -xzf fly-${CONCOURSE_FLY_VERSION}-linux-amd64.tgz
+  ./fly -t ${CONCOURSE_TARGET} login -c ${CONCOURSE_TARGET_URL} -u ${CONCOURSE_TARGET_USER} -p ${CONCOURSE_TARGET_PASSWORD}
+  echo -e "\n./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME}"
+  ./fly -t ${CONCOURSE_TARGET} trigger-job --job ${CONCOURSE_TARGET_TRIGGER_PIPELINE_NAME}/${CONCOURSE_TARGET_TRIGGER_PIPELINE_JOB_NAME}
+fi
 
 repo=terraform-provider-alicloud
 export GITHUB_TOKEN=${GITHUB_TOKEN}
