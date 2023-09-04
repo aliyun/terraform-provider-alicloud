@@ -128,7 +128,7 @@ resources:
   type: github-pr-comment-resource
   source:
     repository: aliyun/terraform-provider-alicloud
-    access_token: {{github_token}}
+    access_token: {{github_token_for_docs}}
     review_states: ["approved"]
     when: latest
 
@@ -136,7 +136,7 @@ resources:
   type: github-pr-comment-resource
   source:
     repository: aliyun/terraform-provider-alicloud
-    access_token: {{github_token}}
+    access_token: {{github_token_for_docs}}
     review_states: ["commented"]
     when: latest
     comments: ["^approved$"]

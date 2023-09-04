@@ -15,6 +15,8 @@
 repo=terraform-provider-alicloud
 export GITHUB_TOKEN=${GITHUB_TOKEN}
 export GH_REPO=aliyun/${repo}
+export ALICLOUD_ACCESS_KEY_FOR_SERVICE=${ALICLOUD_ACCESS_KEY}
+export ALICLOUD_SECRET_KEY_FOR_SERVICE=${ALICLOUD_SECRET_KEY}
 export ALICLOUD_ACCESS_KEY=${ALICLOUD_ACCESS_KEY_TEST}
 export ALICLOUD_SECRET_KEY=${ALICLOUD_SECRET_KEY_TEST}
 export ALICLOUD_REGION=${ALICLOUD_REGION_TEST}
@@ -266,17 +268,17 @@ for fileName in ${changeFiles[@]}; do
   fi
 done
 zip -qq -r ${repo}.zip .
-aliyun oss cp ${repo}.zip oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${repo}.zip -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${repo}.zip oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${repo}.zip -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} provider package to oss failed, please checking it.\033[0m"
   exit 1
 fi
-aliyun oss cp ${docsExampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
+aliyun oss cp ${docsExampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check result log  to oss failed, please checking it.\033[0m"
   exit 1
 fi
-aliyun oss cp ${docsExampleTestRunLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY} --access-key-secret ${ALICLOUD_SECRET_KEY} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${docsExampleTestRunLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check log  to oss failed, please checking it.\033[0m"
   exit 1
