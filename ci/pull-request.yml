@@ -84,6 +84,10 @@ jobs:
             source_path: .
         - get: aliyun-cli
           resource: aliyun-cli
+        - get: terraform
+          resource: terraform
+        - get: github-cli
+          resource: github-cli
     - <<: *run-example
 
 resources:
@@ -133,8 +137,26 @@ resources:
     when: latest
     comments: ["^approved$"]
 
+- name: terraform
+  type: file-url
+  source:
+    url: https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
+    filename: terraform.zip
+
+- name: github-cli
+  type: file-url
+  source:
+    url: https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
+    filename: gh.tar.gz
+
 resource_types:
   - name: github-pr-comment-resource
     type: docker-image
     source:
       repository: ndrjng/concourse-github-pr-comment-resource
+
+  - name: file-url
+    type: docker-image
+    source:
+      repository: pivotalservices/concourse-curl-resource
+      tag: latest

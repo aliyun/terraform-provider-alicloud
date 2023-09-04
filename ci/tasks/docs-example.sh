@@ -28,12 +28,12 @@ apt-get update
 apt-get install zip -y
 
 # install gh
+ls -l
 wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
-tar -xzf gh_2.27.0_linux_amd64.tar.gz -C /usr/local
-export PATH="/usr/local/gh_2.27.0_linux_amd64/bin:$PATH"
+tar -xzf gh.tar.gz -C /usr/local
+export PATH="/usr/local/gh/bin:$PATH"
 #install terraform
-curl -OL https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
-unzip -o terraform_1.5.4_linux_amd64.zip -d /usr/local/bin
+unzip -o terraform.zip -d /usr/local/bin
 
 gh version
 # shellcheck disable=SC2164
@@ -129,11 +129,13 @@ if [[ ${exampleCheckPending} == "" ]]; then
   exit 0
 fi
 
+echo -e "building a new alpha release..."
 GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud
 export TFNV=1.0.0-alpha
 rm -rf ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/
 mkdir -p ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/
 mv bin/terraform-provider-alicloud ~/.terraform.d/plugins/registry.terraform.io/hashicorp/alicloud/${TFNV}/linux_amd64/terraform-provider-alicloud_v${TFNV}
+echo -e "finished!"
 
 exampleTerraformErrorTmpLog=terraform-example.error.temp.log
 exampleTerraformDoubleCheckTmpLog=terraform-example.double.check.log
