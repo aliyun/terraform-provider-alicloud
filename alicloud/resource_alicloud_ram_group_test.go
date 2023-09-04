@@ -22,6 +22,7 @@ func init() {
 		Dependencies: []string{
 			"alicloud_ram_user",
 		},
+
 	})
 }
 

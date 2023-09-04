@@ -17,6 +17,7 @@ func resourceAlicloudRamGroup() *schema.Resource {
 		Delete: resourceAlicloudRamGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+
 		},
 
 		Schema: map[string]*schema.Schema{
