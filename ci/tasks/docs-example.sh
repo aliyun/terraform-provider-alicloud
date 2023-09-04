@@ -64,6 +64,7 @@ for fileName in ${changeFiles[@]}; do
     fi
 
     if [[ ${fileName} == *".go" ]]; then
+      fileName=(${fileName/_test./.})
       fileName=(${fileName/.go/.html.markdown})
       fileName=(${fileName#*resource_alicloud_})
       fileName=(${fileName#*data_source_alicloud_})

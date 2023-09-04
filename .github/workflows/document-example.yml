@@ -45,6 +45,7 @@ jobs:
               fi
           
               if [[ ${fileName} == *".go" ]]; then
+                fileName=(${fileName/_test./.})
                 fileName=(${fileName/.go/.html.markdown})
                 fileName=(${fileName#*resource_alicloud_})
                 fileName=(${fileName#*data_source_alicloud_})
@@ -57,7 +58,7 @@ jobs:
               docsDir="${docsPathKey}/${resourceName}.html.markdown"
               noNeedRun=false
               if [[ $(grep -c '```terraform' "${docsDir}") -lt 1 ]]; then
-                  echo -e "\033[33m[WARNING]\033[0m missing docs examples in the ${docsDir}/${resourceName}.html.markdown,  please adding them. \033[0m"
+                  echo -e "\033[33m[WARNING]\033[0m missing docs examples in the ${docsDir},  please adding them. \033[0m"
                   exit 1
               fi
               diffExampleCount=$(grep -c '```terraform' "${docsDir}")
