@@ -51,6 +51,10 @@ jobs:
         source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
+    - get: fly
+      resource: fly
+      version:
+        tag: {{alicloud_concourse_fly_version}}
   - <<: *run
     params:
       <<: *run-params
@@ -67,6 +71,10 @@ jobs:
             source_path: .
         - get: aliyun-cli
           resource: aliyun-cli
+        - get: fly
+          resource: fly
+          version:
+            tag: {{alicloud_concourse_fly_version}}
     - <<: *run
       params:
         <<: *run-params
@@ -109,6 +117,12 @@ resources:
     regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
     region_name: {{aliyun_cli_region}}
     endpoint: oss-((aliyun_cli_region)).aliyuncs.com
+
+- name: fly
+  type: github-release
+  source:
+    owner: concourse
+    repository: concourse
 
 - name: github-pr-approve
   type: github-pr-comment-resource
