@@ -3,11 +3,24 @@ groups:
     jobs:
       - pull-request-integration-test-approve
       - pull-request-integration-test-comment
+      - pull-request-docs-example
 
 shared:
   - &run
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/pull-request.yml
+    params:
+      ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
+      ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
+      ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
+      FC_SERVICE: {{alicloud_fc_service_name}}
+      FC_REGION: {{alicloud_fc_region}}
+      OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
+      OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
+      GITHUB_TOKEN: {{github_token}}
+  - &run-example
+    task: terraformci
+    file: terraform-provider-alicloud/ci/tasks/docs-example.yml
     params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
       ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
@@ -45,6 +58,19 @@ jobs:
           resource: aliyun-cli
     - <<: *run
 
+- name: pull-request-docs-example
+  plan:
+    - in_parallel:
+        - get: terraform-provider-alicloud
+          resource: github-pr-approve-docs
+          trigger: true
+          version: every
+          params:
+            source_path: .
+        - get: aliyun-cli
+          resource: aliyun-cli
+    - <<: *run-example
+
 resources:
 
 - name: aliyun-cli
@@ -74,6 +100,14 @@ resources:
     when: latest
     comments: ["^approved$"]
     commenter_association: ["owner"]
+
+- name: github-pr-approve-docs
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["approved"]
+    when: latest
 
 resource_types:
   - name: github-pr-comment-resource
