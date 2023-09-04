@@ -21,6 +21,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 		Delete: resourceAlicloudRamPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Delete: schema.DefaultTimeout(26 * time.Minute),

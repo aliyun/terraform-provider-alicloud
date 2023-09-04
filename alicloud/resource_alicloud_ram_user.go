@@ -42,6 +42,7 @@ func resourceAlicloudRamUser() *schema.Resource {
 			"email": {
 				Type:     schema.TypeString,
 				Optional: true,
+
 			},
 			"comments": {
 				Type:         schema.TypeString,

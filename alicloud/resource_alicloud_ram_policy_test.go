@@ -48,6 +48,7 @@ func testSweepRamPolicies(region string) error {
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
+
 	}
 	var response map[string]interface{}
 	sweeped := false
