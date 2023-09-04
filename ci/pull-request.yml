@@ -3,14 +3,14 @@ groups:
     jobs:
       - pull-request-integration-test-approve
       - pull-request-integration-test-comment
-      - pull-request-docs-example
+      - pull-request-docs-example-approve
       - pull-request-docs-example-comment
 
 shared:
   - &run
     task: terraformci
     file: terraform-provider-alicloud/ci/tasks/pull-request.yml
-    params: &run-params
+    params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key}}
       ALICLOUD_SECRET_KEY: {{alicloud_secret_key}}
       ALICLOUD_ACCOUNT_ID: {{alicloud_accound_id}}
@@ -45,6 +45,8 @@ jobs:
         source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
+      passed: [pull-request-docs-example-approve]
+      trigger: true
   - <<: *run
 
 - name: pull-request-integration-test-comment
@@ -58,9 +60,11 @@ jobs:
           source_path: .
       - get: aliyun-cli
         resource: aliyun-cli
+        passed: [ pull-request-docs-example-comment ]
+        trigger: true
     - <<: *run
 
-- name: pull-request-docs-example
+- name: pull-request-docs-example-approve
   plan:
     - in_parallel:
       - get: terraform-provider-alicloud
