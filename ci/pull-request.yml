@@ -4,6 +4,7 @@ groups:
       - pull-request-integration-test-approve
       - pull-request-integration-test-comment
       - pull-request-docs-example
+      - pull-request-docs-example-comment
 
 shared:
   - &run
@@ -71,6 +72,19 @@ jobs:
           resource: aliyun-cli
     - <<: *run-example
 
+- name: pull-request-docs-example-comment
+  plan:
+    - in_parallel:
+        - get: terraform-provider-alicloud
+          resource: github-pr-comment-docs
+          trigger: true
+          version: every
+          params:
+            source_path: .
+        - get: aliyun-cli
+          resource: aliyun-cli
+    - <<: *run-example
+
 resources:
 
 - name: aliyun-cli
@@ -108,6 +122,16 @@ resources:
     access_token: {{github_token}}
     review_states: ["approved"]
     when: latest
+
+- name: github-pr-comment-docs
+  type: github-pr-comment-resource
+  source:
+    repository: aliyun/terraform-provider-alicloud
+    access_token: {{github_token}}
+    review_states: ["commented"]
+    when: latest
+    comments: ["^approved$"]
+    commenter_association: ["owner"]
 
 resource_types:
   - name: github-pr-comment-resource
