@@ -37,7 +37,7 @@ shared:
       FC_REGION: {{alicloud_fc_region}}
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
       OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
-      GITHUB_TOKEN: {{github_token}}
+      GITHUB_TOKEN: {{github_token_for_docs}}
 
 jobs:
 - name: pull-request-integration-test-approve
@@ -81,7 +81,7 @@ jobs:
     - in_parallel:
         - get: terraform-provider-alicloud
           resource: github-pr-approve-docs
-          trigger: false
+          trigger: true
           version: every
           params:
             source_path: .
@@ -94,7 +94,7 @@ jobs:
     - in_parallel:
         - get: terraform-provider-alicloud
           resource: github-pr-comment-docs
-          trigger: false
+          trigger: true
           version: every
           params:
             source_path: .
@@ -113,13 +113,6 @@ resources:
     regexp: .*-cli-linux-3\.0\.(\d+)-amd64\.tgz
     region_name: {{aliyun_cli_region}}
     endpoint: oss-((aliyun_cli_region)).aliyuncs.com
-
-- name: fly
-  type: github-release
-  source:
-    owner: concourse
-    repository: concourse
-    tag_filter: "v7.9.0"
 
 - name: github-pr-approve
   type: github-pr-comment-resource
@@ -155,7 +148,6 @@ resources:
     review_states: ["commented"]
     when: latest
     comments: ["^approved$"]
-    commenter_association: ["owner"]
 
 resource_types:
   - name: github-pr-comment-resource
