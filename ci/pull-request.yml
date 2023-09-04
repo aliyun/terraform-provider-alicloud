@@ -53,8 +53,6 @@ jobs:
       resource: aliyun-cli
     - get: fly
       resource: fly
-      version:
-        tag: {{alicloud_concourse_fly_version}}
   - <<: *run
     params:
       <<: *run-params
@@ -73,8 +71,6 @@ jobs:
           resource: aliyun-cli
         - get: fly
           resource: fly
-          version:
-            tag: {{alicloud_concourse_fly_version}}
     - <<: *run
       params:
         <<: *run-params
@@ -123,6 +119,7 @@ resources:
   source:
     owner: concourse
     repository: concourse
+    tag_filter: "v7.9.0"
 
 - name: github-pr-approve
   type: github-pr-comment-resource
