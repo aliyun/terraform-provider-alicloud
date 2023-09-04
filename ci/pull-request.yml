@@ -132,6 +132,7 @@ resources:
     review_states: ["commented"]
     when: latest
     comments: ["^approved$"]
+    commenter_association: ["owner"]
 
 resource_types:
   - name: github-pr-comment-resource
