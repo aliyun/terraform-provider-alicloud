@@ -65,6 +65,7 @@ resource "alicloud_instance" "instance" {
   instance_name              = var.name
   vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
+  description = "test"
   data_disks {
     name        = "disk2"
     size        = 20
