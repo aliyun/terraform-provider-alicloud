@@ -55,7 +55,7 @@ func resourceAlicloudGaForwardingRule() *schema.Resource {
 						"rule_condition_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Host", "Path"}, false),
+							ValidateFunc: StringInSlice([]string{"Host", "Path", "RequestHeader", "Query", "Method", "Cookie", "SourceIP"}, false),
 						},
 						"path_config": {
 							Type:     schema.TypeSet,
@@ -102,8 +102,9 @@ func resourceAlicloudGaForwardingRule() *schema.Resource {
 							Required: true,
 						},
 						"rule_action_type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixResponse", "Rewrite", "AddHeader", "RemoveHeader", "Drop"}, false),
 						},
 						"rule_action_value": {
 							Type:     schema.TypeString,
