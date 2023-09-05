@@ -7,30 +7,32 @@ description: |-
   Provides a Alicloud Resource Manager Shared Target resource.
 ---
 
-# alicloud\_resource\_manager\_shared\_target
+# alicloud_resource_manager_shared_target
 
 Provides a Resource Manager Shared Target resource.
 
 For information about Resource Manager Shared Target and how to use it, see [What is Shared Target](https://www.alibabacloud.com/help/en/doc-detail/94475.htm).
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_accounts" "example" {}
+variable "name" {
+  default = "tfexample"
+}
+data "alicloud_resource_manager_accounts" "default" {}
 
 resource "alicloud_resource_manager_resource_share" "example" {
-  resource_share_name = "example_value"
+  resource_share_name = var.name
 }
 
 resource "alicloud_resource_manager_shared_target" "example" {
-  resource_share_id = alicloud_resource_manager_resource_share.example.resource_share_id
-  target_id         = data.alicloud_resource_manager_accounts.example.ids.0
+  resource_share_id = alicloud_resource_manager_resource_share.example.id
+  target_id         = data.alicloud_resource_manager_accounts.default.ids.0
 }
-
 ```
 
 ## Argument Reference
@@ -47,7 +49,7 @@ The following attributes are exported:
 * `id` - The resource ID of Shared Target. The value is formatted `<resource_share_id>:<target_id>`.
 * `status` - The status of shared target.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

@@ -7,12 +7,12 @@ description: |-
   Provides a Alicloud Resource Manager Folder resource.
 ---
 
-# alicloud\_resource\_manager\_folder
+# alicloud_resource_manager_folder
 
 Provides a Resource Manager Folder resource. A folder is an organizational unit in a resource directory. You can use folders to build an organizational structure for resources.
 For information about Resource Manager Foler and how to use it, see [What is Resource Manager Folder](https://www.alibabacloud.com/help/en/doc-detail/111221.htm).
 
--> **NOTE:** Available in v1.82.0+.
+-> **NOTE:** Available since v1.82.0.
 
 -> **NOTE:** A maximum of five levels of folders can be created under the root folder.
 
@@ -21,8 +21,12 @@ For information about Resource Manager Foler and how to use it, see [What is Res
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 resource "alicloud_resource_manager_folder" "example" {
-  folder_name = "test"
+  folder_name = var.name
 }
 ```
 ## Argument Reference

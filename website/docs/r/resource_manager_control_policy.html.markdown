@@ -7,22 +7,26 @@ description: |-
   Provides a Alicloud Resource Manager Control Policy resource.
 ---
 
-# alicloud\_resource\_manager\_control\_policy
+# alicloud_resource_manager_control_policy
 
 Provides a Resource Manager Control Policy resource.
 
-For information about Resource Manager Control Policy and how to use it, see [What is Control Policy](https://help.aliyun.com/document_detail/208287.html).
+For information about Resource Manager Control Policy and how to use it, see [What is Control Policy](https://www.alibabacloud.com/help/en/resource-management/latest/api-resourcedirectorymaster-2022-04-19-createcontrolpolicy).
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 resource "alicloud_resource_manager_control_policy" "example" {
-  control_policy_name = "tf-testAccRDControlPolicy"
-  description         = "tf-testAccRDControlPolicy"
+  control_policy_name = var.name
+  description         = var.name
   effect_scope        = "RAM"
   policy_document     = <<EOF
   {

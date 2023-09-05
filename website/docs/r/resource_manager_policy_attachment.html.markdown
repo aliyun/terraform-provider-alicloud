@@ -7,26 +7,27 @@ description: |-
   Provides a Alicloud Resource Manager Policy Attachment resource.
 ---
 
-# alicloud\_resource\_manager\_policy\_attachment
+# alicloud_resource_manager_policy_attachment
 
 Provides a Resource Manager Policy Attachment resource to attaches a policy to an object. After you attach a policy to an object, the object has the operation permissions on the current resource group or the resources under the current account. 
 For information about Resource Manager Policy Attachment and how to use it, see [How to authorize and manage resource groups](https://www.alibabacloud.com/help/en/doc-detail/94490.htm).
 
--> **NOTE:** Available in v1.93.0+.
+-> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-# Create a RAM user
-resource "alicloud_ram_user" "example" {
-  name = "tf-testaccramuser"
+variable "name" {
+  default = "tfexamplename"
 }
 
-# Create a Resource Manager Policy
+resource "alicloud_ram_user" "example" {
+  name = var.name
+}
 resource "alicloud_resource_manager_policy" "example" {
-  policy_name     = "tf-testaccrdpolicy"
+  policy_name     = var.name
   policy_document = <<EOF
 		{
 			"Statement": [{
@@ -39,10 +40,8 @@ resource "alicloud_resource_manager_policy" "example" {
     EOF
 }
 
-# Create a Resource Group
-resource "alicloud_resource_manager_resource_group" "example" {
-  display_name = "tf_test"
-  name         = "tf_test"
+data "alicloud_resource_manager_resource_groups" "example" {
+  status = "OK"
 }
 
 # Get Alicloud Account Id
@@ -54,7 +53,7 @@ resource "alicloud_resource_manager_policy_attachment" "example" {
   policy_type       = "Custom"
   principal_name    = format("%s@%s.onaliyun.com", alicloud_ram_user.example.name, data.alicloud_account.example.id)
   principal_type    = "IMSUser"
-  resource_group_id = alicloud_resource_manager_resource_group.example.id
+  resource_group_id = data.alicloud_resource_manager_resource_groups.example.ids.0
 }
 ```
 ## Argument Reference
@@ -62,7 +61,7 @@ resource "alicloud_resource_manager_policy_attachment" "example" {
 The following arguments are supported:
 
 * `policy_name` - (Required, ForceNew) The name of the policy. name must be 1 to 128 characters in length and can contain letters, digits, and hyphens (-).
-* `policy_type` - - (Required, ForceNew) The type of the policy. Valid values: `Custom`, `System`.
+* `policy_type` - (Required, ForceNew) The type of the policy. Valid values: `Custom`, `System`.
 * `principal_name` - (Required, ForceNew) The name of the object to which you want to attach the policy.
 * `principal_type` - (Required, ForceNew) The type of the object to which you want to attach the policy. Valid values: `IMSUser`: RAM user, `IMSGroup`: RAM user group, `ServiceRole`: RAM role. 
 * `resource_group_id` - (Required, ForceNew) The ID of the resource group or the ID of the Alibaba Cloud account to which the resource group belongs.
