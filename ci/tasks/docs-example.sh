@@ -215,16 +215,13 @@ for fileName in ${changeFiles[@]}; do
           fi
           echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
         else
-          if [[ $docsDir =~ "website/docs/r" ]]; then
-            { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
-            haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
-            if [[ ${haveDiff} == "" ]]; then
-              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-              echo "--Check again. Resource diff information exists in the template and status file."
-              echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
-            else
-              echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
-            fi
+          # double check
+          { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
+          haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
+          if [[ ${haveDiff} == "" ]]; then
+            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
+            echo "--Check again. Resource diff information exists in the template and status file."
+            echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           else
             echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           fi
