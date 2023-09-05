@@ -209,7 +209,7 @@ for fileName in ${changeFiles[@]}; do
 
         if [ $? -ne 0 ]; then
           cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
-          sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
+          sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
@@ -233,7 +233,7 @@ for fileName in ${changeFiles[@]}; do
 
         if [ $? -ne 0 ]; then
           cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
-          sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
+          sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
