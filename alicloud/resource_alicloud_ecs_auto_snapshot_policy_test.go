@@ -468,7 +468,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyCreate(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -485,7 +485,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyCreate(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -502,7 +502,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -520,7 +520,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -538,7 +538,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudEcsAutoSnapshotPolicyUpdate(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -580,7 +580,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -622,7 +622,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -637,7 +637,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -654,7 +654,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -671,7 +671,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -688,7 +688,7 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyRead(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -704,8 +704,242 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsAutoSnapshotPolicyRead(d, rawClient)
+		err := resourceAliCloudEcsAutoSnapshotPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Ecs AutoSnapshotPolicy. >>> Resource test cases, automatically generated.
+// Case 4005
+func TestAccAlicloudEcsAutoSnapshotPolicy_basic4005(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsAutoSnapshotPolicyMap4005)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsautosnapshotpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsAutoSnapshotPolicyBasicDependence4005)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points": []string{
+						"1"},
+					"retention_days": "1",
+					"repeat_weekdays": []string{
+						"1"},
+					"auto_snapshot_policy_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#":             "1",
+						"retention_days":            "1",
+						"repeat_weekdays.#":         "1",
+						"auto_snapshot_policy_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points": []string{
+						"1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_days": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_days": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"repeat_weekdays": []string{
+						"1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"repeat_weekdays.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_snapshot_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_snapshot_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points": []string{
+						"1"},
+					"resource_group_id": "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+					"retention_days":    "1",
+					"repeat_weekdays": []string{
+						"1"},
+					"auto_snapshot_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#":             "1",
+						"resource_group_id":         CHECKSET,
+						"retention_days":            "1",
+						"repeat_weekdays.#":         "1",
+						"auto_snapshot_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEcsAutoSnapshotPolicyMap4005 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsAutoSnapshotPolicyBasicDependence4005(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "ResourceGroup" {
+  display_name        = "test"
+  resource_group_name = var.name
+}
+
+
+`, name)
+}
+
+// Case 4005  twin
+func TestAccAlicloudEcsAutoSnapshotPolicy_basic4005_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsAutoSnapshotPolicyMap4005)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsautosnapshotpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsAutoSnapshotPolicyBasicDependence4005)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points": []string{
+						"1"},
+					"resource_group_id": "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+					"retention_days":    "1",
+					"repeat_weekdays": []string{
+						"1"},
+					"auto_snapshot_policy_name": name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#":             "1",
+						"resource_group_id":         CHECKSET,
+						"retention_days":            "1",
+						"repeat_weekdays.#":         "1",
+						"auto_snapshot_policy_name": name,
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Ecs AutoSnapshotPolicy. <<< Resource test cases, automatically generated.

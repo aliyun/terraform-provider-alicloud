@@ -323,7 +323,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsImageComponentCreate(d, rawClient)
+		err := resourceAliCloudEcsImageComponentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -340,7 +340,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentCreate(d, rawClient)
+		err := resourceAliCloudEcsImageComponentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -357,7 +357,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsImageComponentCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -373,7 +373,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentCreate(d, rawClient)
+		err := resourceAliCloudEcsImageComponentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -391,7 +391,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsImageComponentDelete(d, rawClient)
+		err := resourceAliCloudEcsImageComponentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -409,7 +409,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentDelete(d, rawClient)
+		err := resourceAliCloudEcsImageComponentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -424,7 +424,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentDelete(d, rawClient)
+		err := resourceAliCloudEcsImageComponentDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -440,7 +440,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentDelete(d, rawClient)
+		err := resourceAliCloudEcsImageComponentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -457,7 +457,7 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentRead(d, rawClient)
+		err := resourceAliCloudEcsImageComponentRead(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -465,8 +465,189 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsImageComponentRead(d, rawClient)
+		err := resourceAliCloudEcsImageComponentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
 }
+
+// Test Ecs ImageComponent. >>> Resource test cases, automatically generated.
+// Case 3984
+func TestAccAlicloudEcsImageComponent_basic3984(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_image_component.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3984)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsImageComponent")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence3984)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_component_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_component_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_component_name": name + "_update",
+					"resource_group_id":    "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+					"content":              "RUN yum update -y",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_component_name": name + "_update",
+						"resource_group_id":    CHECKSET,
+						"content":              "RUN yum update -y",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEcsImageComponentMap3984 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsImageComponentBasicDependence3984(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "ResourceGroup" {
+  display_name        = "test"
+  resource_group_name = var.name
+}
+
+
+`, name)
+}
+
+// Case 3984  twin
+func TestAccAlicloudEcsImageComponent_basic3984_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_image_component.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3984)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsImageComponent")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence3984)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_component_name": name,
+					"resource_group_id":    "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+					"content":              "RUN yum update -y",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_component_name": name,
+						"resource_group_id":    CHECKSET,
+						"content":              "RUN yum update -y",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Ecs ImageComponent. <<< Resource test cases, automatically generated.

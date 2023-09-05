@@ -11,6 +11,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -418,3 +419,180 @@ var testAccCheckSecurityBasicMap = map[string]string{
 	"tags.foo":            "foo",
 	"tags.Test":           "Test",
 }
+
+// Test Ecs SecurityGroup. >>> Resource test cases, automatically generated.
+// Case 4001
+func TestAccAlicloudEcsSecurityGroup_basic4001(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_security_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsSecurityGroupMap4001)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsSecurityGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secssecuritygroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsSecurityGroupBasicDependence4001)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":              "${alicloud_vpc.VPC.id}",
+					"security_group_name": name + "_update",
+					"resource_group_id":   "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":              CHECKSET,
+						"security_group_name": name + "_update",
+						"resource_group_id":   CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEcsSecurityGroupMap4001 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsSecurityGroupBasicDependence4001(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_resource_manager_resource_group" "ResourceGroup" {
+  display_name        = "test"
+  resource_group_name = var.name
+}
+
+resource "alicloud_vpc" "VPC" {
+  resource_group_id = alicloud_resource_manager_resource_group.ResourceGroup.id
+  cidr_block        = "172.16.0.0/12"
+  vpc_name          = "${var.name}1"
+}
+
+
+`, name)
+}
+
+// Case 4001  twin
+func TestAccAlicloudEcsSecurityGroup_basic4001_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_security_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsSecurityGroupMap4001)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsSecurityGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secssecuritygroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsSecurityGroupBasicDependence4001)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":              "${alicloud_vpc.VPC.id}",
+					"security_group_name": name,
+					"resource_group_id":   "${alicloud_resource_manager_resource_group.ResourceGroup.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":              CHECKSET,
+						"security_group_name": name,
+						"resource_group_id":   CHECKSET,
+						"tags.%":              "2",
+						"tags.Created":        "TF",
+						"tags.For":            "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Ecs SecurityGroup. <<< Resource test cases, automatically generated.
