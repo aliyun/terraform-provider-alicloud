@@ -35,8 +35,9 @@ apt-get update
 apt-get install zip -y
 
 # install gh
-wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
-tar -xzf gh_2.27.0_linux_amd64.tar.gz -C /usr/local
+ll -l
+#wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
+tar -xzf gh/gh_2.27.0_linux_amd64.tar.gz -C /usr/local
 export PATH="/usr/local/gh_2.27.0_linux_amd64/bin:$PATH"
 #install terraform
 curl -OL https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
@@ -228,33 +229,31 @@ for fileName in ${changeFiles[@]}; do
             echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           fi
         fi
-        #data source example not need to run destory
-        if [[ $docsDir =~ "website/docs/r" ]]; then
-          echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
-          # check diff
-          { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
+        # run destory
+        echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
+        # check diff
+        { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
 
-          if [ $? -ne 0 ]; then
-            cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
-            sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
-            if [[ ${sdkError} == "" ]]; then
-              cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
-            fi
+        if [ $? -ne 0 ]; then
+          cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
+          sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "SDKError")
+          if [[ ${sdkError} == "" ]]; then
+            cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
+          fi
+          echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+        else
+          # check diff
+          { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
+          haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
+          if [[ ${haveDiff} == "" ]]; then
+            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
+            echo "--Check again. Resource diff information exists in the template and status file."
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           else
-            # check diff
-            { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
-            haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
-            if [[ ${haveDiff} == "" ]]; then
-              cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-              echo "--Check again. Resource diff information exists in the template and status file."
-              echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
-            else
-              echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
-            fi
+            echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           fi
-
         fi
+
         let "count=count+1"
         continue
       fi
@@ -265,12 +264,7 @@ for fileName in ${changeFiles[@]}; do
     done
   fi
 done
-zip -qq -r ${repo}.zip .
-aliyun oss cp ${repo}.zip oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${repo}.zip -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
-if [[ "$?" != "0" ]]; then
-  echo -e "\033[31m uploading the pr ${prNum} provider package to oss failed, please checking it.\033[0m"
-  exit 1
-fi
+
 aliyun oss cp ${docsExampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check result log  to oss failed, please checking it.\033[0m"

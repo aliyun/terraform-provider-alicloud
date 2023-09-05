@@ -3,12 +3,12 @@ groups:
     jobs:
       - pull-request-integration-test-approve
       - pull-request-integration-test-comment
-      - pull-request-docs-example-approve
-      - pull-request-docs-example-comment
+#      - pull-request-docs-example-approve
+#      - pull-request-docs-example-comment
 
 shared:
   - &run
-    task: terraformci
+    task: integrate-check
     file: terraform-provider-alicloud/ci/tasks/pull-request.yml
     params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key_for_service}}
@@ -21,7 +21,7 @@ shared:
       GITHUB_TOKEN: {{github_token}}
 
   - &run-example
-    task: terraformci
+    task: docs-example-check
     file: terraform-provider-alicloud/ci/tasks/docs-example.yml
     params:
       ALICLOUD_ACCESS_KEY: {{alicloud_access_key_test}}
@@ -42,56 +42,58 @@ jobs:
   - in_parallel:
     - get: terraform-provider-alicloud
       resource: github-pr-approve
-      trigger: false
+      trigger: true
       version: every
       params:
         source_path: .
     - get: aliyun-cli
       resource: aliyun-cli
-      passed: [pull-request-docs-example-approve]
-      trigger: true
+    - get: gh
+      resource: gh
+  - <<: *run-example
   - <<: *run
 
 - name: pull-request-integration-test-comment
   plan:
-    - in_parallel:
-      - get: terraform-provider-alicloud
-        resource: github-pr-comment
-        trigger: false
-        version: every
-        params:
-          source_path: .
-      - get: aliyun-cli
-        resource: aliyun-cli
-        passed: [ pull-request-docs-example-comment ]
-        trigger: true
-    - <<: *run
+  - in_parallel:
+    - get: terraform-provider-alicloud
+      resource: github-pr-comment
+      trigger: true
+      version: every
+      params:
+        source_path: .
+    - get: aliyun-cli
+      resource: aliyun-cli
+    - get: gh
+      resource: gh
+  - <<: *run-example
+  - <<: *run
 
-- name: pull-request-docs-example-approve
-  plan:
-    - in_parallel:
-      - get: terraform-provider-alicloud
-        resource: github-pr-approve-docs
-        trigger: true
-        version: every
-        params:
-          source_path: .
-      - get: aliyun-cli
-        resource: aliyun-cli
-    - <<: *run-example
-
-- name: pull-request-docs-example-comment
-  plan:
-    - in_parallel:
-      - get: terraform-provider-alicloud
-        resource: github-pr-comment-docs
-        trigger: true
-        version: every
-        params:
-          source_path: .
-      - get: aliyun-cli
-        resource: aliyun-cli
-    - <<: *run-example
+#- name: pull-request-docs-example-approve
+#  plan:
+#    - in_parallel:
+#      - get: terraform-provider-alicloud
+#        resource: github-pr-approve-docs
+#        trigger: true
+#        version: every
+#        params:
+#          source_path: .
+#      - get: aliyun-cli
+#        resource: aliyun-cli
+#    - <<: *run-example
+#
+#- name: pull-request-docs-example-comment
+#  plan:
+#    - in_parallel:
+#      - get: terraform-provider-alicloud
+#        resource: github-pr-comment-docs
+#        trigger: true
+#        version: every
+#        params:
+#          source_path: .
+#      - get: aliyun-cli
+#        resource: aliyun-cli
+#    - <<: *run-example
 
 resources:
 
@@ -123,23 +125,29 @@ resources:
     comments: ["^approved$"]
     commenter_association: ["owner"]
 
-- name: github-pr-approve-docs
-  type: github-pr-comment-resource
+- name: gh
+  type: gh
   source:
-    repository: aliyun/terraform-provider-alicloud
-    access_token: {{github_token_for_docs}}
-    review_states: ["approved"]
-    when: latest
-
-- name: github-pr-comment-docs
-  type: github-pr-comment-resource
-  source:
-    repository: aliyun/terraform-provider-alicloud
-    access_token: {{github_token_for_docs}}
-    review_states: ["commented"]
-    when: latest
-    comments: ["^approved$"]
-    commenter_association: ["owner"]
+    owner: cli
+    repository: cli
+    tag_filter: "v2.27.0"
+#- name: github-pr-approve-docs
+#  type: github-pr-comment-resource
+#  source:
+#    repository: aliyun/terraform-provider-alicloud
+#    access_token: {{github_token_for_docs}}
+#    review_states: ["approved"]
+#    when: latest
+#
+#- name: github-pr-comment-docs
+#  type: github-pr-comment-resource
+#  source:
+#    repository: aliyun/terraform-provider-alicloud
+#    access_token: {{github_token_for_docs}}
+#    review_states: ["commented"]
+#    when: latest
+#    comments: ["^approved$"]
+#    commenter_association: ["owner"]
 
 resource_types:
   - name: github-pr-comment-resource
