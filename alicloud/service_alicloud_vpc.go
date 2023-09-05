@@ -671,31 +671,6 @@ func (s *VpcService) DescribeCommonBandwidthPackage(id string) (object map[strin
 	return object, nil
 }
 
-func (s *VpcService) DescribeCommonBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		return object, WrapError(err)
-	}
-	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
-
-	object, err = s.DescribeCommonBandwidthPackage(bandwidthPackageId)
-	if err != nil {
-		return object, WrapError(err)
-	}
-
-	if val, ok := object["PublicIpAddresses"].(map[string]interface{}); ok {
-		if vs, ok := val["PublicIpAddresse"]; ok {
-			for _, ipAddresse := range vs.([]interface{}) {
-				item := ipAddresse.(map[string]interface{})
-				if fmt.Sprint(item["AllocationId"]) == ipInstanceId {
-					return object, nil
-				}
-			}
-		}
-	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
-}
-
 func (s *VpcService) DescribeRouteTable(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewVpcClient()
@@ -951,29 +926,6 @@ func (s *VpcService) ActivateRouterInterface(interfaceId string) error {
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	return nil
-}
-
-func (s *VpcService) WaitForCommonBandwidthPackageAttachment(id string, status Status, timeout int) error {
-	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
-	for {
-		object, err := s.DescribeCommonBandwidthPackageAttachment(id)
-		if err != nil {
-			if NotFoundError(err) {
-				if status == Deleted {
-					return nil
-				}
-			} else {
-				return WrapError(err)
-			}
-		}
-
-		if fmt.Sprint(object["Status"]) == string(status) {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object["Status"]), string(status), ProviderERROR)
-		}
-	}
 }
 
 // Flattens an array of vpc.public_ip_addresses into a []map[string]string

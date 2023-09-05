@@ -7,9 +7,9 @@ description: |-
   Provides an Alicloud Common  Attachment resource.
 ---
 
-# alicloud\_common\_bandwidth\_package\_attachment
+# alicloud_common_bandwidth_package_attachment
 
-Provides an Alicloud Common Bandwidth Package Attachment resource for associating Common Bandwidth Package to EIP Instance.
+Provides an AliCloud Common Bandwidth Package Attachment resource for associating Common Bandwidth Package to EIP Instance.
 
 -> **NOTE:** Terraform will auto build common bandwidth package attachment while it uses `alicloud_common_bandwidth_package_attachment` to build a common bandwidth package attachment resource.
 
@@ -17,6 +17,7 @@ For information about common bandwidth package and how to use it, see [What is C
 
 -> **NOTE:** From version 1.194.0, the resource can set the maximum bandwidth of an EIP that is associated with an EIP bandwidth plan by `bandwidth_package_bandwidth`. see [how to use it](https://www.alibabacloud.com/help/en/eip-bandwidth-plan/latest/120327).
 
+-> **NOTE:** Available since v1.94.0.
 ## Example Usage
 
 Basic Usage
@@ -24,8 +25,8 @@ Basic Usage
 ```terraform
 resource "alicloud_common_bandwidth_package" "foo" {
   bandwidth              = "2"
-  bandwidth_package_name = "test_common_bandwidth_package"
-  description            = "test_common_bandwidth_package"
+  bandwidth_package_name = "terraform-example"
+  description            = "common bandwidth package description"
 }
 
 resource "alicloud_eip_address" "foo" {
@@ -53,7 +54,7 @@ The following attributes are exported:
 
 * `id` - The ID of the common bandwidth package attachment id and formates as `<bandwidth_package_id>:<instance_id>`.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.194.0+.
 
