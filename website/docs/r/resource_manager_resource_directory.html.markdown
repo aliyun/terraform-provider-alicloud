@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Resource Manager Resource Directory resource.
 ---
 
-# alicloud\_resource\_manager\_resource\_directory
+# alicloud_resource_manager_resource_directory
 
 Provides a Resource Manager Resource Directory resource. Resource Directory enables you to establish an organizational structure for the resources used by applications of your enterprise. You can plan, build, and manage the resources in a centralized manner by using only one resource directory.
 
 For information about Resource Manager Resource Directory and how to use it, see [What is Resource Manager Resource Directory](https://www.alibabacloud.com/help/en/doc-detail/94475.htm).
 
--> **NOTE:** Available in v1.84.0+.
+-> **NOTE:** Available since v1.84.0.
 
 -> **NOTE:** An account can only be used to enable a resource directory after it passes enterprise real-name verification. An account that only passed individual real-name verification cannot be used to enable a resource directory.
 
@@ -26,8 +26,10 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 ```terraform
-resource "alicloud_resource_manager_resource_directory" "example" {
-  // Enable the control policy
+data "alicloud_resource_manager_resource_directories" "default" {}
+
+resource "alicloud_resource_manager_resource_directory" "default" {
+  count  = length(data.alicloud_resource_manager_resource_directories.default.directories) > 0 ? 0 : 1
   status = "Enabled"
 }
 ```
@@ -35,8 +37,8 @@ resource "alicloud_resource_manager_resource_directory" "example" {
 
 The following arguments are supported:
 
-* `status` - (Optional, Available in v1.120.0+) The status of control policy. Valid values:`Enabled` and `Disabled`. 
-* `member_deletion_status` - (Optional, Available in v1.201.0+) Specifies whether to enable the member deletion feature. Valid values:`Enabled` and `Disabled`. 
+* `status` - (Optional, Available since v1.120.0) The status of control policy. Valid values:`Enabled` and `Disabled`. 
+* `member_deletion_status` - (Optional, Available since v1.201.0) Specifies whether to enable the member deletion feature. Valid values:`Enabled` and `Disabled`. 
 
 ## Attributes Reference
 
@@ -45,9 +47,9 @@ The following arguments are supported:
 * `master_account_name` - The name of the master account.
 * `root_folder_id` - The ID of the root folder.
 
--> **NOTE:** Available in 1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

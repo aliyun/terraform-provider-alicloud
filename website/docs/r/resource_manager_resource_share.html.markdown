@@ -7,23 +7,25 @@ description: |-
   Provides a Alicloud Resource Manager Resource Share resource.
 ---
 
-# alicloud\_resource\_manager\_resource\_share
+# alicloud_resource_manager_resource_share
 
 Provides a Resource Manager Resource Share resource.
 
 For information about Resource Manager Resource Share and how to use it, see [What is Resource Share](https://www.alibabacloud.com/help/en/doc-detail/94475.htm).
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_resource_manager_resource_share" "example" {
-  resource_share_name = "example_value"
+variable "name" {
+  default = "tfexample"
 }
-
+resource "alicloud_resource_manager_resource_share" "example" {
+  resource_share_name = var.name
+}
 ```
 
 ## Argument Reference
@@ -40,7 +42,7 @@ The following attributes are exported:
 * `resource_share_owner` - The owner of resource share.
 * `status` - The status of resource share.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

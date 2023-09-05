@@ -7,20 +7,24 @@ description: |-
   Provides a Alicloud Resource Manager Policy resource.
 ---
 
-# alicloud\_resource\_manager\_policy
+# alicloud_resource_manager_policy
 
 Provides a Resource Manager Policy resource.  
 For information about Resource Manager Policy and how to use it, see [What is Resource Manager Policy](https://www.alibabacloud.com/help/en/doc-detail/93732.htm).
 
--> **NOTE:** Available in v1.83.0+.
+-> **NOTE:** Available since v1.83.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tfexample"
+}
+
 resource "alicloud_resource_manager_policy" "example" {
-  policy_name     = "abc12345"
+  policy_name     = var.name
   policy_document = <<EOF
 		{
 			"Statement": [{

@@ -23,45 +23,41 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_kvstore_zones" "default" {
+  product_type = "Tair_rdb"
+}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
-resource "alicloud_resource_manager_resource_group" "defaultRg" {
-  display_name        = "tf-example-rg714"
-  resource_group_name = var.name
-}
-
-resource "alicloud_vpc" "defaultVpc" {
+resource "alicloud_vpc" "default" {
   vpc_name    = var.name
   enable_ipv6 = true
   description = "tf-example-vpc"
 }
 
-resource "alicloud_vswitch" "defaultVSwitch" {
-  vpc_id     = alicloud_vpc.defaultVpc.id
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
   cidr_block = "172.16.0.0/21"
-  zone_id    = data.alicloud_zones.default.zones.0.id
+  zone_id    = data.alicloud_kvstore_zones.default.zones.0.id
 }
 
 
 resource "alicloud_redis_tair_instance" "default" {
   auto_renew         = "false"
   port               = 6379
-  payment_type       = "Subscription"
+  payment_type       = "PayAsYouGo"
   instance_type      = "tair_rdb"
   password           = "Pass!123456"
   engine_version     = "5.0"
-  zone_id            = alicloud_vswitch.defaultVSwitch.zone_id
+  zone_id            = alicloud_vswitch.default.zone_id
   instance_class     = "tair.rdb.1g"
   tair_instance_name = var.name
   shard_count        = 2
-  secondary_zone_id  = alicloud_vswitch.defaultVSwitch.zone_id
-  resource_group_id  = alicloud_resource_manager_resource_group.defaultRg.id
-  vswitch_id         = alicloud_vswitch.defaultVSwitch.id
-  vpc_id             = alicloud_vpc.defaultVpc.id
-  auto_renew_period  = "12"
-  period             = 1
+  secondary_zone_id  = alicloud_vswitch.default.zone_id
+  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+  vswitch_id         = alicloud_vswitch.default.id
+  vpc_id             = alicloud_vpc.default.id
 }
 ```
 

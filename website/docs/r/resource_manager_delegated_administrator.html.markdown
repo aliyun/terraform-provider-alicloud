@@ -7,24 +7,37 @@ description: |-
   Provides a Alicloud Resource Manager Delegated Administrator resource.
 ---
 
-# alicloud\_resource\_manager\_delegated\_administrator
+# alicloud_resource_manager_delegated_administrator
 
 Provides a Resource Manager Delegated Administrator resource.
 
 For information about Resource Manager Delegated Administrator and how to use it, see [What is Delegated Administrator](https://www.alibabacloud.com/help/en/resource-management/latest/registerdelegatedadministrator#doc-api-ResourceManager-RegisterDelegatedAdministrator).
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_accounts" "default" {
-  status = "CreateSuccess"
+variable "name" {
+  default = "tf-example"
 }
-resource "alicloud_resource_manager_delegated_administrator" "default" {
-  account_id        = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
+variable "display_name" {
+  default = "EAccount"
+}
+
+resource "alicloud_resource_manager_folder" "example" {
+  folder_name = var.name
+}
+
+resource "alicloud_resource_manager_account" "example" {
+  display_name = var.display_name
+  folder_id    = alicloud_resource_manager_folder.example.id
+}
+
+resource "alicloud_resource_manager_delegated_administrator" "example" {
+  account_id        = alicloud_resource_manager_account.example.id
   service_principal = "cloudfw.aliyuncs.com"
 }
 ```
@@ -42,7 +55,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Delegated Administrator. The value formats as `<account_id>:<service_principal>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
