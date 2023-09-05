@@ -1232,8 +1232,22 @@ func (s *PolarDBService) DescribeDBAuditLogCollectorStatus(id string) (collector
 	request := polardb.CreateDescribeDBClusterAuditLogCollectorRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
-	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.DescribeDBClusterAuditLogCollector(request)
+	var response *polardb.DescribeDBClusterAuditLogCollectorResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DescribeDBClusterAuditLogCollector(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClusterAuditLogCollectorResponse)
+		return nil
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
@@ -1241,9 +1255,6 @@ func (s *PolarDBService) DescribeDBAuditLogCollectorStatus(id string) (collector
 		}
 		return collectorStatus, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*polardb.DescribeDBClusterAuditLogCollectorResponse)
-
 	return response.CollectorStatus, nil
 }
 
