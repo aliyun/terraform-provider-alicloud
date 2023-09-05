@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEssScalingConfiguration_Update(t *testing.T) {
+func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default"
@@ -452,7 +452,7 @@ func TestAccAlicloudEssScalingConfiguration_Update(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
+func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.pl"
@@ -617,7 +617,7 @@ func TestAccAlicloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssScalingConfiguration_Multi(t *testing.T) {
+func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.default.9"
@@ -728,7 +728,7 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 	}`, EcsInstanceCommonTestCase, name)
 }
 
-func TestAccAlicloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
+func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	var v ess.ScalingConfiguration
 	resourceId := "alicloud_ess_scaling_configuration.ipi"
@@ -854,7 +854,7 @@ func TestAccAlicloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 							"size":                 "20",
 							"category":             "cloud_essd",
 							"delete_with_instance": "false",
-							"encrypted":            "false",
+							"encrypted":            "true",
 							"kms_key_id":           "${alicloud_kms_key.key.id}",
 							"name":                 "kms",
 							"description":          "kms",
