@@ -133,7 +133,7 @@ func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
 
 // At present, some properties of this resource do not support modification, including: period, bandwidth, enable_ipsec,
 // enable_ssl, ssl_connections etc.
-func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
+func TestAccAliCloudVPNGatewayBasic(t *testing.T) {
 	var v vpc.DescribeVpnGatewayResponse
 
 	resourceId := "alicloud_vpn_gateway.default"
@@ -164,12 +164,6 @@ func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
-			},
-			{
 				Config: testAccVpnConfig_name(rand),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -194,6 +188,12 @@ func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "auto_pay"},
+			},
 		},
 	})
 
@@ -202,19 +202,19 @@ func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
 func testAccVpnConfigBasic(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default =  "tf-testAccVpnConfig%d"
+default =  "tf-testAccVpnConfig%d"
 }
 
 data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+available_resource_creation= "VSwitch"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+vpc_id = data.alicloud_vpcs.default.ids.0
+zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -229,12 +229,12 @@ locals {
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
-	enable_ssl = true
-	instance_charge_type = "PrePaid"
-	vswitch_id = local.vswitch_id
+name = "${var.name}"
+vpc_id = data.alicloud_vpcs.default.ids.0
+bandwidth = "10"
+enable_ssl = true
+instance_charge_type = "PrePaid"
+vswitch_id = local.vswitch_id
 }
 `, rand)
 }
@@ -242,19 +242,19 @@ resource "alicloud_vpn_gateway" "default" {
 func testAccVpnConfig_name(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default =  "tf-testAccVpnConfig%d"
+default =  "tf-testAccVpnConfig%d"
 }
 
 data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+available_resource_creation= "VSwitch"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+vpc_id = data.alicloud_vpcs.default.ids.0
+zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -269,12 +269,12 @@ locals {
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}_change"
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
-	enable_ssl = true
-	instance_charge_type = "PrePaid"
-	vswitch_id = local.vswitch_id
+name = "${var.name}_change"
+vpc_id = data.alicloud_vpcs.default.ids.0
+bandwidth = "10"
+enable_ssl = true
+instance_charge_type = "PrePaid"
+vswitch_id = local.vswitch_id
 }
 `, rand)
 }
@@ -282,19 +282,19 @@ resource "alicloud_vpn_gateway" "default" {
 func testAccVpnConfig_description(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default =  "tf-testAccVpnConfig%d"
+default =  "tf-testAccVpnConfig%d"
 }
 
 data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+available_resource_creation= "VSwitch"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+vpc_id = data.alicloud_vpcs.default.ids.0
+zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -309,13 +309,13 @@ locals {
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}_change"
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
-	enable_ssl = true
-	instance_charge_type = "PrePaid"
-	description = "${var.name}_description"
-	vswitch_id = local.vswitch_id
+name = "${var.name}_change"
+vpc_id = data.alicloud_vpcs.default.ids.0
+bandwidth = "10"
+enable_ssl = true
+instance_charge_type = "PrePaid"
+description = "${var.name}_description"
+vswitch_id = local.vswitch_id
 }
 `, rand)
 }
@@ -323,19 +323,19 @@ resource "alicloud_vpn_gateway" "default" {
 func testAccVpnConfig_all(rand int) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default =  "tf-testAccVpnConfig%d"
+default =  "tf-testAccVpnConfig%d"
 }
 
 data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
+available_resource_creation= "VSwitch"
 }
 
 data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+vpc_id = data.alicloud_vpcs.default.ids.0
+zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -350,13 +350,13 @@ locals {
 }
 
 resource "alicloud_vpn_gateway" "default" {
-	name = "${var.name}"
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	bandwidth = "10"
-	enable_ssl = true
-	instance_charge_type = "PrePaid"
-	description = "${var.name}"
-	vswitch_id = local.vswitch_id
+name = "${var.name}"
+vpc_id = data.alicloud_vpcs.default.ids.0
+bandwidth = "10"
+enable_ssl = true
+instance_charge_type = "PrePaid"
+description = "${var.name}"
+vswitch_id = local.vswitch_id
 }
 `, rand)
 }
@@ -370,7 +370,7 @@ var testAccVpnGatewayCheckMap = map[string]string{
 	"vswitch_id":   CHECKSET,
 }
 
-func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
+func TestAccAliCloudVPNGateway_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnGatewayMap3)
@@ -405,7 +405,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"Created": "TF",
 						"For":     "Test",
 					},
-					"network_type": "private",
+					"network_type": "public",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -419,7 +419,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 						"period":               "1",
 						"instance_charge_type": "PrePaid",
 						"tags.%":               "2",
-						"network_type":         "private",
+						"network_type":         "public",
 					}),
 				),
 			},
@@ -451,7 +451,7 @@ func TestAccAlicloudVPNGateway_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period"},
+				ImportStateVerifyIgnore: []string{"period", "auto_pay"},
 			},
 		},
 	})
@@ -462,10 +462,10 @@ var AlicloudVpnGatewayMap3 = map[string]string{}
 func AlicloudVpnGatewayBasicDependence3(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
-	default = "%s"
+default = "%s"
 }
 
-data "alicloud_vpcs" "default"	{
+data "alicloud_vpcs" "default" {
   name_regex = "default-NODELETING"
 }
 
@@ -475,3 +475,319 @@ data "alicloud_vswitches" "default" {
 
 `, name)
 }
+
+// Test VPNGateway VPNGateway. >>> Resource test cases, automatically generated.
+// Case 3675
+func TestAccAliCloudVPNGatewayVPNGateway_basic3675(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayVPNGatewayMap3675)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayVPNGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpngatewayvpngateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPNGatewayVPNGatewayBasicDependence3675)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth":        "5",
+					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":       "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpn_gateway_name": name,
+					"enable_ssl":       "true",
+					"enable_ipsec":     "true",
+					"vpn_type":         "Normal",
+					"ssl_connections":  "5",
+					"payment_type":     "Subscription",
+					"period":           "1",
+					"network_type":     "public",
+					"auto_pay":         "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth":        "5",
+						"vpc_id":           CHECKSET,
+						"vswitch_id":       CHECKSET,
+						"vpn_gateway_name": name,
+						"enable_ssl":       "true",
+						"enable_ipsec":     "true",
+						"vpn_type":         "Normal",
+						"ssl_connections":  "5",
+						"payment_type":     "Subscription",
+						"period":           "1",
+						"network_type":     "public",
+						"auto_pay":         "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test_vpn",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test_vpn",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "tes_vpn_new",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "tes_vpn_new",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_propagate": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_propagate": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test_vpn",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test_vpn",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpn_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpn_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_connections":  "5",
+					"enable_ipsec":     "true",
+					"enable_ssl":       "true",
+					"auto_pay":         "true",
+					"vpn_type":         "Normal",
+					"description":      "test_vpn",
+					"vpn_gateway_name": name + "_update",
+					"network_type":     "public",
+					"bandwidth":        "5",
+					"vswitch_id":       "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
+					"period":           "1",
+					"payment_type":     "Subscription",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_connections":  "5",
+						"enable_ipsec":     "true",
+						"enable_ssl":       "true",
+						"auto_pay":         "true",
+						"vpn_type":         "Normal",
+						"description":      "test_vpn",
+						"vpn_gateway_name": name + "_update",
+						"network_type":     "public",
+						"bandwidth":        "5",
+						"vswitch_id":       CHECKSET,
+						"vpc_id":           CHECKSET,
+						"period":           "1",
+						"payment_type":     "Subscription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_pay", "enable_ipsec", "enable_ssl", "period", "ssl_connections"},
+			},
+		},
+	})
+}
+
+var AlicloudVPNGatewayVPNGatewayMap3675 = map[string]string{
+	"payment_type": CHECKSET,
+	"status":       CHECKSET,
+	"create_time":  CHECKSET,
+}
+
+func AliCloudVPNGatewayVPNGatewayBasicDependence3675(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+
+
+`, name)
+}
+
+// Case 3675  twin
+func TestAccAliCloudVPNGatewayVPNGateway_basic3675_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayVPNGatewayMap3675)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayVPNGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpngatewayvpngateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPNGatewayVPNGatewayBasicDependence3675)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_connections":  "5",
+					"enable_ipsec":     "true",
+					"enable_ssl":       "true",
+					"auto_pay":         "true",
+					"vpn_type":         "Normal",
+					"description":      "test_vpn",
+					"vpn_gateway_name": name,
+					"network_type":     "public",
+					"bandwidth":        "5",
+					"vswitch_id":       "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vpc_id":           "${data.alicloud_vpcs.default.ids.0}",
+					"period":           "1",
+					"payment_type":     "Subscription",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_connections":  "5",
+						"enable_ipsec":     "true",
+						"enable_ssl":       "true",
+						"auto_pay":         "true",
+						"vpn_type":         "Normal",
+						"description":      "test_vpn",
+						"vpn_gateway_name": name,
+						"network_type":     "public",
+						"bandwidth":        "5",
+						"vswitch_id":       CHECKSET,
+						"vpc_id":           CHECKSET,
+						"period":           "1",
+						"payment_type":     "Subscription",
+						"tags.%":           "2",
+						"tags.Created":     "TF",
+						"tags.For":         "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_pay", "enable_ipsec", "enable_ssl", "period", "ssl_connections"},
+			},
+		},
+	})
+}
+
+// Test VPNGateway VPNGateway. <<< Resource test cases, automatically generated.

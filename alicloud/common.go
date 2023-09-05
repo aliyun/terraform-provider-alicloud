@@ -1542,3 +1542,23 @@ func InArray(target string, strArray []string) bool {
 	}
 	return false
 }
+
+func convertChargeTypeToPaymentType(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
+}
+
+func convertPaymentTypeToChargeType(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}
