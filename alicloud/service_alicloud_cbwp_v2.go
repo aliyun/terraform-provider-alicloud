@@ -227,3 +227,48 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+func (s *CbwpServiceV2) DescribeCommonBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
+
+	object, err = s.DescribeCbwpCommonBandwidthPackage(bandwidthPackageId)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	if val, ok := object["PublicIpAddresses"].(map[string]interface{}); ok {
+		if vs, ok := val["PublicIpAddresse"]; ok {
+			for _, ipAddresse := range vs.([]interface{}) {
+				item := ipAddresse.(map[string]interface{})
+				if fmt.Sprint(item["AllocationId"]) == ipInstanceId {
+					return object, nil
+				}
+			}
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+}
+
+func (s *CbwpServiceV2) CbwpCommonBandwidthPackageAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCommonBandwidthPackageAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
