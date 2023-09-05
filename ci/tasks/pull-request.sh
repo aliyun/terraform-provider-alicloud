@@ -31,8 +31,8 @@ apt-get update
 apt-get install zip -y
 
 # install gh
-wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
-tar -xzf gh_2.27.0_linux_amd64.tar.gz -C /usr/local
+#wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
+tar -xzf gh/gh_2.27.0_linux_amd64.tar.gz -C /usr/local
 export PATH="/usr/local/gh_2.27.0_linux_amd64/bin:$PATH"
 
 gh version

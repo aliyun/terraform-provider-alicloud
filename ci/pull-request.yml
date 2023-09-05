@@ -3,8 +3,6 @@ groups:
     jobs:
       - pull-request-integration-test-approve
       - pull-request-integration-test-comment
-#      - pull-request-docs-example-approve
-#      - pull-request-docs-example-comment
 
 shared:
   - &run
@@ -34,7 +32,7 @@ shared:
       FC_REGION: {{alicloud_fc_region}}
       OSS_BUCKET_NAME: {{alicloud_oss_bucket_name}}
       OSS_BUCKET_REGION: {{alicloud_oss_bucket_region}}
-      GITHUB_TOKEN: {{github_token_for_docs}}
+      GITHUB_TOKEN: {{github_token}}
 
 jobs:
 - name: pull-request-integration-test-approve
@@ -50,6 +48,8 @@ jobs:
       resource: aliyun-cli
     - get: gh
       resource: gh
+    - get: terraform
+      resource: terraform
   - <<: *run-example
   - <<: *run
 
@@ -66,34 +66,10 @@ jobs:
       resource: aliyun-cli
     - get: gh
       resource: gh
+    - get: terraform
+      resource: terraform
   - <<: *run-example
   - <<: *run
-
-#- name: pull-request-docs-example-approve
-#  plan:
-#    - in_parallel:
-#      - get: terraform-provider-alicloud
-#        resource: github-pr-approve-docs
-#        trigger: true
-#        version: every
-#        params:
-#          source_path: .
-#      - get: aliyun-cli
-#        resource: aliyun-cli
-#    - <<: *run-example
-#
-#- name: pull-request-docs-example-comment
-#  plan:
-#    - in_parallel:
-#      - get: terraform-provider-alicloud
-#        resource: github-pr-comment-docs
-#        trigger: true
-#        version: every
-#        params:
-#          source_path: .
-#      - get: aliyun-cli
-#        resource: aliyun-cli
-#    - <<: *run-example
 
 resources:
 
@@ -126,31 +102,25 @@ resources:
     commenter_association: ["owner"]
 
 - name: gh
-  type: gh
+  type: file-url
   source:
-    owner: cli
-    repository: cli
-    tag_filter: "v2.27.0"
-#- name: github-pr-approve-docs
-#  type: github-pr-comment-resource
-#  source:
-#    repository: aliyun/terraform-provider-alicloud
-#    access_token: {{github_token_for_docs}}
-#    review_states: ["approved"]
-#    when: latest
-#
-#- name: github-pr-comment-docs
-#  type: github-pr-comment-resource
-#  source:
-#    repository: aliyun/terraform-provider-alicloud
-#    access_token: {{github_token_for_docs}}
-#    review_states: ["commented"]
-#    when: latest
-#    comments: ["^approved$"]
-#    commenter_association: ["owner"]
+    url: https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
+    filename: gh_2.27.0_linux_amd64.tar.gz
+
+- name: terraform
+  type: file-url
+  source:
+    url: https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
+    filename: terraform.zip
 
 resource_types:
   - name: github-pr-comment-resource
     type: docker-image
     source:
       repository: ndrjng/concourse-github-pr-comment-resource
+
+  - name: file-url
+    type: docker-image
+    source:
+      repository: pivotalservices/concourse-curl-resource
+      tag: latest

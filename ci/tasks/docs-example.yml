@@ -8,6 +8,8 @@ image_resource:
 inputs:
   - name: terraform-provider-alicloud
   - name: aliyun-cli
+  - name: gh
+  - name: terraform
 
 run:
   path: terraform-provider-alicloud/ci/tasks/docs-example.sh

@@ -8,6 +8,7 @@ image_resource:
 inputs:
   - name: terraform-provider-alicloud
   - name: aliyun-cli
+  - name: gh
 
 run:
   path: terraform-provider-alicloud/ci/tasks/pull-request.sh

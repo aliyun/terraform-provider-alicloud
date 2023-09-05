@@ -35,13 +35,13 @@ apt-get update
 apt-get install zip -y
 
 # install gh
-ll -l
+ls -l
 #wget -qq https://github.com/cli/cli/releases/download/v2.27.0/gh_2.27.0_linux_amd64.tar.gz
 tar -xzf gh/gh_2.27.0_linux_amd64.tar.gz -C /usr/local
 export PATH="/usr/local/gh_2.27.0_linux_amd64/bin:$PATH"
 #install terraform
-curl -OL https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
-unzip -o terraform_1.5.4_linux_amd64.zip -d /usr/local/bin
+#curl -OL https://releases.hashicorp.com/terraform/1.5.4/terraform_1.5.4_linux_amd64.zip
+unzip -o terraform/terraform.zip -d /usr/local/bin
 
 gh version
 # shellcheck disable=SC2164
