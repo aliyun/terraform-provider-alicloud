@@ -25,9 +25,8 @@ variable "name" {
   default = "terraform-example"
 }
 
-resource "alicloud_resource_manager_resource_group" "default" {
-  display_name        = var.name
-  resource_group_name = var.name
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_common_bandwidth_package" "default" {
@@ -37,7 +36,7 @@ resource "alicloud_common_bandwidth_package" "default" {
   bandwidth                 = "1000"
   ratio                     = 100
   internet_charge_type      = "PayByBandwidth"
-  resource_group_id         = alicloud_resource_manager_resource_group.default.id
+  resource_group_id         = data.alicloud_resource_manager_resource_groups.default.ids.0
   security_protection_types = ["AntiDDoS_Enhanced"]
 }
 ```

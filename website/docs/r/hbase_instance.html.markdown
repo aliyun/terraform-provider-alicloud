@@ -7,17 +7,17 @@ description: |-
   Provides a HBase instance resource.
 ---
 
-# alicloud\_hbase\_instance
+# alicloud_hbase_instance
 
 Provides a HBase instance resource supports replica set instances only. The HBase provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
-You can see detail product introduction [here](https://help.aliyun.com/product/49055.html)
+You can see detail product introduction [here](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/createcluster)
 
--> **NOTE:**  Available in 1.67.0+
+-> **NOTE:** Available since v1.67.0.
 
 -> **NOTE:**  The following regions don't support create Classic network HBase instance.
 [`cn-hangzhou`,`cn-shanghai`,`cn-qingdao`,`cn-beijing`,`cn-shenzhen`,`ap-southeast-1a`,.....]
-The official website mark  more regions. or you can call [DescribeRegions](https://help.aliyun.com/document_detail/144489.html)
+The official website mark  more regions. or you can call [DescribeRegions](https://www.alibabacloud.com/help/en/apsaradb-for-hbase/latest/describeregions)
 
 -> **NOTE:**  Create HBase instance or change instance type and storage would cost 15 minutes. Please make full preparation
 
@@ -26,10 +26,26 @@ The official website mark  more regions. or you can call [DescribeRegions](https
 ### Create a hbase instance
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+data "alicloud_hbase_zones" "default" {}
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_hbase_zones.default.zones[0].id
+}
+
 resource "alicloud_hbase_instance" "default" {
-  name                   = "tf_testAccHBase_vpc"
-  zone_id                = "cn-shenzhen-b"
-  vswitch_id             = "vsw-123456"
+  name                   = var.name
+  zone_id                = data.alicloud_hbase_zones.default.zones[0].id
+  vswitch_id             = data.alicloud_vswitches.default.ids.0
+  vpc_id                 = data.alicloud_vpcs.default.ids.0
   engine                 = "hbaseue"
   engine_version         = "2.0"
   master_instance_type   = "hbase.sn2.2xlarge"
@@ -39,6 +55,7 @@ resource "alicloud_hbase_instance" "default" {
   core_disk_size         = 400
   pay_type               = "PostPaid"
   cold_storage_size      = 0
+  deletion_protection    = "false"
 }
 ```
 
@@ -75,9 +92,41 @@ The following arguments are supported:
 * `ip_white` - (Optional, Available in 1.105.0+) The white ip list of the cluster.
 * `security_groups` - (Optional, Available in 1.105.0+) The security group resource of the cluster.
 * `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
-
+* `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster. See [`ui_proxy_conn_addrs`](#ui_proxy_conn_addrs) below.
+* `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster. See [`zk_conn_addrs`](#zk_conn_addrs) below.
+* `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster. See [`slb_conn_addrs`](#slb_conn_addrs) below.
 
 -> **NOTE:** Now only instance name can be change. The others(instance_type, disk_size, core_instance_quantity and so on) will be supported in the furture.
+
+### `ui_proxy_conn_addrs`
+
+The ui_proxy_conn_addrs supports the following:
+
+* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Optional) The Phoenix address.
+* `net_type` - (Optional) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
+
+### `zk_conn_addrs`
+
+The zk_conn_addrs supports the following:
+
+* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Optional) The Phoenix address.
+* `net_type` - (Optional) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
+
+### `slb_conn_addrs`
+
+The slb_conn_addrs supports the following:
+
+* `conn_addr_port` - (Optional) The number of the port over which Phoenix connects to the instance.
+* `conn_addr` - (Optional) The Phoenix address.
+* `net_type` - (Optional) The type of the network. Valid values:
+  - `2`: The instance is connected over an internal network.
+  - `0`: The instance is connected over the Internet.
 
 ## Attributes Reference
 
@@ -85,11 +134,9 @@ The following attributes are exported:
 
 * `id` - The ID of the HBase.
 * `master_instance_quantity` - Count nodes of the master node.
-* `ui_proxy_conn_addrs` - (Available in 1.105.0+) The Web UI proxy addresses of the cluster.
-* `zk_conn_addrs` - (Available in 1.105.0+) The zookeeper addresses of the cluster.
-* `slb_conn_addrs` - (Available in 1.105.0+) The slb service addresses of the cluster.
 
-### Timeouts
+
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

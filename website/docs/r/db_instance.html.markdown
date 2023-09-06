@@ -119,12 +119,12 @@ resource "alicloud_db_instance" "example" {
   db_instance_storage_type = "cloud_essd"
   security_group_ids       = [alicloud_security_group.example.id]
   parameters {
-    name  = "innodb_large_prefix"
-    value = "ON"
+    name  = "delayed_insert_timeout"
+    value = "600"
   }
   parameters {
-    name  = "connect_timeout"
-    value = "50"
+    name  = "max_length_for_sort_data"
+    value = "2048"
   }
 }
 ```
@@ -187,12 +187,24 @@ resource "alicloud_db_instance" "example" {
 
 ```terraform
 variable "name" {
-  default = "tf-zccdbinstance"
+  default = "tf_example"
 }
 
-data "alicloud_zones" "example" {
-  available_resource_creation = "Rds"
-  multi                       = true
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  instance_charge_type     = "PostPaid"
+  db_instance_storage_type = "cloud_essd"
 }
 
 resource "alicloud_vpc" "example" {
@@ -201,34 +213,53 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  count        = length(data.alicloud_zones.example.zones.0.multi_zone_ids)
+  count        = 2
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = format("172.16.%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.example.zones.0.multi_zone_ids[count.index]
-  vswitch_name = format("vswitch_%d", count.index)
+  zone_id      = data.alicloud_db_zones.example.zones[count.index].id
+  vswitch_name = format("%s_%d", var.name, count.index)
 }
 
-resource "alicloud_db_instance" "this" {
-  engine               = "MySQL"
-  engine_version       = "5.6"
-  instance_storage     = "30"
-  instance_type        = "rds.mysql.t1.small"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  zone_id              = data.alicloud_zones.example.zones.0.id
-  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
-  monitoring_period    = "60"
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
+}
+
+resource "alicloud_db_instance" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
+  instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period        = "60"
+  db_instance_storage_type = "cloud_essd"
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  zone_id_slave_a          = data.alicloud_db_zones.example.zones.1.id
 }
 ```
 
 ### Create an Enterprise Edition RDS MySQL Instance
 ```terraform
 variable "name" {
-  default = "tf-accdbinstance"
+  default = "tf-example"
 }
 
-data "alicloud_zones" "example" {
-  available_resource_creation = "Rds"
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  db_instance_storage_type = "local_ssd"
+}
+
+data "alicloud_db_instance_classes" "example" {
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
 }
 
 resource "alicloud_vpc" "example" {
@@ -237,25 +268,32 @@ resource "alicloud_vpc" "example" {
 }
 
 resource "alicloud_vswitch" "example" {
-  count        = 3
+  count        = 2
   vpc_id       = alicloud_vpc.example.id
   cidr_block   = format("172.16.%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.example.zones[count.index].id
-  vswitch_name = format("vswich_%d", var.name, count.index)
+  zone_id      = data.alicloud_db_zones.example.zones[count.index].id
+  vswitch_name = format("%s_%d", var.name, count.index)
+}
+
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = alicloud_vpc.example.id
 }
 
 resource "alicloud_db_instance" "example" {
-  engine               = "MySQL"
-  engine_version       = "8.0"
-  instance_storage     = "30"
-  instance_type        = "mysql.n2.small.25"
-  instance_charge_type = "Postpaid"
-  instance_name        = var.name
-  zone_id              = data.alicloud_zones.example.zones.0.id
-  zone_id_slave_a      = data.alicloud_zones.example.zones.1.id
-  zone_id_slave_b      = data.alicloud_zones.example.zones.2.id
-  vswitch_id           = join(",", alicloud_vswitch.example.*.id)
-  monitoring_period    = "60"
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "Finance"
+  instance_type            = "mysql.n2.xlarge.25"
+  instance_storage         = "20"
+  instance_charge_type     = "Postpaid"
+  instance_name            = var.name
+  vswitch_id               = join(",", alicloud_vswitch.example.*.id)
+  monitoring_period        = "60"
+  db_instance_storage_type = "local_ssd"
+  zone_id                  = data.alicloud_db_zones.example.zones.0.id
+  zone_id_slave_a          = data.alicloud_db_zones.example.zones.1.id
+  zone_id_slave_b          = data.alicloud_db_zones.example.zones.1.id
 }
 ```
 
@@ -266,6 +304,9 @@ variable "name" {
   default = "tf-accdbinstance"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -324,6 +365,9 @@ variable "name" {
   default = "tf-accdbinstance"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 data "alicloud_db_zones" "example" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
@@ -342,16 +386,12 @@ data "alicloud_db_instance_classes" "example" {
   commodity_code           = "rds_serverless_public_cn"
 }
 
-resource "alicloud_vpc" "example" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
-
-resource "alicloud_vswitch" "example" {
-  vpc_id       = alicloud_vpc.example.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_db_zones.example.ids.1
-  vswitch_name = var.name
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.example.ids.1
 }
 
 resource "alicloud_db_instance" "example" {
@@ -362,7 +402,7 @@ resource "alicloud_db_instance" "example" {
   instance_charge_type     = "Serverless"
   instance_name            = var.name
   zone_id                  = data.alicloud_db_zones.example.ids.1
-  vswitch_id               = alicloud_vswitch.example.id
+  vswitch_id               = data.alicloud_vswitches.default.ids.0
   db_instance_storage_type = "cloud_essd"
   category                 = "serverless_basic"
   serverless_config {
@@ -370,7 +410,6 @@ resource "alicloud_db_instance" "example" {
     min_capacity = 0.5
   }
 }
-
 ```
 
 ### Create a Serverless RDS SQLServer Instance
@@ -380,6 +419,9 @@ variable "name" {
   default = "tf-accdbinstance"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 data "alicloud_db_zones" "example" {
   engine                   = "SQLServer"
   engine_version           = "2019_std_sl"

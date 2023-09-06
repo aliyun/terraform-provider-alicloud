@@ -7,24 +7,33 @@ description: |-
   Provides a Alicloud Cloudauth Face Config resource.
 ---
 
-# alicloud\_cloudauth\_face\_config
+# alicloud_cloudauth_face_config
 
 Provides a Cloudauth Face Config resource.
 
-For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://help.aliyun.com/document_detail/99173.html).
+For information about Cloudauth Face Config and how to use it, see [What is Face Config](https://www.alibabacloud.com/help/en/document_detail/99173.html).
 
--> **NOTE:** Available in v1.137.0+.
+-> **NOTE:** Available since v1.137.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_cloudauth_face_config" "example" {
-  biz_name = "example_value"
-  biz_type = "example_value"
+variable "name" {
+  default = "tf_example"
 }
-
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+resource "alicloud_cloudauth_face_config" "example" {
+  biz_name = format("%s-biz", var.name)
+  biz_type = format("type-%s", random_integer.default.result)
+}
 ```
 
 ## Argument Reference
