@@ -7,21 +7,24 @@ description: |-
   Provides a Alicloud Intelligent Media Management Project resource.
 ---
 
-# alicloud\_imm\_project
+# alicloud_imm_project
 
 Provides a Intelligent Media Management Project resource.
 
-For information about Intelligent Media Management Project and how to use it, see [What is Project](https://help.aliyun.com/document_detail/63496.html).
+For information about Intelligent Media Management Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/network-intelligence-service/latest/user-overview).
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tfexample"
+}
 resource "alicloud_ram_role" "role" {
-  name        = "example_role_name"
+  name        = var.name
   document    = <<EOF
   {
     "Statement": [
@@ -42,7 +45,7 @@ resource "alicloud_ram_role" "role" {
   force       = true
 }
 resource "alicloud_imm_project" "example" {
-  project      = "example_name"
+  project      = var.name
   service_role = alicloud_ram_role.role.name
 }
 ```

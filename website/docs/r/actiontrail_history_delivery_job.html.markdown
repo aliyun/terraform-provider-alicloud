@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Actiontrail History Delivery Job resource.
 ---
 
-# alicloud\_actiontrail\_history\_delivery\_job
+# alicloud_actiontrail_history_delivery_job
 
 Provides a Actiontrail History Delivery Job resource.
 
-For information about Actiontrail History Delivery Job and how to use it, see [What is History Delivery Job](https://www.alibabacloud.com/help/doc-detail/199999.htm).
+For information about Actiontrail History Delivery Job and how to use it, see [What is History Delivery Job](https://www.alibabacloud.com/help/en/actiontrail/latest/api-actiontrail-2020-07-06-createdeliveryhistoryjob).
 
--> **NOTE:** Available in v1.139.0+.
+-> **NOTE:** Available since v1.139.0.
 
 -> **NOTE:** You are authorized to use the historical event delivery task feature. To use this feature, [submit a ticket](https://workorder-intl.console.aliyun.com/?spm=a2c63.p38356.0.0.e29f552bb6odNZ#/ticket/createIndex) or ask the sales manager to add you to the whitelist.
 
@@ -28,20 +28,21 @@ For information about Actiontrail History Delivery Job and how to use it, see [W
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tfexample"
+}
 data "alicloud_regions" "example" {
   current = true
 }
-
 data "alicloud_account" "example" {}
 
 resource "alicloud_log_project" "example" {
-  name        = "example_value"
-  description = "tf actiontrail test"
+  name        = var.name
+  description = "tf actiontrail example"
 }
 
-
 resource "alicloud_actiontrail_trail" "example" {
-  trail_name      = "example_value"
+  trail_name      = var.name
   sls_project_arn = "acs:log:${data.alicloud_regions.example.regions.0.id}:${data.alicloud_account.example.id}:project/${alicloud_log_project.example.name}"
 }
 
@@ -63,7 +64,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of History Delivery Job.
 * `status` - The status of the task. Valid values: `0`, `1`, `2`, `3`. `0`: The task is initializing. `1`: The task is delivering historical events. `2`: The delivery of historical events is complete. `3`: The task fails.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

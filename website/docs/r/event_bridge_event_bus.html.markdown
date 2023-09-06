@@ -7,23 +7,25 @@ description: |-
   Provides a Alicloud Event Bridge Event Bus resource.
 ---
 
-# alicloud\_event\_bridge\_event\_bus
+# alicloud_event_bridge_event_bus
 
 Provides a Event Bridge Event Bus resource.
 
-For information about Event Bridge Event Bus and how to use it, see [What is Event Bus](https://help.aliyun.com/document_detail/167863.html).
+For information about Event Bridge Event Bus and how to use it, see [What is Event Bus](https://www.alibabacloud.com/help/en/eventbridge/latest/api-eventbridge-2020-04-01-createeventbus).
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_event_bridge_event_bus" "example" {
-  event_bus_name = "my-EventBus"
+variable "name" {
+  default = "tf-example"
 }
-
+resource "alicloud_event_bridge_event_bus" "example" {
+  event_bus_name = var.name
+}
 ```
 
 ## Argument Reference

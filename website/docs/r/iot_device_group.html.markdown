@@ -7,23 +7,25 @@ description: |-
   Provides a Alicloud Iot Device Group resource.
 ---
 
-# alicloud\_iot\_device\_group
+# alicloud_iot_device_group
 
 Provides a Iot Device Group resource.
 
 For information about Iot Device Group and how to use it, see [What is Device Group](https://www.alibabacloud.com/help/product/30520.htm).
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_iot_device_group" "example" {
-  group_name = "example_value"
+variable "name" {
+  default = "tfexample"
 }
-
+resource "alicloud_iot_device_group" "example" {
+  group_name = var.name
+}
 ```
 
 ## Argument Reference

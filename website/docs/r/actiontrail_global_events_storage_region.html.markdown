@@ -7,13 +7,13 @@ description: |-
   Provides Alibaba Cloud Actiontrail Global Events Storage Region Resource
 ---
 
-# alicloud\_actiontrail\_global\_events\_storage\_region
+# alicloud_actiontrail_global_events_storage_region
 
 Provides a Global events storage region resource.
 
-For information about global events storage region and how to use it, see [What is Global Events Storage Region](https://help.aliyun.com/document_detail/608293.html).
+For information about global events storage region and how to use it, see [What is Global Events Storage Region](https://www.alibabacloud.com/help/en/actiontrail/latest/api-actiontrail-2020-07-06-updateglobaleventsstorageregion).
 
--> **NOTE:** Available in 1.201.0+
+-> **NOTE:** Available since v1.201.0.
 
 ## Example Usage
 
@@ -27,13 +27,12 @@ resource "alicloud_actiontrail_global_events_storage_region" "foo" {
 
 The following arguments are supported:
 
-* `storage_region` - (Optional, Computed) Global Events Storage Region.
+* `storage_region` - (Optional) Global Events Storage Region.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `storage_region` - Global Events Storage Region.
 
 ## Import
 
