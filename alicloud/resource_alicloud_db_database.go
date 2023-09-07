@@ -129,6 +129,8 @@ func resourceAlicloudDBDatabaseRead(d *schema.ResourceData, meta interface{}) er
 		var strArray = []string{object["CharacterSetName"].(string), object["Collate"].(string), object["Ctype"].(string)}
 		postgreSQLCharacterSet := strings.Join(strArray, ",")
 		d.Set("character_set", postgreSQLCharacterSet)
+	} else if string(MySQL) == object["Engine"] && object["CharacterSetName"] == "utf8mb3" {
+		d.Set("character_set", "utf8")
 	} else {
 		d.Set("character_set", object["CharacterSetName"])
 	}
