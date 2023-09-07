@@ -9,6 +9,8 @@ description: |-
 
 # alicloud\_waf\_instance
 
+-> **DEPRECATED:**  This resource has been deprecated and using [alicloud_wafv3_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/wafv3_instance) instead.
+
 Provides a WAF Instance resource to create instance in the Web Application Firewall.
 
 For information about WAF and how to use it, see [What is Alibaba Cloud WAF](https://www.alibabacloud.com/help/doc-detail/28517.htm).
