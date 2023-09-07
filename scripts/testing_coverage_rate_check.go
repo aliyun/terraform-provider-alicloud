@@ -279,9 +279,12 @@ func getTestCaseAttr(filePath string, resourceName string,
 					inIgnore = false
 					ignoreStr = strings.ReplaceAll(ignoreStr, "\"", "")
 					ignoreStr = symbolRegex.ReplaceAllString(ignoreStr, "")
-					attrSlice := strings.Split(ignoreStr[strings.Index(ignoreStr, "{")+1:strings.Index(ignoreStr, "}")], ",")
-					for _, v := range attrSlice {
-						(*testIgnoreSet).Add(v)
+					attrStr := ignoreStr[strings.Index(ignoreStr, "{")+1 : strings.Index(ignoreStr, "}")]
+					if len(attrStr) != 0 {
+						attrSlice := strings.Split(attrStr, ",")
+						for _, v := range attrSlice {
+							(*testIgnoreSet).Add(v)
+						}
 					}
 					ignoreStr = ""
 				}
