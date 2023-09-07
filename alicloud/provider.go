@@ -858,6 +858,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ims_oidc_provider":                                    resourceAliCloudImsOidcProvider(),
 			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),
 			"alicloud_nlb_loadbalancer_common_bandwidth_package_attachment": resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment(),
 			"alicloud_arms_prometheus_monitoring":                           resourceAliCloudArmsPrometheusMonitoring(),
