@@ -32,6 +32,10 @@ develop*
 !vendor/github.com/valyala/**/*.pem
 task-config
 website/vendor
+testcases/
+testcase-example/
+ossSchema.json
+ossNotFound.json
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate

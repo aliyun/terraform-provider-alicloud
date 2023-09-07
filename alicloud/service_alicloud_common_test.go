@@ -1,10 +1,12 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -400,8 +402,21 @@ func (ra *resourceAttr) resourceAttrMapUpdateSet() resourceAttrMapUpdate {
 func resourceTestAccConfigFunc(resourceId string,
 	name string,
 	configDependence func(name string) string) ResourceTestAccConfigFunc {
+
+	funcName := name
+	pc, _, _, ok := runtime.Caller(1)
+	if ok {
+		fn := runtime.FuncForPC(pc)
+		fname := fn.Name()
+		if strings.Contains(fname, ".") {
+			fNameSlice := strings.Split(fname, ".")
+			funcName = fNameSlice[len(fNameSlice)-1]
+		}
+	}
+
 	basicInfo := resourceConfig{
 		name:             name,
+		testCaseName:     funcName,
 		resourceId:       resourceId,
 		attributeMap:     make(map[string]interface{}),
 		configDependence: configDependence,
@@ -413,8 +428,21 @@ func resourceTestAccConfigFunc(resourceId string,
 func dataSourceTestAccConfigFunc(resourceId string,
 	name string,
 	configDependence func(name string) string) ResourceTestAccConfigFunc {
+
+	funcName := name
+	pc, _, _, ok := runtime.Caller(1)
+	if ok {
+		fn := runtime.FuncForPC(pc)
+		fname := fn.Name()
+		if strings.Contains(fname, ".") {
+			fNameSlice := strings.Split(fname, ".")
+			funcName = fNameSlice[len(fNameSlice)-1]
+		}
+	}
+
 	basicInfo := resourceConfig{
 		name:             name,
+		testCaseName:     funcName,
 		resourceId:       resourceId,
 		attributeMap:     make(map[string]interface{}),
 		configDependence: configDependence,
@@ -426,6 +454,8 @@ func dataSourceTestAccConfigFunc(resourceId string,
 type resourceConfig struct {
 	// the resource name
 	name string
+
+	testCaseName string
 
 	resourceId string
 
@@ -478,7 +508,9 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		} else {
 			primaryConfig = fmt.Sprintf("\n\nresource \"%s\" \"%s\" ", strs[0], strs[1])
 		}
+		writeAttributeToFile(assistantConfig, primaryConfig, b.resourceId, b.testCaseName, b.attributeMap)
 		config := assistantConfig + primaryConfig + fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap)))
+		fmt.Println(fmt.Sprint(valueConvert(0, reflect.ValueOf(b.attributeMap))))
 		for _, part := range strings.Split(os.Getenv("DEBUG"), ",") {
 			if strings.TrimSpace(part) == "terraform_test" {
 				log.Printf("###### (step %d) terraform test configuration ###### %s \n###### (END) ######\n\n", b.number, config)
@@ -487,6 +519,72 @@ func (b *resourceConfig) configBuild(overwrite bool) ResourceTestAccConfigFunc {
 		}
 		return config
 	}
+}
+
+func writeAttributeToFile(configDependence, primaryConfig, resourceId, name string, attributeMap map[string]interface{}) {
+	if os.Getenv("EXAMPLE") != "on" || len(resourceId) == 0 ||
+		len(attributeMap) == 0 || len(name) == 0 {
+		return
+	}
+
+	examplePath := "../testcases/"
+	strs := strings.Split(resourceId, ".")
+	resourceName := ""
+	// resourceType := ""
+	if strings.Compare("data", strs[0]) == 0 {
+		// resourceType = "data"
+		examplePath += "data-source/"
+		resourceName = strs[1]
+	} else {
+		// resourceType = "resource"
+		examplePath += "resource/"
+		resourceName = strs[0]
+	}
+	resourceStrs := strings.SplitN(resourceName, "_", 3)
+	examplePath += resourceStrs[1] + "/"
+	if len(resourceStrs) == 2 {
+		examplePath += resourceStrs[1] + "/"
+	} else {
+		examplePath += resourceStrs[2] + "/"
+	}
+
+	dependenceFileName := name + "-dependence.tf"
+	testCasefileName := name + ".txt"
+
+	_, err := os.Stat(examplePath)
+	if err != nil || os.IsNotExist(err) {
+		err := os.MkdirAll(examplePath, 0777)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+	_, err = os.Stat(examplePath + dependenceFileName)
+	if err != nil || os.IsNotExist(err) {
+		dependenceFile, err := os.OpenFile(examplePath+dependenceFileName,
+			os.O_RDWR|os.O_CREATE, 0766)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		dependenceFile.WriteString("# " + resourceName + " \n")
+		dependenceFile.WriteString("# " + strings.TrimSpace(primaryConfig) + " \n")
+		dependenceFile.WriteString(configDependence)
+		dependenceFile.Close()
+	}
+
+	testCaseFile, err := os.OpenFile(examplePath+testCasefileName,
+		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer testCaseFile.Close()
+
+	data, _ := json.Marshal(attributeMap)
+	testCaseFile.WriteString("# " + resourceName + " \n")
+	testCaseFile.WriteString(string(data) + "\n")
+
 }
 
 // deal with the parameter common method
