@@ -102,7 +102,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
-  runtime     = "python2.7"
+  runtime     = "python3.10"
   handler     = "hello.handler"
 }
 
@@ -117,8 +117,8 @@ resource "alicloud_fc_trigger" "default" {
   config     = <<EOF
     {
         "sourceConfig": {
-            "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.source_store.name}"
+            "logstore": "${alicloud_log_store.source_store.name}",
+            "startTime": null
         },
         "jobConfig": {
             "maxRetryTime": 3,
@@ -132,6 +132,7 @@ resource "alicloud_fc_trigger" "default" {
              "project": "${alicloud_log_project.default.name}",
             "logstore": "${alicloud_log_store.default.name}"
         },
+        "targetConfig": null,
         "enable": true
     }
   
@@ -207,7 +208,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
-  runtime     = "python2.7"
+  runtime     = "python3.10"
   handler     = "hello.handler"
 }
 
@@ -324,7 +325,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
-  runtime     = "python2.7"
+  runtime     = "python3.10"
   handler     = "hello.handler"
 }
 
@@ -386,7 +387,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
-  runtime     = "python2.7"
+  runtime     = "python3.10"
   handler     = "hello.handler"
 }
 
@@ -399,7 +400,14 @@ resource "alicloud_fc_trigger" "oss_trigger" {
     {
         "triggerEnable": false,
         "asyncInvocationType": false,
-        "eventRuleFilterPattern": "{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
+        "eventRuleFilterPattern": {
+          "source":[
+            "acs.oss"
+            ],
+            "type":[
+              "oss:BucketCreated:PutBucket"
+            ]
+        },
         "eventSourceConfig": {
             "eventSourceType": "Default"
         }

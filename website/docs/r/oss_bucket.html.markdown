@@ -209,7 +209,7 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
 }
 
 resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
-  bucket = "example-lifecycle-${random_integer.default.result}"
+  bucket = format("example-lifecycle6-%s", random_integer.default.result)
   acl    = "private"
 
   access_monitor {
@@ -222,39 +222,33 @@ resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
     enabled = true
 
     transitions {
-      created_before_date      = "2022-11-11"
+      days                     = 30
       storage_class            = "IA"
       is_access_time           = true
       return_to_std_when_visit = true
-    }
-    transitions {
-      created_before_date = "2021-11-11"
-      storage_class       = "Archive"
     }
   }
 }
 
 resource "alicloud_oss_bucket" "bucket-tag-lifecycle" {
-  bucket = "example-lifecycle-${random_integer.default.result}"
+  bucket = format("example-lifecycle7-%s", random_integer.default.result)
   acl    = "private"
 
   lifecycle_rule {
     id      = "rule-days-transition"
     prefix  = "path/"
     enabled = true
-
-    tags {
-      key1 = "value1"
-      key2 = "value2"
-    }
-
     transitions {
       created_before_date = "2022-11-11"
       storage_class       = "IA"
     }
   }
-}
 
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
+}
 ```
 
 Set bucket policy 

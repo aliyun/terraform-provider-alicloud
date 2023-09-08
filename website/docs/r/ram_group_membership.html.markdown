@@ -16,15 +16,17 @@ Provides a RAM Group membership resource.
 ## Example Usage
 
 ```terraform
-# Create a RAM Group membership.
+variable "name" {
+  default = "tfexample"
+}
 resource "alicloud_ram_group" "group" {
-  name     = "groupName"
+  name     = format("%sgroup", var.name)
   comments = "this is a group comments."
   force    = true
 }
 
 resource "alicloud_ram_user" "user" {
-  name         = "terraform-example"
+  name         = format("%suser", var.name)
   display_name = "user_display_name"
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
@@ -33,7 +35,7 @@ resource "alicloud_ram_user" "user" {
 }
 
 resource "alicloud_ram_user" "user1" {
-  name         = "terraform-example"
+  name         = format("%suser1", var.name)
   display_name = "user_display_name1"
   mobile       = "86-18688888889"
   email        = "hello.uuu@aaa.com"

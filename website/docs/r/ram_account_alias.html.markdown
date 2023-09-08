@@ -16,9 +16,11 @@ Provides a RAM cloud account alias.
 ## Example Usage
 
 ```terraform
-# Create a alias for cloud account.
+variable "name" {
+  default = "tfexample"
+}
 resource "alicloud_ram_account_alias" "alias" {
-  account_alias = "hallo"
+  account_alias = var.name
 }
 ```
 ## Argument Reference

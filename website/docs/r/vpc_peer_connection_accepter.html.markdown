@@ -26,23 +26,29 @@ variable "name" {
 variable "accepting_region" {
   default = "cn-beijing"
 }
-# other account ak,sk
-variable "accepting_account_access_key" {
-  default = "access_key"
+variable "accept_uid" {
+  default = "xxxx"
 }
-variable "accepting_account_secret_key" {
-  default = "secret_key"
+# Method 1: Use assume_role to operate resources in the target account, detail see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#assume-role
+provider "alicloud" {
+  region = var.accepting_region
+  alias  = "accepting"
+  assume_role {
+    role_arn = "acs:ram::${var.accept_uid}:role/terraform-example-assume-role"
+  }
 }
+
+# Method 2: Use the target account's access_key, secret_key
+# provider "alicloud" {
+#   region     = "cn-hangzhou"
+#   access_key = "access_key"
+#   secret_key = "secret_key"
+#   alias      = "accepting"
+# }
 
 provider "alicloud" {
   alias  = "local"
   region = "cn-hangzhou"
-}
-provider "alicloud" {
-  alias      = "accepting"
-  region     = var.accepting_region
-  access_key = var.accepting_account_access_key
-  secret_key = var.accepting_account_secret_key
 }
 
 resource "alicloud_vpc" "local" {

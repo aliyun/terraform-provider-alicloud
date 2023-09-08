@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Tag Policy Attachment resource.
 ---
 
-# alicloud\_tag\_policy\_attachment
+# alicloud_tag_policy_attachment
 
 Provides a Tag Policy Attachment resource to attaches a policy to an object. After you attach a tag policy to an object.
 For information about Tag Policy Attachment and how to use it,
@@ -20,18 +20,25 @@ see [What is Policy Attachment](https://www.alibabacloud.com/help/en/resource-ma
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+data "alicloud_account" "default" {}
 resource "alicloud_tag_policy" "example" {
-  policy_name     = "tName"
-  policy_desc     = "tDesc"
-  user_type       = "USER"
-  policy_document = <<EOF
+  policy_name    = var.name
+  policy_desc    = var.name
+  user_type      = "USER"
+  policy_content = <<EOF
 		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
     EOF
 }
 
 resource "alicloud_tag_policy_attachment" "example" {
   policy_id   = alicloud_tag_policy.example.id
-  target_id   = "151266687691****"
+  target_id   = data.alicloud_account.default.id
   target_type = "USER"
 }
 ```

@@ -7,34 +7,55 @@ description: |-
   Provides a Alicloud SSL VPN server resource.
 ---
 
-# alicloud\_ssl_vpn_server
+# alicloud_ssl_vpn_server
 
 Provides a SSL VPN server resource. [Refer to details](https://www.alibabacloud.com/help/doc-detail/64960.htm)
 
 -> **NOTE:** Terraform will auto build ssl vpn server while it uses `alicloud_ssl_vpn_server` to build a ssl vpn server resource.
+
+-> **NOTE:** Available since v1.15.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_vpn_gateway" "foo" {
-  name                 = "testAccVpnConfig_create"
-  vpc_id               = "vpc-fake-id"
-  bandwidth            = "10"
-  enable_ssl           = true
-  instance_charge_type = "PostPaid"
-  description          = "test_create_description"
+variable "name" {
+  default = "terraform-example"
 }
 
-resource "alicloud_ssl_vpn_server" "foo" {
-  name           = "sslVpnServerNameExample"
-  vpn_gateway_id = alicloud_vpn_gateway.foo.id
-  client_ip_pool = "192.168.0.0/16"
-  local_subnet   = "172.16.0.0/21"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vpn_gateway" "default" {
+  name                 = var.name
+  vpc_id               = alicloud_vpc.default.id
+  bandwidth            = "10"
+  enable_ssl           = true
+  description          = var.name
+  instance_charge_type = "PrePaid"
+  vswitch_id           = alicloud_vswitch.default.id
+}
+
+resource "alicloud_ssl_vpn_server" "default" {
+  name           = var.name
+  vpn_gateway_id = alicloud_vpn_gateway.default.id
+  client_ip_pool = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
+  local_subnet   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
   protocol       = "UDP"
   cipher         = "AES-128-CBC"
-  port           = 1194
+  port           = "1194"
   compress       = "false"
 }
 ```
