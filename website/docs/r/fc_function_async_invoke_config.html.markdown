@@ -97,7 +97,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
   memory_size = "512"
-  runtime     = "python2.7"
+  runtime     = "python3.10"
   handler     = "hello.handler"
 }
 
@@ -121,39 +121,18 @@ resource "alicloud_fc_function_async_invoke_config" "default" {
       destination = "acs:mns:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:/topics/${alicloud_mns_topic.default.name}/messages"
     }
   }
-}
-```
 
-### Error Handling Configuration
 
-```terraform
-resource "alicloud_fc_function_async_invoke_config" "example" {
-  service_name                 = alicloud_fc_service.example.name
-  function_name                = alicloud_fc_function.example.name
+  # Error Handling Configuration
   maximum_event_age_in_seconds = 60
   maximum_retry_attempts       = 0
-}
-```
 
-### Async Job Configuration
-
-```terraform
-resource "alicloud_fc_function_async_invoke_config" "example" {
-  service_name        = alicloud_fc_service.example.name
-  function_name       = alicloud_fc_function.example.name
+  # Async Job Configuration
   stateful_invocation = true
-}
-```
 
-### Configuration for Function Latest Unpublished Version
+  # Configuration for Function Latest Unpublished Version
+  qualifier = "LATEST"
 
-```terraform
-resource "alicloud_fc_function_async_invoke_config" "example" {
-  service_name  = alicloud_fc_service.example.name
-  function_name = alicloud_fc_function.example.name
-  qualifier     = "LATEST"
-
-  # ... other configuration ...
 }
 ```
 

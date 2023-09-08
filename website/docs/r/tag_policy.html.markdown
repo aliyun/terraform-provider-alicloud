@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud Tag Policy resource.
 ---
 
-# alicloud\_tag\_policy
+# alicloud_tag_policy
 
 Provides a Tag Policy resource.
 
@@ -21,11 +21,17 @@ see [What is Policy](https://www.alibabacloud.com/help/en/resource-management/la
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+provider "alicloud" {
+  region = "cn-shanghai"
+}
 resource "alicloud_tag_policy" "example" {
-  policy_name     = "tName"
-  policy_desc     = "tDesc"
-  user_type       = "USER"
-  policy_document = <<EOF
+  policy_name    = var.name
+  policy_desc    = var.name
+  user_type      = "USER"
+  policy_content = <<EOF
 		{"tags":{"CostCenter":{"tag_value":{"@@assign":["Beijing","Shanghai"]},"tag_key":{"@@assign":"CostCenter"}}}}
     EOF
 }

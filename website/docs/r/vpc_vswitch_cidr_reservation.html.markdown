@@ -13,7 +13,7 @@ Provides a Vpc Vswitch Cidr Reservation resource. The reserved network segment o
 
 For information about Vpc Vswitch Cidr Reservation and how to use it, see [What is Vswitch Cidr Reservation](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/610154).
 
--> **NOTE:** Available in v1.205.0+.
+-> **NOTE:** Available since v1.205.0.
 
 ## Example Usage
 
@@ -21,9 +21,11 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testacc-example"
+  default = "tf-example"
 }
-
+provider "alicloud" {
+  region = "ap-southeast-2"
+}
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -44,7 +46,7 @@ resource "alicloud_vswitch" "defaultVSwitch" {
 resource "alicloud_vpc_vswitch_cidr_reservation" "default" {
   ip_version                    = "IPv4"
   vswitch_id                    = alicloud_vswitch.defaultVSwitch.id
-  cidr_reservation_description  = "test"
+  cidr_reservation_description  = var.name
   cidr_reservation_cidr         = "10.0.10.0/24"
   vswitch_cidr_reservation_name = var.name
   cidr_reservation_type         = "Prefix"
@@ -54,11 +56,11 @@ resource "alicloud_vpc_vswitch_cidr_reservation" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_reservation_cidr` - (Optional, ForceNew, Computed) Reserved network segment CIdrBlock.
+* `cidr_reservation_cidr` - (Optional, ForceNew) Reserved network segment CIdrBlock.
 * `cidr_reservation_description` - (Optional) The description of the reserved CIDR block.
 * `cidr_reservation_mask` - (Optional, ForceNew) Reserved segment mask.
-* `cidr_reservation_type` - (Optional, ForceNew, Computed) Reserved CIDR Block Type.Valid values: `Prefix`. Default value: Prefix.
-* `ip_version` - (Optional, ForceNew, Computed) Reserved ip version of network segment, valid values: `IPv4`, `IPv6`, default IPv4.
+* `cidr_reservation_type` - (Optional, ForceNew) Reserved CIDR Block Type.Valid values: `Prefix`. Default value: Prefix.
+* `ip_version` - (Optional, ForceNew) Reserved ip version of network segment, valid values: `IPv4`, `IPv6`, default IPv4.
 * `vswitch_cidr_reservation_name` - (Optional) The name of the resource.
 * `vswitch_id` - (Required, ForceNew) The Id of the switch instance.
 
@@ -73,7 +75,7 @@ The following attributes are exported:
 * `vswitch_cidr_reservation_id` - The resource attribute field of the resource ID.
 * `vpc_id` - The id of the vpc instance to which the reserved CIDR block belongs.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Vswitch Cidr Reservation.

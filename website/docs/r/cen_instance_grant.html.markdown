@@ -20,19 +20,28 @@ For more information about how to use it, see [Attach a network in a different a
 Basic Usage
 
 ```terraform
-variable "child_account_ak" {
-  default = "example-ak"
+variable "another_uid" {
+  default = "xxxx"
 }
-variable "child_account_sk" {
-  default = "example-sk"
+# Method 1: Use assume_role to operate resources in the target cen account, detail see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#assume-role
+provider "alicloud" {
+  region = "cn-hangzhou"
+  alias  = "child_account"
+  assume_role {
+    role_arn = "acs:ram::${var.another_uid}:role/terraform-example-assume-role"
+  }
 }
+
+# Method 2: Use the target cen account's access_key, secret_key
+# provider "alicloud" {
+#   region     = "cn-hangzhou"
+#   access_key = "access_key"
+#   secret_key = "secret_key"
+#   alias      = "child_account"
+# }
+
 provider "alicloud" {
   alias = "your_account"
-}
-provider "alicloud" {
-  access_key = var.child_account_ak
-  secret_key = var.child_account_sk
-  alias      = "child_account"
 }
 data "alicloud_account" "your_account" {
   provider = alicloud.your_account
