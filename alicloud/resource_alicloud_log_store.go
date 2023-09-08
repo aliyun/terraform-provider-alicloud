@@ -41,6 +41,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 			"telemetry_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"retention_period": {
 				Type:         schema.TypeInt,
@@ -56,6 +57,7 @@ func resourceAlicloudLogStore() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Default:  2,
+				ForceNew: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if old == "" {
 						return false
@@ -66,9 +68,11 @@ func resourceAlicloudLogStore() *schema.Resource {
 			"mode": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return old != "" && new != "" && old != new
+					if new == "" {
+						return true
+					}
+					return old != "" && new != "" && old == new
 				},
 			},
 			"shards": {
@@ -130,26 +134,31 @@ func resourceAlicloudLogStore() *schema.Resource {
 						"encrypt_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							ForceNew:     true,
 							Default:      "default",
 							ValidateFunc: StringInSlice([]string{"default", "m4"}, false),
 						},
 						"user_cmk_info": {
 							Type:     schema.TypeSet,
 							Optional: true,
+							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"cmk_key_id": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 									"arn": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 									"region_id": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 								},
 							},
@@ -334,6 +343,10 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		update = true
 		d.SetPartial("encrypt_conf")
 	}
+	if d.HasChange("mode") {
+		update = true
+		d.SetPartial("mode")
+	}
 
 	if update {
 		store, err := logService.DescribeLogStore(d.Id())
@@ -345,6 +358,9 @@ func resourceAlicloudLogStoreUpdate(d *schema.ResourceData, meta interface{}) er
 		store.WebTracking = d.Get("enable_web_tracking").(bool)
 		store.AppendMeta = d.Get("append_meta").(bool)
 		store.AutoSplit = d.Get("auto_split").(bool)
+		if mode, ok := d.GetOk("mode"); ok {
+			store.Mode = mode.(string)
+		}
 		if encrypt := buildEncrypt(d); encrypt != nil {
 			store.EncryptConf = encrypt
 		}

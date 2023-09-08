@@ -267,3 +267,4 @@ var CDDCSupportRegions = []Region{Hangzhou}
 var EventBridgeConnectionSupportRegions = []Region{ChengDu, Huhehaote}
 var KmsInstanceSupportRegions = []Region{Hangzhou}
 var KmsInstanceIntlSupportRegions = []Region{APSouthEast1}
+var SlsTestRegions = []Region{EUWest1}
