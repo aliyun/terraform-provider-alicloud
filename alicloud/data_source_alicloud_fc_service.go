@@ -54,7 +54,7 @@ func dataSourceAlicloudFcServiceRead(d *schema.ResourceData, meta interface{}) e
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ORDER.OPEND", "FC_INTL_ALREADY_OPENED", "SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED"}) {
+		if IsExpectedErrors(err, []string{"CURRENT_ORDER_QUANTITY_EXCEED", "ORDER.OPEND", "FC_INTL_ALREADY_OPENED", "SYSTEM.SALE_VALIDATE_NO_SPECIFIC_CODE_FAILED"}) {
 			d.SetId("FcServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
