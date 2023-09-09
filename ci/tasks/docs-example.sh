@@ -193,6 +193,13 @@ for fileName in ${changeFiles[@]}; do
         if [ ! -d $exampleFileName ]; then
           mkdir $exampleFileName
           cp -rf ci/tasks/docs-example-provider.tf $exampleFileName/terraform.tf
+          for dirName in $(ls ci/assets/open-service/); do
+            if [[ ${resourceName} == "${dirName}_"* ]]; then
+              echo -e "[WARNING] current resource or data-source '${resourceName}' requires open service '${dirName}', and copy it.\n"
+              cp -rf ci/assets/open-service/${dirName}/* ${exampleFileName}/
+              break
+            fi
+          done
         fi
         #clear file
         if [ ! -d $exampleTerraformContent ]; then
