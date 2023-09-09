@@ -7,19 +7,19 @@ description: |-
     Provides a datasource to open the FC service automatically.
 ---
 
-# alicloud\_fc\_service
+# alicloud_fc_service
 
 Using this data source can open FC service automatically. If the service has been opened, it will return opened.
 
 For information about FC and how to use it, see [What is FC](https://www.alibabacloud.com/help/en/product/50980.htm).
 
--> **NOTE:** Available in v1.112.0+
+-> **NOTE:** Available since v1.112.0+
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_fc_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
