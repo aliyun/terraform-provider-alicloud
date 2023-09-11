@@ -11,22 +11,29 @@ description: |-
 
 This data source provides the PolarDB Parameter Groups of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_polardb_parameter_groups" "ids" {
-  ids = ["example_id"]
+
+data "alicloud_polardb_parameter_groups" "default" {
+  db_type    = "MySQL"
+  db_version = "8.0"
 }
+
+data "alicloud_polardb_parameter_groups" "ids" {
+  ids = [data.alicloud_polardb_parameter_groups.default.groups.0.id]
+}
+
 output "polardb_parameter_group_id_1" {
   value = data.alicloud_polardb_parameter_groups.ids.groups.0.id
 }
 
 data "alicloud_polardb_parameter_groups" "nameRegex" {
-  name_regex = "example_name"
+  name_regex = data.alicloud_polardb_parameter_groups.default.groups.0.parameter_group_name
 }
 output "polardb_parameter_group_id_2" {
   value = data.alicloud_polardb_parameter_groups.nameRegex.groups.0.id
@@ -43,7 +50,7 @@ The following arguments are supported:
 * `db_version` - (Optional, ForceNew) The version number of the database engine. Valid values: `5.6`, `5.7`, `8.0`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

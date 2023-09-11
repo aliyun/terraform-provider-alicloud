@@ -126,7 +126,7 @@ func testSweepPolarDBGlobalDatabaseNetwork(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
+func TestAccAliCloudPolarDBGlobalDatabaseNetwork_basic00(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_polardb_global_database_network.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudPolarDBGlobalDatabaseNetworkMap)

@@ -353,6 +353,20 @@ func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 	return true
 }
 
+func polardbProxyTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if v, ok := d.GetOk("creation_category"); ok && v.(string) == "SENormal" {
+		return false
+	}
+	return true
+}
+
+func polardbDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" {
+		return false
+	}
+	return true
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false

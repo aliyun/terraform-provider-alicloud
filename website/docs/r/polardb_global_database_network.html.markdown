@@ -13,7 +13,7 @@ Provides a PolarDB Global Database Network resource.
 
 For information about PolarDB Global Database Network and how to use it, see [What is Global Database Network](https://www.alibabacloud.com/help/en/polardb-for-mysql/latest/createglobaldatabasenetwork).
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0+.
 
 ## Example Usage
 
@@ -23,6 +23,7 @@ Basic Usage
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
+  category   = "Normal"
   pay_type   = "PostPaid"
 }
 
@@ -58,6 +59,7 @@ resource "alicloud_polardb_global_database_network" "default" {
 The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The ID of the primary cluster.
+* `status` - (Computed) The status of the Global Database Network.
 * `description` - (Optional, Computed) The description of the Global Database Network.
 
 ## Attributes Reference
@@ -67,7 +69,7 @@ The following attributes are exported:
 * `id` - The resource ID in terraform of Global Database Network.
 * `status` - The status of the Global Database Network.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
