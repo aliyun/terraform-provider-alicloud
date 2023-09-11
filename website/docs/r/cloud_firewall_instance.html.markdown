@@ -69,9 +69,9 @@ The following arguments are supported:
 * `instance_count` - (Optional)  The number of assets.
 * `cfw_account` - (Optional, Available since v1.209.1, Bool) Whether to use multi-account. Valid values: `true`, `false`.
 * `account_number` - (Optional, Available since v1.209.1, Int) The number of multi account. It will be ignored when `cfw_account = false`.
-  * `premium_version` - The valid cfw_log_storage is [1, 20] with the step size 1000. Default Value: `1000`. Unit: GB.
-  * `enterprise_version` - The valid cfw_log_storage is [1, 50] with the step size 1000. Default Value: `3000`. Unit: GB.
-  * `ultimate_version` - The valid cfw_log_storage is [1, 1000] with the step size 1000. Default Value: `5000`. Unit: GB.
+  * `premium_version` - The valid account number is [1, 20].
+  * `enterprise_version` - The valid account number is [1, 50].
+  * `ultimate_version` - The valid account number is [1, 1000].
 
 ## Attributes Reference
 

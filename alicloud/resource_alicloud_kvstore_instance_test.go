@@ -134,7 +134,7 @@ func testSweepKVStoreInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
@@ -409,7 +409,7 @@ func TestAccAlicloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreRedisInstance_6_0(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
@@ -674,7 +674,7 @@ func TestAccAlicloudKVStoreRedisInstance_6_0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreRedisInstance_7_0(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
@@ -939,7 +939,275 @@ func TestAccAlicloudKVStoreRedisInstance_7_0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstance7_0_with_proxy-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceVpcTestdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":   "redis.shard.with.proxy.small.ce",
+					"db_instance_name": name,
+					"instance_type":    "Redis",
+					"engine_version":   "7.0",
+					"shard_count":      "2",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":    "redis.shard.with.proxy.small.ce",
+						"db_instance_name":  name,
+						"instance_type":     "Redis",
+						"engine_version":    "7.0",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
+						"shard_count":       "2",
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_pay", "auto_renew", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effect_time", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "instance_release_protection", "major_version", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "security_ips", "enable_backup_log"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "kvstore",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "kvstore",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": map[string]string{
+						"appendonly":             "no",
+						"lazyfree-lazy-eviction": "no",
+						"EvictionPolicy":         "volatile-lru",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config.%":                      "3",
+						"config.appendonly":             "no",
+						"config.lazyfree-lazy-eviction": "no",
+						"config.EvictionPolicy":         "volatile-lru",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.23.12.24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.shard.with.proxy.mid.ce",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.shard.with.proxy.mid.ce",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Tuesday", "Wednesday"},
+					"backup_time":   "10:00Z-11:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_port": "4010",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_port": "4010",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":              "redis.shard.with.proxy.small.ce",
+					"instance_release_protection": "false",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"security_ips":                []string{"10.0.0.1"},
+					"db_instance_name":            name,
+					"vpc_auth_mode":               "Open",
+					"config": map[string]string{
+						"appendonly":             "yes",
+						"lazyfree-lazy-eviction": "yes",
+						"EvictionPolicy":         "volatile-lru",
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id":         REMOVEKEY,
+					"maintain_start_time":       "04:00Z",
+					"maintain_end_time":         "06:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_time":               "11:00Z-12:00Z",
+					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
+					"private_connection_port":   "4011",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":                "redis.shard.with.proxy.small.ce",
+						"instance_release_protection":   "false",
+						"resource_group_id":             CHECKSET,
+						"security_ips.#":                "1",
+						"db_instance_name":              name,
+						"vpc_auth_mode":                 "Open",
+						"config.%":                      "3",
+						"config.appendonly":             "yes",
+						"config.lazyfree-lazy-eviction": "yes",
+						"config.EvictionPolicy":         "volatile-lru",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "acceptance test",
+						"zone_id":                       CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"secondary_zone_id":             REMOVEKEY,
+						"maintain_start_time":           "04:00Z",
+						"maintain_end_time":             "06:00Z",
+						"backup_period.#":               "1",
+						"backup_time":                   "11:00Z-12:00Z",
+						"private_connection_port":       "4011",
+						"private_connection_prefix":     CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+// Memcache Instance has been offline since 2023-08-13
+func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
@@ -1177,7 +1445,7 @@ func TestAccAlicloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
@@ -1188,7 +1456,7 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccKvstoreRedisInstancePrePaid%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceVpcTestdependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstancePrePaidDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1210,9 +1478,9 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"For":     "acceptance test",
 					},
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[0].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[1].id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1315,16 +1583,6 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine_version": "5.0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version": "5.0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1355,9 +1613,19 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"engine_version": "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "5.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[1].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[0].id}",
 					"timeouts": []map[string]interface{}{
 						{
 							"update": "1h",
@@ -1442,7 +1710,7 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
-					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[0].id}",
 					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
 					"secondary_zone_id":         REMOVEKEY,
 					"maintain_start_time":       "04:00Z",
@@ -1487,9 +1755,11 @@ func TestAccAlicloudKVStoreRedisInstance_prepaid(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
+func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
-	resourceId := "alicloud_kvstore_instance.default.1"
+	// en-central-1 has no enough quota for this class
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1, connectivity.Hangzhou})
+	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1509,7 +1779,277 @@ func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"count":             "2",
+					"instance_class":    "redis.amber.master.small.multithread",
+					"db_instance_name":  name,
+					"instance_type":     "Redis",
+					"engine_version":    "5.0",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					//"shard_count":       "2",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":    "redis.amber.master.small.multithread",
+						"db_instance_name":  name,
+						"instance_type":     "Redis",
+						"engine_version":    "5.0",
+						"resource_group_id": CHECKSET,
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						//"shard_count":       "2",
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "kvstore",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "kvstore",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": map[string]string{
+						"appendonly":             "no",
+						"lazyfree-lazy-eviction": "no",
+						"EvictionPolicy":         "volatile-lru",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config.%":                      "3",
+						"config.appendonly":             "no",
+						"config.lazyfree-lazy-eviction": "no",
+						"config.EvictionPolicy":         "volatile-lru",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.23.12.24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.master.mid.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.master.mid.multithread",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Tuesday", "Wednesday"},
+					"backup_time":   "10:00Z-11:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_port": "4010",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_port": "4010",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":              "redis.amber.master.small.multithread",
+					"instance_release_protection": "false",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"security_ips":                []string{"10.0.0.1"},
+					"db_instance_name":            name,
+					"vpc_auth_mode":               "Open",
+					"config": map[string]string{
+						"appendonly":             "yes",
+						"lazyfree-lazy-eviction": "yes",
+						"EvictionPolicy":         "volatile-lru",
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id":         REMOVEKEY,
+					"maintain_start_time":       "04:00Z",
+					"maintain_end_time":         "06:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_time":               "11:00Z-12:00Z",
+					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
+					"private_connection_port":   "4011",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":                "redis.amber.master.small.multithread",
+						"instance_release_protection":   "false",
+						"resource_group_id":             CHECKSET,
+						"security_ips.#":                "1",
+						"db_instance_name":              name,
+						"vpc_auth_mode":                 "Open",
+						"config.%":                      "3",
+						"config.appendonly":             "yes",
+						"config.lazyfree-lazy-eviction": "yes",
+						"config.EvictionPolicy":         "volatile-lru",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "acceptance test",
+						"zone_id":                       CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"secondary_zone_id":             REMOVEKEY,
+						"maintain_start_time":           "04:00Z",
+						"maintain_end_time":             "06:00Z",
+						"backup_period.#":               "1",
+						"backup_time":                   "11:00Z-12:00Z",
+						"private_connection_port":       "4011",
+						"private_connection_prefix":     CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T) {
+	var v r_kvstore.DBInstanceAttribute
+	// en-central-1 has no enough quota for this class
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1, connectivity.Hangzhou})
+	resourceId := "alicloud_kvstore_instance.default"
+	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &R_kvstoreService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKvstoreInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccKvstoreRedisInstanceVpcMultiTest%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KvstoreInstanceVpcTestdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":    "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
 					"db_instance_name":  name,
 					"instance_type":     "Redis",
@@ -1549,6 +2089,209 @@ func TestAccAlicloudKVStoreRedisInstance_tde(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "kvstore",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "kvstore",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": map[string]string{
+						"appendonly":             "no",
+						"lazyfree-lazy-eviction": "no",
+						"EvictionPolicy":         "volatile-lru",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config.%":                      "3",
+						"config.appendonly":             "no",
+						"config.lazyfree-lazy-eviction": "no",
+						"config.EvictionPolicy":         "volatile-lru",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ips": []string{"10.23.12.24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ips.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.amber.logic.sharding.2g.2db.0rodb.6proxy.multithread",
+					}),
+				),
+			},
+			// there is no more quota for this class on multi-zone
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+			//		"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+			//		"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+			//		"timeouts": []map[string]interface{}{
+			//			{
+			//				"update": "1h",
+			//			},
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"zone_id":           CHECKSET,
+			//			"vswitch_id":        CHECKSET,
+			//			"secondary_zone_id": CHECKSET,
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "02:00Z",
+					"maintain_end_time":   "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "02:00Z",
+						"maintain_end_time":   "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Tuesday", "Wednesday"},
+					"backup_time":   "10:00Z-11:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "2",
+						"backup_time":     "10:00Z-11:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_prefix": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_connection_port": "4010",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_connection_port": "4010",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_release_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_class":              "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+					"instance_release_protection": "false",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"security_ips":                []string{"10.0.0.1"},
+					"db_instance_name":            name,
+					"vpc_auth_mode":               "Open",
+					"config": map[string]string{
+						"appendonly":             "yes",
+						"lazyfree-lazy-eviction": "yes",
+						"EvictionPolicy":         "volatile-lru",
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"maintain_start_time":       "04:00Z",
+					"maintain_end_time":         "06:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_time":               "11:00Z-12:00Z",
+					"private_connection_prefix": fmt.Sprintf("privateprefixupdate%d", rand),
+					"private_connection_port":   "4011",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class":                "redis.amber.logic.sharding.1g.2db.0rodb.6proxy.multithread",
+						"instance_release_protection":   "false",
+						"resource_group_id":             CHECKSET,
+						"security_ips.#":                "1",
+						"db_instance_name":              name,
+						"vpc_auth_mode":                 "Open",
+						"config.%":                      "3",
+						"config.appendonly":             "yes",
+						"config.lazyfree-lazy-eviction": "yes",
+						"config.EvictionPolicy":         "volatile-lru",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "acceptance test",
+						"zone_id":                       CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"maintain_start_time":           "04:00Z",
+						"maintain_end_time":             "06:00Z",
+						"backup_period.#":               "1",
+						"backup_time":                   "11:00Z-12:00Z",
+						"private_connection_port":       "4011",
+						"private_connection_prefix":     CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -1570,6 +2313,7 @@ func KvstoreInstanceVpcTestdependence(name string) string {
   		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	data "alicloud_resource_manager_resource_groups" "default"{
+		status = "OK"
 	}
 
 	data "alicloud_vswitches" "update" {
@@ -1579,6 +2323,28 @@ func KvstoreInstanceVpcTestdependence(name string) string {
 	`)
 }
 
+func KvstoreInstancePrePaidDependence(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_kvstore_zones" "default"{
+		instance_charge_type = "PrePaid"
+	}
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+	data "alicloud_vswitches" "default" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[0].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	data "alicloud_resource_manager_resource_groups" "default"{
+		status = "OK"
+	}
+
+	data "alicloud_vswitches" "update" {
+  		zone_id = data.alicloud_kvstore_zones.default.zones[1].id
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+	`)
+}
 func KvstoreMemcacheInstanceVpcTestdependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_kvstore_zones" "default"{
@@ -1593,6 +2359,7 @@ func KvstoreMemcacheInstanceVpcTestdependence(name string) string {
   		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 	data "alicloud_resource_manager_resource_groups" "default"{
+		status = "OK"
 	}
 
 	data "alicloud_vswitches" "update" {

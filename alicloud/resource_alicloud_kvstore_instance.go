@@ -387,7 +387,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Enabled", "Disabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled"}, false),
 			},
 			"encryption_name": {
 				Type:     schema.TypeString,
@@ -629,7 +629,7 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("instance_name", object["InstanceName"])
 	d.Set("end_time", object["EndTime"])
 	d.Set("engine_version", object["EngineVersion"])
-	d.Set("instance_class", object["InstanceClass"])
+	d.Set("instance_class", object["RealInstanceClass"])
 	d.Set("instance_release_protection", object["InstanceReleaseProtection"])
 	d.Set("instance_type", object["InstanceType"])
 	d.Set("maintain_end_time", object["MaintainEndTime"])
@@ -1174,7 +1174,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		if modifyInstanceSpecReq.EffectiveTime != "MaintainTime" && d.HasChange("instance_class") {
-			stateConf := BuildStateConf([]string{}, []string{modifyInstanceSpecReq.InstanceClass}, d.Timeout(schema.TimeoutUpdate), 360*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "InstanceClass"))
+			stateConf := BuildStateConf([]string{}, []string{modifyInstanceSpecReq.InstanceClass}, d.Timeout(schema.TimeoutUpdate), 360*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "RealInstanceClass"))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
