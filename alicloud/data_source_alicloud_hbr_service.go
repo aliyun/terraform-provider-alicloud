@@ -30,8 +30,6 @@ func dataSourceAlicloudHbrService() *schema.Resource {
 }
 
 func dataSourceAlicloudHbrServiceRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-
 	action := "OpenHbrService"
 	request := map[string]interface{}{}
 	if v, ok := d.GetOk("enable"); !ok || v.(string) != "On" {
@@ -40,12 +38,11 @@ func dataSourceAlicloudHbrServiceRead(d *schema.ResourceData, meta interface{}) 
 		return nil
 	}
 
-	conn, err := client.NewHbrClient()
+	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(connectivity.OpenHbrService)
 	if err != nil {
 		return WrapError(err)
 	}
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(3*time.Minute, func() *resource.RetryError {
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {

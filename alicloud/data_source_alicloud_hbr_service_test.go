@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudHbrServiceDataSource(t *testing.T) {
+func TestAccAliCloudHbrServiceDataSource(t *testing.T) {
 	resourceId := "data.alicloud_hbr_service.current"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{

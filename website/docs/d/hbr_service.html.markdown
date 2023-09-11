@@ -4,16 +4,16 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_hbr_service"
 sidebar_current: "docs-alicloud-datasource-hbr-service"
 description: |-
-    Provides a datasource to open the HBR service automatically.
+  Provides a datasource to open the HBR service automatically.
 ---
 
-# alicloud\_hbr\_service
+# alicloud_hbr_service
 
 Using this data source can open HBR service automatically. If the service has been opened, it will return opened.
 
 For information about HBR and how to use it, see [What is HBR](https://www.alibabacloud.com/help/en/hybrid-backup-recovery).
 
--> **NOTE:** Available in v1.184.0+
+-> **NOTE:** Available since v1.184.0+
 
 ## Example Usage
 
