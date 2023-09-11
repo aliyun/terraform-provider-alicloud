@@ -11,21 +11,55 @@ description: |-
 
 This data source provides the PolarDB Global Database Networks of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.181.0+.
+-> **NOTE:** Available since v1.181.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+
+data "alicloud_polardb_node_classes" "this" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PrePaid"
+  category   = "Normal"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.this.classes[0].zone_id
+  vswitch_name = "terraform-example"
+}
+
+resource "alicloud_polardb_cluster" "cluster" {
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  pay_type      = "PostPaid"
+  db_node_count = "2"
+  db_node_class = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
+  vswitch_id    = alicloud_vswitch.default.id
+}
+
+resource "alicloud_polardb_global_database_network" "default" {
+  db_cluster_id = alicloud_polardb_cluster.cluster.id
+  description   = alicloud_polardb_cluster.cluster.id
+}
 data "alicloud_polardb_global_database_networks" "ids" {
-  ids = ["example_id"]
+  ids = [alicloud_polardb_global_database_network.default.id]
 }
 output "polardb_global_database_network_id_1" {
   value = data.alicloud_polardb_global_database_networks.ids.networks.0.id
 }
+
 data "alicloud_polardb_global_database_networks" "description" {
-  description = "example_description"
+  description = alicloud_polardb_cluster.cluster.id
 }
 output "polardb_global_database_network_id_2" {
   value = data.alicloud_polardb_global_database_networks.description.networks.0.id
@@ -39,8 +73,8 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Global Database Network IDs.
 * `gdn_id` - (Optional, ForceNew)  The ID of the Global Database Network.
 * `db_cluster_id` - (Optional, ForceNew) The ID of the cluster.
-* `description` - (Optional, Computed) The description of the Global Database Network.
-* `status` - The status of the Global Database Network. Valid values:
+* `description` - (Optional, ForceNew, Computed) The description of the Global Database Network.
+* `status` - (Optional, ForceNew) The status of the Global Database Network. Valid values:
 	- `creating`: The Global Database Network is being created.
 	- `active`: The Global Database Network is running.
 	- `deleting`: The Global Database Network is being deleted.
@@ -48,7 +82,7 @@ The following arguments are supported:
 	- `removing_member`: The secondary cluster is being removed from the Global Database Network.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

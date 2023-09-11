@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -1232,17 +1233,30 @@ func (s *PolarDBService) DescribeDBAuditLogCollectorStatus(id string) (collector
 	request := polardb.CreateDescribeDBClusterAuditLogCollectorRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = id
-	raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
-		return polardbClient.DescribeDBClusterAuditLogCollector(request)
+	var response *polardb.DescribeDBClusterAuditLogCollectorResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+			return polardbClient.DescribeDBClusterAuditLogCollector(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		response, _ = raw.(*polardb.DescribeDBClusterAuditLogCollectorResponse)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
 			return "", WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return collectorStatus, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response := raw.(*polardb.DescribeDBClusterAuditLogCollectorResponse)
 
 	return response.CollectorStatus, nil
 }
@@ -1578,6 +1592,14 @@ func (s *PolarDBService) DescribeDBClusterAccessWhitelist(id string) (instance *
 	return response, nil
 }
 
+func convertPolarDBIpsSetListToString(arr1 *schema.Set) []string {
+	var ips []string
+	for _, v := range arr1.List() {
+		ips = append(ips, v.(string))
+	}
+	return ips
+}
+
 func convertPolarDBIpsSetToString(sourceIps string) []string {
 	ipsMap := make(map[string]string)
 
@@ -1591,6 +1613,17 @@ func convertPolarDBIpsSetToString(sourceIps string) []string {
 		}
 	}
 	return ips
+}
+
+func arrValueEqual(arr1, arr2 []string) bool {
+	sort.Strings(arr2)
+	sort.Strings(arr1)
+	for i, v := range arr1 {
+		if v != arr2[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *PolarDBService) PolarDBClusterCategoryRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {

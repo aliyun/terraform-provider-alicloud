@@ -254,6 +254,7 @@ var ActiontrailGlobalEventsStorageRegionSupportRegions = []Region{Hangzhou, APSo
 var OceanBaseSupportRegions = []Region{Hangzhou}
 var ChatbotSupportRegions = []Region{Shanghai}
 var SENormalPolarDBSupportRegions = []Region{Beijing, Shanghai, Shenzhen, Zhangjiakou, APSouthEast1}
+var GDNPolarDBSupportRegions = []Region{ChengDu}
 var VpcVSwitchCidrReservationSupportRegions = []Region{APSouthEast2}
 var ComputeNestSupportRegions = []Region{Hangzhou}
 var RedisTariInstanceSupportRegions = []Region{GuangZhou}

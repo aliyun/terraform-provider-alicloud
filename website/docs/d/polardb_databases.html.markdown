@@ -12,18 +12,53 @@ description: |-
 The `alicloud_polardb_databases` data source provides a collection of PolarDB cluster database available in Alibaba Cloud account.
 Filters support regular expression for the database name, searches by clusterId.
 
--> **NOTE:** Available in v1.70.0+.
+-> **NOTE:** Available since v1.70.0+.
 
 ## Example Usage
 
 ```terraform
+data "alicloud_polardb_node_classes" "this" {
+  db_type    = "MySQL"
+  db_version = "8.0"
+  pay_type   = "PrePaid"
+  category   = "Normal"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_polardb_node_classes.this.classes[0].zone_id
+  vswitch_name = "terraform-example"
+}
+
+resource "alicloud_polardb_cluster" "cluster" {
+  db_type       = "MySQL"
+  db_version    = "8.0"
+  pay_type      = "PostPaid"
+  db_node_count = "2"
+  db_node_class = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
+  vswitch_id    = alicloud_vswitch.default.id
+}
+
 data "alicloud_polardb_clusters" "polardb_clusters_ds" {
-  description_regex = "pc-\\w+"
+  description_regex = alicloud_polardb_cluster.cluster.description
   status            = "Running"
+}
+
+resource "alicloud_polardb_database" "default" {
+  db_cluster_id  = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
+  db_name        = "tfaccountpri_${data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id}"
+  db_description = "from terraform"
 }
 
 data "alicloud_polardb_databases" "default" {
   db_cluster_id = data.alicloud_polardb_clusters.polardb_clusters_ds.clusters.0.id
+  name_regex    = alicloud_polardb_database.default.db_name
 }
 
 output "database" {

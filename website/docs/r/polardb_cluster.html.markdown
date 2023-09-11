@@ -23,6 +23,7 @@ Create a PolarDB MySQL cluster
 data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
+  category   = "Normal"
   pay_type   = "PostPaid"
 }
 
@@ -65,36 +66,36 @@ data "alicloud_account" "current" {
 }
 
 
-resource "alicloud_ram_role" "default" {
-  name        = "AliyunRDSInstanceEncryptionDefaultRole"
-  document    = <<DEFINITION
-    {
-        "Statement": [
-            {
-                "Action": "sts:AssumeRole",
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": [
-                        "rds.aliyuncs.com"
-                    ]
-                }
-            }
-        ],
-        "Version": "1"
-    }
-	DEFINITION
-  description = "RDS使用此角色来访问您在其他云产品中的资源"
-}
+// resource "alicloud_ram_role" "default" {
+//  name        = "AliyunRDSInstanceEncryptionDefaultRole"
+//  document    = <<DEFINITION
+//    {
+//        "Statement": [
+//            {
+//               "Action": "sts:AssumeRole",
+//                "Effect": "Allow",
+//                "Principal": {
+//                    "Service": [
+//                        "rds.aliyuncs.com"
+//                    ]
+//                }
+//            }
+//        ],
+//        "Version": "1"
+//    }
+//	DEFINITION
+//  description = "RDS使用此角色来访问您在其他云产品中的资源"
+//}
 
 
 
-resource "alicloud_resource_manager_policy_attachment" "default" {
-  policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
-  policy_type       = "System"
-  principal_name    = "AliyunRDSInstanceEncryptionDefaultRole@role.${data.alicloud_account.current.id}.onaliyunservice.com"
-  principal_type    = "ServiceRole"
-  resource_group_id = "${data.alicloud_account.current.id}"
-}
+// resource "alicloud_resource_manager_policy_attachment" "default" {
+// policy_name       = "AliyunRDSInstanceEncryptionRolePolicy"
+// policy_type       = "System"
+// principal_name    = "AliyunRDSInstanceEncryptionDefaultRole@role.${data.alicloud_account.current.id}.onaliyunservice.com"
+// principal_type    = "ServiceRole"
+// resource_group_id = "${data.alicloud_account.current.id}"
+// }
 
 ```
 
@@ -114,7 +115,7 @@ The following arguments are supported:
 * `modify_type` - (Optional, Available since 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
 * `db_node_count` - (Optional, Available since 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
 -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
-* `zone_id` - (Optional) The Zone to launch the DB cluster. it supports multiple zone.
+* `zone_id` - (Optional, ForceNew) The Zone to launch the DB cluster. it supports multiple zone.
 * `pay_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
 * `renewal_status` - (Optional) Valid values are `AutoRenewal`, `Normal`, `NotRenewal`, Default to `NotRenewal`.
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
@@ -150,7 +151,7 @@ The following arguments are supported:
 * `sub_category` - (Optional, Available since 1.177.0+)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
 * `creation_option` - (Optional, Available since 1.179.0+) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationOption`.
 -> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby.
-* `creation_category` - (Optional, Available since 1.179.0+) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`,`SENormal`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationCategory`.
+* `creation_category` - (Optional, ForceNew, Computed, Available since 1.179.0+) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`,`SENormal`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationCategory`.
 -> **NOTE:** You can set this parameter to Basic only when DBType is set to MySQL and DBVersion is set to 5.6, 5.7, or 8.0. You can set this parameter to Archive only when DBType is set to MySQL and DBVersion is set to 8.0. From version 1.188.0, `creation_category` can be set to `NormalMultimaster`. From version 1.203.0, `creation_category` can be set to `SENormal`.
 * `source_resource_id` - (Optional, Available since 1.179.0+) The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `SourceResourceId`.
 * `gdn_id` - (Optional, Available since 1.179.0+) The ID of the global database network (GDN).
@@ -160,7 +161,10 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew, Computed, Available since v1.185.0+) The id of the VPC.
 * `storage_type` - (Optional, ForceNew, Available since v1.203.0+) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`. The standard version only supports MySQL.
 -> **NOTE:** Serverless cluster does not support this parameter.
-* `storage_space` - (Optional, ForceNew, Available since v1.203.0+) Storage space charged by space (monthly package). Unit: GB.
+* `storage_space` - (Optional, Computed, Available since v1.203.0+) Storage space charged by space (monthly package). Unit: GB.
+-> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
+-> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
+* `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0+) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
 * `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0+) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
 * `serverless_type` - (Optional, ForceNew, Available since v1.204.0+) The type of the serverless cluster. Set the value to AgileServerless.
 -> **NOTE:** This parameter is valid only for serverless clusters.
@@ -182,6 +186,20 @@ The following arguments are supported:
 -> **NOTE:** The starting time range is any time point within the next 24 hours. For example, the current time is 2021-01-14T09:00:00Z, and the allowed start time range for filling in here is 2021-01-14T09:00:00Z~2021-01-15T09:00:00Z. If this parameter is left blank, the kernel version upgrade task will be executed immediately by default.
 * `planned_end_time` - (Optional, Available since v1.208.1) The latest time to start executing the target scheduled task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
 -> **NOTE:** The latest time must be 30 minutes or more later than the start time. If PlannedStartTime is set but this parameter is not specified, the latest time to execute the target task defaults to the start time+30 minutes. For example, when the PlannedStartTime is set to 2021-01-14T09:00:00Z and this parameter is left blank, the target task will start executing at the latest on 2021-01-14T09:30:00Z.
+* `proxy_type` - (Optional, Available since 1.210.0) The type of PolarProxy. Default value: OFF. Valid values are `OFF`, `EXCLUSIVE` `GENERAL`.
+  -> **NOTE:** This parameter is valid only for standard clusters.
+* `proxy_class` - (Optional, Available since 1.210.0) The specifications of the Standard Edition PolarProxy. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `ProxyType`
+  -> **NOTE:** This parameter is valid only for standard clusters.
+* `loose_polar_log_bin` - (Optional, Available since 1.210.0) Enable the Binlog function. Valid values are `OFF`, `ON`.
+  -> **NOTE:** This parameter is valid only MySQL Engine supports.
+* `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: 1. Valid values are `1`, `2`.
+* `parameter_group_id` - (Optional, Available since 1.210.0) The ID of the parameter template
+  -> **NOTE:** You can call the [DescribeParameterGroups](https://www.alibabacloud.com/help/en/polardb/latest/describeparametergroups) operation to query the details of all parameter templates of a specified region, such as the ID of a parameter template.
+* `lower_case_table_names`  - (Optional, Available since 1.210.0)  Specifies whether the table names are case-sensitive. Default value: 1.  Valid values are `1`, `0`.
+  -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
+* `default_time_zone` - (Optional, Available since 1.210.0) The time zone of the cluster. You can set the parameter to a value that is on the hour from -12:00 to +13:00 based on UTC. Example: 00:00. Default value: SYSTEM. This value indicates that the time zone of the cluster is the same as the time zone of the region.
+  -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
+
 
 ### `db_cluster_ip_array`
 

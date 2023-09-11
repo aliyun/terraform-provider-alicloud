@@ -65,6 +65,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"pay_type": {
 				Type:         schema.TypeString,
@@ -238,6 +239,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, false),
 			},
 			"creation_option": {
@@ -266,11 +268,18 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed:     true,
 				ForceNew:     true,
 			},
+			"storage_pay_type": {
+				Type:         schema.TypeString,
+				ValidateFunc: StringInSlice([]string{string(PostPaid), string(PrePaid)}, false),
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+			},
 			"storage_space": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(20, 32000),
-				ForceNew:     true,
+				ValidateFunc: IntBetween(20, 100000),
+				Computed:     true,
 			},
 			"hot_standby_cluster": {
 				Type:         schema.TypeString,
@@ -354,6 +363,51 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"proxy_type": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"OFF", "EXCLUSIVE", "GENERAL"}, false),
+				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
+			},
+			"proxy_class": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: StringInSlice([]string{"polar.maxscale.g2.medium.c", "polar.maxscale.g2.large.c",
+					"polar.maxscale.g2.xlarge.c", "polar.maxscale.g2.2xlarge.c", "polar.maxscale.g2.3xlarge.c",
+					"polar.maxscale.g2.4xlarge.c", "polar.maxscale.g2.8xlarge.c"}, false),
+				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
+			},
+			"loose_polar_log_bin": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
+				DiffSuppressFunc: polardbDiffSuppressFunc,
+			},
+			"db_node_num": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntInSlice([]int{1, 2}),
+			},
+			"parameter_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"lower_case_table_names": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntInSlice([]int{0, 1}),
+				DiffSuppressFunc: polardbDiffSuppressFunc,
+			},
+			"default_time_zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ValidateFunc: StringInSlice([]string{"-12:00", "-11:00", "-10:00", "-9:00", "-8:00", "-7:00",
+					"-6:00", "-5:00", "-4:00", "-3:00", "-2:00", "-1:00",
+					"+0:00", "+1:00", "+2:00", "+3:00", "+4:00", "+5:00",
+					"+6:00", "+7:00", "+8:00", "+9:00", "+10:00", "+11:00",
+					"+12:00", "+13:00", "SYSTEM"}, false),
+				DiffSuppressFunc: polardbDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -431,10 +485,11 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	payType := d.Get("pay_type").(string)
 	if !d.IsNewResource() && d.HasChange("pay_type") {
 		action := "TransformDBClusterPayType"
+		requestPayType := convertPolarDBPayTypeUpdateRequest(payType)
 		request := map[string]interface{}{
 			"RegionId":    client.RegionId,
 			"DBClusterId": d.Id(),
-			"PayType":     convertPolarDBPayTypeUpdateRequest(payType),
+			"PayType":     requestPayType,
 		}
 		if payType == string(PrePaid) {
 			period := d.Get("period").(int)
@@ -462,7 +517,10 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
+		//wait asynchronously cluster payType
+		if err := polarDBService.WaitForPolarDBPayType(d.Id(), requestPayType, DefaultTimeout); err != nil {
+			return WrapError(err)
+		}
 		if payType == string(PrePaid) {
 			d.SetPartial("period")
 		}
@@ -891,6 +949,48 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if d.HasChange("storage_space") {
+		action := "ModifyDBClusterStorageSpace"
+		storageSpace := d.Get("storage_space").(int)
+		request := map[string]interface{}{
+			"DBClusterId":  d.Id(),
+			"StorageSpace": storageSpace,
+		}
+		if v, ok := d.GetOk("planned_start_time"); ok && v.(string) != "" {
+			request["PlannedStartTime"] = v
+		}
+		if v, ok := d.GetOk("planned_end_time"); ok && v.(string) != "" {
+			request["PlannedEndTime"] = v
+		}
+		if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
+			request["SubCategory"] = convertPolarDBSubCategoryUpdateRequest(v.(string))
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+		}
+		// wait cluster status change from StorageExpanding to running
+		stateConf := BuildStateConf([]string{"StorageExpanding"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("storage_space")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -918,14 +1018,38 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	defaultSecurityIps := make([]string, 0)
 	dbClusterIPArrays := make([]map[string]interface{}, 0)
+	inDBClusterIPArrays := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("db_cluster_ip_array"); ok {
+		for _, e := range v.(*schema.Set).List() {
+			inDBClusterIPArrays = append(inDBClusterIPArrays, e.(map[string]interface{}))
+		}
+	}
 	for _, white := range whiteList.Items.DBClusterIPArray {
 		if white.DBClusterIPArrayAttribute == "hidden" {
 			continue
 		}
-		dbClusterIPArrays = append(dbClusterIPArrays, map[string]interface{}{
+		// Judge whether input parameters are passed into modify_mode, if there is a modify_mode parameter is based on
+		// db_cluster_ip_array_name、security_ips determines whether the whitelist is the same and assigns a local modify_mode
+		modifyMode := ""
+		for _, temp := range inDBClusterIPArrays {
+			if temp["db_cluster_ip_array_name"] == nil || temp["security_ips"] == nil {
+				continue
+			}
+			if temp["db_cluster_ip_array_name"] == white.DBClusterIPArrayName &&
+				arrValueEqual(convertPolarDBIpsSetListToString(temp["security_ips"].(*schema.Set)), convertPolarDBIpsSetToString(white.SecurityIps)) {
+				if temp["modify_mode"] != nil {
+					modifyMode = temp["modify_mode"].(string)
+				}
+			}
+		}
+		clusterIdItem := map[string]interface{}{
 			"db_cluster_ip_array_name": white.DBClusterIPArrayName,
 			"security_ips":             convertPolarDBIpsSetToString(white.SecurityIps),
-		})
+		}
+		if modifyMode != "" {
+			clusterIdItem["modify_mode"] = modifyMode
+		}
+		dbClusterIPArrays = append(dbClusterIPArrays, clusterIdItem)
 		if white.DBClusterIPArrayName == "default" {
 			defaultSecurityIps = convertPolarDBIpsSetToString(white.SecurityIps)
 		}
@@ -959,7 +1083,16 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("db_type", clusterAttribute.DBType)
 	d.Set("db_version", clusterAttribute.DBVersion)
 	d.Set("maintain_time", clusterAttribute.MaintainTime)
-	d.Set("zone_id", clusterAttribute.ZoneIds)
+	// Only compare the main availability zone, and randomly allocate backup availability zones in the background
+	if len(clusterAttribute.DBNodes) > 0 {
+		d.Set("zone_id", clusterAttribute.DBNodes[0].ZoneId)
+	}
+	dbNodeId, ok := d.GetOk("db_node_id")
+	if len(clusterAttribute.DBNodes) > 0 && ok && dbNodeId.(string) == "db_node_id_index" {
+		d.Set("db_node_id", clusterAttribute.DBNodes[0].DBNodeId)
+	} else {
+		d.Set("db_node_id", dbNodeId)
+	}
 	d.Set("db_node_class", cluster.DBNodeClass)
 	d.Set("db_node_count", len(clusterAttribute.DBNodes))
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
@@ -968,6 +1101,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	d.Set("vpc_id", clusterAttribute.VPCId)
 	d.Set("status", clusterAttribute.DBClusterStatus)
 	d.Set("create_time", clusterAttribute.CreationTime)
+
 	tags, err := polarDBService.DescribeTags(d.Id(), "cluster")
 	if err != nil {
 		return WrapError(err)
@@ -1043,6 +1177,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		resultStorageSpace, _ := clusterInfo["StorageSpace"].(json.Number).Int64()
 		var storageSpace = resultStorageSpace / 1024 / 1024 / 1024
 		d.Set("storage_space", storageSpace)
+	}
+	if clusterInfo["StoragePayType"] != nil {
+		d.Set("storage_pay_type", getChargeType(clusterInfo["StoragePayType"].(string)))
 	}
 	if clusterInfo["ServerlessType"] != nil {
 		d.Set("serverless_type", clusterInfo["ServerlessType"].(string))
@@ -1170,6 +1307,14 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	if v, ok := d.GetOk("storage_space"); ok && v.(int) != 0 {
 		request["StorageSpace"] = d.Get("storage_space").(int)
 	}
+	if v, ok := d.GetOk("storage_pay_type"); ok && v.(string) != "" {
+		if v.(string) == string(PrePaid) {
+			request["StoragePayType"] = string(Prepaid)
+		}
+		if v.(string) == string(PostPaid) {
+			request["StoragePayType"] = string(Postpaid)
+		}
+	}
 
 	if v, ok := d.GetOk("hot_standby_cluster"); ok && v.(string) != "" {
 		request["HotStandbyCluster"] = d.Get("hot_standby_cluster").(string)
@@ -1267,6 +1412,34 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	if v, ok := d.GetOk("scale_ro_num_max"); ok {
 		scaleRoNumMax := v.(int)
 		request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+	}
+
+	if v, ok := d.GetOk("proxy_type"); ok {
+		request["ProxyType"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("proxy_class"); ok {
+		request["ProxyClass"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("loose_polar_log_bin"); ok {
+		request["LoosePolarLogBin"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("db_node_num"); ok {
+		request["DBNodeNum"] = v.(int)
+	}
+
+	if v, ok := d.GetOk("parameter_group_id"); ok {
+		request["ParameterGroupId"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("lower_case_table_names"); ok {
+		request["LowerCaseTableNames"] = v.(int)
+	}
+
+	if v, ok := d.GetOk("default_time_zone"); ok {
+		request["DefaultTimeZone"] = v.(string)
 	}
 
 	return request, nil
