@@ -20,7 +20,7 @@ Filters support regular expression for the database name, searches by clusterId.
 data "alicloud_polardb_node_classes" "this" {
   db_type    = "MySQL"
   db_version = "8.0"
-  pay_type   = "PrePaid"
+  pay_type   = "PostPaid"
   category   = "Normal"
 }
 

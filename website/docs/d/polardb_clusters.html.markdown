@@ -20,7 +20,7 @@ Filters support regular expression for the cluster description, searches by tags
 data "alicloud_polardb_node_classes" "this" {
   db_type    = "MySQL"
   db_version = "8.0"
-  pay_type   = "PrePaid"
+  pay_type   = "PostPaid"
   category   = "Normal"
 }
 
@@ -43,11 +43,10 @@ resource "alicloud_polardb_cluster" "cluster" {
   db_node_count = "2"
   db_node_class = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
   vswitch_id    = alicloud_vswitch.default.id
-  description   = "pc-abc12345678"
 }
 
 data "alicloud_polardb_clusters" "polardb_clusters_ds" {
-  description_regex = "pc-abc12345678"
+  description_regex = alicloud_polardb_cluster.cluster.id
   status            = "Running"
 }
 
