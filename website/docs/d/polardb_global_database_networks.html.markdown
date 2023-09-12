@@ -22,7 +22,7 @@ Basic Usage
 data "alicloud_polardb_node_classes" "this" {
   db_type    = "MySQL"
   db_version = "8.0"
-  pay_type   = "PrePaid"
+  pay_type   = "PostPaid"
   category   = "Normal"
 }
 
@@ -59,7 +59,7 @@ output "polardb_global_database_network_id_1" {
 }
 
 data "alicloud_polardb_global_database_networks" "description" {
-  description = alicloud_polardb_cluster.cluster.id
+  description = alicloud_polardb_global_database_network.default.description
 }
 output "polardb_global_database_network_id_2" {
   value = data.alicloud_polardb_global_database_networks.description.networks.0.id
