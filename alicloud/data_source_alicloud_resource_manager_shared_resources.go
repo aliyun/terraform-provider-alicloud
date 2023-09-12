@@ -2,24 +2,26 @@ package alicloud
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudResourceManagerSharedResources() *schema.Resource {
+func dataSourceAliCloudResourceManagerSharedResources() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudResourceManagerSharedResourcesRead,
+		Read: dataSourceAliCloudResourceManagerSharedResourcesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"resource_share_id": {
 				Type:     schema.TypeString,
@@ -30,7 +32,7 @@ func dataSourceAlicloudResourceManagerSharedResources() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Associated", "Associating", "Disassociated", "Disassociating", "Failed"}, false),
+				ValidateFunc: StringInSlice([]string{"Associated", "Associating", "Disassociated", "Disassociating", "Failed"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -41,19 +43,19 @@ func dataSourceAlicloudResourceManagerSharedResources() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"resource_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"resource_share_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"resource_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_share_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -68,18 +70,22 @@ func dataSourceAlicloudResourceManagerSharedResources() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudResourceManagerSharedResourcesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudResourceManagerSharedResourcesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListResourceShareAssociations"
 	request := make(map[string]interface{})
+
+	request["MaxResults"] = PageSizeMedium
 	request["AssociationType"] = "Resource"
+
 	if v, ok := d.GetOk("resource_share_id"); ok {
 		request["ResourceShareIds"] = []string{v.(string)}
 	}
-	request["MaxResults"] = PageSizeMedium
-	var objects []map[string]interface{}
 
+	status, statusOk := d.GetOk("status")
+
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -89,25 +95,39 @@ func dataSourceAlicloudResourceManagerSharedResourcesRead(d *schema.ResourceData
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
+
 	var response map[string]interface{}
 	conn, err := client.NewRessharingClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_resource_manager_shared_resources", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.ResourceShareAssociations", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.ResourceShareAssociations", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -116,32 +136,38 @@ func dataSourceAlicloudResourceManagerSharedResourcesRead(d *schema.ResourceData
 					continue
 				}
 			}
+
 			if statusOk && status.(string) != "" && status.(string) != item["AssociationStatus"].(string) {
 				continue
 			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"resource_id":       object["EntityId"],
-			"resource_share_id": object["ResourceShareId"],
-			"id":                fmt.Sprint(object["EntityId"], ":", object["EntityType"]),
+			"id":                fmt.Sprintf("%v:%v", object["EntityId"], object["EntityType"]),
+			"resource_id":       fmt.Sprint(object["EntityId"]),
 			"resource_type":     fmt.Sprint(object["EntityType"]),
+			"resource_share_id": object["ResourceShareId"],
 			"status":            object["AssociationStatus"],
 		}
+
 		ids = append(ids, fmt.Sprint(object["EntityId"], ":", object["EntityType"]))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -149,6 +175,7 @@ func dataSourceAlicloudResourceManagerSharedResourcesRead(d *schema.ResourceData
 	if err := d.Set("resources", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
