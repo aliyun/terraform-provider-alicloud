@@ -60,7 +60,7 @@ github.com/alibabacloud-go/openapi-util/service
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
-# github.com/alibabacloud-go/tea-roa v1.3.0
+# github.com/alibabacloud-go/tea-roa v1.3.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-roa/client
 # github.com/alibabacloud-go/tea-roa-utils v1.1.5

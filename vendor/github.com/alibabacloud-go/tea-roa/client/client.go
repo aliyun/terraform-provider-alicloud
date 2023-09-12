@@ -241,6 +241,7 @@ func (client *Client) Init(config *Config) (_err error) {
 	client.HttpProxy = config.HttpProxy
 	client.HttpsProxy = config.HttpsProxy
 	client.MaxIdleConns = config.MaxIdleConns
+	client.UserAgent = config.UserAgent
 	return nil
 }
 
@@ -367,6 +368,7 @@ func (client *Client) DoRequest(version *string, protocol *string, method *strin
 
 			if tea.BoolValue(util.Is4xx(response_.StatusCode)) || tea.BoolValue(util.Is5xx(response_.StatusCode)) {
 				err := util.AssertAsMap(result)
+				err["_headers"] = response_.Headers
 				_err = tea.NewSDKError(map[string]interface{}{
 					"code":       tea.ToString(DefaultAny(err["Code"], err["code"])),
 					"statusCode": tea.IntValue(response_.StatusCode),
@@ -381,6 +383,7 @@ func (client *Client) DoRequest(version *string, protocol *string, method *strin
 				"headers": response_.Headers,
 				"body":    result,
 			}, &_result)
+			_result["_headers"] = response_.Headers
 			return _result, _err
 		}()
 		if !tea.BoolValue(tea.Retryable(_err)) {
@@ -516,6 +519,7 @@ func (client *Client) DoRequestWithAction(action *string, version *string, proto
 
 			if tea.BoolValue(util.Is4xx(response_.StatusCode)) || tea.BoolValue(util.Is5xx(response_.StatusCode)) {
 				err := util.AssertAsMap(result)
+				err["_headers"] = response_.Headers
 				_err = tea.NewSDKError(map[string]interface{}{
 					"code":       tea.ToString(DefaultAny(err["Code"], err["code"])),
 					"statusCode": tea.IntValue(response_.StatusCode),
@@ -530,6 +534,7 @@ func (client *Client) DoRequestWithAction(action *string, version *string, proto
 				"headers": response_.Headers,
 				"body":    result,
 			}, &_result)
+			_result["_headers"] = response_.Headers
 			return _result, _err
 		}()
 		if !tea.BoolValue(tea.Retryable(_err)) {
@@ -663,6 +668,7 @@ func (client *Client) DoRequestWithForm(version *string, protocol *string, metho
 
 			if tea.BoolValue(util.Is4xx(response_.StatusCode)) || tea.BoolValue(util.Is5xx(response_.StatusCode)) {
 				err := util.AssertAsMap(result)
+				err["_headers"] = response_.Headers
 				_err = tea.NewSDKError(map[string]interface{}{
 					"code":       tea.ToString(DefaultAny(err["Code"], err["code"])),
 					"statusCode": tea.IntValue(response_.StatusCode),
@@ -677,6 +683,7 @@ func (client *Client) DoRequestWithForm(version *string, protocol *string, metho
 				"headers": response_.Headers,
 				"body":    result,
 			}, &_result)
+			_result["_headers"] = response_.Headers
 			return _result, _err
 		}()
 		if !tea.BoolValue(tea.Retryable(_err)) {
