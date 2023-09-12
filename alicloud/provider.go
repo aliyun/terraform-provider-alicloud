@@ -1620,6 +1620,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_eflo_subnet":                                           resourceAlicloudEfloSubnet(),
 			"alicloud_compute_nest_service_instance":                         resourceAlicloudComputeNestServiceInstance(),
 			"alicloud_cloud_monitor_service_hybrid_double_write":             resourceAliCloudCloudMonitorServiceHybridDoubleWrite(),
+			"alicloud_ga_application_monitor":                                resourceAliCloudGaApplicationMonitor(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
