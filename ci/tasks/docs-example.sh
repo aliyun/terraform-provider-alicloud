@@ -65,7 +65,7 @@ allResources["init"]=1
 #check if need run
 for fileName in ${changeFiles[@]}; do
 
-  if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* ]]; then
+  if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
     docsPathKey="website/docs/r"
     if [[ $fileName =~ "data_source_" || $fileName =~ "website/docs/d/" ]]; then
       docsPathKey="website/docs/d"
