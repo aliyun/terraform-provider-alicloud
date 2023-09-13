@@ -1612,7 +1612,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_route_table_aggregation":                   resourceAlicloudCenTransitRouteTableAggregation(),
 			"alicloud_arms_prometheus":                                       resourceAlicloudArmsPrometheus(),
 			"alicloud_oos_default_patch_baseline":                            resourceAlicloudOosDefaultPatchBaseline(),
-			"alicloud_ocean_base_instance":                                   resourceAlicloudOceanBaseInstance(),
+			"alicloud_ocean_base_instance":                                   resourceAliCloudOceanBaseInstance(),
 			"alicloud_chatbot_publish_task":                                  resourceAlicloudChatbotPublishTask(),
 			"alicloud_arms_integration_exporter":                             resourceAlicloudArmsIntegrationExporter(),
 			"alicloud_service_catalog_portfolio":                             resourceAlicloudServiceCatalogPortfolio(),
