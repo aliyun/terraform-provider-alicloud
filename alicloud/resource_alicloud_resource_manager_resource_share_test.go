@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerResourceShare_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_share.default"
 	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceShareMap)
@@ -154,7 +154,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -182,7 +182,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -209,7 +209,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareUpdate(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateResourceShare
@@ -247,7 +247,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -286,7 +286,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -305,7 +305,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -340,7 +340,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -351,3 +351,206 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 	}
 
 }
+
+// Test ResourceManager ResourceShare. >>> Resource test cases, automatically generated.
+// Case 4297
+func TestAccAliCloudResourceManagerResourceShare_basic4297(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_resource_share.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceShareMap4297)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerResourceShare")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srs%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceShareBasicDependence4297)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allow_external_targets": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allow_external_targets": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_name": name + "_update",
+					"resources": []map[string]interface{}{
+						{
+							"resource_type": "VSwitch",
+							"resource_id":   "${alicloud_vswitch.vs.id}",
+						},
+					},
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"allow_external_targets": "true",
+					"targets": []string{
+						"1524526934643077"},
+					"permission_names": []string{
+						"AliyunRSDefaultPermissionVSwitch"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_name":    name + "_update",
+						"resources.#":            "1",
+						"resource_group_id":      CHECKSET,
+						"allow_external_targets": "true",
+						"targets.#":              "1",
+						"permission_names.#":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"permission_names", "resources", "targets"},
+			},
+		},
+	})
+}
+
+var AlicloudResourceManagerResourceShareMap4297 = map[string]string{
+	"status":      CHECKSET,
+	"create_time": CHECKSET,
+}
+
+func AlicloudResourceManagerResourceShareBasicDependence4297(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = "${var.name}2"
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "vs" {
+  vpc_id     = alicloud_vpc.vpc.id
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "192.168.1.0/24"
+}
+
+
+`, name)
+}
+
+// Case 4297  twin
+func TestAccAliCloudResourceManagerResourceShare_basic4297_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_resource_manager_resource_share.default"
+	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceShareMap4297)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ResourceManagerServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeResourceManagerResourceShare")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srs%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceShareBasicDependence4297)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_share_name": name,
+					"resources": []map[string]interface{}{
+						{
+							"resource_type": "VSwitch",
+							"resource_id":   "${alicloud_vswitch.vs.id}",
+						},
+					},
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"allow_external_targets": "true",
+					"targets": []string{
+						"1524526934643077"},
+					"permission_names": []string{
+						"AliyunRSDefaultPermissionVSwitch"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_share_name":    name,
+						"resources.#":            "1",
+						"resource_group_id":      CHECKSET,
+						"allow_external_targets": "true",
+						"targets.#":              "1",
+						"permission_names.#":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"permission_names", "resources", "targets"},
+			},
+		},
+	})
+}
+
+// Test ResourceManager ResourceShare. <<< Resource test cases, automatically generated.
