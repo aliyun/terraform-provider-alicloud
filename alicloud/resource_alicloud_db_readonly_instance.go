@@ -966,6 +966,10 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 		}
 	}
 
+	if auto_renew, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenew"] = auto_renew
+	}
+
 	request["ClientToken"] = buildClientToken("CreateReadOnlyDBInstance")
 
 	return request, nil
