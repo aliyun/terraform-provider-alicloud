@@ -11,17 +11,20 @@ description: |-
 
 Provides a Threat Detection Honeypot Node resource.
 
-For information about Threat Detection Honeypot Node and how to use it, see [What is Honeypot Node](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-createhoneypotnode).
+For information about Threat Detection Honeypot Node and how to use it, see [What is Honeypot Node](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createhoneypotnode).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf_example"
+}
 resource "alicloud_threat_detection_honeypot_node" "default" {
-  node_name                    = "apispec_test"
+  node_name                    = var.name
   available_probe_num          = 20
   security_group_probe_ip_list = ["0.0.0.0/0"]
 }
@@ -30,7 +33,7 @@ resource "alicloud_threat_detection_honeypot_node" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `allow_honeypot_access_internet` - (ForceNew,Optional) Whether to allow honeypot access to the external network. Value:-**true**: Allow-**false**: Disabled
+* `allow_honeypot_access_internet` - (Optional, ForceNew) Whether to allow honeypot access to the external network. Value:-**true**: Allow-**false**: Disabled
 * `available_probe_num` - (Required) Number of probes available.
 * `node_name` - (Required) Management node name.
 * `security_group_probe_ip_list` - (Optional) Release the collection of network segments.
@@ -42,7 +45,7 @@ The following attributes are exported:
 * `create_time` - The creation time of the resource
 * `status` - The status of the resource
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 10 mins) Used when create the Honeypot Node.
