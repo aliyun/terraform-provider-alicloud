@@ -913,7 +913,9 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 
 	request["InstanceNetworkType"] = Classic
-
+	if auto_renew, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenew"] = auto_renew
+	}
 	if vswitchId != "" {
 		request["VSwitchId"] = vswitchId
 		request["InstanceNetworkType"] = strings.ToUpper(string(Vpc))
