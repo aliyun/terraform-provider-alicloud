@@ -67,7 +67,7 @@ resource "alicloud_db_readonly_instance" "example" {
 The following arguments are supported:
 
 * `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
-* `master_db_instance_id` - (Required) ID of the master instance.
+* `master_db_instance_id` - (Required, ForceNew) ID of the master instance.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range: [5, 2000] for MySQL/SQL Server HA dual node edition. Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
 * `instance_name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
