@@ -859,6 +859,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ims_oidc_provider":                                    resourceAliCloudImsOidcProvider(),
+			"alicloud_cddc_dedicated_propre_host":                           resourceAliCloudCddcDedicatedPropreHost(),
 			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),
 			"alicloud_nlb_loadbalancer_common_bandwidth_package_attachment": resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment(),
 			"alicloud_arms_prometheus_monitoring":                           resourceAliCloudArmsPrometheusMonitoring(),
@@ -1198,8 +1199,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_group":                                     resourceAliCloudGaEndpointGroup(),
 			"alicloud_brain_industrial_pid_organization":                     resourceAlicloudBrainIndustrialPidOrganization(),
 			"alicloud_ga_bandwidth_package_attachment":                       resourceAlicloudGaBandwidthPackageAttachment(),
-			"alicloud_ga_forwarding_rule":                                    resourceAliCloudGaForwardingRule(),
 			"alicloud_ga_ip_set":                                             resourceAliCloudGaIpSet(),
+			"alicloud_ga_forwarding_rule":                                    resourceAliCloudGaForwardingRule(),
 			"alicloud_eipanycast_anycast_eip_address":                        resourceAliCloudEipanycastAnycastEipAddress(),
 			"alicloud_brain_industrial_pid_project":                          resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                                     resourceAlicloudCmsMonitorGroup(),

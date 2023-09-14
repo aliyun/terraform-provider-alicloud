@@ -48,7 +48,7 @@ The following arguments are supported:
 * `cpu_allocation_ratio` - (Optional) The CPU overcommitment ratio of the dedicated cluster.Valid values: 100 to 300. Default value: 200.
 * `dedicated_host_group_desc` - (Optional) The name of the dedicated cluster. The name must be 1 to 64 characters in length and can contain letters, digits, underscores (_), and hyphens (-). It must start with a letter.
 * `disk_allocation_ratio` - (Optional) The Disk Allocation Ratio of the Dedicated Host Group. **NOTE:** When `engine = SQLServer`, this attribute does not support to set.
-* `engine` - (Required, ForceNew) Database Engine Type.The database engine of the dedicated cluster. Valid values:`Redis`, `SQLServer`, `MySQL`, `PostgreSQL`, `MongoDB`
+* `engine` - (Required, ForceNew) Database Engine Type.The database engine of the dedicated cluster. Valid values:`Redis`, `SQLServer`, `MySQL`, `PostgreSQL`, `MongoDB`, `alisql`, `tair`, `mssql`. **NOTE:** Since v1.210.0., the `engine = SQLServer` was deprecated.
 * `host_replace_policy` - (Optional) The policy based on which the system handles host failures. Valid values:`Auto`,`Manual`
 * `mem_allocation_ratio` - (Optional) The Memory Allocation Ratio of the Dedicated Host Group.
 * `vpc_id` - (Required, ForceNew) The virtual private cloud (VPC) ID of the dedicated cluster.
