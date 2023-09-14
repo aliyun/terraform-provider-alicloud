@@ -39,6 +39,7 @@ func resourceAlicloudDBReadonlyInstance() *schema.Resource {
 
 			"master_db_instance_id": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Required: true,
 			},
 
@@ -909,7 +910,9 @@ func buildDBReadonlyCreateRequest(d *schema.ResourceData, meta interface{}) (map
 	if zone, ok := d.GetOk("zone_id"); ok && Trim(zone.(string)) != "" {
 		request["ZoneId"] = Trim(zone.(string))
 	}
-
+	if auto_renew, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenew"] = auto_renew
+	}
 	vswitchId := Trim(d.Get("vswitch_id").(string))
 
 	request["InstanceNetworkType"] = Classic
