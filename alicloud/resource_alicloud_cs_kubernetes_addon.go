@@ -3,6 +3,7 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"reflect"
 	"time"
 
@@ -185,6 +186,19 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "InitializeClient", err)
 	}
 	csClient := CsClient{client}
+
+	addonsMetadata, err := csClient.DescribeClusterAddonsMetadata(clusterId)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonsMetadata", err)
+	}
+	addon, ok := addonsMetadata[name]
+	if !ok {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "DescribeCsKubernetesAddonMetadata", err)
+	}
+	if addon.Required {
+		log.Printf("[DEBUG] Skip delete system addon %s\n", name)
+		return nil
+	}
 
 	err = csClient.uninstallAddon(d)
 	if err != nil {
