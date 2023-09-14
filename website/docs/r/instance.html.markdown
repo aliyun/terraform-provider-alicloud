@@ -266,6 +266,7 @@ The following attributes are exported:
 * `os_type` - The type of the operating system of the instance.
 * `os_name` - The name of the operating system of the instance.
 * `network_interface_id` - The ID of the ENI.
+* `system_disk_id` - (Available since v1.210.0) The ID of system disk.  
 * `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - The group number of the instance in a deployment set when the deployment set is use.
 

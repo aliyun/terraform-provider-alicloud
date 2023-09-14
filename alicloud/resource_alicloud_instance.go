@@ -192,6 +192,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 			},
+			"system_disk_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -265,11 +269,10 @@ func resourceAliCloudInstance() *schema.Resource {
 			},
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
 			"subnet_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
-				ConflictsWith: []string{"vswitch_id"},
-				Deprecated:    "Field 'subnet_id' has been deprecated from version 1.177.0, and use field 'vswitch_id' to replace. ",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
+				Removed:  "Field 'subnet_id' has been removed from version 1.210.0",
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -549,15 +552,6 @@ func resourceAliCloudInstance() *schema.Resource {
 func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
-
-	// Ensure instance_type is valid
-	//zoneId, validZones, requestId, err := ecsService.DescribeAvailableResources(d, meta, InstanceTypeResource)
-	//if err != nil {
-	//	return WrapError(err)
-	//}
-	//if err := ecsService.InstanceTypeValidation(d.Get("instance_type").(string), zoneId, validZones); err != nil {
-	//	return WrapError(Error("%s. RequestId: %s", err, requestId))
-	//}
 	var response map[string]interface{}
 	action := "RunInstances"
 	request := make(map[string]interface{})
@@ -876,30 +870,27 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 	var disk ecs.Disk
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-		if err != nil {
-			if NotFoundError(err) {
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
+	disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId, d.Get("system_disk_id").(string))
 	if err != nil {
-		return WrapError(err)
+		// if old resource happenes an not found error, there may system has been detached
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[WARNING] describing instance %s system disk failed. Error: %v", d.Id(), err)
+		} else {
+			return WrapError(err)
+		}
+	} else {
+		d.Set("system_disk_category", disk.Category)
+		d.Set("system_disk_name", disk.DiskName)
+		d.Set("system_disk_description", disk.Description)
+		d.Set("system_disk_size", disk.Size)
+		d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
+		d.Set("system_disk_storage_cluster_id", disk.StorageClusterId)
+		d.Set("system_disk_encrypted", disk.Encrypted)
+		d.Set("system_disk_kms_key_id", disk.KMSKeyId)
+		d.Set("system_disk_id", disk.DiskId)
+		d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
+		d.Set("system_disk_performance_level", disk.PerformanceLevel)
 	}
-	d.Set("system_disk_category", disk.Category)
-	d.Set("system_disk_name", disk.DiskName)
-	d.Set("system_disk_description", disk.Description)
-	d.Set("system_disk_size", disk.Size)
-	d.Set("system_disk_auto_snapshot_policy_id", disk.AutoSnapshotPolicyId)
-	d.Set("system_disk_storage_cluster_id", disk.StorageClusterId)
-	d.Set("system_disk_encrypted", disk.Encrypted)
-	d.Set("system_disk_kms_key_id", disk.KMSKeyId)
-
-	d.Set("volume_tags", ecsService.tagsToMap(disk.Tags.Tag))
-	d.Set("system_disk_performance_level", disk.PerformanceLevel)
 	d.Set("instance_name", instance.InstanceName)
 	d.Set("resource_group_id", instance.ResourceGroupId)
 	d.Set("description", instance.Description)
@@ -1846,6 +1837,8 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		if err != nil {
 			return update, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+		response, _ := raw.(*ecs.ReplaceSystemDiskResponse)
+		d.Set("system_disk_id", response.DiskId)
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		// Ensure instance's image has been replaced successfully.
 		timeout := DefaultTimeoutMedium
@@ -1854,17 +1847,7 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 			if errDesc != nil {
 				return update, WrapError(errDesc)
 			}
-			var disk ecs.Disk
-			err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-				disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId)
-				if err != nil {
-					if NotFoundError(err) {
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
+			disk, err := ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId, d.Get("system_disk_id").(string))
 			if err != nil {
 				return update, WrapError(err)
 			}
@@ -1879,9 +1862,6 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 				return update, WrapError(GetTimeErrorFromString(fmt.Sprintf("Replacing instance %s system disk timeout.", d.Id())))
 			}
 		}
-
-		d.SetPartial("system_disk_size")
-		d.SetPartial("image_id")
 
 		// After updating image, it need to re-attach key pair
 		if keyPairName != "" {

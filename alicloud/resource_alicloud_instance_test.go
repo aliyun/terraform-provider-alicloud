@@ -139,7 +139,7 @@ func testSweepInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECSInstanceBasic(t *testing.T) {
+func TestAccAliCloudECSInstanceBasic(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -488,7 +488,7 @@ func TestAccAlicloudECSInstanceBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceVpc(t *testing.T) {
+func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -854,7 +854,7 @@ func TestAccAlicloudECSInstanceVpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstancePrepaid(t *testing.T) {
+func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1211,7 +1211,7 @@ func TestAccAlicloudECSInstancePrepaid(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
+func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1368,7 +1368,7 @@ func TestAccAlicloudECSInstanceDataDisks(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
+func TestAccAliCloudECSInstanceTypeUpdate(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1455,7 +1455,7 @@ func TestAccAlicloudECSInstanceTypeUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
+func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1511,7 +1511,7 @@ func TestAccAlicloudECSInstanceSpotInstanceLimit(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceMulti(t *testing.T) {
+func TestAccAliCloudECSInstanceMulti(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default.9"
@@ -1567,7 +1567,7 @@ func TestAccAlicloudECSInstanceMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceHpcCluster(t *testing.T) {
+func TestAccAliCloudECSInstanceHpcCluster(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1690,7 +1690,7 @@ resource "alicloud_kms_key" "key" {
 `, name)
 }
 
-func TestAccAlicloudECSInstanceSecondaryIps(t *testing.T) {
+func TestAccAliCloudECSInstanceSecondaryIps(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1771,7 +1771,7 @@ func TestAccAlicloudECSInstanceSecondaryIps(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceSecondaryIpCount(t *testing.T) {
+func TestAccAliCloudECSInstanceSecondaryIpCount(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1865,7 +1865,7 @@ func TestAccAlicloudECSInstanceSecondaryIpCount(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstance_DeploymentSetID(t *testing.T) {
+func TestAccAliCloudECSInstance_DeploymentSetID(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -1954,7 +1954,7 @@ func TestAccAlicloudECSInstance_DeploymentSetID(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstance_StatusUpdated(t *testing.T) {
+func TestAccAliCloudECSInstance_StatusUpdated(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2054,7 +2054,7 @@ func TestAccAlicloudECSInstance_StatusUpdated(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceMetadataOptions(t *testing.T) {
+func TestAccAliCloudECSInstanceMetadataOptions(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2157,7 +2157,7 @@ func TestAccAlicloudECSInstanceMetadataOptions(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceIpv6AddressesCount(t *testing.T) {
+func TestAccAliCloudECSInstanceIpv6AddressesCount(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2224,7 +2224,7 @@ func TestAccAlicloudECSInstanceIpv6AddressesCount(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceIpv6Addresses(t *testing.T) {
+func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2760,9 +2760,10 @@ var testAccInstanceCheckMap = map[string]string{
 	"force_delete":       NOSET,
 	"include_data_disks": NOSET,
 	"dry_run":            "false",
+	"system_disk_id":     CHECKSET,
 }
 
-func TestAccAlicloudECSInstance_OperatorType(t *testing.T) {
+func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -2895,7 +2896,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
+func TestAccAliCloudECSInstance_AutoSnapshotPolicyId(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -3033,7 +3034,7 @@ resource "alicloud_ecs_auto_snapshot_policy" "default1" {
 `, name)
 }
 
-func TestAccAlicloudECSInstanceSystemDisk(t *testing.T) {
+func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -3107,7 +3108,7 @@ func TestAccAlicloudECSInstanceSystemDisk(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceMaintenance(t *testing.T) {
+func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"
@@ -3227,7 +3228,7 @@ func TestAccAlicloudECSInstanceMaintenance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSInstanceDedicatedHostId(t *testing.T) {
+func TestAccAliCloudECSInstanceDedicatedHostId(t *testing.T) {
 	var v ecs.Instance
 
 	resourceId := "alicloud_instance.default"

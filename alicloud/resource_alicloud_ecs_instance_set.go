@@ -717,7 +717,7 @@ func resourceAlicloudEcsInstanceSetRead(d *schema.ResourceData, meta interface{}
 
 	var disk ecs.Disk
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		disk, err = ecsService.DescribeInstanceSystemDisk(fmt.Sprint(instance["InstanceId"]), fmt.Sprint(instance["ResourceGroupId"]))
+		disk, err = ecsService.DescribeInstanceSystemDisk(fmt.Sprint(instance["InstanceId"]), fmt.Sprint(instance["ResourceGroupId"]), "")
 		if err != nil {
 			if NotFoundError(err) {
 				return resource.RetryableError(err)
