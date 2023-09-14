@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstance_update(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
@@ -187,7 +187,7 @@ func TestAccAlicloudRdsDBReadonlyInstance_update(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
@@ -443,7 +443,7 @@ func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_update(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBReadonlyInstanceMySQL_updatePayType(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstanceMySQL_updatePayType(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
@@ -539,7 +539,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceMySQL_updatePayType(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBReadonlyInstanceMySQL_downgrade(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstanceMySQL_downgrade(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
@@ -619,7 +619,7 @@ func TestAccAlicloudRdsDBReadonlyInstanceMySQL_downgrade(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_updatePayType(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstancePostgreSQL_updatePayType(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
@@ -715,7 +715,7 @@ func TestAccAlicloudRdsDBReadonlyInstancePostgreSQL_updatePayType(t *testing.T) 
 	})
 }
 
-func TestAccAlicloudRdsDBReadonlyInstanceSQLServer_updatePayType(t *testing.T) {
+func TestAccAliCloudRdsDBReadonlyInstanceSQLServer_updatePayType(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_readonly_instance.default"
 	rand := acctest.RandIntRange(10000, 99999)
