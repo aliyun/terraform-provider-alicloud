@@ -175,15 +175,19 @@ func (s *EcsService) DescribeInstanceAttribute(id string) (instance ecs.Describe
 	return *response, nil
 }
 
-func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, err error) {
+func (s *EcsService) DescribeInstanceSystemDisk(instanceId, rg, diskId string) (disk ecs.Disk, err error) {
 	request := ecs.CreateDescribeDisksRequest()
-	request.InstanceId = id
-	request.DiskType = string(DiskTypeSystem)
-	request.RegionId = s.client.RegionId
-	// resource_group_id may cause failure to query the system disk of the instance, because the newly created instance may fail to query through the resource_group_id parameter, so temporarily remove this parameter.
-	if rg != "" {
-		request.ResourceGroupId = rg
+	if diskId != "" {
+		request.DiskIds = convertListToJsonString([]interface{}{diskId})
+	} else {
+		request.InstanceId = instanceId
+		request.DiskType = string(DiskTypeSystem)
+		// resource_group_id may cause failure to query the system disk of the instance, because the newly created instance may fail to query through the resource_group_id parameter, so temporarily remove this parameter.
+		if rg != "" {
+			request.ResourceGroupId = rg
+		}
 	}
+	request.RegionId = s.client.RegionId
 	var response *ecs.DescribeDisksResponse
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -203,10 +207,10 @@ func (s *EcsService) DescribeInstanceSystemDisk(id, rg string) (disk ecs.Disk, e
 		return nil
 	})
 	if err != nil {
-		return disk, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return disk, WrapErrorf(err, DefaultErrorMsg, instanceId, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	if len(response.Disks.Disk) < 1 || response.Disks.Disk[0].InstanceId != id {
-		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, response.RequestId)
+	if len(response.Disks.Disk) < 1 {
+		return disk, WrapErrorf(Error(GetNotFoundMessage("Instance", instanceId+" system disk")), NotFoundWithResponse, response)
 	}
 	return response.Disks.Disk[0], nil
 }
