@@ -263,3 +263,4 @@ var EipAddressZoneSupportRegions = []Region{APSouthEast2}
 var VpcDhcpOptionsSetSupportRegions = []Region{Hangzhou}
 var FCV2FunctionSupportRegions = []Region{Hangzhou}
 var VPCGatewayEndpointSupportRegions = []Region{Hangzhou}
+var CDDCSupportRegions = []Region{Hangzhou}

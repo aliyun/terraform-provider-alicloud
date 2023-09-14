@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -27,13 +25,13 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Evenly", "Intensively"}, false),
+				ValidateFunc: StringInSlice([]string{"Evenly", "Intensively"}, false),
 			},
 			"cpu_allocation_ratio": {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(100, 300),
+				ValidateFunc: IntBetween(100, 300),
 			},
 			"dedicated_host_group_desc": {
 				Type:     schema.TypeString,
@@ -43,13 +41,16 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(100, 300),
+				ValidateFunc: IntBetween(100, 300),
 			},
 			"engine": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Redis", "SQLServer", "MySQL", "PostgreSQL", "MongoDB"}, false),
+				ValidateFunc: StringInSlice([]string{"Redis", "SQLServer", "MySQL", "PostgreSQL", "MongoDB", "alisql", "tair", "mssql"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Id() != "" && new == "SQLServer"
+				},
 			},
 			"host_replace_policy": {
 				Type:     schema.TypeString,
@@ -60,7 +61,7 @@ func resourceAlicloudCddcDedicatedHostGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -274,8 +275,6 @@ func convertCddcDedicatedHostGroupEngineResponse(engine interface{}) string {
 		engine = "MySQL"
 	case "redis":
 		engine = "Redis"
-	case "mssql":
-		engine = "SQLServer"
 	case "pgsql":
 		engine = "PostgreSQL"
 	case "mongodb":
