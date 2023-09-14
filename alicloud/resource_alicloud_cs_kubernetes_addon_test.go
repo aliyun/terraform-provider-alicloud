@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
+func TestAccAliCloudCSKubernetesAddon_basic(t *testing.T) {
 	var v *Component
 
 	resourceId := "alicloud_cs_kubernetes_addon.default"
@@ -72,6 +72,16 @@ func TestAccAlicloudCSKubernetesAddon_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config": "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config": CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
@@ -130,7 +140,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   count                       = 1
   cluster_spec                = "ack.pro.small"
   worker_vswitch_ids          = [local.vswitch_id]
-  new_nat_gateway             = true
+  new_nat_gateway             = false
   worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
   node_port_range             = "30000-32767"
   password                    = "Hello1234"
