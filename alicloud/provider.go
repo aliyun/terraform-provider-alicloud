@@ -858,6 +858,11 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_kms_application_access_point":                         resourceAliCloudKmsApplicationAccessPoint(),
+			"alicloud_kms_client_key":                                       resourceAliCloudKmsClientKey(),
+			"alicloud_kms_policy":                                           resourceAliCloudKmsPolicy(),
+			"alicloud_kms_network_rule":                                     resourceAliCloudKmsNetworkRule(),
+			"alicloud_kms_instance":                                         resourceAliCloudKmsInstance(),
 			"alicloud_ims_oidc_provider":                                    resourceAliCloudImsOidcProvider(),
 			"alicloud_cddc_dedicated_propre_host":                           resourceAliCloudCddcDedicatedPropreHost(),
 			"alicloud_nlb_listener_additional_certificate_attachment":       resourceAliCloudNlbListenerAdditionalCertificateAttachment(),

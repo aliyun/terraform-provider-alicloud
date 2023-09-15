@@ -265,3 +265,5 @@ var FCV2FunctionSupportRegions = []Region{Hangzhou}
 var VPCGatewayEndpointSupportRegions = []Region{Hangzhou}
 var CDDCSupportRegions = []Region{Hangzhou}
 var EventBridgeConnectionSupportRegions = []Region{ChengDu, Huhehaote}
+var KmsInstanceSupportRegions = []Region{Hangzhou}
+var KmsInstanceIntlSupportRegions = []Region{APSouthEast1}
