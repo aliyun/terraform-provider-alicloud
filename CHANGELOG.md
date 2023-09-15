@@ -1,4 +1,47 @@
 ## 1.210.0 (Unreleased)
+
+- **New Resource:** `alicloud_cloud_monitor_service_hybrid_double_write` [GH-6386]
+- **New Resource:** `alicloud_kms_instance` [GH-6432]
+- **New Resource:** `alicloud_kms_network_rule` [GH-6432]
+- **New Resource:** `alicloud_kms_policy` [GH-6432]
+- **New Resource:** `alicloud_kms_application_access_point` [GH-6432]
+- **New Resource:** `alicloud_kms_client_key` [GH-6432]
+- **New Resource:** `alicloud_ims_oidc_provider` [GH-6471]
+- **New Resource:** `alicloud_cddc_dedicated_propre_host` [GH-6472]
+- **New Resource:** `alicloud_event_bridge_connection` [GH-6503]
+- **New Datasource:** `alicloud_arms_prometheus_monitorings` [GH-6443]
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster: added poladb db support proxy_type、proxy_class、loose_polar_log_bin;data-source/alicloud_polardb_node_classes: modified filter useless data;resource/alicloud_polardb_global_database_network: try again when a member exists;alicloud/connectivity/regions: create gdn strength setting availability zone; alicloud/diff_suppress_funcs: creation_category db_type. [GH-6404]
+- resource/alicloud_oos_patch_baseline: rejected_patches, rejected_patches_action. [GH-6459]
+- resource/alicloud_ocean_base_instance: add new attributes: disk_type, ob_version. [GH-6460]
+- resource/alicloud_ga_endpoint_group: Improved default create and delete timeout. [GH-6461]
+- resource/alicloud_ga_ip_set: Improved default create and delete timeout. [GH-6462]
+- resource/alicloud_ga_listener: Improved default create and delete timeout. [GH-6463]
+- resource/alicloud_ga_forwarding_rule: Improved default create and delete timeout. [GH-6464]
+- resource/alicloud_ots_instance: Upgrade openapi version. [GH-6466]
+- resource/alicloud_cddc_dedicated_host_group: modify attribute engine to supports more type. [GH-6472]
+- resource/alicloud_common_bandwidth_package_attachment: Improves the resource creating and avoid happened IpInstanceId.AlreadyInBandwidthPackage error. [GH-6480]
+- resource/alicloud_ga_endpoint_group: Added retry strategy for error code NotActive.Listener. [GH-6483]
+- resource/alicloud_instance: Adds new output attribute system_disk_id, and fixes the resource not found error when there is missing system disk; resource/alicloud_ecs_instance_set: Fixes the resource not found error when there is missing system disk. [GH-6498]
+- data-source/alicloud_wafv3_domains: Fixed the panic error. [GH-6454]
+- data-source/alicloud_fc_service: Improves the response checking when the account is opened. [GH-6489]
+- data-source/alicloud_hbr_service: Update endpoint to fix the service unavailable issue. [GH-6491]
+- docs: Improves the docs example. [GH-6434]
+- docs: Improves the sddp,swas docs example. [GH-6453]
+- docs: Improves the docs example. [GH-6457]
+- docs: Improves the alicloud_resource_manager_resource_groups docs. [GH-6487]
+- docs: polardb_accounts.html.markdown;polardb_clusters.html.markdown;polardb_databases.html.markdown;polardb_endpoints.html.markdown;polardb_global_database_networks_html.markdown. [GH-6495]
+- testcase: add cross-border use case for cen_tranist_router_peer_attachment. [GH-6455]
+- testcase: Adds or improves sweeper testcase for ssl_certificate_service_certificate and the resource group. [GH-6468]
+
+BUG FIXES:
+
+- resource/alicloud_kvstore_instance: Fixes the diff error from attribute instance_class. [GH-6440]
+- datasource/alicloud_cs_kubernetes_addons: Fixes reading latest addon config error. [GH-6262]
+- data-source/alicloud_cdn_service: Fixes the CdnServiceNotFoundError error. [GH-6467]
+
 ## 1.209.1 (August 28, 2023)
 
 ENHANCEMENTS:
