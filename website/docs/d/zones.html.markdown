@@ -4,10 +4,10 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_zones"
 sidebar_current: "docs-alicloud-datasource-zones"
 description: |-
-    Provides a list of availability zones that can be used by an Alibaba Cloud account.
+  Provides a list of availability zones that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_zones
+# alicloud_zones
 
 This data source provides availability zones that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
@@ -16,7 +16,7 @@ This data source provides availability zones that can be accessed by an Alibaba 
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 data "alicloud_zones" "zones_ds" {
   available_instance_type = "ecs.n4.large"
@@ -48,9 +48,9 @@ If you want to fetch the available zones for RDS instance, you can use datasourc
 * `network_type` - (Optional) Filter the results by a specific network type. Valid values: `Classic` and `Vpc`.
 * `spot_strategy` - - (Optional) Filter the results by a specific ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `enable_details` - (Optional, Available in 1.36.0+) Default to false and only output `id` in the `zones` block. Set it to true can output more details.
-* `available_slb_address_type` - (Available in 1.45.0+) Filter the results by a slb instance address type. Can be either `Vpc`, `classic_internet` or `classic_intranet`
-* `available_slb_address_ip_version` - (Available in 1.45.0+) Filter the results by a slb instance address version. Can be either `ipv4`, or `ipv6`.
+* `enable_details` - (Optional, Available since 1.36.0) Default to false and only output `id` in the `zones` block. Set it to true can output more details.
+* `available_slb_address_type` - (Available since 1.45.0) Filter the results by a slb instance address type. Can be either `Vpc`, `classic_internet` or `classic_intranet`
+* `available_slb_address_ip_version` - (Available since 1.45.0) Filter the results by a slb instance address version. Can be either `ipv4`, or `ipv6`.
 
 -> **NOTE:** The disk category `cloud` has been outdated and can only be used by non-I/O Optimized ECS instances. Many availability zones don't support it. It is recommended to use `cloud_efficiency` or `cloud_ssd`.
 

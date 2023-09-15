@@ -35,7 +35,7 @@ func dataSourceAlicloudKVStorePermissionRead(d *schema.ResourceData, meta interf
 
 	client := meta.(*connectivity.AliyunClient)
 	request := r_kvstore.CreateInitializeKvstorePermissionRequest()
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.InitializeKvstorePermission(request)
 	})
 	if err != nil {
