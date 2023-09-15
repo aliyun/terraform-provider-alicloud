@@ -12,7 +12,7 @@ This data source provides information about the current account.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_account" "current" {
 }
 
