@@ -1202,34 +1202,6 @@ func (client *AliyunClient) NewGpdbClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
-func (client *AliyunClient) WithRkvClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the RKV client if necessary
-	if client.rkvconn == nil {
-		endpoint := client.config.KVStoreEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, KVSTORECode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, fmt.Sprintf("R-%s", string(KVSTORECode)), endpoint)
-		}
-		rkvconn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RKV client: %#v", err)
-		}
-		rkvconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		rkvconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		rkvconn.SourceIp = client.config.SourceIp
-		rkvconn.SecureTransport = client.config.SecureTransport
-		rkvconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		rkvconn.AppendUserAgent(Provider, providerVersion)
-		rkvconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		rkvconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
-		client.rkvconn = rkvconn
-	}
-
-	return do(client.rkvconn)
-}
-
 func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -2226,16 +2198,29 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
+	productCode := "redisa"
+	endpoint := ""
 	if client.r_kvstoreConn == nil {
-		endpoint := client.config.RKvstoreEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, RKvstoreCode)
+		}
+		if endpoint == "" {
+			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+				if err := client.loadEndpoint(productCode); err != nil {
+					endpoint = "r-kvstore.aliyuncs.com"
+					client.config.Endpoints.Store(productCode, endpoint)
+					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+				}
+			}
+			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+				endpoint = v.(string)
+			}
 		}
 		if strings.HasPrefix(endpoint, "http") {
 			endpoint = fmt.Sprintf("https://%s", strings.TrimPrefix(endpoint, "http://"))
 		}
 		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(RKvstoreCode), endpoint)
+			endpoints.AddEndpointMapping(client.config.RegionId, "r-kvstore", endpoint)
 		}
 
 		r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))

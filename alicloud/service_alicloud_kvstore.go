@@ -25,7 +25,7 @@ func (s *KvstoreService) DescribeKVstoreInstance(id string) (*r_kvstore.DBInstan
 	request := r_kvstore.CreateDescribeInstanceAttributeRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = id
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeInstanceAttribute(request)
 	})
 	if err != nil {
@@ -48,7 +48,7 @@ func (s *KvstoreService) DescribeKVstoreBackupPolicy(id string) (*r_kvstore.Desc
 	request := r_kvstore.CreateDescribeBackupPolicyRequest()
 	request.RegionId = s.client.RegionId
 	request.InstanceId = id
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeBackupPolicy(request)
 	})
 	if err != nil {
@@ -128,7 +128,7 @@ func (s *KvstoreService) DescribeParameters(id string) (*r_kvstore.DescribeParam
 	request.RegionId = s.client.RegionId
 	request.DBInstanceId = id
 
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeParameters(request)
 	})
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *KvstoreService) ModifyInstanceConfig(id string, config string) error {
 	if err := s.WaitForKVstoreInstance(id, Normal, DefaultLongTimeout); err != nil {
 		return WrapError(err)
 	}
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ModifyInstanceConfig(request)
 	})
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
 			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 			request.TagKey = &tagKey
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			raw, err := s.client.WithRKvstoreClient(func(client *r_kvstore.Client) (interface{}, error) {
 				return client.UntagResources(request)
 			})
 			if err != nil {
@@ -193,7 +193,7 @@ func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
 			request.Tag = &create
 			request.ResourceType = strings.ToUpper(string(TagResourceInstance))
 			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			raw, err := s.client.WithRKvstoreClient(func(client *r_kvstore.Client) (interface{}, error) {
 				return client.TagResources(request)
 			})
 			if err != nil {
@@ -268,7 +268,7 @@ func (s *KvstoreService) DescribeTags(resourceId string, resourceType TagResourc
 	request.RegionId = s.client.RegionId
 	request.ResourceType = strings.ToUpper(string(resourceType))
 	request.ResourceId = &[]string{resourceId}
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ListTagResources(request)
 	})
 	if err != nil {
@@ -318,7 +318,7 @@ func (s *KvstoreService) DescribeKVstoreAccount(id string) (*r_kvstore.Account, 
 	invoker.AddCatcher(KVstoreInstanceStatusCatcher)
 	var response *r_kvstore.DescribeAccountsResponse
 	if err := invoker.Run(func() error {
-		raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.DescribeAccounts(request)
 		})
 		if err != nil {
@@ -350,7 +350,7 @@ func (s *KvstoreService) DescribeKVstoreSecurityGroupId(id string) (*r_kvstore.D
 	if err := s.WaitForKVstoreInstance(id, Normal, DefaultLongTimeout); err != nil {
 		return response, WrapError(err)
 	}
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeSecurityGroupConfiguration(request)
 	})
 	if err != nil {
@@ -370,7 +370,7 @@ func (s *KvstoreService) DescribeDBInstanceNetInfo(id string) (*r_kvstore.NetInf
 	if err := s.WaitForKVstoreInstance(id, Normal, DefaultLongTimeout); err != nil {
 		return &response.NetInfoItems, WrapError(err)
 	}
-	raw, err := s.client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := s.client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.DescribeDBInstanceNetInfo(request)
 	})
 	if err != nil {

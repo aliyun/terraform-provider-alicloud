@@ -88,7 +88,7 @@ func resourceAlicloudKVStoreBackupPolicyUpdate(d *schema.ResourceData, meta inte
 		periodList := expandStringList(d.Get("backup_period").(*schema.Set).List())
 		request.PreferredBackupPeriod = strings.Join(periodList, COMMA_SEPARATED)
 
-		raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+		raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 			return rkvClient.ModifyBackupPolicy(request)
 		})
 		if err != nil {
@@ -120,7 +120,7 @@ func resourceAlicloudKVStoreBackupPolicyDelete(d *schema.ResourceData, meta inte
 	request.PreferredBackupTime = "01:00Z-02:00Z"
 	request.PreferredBackupPeriod = "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"
 
-	raw, err := client.WithRkvClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
+	raw, err := client.WithRKvstoreClient(func(rkvClient *r_kvstore.Client) (interface{}, error) {
 		return rkvClient.ModifyBackupPolicy(request)
 	})
 	if err != nil {

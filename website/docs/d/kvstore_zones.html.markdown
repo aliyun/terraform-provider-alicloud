@@ -7,23 +7,18 @@ description: |-
     Provides a list of availability zones for KVStore that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_kvstore\_zones
+# alicloud_kvstore_zones
 
 This data source provides availability zones for KVStore that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.73.0+.
+-> **NOTE:** Available since v1.73.0.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
-data "alicloud_kvstore_zones" "zones_ids" {}
-
-# Create an KVStore instance with the first matched zone
-resource "alicloud_kvstore_instance" "kvstore" {
-    availability_zone = data.alicloud_kvstore_zones.zones_ids.zones.0.id
-
-  # Other properties...
+data "alicloud_kvstore_zones" "zones_ids" {
+  instance_charge_type = "PostPaid"
 }
 ```
 
@@ -34,7 +29,7 @@ The following arguments are supported:
 * `multi` - (Optional) Indicate whether the zones can be used in a multi AZ configuration. Default to `false`. Multi AZ is usually used to launch KVStore instances.
 * `instance_charge_type` - (Optional) Filter the results by a specific instance charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
 * `engine` - (Optional) Database type. Options are `Redis`, `Memcache`. Default to `Redis`.
-* product_type - (Optional, Available in v1.130.0+) The type of the service. Valid values: `Local`, `Tair_rdb`, `Tair_scm`, `Tair_essd`, `OnECS`.
+* product_type - (Optional, Available since v1.130.0+) The type of the service. Valid values: `Local`, `Tair_rdb`, `Tair_scm`, `Tair_essd`, `OnECS`.
     
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

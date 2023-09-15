@@ -4,10 +4,10 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_permission"
 sidebar_current: "docs-alicloud-datasource-kvstore-permission"
 description: |-
-    Provides data source to assigns a RAM role to ApsaraDB for Redis.
+  Provides data source to assigns a RAM role to ApsaraDB for Redis.
 ---
 
-# alicloud\_kvstore\_permission
+# alicloud_kvstore_permission
 
 Assigns a RAM role to ApsaraDB for Redis.
 
@@ -15,11 +15,11 @@ The log management feature of ApsaraDB for Redis requires the resources of [Log 
 To use the log management feature of ApsaraDB for Redis, you can call this operation to associate the RAM role named AliyunServiceRoleForKvstore with the ApsaraDB for Redis instance. 
 For more information, see [Associated RAM roles of ApsaraDB for Redis](https://www.alibabacloud.com/help/doc-detail/184337.htm)
 
--> **NOTE:** Available in v1.128.0+
+-> **NOTE:** Available since v1.128.0
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_kvstore_permission" "open" {
 	enable = "On"
 }

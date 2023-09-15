@@ -4,18 +4,18 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_kvstore_instance_engines"
 sidebar_current: "docs-alicloud-datasource-kvstore-instance-engines"
 description: |-
-    Provides a list of KVStore instacne engines info.
+  Provides a list of KVStore instacne engines info.
 ---
 
-# alicloud\_kvstore\_instances\_engines
+# alicloud_kvstore_instance_engines
 
 This data source provides the KVStore instance engines resource available info of Alibaba Cloud.
 
--> **NOTE:** Available in v1.51.0+
+-> **NOTE:** Available since v1.51.0
 
 ## Example Usage
 
-```tf
+```terraform
 data "alicloud_zones" "resources" {
   available_resource_creation = "KVStore"
 }

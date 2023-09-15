@@ -566,7 +566,7 @@ func resourceAlicloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%v", response.InstanceId))
 
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 180*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -1223,7 +1223,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			request.ConnectionStringPrefix = prefix
 			request.Port = port
 
-			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			raw, err := client.WithRKvstoreClient(func(client *r_kvstore.Client) (interface{}, error) {
 				return client.AllocateInstancePublicConnection(request)
 			})
 			addDebug(request.GetActionName(), raw)
@@ -1240,7 +1240,7 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			request.InstanceId = d.Id()
 			request.CurrentConnectionString = d.Get("connection_string").(string)
 
-			raw, err := client.WithRkvClient(func(client *r_kvstore.Client) (interface{}, error) {
+			raw, err := client.WithRKvstoreClient(func(client *r_kvstore.Client) (interface{}, error) {
 				return client.ReleaseInstancePublicConnection(request)
 			})
 			addDebug(request.GetActionName(), raw)
