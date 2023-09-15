@@ -47,9 +47,8 @@ if [[ ${GITHUB_DEFAULT_REPO} != "" ]]; then
   echo -e "\033[33m[WARNING]\033[0m setting default repo to ${GITHUB_DEFAULT_REPO} before getting change files."
   gh repo set-default ${GITHUB_DEFAULT_REPO}
   gh auth refresh -h github.com -s repo
-  gh auth login --with-token ${GITHUB_TOKEN}
-  export GITHUB_TOKEN=${GITHUB_TOKEN}
   export GH_TOKEN=${GITHUB_TOKEN}
+  gh auth login --with-token ${GITHUB_TOKEN}
 fi
 
 changeFiles=$(gh pr diff ${prNum} --name-only | grep "^alicloud/" | grep ".go$")
