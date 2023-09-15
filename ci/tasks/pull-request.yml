@@ -22,3 +22,4 @@ params:
   OSS_BUCKET_NAME:           ""
   OSS_BUCKET_REGION:         ""
   GITHUB_TOKEN: ""
+  GITHUB_DEFAULT_REPO: ""

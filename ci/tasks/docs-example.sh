@@ -8,6 +8,7 @@
 : ${OSS_BUCKET_NAME:=?}
 : ${OSS_BUCKET_REGION:=?}
 : ${GITHUB_TOKEN:?}
+: ${GITHUB_DEFAULT_REPO:=""}
 : ${ALICLOUD_ACCESS_KEY_FOR_SERVICE:?}
 : ${ALICLOUD_SECRET_KEY_FOR_SERVICE:?}
 
@@ -50,10 +51,13 @@ cd $repo
 echo -e "\n$ git log -n 2"
 git log -n 2
 prNum=${pr_id}
-echo -e "\n$ git remote -v"
-git remote -v
+
+if [[ ${GITHUB_DEFAULT_REPO} != "" ]]; then
+  echo -e "\033[33m[WARNING]\033[0m setting default repo to ${GITHUB_DEFAULT_REPO} before getting change files."
+  gh repo set-default ${GITHUB_DEFAULT_REPO}
+fi
+
 #find file
-echo -e "\n$ gh pr diff ${pr_id} --name-only ....."
 changeFiles=$(gh pr diff ${pr_id} --name-only)
 if [[ ${#changeFiles[@]} -eq 0 ]]; then
   echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."

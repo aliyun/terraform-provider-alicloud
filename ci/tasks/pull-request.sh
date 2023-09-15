@@ -9,6 +9,7 @@
 : ${FC_SERVICE:?}
 : ${FC_REGION:?}
 : ${GITHUB_TOKEN:?}
+: ${GITHUB_DEFAULT_REPO:=""}
 
 repo=terraform-provider-alicloud
 export GITHUB_TOKEN=${GITHUB_TOKEN}
@@ -41,10 +42,12 @@ cd $repo
 echo -e "\n$ git log -n 2"
 git log -n 2
 prNum=${pr_id}
-#    if [[ $(gh pr diff ${prNum} --name-only | grep "^alicloud/") -lt 1 ]]; then
-#      echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to test."
-#      exit 0
-#    fi
+
+if [[ ${GITHUB_DEFAULT_REPO} != "" ]]; then
+  echo -e "\033[33m[WARNING]\033[0m setting default repo to ${GITHUB_DEFAULT_REPO} before getting change files."
+  gh repo set-default ${GITHUB_DEFAULT_REPO}
+fi
+
 changeFiles=$(gh pr diff ${prNum} --name-only | grep "^alicloud/" | grep ".go$")
 if [[ ${#changeFiles[@]} -eq 0 ]]; then
   echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to test."
