@@ -347,7 +347,7 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	d.SetId(fmt.Sprint(response["DtsJobId"]))
 	d.Set("dts_instance_id", response["DtsInstanceId"])
 	dtsService := DtsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"InitializeFailed"}))
+	stateConf := BuildStateConf([]string{}, []string{"Synchronizing", "NotStarted"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -403,7 +403,6 @@ func resourceAlicloudDtsSynchronizationJobRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dtsService := DtsService{client}
 	var response map[string]interface{}
 	d.Partial(true)
 
@@ -540,7 +539,7 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 	request = map[string]interface{}{
 		"DtsJobId": d.Id(),
 	}
-	if !d.IsNewResource() && d.HasChange("instance_class") {
+	if d.HasChange("instance_class") {
 		if v, ok := d.GetOk("instance_class"); ok {
 			request["InstanceClass"] = v
 		}
@@ -576,11 +575,11 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("status") {
+	if d.HasChange("status") {
 		target := d.Get("status").(string)
 		err := resourceAlicloudDtsSynchronizationJobStatusFlow(d, meta, target)
 		if err != nil {
-			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
+			return WrapError(err)
 		}
 	}
 
@@ -600,10 +599,12 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 			return WrapError(err)
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, modifyDtsJobReq, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, modifyDtsJobReq, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"InvalidJobStatus", "InvalidTaskStatus", "DTS.Msg.OperationDenied.JobStatusModifying", "DTS.Msg.ModifyDenied.JobStatusNotRunning"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -626,15 +627,6 @@ func resourceAlicloudDtsSynchronizationJobUpdate(d *schema.ResourceData, meta in
 		if err != nil {
 			return WrapError(Error(FailedToReachTargetStatus, d.Get("status")))
 		}
-		stateConf := BuildStateConf([]string{}, []string{"synchronizing"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSyncJobStateRefreshFunc(d.Id(), []string{"InitializeFailed"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-
-	}
-	stateConf := BuildStateConf([]string{}, []string{"Synchronizing", "Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"InitializeFailed", "PrecheckFailed", "Failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	d.Partial(false)
 	return resourceAlicloudDtsSynchronizationJobRead(d, meta)
@@ -716,7 +708,7 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"InitializeFailed"}))
+			stateConf := BuildStateConf([]string{}, []string{"Synchronizing"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
@@ -750,7 +742,7 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			stateConf := BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{}))
+			stateConf := BuildStateConf([]string{}, []string{"Suspending"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dtsService.DtsSynchronizationJobStateRefreshFunc(d.Id(), []string{"PrecheckFailed", "InitializeFailed", "Failed"}))
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}

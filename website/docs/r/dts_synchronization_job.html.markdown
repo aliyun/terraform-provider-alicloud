@@ -67,7 +67,7 @@ resource "alicloud_db_instance" "example" {
   instance_type            = data.alicloud_db_instance_classes.example.instance_classes.0.instance_class
   instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
   instance_charge_type     = "Postpaid"
-  instance_name            = format("${var.name}_%d", count.index + 1)
+  instance_name            = format("%s_%d", var.name, count.index + 1)
   vswitch_id               = alicloud_vswitch.example.id
   monitoring_period        = "60"
   db_instance_storage_type = "cloud_essd"
@@ -84,13 +84,13 @@ resource "alicloud_rds_account" "example" {
 resource "alicloud_db_database" "example" {
   count       = 2
   instance_id = alicloud_db_instance.example[count.index].id
-  name        = format("${var.name}_%d", count.index + 1)
+  name        = format("%s_%d", var.name, count.index + 1)
 }
 
 resource "alicloud_db_account_privilege" "example" {
   count        = 2
   instance_id  = alicloud_db_instance.example[count.index].id
-  account_name = alicloud_rds_account.example[count.index].name
+  account_name = alicloud_rds_account.example[count.index].account_name
   privilege    = "ReadWrite"
   db_names     = [alicloud_db_database.example[count.index].name]
 }
@@ -112,19 +112,23 @@ resource "alicloud_dts_synchronization_job" "example" {
   source_endpoint_instance_id        = alicloud_db_account_privilege.example.0.instance_id
   source_endpoint_engine_name        = "MySQL"
   source_endpoint_region             = data.alicloud_regions.example.regions.0.id
-  source_endpoint_user_name          = alicloud_rds_account.example.0.name
+  source_endpoint_user_name          = alicloud_rds_account.example.0.account_name
   source_endpoint_password           = alicloud_rds_account.example.0.account_password
   destination_endpoint_instance_type = "RDS"
   destination_endpoint_instance_id   = alicloud_db_account_privilege.example.1.instance_id
   destination_endpoint_engine_name   = "MySQL"
   destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
-  destination_endpoint_user_name     = alicloud_rds_account.example.1.name
+  destination_endpoint_user_name     = alicloud_rds_account.example.1.account_name
   destination_endpoint_password      = alicloud_rds_account.example.1.account_password
-  db_list                            = "{\"${alicloud_db_database.example.0.name}\":{\"name\":\"${alicloud_db_database.example.1.name}\",\"all\":true}}"
-  structure_initialization           = true
-  data_initialization                = true
-  data_synchronization               = true
-  status                             = "Synchronizing"
+  db_list = jsonencode(
+    {
+      "${alicloud_db_database.example.0.name}" = { name = alicloud_db_database.example.1.name, all = true }
+    }
+  )
+  structure_initialization = true
+  data_initialization      = true
+  data_synchronization     = true
+  status                   = "Synchronizing"
 }
 ```
 

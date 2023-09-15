@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationJobMap0)
@@ -165,7 +165,7 @@ func TestAccAlicloudDTSSynchronizationJob_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDTSSynchronizationJob_basic1(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationJob_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationJobMap0)
@@ -230,7 +230,7 @@ func TestAccAlicloudDTSSynchronizationJob_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudDTSSynchronizationJob_basic2(t *testing.T) {
+func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dts_synchronization_job.default"
 	ra := resourceAttrInit(resourceId, AlicloudDTSSynchronizationJobMap0)
