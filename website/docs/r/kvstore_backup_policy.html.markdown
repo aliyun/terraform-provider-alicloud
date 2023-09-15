@@ -18,42 +18,41 @@ Provides a backup policy for ApsaraDB Redis / Memcache instance resource.
 Basic Usage
 
 ```terraform
-variable "creation" {
-  default = "KVStore"
-}
-
-variable "multi_az" {
-  default = "false"
-}
 
 variable "name" {
   default = "kvstorebackuppolicyvpc"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = var.creation
-}
+data "alicloud_kvstore_zones" "default" {}
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
-  name       = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_kvstore_zones.default.zones.0.id
+  vswitch_name = var.name
 }
 
 resource "alicloud_kvstore_instance" "default" {
-  instance_class = "Memcache"
-  instance_name  = var.name
-  vswitch_id     = alicloud_vswitch.default.id
-  private_ip     = "172.16.0.10"
-  security_ips   = ["10.0.0.1"]
-  instance_type  = "memcache.master.small.default"
-  engine_version = "2.8"
+  db_instance_name = var.name
+  vswitch_id       = alicloud_vswitch.default.id
+  zone_id          = data.alicloud_kvstore_zones.default.zones.0.id
+  instance_class   = "redis.master.large.default"
+  instance_type    = "Redis"
+  engine_version   = "5.0"
+  security_ips     = ["10.23.12.24"]
+  config = {
+    appendonly             = "yes"
+    lazyfree-lazy-eviction = "yes"
+  }
+  tags = {
+    Created = "TF",
+    For     = "example",
+  }
 }
 
 resource "alicloud_kvstore_backup_policy" "default" {

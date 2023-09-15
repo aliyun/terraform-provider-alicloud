@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudKVStoreConnection_basic(t *testing.T) {
+func TestAccAliCloudKVStoreConnection_basic(t *testing.T) {
 	var v r_kvstore.InstanceNetInfo
 	resourceId := "alicloud_kvstore_connection.default"
 	ra := resourceAttrInit(resourceId, RedisConnectionMap)
@@ -53,12 +53,33 @@ func TestAccAlicloudKVStoreConnection_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"connection_string_prefix": "allocatetestupdate",
-					"port":                     "6371",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"connection_string_prefix": "allocatetestupdate",
-						"port":                     "6371",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "6371",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "6371",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": "allocatetestup",
+					"port":                     "6372",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": "allocatetestup",
+						"port":                     "6372",
 					}),
 				),
 			},
@@ -66,7 +87,9 @@ func TestAccAlicloudKVStoreConnection_basic(t *testing.T) {
 	})
 }
 
-var RedisConnectionMap = map[string]string{}
+var RedisConnectionMap = map[string]string{
+	"connection_string": CHECKSET,
+}
 
 func KvstoreConnectionBasicdependence(name string) string {
 	return fmt.Sprintf(`
