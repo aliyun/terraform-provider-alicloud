@@ -53,8 +53,13 @@ git log -n 2
 prNum=${pr_id}
 
 if [[ ${GITHUB_DEFAULT_REPO} != "" ]]; then
+  export GITHUB_TOKEN=""
   echo -e "\033[33m[WARNING]\033[0m setting default repo to ${GITHUB_DEFAULT_REPO} before getting change files."
   gh repo set-default ${GITHUB_DEFAULT_REPO}
+  gh auth refresh -h github.com -s repo
+  gh auth login --with-token ${GITHUB_TOKEN}
+  export GITHUB_TOKEN=${GITHUB_TOKEN}
+  export GH_TOKEN=${GITHUB_TOKEN}
 fi
 
 #find file
@@ -64,7 +69,6 @@ if [[ ${#changeFiles[@]} -eq 0 ]]; then
   exit 0
 fi
 
-echo -e "\n changeFiles: $changeFiles"
 exampleCount=0
 noNeedRun=true
 declare -A allResources
