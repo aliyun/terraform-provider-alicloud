@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMessageServiceSubscription_basic0(t *testing.T) {
+func TestAccAliCloudMessageServiceSubscription_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_message_service_subscription.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudMessageServiceSubscriptionMap)
@@ -164,7 +164,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceSubscriptionCreate(dInit, rawClient)
+	err = resourceAliCloudMessageServiceSubscriptionCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -187,7 +187,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceSubscriptionCreate(dInit, rawClient)
+		err := resourceAliCloudMessageServiceSubscriptionCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -214,7 +214,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceSubscriptionUpdate(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceSubscriptionUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -253,7 +253,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceSubscriptionUpdate(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceSubscriptionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -297,7 +297,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceSubscriptionRead(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceSubscriptionRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -316,7 +316,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceSubscriptionDelete(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceSubscriptionDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -344,7 +344,7 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceSubscriptionDelete(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceSubscriptionDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -354,3 +354,167 @@ func TestUnitAlicloudMessageServiceSubscription(t *testing.T) {
 		}
 	}
 }
+
+// Test MessageService Subscription. >>> Resource test cases, automatically generated.
+// Case 1570
+func TestAccAliCloudMessageServiceSubscription_basic1570(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_subscription.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceSubscriptionMap1570)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceSubscription")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicesubscription%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceSubscriptionBasicDependence1570)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"push_type":         "http",
+					"endpoint":          "http://example.com",
+					"subscription_name": name,
+					"topic_name":        "${alicloud_message_service_topic.defaultTopic.topic_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"push_type":         "http",
+						"endpoint":          "http://example.com",
+						"subscription_name": name,
+						"topic_name":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"notify_strategy": "BACKOFF_RETRY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_strategy": "BACKOFF_RETRY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"notify_strategy": "EXPONENTIAL_DECAY_RETRY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"notify_strategy": "EXPONENTIAL_DECAY_RETRY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"push_type":             "http",
+					"endpoint":              "http://example.com/example",
+					"notify_strategy":       "BACKOFF_RETRY",
+					"notify_content_format": "SIMPLIFIED",
+					"subscription_name":     name + "update",
+					"filter_tag":            "important",
+					"topic_name":            "${alicloud_message_service_topic.defaultTopic.topic_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"push_type":             "http",
+						"endpoint":              "http://example.com/example",
+						"notify_strategy":       "BACKOFF_RETRY",
+						"notify_content_format": "SIMPLIFIED",
+						"subscription_name":     name + "update",
+						"filter_tag":            "important",
+						"topic_name":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"push_type"},
+			},
+		},
+	})
+}
+
+var AlicloudMessageServiceSubscriptionMap1570 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudMessageServiceSubscriptionBasicDependence1570(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_message_service_topic" "defaultTopic" {
+  max_message_size = 65536
+  topic_name       = var.name
+}
+
+
+`, name)
+}
+
+// Case 1570  twin
+func TestAccAliCloudMessageServiceSubscription_basic1570_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_subscription.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceSubscriptionMap1570)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceSubscription")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicesubscription%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceSubscriptionBasicDependence1570)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"push_type":             "http",
+					"endpoint":              "http://example.com",
+					"notify_strategy":       "EXPONENTIAL_DECAY_RETRY",
+					"notify_content_format": "SIMPLIFIED",
+					"subscription_name":     name,
+					"filter_tag":            "important",
+					"topic_name":            "${alicloud_message_service_topic.defaultTopic.topic_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"push_type":             "http",
+						"endpoint":              "http://example.com",
+						"notify_strategy":       "EXPONENTIAL_DECAY_RETRY",
+						"notify_content_format": "SIMPLIFIED",
+						"subscription_name":     name,
+						"filter_tag":            "important",
+						"topic_name":            CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"push_type"},
+			},
+		},
+	})
+}
+
+// Test MessageService Subscription. <<< Resource test cases, automatically generated.
