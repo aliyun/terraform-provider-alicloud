@@ -91,6 +91,14 @@ func dataSourceAlicloudSaeApplications() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"acr_assume_role_arn": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"acr_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"command": {
 							Type:     schema.TypeString,
 							Computed: true,

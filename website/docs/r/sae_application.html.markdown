@@ -76,6 +76,8 @@ resource "alicloud_sae_application" "default" {
 
 The following arguments are supported:
 
+* `acr_assume_role_arn` - (Optional) The ARN of the RAM role required when pulling images across accounts. Only necessary if the image_url is pointing to an ACR EE instance.
+* `acr_instance_id` - (Optional) ID of the ACR EE instance. Only necessary if the image_url is pointing to an ACR EE instance.
 * `app_description` - (Optional, ForceNew) Application description information. No more than 1024 characters.
 * `app_name` - (Required, ForceNew) Application Name. Combinations of numbers, letters, and dashes (-) are allowed. It must start with a letter and the maximum length is 36 characters.
 * `auto_config` - (Optional) The auto config. Valid values: `false`, `true`.
