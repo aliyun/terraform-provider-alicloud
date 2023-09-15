@@ -85,7 +85,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 5 mins) Used when creating the KVStore connection (until it reaches the initial `Normal` status). 
 * `update` - (Defaults to 5 mins) Used when updating the KVStore connection (until it reaches the initial `Normal` status). 
-* `delete` - (Defaults to 5 mins) Used when deleting the KVStore connection (until it reaches the initial `Normal` status). 
+* `delete` - (Defaults to 30 mins) Used when deleting the KVStore connection (until it reaches the initial `Normal` status). 
 
 ## Import
 
