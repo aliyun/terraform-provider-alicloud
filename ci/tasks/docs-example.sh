@@ -50,21 +50,24 @@ cd $repo
 echo -e "\n$ git log -n 2"
 git log -n 2
 prNum=${pr_id}
+echo -e "\n$ git remote -v"
+git remote -v
 #find file
+echo -e "\n$ gh pr diff ${pr_id} --name-only ....."
 changeFiles=$(gh pr diff ${pr_id} --name-only)
 if [[ ${#changeFiles[@]} -eq 0 ]]; then
   echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
   exit 0
 fi
 
-echo
+echo -e "\n changeFiles: $changeFiles"
 exampleCount=0
 noNeedRun=true
 declare -A allResources
 allResources["init"]=1
 #check if need run
 for fileName in ${changeFiles[@]}; do
-
+  echo -e "\033[37m\nchecking diff file $fileName ... \033[0m"
   if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* || ${fileName} == "website/docs/r/"* || ${fileName} == "website/docs/d/"* ]]; then
     docsPathKey="website/docs/r"
     if [[ $fileName =~ "data_source_" || $fileName =~ "website/docs/d/" ]]; then
