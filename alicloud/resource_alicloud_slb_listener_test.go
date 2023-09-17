@@ -293,7 +293,7 @@ func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudSlbListenerForward(t *testing.T) {
+func TestAccAliCloudSLBListener_Forward(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -304,6 +304,7 @@ func TestAccAliCloudSlbListenerForward(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccSlbListenerForwardConfigSpot%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccSlbListenerHttpForward)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -315,7 +316,13 @@ func TestAccAliCloudSlbListenerForward(t *testing.T) {
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbListenerHttpForward(name),
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
+					"frontend_port":    "80",
+					"protocol":         "http",
+					"listener_forward": "on",
+					"forward_port":     "${alicloud_slb_listener.default-1.frontend_port}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id":          CHECKSET,
@@ -360,6 +367,7 @@ func TestAccAliCloudSLBListener_same_port(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccSlbListenerSamePort%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccSlbListenerSamePort)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -371,7 +379,13 @@ func TestAccAliCloudSLBListener_same_port(t *testing.T) {
 		CheckDestroy:  testAccCheckSlbListenerDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSlbListenerSamePort(name),
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
+					"frontend_port":    "80",
+					"protocol":         "tcp",
+					"bandwidth":        "10",
+					"backend_port":     "80",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"load_balancer_id": CHECKSET,
@@ -1487,13 +1501,6 @@ func TestAccAliCloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
 func testAccSlbListenerHttpForward(name string) string {
 	return fmt.Sprintf(`
 	%s
-	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
-  		frontend_port = 80
-  		protocol = "http"
-  		listener_forward = "on"
-  		forward_port = "${alicloud_slb_listener.default-1.frontend_port}"
-	}
 	resource "alicloud_slb_listener" "default-1" {
   		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
   		backend_port = 80
@@ -1519,13 +1526,6 @@ func testAccSlbListenerSamePort(name string) string {
 	%s
 	variable "name" {
   		default = "%s"
-	}
-	resource "alicloud_slb_listener" "default"{
-  		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
-  		frontend_port = 80
-  		protocol = "tcp"
-		bandwidth = "10"
-		backend_port = 80
 	}
 	resource "alicloud_slb_listener" "default-1" {
   		load_balancer_id = "${alicloud_slb_load_balancer.default.id}"
