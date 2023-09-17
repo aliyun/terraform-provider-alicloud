@@ -16,12 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunSlbListener() *schema.Resource {
+func resourceAliCloudSlbListener() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunSlbListenerCreate,
-		Read:   resourceAliyunSlbListenerRead,
-		Update: resourceAliyunSlbListenerUpdate,
-		Delete: resourceAliyunSlbListenerDelete,
+		Create: resourceAliCloudSlbListenerCreate,
+		Read:   resourceAliCloudSlbListenerRead,
+		Update: resourceAliCloudSlbListenerUpdate,
+		Delete: resourceAliCloudSlbListenerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +45,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 			"lb_port": {
 				Type:       schema.TypeInt,
 				Optional:   true,
-				Deprecated: "Field 'lb_port' has been deprecated, and using 'frontend_port' to replace.",
+				Deprecated: "Field 'lb_port' has been removed since 1.211.0.",
 			},
 
 			"backend_port": {
@@ -56,15 +56,15 @@ func resourceAliyunSlbListener() *schema.Resource {
 			},
 
 			"instance_port": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'instance_port' has been deprecated, and using 'backend_port' to replace.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Removed:  "Field 'instance_port' has been removed since 1.211.0",
 			},
 
 			"lb_protocol": {
 				Type:       schema.TypeString,
 				Optional:   true,
-				Deprecated: "Field 'lb_protocol' has been deprecated, and using 'protocol' to replace.",
+				Deprecated: "Field 'lb_protocol' has been removed since 1.211.0.",
 			},
 
 			"protocol": {
@@ -272,7 +272,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						// At present, retrive client ip can not be modified, and it default to true.
+						// At present, retrieve client ip can not be modified, and it default to true.
 						"retrive_client_ip": {
 							Type:     schema.TypeBool,
 							Computed: true,
@@ -368,7 +368,7 @@ func resourceAliyunSlbListener() *schema.Resource {
 	}
 }
 
-func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
@@ -456,12 +456,12 @@ func resourceAliyunSlbListenerCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	if httpForward {
-		return resourceAliyunSlbListenerRead(d, meta)
+		return resourceAliCloudSlbListenerRead(d, meta)
 	}
-	return resourceAliyunSlbListenerUpdate(d, meta)
+	return resourceAliCloudSlbListenerUpdate(d, meta)
 }
 
-func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlbListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 
@@ -500,7 +500,7 @@ func resourceAliyunSlbListenerRead(d *schema.ResourceData, meta interface{}) err
 	})
 }
 
-func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	proto := d.Get("protocol").(string)
 	lb_id := d.Get("load_balancer_id").(string)
 	frontend := d.Get("frontend_port").(int)
@@ -763,7 +763,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 				return slbClient.ProcessCommonRequest(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) {
+				if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport", "The specified VServerGroupId does not exist"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -778,10 +778,10 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 
 	d.Partial(false)
 
-	return resourceAliyunSlbListenerRead(d, meta)
+	return resourceAliCloudSlbListenerRead(d, meta)
 }
 
-func resourceAliyunSlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
 

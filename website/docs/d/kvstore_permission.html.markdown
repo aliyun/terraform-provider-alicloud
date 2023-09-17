@@ -21,7 +21,7 @@ For more information, see [Associated RAM roles of ApsaraDB for Redis](https://w
 
 ```terraform
 data "alicloud_kvstore_permission" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 
