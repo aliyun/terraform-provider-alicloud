@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSLBListener_http_basic(t *testing.T) {
+func TestAccAliCloudSLBListener_http_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -293,7 +293,7 @@ func TestAccAlicloudSLBListener_http_basic(t *testing.T) {
 	})
 }
 
-func TestAccCheckSlbListenerForward(t *testing.T) {
+func TestAccAliCloudSlbListenerForward(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -349,7 +349,7 @@ func TestAccCheckSlbListenerForward(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSLBListener_same_port(t *testing.T) {
+func TestAccAliCloudSLBListener_same_port(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -385,7 +385,7 @@ func TestAccAlicloudSLBListener_same_port(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSLBListener_https_update(t *testing.T) {
+func TestAccAliCloudSLBListener_https_update(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -649,7 +649,7 @@ func TestAccAlicloudSLBListener_https_update(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_tcp_basic(t *testing.T) {
+func TestAccAliCloudSLBListener_tcp_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -843,7 +843,7 @@ func TestAccAlicloudSLBListener_tcp_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_tcp_server_group(t *testing.T) {
+func TestAccAliCloudSLBListener_tcp_server_group(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -929,7 +929,7 @@ func TestAccAlicloudSLBListener_tcp_server_group(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_udp_basic(t *testing.T) {
+func TestAccAliCloudSLBListener_udp_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1082,7 +1082,7 @@ func TestAccAlicloudSLBListener_udp_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_http_healcheckmethod(t *testing.T) {
+func TestAccAliCloudSLBListener_http_healcheckmethod(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1193,7 +1193,7 @@ func TestAccAlicloudSLBListener_http_healcheckmethod(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudSLBListener_https_healcheckmethod(t *testing.T) {
+func TestAccAliCloudSLBListener_https_healcheckmethod(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1305,7 +1305,7 @@ func TestAccAlicloudSLBListener_https_healcheckmethod(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
+func TestAccAliCloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -1399,7 +1399,7 @@ func TestAccAlicloudSLBListener_tcp_ProxyProtocolV2Enabled(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
+func TestAccAliCloudSLBListener_udp_ProxyProtocolV2Enabled(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_listener.default"
 	ra := resourceAttrInit(resourceId, nil)
