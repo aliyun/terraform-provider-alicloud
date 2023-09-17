@@ -763,7 +763,7 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				return slbClient.ProcessCommonRequest(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport", "The specified VServerGroupId does not exist"}) {
+				if IsExpectedErrors(err, []string{"OperationFailed.ListenerStatusNotSupport"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -772,6 +772,10 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			return nil
 		})
 		if err != nil {
+			if IsExpectedErrors(err, []string{"The specified VServerGroupId does not exist"}) {
+				return WrapErrorf(err, DefaultErrorMsg+"%s", d.Id(), request.GetActionName(),
+					"Listener and server group should belong to the same load balancer, please check it.", AlibabaCloudSdkGoERROR)
+			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 	}
