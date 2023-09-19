@@ -228,9 +228,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				ConflictsWith: []string{"payment_type"},
 			},
 			"period": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"1", "12", "2", "24", "3", "36", "4", "5", "6", "7", "8", "9"}, false),
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"1", "12", "2", "24", "3", "36", "4", "5", "6", "7", "8", "9"}, false),
+				DiffSuppressFunc: redisPostPaidDiffSuppressFunc,
 			},
 			"port": {
 				Type:     schema.TypeInt,
