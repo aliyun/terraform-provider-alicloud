@@ -62,7 +62,7 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 	response, err := conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 	addDebug("DescribeCdnService", response, nil)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"OperationDenied", "CdnServiceNotFoundError"}) {
+		if IsExpectedErrors(err, []string{"OperationDenied", "CdnServiceNotFound"}) {
 			log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
 		} else {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
