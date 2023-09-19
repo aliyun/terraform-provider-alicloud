@@ -60,8 +60,8 @@ resource "alicloud_ga_acl_entry_attachment" "default" {
 }
 
 resource "alicloud_ga_acl_attachment" "default" {
-  acl_id      = alicloud_ga_acl.default.id
   listener_id = alicloud_ga_listener.default.id
+  acl_id      = alicloud_ga_acl.default.id
   acl_type    = "white"
 }
 ```
@@ -70,31 +70,31 @@ resource "alicloud_ga_acl_attachment" "default" {
 
 The following arguments are supported:
 
+* `listener_id` - (Required, ForceNew) The ID of the listener.
 * `acl_id` - (Required, ForceNew) The ID of an ACL.
-* `acl_type` - (Required, ForceNew) The type of the ACL. Valid values: `white`, `black`. 
+* `acl_type` - (Required, ForceNew) The type of the ACL. Valid values:
   - `white`: Only requests from IP addresses or address segments in the selected access control list are forwarded. The whitelist applies to scenarios where applications only allow specific IP addresses. There are certain business risks in setting up a whitelist. Once the whitelist is set, only the IP addresses in the whitelist can access global acceleration listeners. If whitelist access is enabled, but no IP is added to the access policy group, the global acceleration listener will not forward the request.
   - `black`: All requests from IP addresses or address segments in the selected access control list are not forwarded. Blacklists are applicable to scenarios where applications restrict access to specific IP addresses. If blacklist access is enabled and no IP is added to the access policy group, the global acceleration listener forwards all requests.
-* `dry_run` - (Optional) The dry run.
-* `listener_id` - (Required, ForceNew) The ID of the listener.
+* `dry_run` - (Optional, Bool) The dry run.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID of Acl Attachment. The value formats as `<listener_id>:<acl_id>`.
-* `status` - The status of the resource. 
+* `status` - The status of the Acl Attachment. 
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when create the Acl Attachment.
-* `delete` - (Defaults to 5 mins) Used when delete the Acl Attachment.
+* `create` - (Defaults to 10 mins) Used when create the Acl Attachment.
+* `delete` - (Defaults to 10 mins) Used when delete the Acl Attachment.
 
 ## Import
 
-Global Accelerator (GA) Acl Attachment can be imported using the id. Format to `<listener_id>:<acl_id>`, e.g.
+Global Accelerator (GA) Acl Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_acl_attachment.example your_listener_id:your_acl_id
+$ terraform import alicloud_ga_acl_attachment.example <listener_id>:<acl_id>
 ```
