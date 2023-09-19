@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
+func TestAccAliCloudRdsDBBackupPolicyMySql(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -31,9 +31,16 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":                 "${alicloud_db_instance.default.id}",
-					"enable_backup_log":           "true",
 					"local_log_retention_hours":   "18",
 					"high_space_usage_protection": "Enable",
+					"log_backup":                  "false",
+					"enable_backup_log":           "false",
+					"preferred_backup_time":       "02:00Z-03:00Z",
+					"backup_time":                 "02:00Z-03:00Z",
+					"retention_period":            "900",
+					"backup_retention_period":     "900",
+					"backup_period":               []string{"Wednesday"},
+					"log_retention_period":        "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -48,41 +55,49 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_period": []string{"Wednesday", "Monday"},
+					"log_backup":        "true",
+					"enable_backup_log": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"preferred_backup_period.#": "2",
+						"log_backup":        "true",
+						"enable_backup_log": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"preferred_backup_time": "10:00Z-11:00Z",
+					"backup_retention_period": "910",
+					"retention_period":        "910",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"preferred_backup_time": "10:00Z-11:00Z",
+						"retention_period":        "910",
+						"backup_retention_period": "910",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_retention_period": "900",
+					"backup_time":           "03:00Z-04:00Z",
+					"preferred_backup_time": "03:00Z-04:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_retention_period": "900",
+						"backup_time":           "03:00Z-04:00Z",
+						"preferred_backup_time": "03:00Z-04:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"log_backup_retention_period": "900",
+					"log_backup_retention_period": "8",
+					"log_retention_period":        "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"log_backup_retention_period": "900",
+						"log_backup_retention_period": "8",
+						"log_retention_period":        "8",
 					}),
 				),
 			},
@@ -154,16 +169,6 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable_backup_log": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_backup_log": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"released_keep_policy": "Lastest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -175,31 +180,37 @@ func TestAccAlicloudRdsDBBackupPolicyMySql(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":                     "${alicloud_db_instance.default.id}",
-					"preferred_backup_period":         []string{"Tuesday", "Monday", "Wednesday"},
-					"preferred_backup_time":           "13:00Z-14:00Z",
-					"backup_retention_period":         "830",
-					"enable_backup_log":               "true",
-					"log_backup_retention_period":     "700",
+					"preferred_backup_period":         []string{"Wednesday", "Monday"},
+					"backup_period":                   []string{"Wednesday", "Monday"},
+					"backup_time":                     "03:00Z-04:00Z",
+					"retention_period":                "910",
+					"backup_retention_period":         "910",
+					"log_backup":                      "true",
+					"log_retention_period":            "8",
 					"local_log_retention_hours":       "48",
 					"high_space_usage_protection":     "Enable",
 					"archive_backup_retention_period": "100",
 					"archive_backup_keep_count":       "3",
 					"archive_backup_keep_policy":      "ByWeek",
 					"category":                        "Standard",
+					"enable_backup_log":               "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"preferred_backup_period.#":       "3",
-						"preferred_backup_time":           "13:00Z-14:00Z",
-						"backup_retention_period":         "830",
-						"enable_backup_log":               "true",
-						"log_backup_retention_period":     "700",
+						"preferred_backup_period.#":       "2",
+						"backup_period.#":                 "2",
+						"backup_time":                     "03:00Z-04:00Z",
+						"retention_period":                "910",
+						"backup_retention_period":         "910",
+						"log_backup":                      "true",
+						"log_retention_period":            "8",
 						"local_log_retention_hours":       "48",
 						"high_space_usage_protection":     "Enable",
 						"archive_backup_retention_period": "100",
 						"archive_backup_keep_count":       "3",
 						"archive_backup_keep_policy":      "ByWeek",
 						"category":                        "Standard",
+						"enable_backup_log":               "true",
 					}),
 				),
 			}},
@@ -270,7 +281,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsDBBackupPolicyPostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -504,7 +515,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBBackupPolicySQLServer(t *testing.T) {
+func TestAccAliCloudRdsDBBackupPolicySQLServer(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -672,7 +683,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBBackupPolicyMariaDB(t *testing.T) {
+func TestAccAliCloudRdsDBBackupPolicyMariaDB(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_backup_policy.default"
 	serverFunc := func() interface{} {
