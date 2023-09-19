@@ -4,23 +4,23 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cdn_service"
 sidebar_current: "docs-alicloud-datasource-cdn-service"
 description: |-
-    Provides a datasource to open the CDN service automatically.
+  Provides a datasource to open the CDN service automatically.
 ---
 
-# alicloud\_cdn\_service
+# alicloud_cdn_service
 
 Using this data source can enable CDN service automatically. If the service has been enabled, it will return `Opened`.
 
 For information about CDN and how to use it, see [What is CDN](https://www.alibabacloud.com/help/product/27099.htm).
 
--> **NOTE:** Available in v1.98.0+
+-> **NOTE:** Available since v1.98.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cdn_service" "open" {
-	enable               = "On"
-	internet_charge_type = "PayByTraffic"
+  enable               = "On"
+  internet_charge_type = "PayByTraffic"
 }
 ```
 
