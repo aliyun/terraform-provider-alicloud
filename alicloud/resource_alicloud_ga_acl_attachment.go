@@ -9,23 +9,27 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudGaAclAttachment() *schema.Resource {
+func resourceAliCloudGaAclAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaAclAttachmentCreate,
-		Read:   resourceAlicloudGaAclAttachmentRead,
-		Update: resourceAlicloudGaAclAttachmentUpdate,
-		Delete: resourceAlicloudGaAclAttachmentDelete,
+		Create: resourceAliCloudGaAclAttachmentCreate,
+		Read:   resourceAliCloudGaAclAttachmentRead,
+		Update: resourceAliCloudGaAclAttachmentUpdate,
+		Delete: resourceAliCloudGaAclAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"listener_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"acl_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -35,16 +39,11 @@ func resourceAlicloudGaAclAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"black", "white"}, false),
+				ValidateFunc: StringInSlice([]string{"black", "white"}, false),
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
-			},
-			"listener_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -54,8 +53,9 @@ func resourceAlicloudGaAclAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	gaService := GaService{client}
 	var response map[string]interface{}
 	action := "AssociateAclsWithListener"
 	request := make(map[string]interface{})
@@ -63,14 +63,17 @@ func resourceAlicloudGaAclAttachmentCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("AssociateAclsWithListener")
+	request["ListenerId"] = d.Get("listener_id")
 	request["AclIds.1"] = d.Get("acl_id")
 	request["AclType"] = d.Get("acl_type")
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["ListenerId"] = d.Get("listener_id")
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("AssociateAclsWithListener")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -86,21 +89,22 @@ func resourceAlicloudGaAclAttachmentCreate(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_acl_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["ListenerId"], ":", d.Get("acl_id")))
-	gaService := GaService{client}
+	d.SetId(fmt.Sprintf("%v:%v", request["ListenerId"], request["AclIds.1"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gaService.GaAclAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAclAttachmentRead(d, meta)
+	return resourceAliCloudGaAclAttachmentRead(d, meta)
 }
 
-func resourceAlicloudGaAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaAclAttachment(d.Id())
@@ -112,28 +116,27 @@ func resourceAlicloudGaAclAttachmentRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("acl_id", parts[1])
+
 	d.Set("listener_id", parts[0])
+	d.Set("acl_id", parts[1])
 	d.Set("acl_type", object["AclType"])
 	d.Set("status", object["Status"])
+
 	return nil
 }
 
-func resourceAlicloudGaAclAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudGaAclAttachmentRead(d, meta)
+	return resourceAliCloudGaAclAttachmentRead(d, meta)
 }
 
-func resourceAlicloudGaAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 	gaService := GaService{client}
 	action := "DissociateAclsFromListener"
 	var response map[string]interface{}
@@ -141,16 +144,24 @@ func resourceAlicloudGaAclAttachmentDelete(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	request := map[string]interface{}{
-		"ListenerId": parts[0],
+		"RegionId":    client.RegionId,
+		"ClientToken": buildClientToken("DissociateAclsFromListener"),
+		"ListenerId":  parts[0],
 	}
 
 	request["AclIds.1"] = parts[1]
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("DissociateAclsFromListener")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -166,12 +177,15 @@ func resourceAlicloudGaAclAttachmentDelete(d *schema.ResourceData, meta interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, gaService.GaAclAttachmentStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
