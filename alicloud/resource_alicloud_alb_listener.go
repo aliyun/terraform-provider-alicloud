@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudAlbListener() *schema.Resource {
+func resourceAliCloudAlbListener() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlbListenerCreate,
-		Read:   resourceAlicloudAlbListenerRead,
-		Update: resourceAlicloudAlbListenerUpdate,
-		Delete: resourceAlicloudAlbListenerDelete,
+		Create: resourceAliCloudAlbListenerCreate,
+		Read:   resourceAliCloudAlbListenerRead,
+		Update: resourceAliCloudAlbListenerUpdate,
+		Delete: resourceAliCloudAlbListenerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -231,6 +231,84 @@ func resourceAlicloudAlbListener() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Running", "Stopped"}, false),
 			},
+			"x_forwarded_for_config": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				MaxItems:      1,
+				ConflictsWith: []string{"xforwarded_for_config"},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("listener_protocol"); ok && v.(string) == "HTTPS" {
+						return false
+					}
+					return true
+				},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"x_forwarded_for_client_cert_issuer_dn_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_issuer_dn_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_client_verify_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_client_verify_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_finger_print_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_finger_print_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_cert_subject_dn_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"x_forwarded_for_client_cert_subject_dn_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_client_src_port_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_proto_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_slb_id_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"x_forwarded_for_slb_port_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
 			"xforwarded_for_config": {
 				Type:          schema.TypeSet,
 				Optional:      true,
@@ -310,89 +388,11 @@ func resourceAlicloudAlbListener() *schema.Resource {
 					},
 				},
 			},
-			"x_forwarded_for_config": {
-				Type:          schema.TypeSet,
-				Optional:      true,
-				Computed:      true,
-				MaxItems:      1,
-				ConflictsWith: []string{"xforwarded_for_config"},
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("listener_protocol"); ok && v.(string) == "HTTPS" {
-						return false
-					}
-					return true
-				},
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"x_forwarded_for_client_cert_issuer_dn_alias": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"x_forwarded_for_client_cert_issuer_dn_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_client_cert_client_verify_alias": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"x_forwarded_for_client_cert_client_verify_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_client_cert_finger_print_alias": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"x_forwarded_for_client_cert_finger_print_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_client_cert_subject_dn_alias": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"x_forwarded_for_client_cert_subject_dn_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_client_src_port_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_proto_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_slb_id_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"x_forwarded_for_slb_port_enabled": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-					},
-				},
-			},
 		},
 	}
 }
 
-func resourceAlicloudAlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbListenerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateListener"
@@ -529,10 +529,10 @@ func resourceAlicloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudAlbListenerUpdate(d, meta)
+	return resourceAliCloudAlbListenerUpdate(d, meta)
 }
 
-func resourceAlicloudAlbListenerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	object, err := albService.DescribeAlbListener(d.Id())
@@ -685,7 +685,7 @@ func resourceAlicloudAlbListenerRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	var response map[string]interface{}
@@ -695,12 +695,14 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 	request := map[string]interface{}{
 		"ListenerId": d.Id(),
 	}
-	if d.HasChange("access_log_record_customized_headers_enabled") || d.IsNewResource() {
+
+	if d.HasChange("access_log_record_customized_headers_enabled") {
 		if v, ok := d.GetOkExists("access_log_record_customized_headers_enabled"); ok {
 			update = true
 			request["AccessLogRecordCustomizedHeadersEnabled"] = v
 		}
 	}
+
 	if d.HasChange("access_log_tracing_config") {
 		if v, ok := d.GetOk("access_log_tracing_config"); ok {
 			update = true
@@ -714,6 +716,7 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			request["AccessLogTracingConfig"] = accessLogTracingConfigMap
 		}
 	}
+
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
@@ -749,73 +752,26 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("access_log_record_customized_headers_enabled")
 		d.SetPartial("access_log_tracing_config")
 	}
-	update = false
 
+	update = false
 	updateListenerAttributeReq := map[string]interface{}{
 		"ListenerId": d.Id(),
 	}
+
 	if d.HasChange("certificates") {
 		update = true
-		if v, ok := d.GetOk("certificates"); ok {
-			certificatesMaps := make([]map[string]interface{}, 0)
-			for _, certificates := range v.(*schema.Set).List() {
-				certificatesArg := certificates.(map[string]interface{})
-				certificatesMap := map[string]interface{}{}
-				certificatesMap["CertificateId"] = certificatesArg["certificate_id"]
-				certificatesMaps = append(certificatesMaps, certificatesMap)
-			}
-			updateListenerAttributeReq["Certificates"] = certificatesMaps
-		}
 	}
-	if !d.IsNewResource() && d.HasChange("default_actions") {
-		update = true
-		defaultActionsMaps := make([]map[string]interface{}, 0)
-		for _, defaultActions := range d.Get("default_actions").(*schema.Set).List() {
-			defaultActionsArg := defaultActions.(map[string]interface{})
-			defaultActionsMap := map[string]interface{}{}
-			defaultActionsMap["Type"] = defaultActionsArg["type"]
-			forwardGroupConfigMap := map[string]interface{}{}
-			for _, forwardGroupConfig := range defaultActionsArg["forward_group_config"].(*schema.Set).List() {
-				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
-				serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
-					serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
-					serverGroupTuplesMap := map[string]interface{}{}
-					serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
-				}
-				forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
-			}
+	if v, ok := d.GetOk("certificates"); ok {
+		certificatesMaps := make([]map[string]interface{}, 0)
+		for _, certificates := range v.(*schema.Set).List() {
+			certificatesArg := certificates.(map[string]interface{})
+			certificatesMap := map[string]interface{}{}
+			certificatesMap["CertificateId"] = certificatesArg["certificate_id"]
+			certificatesMaps = append(certificatesMaps, certificatesMap)
+		}
+		updateListenerAttributeReq["Certificates"] = certificatesMaps
+	}
 
-			defaultActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
-			defaultActionsMaps = append(defaultActionsMaps, defaultActionsMap)
-		}
-		updateListenerAttributeReq["DefaultActions"] = defaultActionsMaps
-	}
-	if !d.IsNewResource() && d.HasChange("gzip_enabled") {
-		update = true
-		if v, ok := d.GetOkExists("gzip_enabled"); ok {
-			updateListenerAttributeReq["GzipEnabled"] = v
-		}
-	}
-	if !d.IsNewResource() && d.HasChange("http2_enabled") {
-		update = true
-		if v, ok := d.GetOkExists("http2_enabled"); ok {
-			updateListenerAttributeReq["Http2Enabled"] = v
-		}
-	}
-	if !d.IsNewResource() && d.HasChange("idle_timeout") {
-		update = true
-		if v, ok := d.GetOk("idle_timeout"); ok {
-			updateListenerAttributeReq["IdleTimeout"] = v
-		}
-	}
-	if !d.IsNewResource() && d.HasChange("listener_description") {
-		update = true
-		if v, ok := d.GetOk("listener_description"); ok {
-			updateListenerAttributeReq["ListenerDescription"] = v
-		}
-	}
 	if d.HasChange("quic_config") {
 		if v, ok := d.GetOk("quic_config"); ok {
 			update = true
@@ -830,16 +786,98 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			updateListenerAttributeReq["QuicConfig"] = quicConfigMap
 		}
 	}
+
+	if !d.IsNewResource() && d.HasChange("default_actions") {
+		update = true
+	}
+	defaultActionsMaps := make([]map[string]interface{}, 0)
+	for _, defaultActions := range d.Get("default_actions").(*schema.Set).List() {
+		defaultActionsArg := defaultActions.(map[string]interface{})
+		defaultActionsMap := map[string]interface{}{}
+		defaultActionsMap["Type"] = defaultActionsArg["type"]
+		forwardGroupConfigMap := map[string]interface{}{}
+		for _, forwardGroupConfig := range defaultActionsArg["forward_group_config"].(*schema.Set).List() {
+			forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
+			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
+				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+				serverGroupTuplesMap := map[string]interface{}{}
+				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
+				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+			}
+			forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+		}
+
+		defaultActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
+		defaultActionsMaps = append(defaultActionsMaps, defaultActionsMap)
+	}
+
+	updateListenerAttributeReq["DefaultActions"] = defaultActionsMaps
+
+	if !d.IsNewResource() && d.HasChange("gzip_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("gzip_enabled"); ok {
+		updateListenerAttributeReq["GzipEnabled"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("http2_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("http2_enabled"); ok {
+		updateListenerAttributeReq["Http2Enabled"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("idle_timeout") {
+		update = true
+	}
+	if v, ok := d.GetOk("idle_timeout"); ok {
+		updateListenerAttributeReq["IdleTimeout"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("listener_description") {
+		update = true
+	}
+	if v, ok := d.GetOk("listener_description"); ok {
+		updateListenerAttributeReq["ListenerDescription"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("request_timeout") {
 		update = true
-		if v, ok := d.GetOk("request_timeout"); ok {
-			updateListenerAttributeReq["RequestTimeout"] = v
-		}
 	}
+	if v, ok := d.GetOk("request_timeout"); ok {
+		updateListenerAttributeReq["RequestTimeout"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("security_policy_id") {
 		update = true
-		if v, ok := d.GetOk("security_policy_id"); ok {
-			updateListenerAttributeReq["SecurityPolicyId"] = v
+	}
+	if v, ok := d.GetOk("security_policy_id"); ok {
+		updateListenerAttributeReq["SecurityPolicyId"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("x_forwarded_for_config") {
+		update = true
+		if v, ok := d.GetOk("x_forwarded_for_config"); ok {
+			xforwardedForConfigMap := map[string]interface{}{}
+			for _, xforwardedForConfig := range v.(*schema.Set).List() {
+				xforwardedForConfigArg := xforwardedForConfig.(map[string]interface{})
+				xforwardedForConfigMap["XForwardedForClientCertIssuerDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertIssuerDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertClientVerifyAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertClientVerifyEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertFingerprintAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
+				xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
+				xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
+				xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
+				xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
+				xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
+				xforwardedForConfigMap["XForwardedForSLBIdEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_id_enabled"]
+				xforwardedForConfigMap["XForwardedForSLBPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_port_enabled"]
+			}
+
+			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
 		}
 	}
 
@@ -862,31 +900,6 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["xforwardedforprotoenabled"]
 				xforwardedForConfigMap["XForwardedForSLBIdEnabled"] = xforwardedForConfigArg["xforwardedforslbidenabled"]
 				xforwardedForConfigMap["XForwardedForSLBPortEnabled"] = xforwardedForConfigArg["xforwardedforslbportenabled"]
-			}
-
-			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
-		}
-	}
-
-	if !d.IsNewResource() && d.HasChange("x_forwarded_for_config") {
-		update = true
-		if v, ok := d.GetOk("x_forwarded_for_config"); ok {
-			xforwardedForConfigMap := map[string]interface{}{}
-			for _, xforwardedForConfig := range v.(*schema.Set).List() {
-				xforwardedForConfigArg := xforwardedForConfig.(map[string]interface{})
-				xforwardedForConfigMap["XForwardedForClientCertIssuerDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_alias"]
-				xforwardedForConfigMap["XForwardedForClientCertIssuerDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_issuer_dn_enabled"]
-				xforwardedForConfigMap["XForwardedForClientCertClientVerifyAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_alias"]
-				xforwardedForConfigMap["XForwardedForClientCertClientVerifyEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_client_verify_enabled"]
-				xforwardedForConfigMap["XForwardedForClientCertFingerprintAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_alias"]
-				xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
-				xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
-				xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
-				xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
-				xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
-				xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
-				xforwardedForConfigMap["XForwardedForSLBIdEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_id_enabled"]
-				xforwardedForConfigMap["XForwardedForSLBPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_slb_port_enabled"]
 			}
 
 			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
@@ -939,89 +952,7 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("xforwarded_for_config")
 		d.SetPartial("x_forwarded_for_config")
 	}
-	if d.HasChange("status") {
-		object, err := albService.DescribeAlbListener(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		target := d.Get("status").(string)
-		if object["ListenerStatus"].(string) != target {
-			if target == "Running" {
-				request := map[string]interface{}{
-					"ListenerId": d.Id(),
-				}
-				if v, ok := d.GetOkExists("dry_run"); ok {
-					request["DryRun"] = v
-				}
-				action := "StartListener"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				request["ClientToken"] = buildClientToken("StartListener")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "SystemBusy"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			if target == "Stopped" {
-				request := map[string]interface{}{
-					"ListenerId": d.Id(),
-				}
-				if v, ok := d.GetOkExists("dry_run"); ok {
-					request["DryRun"] = v
-				}
-				action := "StopListener"
-				conn, err := client.NewAlbClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				request["ClientToken"] = buildClientToken("StopListener")
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
-					if err != nil {
-						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "SystemBusy"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			d.SetPartial("status")
-		}
-	}
-	d.Partial(false)
+
 	if d.HasChange("acl_config") {
 		oldAssociateAcls, newAssociateVpcs := d.GetChange("acl_config")
 		oldAssociateAclsSet := oldAssociateAcls.(*schema.Set)
@@ -1114,10 +1045,96 @@ func resourceAlicloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			}
 		}
 	}
-	return resourceAlicloudAlbListenerRead(d, meta)
+
+	if d.HasChange("status") {
+		object, err := albService.DescribeAlbListener(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		target := d.Get("status").(string)
+		if object["ListenerStatus"].(string) != target {
+			if target == "Running" {
+				request := map[string]interface{}{
+					"ListenerId": d.Id(),
+				}
+				if v, ok := d.GetOkExists("dry_run"); ok {
+					request["DryRun"] = v
+				}
+				action := "StartListener"
+				conn, err := client.NewAlbClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ClientToken"] = buildClientToken("StartListener")
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "SystemBusy"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+			if target == "Stopped" {
+				request := map[string]interface{}{
+					"ListenerId": d.Id(),
+				}
+				if v, ok := d.GetOkExists("dry_run"); ok {
+					request["DryRun"] = v
+				}
+				action := "StopListener"
+				conn, err := client.NewAlbClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request["ClientToken"] = buildClientToken("StopListener")
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IdempotenceProcessing", "IncorrectBusinessStatus.LoadBalancer", "SystemBusy"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				stateConf := BuildStateConf([]string{}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbListenerStateRefreshFunc(d.Id(), []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+			d.SetPartial("status")
+		}
+	}
+
+	d.Partial(false)
+
+	return resourceAliCloudAlbListenerRead(d, meta)
 }
 
-func resourceAlicloudAlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbListenerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteListener"
 	var response map[string]interface{}
