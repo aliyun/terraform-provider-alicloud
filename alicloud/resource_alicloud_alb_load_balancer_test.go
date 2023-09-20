@@ -27,7 +27,7 @@ func init() {
 func testSweepAlbLoadBalancer(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -100,10 +100,10 @@ func testSweepAlbLoadBalancer(region string) error {
 	return nil
 }
 
-func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
+func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBLoadBalancerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbLoadBalancer")
@@ -111,7 +111,7 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBLoadBalancerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -280,19 +280,18 @@ func TestAccAlicloudALBLoadBalancer_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBLoadBalancer_basic1(t *testing.T) {
+func TestAccAliCloudALBLoadBalancer_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBLoadBalancerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbLoadBalancer")
@@ -300,7 +299,7 @@ func TestAccAlicloudALBLoadBalancer_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBLoadBalancerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -367,18 +366,22 @@ func TestAccAlicloudALBLoadBalancer_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudALBLoadBalancerMap0 = map[string]string{}
+var AliCloudALBLoadBalancerMap0 = map[string]string{
+	"address_ip_version": CHECKSET,
+	"resource_group_id":  CHECKSET,
+	"dns_name":           CHECKSET,
+	"status":             CHECKSET,
+}
 
-func AlicloudALBLoadBalancerBasicDependence0(name string) string {
+func AliCloudALBLoadBalancerBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
   default = "%s"

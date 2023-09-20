@@ -26,7 +26,7 @@ func init() {
 func testSweepAlbListener(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -106,11 +106,11 @@ func testSweepAlbListener(region string) error {
 	return nil
 }
 
-func TestAccAlicloudALBListener_basic0(t *testing.T) {
+func TestAccAliCloudALBListener_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBListenerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbListener")
@@ -119,7 +119,7 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
 	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -130,10 +130,9 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id":     "${local.load_balancer_id}",
-					"listener_protocol":    "HTTPS",
-					"listener_port":        port,
-					"listener_description": "tf-testAccListener_new",
+					"load_balancer_id":  "${local.load_balancer_id}",
+					"listener_protocol": "HTTPS",
+					"listener_port":     port,
 					"default_actions": []map[string]interface{}{
 						{
 							"type": "ForwardGroup",
@@ -156,12 +155,11 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_id":     CHECKSET,
-						"listener_protocol":    "HTTPS",
-						"listener_port":        port,
-						"listener_description": "tf-testAccListener_new",
-						"default_actions.#":    "1",
-						"certificates.#":       "1",
+						"load_balancer_id":  CHECKSET,
+						"listener_protocol": "HTTPS",
+						"listener_port":     port,
+						"default_actions.#": "1",
+						"certificates.#":    "1",
 					}),
 				),
 			},
@@ -273,7 +271,7 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 								{
 									"server_group_tuples": []map[string]interface{}{
 										{
-											"server_group_id": "${local.server_group_id}",
+											"server_group_id": "${local.server_group_id_update}",
 										},
 									},
 								},
@@ -365,7 +363,7 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 					"gzip_enabled":         "true",
 					"certificates": []map[string]interface{}{
 						{
-							"certificate_id": "${local.certificate_id}",
+							"certificate_id": "${local.certificate_id_update}",
 						},
 					},
 					"default_actions": []map[string]interface{}{
@@ -420,17 +418,17 @@ func TestAccAlicloudALBListener_basic0(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "xforwarded_for_config"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBListener_basic1(t *testing.T) {
+func TestAccAliCloudALBListener_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBListenerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbListener")
@@ -439,7 +437,7 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
 	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -540,17 +538,17 @@ func TestAccAlicloudALBListener_basic1(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "xforwarded_for_config"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBListener_basic2(t *testing.T) {
+func TestAccAliCloudALBListener_basic2(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBListenerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbListener")
@@ -559,7 +557,7 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 	rand := acctest.RandInt()
 	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
 	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBListenerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -603,7 +601,6 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 							},
 						},
 					},
-					"dry_run":            "false",
 					"gzip_enabled":       "true",
 					"http2_enabled":      "true",
 					"idle_timeout":       "20",
@@ -636,7 +633,6 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 						"default_actions.#":       "1",
 						"certificates.#":          "1",
 						"acl_config.#":            "1",
-						"dry_run":                 "false",
 						"gzip_enabled":            "true",
 						"http2_enabled":           "true",
 						"idle_timeout":            "20",
@@ -649,25 +645,26 @@ func TestAccAlicloudALBListener_basic2(t *testing.T) {
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run", "xforwarded_for_config"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBListener_basic3(t *testing.T) {
+func TestAccAliCloudALBListener_basic3(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_listener.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBListenerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbListener")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 1000)
-	port := fmt.Sprintf("%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, port, AlicloudALBListenerBasicDependence0)
+	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
+	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBListenerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -711,7 +708,6 @@ func TestAccAlicloudALBListener_basic3(t *testing.T) {
 							},
 						},
 					},
-					"dry_run":            "false",
 					"gzip_enabled":       "true",
 					"http2_enabled":      "true",
 					"idle_timeout":       "20",
@@ -744,7 +740,6 @@ func TestAccAlicloudALBListener_basic3(t *testing.T) {
 						"default_actions.#":        "1",
 						"certificates.#":           "1",
 						"acl_config.#":             "1",
-						"dry_run":                  "false",
 						"gzip_enabled":             "true",
 						"http2_enabled":            "true",
 						"idle_timeout":             "20",
@@ -755,118 +750,182 @@ func TestAccAlicloudALBListener_basic3(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				Config: testAccConfig(map[string]interface{}{
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "true",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "true",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "true",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "true",
+							"x_forwarded_for_client_src_port_enabled":           "true",
+							"x_forwarded_for_enabled":                           "true",
+							"x_forwarded_for_proto_enabled":                     "true",
+							"x_forwarded_for_slb_id_enabled":                    "true",
+							"x_forwarded_for_slb_port_enabled":                  "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "false",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "false",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "false",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "false",
+							"x_forwarded_for_client_src_port_enabled":           "false",
+							"x_forwarded_for_enabled":                           "false",
+							"x_forwarded_for_proto_enabled":                     "false",
+							"x_forwarded_for_slb_id_enabled":                    "false",
+							"x_forwarded_for_slb_port_enabled":                  "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudALBListenerMap0 = map[string]string{
-	"dry_run": NOSET,
+var AliCloudALBListenerMap0 = map[string]string{
+	"access_log_record_customized_headers_enabled": CHECKSET,
+	"gzip_enabled":       CHECKSET,
+	"http2_enabled":      CHECKSET,
+	"idle_timeout":       CHECKSET,
+	"request_timeout":    CHECKSET,
+	"security_policy_id": CHECKSET,
+	"status":             CHECKSET,
 }
 
-func AlicloudALBListenerBasicDependence0(name string) string {
+func AliCloudALBListenerBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {	
-	default = "tf-testaccalblistener%s"
-}
-
-data "alicloud_alb_zones" "default"{}
-
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default_1" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "vswitch_1" {
-  count             = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id 			=  data.alicloud_alb_zones.default.zones.0.id
-  vswitch_name      = var.name
-}
-
-data "alicloud_vswitches" "default_2" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_alb_zones.default.zones.1.id
-}
-resource "alicloud_vswitch" "vswitch_2" {
-  count             = length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
-  zone_id = data.alicloud_alb_zones.default.zones.1.id
-  vswitch_name              = var.name
-}
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-resource "alicloud_log_project" "default" {
-  name        = var.name
-  description = "created by terraform"
-}
-
-resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
-  shard_count           = 3
-  auto_split            = true
-  max_split_shard_count = 60
-  append_meta           = true
-}
-
-resource "alicloud_alb_load_balancer" "default_3" {
-  vpc_id =                data.alicloud_vpcs.default.ids.0
-  address_type =        "Internet"
-  address_allocated_mode = "Fixed"
-  load_balancer_name =    var.name
-  load_balancer_edition = "Standard"
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  load_balancer_billing_config {
-    pay_type = 	"PayAsYouGo"
-  }
-  tags = {
-		Created = "TF"
-  }
-  zone_mappings{
-		vswitch_id =  length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
-		zone_id =  data.alicloud_alb_zones.default.zones.0.id
+	variable "name" {
+  		default = "%s"
 	}
-  zone_mappings{
-		vswitch_id = length(data.alicloud_vswitches.default_2.ids) > 0 ? data.alicloud_vswitches.default_2.ids[0] : concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
-		zone_id =   data.alicloud_alb_zones.default.zones.1.id
-	}
-  modification_protection_config{
-	status = "NonProtection"
-  }
-  access_log_config{
-  	log_project = alicloud_log_project.default.name
-  	log_store =   alicloud_log_store.default.name
-  }
-}
 
-resource "alicloud_alb_server_group" "default_4" {
-	protocol = "HTTP"
-	vpc_id = data.alicloud_vpcs.default.vpcs.0.id
-	server_group_name = var.name
-    resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-	health_check_config {
-       health_check_enabled = "false"
+	data "alicloud_alb_zones" "default" {
 	}
-	sticky_session_config {
-       sticky_session_enabled = "false"
-	}
-	tags = {
-		Created = "TF"
-	}
-}
 
-resource "alicloud_ssl_certificates_service_certificate" "default" {
-  certificate_name = var.name
-  cert = <<EOF
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default_1" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_alb_zones.default.zones.0.id
+	}
+
+	data "alicloud_vswitches" "default_2" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_alb_zones.default.zones.1.id
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	resource "alicloud_vswitch" "vswitch_1" {
+  		count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
+  		zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_vswitch" "vswitch_2" {
+  		count        = length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1
+  		vpc_id       = data.alicloud_vpcs.default.ids.0
+  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
+  		zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  		vswitch_name = var.name
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name        = var.name
+  		description = "created by terraform"
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project               = alicloud_log_project.default.name
+  		name                  = var.name
+  		shard_count           = 3
+  		auto_split            = true
+  		max_split_shard_count = 60
+  		append_meta           = true
+	}
+
+	resource "alicloud_alb_load_balancer" "default_3" {
+  		vpc_id                 = data.alicloud_vpcs.default.ids.0
+  		address_type           = "Internet"
+  		address_allocated_mode = "Fixed"
+  		load_balancer_name     = var.name
+  		load_balancer_edition  = "Standard"
+  		resource_group_id      = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  		load_balancer_billing_config {
+    		pay_type = "PayAsYouGo"
+  		}
+  		tags = {
+    		Created = "TF"
+  		}
+  		zone_mappings {
+    		vswitch_id = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
+    		zone_id    = data.alicloud_alb_zones.default.zones.0.id
+  		}
+  		zone_mappings {
+    		vswitch_id = length(data.alicloud_vswitches.default_2.ids) > 0 ? data.alicloud_vswitches.default_2.ids[0] : concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
+    		zone_id    = data.alicloud_alb_zones.default.zones.1.id
+  		}
+  		modification_protection_config {
+    		status = "NonProtection"
+  		}
+  		access_log_config {
+    		log_project = alicloud_log_project.default.name
+    		log_store   = alicloud_log_store.default.name
+  		}
+	}
+
+	resource "alicloud_alb_server_group" "default_4" {
+  		count             = 2
+  		protocol          = "HTTP"
+  		vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  		server_group_name = var.name
+  		resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  		health_check_config {
+    		health_check_enabled = "false"
+  		}
+  		sticky_session_config {
+    		sticky_session_enabled = "false"
+  		}
+  		tags = {
+    		Created = "TF"
+  		}
+	}
+
+	resource "alicloud_ssl_certificates_service_certificate" "default" {
+  		certificate_name = var.name
+  		cert             = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV
 BAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP
@@ -888,7 +947,7 @@ Ofi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd
 DUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=
 -----END CERTIFICATE-----
 EOF
-  key = <<EOF
+  		key              = <<EOF
 -----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQDO0kt3vfjY9BygLEbiAzUrEt1Cum/utmEG9rroSq6dRzKzsetV
 kg0dqpAJwXKBtNFM9/BBPvQy2DVFUASu2koCz+TNQJOMK+BqhsgoI3o884dw7IVM
@@ -905,16 +964,78 @@ zWX931YQeACcwhxvHQJBAN5mTzzJD4w4Ma6YTaNHyXakdYfyAWrOkPIWZxfhMfXe
 DrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=
 -----END RSA PRIVATE KEY-----
 EOF
-}
-resource "alicloud_alb_acl" "default" {
-	acl_name = var.name
-	count = 2
-}
+	}
 
-locals {
- load_balancer_id = alicloud_alb_load_balancer.default_3.id
- server_group_id = alicloud_alb_server_group.default_4.id
- certificate_id = join("",[alicloud_ssl_certificates_service_certificate.default.id,"-%s"])
-}
-`, name, defaultRegionToTest)
+	resource "alicloud_ssl_certificates_service_certificate" "update" {
+  		certificate_name = "${var.name}-update"
+  		cert             = <<EOF
+-----BEGIN CERTIFICATE-----
+MIID7jCCAtagAwIBAgIQUNnSVa/sQNeb9pBN9NhkwTANBgkqhkiG9w0BAQsFADBe
+MQswCQYDVQQGEwJDTjEOMAwGA1UEChMFTXlTU0wxKzApBgNVBAsTIk15U1NMIFRl
+c3QgUlNBIC0gRm9yIHRlc3QgdXNlIG9ubHkxEjAQBgNVBAMTCU15U1NMLmNvbTAe
+Fw0yMzA4MDkwMzM4MThaFw0yODA4MDcwMzM4MThaMCwxCzAJBgNVBAYTAkNOMR0w
+GwYDVQQDExRhbGljbG91ZC1wcm92aWRlci5jbjCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAOgskr8dEfZYdjr0xaIqlCkmE802vABoj3SQNn3rLWnUj+1v
+Wqbpsj6Bu61Scb8mtl/OZOOM7sgq0Q1hpdO8xvMGxTMuZ2bjX0EqCMqh4AvFofHL
+a/iVD07hfoM1Jo8CEidh1uvcOuXP1TlaqU020x1TX3a3niJu4JVkmCkCOwAbWYuj
+O8IsgBCsFaF9d4+C1JRYOtRbIHCNhd0sxG8AGovUDLvlkePeH5NF7DNvFXgGJ4iv
+EQcY9pP08RBFUkaznOw/r64Up7zhLb+Ie4SyAvs1FulhMAmIXOcbsND39hJ+/WIP
+8beWvIN1eCS8zcvgAvDgMkV8oqqVbQu1dqx5WuMCAwEAAaOB2TCB1jAOBgNVHQ8B
+Af8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB8GA1UdIwQY
+MBaAFCiBJgXRNBo/wXMPu5PPFRw/A79/MGMGCCsGAQUFBwEBBFcwVTAhBggrBgEF
+BQcwAYYVaHR0cDovL29jc3AubXlzc2wuY29tMDAGCCsGAQUFBzAChiRodHRwOi8v
+Y2EubXlzc2wuY29tL215c3NsdGVzdHJzYS5jcnQwHwYDVR0RBBgwFoIUYWxpY2xv
+dWQtcHJvdmlkZXIuY24wDQYJKoZIhvcNAQELBQADggEBALd0hFZAd2XHJgETbHQs
+h4YUBNKxrIy6JiWfxffhIL1ZK5pI443DC4VRGfxVi3zWqs01WbNtJ2b1KdfSoovH
+Zwi3hdMF1IwoAB/Y2sS4zjqS0H1od7MN9KKHes6bl3yCgpmaYs5cHbyg0IJHmeq3
+rCgbKsvHfUwtzBNNPHlpANakAYd/5O1pztmUskWMUVaExfpMoQLo/AX9Lqm8pVjw
+xs921I703l/E5zEnd3PVSYagy/KQJrwVt+wQZS11HsAryfO9kct/9f+c85VDo6Ht
+iRirW/EnNPQRSno4z0V2x1Rn5+ZaoJo8cWzPvKrdfCG9TUozt4AR/LIudNLb6NNW
+n7g=
+-----END CERTIFICATE-----
+EOF
+  		key              = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA6CySvx0R9lh2OvTFoiqUKSYTzTa8AGiPdJA2festadSP7W9a
+pumyPoG7rVJxvya2X85k44zuyCrRDWGl07zG8wbFMy5nZuNfQSoIyqHgC8Wh8ctr
++JUPTuF+gzUmjwISJ2HW69w65c/VOVqpTTbTHVNfdreeIm7glWSYKQI7ABtZi6M7
+wiyAEKwVoX13j4LUlFg61FsgcI2F3SzEbwAai9QMu+WR494fk0XsM28VeAYniK8R
+Bxj2k/TxEEVSRrOc7D+vrhSnvOEtv4h7hLIC+zUW6WEwCYhc5xuw0Pf2En79Yg/x
+t5a8g3V4JLzNy+AC8OAyRXyiqpVtC7V2rHla4wIDAQABAoIBABKGQ+sluaIrKrvH
+feFTfmDOHfRYsqVhslh9jSt80THJePZb1SLOMJ+WIFBS7Kpwv0pjoF8bho3IBMgJ
+i36aaFFJsABGao+mApqjbPIl+kdWLHarYWEDG6aSjVKQshPk+WfVAZ3uA3EEpSGf
+XzS+9Bc56LsDKYXbzOV+kjlraSO35AMec3CpISdx4K1caEAhKX6it9bvPq4pSYXi
+PQspba0Jv46VV7MaabVjLzsinz5/md4vxyYHNIJAukHUfwJIsVC9ZNxukwSw+CzE
+MMO64ylq2DGokNerGsLetuViV8UWi7qmUmms2fAmchodW16olgNkYTz27+V/A42S
+eex63pkCgYEA+CqKhqp3qPe2E9KVrycrwjoycxmhOn3Iz1xiN7uAEv+DzfKtfZVf
+mcOIiqw4Z82RkgjHb9vJuTigKdDkB1zE2gSDnep44sDWJM/5nPjGlMgnkiJWJhci
+CnD0P4d6cT5wyDt7Q0/tS6ql2UrCpW4ktw1AP0Rm/z/VBD8jGkVenjcCgYEA74DM
+Z2Qmh3bPt1TykpOlw+H+sEuvlkYxqMlbtn3Rv3WgEPIBekOFrgP7n/uLW1Aizn8w
+EhNBBAE8w5jvklqZWYbpFMJQc09eqUkI8aTbLooZbzYj1f3CrzBRKn1GoTPmN9V0
+j9r+TbH3/5CEoqlsJdmeQPofuv5Qid2oEutZcrUCgYBuZ16hco0xmqJiRzlYZvDM
+w99V3X0g7Hy947e+W6gqy4nzwZb1W9LgMWE5cEzXwViVw1oWpY0k3dBDSi9oJxlc
+dM2pH3sQRgH+9pdyAis2XaVdGfGBmKEITCAdc0RBxSmfqva3h4NmOlD2TpAx0MJ8
+vWRrwR6hR+CYtw4CzgG+GQKBgQDGmi5lugW9JUe/xeBUrbyyv0+cT1auLUz2ouq7
+XIA23Mo74wJYqW9Lyp+4nTWFJeGHDK8G/hJWyNPjeomG+jvZombbQPrHc9SSWi7h
+eowKfpfywZlb1M7AyTc1HacY+9l3CTlcJQPl16NHuEZUQFue02NIjGENhd+xQy4h
+ainFVQKBgAoPs9ebtWbBOaqGpOnquzb7WibvW/ifOfzv5/aOhkbpp+KCjcSON6CB
+QF3BEXMcNMGWlpPrd8PaxCAzR4MyU///ekJri2icS9lrQhGSz2TtYhdED4pv1Aag
+7eTPl5L7xAwphCSwy8nfCKmvlqcX/MSJ7A+LHB/2hdbuuEOyhpbu
+-----END RSA PRIVATE KEY-----
+EOF
+	}
+
+	resource "alicloud_alb_acl" "default" {
+  		count    = 2
+  		acl_name = var.name
+	}
+
+	locals {
+  		load_balancer_id       = alicloud_alb_load_balancer.default_3.id
+  		server_group_id        = alicloud_alb_server_group.default_4.0.id
+  		server_group_id_update = alicloud_alb_server_group.default_4.1.id
+  		certificate_id         = join("", [alicloud_ssl_certificates_service_certificate.default.id, "-%s"])
+  		certificate_id_update  = join("-", [alicloud_ssl_certificates_service_certificate.update.id, "%s"])
+	}
+`, name, defaultRegionToTest, defaultRegionToTest)
 }

@@ -23,13 +23,19 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
-data "alicloud_alb_zones" "default" {}
-data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_alb_zones" "default" {
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
 data "alicloud_instance_types" "default" {
   availability_zone = data.alicloud_alb_zones.default.zones.0.id
   cpu_core_count    = 1
   memory_size       = 2
 }
+
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners     = "system"
@@ -165,10 +171,10 @@ The following arguments are supported:
 
 -> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 
-* `status` - (Optional, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
-* `xforwarded_for_config` - (Optional, Deprecated from v1.161.0+) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
-* `x_forwarded_for_config` - (Optional, Available in v1.161.0+) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `acl_config` - (Optional, Deprecated from v1.163.0+)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+* `status` - (Optional, Available since v1.133.0) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
+* `xforwarded_for_config` - (Optional, Deprecated since v1.161.0) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated since provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
+* `x_forwarded_for_config` - (Optional, Available since v1.161.0) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
+* `acl_config` - (Optional, Deprecated since v1.163.0)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
 
 
 ### `x_forwarded_for_config`
@@ -239,14 +245,14 @@ The server_group_tuples supports the following:
 
 The acl_config supports the following:
 
-* `acl_relations` - (Optional, Available 1.136.0+) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
-* `acl_type` - (Optional, Available 1.136.0+) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
+* `acl_relations` - (Optional, Available since v1.136.0) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
+* `acl_type` - (Optional, Available since v1.136.0) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
 
 ### `acl_config-acl_relations`
 
 The acl_relations supports the following:
 
-* `acl_id` - (Optional, Available 1.136.0+) Snooping Binding of the Access Policy Group ID List.
+* `acl_id` - (Optional, Available since v1.136.0) Snooping Binding of the Access Policy Group ID List.
 * `status` - (Optional) The status of the ACL relation.
 
 ### `access_log_tracing_config`
@@ -281,8 +287,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Listener.
-* `delete` - (Defaults to 2 mins) Used when delete the Listener.
 * `update` - (Defaults to 2 mins) Used when update the Listener.
+* `delete` - (Defaults to 2 mins) Used when delete the Listener.
 
 ## Import
 
