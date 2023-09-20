@@ -13,16 +13,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudSslCertificatesServiceCertificate() *schema.Resource {
+func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudSslCertificatesServiceCertificateCreate,
-		Read:   resourceAlicloudSslCertificatesServiceCertificateRead,
-		Update: resourceAlicloudSslCertificatesServiceCertificateUpdate,
-		Delete: resourceAlicloudSslCertificatesServiceCertificateDelete,
+		Create: resourceAliCloudSslCertificatesServiceCertificateCreate,
+		Read:   resourceAliCloudSslCertificatesServiceCertificateRead,
+		Update: resourceAliCloudSslCertificatesServiceCertificateUpdate,
+		Delete: resourceAliCloudSslCertificatesServiceCertificateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			"key": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"cert": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -31,10 +36,10 @@ func resourceAlicloudSslCertificatesServiceCertificate() *schema.Resource {
 			"certificate_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				Computed:     true,
 				AtLeastOneOf: []string{"certificate_name", "name"},
 				ValidateFunc: validation.StringLenBetween(1, 64),
-				ForceNew:     true,
 			},
 			"name": {
 				Type:         schema.TypeString,
@@ -44,11 +49,6 @@ func resourceAlicloudSslCertificatesServiceCertificate() *schema.Resource {
 				Deprecated:   "attribute 'name' has been deprecated from provider version 1.129.0 and it will be remove in the future version. Please use the new attribute 'certificate_name' instead.",
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
-			"key": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"lang": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -57,7 +57,7 @@ func resourceAlicloudSslCertificatesServiceCertificate() *schema.Resource {
 	}
 }
 
-func resourceAlicloudSslCertificatesServiceCertificateCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateUserCertificate"
@@ -99,9 +99,9 @@ func resourceAlicloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 
 	d.SetId(fmt.Sprint(response["CertId"]))
 
-	return resourceAlicloudSslCertificatesServiceCertificateRead(d, meta)
+	return resourceAliCloudSslCertificatesServiceCertificateRead(d, meta)
 }
-func resourceAlicloudSslCertificatesServiceCertificateRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSslCertificatesServiceCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	casService := CasService{client}
 	object, err := casService.DescribeSslCertificatesServiceCertificate(d.Id())
@@ -119,11 +119,11 @@ func resourceAlicloudSslCertificatesServiceCertificateRead(d *schema.ResourceDat
 	d.Set("key", object["Key"])
 	return nil
 }
-func resourceAlicloudSslCertificatesServiceCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSslCertificatesServiceCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudSslCertificatesServiceCertificateRead(d, meta)
+	return resourceAliCloudSslCertificatesServiceCertificateRead(d, meta)
 }
-func resourceAlicloudSslCertificatesServiceCertificateDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteUserCertificate"
 	var response map[string]interface{}
