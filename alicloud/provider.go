@@ -1183,7 +1183,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_route_service":                                     resourceAlicloudCenRouteService(),
 			"alicloud_kvstore_connection":                                    resourceAlicloudKvstoreConnection(),
 			"alicloud_cms_alarm_contact_group":                               resourceAlicloudCmsAlarmContactGroup(),
-			"alicloud_cms_group_metric_rule":                                 resourceAlicloudCmsGroupMetricRule(),
+			"alicloud_cms_group_metric_rule":                                 resourceAliCloudCmsGroupMetricRule(),
 			"alicloud_fnf_flow":                                              resourceAlicloudFnfFlow(),
 			"alicloud_fnf_schedule":                                          resourceAlicloudFnfSchedule(),
 			"alicloud_ros_change_set":                                        resourceAlicloudRosChangeSet(),

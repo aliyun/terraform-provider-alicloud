@@ -5,21 +5,18 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
+func resourceAliCloudCmsGroupMetricRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsGroupMetricRuleCreate,
-		Read:   resourceAlicloudCmsGroupMetricRuleRead,
-		Update: resourceAlicloudCmsGroupMetricRuleUpdate,
-		Delete: resourceAlicloudCmsGroupMetricRuleDelete,
+		Create: resourceAliCloudCmsGroupMetricRuleCreate,
+		Read:   resourceAliCloudCmsGroupMetricRuleRead,
+		Update: resourceAliCloudCmsGroupMetricRuleUpdate,
+		Delete: resourceAliCloudCmsGroupMetricRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -29,10 +26,31 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"category": {
+			"rule_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"group_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"group_metric_rule_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"metric_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"namespace": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"category": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"contact_groups": {
 				Type:     schema.TypeString,
@@ -44,14 +62,66 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"effective_interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"email_subject": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+			},
+			"effective_interval": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"no_effective_interval": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"interval": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"silence_time": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"webhook": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"targets": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"json_params": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"Critical", "Warn", "Info"}, false),
+						},
+						"arn": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"escalations": {
 				Type:     schema.TypeSet,
@@ -137,86 +207,11 @@ func resourceAlicloudCmsGroupMetricRule() *schema.Resource {
 					},
 				},
 			},
-			"group_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"group_metric_rule_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"metric_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"namespace": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"no_effective_interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"rule_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"silence_time": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  86400,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"webhook": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"targets": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"arn": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"level": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"Critical", "Warn", "Info"}, false),
-						},
-						"json_params": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
 		},
 	}
 }
 
-func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "PutGroupMetricRule"
@@ -225,82 +220,45 @@ func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
-	request["Category"] = d.Get("category")
+
+	request["RuleId"] = d.Get("rule_id")
+	request["GroupId"] = d.Get("group_id")
+	request["RuleName"] = d.Get("group_metric_rule_name")
+	request["MetricName"] = d.Get("metric_name")
+	request["Namespace"] = d.Get("namespace")
+
+	if v, ok := d.GetOk("category"); ok {
+		request["Category"] = v
+	}
+
 	if v, ok := d.GetOk("contact_groups"); ok {
 		request["ContactGroups"] = v
 	}
 
 	if v, ok := d.GetOk("dimensions"); ok {
-		request["Dimensions"] = v
-	}
-
-	if v, ok := d.GetOk("effective_interval"); ok {
-		request["EffectiveInterval"] = v
+		request["ExtraDimensionJson"] = v
 	}
 
 	if v, ok := d.GetOk("email_subject"); ok {
 		request["EmailSubject"] = v
 	}
 
-	if v, ok := d.GetOk("escalations"); ok {
-		if v != nil {
-			escalationsMap := make(map[string]interface{})
-			for _, escalations := range v.(*schema.Set).List() {
-				escalationsArg := escalations.(map[string]interface{})
-				if escalationsArg["critical"] != nil {
-					criticalMap := make(map[string]interface{})
-					for _, critical := range escalationsArg["critical"].(*schema.Set).List() {
-						criticalArg := critical.(map[string]interface{})
-						criticalMap["ComparisonOperator"] = criticalArg["comparison_operator"].(string)
-						criticalMap["Statistics"] = criticalArg["statistics"].(string)
-						criticalMap["Threshold"] = criticalArg["threshold"].(string)
-						criticalMap["Times"] = requests.NewInteger(criticalArg["times"].(int))
-					}
-					escalationsMap["Critical"] = criticalMap
-				}
-				if escalationsArg["info"] != nil {
-					infoMap := make(map[string]interface{})
-					for _, info := range escalationsArg["info"].(*schema.Set).List() {
-						infoArg := info.(map[string]interface{})
-						infoMap["ComparisonOperator"] = infoArg["comparison_operator"].(string)
-						infoMap["Statistics"] = infoArg["statistics"].(string)
-						infoMap["Threshold"] = infoArg["threshold"].(string)
-						infoMap["Times"] = requests.NewInteger(infoArg["times"].(int))
-					}
-					escalationsMap["Info"] = infoMap
-				}
-				if escalationsArg["warn"] != nil {
-					warnMap := make(map[string]interface{})
-					for _, warn := range escalationsArg["warn"].(*schema.Set).List() {
-						warnArg := warn.(map[string]interface{})
-						warnMap["ComparisonOperator"] = warnArg["comparison_operator"].(string)
-						warnMap["Statistics"] = warnArg["statistics"].(string)
-						warnMap["Threshold"] = warnArg["threshold"].(string)
-						warnMap["Times"] = requests.NewInteger(warnArg["times"].(int))
-					}
-					escalationsMap["Warn"] = warnMap
-				}
-			}
-			request["Escalations"] = escalationsMap
-		}
-	}
-	request["GroupId"] = d.Get("group_id")
-	request["RuleName"] = d.Get("group_metric_rule_name")
-	if v, ok := d.GetOk("interval"); ok {
-		request["Interval"] = v
+	if v, ok := d.GetOk("effective_interval"); ok {
+		request["EffectiveInterval"] = v
 	}
 
-	request["MetricName"] = d.Get("metric_name")
-	request["Namespace"] = d.Get("namespace")
 	if v, ok := d.GetOk("no_effective_interval"); ok {
 		request["NoEffectiveInterval"] = v
+	}
+
+	if v, ok := d.GetOk("interval"); ok {
+		request["Interval"] = v
 	}
 
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
 
-	request["RuleId"] = d.Get("rule_id")
 	if v, ok := d.GetOk("silence_time"); ok {
 		request["SilenceTime"] = v
 	}
@@ -309,37 +267,124 @@ func resourceAlicloudCmsGroupMetricRuleCreate(d *schema.ResourceData, meta inter
 		request["Webhook"] = v
 	}
 
+	escalationsMap := map[string]interface{}{}
+	for _, escalationsList := range d.Get("escalations").(*schema.Set).List() {
+		escalationsArg := escalationsList.(map[string]interface{})
+
+		if critical, ok := escalationsArg["critical"]; ok {
+			criticalMap := map[string]interface{}{}
+			for _, criticalList := range critical.(*schema.Set).List() {
+				criticalArg := criticalList.(map[string]interface{})
+
+				if comparisonOperator, ok := criticalArg["comparison_operator"]; ok {
+					criticalMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := criticalArg["statistics"]; ok {
+					criticalMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := criticalArg["threshold"]; ok {
+					criticalMap["Threshold"] = threshold
+				}
+
+				if times, ok := criticalArg["times"]; ok {
+					criticalMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Critical"] = criticalMap
+		}
+
+		if info, ok := escalationsArg["info"]; ok {
+			infoMap := map[string]interface{}{}
+			for _, infoList := range info.(*schema.Set).List() {
+				infoArg := infoList.(map[string]interface{})
+
+				if comparisonOperator, ok := infoArg["comparison_operator"]; ok {
+					infoMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := infoArg["statistics"]; ok {
+					infoMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := infoArg["threshold"]; ok {
+					infoMap["Threshold"] = threshold
+				}
+
+				if times, ok := infoArg["times"]; ok {
+					infoMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Info"] = infoMap
+		}
+
+		if warn, ok := escalationsArg["warn"]; ok {
+			warnMap := map[string]interface{}{}
+			for _, warnList := range warn.(*schema.Set).List() {
+				warnArg := warnList.(map[string]interface{})
+
+				if comparisonOperator, ok := warnArg["comparison_operator"]; ok {
+					warnMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := warnArg["statistics"]; ok {
+					warnMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := warnArg["threshold"]; ok {
+					warnMap["Threshold"] = threshold
+				}
+
+				if times, ok := warnArg["times"]; ok {
+					warnMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Warn"] = warnMap
+		}
+	}
+
+	request["Escalations"] = escalationsMap
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_group_metric_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["RuleId"]))
 
-	return resourceAlicloudCmsGroupMetricRuleUpdate(d, meta)
+	return resourceAliCloudCmsGroupMetricRuleUpdate(d, meta)
 }
 
-func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
+
 	object, err := cmsService.DescribeCmsGroupMetricRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cms_group_metric_rule cmsService.DescribeCmsGroupMetricRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -348,65 +393,109 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 	}
 
 	d.Set("rule_id", object["RuleId"])
-	d.Set("contact_groups", object["ContactGroups"])
-	d.Set("dimensions", object["Dimensions"])
-	d.Set("effective_interval", object["EffectiveInterval"])
-	d.Set("email_subject", object["MailSubject"])
-
-	escalationsSli := make([]map[string]interface{}, 0)
-	if len(object["Escalations"].(map[string]interface{})) > 0 {
-		escalations := object["Escalations"]
-		escalationsMap := make(map[string]interface{})
-
-		criticalSli := make([]map[string]interface{}, 0)
-		if len(escalations.(map[string]interface{})["Critical"].(map[string]interface{})) > 0 {
-			critical := escalations.(map[string]interface{})["Critical"]
-			criticalMap := make(map[string]interface{})
-			criticalMap["comparison_operator"] = critical.(map[string]interface{})["ComparisonOperator"]
-			criticalMap["statistics"] = critical.(map[string]interface{})["Statistics"]
-			criticalMap["threshold"] = critical.(map[string]interface{})["Threshold"]
-			criticalMap["times"] = critical.(map[string]interface{})["Times"]
-			criticalSli = append(criticalSli, criticalMap)
-		}
-		escalationsMap["critical"] = criticalSli
-
-		infoSli := make([]map[string]interface{}, 0)
-		if len(escalations.(map[string]interface{})["Info"].(map[string]interface{})) > 0 {
-			info := escalations.(map[string]interface{})["Info"]
-			infoMap := make(map[string]interface{})
-			infoMap["comparison_operator"] = info.(map[string]interface{})["ComparisonOperator"]
-			infoMap["statistics"] = info.(map[string]interface{})["Statistics"]
-			infoMap["threshold"] = info.(map[string]interface{})["Threshold"]
-			infoMap["times"] = info.(map[string]interface{})["Times"]
-			infoSli = append(infoSli, infoMap)
-		}
-		escalationsMap["info"] = infoSli
-
-		warnSli := make([]map[string]interface{}, 0)
-		if len(escalations.(map[string]interface{})["Warn"].(map[string]interface{})) > 0 {
-			warn := escalations.(map[string]interface{})["Warn"]
-			warnMap := make(map[string]interface{})
-			warnMap["comparison_operator"] = warn.(map[string]interface{})["ComparisonOperator"]
-			warnMap["statistics"] = warn.(map[string]interface{})["Statistics"]
-			warnMap["threshold"] = warn.(map[string]interface{})["Threshold"]
-			warnMap["times"] = warn.(map[string]interface{})["Times"]
-			warnSli = append(warnSli, warnMap)
-		}
-		escalationsMap["warn"] = warnSli
-		escalationsSli = append(escalationsSli, escalationsMap)
-	}
-	d.Set("escalations", escalationsSli)
 	d.Set("group_id", object["GroupId"])
 	d.Set("group_metric_rule_name", object["RuleName"])
 	d.Set("metric_name", object["MetricName"])
 	d.Set("namespace", object["Namespace"])
+	d.Set("contact_groups", object["ContactGroups"])
+	d.Set("dimensions", removeSquareBracketsFromDimensions(fmt.Sprint(object["Dimensions"])))
+	d.Set("email_subject", object["MailSubject"])
+	d.Set("effective_interval", object["EffectiveInterval"])
 	d.Set("no_effective_interval", object["NoEffectiveInterval"])
 	d.Set("period", formatInt(object["Period"]))
 	d.Set("silence_time", formatInt(object["SilenceTime"]))
-	d.Set("status", object["AlertState"])
 	d.Set("webhook", object["Webhook"])
+	d.Set("status", object["AlertState"])
 
-	target, err := cmsService.DescribeMetricRuleTargets(d.Id())
+	if escalations, ok := object["Escalations"]; ok {
+		escalationsMaps := make([]map[string]interface{}, 0)
+		escalationsArg := escalations.(map[string]interface{})
+		escalationsMap := make(map[string]interface{})
+
+		if critical, ok := escalationsArg["Critical"]; ok && len(critical.(map[string]interface{})) > 0 {
+			criticalMaps := make([]map[string]interface{}, 0)
+			criticalArg := critical.(map[string]interface{})
+			criticalMap := map[string]interface{}{}
+
+			if comparisonOperator, ok := criticalArg["ComparisonOperator"]; ok {
+				criticalMap["comparison_operator"] = comparisonOperator
+			}
+
+			if statistics, ok := criticalArg["Statistics"]; ok {
+				criticalMap["statistics"] = statistics
+			}
+
+			if threshold, ok := criticalArg["Threshold"]; ok {
+				criticalMap["threshold"] = threshold
+			}
+
+			if times, ok := criticalArg["Times"]; ok {
+				criticalMap["times"] = times
+			}
+
+			criticalMaps = append(criticalMaps, criticalMap)
+
+			escalationsMap["critical"] = criticalMaps
+		}
+
+		if info, ok := escalationsArg["Info"]; ok && len(info.(map[string]interface{})) > 0 {
+			infoMaps := make([]map[string]interface{}, 0)
+			infoArg := info.(map[string]interface{})
+			infoMap := map[string]interface{}{}
+
+			if comparisonOperator, ok := infoArg["ComparisonOperator"]; ok {
+				infoMap["comparison_operator"] = comparisonOperator
+			}
+
+			if statistics, ok := infoArg["Statistics"]; ok {
+				infoMap["statistics"] = statistics
+			}
+
+			if threshold, ok := infoArg["Threshold"]; ok {
+				infoMap["threshold"] = threshold
+			}
+
+			if times, ok := infoArg["Times"]; ok {
+				infoMap["times"] = times
+			}
+
+			infoMaps = append(infoMaps, infoMap)
+
+			escalationsMap["info"] = infoMaps
+		}
+
+		if warn, ok := escalationsArg["Warn"]; ok && len(warn.(map[string]interface{})) > 0 {
+			warnMaps := make([]map[string]interface{}, 0)
+			warnArg := warn.(map[string]interface{})
+			warnMap := map[string]interface{}{}
+
+			if comparisonOperator, ok := warnArg["ComparisonOperator"]; ok {
+				warnMap["comparison_operator"] = comparisonOperator
+			}
+
+			if statistics, ok := warnArg["Statistics"]; ok {
+				warnMap["statistics"] = statistics
+			}
+
+			if threshold, ok := warnArg["Threshold"]; ok {
+				warnMap["threshold"] = threshold
+			}
+
+			if times, ok := warnArg["Times"]; ok {
+				warnMap["times"] = times
+			}
+
+			warnMaps = append(warnMaps, warnMap)
+
+			escalationsMap["warn"] = warnMaps
+		}
+
+		escalationsMaps = append(escalationsMaps, escalationsMap)
+
+		d.Set("escalations", escalationsMaps)
+	}
+
+	targetsList, err := cmsService.DescribeMetricRuleTargets(d.Id())
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
@@ -414,171 +503,297 @@ func resourceAlicloudCmsGroupMetricRuleRead(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
-	targets := make([]map[string]interface{}, 0)
-	if target != nil {
-		targetsMap := make(map[string]interface{})
-		targetsMap["id"] = target["Id"]
-		targetsMap["arn"] = target["Arn"]
-		targetsMap["level"] = target["Level"]
-		targetsMap["json_params"] = target["JsonParams"]
-		targets = append(targets, targetsMap)
-		d.Set("targets", targets)
+	targetsMaps := make([]map[string]interface{}, 0)
+	for _, targets := range targetsList {
+		targetsArg := targets.(map[string]interface{})
+		targetsMap := map[string]interface{}{}
+
+		if id, ok := targetsArg["Id"]; ok {
+			targetsMap["id"] = id
+		}
+
+		if jsonParams, ok := targetsArg["JsonParams"]; ok {
+			targetsMap["json_params"] = jsonParams
+		}
+
+		if level, ok := targetsArg["Level"]; ok {
+			targetsMap["level"] = level
+		}
+
+		if arn, ok := targetsArg["Arn"]; ok {
+			targetsMap["arn"] = arn
+		}
+
+		targetsMaps = append(targetsMaps, targetsMap)
 	}
+
+	d.Set("targets", targetsMaps)
 
 	return nil
 }
 
-func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
+	d.Partial(true)
+
 	update := false
 	request := map[string]interface{}{
-		"RuleId": d.Id(),
+		"RuleId":    d.Id(),
+		"Namespace": d.Get("namespace"),
 	}
+
 	if !d.IsNewResource() && d.HasChange("group_id") {
 		update = true
 	}
 	request["GroupId"] = d.Get("group_id")
+
 	if !d.IsNewResource() && d.HasChange("group_metric_rule_name") {
 		update = true
 	}
 	request["RuleName"] = d.Get("group_metric_rule_name")
+
 	if !d.IsNewResource() && d.HasChange("metric_name") {
 		update = true
 	}
 	request["MetricName"] = d.Get("metric_name")
-	request["Namespace"] = d.Get("namespace")
+
 	if !d.IsNewResource() && d.HasChange("contact_groups") {
 		update = true
-		request["ContactGroups"] = d.Get("contact_groups")
 	}
+	if v, ok := d.GetOk("contact_groups"); ok {
+		request["ContactGroups"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("dimensions") {
 		update = true
-		request["Dimensions"] = d.Get("dimensions")
 	}
-	if !d.IsNewResource() && d.HasChange("effective_interval") {
-		update = true
-		request["EffectiveInterval"] = d.Get("effective_interval")
+	if v, ok := d.GetOk("dimensions"); ok {
+		request["ExtraDimensionJson"] = v
 	}
+
 	if !d.IsNewResource() && d.HasChange("email_subject") {
 		update = true
-		request["EmailSubject"] = d.Get("email_subject")
 	}
-	if !d.IsNewResource() && d.HasChange("escalations") {
+	if v, ok := d.GetOk("email_subject"); ok {
+		request["EmailSubject"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("effective_interval") {
 		update = true
-		if d.Get("escalations") != nil {
-			escalationsMap := make(map[string]interface{})
-			for _, escalations := range d.Get("escalations").(*schema.Set).List() {
-				escalationsArg := escalations.(map[string]interface{})
-				if escalationsArg["critical"] != nil {
-					criticalMap := make(map[string]interface{})
-					for _, critical := range escalationsArg["critical"].(*schema.Set).List() {
-						criticalArg := critical.(map[string]interface{})
-						criticalMap["ComparisonOperator"] = criticalArg["comparison_operator"].(string)
-						criticalMap["Statistics"] = criticalArg["statistics"].(string)
-						criticalMap["Threshold"] = criticalArg["threshold"].(string)
-						criticalMap["Times"] = requests.NewInteger(criticalArg["times"].(int))
-					}
-					escalationsMap["Critical"] = criticalMap
-				}
-				if escalationsArg["info"] != nil {
-					infoMap := make(map[string]interface{})
-					for _, info := range escalationsArg["info"].(*schema.Set).List() {
-						infoArg := info.(map[string]interface{})
-						infoMap["ComparisonOperator"] = infoArg["comparison_operator"].(string)
-						infoMap["Statistics"] = infoArg["statistics"].(string)
-						infoMap["Threshold"] = infoArg["threshold"].(string)
-						infoMap["Times"] = requests.NewInteger(infoArg["times"].(int))
-					}
-					escalationsMap["Info"] = infoMap
-				}
-				if escalationsArg["warn"] != nil {
-					warnMap := make(map[string]interface{})
-					for _, warn := range escalationsArg["warn"].(*schema.Set).List() {
-						warnArg := warn.(map[string]interface{})
-						warnMap["ComparisonOperator"] = warnArg["comparison_operator"].(string)
-						warnMap["Statistics"] = warnArg["statistics"].(string)
-						warnMap["Threshold"] = warnArg["threshold"].(string)
-						warnMap["Times"] = requests.NewInteger(warnArg["times"].(int))
-					}
-					escalationsMap["Warn"] = warnMap
-				}
-			}
-			request["Escalations"] = escalationsMap
-		}
 	}
+	if v, ok := d.GetOk("effective_interval"); ok {
+		request["EffectiveInterval"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("no_effective_interval") {
 		update = true
-		request["NoEffectiveInterval"] = d.Get("no_effective_interval")
 	}
+	if v, ok := d.GetOk("no_effective_interval"); ok {
+		request["NoEffectiveInterval"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("period") {
 		update = true
-		request["Period"] = d.Get("period")
+
+		if v, ok := d.GetOkExists("period"); ok {
+			request["Period"] = v
+		}
 	}
+
 	if !d.IsNewResource() && d.HasChange("silence_time") {
 		update = true
-		request["SilenceTime"] = d.Get("silence_time")
+
+		if v, ok := d.GetOkExists("silence_time"); ok {
+			request["SilenceTime"] = v
+		}
 	}
+
 	if !d.IsNewResource() && d.HasChange("webhook") {
 		update = true
-		request["Webhook"] = d.Get("webhook")
 	}
-	if update {
-		request["Category"] = d.Get("category")
-		if _, ok := d.GetOk("interval"); ok {
-			request["Interval"] = d.Get("interval")
+	if v, ok := d.GetOk("webhook"); ok {
+		request["Webhook"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("escalations") {
+		update = true
+	}
+	escalationsMap := map[string]interface{}{}
+	for _, escalationsList := range d.Get("escalations").(*schema.Set).List() {
+		escalationsArg := escalationsList.(map[string]interface{})
+
+		if critical, ok := escalationsArg["critical"]; ok {
+			criticalMap := map[string]interface{}{}
+			for _, criticalList := range critical.(*schema.Set).List() {
+				criticalArg := criticalList.(map[string]interface{})
+
+				if comparisonOperator, ok := criticalArg["comparison_operator"]; ok {
+					criticalMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := criticalArg["statistics"]; ok {
+					criticalMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := criticalArg["threshold"]; ok {
+					criticalMap["Threshold"] = threshold
+				}
+
+				if times, ok := criticalArg["times"]; ok {
+					criticalMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Critical"] = criticalMap
 		}
+
+		if info, ok := escalationsArg["info"]; ok {
+			infoMap := map[string]interface{}{}
+			for _, infoList := range info.(*schema.Set).List() {
+				infoArg := infoList.(map[string]interface{})
+
+				if comparisonOperator, ok := infoArg["comparison_operator"]; ok {
+					infoMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := infoArg["statistics"]; ok {
+					infoMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := infoArg["threshold"]; ok {
+					infoMap["Threshold"] = threshold
+				}
+
+				if times, ok := infoArg["times"]; ok {
+					infoMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Info"] = infoMap
+		}
+
+		if warn, ok := escalationsArg["warn"]; ok {
+			warnMap := map[string]interface{}{}
+			for _, warnList := range warn.(*schema.Set).List() {
+				warnArg := warnList.(map[string]interface{})
+
+				if comparisonOperator, ok := warnArg["comparison_operator"]; ok {
+					warnMap["ComparisonOperator"] = comparisonOperator
+				}
+
+				if statistics, ok := warnArg["statistics"]; ok {
+					warnMap["Statistics"] = statistics
+				}
+
+				if threshold, ok := warnArg["threshold"]; ok {
+					warnMap["Threshold"] = threshold
+				}
+
+				if times, ok := warnArg["times"]; ok {
+					warnMap["Times"] = times
+				}
+			}
+
+			escalationsMap["Warn"] = warnMap
+		}
+	}
+
+	request["Escalations"] = escalationsMap
+
+	if update {
 		action := "PutGroupMetricRule"
+		conn, err := client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-			return WrapError(Error("PutGroupMetricRule failed for " + response["Message"].(string)))
+
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
+
+		d.SetPartial("group_id")
+		d.SetPartial("group_metric_rule_name")
+		d.SetPartial("metric_name")
+		d.SetPartial("contact_groups")
+		d.SetPartial("dimensions")
+		d.SetPartial("email_subject")
+		d.SetPartial("effective_interval")
+		d.SetPartial("no_effective_interval")
+		d.SetPartial("period")
+		d.SetPartial("silence_time")
+		d.SetPartial("webhook")
+		d.SetPartial("escalations")
 	}
+
 	update = false
-	request = map[string]interface{}{
+	putMetricRuleTargetsReq := map[string]interface{}{
 		"RuleId": d.Id(),
 	}
 
 	if d.HasChange("targets") {
 		update = true
 	}
-
 	if v, ok := d.GetOk("targets"); ok {
-		Targets := make([]map[string]interface{}, len(v.(*schema.Set).List()))
-		for i, TargetsValue := range v.(*schema.Set).List() {
-			TargetsMap := TargetsValue.(map[string]interface{})
-			Targets[i] = make(map[string]interface{})
-			Targets[i]["Id"] = TargetsMap["id"]
-			Targets[i]["Arn"] = TargetsMap["arn"]
-			Targets[i]["Level"] = TargetsMap["level"]
-			Targets[i]["JsonParams"] = TargetsMap["json_params"]
+		targetsMaps := make([]map[string]interface{}, 0)
+		for _, targets := range v.(*schema.Set).List() {
+			targetsMap := map[string]interface{}{}
+			targetsArg := targets.(map[string]interface{})
+
+			if id, ok := targetsArg["id"]; ok {
+				targetsMap["Id"] = id
+			}
+
+			if jsonParams, ok := targetsArg["json_params"]; ok {
+				targetsMap["JsonParams"] = jsonParams
+			}
+
+			if level, ok := targetsArg["level"]; ok {
+				targetsMap["Level"] = level
+			}
+
+			if arn, ok := targetsArg["arn"]; ok {
+				targetsMap["Arn"] = arn
+			}
+
+			targetsMaps = append(targetsMaps, targetsMap)
 		}
-		request["Targets"] = Targets
+
+		putMetricRuleTargetsReq["Targets"] = targetsMaps
 	}
+
 	if update {
 		action := "PutMetricRuleTargets"
+		conn, err := client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, putMetricRuleTargetsReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -588,16 +803,25 @@ func resourceAlicloudCmsGroupMetricRuleUpdate(d *schema.ResourceData, meta inter
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(action, response, putMetricRuleTargetsReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
 		d.SetPartial("targets")
 	}
-	return resourceAlicloudCmsGroupMetricRuleRead(d, meta)
+
+	d.Partial(false)
+
+	return resourceAliCloudCmsGroupMetricRuleRead(d, meta)
 }
 
-func resourceAlicloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMetricRules"
 	var response map[string]interface{}
@@ -605,31 +829,46 @@ func resourceAlicloudCmsGroupMetricRuleDelete(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"Id": []string{d.Id()},
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	if IsExpectedErrorCodes(fmt.Sprintf("%v", response["Code"]), []string{"400", "403", "404", "ResourceNotFound"}) {
 		return nil
 	}
+
 	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
 		return WrapError(Error("DeleteMetricRules failed for " + response["Message"].(string)))
 	}
+
 	return nil
+}
+
+func removeSquareBracketsFromDimensions(src string) string {
+	if len(src) < 1 && src[0] != '[' && src[len(src)-1] != ']' {
+		return src
+	}
+
+	return src[1 : len(src)-1]
 }
