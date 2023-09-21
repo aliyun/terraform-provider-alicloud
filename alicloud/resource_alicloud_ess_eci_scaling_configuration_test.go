@@ -96,7 +96,7 @@ func testSweepEciScalingConfiguration(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEssEciScalingConfigurationBasic(t *testing.T) {
+func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ess_eci_scaling_configuration.default"
 	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
@@ -145,7 +145,7 @@ func TestAccAlicloudEssEciScalingConfigurationBasic(t *testing.T) {
 							"domains":       []string{"test-registry-vpc.cn-hangzhou.cr.aliyuncs.com"},
 							"instance_id":   "cri-47rme9691uiowvfv",
 							"region_id":     "cn-hangzhou",
-							"instance_name": "zzz",
+							"instance_name": "zz",
 						},
 					},
 					"image_registry_credentials": []map[string]interface{}{
@@ -185,21 +185,21 @@ func TestAccAlicloudEssEciScalingConfigurationBasic(t *testing.T) {
 								},
 							},
 							"liveness_probe_exec_commands":          []string{"cmd"},
-							"liveness_probe_period_seconds":         "1",
+							"liveness_probe_period_seconds":         "2",
 							"liveness_probe_http_get_path":          "path",
 							"liveness_probe_failure_threshold":      "1",
 							"liveness_probe_initial_delay_seconds":  "1",
-							"liveness_probe_http_get_port":          "1",
+							"liveness_probe_http_get_port":          "2",
 							"liveness_probe_http_get_scheme":        "HTTP",
-							"liveness_probe_tcp_socket_port":        "1",
+							"liveness_probe_tcp_socket_port":        "2",
 							"liveness_probe_success_threshold":      "1",
-							"liveness_probe_timeout_seconds":        "1",
+							"liveness_probe_timeout_seconds":        "2",
 							"readiness_probe_exec_commands":         []string{"cmd"},
-							"readiness_probe_period_seconds":        "1",
+							"readiness_probe_period_seconds":        "2",
 							"readiness_probe_http_get_path":         "path",
-							"readiness_probe_failure_threshold":     "1",
+							"readiness_probe_failure_threshold":     "2",
 							"readiness_probe_initial_delay_seconds": "1",
-							"readiness_probe_http_get_port":         "1",
+							"readiness_probe_http_get_port":         "2",
 							"readiness_probe_http_get_scheme":       "HTTP",
 							"readiness_probe_tcp_socket_port":       "1",
 							"readiness_probe_success_threshold":     "1",
@@ -442,6 +442,396 @@ func TestAccAlicloudEssEciScalingConfigurationBasic(t *testing.T) {
 						"init_containers.#":            "1",
 						"volumes.#":                    "1",
 						"host_aliases.#":               "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssEciScalingConfigurationSupplementSubPathAndMountPropagationForContainer(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ess_eci_scaling_configuration.default1"
+	ra := resourceAttrInit(resourceId, AlicloudEssEciScalingConfigurationMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEssEciScalingConfiguration")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssEciScalingConfiguration)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_configuration_name": name,
+					"description":                "desc",
+					"active":                     true,
+					"force_delete":               false,
+					"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf",
+					"container_group_name":       "containerGroupName",
+					"restart_policy":             "restartPolicy",
+					"cpu":                        "3",
+					"memory":                     "4",
+					"resource_group_id":          "resourceGroupId",
+					"dns_policy":                 "dnsPolicy",
+					"enable_sls":                 "true",
+					"ram_role_name":              "ramRoleName",
+					"spot_strategy":              "SpotWithPriceLimit",
+					"spot_price_limit":           "1.1",
+					"auto_create_eip":            "true",
+					"eip_bandwidth":              "1",
+					"host_name":                  "hostname",
+					"ingress_bandwidth":          "1",
+					"egress_bandwidth":           "1",
+					"tags": map[string]string{
+						"name": "tf-test",
+					},
+					"acr_registry_infos": []map[string]interface{}{
+						{
+							"domains":       []string{"test-registry-vpc.cn-beijing.cr.aliyuncs.com"},
+							"instance_id":   "cri-47rme9691uiowvv",
+							"region_id":     "cn-beijing",
+							"instance_name": "zzz",
+						},
+					},
+					"image_registry_credentials": []map[string]interface{}{
+						{
+							"password": "password",
+							"server":   "server",
+							"username": "username",
+						},
+					},
+					"containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "key",
+									"value": "value",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path":        "path",
+									"name":              "name",
+									"read_only":         "true",
+									"mount_propagation": "None",
+									"sub_path":          "data1/",
+								},
+							},
+							"liveness_probe_exec_commands":          []string{"cmd"},
+							"liveness_probe_period_seconds":         "1",
+							"liveness_probe_http_get_path":          "path1",
+							"liveness_probe_failure_threshold":      "2",
+							"liveness_probe_initial_delay_seconds":  "2",
+							"liveness_probe_http_get_port":          "1",
+							"liveness_probe_http_get_scheme":        "HTTPS",
+							"liveness_probe_tcp_socket_port":        "1",
+							"liveness_probe_timeout_seconds":        "1",
+							"readiness_probe_exec_commands":         []string{"cmd", "echo 'hh'"},
+							"readiness_probe_period_seconds":        "1",
+							"readiness_probe_http_get_path":         "path1",
+							"readiness_probe_failure_threshold":     "1",
+							"readiness_probe_initial_delay_seconds": "2",
+							"readiness_probe_http_get_port":         "1",
+							"readiness_probe_http_get_scheme":       "HTTPS",
+							"readiness_probe_tcp_socket_port":       "2",
+							"readiness_probe_timeout_seconds":       "2",
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "protocol",
+									"port":     "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "key",
+									"value": "value",
+								},
+							},
+							"working_dir":       "workingDir",
+							"args":              []string{"arg"},
+							"cpu":               "1",
+							"gpu":               "1",
+							"memory":            "1",
+							"name":              "name",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.5",
+							"image_pull_policy": "policy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "path",
+									"name":       "name",
+									"read_only":  "true",
+								},
+							},
+							"commands": []string{"cmd"},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"config_file_volume_config_file_to_paths": []map[string]interface{}{
+								{
+									"content": "content",
+									"path":    "path",
+								},
+							},
+							"disk_volume_disk_id":   "disk_volume_disk_id",
+							"disk_volume_fs_type":   "disk_volume_fs_type",
+							"disk_volume_disk_size": "1",
+							"flex_volume_driver":    "flex_volume_driver",
+							"flex_volume_fs_type":   "flex_volume_fs_type",
+							"flex_volume_options":   "flex_volume_options",
+							"nfs_volume_path":       "nfs_volume_path",
+							"nfs_volume_read_only":  "true",
+							"nfs_volume_server":     "nfs_volume_server",
+							"name":                  "name",
+							"type":                  "type",
+						},
+					},
+					"host_aliases": []map[string]interface{}{
+						{
+							"hostnames": []string{"hostnames"},
+							"ip":        "ip",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_id":             CHECKSET,
+						"scaling_configuration_name":   name,
+						"description":                  "desc",
+						"security_group_id":            "sg-bp1hi5tpb5c3e51a15pf",
+						"container_group_name":         "containerGroupName",
+						"restart_policy":               "restartPolicy",
+						"cpu":                          "3",
+						"memory":                       "4",
+						"resource_group_id":            "resourceGroupId",
+						"dns_policy":                   "dnsPolicy",
+						"enable_sls":                   "true",
+						"ram_role_name":                "ramRoleName",
+						"spot_strategy":                "SpotWithPriceLimit",
+						"spot_price_limit":             "1.1",
+						"auto_create_eip":              "true",
+						"host_name":                    "hostname",
+						"ingress_bandwidth":            "1",
+						"egress_bandwidth":             "1",
+						"tags.name":                    "tf-test",
+						"image_registry_credentials.#": "1",
+						"containers.#":                 "1",
+						"init_containers.#":            "1",
+						"volumes.#":                    "1",
+						"host_aliases.#":               "1",
+						"acr_registry_infos.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_configuration_name": "newName",
+					"description":                "newDesc",
+					"active":                     false,
+					"security_group_id":          "sg-bp1hi5tpb5c3e51a15pf*",
+					"force_delete":               true,
+					"container_group_name":       "newName",
+					"restart_policy":             "newPolicy",
+					"cpu":                        "2",
+					"memory":                     "2",
+					"resource_group_id":          "newGroupId",
+					"dns_policy":                 "newDnsPolicy",
+					"enable_sls":                 "false",
+					"ram_role_name":              "newRoleName",
+					"spot_strategy":              "SpotAsPriceGo",
+					"spot_price_limit":           "1.2",
+					"auto_create_eip":            "false",
+					"eip_bandwidth":              "3",
+					"host_name":                  "newHostName",
+					"ingress_bandwidth":          "2",
+					"egress_bandwidth":           "2",
+					"tags": map[string]string{
+						"name": "tf-test2",
+					},
+					"acr_registry_infos": []map[string]interface{}{
+						{
+							"domains":       []string{"test-registry-vpc.cn-hangzhou.cr.aliyuncs.com"},
+							"instance_id":   "cri-47rme9691uiowvf",
+							"region_id":     "cn-hangzhou",
+							"instance_name": "zzz123",
+						},
+					},
+					"image_registry_credentials": []map[string]interface{}{
+						{
+							"password": "newPassword",
+							"server":   "newServer",
+							"username": "newUserName",
+						},
+					},
+					"containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "newProtocol",
+									"port":     "2",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "newKey",
+									"value": "newValue",
+								},
+							},
+							"working_dir":       "newWorkingDir",
+							"args":              []string{"arg2"},
+							"cpu":               "2",
+							"gpu":               "2",
+							"memory":            "2",
+							"name":              "newName",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.0",
+							"image_pull_policy": "newPolicy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path":        "newPath",
+									"name":              "newName",
+									"read_only":         "false",
+									"mount_propagation": "HostToCotainer",
+									"sub_path":          "dat2/",
+								},
+							},
+							"liveness_probe_exec_commands":          []string{"cmd", "echo 'hh'"},
+							"liveness_probe_period_seconds":         "2",
+							"liveness_probe_http_get_path":          "path",
+							"liveness_probe_failure_threshold":      "1",
+							"liveness_probe_initial_delay_seconds":  "1",
+							"liveness_probe_http_get_port":          "2",
+							"liveness_probe_http_get_scheme":        "HTTP",
+							"liveness_probe_tcp_socket_port":        "2",
+							"liveness_probe_timeout_seconds":        "2",
+							"readiness_probe_exec_commands":         []string{"cmd"},
+							"readiness_probe_period_seconds":        "2",
+							"readiness_probe_http_get_path":         "path",
+							"readiness_probe_failure_threshold":     "2",
+							"readiness_probe_initial_delay_seconds": "1",
+							"readiness_probe_success_threshold":     "1",
+							"liveness_probe_success_threshold":      "1",
+							"readiness_probe_http_get_port":         "2",
+							"readiness_probe_http_get_scheme":       "HTTP",
+							"readiness_probe_tcp_socket_port":       "1",
+							"readiness_probe_timeout_seconds":       "1",
+							"commands":                              []string{"cmd2"},
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "newProtocol",
+									"port":     "2",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "newKey",
+									"value": "newValue",
+								},
+							},
+							"working_dir":       "newWorkingDir",
+							"args":              []string{"arg2"},
+							"cpu":               "2",
+							"gpu":               "2",
+							"memory":            "2",
+							"name":              "newName",
+							"image":             "registry-vpc.aliyuncs.com/eci_open/alpine:3.0",
+							"image_pull_policy": "newPolicy",
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "newPath",
+									"name":       "newName",
+									"read_only":  "false",
+								},
+							},
+							"commands": []string{"cmd2"},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"config_file_volume_config_file_to_paths": []map[string]interface{}{
+								{
+									"content": "content2",
+									"path":    "path2",
+								},
+							},
+							"disk_volume_disk_id":   "disk_volume_disk_id2",
+							"disk_volume_fs_type":   "disk_volume_fs_type2",
+							"disk_volume_disk_size": "2",
+							"flex_volume_driver":    "flex_volume_driver2",
+							"flex_volume_fs_type":   "flex_volume_fs_type2",
+							"flex_volume_options":   "flex_volume_options2",
+							"nfs_volume_path":       "nfs_volume_path2",
+							"nfs_volume_read_only":  "false",
+							"nfs_volume_server":     "nfs_volume_server2",
+							"name":                  "name2",
+							"type":                  "type2",
+						},
+					},
+					"host_aliases": []map[string]interface{}{
+						{
+							"hostnames": []string{"hostnames2"},
+							"ip":        "ip2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_configuration_name":   "newName",
+						"description":                  "newDesc",
+						"security_group_id":            "sg-bp1hi5tpb5c3e51a15pf*",
+						"container_group_name":         "newName",
+						"restart_policy":               "newPolicy",
+						"cpu":                          "2",
+						"memory":                       "2",
+						"resource_group_id":            "newGroupId",
+						"dns_policy":                   "newDnsPolicy",
+						"enable_sls":                   "false",
+						"ram_role_name":                "newRoleName",
+						"spot_strategy":                "SpotAsPriceGo",
+						"spot_price_limit":             "1.2",
+						"auto_create_eip":              "false",
+						"eip_bandwidth":                "3",
+						"host_name":                    "newHostName",
+						"ingress_bandwidth":            "2",
+						"egress_bandwidth":             "2",
+						"tags.name":                    "tf-test2",
+						"image_registry_credentials.#": "1",
+						"containers.#":                 "1",
+						"init_containers.#":            "1",
+						"volumes.#":                    "1",
+						"host_aliases.#":               "1",
+						"acr_registry_infos.#":         "1",
 					}),
 				),
 			},
