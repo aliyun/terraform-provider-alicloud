@@ -268,7 +268,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceTopicCreate(dInit, rawClient)
+	err = resourceAliCloudMessageServiceTopicCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -291,7 +291,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceTopicCreate(dInit, rawClient)
+		err := resourceAliCloudMessageServiceTopicCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -318,7 +318,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceTopicUpdate(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceTopicUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -357,7 +357,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceTopicUpdate(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceTopicUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -401,7 +401,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceTopicRead(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceTopicRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -420,7 +420,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceTopicDelete(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceTopicDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -448,7 +448,7 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceTopicDelete(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceTopicDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -458,3 +458,155 @@ func TestUnitAlicloudMessageServiceTopic(t *testing.T) {
 		}
 	}
 }
+
+// Test MessageService Topic. >>> Resource test cases, automatically generated.
+// Case 4254
+func TestAccAliCloudMessageServiceTopic_basic4254(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_topic.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceTopicMap4254)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicetopic%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceTopicBasicDependence4254)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"topic_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"topic_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_message_size": "65536",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_message_size": "65536",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_message_size": "1024",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_message_size": "1024",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_logging": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_logging": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_message_size": "65536",
+					"topic_name":       name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_message_size": "65536",
+						"topic_name":       name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudMessageServiceTopicMap4254 = map[string]string{
+	"create_time":      CHECKSET,
+	"max_message_size": "65536",
+}
+
+func AlicloudMessageServiceTopicBasicDependence4254(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 4254  twin
+func TestAccAliCloudMessageServiceTopic_basic4254_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_message_service_topic.default"
+	ra := resourceAttrInit(resourceId, AlicloudMessageServiceTopicMap4254)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MessageServiceServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMessageServiceTopic")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%smessageservicetopic%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMessageServiceTopicBasicDependence4254)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_message_size": "1024",
+					"topic_name":       name,
+					"enable_logging":   "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_message_size": "1024",
+						"topic_name":       name,
+						"enable_logging":   "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test MessageService Topic. <<< Resource test cases, automatically generated.
