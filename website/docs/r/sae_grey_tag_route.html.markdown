@@ -20,16 +20,18 @@ For information about Serverless App Engine (SAE) GreyTagRoute and how to use it
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
+
 data "alicloud_regions" "default" {
   current = true
 }
-resource "random_integer" "default" {
-  max = 99999
-  min = 10000
-}
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -45,12 +47,13 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   zone_id      = data.alicloud_zones.default.zones.0.id
 }
+
 resource "alicloud_security_group" "default" {
   vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_sae_namespace" "default" {
-  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example${random_integer.default.result}"
+  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example"
   namespace_name            = var.name
   namespace_description     = var.name
   enable_micro_registration = false
@@ -86,7 +89,6 @@ resource "alicloud_sae_grey_tag_route" "default" {
     path      = "/tf/example"
     condition = "AND"
   }
-
   dubbo_rules {
     items {
       cond     = "=="
@@ -109,42 +111,46 @@ resource "alicloud_sae_grey_tag_route" "default" {
 The following arguments are supported:
 
 * `app_id` - (Required, ForceNew) The ID  of the SAE Application.
-* `description` - (Optional) The description of GreyTagRoute.
 * `grey_tag_route_name` - (Required, ForceNew) The name of GreyTagRoute.
-* `dubbo_rules` - (Optional) The grayscale rule created for Dubbo Application. See [`dubbo_rules`](#dubbo_rules) below.
-* `sc_rules` - (Optional) The grayscale rule created for SpringCloud Application. See [`sc_rules`](#sc_rules) below.
-
-### `dubbo_rules`
-
-The `dubbo_rules` supports the following:
-* `method_name` - (Optional) The method name
-* `service_name` - (Optional) The service name.
-* `version` - (Optional) The service version.
-* `condition` - (Optional) The Conditional Patterns for Grayscale Rules. Valid values: `AND`, `OR`.
-* `group` - (Optional) The service group.
-* `items` - (Optional) A list of conditions items. See [`items`](#dubbo_rules-items) below.
-
-### `dubbo_rules-items`
-
-The `items` supports the following:
-* `index` - (Optional) The parameter number.
-* `expr` - (Optional) The parameter value gets the expression.
-* `cond` - (Optional) The comparison operator. Valid values: `>`, `<`, `>=`, `<=`, `==`, `!=`.
-* `value` - (Optional) The value of the parameter.
-* `operator` - (Optional) The operator. Valid values: `rawvalue`, `list`, `mod`, `deterministic_proportional_steaming_division`
+* `description` - (Optional) The description of GreyTagRoute.
+* `sc_rules` - (Optional, Set) The grayscale rule created for SpringCloud Application. See [`sc_rules`](#sc_rules) below.
+* `dubbo_rules` - (Optional, Set) The grayscale rule created for Dubbo Application. See [`dubbo_rules`](#dubbo_rules) below.
 
 ### `sc_rules`
 
-The `sc_rules` supports the following:
+The sc_rules supports the following:
+
 * `path` - (Optional) The path corresponding to the grayscale rule.
 * `condition` - (Optional) The conditional Patterns for Grayscale Rules. Valid values: `AND`, `OR`.
-* `items` - (Optional) A list of conditions items.See [`items`](#sc_rules-items) below.
+* `items` - (Optional, Set) A list of conditions items. See [`items`](#sc_rules-items) below.
 
 ### `sc_rules-items`
 
-The `items` supports the following:
+The items supports the following:
+
 * `name` - (Optional) The name of the parameter.
 * `type` - (Optional) The compare types. Valid values: `param`, `cookie`, `header`.
+* `cond` - (Optional) The comparison operator. Valid values: `>`, `<`, `>=`, `<=`, `==`, `!=`.
+* `value` - (Optional) The value of the parameter.
+* `operator` - (Optional) The operator. Valid values: `rawvalue`, `list`, `mod`, `deterministic_proportional_steaming_division`.
+
+### `dubbo_rules`
+
+The dubbo_rules supports the following:
+
+* `method_name` - (Optional) The method name
+* `service_name` - (Optional) The service name.
+* `version` - (Optional) The service version.
+* `group` - (Optional) The service group.
+* `condition` - (Optional) The Conditional Patterns for Grayscale Rules. Valid values: `AND`, `OR`.
+* `items` - (Optional, Set) A list of conditions items. See [`items`](#dubbo_rules-items) below.
+
+### `dubbo_rules-items`
+
+The items supports the following:
+
+* `index` - (Optional, Int) The parameter number.
+* `expr` - (Optional) The parameter value gets the expression.
 * `cond` - (Optional) The comparison operator. Valid values: `>`, `<`, `>=`, `<=`, `==`, `!=`.
 * `value` - (Optional) The value of the parameter.
 * `operator` - (Optional) The operator. Valid values: `rawvalue`, `list`, `mod`, `deterministic_proportional_steaming_division`.
