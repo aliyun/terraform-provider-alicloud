@@ -1457,7 +1457,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sddp_data_limit":                                       resourceAlicloudSddpDataLimit(),
 			"alicloud_ecs_image_component":                                   resourceAlicloudEcsImageComponent(),
 			"alicloud_sae_application_scaling_rule":                          resourceAlicloudSaeApplicationScalingRule(),
-			"alicloud_sae_grey_tag_route":                                    resourceAlicloudSaeGreyTagRoute(),
+			"alicloud_sae_grey_tag_route":                                    resourceAliCloudSaeGreyTagRoute(),
 			"alicloud_ecs_snapshot_group":                                    resourceAlicloudEcsSnapshotGroup(),
 			"alicloud_alb_listener_additional_certificate_attachment":        resourceAlicloudAlbListenerAdditionalCertificateAttachment(),
 			"alicloud_vpn_ipsec_server":                                      resourceAlicloudVpnIpsecServer(),

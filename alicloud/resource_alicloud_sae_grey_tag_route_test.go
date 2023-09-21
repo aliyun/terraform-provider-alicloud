@@ -20,11 +20,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSAEGreyTagRoute_basic0(t *testing.T) {
+func TestAccAliCloudSAEGreyTagRoute_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_grey_tag_route.default"
-	ra := resourceAttrInit(resourceId, AlicloudSAEGreyTagRouteMap0)
+	ra := resourceAttrInit(resourceId, AliCloudSAEGreyTagRouteMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SaeService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSaeGreyTagRoute")
@@ -32,7 +32,7 @@ func TestAccAlicloudSAEGreyTagRoute_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1, 100)
 	name := fmt.Sprintf("tftestacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSAEGreyTagRouteBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSAEGreyTagRouteBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -40,241 +40,248 @@ func TestAccAlicloudSAEGreyTagRoute_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-					"app_id":      "${alicloud_sae_application.default.id}",
+					"app_id":              "${alicloud_sae_application.default.id}",
+					"grey_tag_route_name": name,
 					"sc_rules": []map[string]interface{}{
 						{
-							"items": []map[string]interface{}{
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test",
-									"cond":     "==",
-								},
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test1",
-									"cond":     "!=",
-								},
-							},
 							"path":      "/tf/test",
 							"condition": "AND",
+							"items": []map[string]interface{}{
+								{
+									"name":     "tftest",
+									"type":     "param",
+									"value":    "test",
+									"cond":     "==",
+									"operator": "rawvalue",
+								},
+								{
+									"name":     "tftest",
+									"type":     "param",
+									"value":    "test1",
+									"cond":     "!=",
+									"operator": "rawvalue",
+								},
+							},
 						},
 					},
 					"dubbo_rules": []map[string]interface{}{
 						{
-							"items": []map[string]interface{}{
-								{
-									"cond":     "==",
-									"expr":     ".key1",
-									"index":    "1",
-									"operator": "rawvalue",
-									"value":    "value1",
-								},
-								{
-									"cond":     "==",
-									"expr":     ".key2",
-									"index":    "0",
-									"operator": "rawvalue",
-									"value":    "value2",
-								},
-							},
-							"condition":    "OR",
-							"group":        "DUBBO",
 							"method_name":  "test",
 							"service_name": "com.test.service",
 							"version":      "1.0.0",
+							"group":        "DUBBO",
+							"condition":    "OR",
+							"items": []map[string]interface{}{
+								{
+									"index":    "1",
+									"expr":     ".key1",
+									"cond":     "==",
+									"value":    "value1",
+									"operator": "rawvalue",
+								},
+								{
+									"index":    "0",
+									"expr":     ".key2",
+									"cond":     "==",
+									"value":    "value2",
+									"operator": "rawvalue",
+								},
+							},
 						},
 					},
-					"grey_tag_route_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":         name,
+						"app_id":              CHECKSET,
+						"grey_tag_route_name": name,
 						"sc_rules.#":          "1",
 						"dubbo_rules.#":       "1",
-						"grey_tag_route_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"sc_rules": []map[string]interface{}{
+						{
+							"path":      "/tf/test1",
+							"condition": "OR",
+							"items": []map[string]interface{}{
+								{
+									"name":     "tftestupdate",
+									"type":     "header",
+									"cond":     "==",
+									"value":    "test2",
+									"operator": "mod",
+								},
+								{
+									"name":     "tftestupdate",
+									"type":     "header",
+									"cond":     "!=",
+									"value":    "test3",
+									"operator": "mod",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"sc_rules.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dubbo_rules": []map[string]interface{}{
+						{
+							"method_name":  "test1",
+							"service_name": "com.test1.service",
+							"version":      "1.2.0",
+							"group":        "DUBBO",
+							"condition":    "AND",
+							"items": []map[string]interface{}{
+								{
+									"index":    "0",
+									"expr":     ".key2",
+									"cond":     "!=",
+									"value":    "value3",
+									"operator": "mod",
+								},
+								{
+									"index":    "1",
+									"expr":     ".key1",
+									"cond":     "!=",
+									"value":    "value3",
+									"operator": "mod",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dubbo_rules.#": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"description": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"sc_rules": []map[string]interface{}{
 						{
-							"items": []map[string]interface{}{
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test3",
-									"cond":     "==",
-								},
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test2",
-									"cond":     "!=",
-								},
-							},
-							"path":      "/tf/test1",
-							"condition": "OR",
-						},
-					},
-					"dubbo_rules": []map[string]interface{}{
-						{
-							"items": []map[string]interface{}{
-								{
-									"cond":     "!=",
-									"expr":     ".key1",
-									"index":    "1",
-									"operator": "rawvalue",
-									"value":    "value3",
-								},
-								{
-									"cond":     "!=",
-									"expr":     ".key2",
-									"index":    "0",
-									"operator": "rawvalue",
-									"value":    "value3",
-								},
-							},
-							"condition":    "AND",
-							"group":        "DUBBO",
-							"method_name":  "test",
-							"service_name": "com.test.service",
-							"version":      "1.2.0",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"sc_rules.#":    "1",
-						"dubbo_rules.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name,
-					"sc_rules": []map[string]interface{}{
-						{
-							"items": []map[string]interface{}{
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test",
-									"cond":     "==",
-								},
-								{
-									"type":     "param",
-									"name":     "tftest",
-									"operator": "rawvalue",
-									"value":    "test1",
-									"cond":     "!=",
-								},
-							},
 							"path":      "/tf/test",
 							"condition": "AND",
+							"items": []map[string]interface{}{
+								{
+									"name":     "tftest",
+									"type":     "param",
+									"cond":     "==",
+									"value":    "test",
+									"operator": "rawvalue",
+								},
+								{
+									"name":     "tftest",
+									"type":     "param",
+									"cond":     "!=",
+									"value":    "test1",
+									"operator": "rawvalue",
+								},
+							},
 						},
 					},
 					"dubbo_rules": []map[string]interface{}{
 						{
-							"items": []map[string]interface{}{
-								{
-									"cond":     "==",
-									"expr":     ".key1",
-									"index":    "1",
-									"operator": "rawvalue",
-									"value":    "value1",
-								},
-								{
-									"cond":     "==",
-									"expr":     ".key2",
-									"index":    "0",
-									"operator": "rawvalue",
-									"value":    "value2",
-								},
-							},
-							"condition":    "OR",
-							"group":        "DUBBO",
 							"method_name":  "test",
 							"service_name": "com.test.service",
 							"version":      "1.0.0",
+							"group":        "DUBBO",
+							"condition":    "OR",
+							"items": []map[string]interface{}{
+								{
+									"index":    "1",
+									"expr":     ".key1",
+									"cond":     "==",
+									"value":    "value1",
+									"operator": "rawvalue",
+								},
+								{
+									"index":    "0",
+									"expr":     ".key2",
+									"value":    "value2",
+									"cond":     "==",
+									"operator": "rawvalue",
+								},
+							},
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   name,
+						"description":   name + "update",
 						"sc_rules.#":    "1",
 						"dubbo_rules.#": "1",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{""},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudSAEGreyTagRouteMap0 = map[string]string{}
+var AliCloudSAEGreyTagRouteMap0 = map[string]string{}
 
-func AlicloudSAEGreyTagRouteBasicDependence0(name string) string {
+func AliCloudSAEGreyTagRouteBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
 
-resource "alicloud_sae_namespace" "default" {
-  namespace_description = var.name
-  namespace_id          = join(":",["%s",var.name])
-  namespace_name        = var.name
-}
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 
-resource "alicloud_sae_application" "default" {
-  app_description = var.name
-  app_name        = var.name
-  namespace_id    = alicloud_sae_namespace.default.namespace_id
-  image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
-  package_type    = "Image"
-  jdk             = "Open JDK 8"
-  vswitch_id      = data.alicloud_vswitches.default.ids.0
-  vpc_id          = data.alicloud_vpcs.default.ids.0
-  timezone        = "Asia/Shanghai"
-  replicas        = "5"
-  cpu             = "500"
-  memory          = "2048"
-}
+	resource "alicloud_sae_namespace" "default" {
+  		namespace_description = var.name
+  		namespace_id          = join(":", ["%s", var.name])
+  		namespace_name        = var.name
+	}
+
+	resource "alicloud_sae_application" "default" {
+  		app_description = var.name
+  		app_name        = var.name
+  		namespace_id    = alicloud_sae_namespace.default.namespace_id
+  		image_url       = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
+  		package_type    = "Image"
+  		jdk             = "Open JDK 8"
+  		vswitch_id      = data.alicloud_vswitches.default.ids.0
+  		vpc_id          = data.alicloud_vpcs.default.ids.0
+  		timezone        = "Asia/Shanghai"
+  		replicas        = "5"
+  		cpu             = "500"
+  		memory          = "2048"
+	}
 `, name, defaultRegionToTest)
 }
 
-func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
+func TestUnitAliCloudSAEGreyTagRoute(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_sae_grey_tag_route"].Schema).Data(nil, nil)
@@ -421,7 +428,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudSaeGreyTagRouteCreate(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -438,7 +445,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteCreate(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -455,7 +462,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteCreate(dCreate, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -471,7 +478,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteCreate(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -510,7 +517,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteUpdate(resourceData1, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -535,7 +542,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&roa.Client{}), "DoRequest", func(_ *roa.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]*string, _ map[string]*string, _ interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudSaeGreyTagRouteUpdate(resourceData, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteUpdate(resourceData, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -566,7 +573,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&roa.Client{}), "DoRequest", func(_ *roa.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]*string, _ map[string]*string, _ interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteUpdate(resourceData1, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -580,7 +587,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 				Message: String("loadEndpoint error"),
 			}
 		})
-		err := resourceAlicloudSaeGreyTagRouteDelete(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -598,7 +605,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteDelete(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -613,7 +620,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteDelete(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -629,7 +636,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteDelete(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -646,7 +653,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteRead(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteRead(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -654,7 +661,7 @@ func TestUnitAlicloudSAEGreyTagRoute(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&roa.Client{}), "DoRequest", func(_ *roa.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]*string, _ map[string]*string, _ interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudSaeGreyTagRouteRead(d, rawClient)
+		err := resourceAliCloudSaeGreyTagRouteRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
