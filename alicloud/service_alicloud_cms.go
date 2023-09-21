@@ -294,55 +294,65 @@ func (s *CmsService) DescribeCmsAlarmContactGroup(id string) (object cms.Contact
 
 func (s *CmsService) DescribeCmsGroupMetricRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeMetricRuleList"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeMetricRuleList"
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
-		"RuleIds":  id,
+		"RuleIds": id,
 	}
+
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ExceedingQuota", "Throttling.User"}) {
+			if IsExpectedErrors(err, []string{"ExceedingQuota"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
-			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-	if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists", "ResourceNotFound", "ResourceNotFoundError"}) {
-		err = WrapErrorf(Error(GetNotFoundMessage("CmsGroupMetricRule", id)), NotFoundMsg, ProviderERROR)
-		return object, err
-	}
-	if fmt.Sprintf(`%v`, response["Code"]) != "200" {
-		if _, ok := response["Message"]; ok {
-			err = Error("DescribeMetricRuleList failed for " + response["Message"].(string))
-		} else {
-			err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"GroupMetricRuleNotExists", "ResourceNotFound", "ResourceNotFoundError"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.Alarms.Alarm", response)
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	resp, err := jsonpath.Get("$.Alarms.Alarm", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Alarms.Alarm", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["RuleId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["RuleId"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
@@ -532,6 +542,7 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 
 	return object, nil
 }
+
 func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCmsClient()
@@ -727,6 +738,7 @@ func (s *CmsService) DescribeCmsSlsGroup(id string) (object map[string]interface
 	object = v.([]interface{})[0].(map[string]interface{})
 	return object, nil
 }
+
 func (s *CmsService) DescribeCmsHybridMonitorSlsTask(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCmsClient()
@@ -889,16 +901,19 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 	return object, nil
 }
 
-func (s *CmsService) DescribeMetricRuleTargets(id string) (object map[string]interface{}, err error) {
+func (s *CmsService) DescribeMetricRuleTargets(id string) (objects []interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeMetricRuleTargets"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeMetricRuleTargets"
+
 	request := map[string]interface{}{
 		"RuleId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -914,15 +929,27 @@ func (s *CmsService) DescribeMetricRuleTargets(id string) (object map[string]int
 		return nil
 	})
 	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.Targets.Target", response)
+
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Targets.Target", response)
+		return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return objects, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
-	return object, nil
+
+	resp, err := jsonpath.Get("$.Targets.Target", response)
+	if err != nil {
+		return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Targets.Target", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return objects, WrapErrorf(Error(GetNotFoundMessage("Cms:GroupMetricRule", id)), NotFoundWithResponse, response)
+	}
+
+	objects = resp.([]interface{})
+
+	return objects, nil
 }
 
 func (s *CmsService) DescribeCmsMetricRuleBlackList(id string) (object map[string]interface{}, err error) {

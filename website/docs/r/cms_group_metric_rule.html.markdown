@@ -67,75 +67,74 @@ resource "alicloud_cms_group_metric_rule" "this" {
 
 The following arguments are supported:
 
-* `category` - (Required, ForceNew) The abbreviation of the service name. 
-* `contact_groups` - (Optional) Alarm contact group.
-* `dimensions` - (Optional) The dimensions that specify the resources to be associated with the alert rule.
-* `effective_interval` - (Optional) The time period during which the alert rule is effective.
-* `email_subject` - (Optional) The subject of the alert notification email.                                         .
-* `escalations` - (Required) Alarm level. See [`escalations`](#escalations) below.
+* `rule_id` - (Required, ForceNew) The ID of the alert rule.
 * `group_id` - (Required) The ID of the application group.
-* `group_metric_rule_name` - (Required) The name of the alert rule.                                      
-* `interval` - (Optional, ForceNew) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.                                    
+* `group_metric_rule_name` - (Required) The name of the alert rule.
 * `metric_name` - (Required) The name of the metric.
 * `namespace` - (Required, ForceNew) The namespace of the service.
-* `no_effective_interval` - (Optional) The time period during which the alert rule is ineffective.                                       
-* `period` - (Optional) The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.                       
-* `rule_id` - (Required, ForceNew) The ID of the alert rule.
-* `silence_time` - (Optional) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
-* `webhook` - (Optional) The callback URL.  
-* `targets` - (Optional, Available since v1.189.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below. 
-
-### `escalations`
-
-The escalations supports the following: 
-
-* `critical` - (Optional) The critical level. See [`critical`](#escalations-critical) below.
-* `info` - (Optional) The info level. See [`info`](#escalations-info) below. 
-* `warn` - (Optional) The warn level. See [`warn`](#escalations-warn) below. 
-
-### `escalations-critical`
-
-The critical supports the following: 
-
-* `comparison_operator` - (Optional) The comparison operator of the threshold for critical-level alerts.                                         
-* `statistics` - (Optional) The statistical aggregation method for critical-level alerts.                                
-* `threshold` - (Optional) The threshold for critical-level alerts.
-* `times` - (Optional) The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.              
-
-### `escalations-info`
-
-The info supports the following: 
-
-* `comparison_operator` - (Optional) The comparison operator of the threshold for info-level alerts.                                         
-* `statistics` - (Optional) The statistical aggregation method for info-level alerts.                                
-* `threshold` - (Optional) The threshold for info-level alerts.
-* `times` - (Optional) The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
-
-### `escalations-warn`
-
-The warn supports the following: 
-
-* `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts.                                         
-* `statistics` - (Optional) The statistical aggregation method for warn-level alerts.                                
-* `threshold` - (Optional) The threshold for warn-level alerts.
-* `times` - (Optional) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.   
+* `category` - (Optional) The abbreviation of the service name.
+* `contact_groups` - (Optional) Alarm contact group.
+* `dimensions` - (Optional) The dimensions that specify the resources to be associated with the alert rule.
+* `email_subject` - (Optional) The subject of the alert notification email.
+* `effective_interval` - (Optional) The time period during which the alert rule is effective.
+* `no_effective_interval` - (Optional) The time period during which the alert rule is ineffective.
+* `interval` - (Optional, ForceNew) The interval at which Cloud Monitor checks whether the alert rule is triggered. Unit: seconds.
+* `period` - (Optional, Int) The aggregation period of the monitoring data. Unit: seconds. The value is an integral multiple of 60. Default value: `300`.
+* `silence_time` - (Optional, Int) The mute period during which new alerts are not reported even if the alert trigger conditions are met. Unit: seconds. Default value: `86400`, which is equivalent to one day.
+* `webhook` - (Optional) The callback URL.
+* `targets` - (Optional, Set, Available since v1.189.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
+* `escalations` - (Required, Set) Alarm level. See [`escalations`](#escalations) below.
 
 ### `targets`
 
 The targets supports the following:
 
 * `id` - (Optional) The ID of the resource for which alerts are triggered.
-* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
-* `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
 * `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
-
+* `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
+* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
 -> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
+
+### `escalations`
+
+The escalations supports the following:
+
+* `critical` - (Optional) The critical level. See [`critical`](#escalations-critical) below.
+* `info` - (Optional) The info level. See [`info`](#escalations-info) below.
+* `warn` - (Optional) The warn level. See [`warn`](#escalations-warn) below.
+
+### `escalations-critical`
+
+The critical supports the following:
+
+* `comparison_operator` - (Optional) The comparison operator of the threshold for critical-level alerts.
+* `statistics` - (Optional) The statistical aggregation method for critical-level alerts.
+* `threshold` - (Optional) The threshold for critical-level alerts.
+* `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a critical-level alert is triggered.
+
+### `escalations-info`
+
+The info supports the following: 
+
+* `comparison_operator` - (Optional) The comparison operator of the threshold for info-level alerts.
+* `statistics` - (Optional) The statistical aggregation method for info-level alerts.
+* `threshold` - (Optional) The threshold for info-level alerts.
+* `times` - (Optional, Int) The consecutive number of times for which the metric value is measured before a info-level alert is triggered.
+
+### `escalations-warn`
+
+The warn supports the following:
+
+* `comparison_operator` - (Optional) The comparison operator of the threshold for warn-level alerts.
+* `statistics` - (Optional) The statistical aggregation method for warn-level alerts.
+* `threshold` - (Optional) The threshold for warn-level alerts.
+* `times` - (Optional, Intl) The consecutive number of times for which the metric value is measured before a warn-level alert is triggered.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Group Metric Rule. Value as `rule_id`.
+* `id` - The resource ID in terraform of Group Metric Rule. Its value is same as `rule_id`.
 * `status` - The status of Group Metric Rule.
 
 ## Timeouts
