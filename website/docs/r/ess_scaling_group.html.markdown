@@ -121,6 +121,7 @@ The following arguments are supported:
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
 * `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, BALANCE or COST_OPTIMIZED(Available in 1.54.0+).
+* `resource_group_id` - (Optional, ForceNew, Available in v1.211.0+) The ID of the resource group to which you want to add the scaling group.
 * `on_demand_base_capacity` - (Optional, Available in v1.54.0+) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
 * `on_demand_percentage_above_base_capacity` - (Optional, Available in v1.54.0+) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
 * `spot_instance_pools` - (Optional, Available in v1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
