@@ -19,7 +19,6 @@ import (
 
 	"github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 )
 
@@ -614,12 +613,8 @@ func (s *CsService) DescribeCsKubernetesNodePool(id string) (nodePool *cs.NodePo
 		response = raw
 		return err
 	}); err != nil {
-		if e, ok := err.(*common.Error); ok {
-			for _, code := range []int{400} {
-				if e.StatusCode == code {
-					return nil, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
-				}
-			}
+		if IsExpectedErrors(err, []string{"ErrorClusterNotFound", "400"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, DenverdinoAliyungo)
 		}
 		return nil, WrapErrorf(err, DefaultErrorMsg, nodePoolId, "DescribeNodePool", DenverdinoAliyungo)
 	}

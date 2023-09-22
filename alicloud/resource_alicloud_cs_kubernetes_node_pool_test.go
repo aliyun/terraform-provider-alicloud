@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.default"
@@ -161,7 +161,7 @@ func TestAccAlicloudCSKubernetesNodePool_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.with_node_count"
@@ -292,7 +292,7 @@ func TestAccAlicloudCSKubernetesNodePoolWithNodeCount_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.autocaling"
@@ -405,7 +405,7 @@ func TestAccAlicloudCSKubernetesNodePool_autoScaling(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.pre_paid_nodepool"
@@ -493,7 +493,7 @@ func TestAccAlicloudCSKubernetesNodePool_PrePaid(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_Spot(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.spot_nodepool"
@@ -598,7 +598,7 @@ func TestAccAlicloudCSKubernetesNodePool_Spot(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_BYOK(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.default"
@@ -682,7 +682,7 @@ func TestAccAlicloudCSKubernetesNodePool_BYOK(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.default"
