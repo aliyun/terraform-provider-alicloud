@@ -1,36 +1,32 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudAlbListenerAclAttachment() *schema.Resource {
+func resourceAliCloudAlbListenerAclAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlbListenerAclAttachmentCreate,
-		Read:   resourceAlicloudAlbListenerAclAttachmentRead,
-		Delete: resourceAlicloudAlbListenerAclAttachmentDelete,
+		Create: resourceAliCloudAlbListenerAclAttachmentCreate,
+		Read:   resourceAliCloudAlbListenerAclAttachmentRead,
+		Delete: resourceAliCloudAlbListenerAclAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"listener_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
 			"acl_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -40,7 +36,12 @@ func resourceAlicloudAlbListenerAclAttachment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"White", "Black"}, false),
+				ValidateFunc: StringInSlice([]string{"White", "Black"}, false),
+			},
+			"listener_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -50,25 +51,31 @@ func resourceAlicloudAlbListenerAclAttachment() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAlbListenerAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlbListenerAclAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "AssociateAclsWithListener"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["ListenerId"] = d.Get("listener_id")
+	request["AclIds.1"] = d.Get("acl_id")
+
+	request["ClientToken"] = buildClientToken(action)
 
 	request["AclType"] = d.Get("acl_type")
-	request["AclIds"] = []string{d.Get("acl_id").(string)}
-	request["ListenerId"] = d.Get("listener_id")
-	request["ClientToken"] = buildClientToken("AssociateAclsWithListener")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(5*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener", "Conflict.Acl"}) || NeedRetry(err) {
 				wait()
@@ -76,83 +83,103 @@ func resourceAlicloudAlbListenerAclAttachmentCreate(d *schema.ResourceData, meta
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alb_listener_acl_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%s:%s", d.Get("listener_id"), d.Get("acl_id")))
+	d.SetId(fmt.Sprintf("%v:%v", request["ListenerId"], request["AclIds.1"]))
 
-	albService := AlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbListenerStateRefreshFunc(fmt.Sprint(request["ListenerId"]), []string{}))
+	albServiceV2 := AlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Associated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albServiceV2.AlbListenerAclAttachmentStateRefreshFunc(d.Id(), "$.AclConfig.AclRelations[0].Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudAlbListenerAclAttachmentRead(d, meta)
+
+	return resourceAliCloudAlbListenerAclAttachmentRead(d, meta)
 }
-func resourceAlicloudAlbListenerAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudAlbListenerAclAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
-	object, err := albService.DescribeAlbListenerAclAttachment(d.Id())
+	albServiceV2 := AlbServiceV2{client}
+
+	objectRaw, err := albServiceV2.DescribeAlbListenerAclAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_alb_listener_acl_attachment albService.DescribeAlbListenerAclAttachment Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_alb_listener_acl_attachment DescribeAlbListenerAclAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+
+	d.Set("listener_id", objectRaw["ListenerId"])
+	aclConfig1RawObj, _ := jsonpath.Get("$.AclConfig", objectRaw)
+	aclConfig1Raw := make(map[string]interface{})
+	if aclConfig1RawObj != nil {
+		aclConfig1Raw = aclConfig1RawObj.(map[string]interface{})
+	}
+	d.Set("acl_type", aclConfig1Raw["AclType"])
+	aclRelations1RawObj, _ := jsonpath.Get("$.AclConfig.AclRelations[*]", objectRaw)
+	aclRelations1Raw := make([]interface{}, 0)
+	if aclRelations1RawObj != nil {
+		aclRelations1Raw = aclRelations1RawObj.([]interface{})
 	}
 
-	d.Set("listener_id", parts[0])
-	d.Set("acl_id", object["AclId"])
-	d.Set("status", object["Status"])
-	d.Set("acl_type", object["AclType"])
+	aclRelationsChild1Raw := aclRelations1Raw[0].(map[string]interface{})
+	d.Set("status", aclRelationsChild1Raw["Status"])
+	d.Set("acl_id", aclRelationsChild1Raw["AclId"])
+
 	return nil
 }
-func resourceAlicloudAlbListenerAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudAlbListenerAclAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DissociateAclsFromListener"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DissociateAclsFromListener"
-	request := map[string]interface{}{
-		"ListenerId": parts[0],
-	}
-	request["AclIds"] = []string{parts[1]}
-	request["ClientToken"] = buildClientToken("DissociateAclsFromListener")
+	request = make(map[string]interface{})
+	request["ListenerId"] = parts[0]
+	request["AclIds.1"] = parts[1]
+
+	request["ClientToken"] = buildClientToken(action)
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(5*time.Second, 5*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LockFailed", "ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	albService := AlbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albService.AlbListenerStateRefreshFunc(fmt.Sprint(request["ListenerId"]), []string{}))
+	albServiceV2 := AlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, albServiceV2.AlbListenerAclAttachmentStateRefreshFunc(d.Id(), "$.AclConfig.AclRelations[0].Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
