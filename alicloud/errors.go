@@ -159,7 +159,7 @@ func IsExpectedErrors(err error, expectCodes []string) bool {
 
 	if e, ok := err.(*common.Error); ok {
 		for _, code := range expectCodes {
-			if e.Code == code || strings.Contains(e.Message, code) {
+			if e.Code == code || fmt.Sprint(e.StatusCode) == code || strings.Contains(e.Message, code) {
 				return true
 			}
 		}
