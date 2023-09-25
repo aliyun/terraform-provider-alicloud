@@ -241,8 +241,9 @@ for fileName in ${changeFiles[@]}; do
             go run scripts/import_check.go ${exampleFileName}
             mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
             { terraform -chdir=${exampleFileName} plan -out tf.tfplan; } >${exampleTerraformImportCheckTmpLog}
+            planResult=$?
             haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
-            if [[ ${haveDiff} == "" ]]; then
+            if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
               failed=true
               cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
               importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
