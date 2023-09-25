@@ -229,8 +229,9 @@ for fileName in ${changeFiles[@]}; do
           echo -e "\033[32m - apply check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
           # double check
           { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
+          planFailed=$($? -ne 0)
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
-          if [[ ${haveDiff} == "" ]]; then
+          if [[ "$planFailed" == "true" || ${haveDiff} == "" ]]; then
             failed=true
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
             diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
@@ -241,9 +242,9 @@ for fileName in ${changeFiles[@]}; do
             go run scripts/import_check.go ${exampleFileName}
             mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
             { terraform -chdir=${exampleFileName} plan -out tf.tfplan; } >${exampleTerraformImportCheckTmpLog}
-            planResult=$?
+            planFailed=$($? -ne 0)
             haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
-            if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
+            if [[ "$planFailed" == "true" || ${haveDiff} == "" ]]; then
               failed=true
               cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
               importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
