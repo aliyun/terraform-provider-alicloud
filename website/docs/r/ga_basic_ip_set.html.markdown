@@ -20,6 +20,14 @@ For information about Global Accelerator (GA) Basic Ip Set and how to use it, se
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = var.region
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
 resource "alicloud_ga_basic_accelerator" "default" {
   duration               = 1
   pricing_cycle          = "Month"
@@ -32,7 +40,7 @@ resource "alicloud_ga_basic_accelerator" "default" {
 
 resource "alicloud_ga_basic_ip_set" "default" {
   accelerator_id       = alicloud_ga_basic_accelerator.default.id
-  accelerate_region_id = "cn-hangzhou"
+  accelerate_region_id = var.region
   isp_type             = "BGP"
   bandwidth            = "5"
 }
@@ -44,8 +52,8 @@ The following arguments are supported:
 
 * `accelerator_id` - (Required, ForceNew) The ID of the basic GA instance.
 * `accelerate_region_id` - (Required, ForceNew) The ID of the acceleration region.
-* `isp_type` - (Optional, Computed, ForceNew) The line type of the elastic IP address (EIP) in the acceleration region. Default value: `BGP`. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`.
-* `bandwidth` - (Optional, Computed) The bandwidth of the acceleration region. Unit: Mbit/s.
+* `isp_type` - (Optional, ForceNew) The line type of the elastic IP address (EIP) in the acceleration region. Default value: `BGP`. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`.
+* `bandwidth` - (Optional) The bandwidth of the acceleration region. Unit: Mbit/s.
 
 ## Attributes Reference
 

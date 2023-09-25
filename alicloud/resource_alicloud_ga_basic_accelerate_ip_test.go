@@ -20,11 +20,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaBasicAccelerateIp_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicAccelerateIp_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_accelerate_ip.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicAccelerateIpMap)
+	ra := resourceAttrInit(resourceId, resourceAliCloudGaBasicAccelerateIpMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicAccelerateIp")
@@ -32,11 +32,10 @@ func TestAccAlicloudGaBasicAccelerateIp_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicAccelerateIp-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicAccelerateIpBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudGaBasicAccelerateIpBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -63,12 +62,12 @@ func TestAccAlicloudGaBasicAccelerateIp_basic0(t *testing.T) {
 	})
 }
 
-var resourceAlicloudGaBasicAccelerateIpMap = map[string]string{
+var resourceAliCloudGaBasicAccelerateIpMap = map[string]string{
 	"accelerate_ip_address": CHECKSET,
 	"status":                CHECKSET,
 }
 
-func resourceAlicloudGaBasicAccelerateIpBasicDependence(name string) string {
+func resourceAliCloudGaBasicAccelerateIpBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -95,7 +94,7 @@ func resourceAlicloudGaBasicAccelerateIpBasicDependence(name string) string {
 `, name)
 }
 
-func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
+func TestUnitAliCloudGaBasicAccelerateIp(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_basic_accelerate_ip"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_basic_accelerate_ip"].Schema).Data(nil, nil)
@@ -159,7 +158,7 @@ func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicAccelerateIpCreate(dInit, rawClient)
+	err = resourceAliCloudGaBasicAccelerateIpCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -182,7 +181,7 @@ func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAccelerateIpCreate(dInit, rawClient)
+		err := resourceAliCloudGaBasicAccelerateIpCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -227,7 +226,7 @@ func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAccelerateIpRead(dExisted, rawClient)
+		err := resourceAliCloudGaBasicAccelerateIpRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -246,7 +245,7 @@ func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicAccelerateIpDelete(dExisted, rawClient)
+	err = resourceAliCloudGaBasicAccelerateIpDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -274,7 +273,7 @@ func TestUnitAlicloudGaBasicAccelerateIp(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAccelerateIpDelete(dExisted, rawClient)
+		err := resourceAliCloudGaBasicAccelerateIpDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

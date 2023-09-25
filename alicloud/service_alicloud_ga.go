@@ -1063,6 +1063,9 @@ func (s *GaService) DescribeGaBasicEndpointGroup(id string) (object map[string]i
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpointGroup", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1072,10 +1075,6 @@ func (s *GaService) DescribeGaBasicEndpointGroup(id string) (object map[string]i
 	}
 
 	object = v.(map[string]interface{})
-
-	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpointGroup", id)), NotFoundMsg, ProviderERROR)
-	}
 
 	return object, nil
 }
@@ -1132,6 +1131,9 @@ func (s *GaService) DescribeGaBasicIpSet(id string) (object map[string]interface
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.IpSet"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicIpSet", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1141,10 +1143,6 @@ func (s *GaService) DescribeGaBasicIpSet(id string) (object map[string]interface
 	}
 
 	object = v.(map[string]interface{})
-
-	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicIpSet", id)), NotFoundMsg, ProviderERROR)
-	}
 
 	return object, nil
 }
@@ -1201,6 +1199,9 @@ func (s *GaService) DescribeGaBasicAccelerateIp(id string) (object map[string]in
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.AccelerateIpId"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicAccelerateIp", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1210,10 +1211,6 @@ func (s *GaService) DescribeGaBasicAccelerateIp(id string) (object map[string]in
 	}
 
 	object = v.(map[string]interface{})
-
-	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicAccelerateIp", id)), NotFoundMsg, ProviderERROR)
-	}
 
 	return object, nil
 }
@@ -1275,6 +1272,9 @@ func (s *GaService) DescribeGaBasicEndpoint(id string) (object map[string]interf
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.EndPoints"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpoint", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1284,10 +1284,6 @@ func (s *GaService) DescribeGaBasicEndpoint(id string) (object map[string]interf
 	}
 
 	object = v.(map[string]interface{})
-
-	if object["State"] == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BasicEndpoint", id)), NotFoundMsg, ProviderERROR)
-	}
 
 	return object, nil
 }

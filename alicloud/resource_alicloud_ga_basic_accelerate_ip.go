@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaBasicAccelerateIp() *schema.Resource {
+func resourceAliCloudGaBasicAccelerateIp() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaBasicAccelerateIpCreate,
-		Read:   resourceAlicloudGaBasicAccelerateIpRead,
-		Delete: resourceAlicloudGaBasicAccelerateIpDelete,
+		Create: resourceAliCloudGaBasicAccelerateIpCreate,
+		Read:   resourceAliCloudGaBasicAccelerateIpRead,
+		Delete: resourceAliCloudGaBasicAccelerateIpDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,7 +45,7 @@ func resourceAlicloudGaBasicAccelerateIp() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaBasicAccelerateIpCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAccelerateIpCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -88,10 +88,10 @@ func resourceAlicloudGaBasicAccelerateIpCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaBasicAccelerateIpRead(d, meta)
+	return resourceAliCloudGaBasicAccelerateIpRead(d, meta)
 }
 
-func resourceAlicloudGaBasicAccelerateIpRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAccelerateIpRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -112,7 +112,7 @@ func resourceAlicloudGaBasicAccelerateIpRead(d *schema.ResourceData, meta interf
 	return nil
 }
 
-func resourceAlicloudGaBasicAccelerateIpDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAccelerateIpDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteBasicAccelerateIp"
@@ -146,7 +146,7 @@ func resourceAlicloudGaBasicAccelerateIpDelete(d *schema.ResourceData, meta inte
 	addDebug(action, response, request)
 
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"NotExist.AccelerateIp"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

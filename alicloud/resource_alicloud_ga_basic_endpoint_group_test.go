@@ -21,11 +21,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaBasicEndpointGroup_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicEndpointGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_endpoint_group.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicEndpointGroupMap)
+	ra := resourceAttrInit(resourceId, resourceAliCloudGaBasicEndpointGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicEndpointGroup")
@@ -33,11 +33,10 @@ func TestAccAlicloudGaBasicEndpointGroup_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%s-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaBasicEndpointGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicEndpointGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -94,11 +93,14 @@ func TestAccAlicloudGaBasicEndpointGroup_basic0(t *testing.T) {
 	})
 }
 
-var resourceAlicloudGaBasicEndpointGroupMap = map[string]string{
-	"status": CHECKSET,
+var resourceAliCloudGaBasicEndpointGroupMap = map[string]string{
+	"endpoint_type":        CHECKSET,
+	"endpoint_address":     CHECKSET,
+	"endpoint_sub_address": CHECKSET,
+	"status":               CHECKSET,
 }
 
-func AlicloudGaBasicEndpointGroupBasicDependence0(name string) string {
+func AliCloudGaBasicEndpointGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -131,7 +133,7 @@ func AlicloudGaBasicEndpointGroupBasicDependence0(name string) string {
 `, name)
 }
 
-func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
+func TestUnitAliCloudGaBasicEndpointGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_basic_endpoint_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_basic_endpoint_group"].Schema).Data(nil, nil)
@@ -202,7 +204,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicEndpointGroupCreate(dInit, rawClient)
+	err = resourceAliCloudGaBasicEndpointGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -225,7 +227,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicEndpointGroupCreate(dInit, rawClient)
+		err := resourceAliCloudGaBasicEndpointGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -252,7 +254,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicEndpointGroupUpdate(dExisted, rawClient)
+	err = resourceAliCloudGaBasicEndpointGroupUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -296,7 +298,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicEndpointGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudGaBasicEndpointGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -340,7 +342,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicEndpointGroupRead(dExisted, rawClient)
+		err := resourceAliCloudGaBasicEndpointGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -360,7 +362,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 		}
 	})
 	dExisted, _ = schema.InternalMap(p["alicloud_ga_basic_endpoint_group"].Schema).Data(dInit.State(), diff)
-	err = resourceAlicloudGaBasicEndpointGroupDelete(dExisted, rawClient)
+	err = resourceAliCloudGaBasicEndpointGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -385,7 +387,7 @@ func TestUnitAlicloudGaBasicEndpointGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicEndpointGroupDelete(dExisted, rawClient)
+		err := resourceAliCloudGaBasicEndpointGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

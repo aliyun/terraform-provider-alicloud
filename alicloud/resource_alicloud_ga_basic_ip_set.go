@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudGaBasicIpSet() *schema.Resource {
+func resourceAliCloudGaBasicIpSet() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaBasicIpSetCreate,
-		Read:   resourceAlicloudGaBasicIpSetRead,
-		Update: resourceAlicloudGaBasicIpSetUpdate,
-		Delete: resourceAlicloudGaBasicIpSetDelete,
+		Create: resourceAliCloudGaBasicIpSetCreate,
+		Read:   resourceAliCloudGaBasicIpSetRead,
+		Update: resourceAliCloudGaBasicIpSetUpdate,
+		Delete: resourceAliCloudGaBasicIpSetDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -39,8 +39,8 @@ func resourceAlicloudGaBasicIpSet() *schema.Resource {
 			"isp_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2"}, false),
 			},
 			"bandwidth": {
@@ -56,7 +56,7 @@ func resourceAlicloudGaBasicIpSet() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaBasicIpSetCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicIpSetCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -107,10 +107,10 @@ func resourceAlicloudGaBasicIpSetCreate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaBasicIpSetRead(d, meta)
+	return resourceAliCloudGaBasicIpSetRead(d, meta)
 }
 
-func resourceAlicloudGaBasicIpSetRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicIpSetRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -132,7 +132,7 @@ func resourceAlicloudGaBasicIpSetRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAlicloudGaBasicIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicIpSetUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -182,10 +182,10 @@ func resourceAlicloudGaBasicIpSetUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	return resourceAlicloudGaBasicIpSetRead(d, meta)
+	return resourceAliCloudGaBasicIpSetRead(d, meta)
 }
 
-func resourceAlicloudGaBasicIpSetDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicIpSetDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteBasicIpSet"
@@ -219,6 +219,9 @@ func resourceAlicloudGaBasicIpSetDelete(d *schema.ResourceData, meta interface{}
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.IpSet"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
