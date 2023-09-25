@@ -224,9 +224,9 @@ for fileName in ${changeFiles[@]}; do
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "\033[31m - apply check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[31m - apply check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
         else
-          echo "\033[32m - apply check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[32m - apply check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
           # double check
           { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
@@ -234,9 +234,9 @@ for fileName in ${changeFiles[@]}; do
             failed=true
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
             diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
-            echo "\033[31m - apply diff check: failed. \033[0m ${diffs} " | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[31m - apply diff check: fail.\033[0m ${diffs} " | tee -a ${docsExampleTestRunResultLog}
           else
-            echo "\033[32m - apply diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[32m - apply diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
             # import check
             go run scripts/import_check.go ${exampleFileName}
             mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
@@ -246,9 +246,9 @@ for fileName in ${changeFiles[@]}; do
               failed=true
               cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
               importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
-              echo "\033[31m - import diff check: failed. \033[0m${importDiff}" | tee -a ${docsExampleTestRunResultLog}
+              echo "\033[31m - import diff check: fail.\033[0m${importDiff}" | tee -a ${docsExampleTestRunResultLog}
             else
-              echo "\033[32m - import diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+              echo "\033[32m - import diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
               { terraform -chdir=${exampleFileName} apply tf.tfplan; } 2>${exampleTerraformImportCheckErrorTmpLog} >>${docsExampleTestRunLog}
               if [ $? -ne 0 ]; then
                 failed=true
@@ -257,9 +257,9 @@ for fileName in ${changeFiles[@]}; do
                 if [[ ${sdkError} == "" ]]; then
                   cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
                 fi
-                echo "\033[31m - import apply check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+                echo "\033[31m - import apply check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
               else
-                echo "\033[32m - import apply check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+                echo "\033[32m - import apply check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
               fi
             fi
           fi
@@ -284,10 +284,10 @@ for fileName in ${changeFiles[@]}; do
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "\033[31m - destroy check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[31m - destroy check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
           echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
         else
-          echo "\033[32m - destroy check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[32m - destroy check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
           # check diff
           { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
@@ -295,9 +295,9 @@ for fileName in ${changeFiles[@]}; do
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
             diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
-            echo "\033[31m - destroy diff check: failed. \033[0m ${diffs}" | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[31m - destroy diff check: fail.\033[0m ${diffs}" | tee -a ${docsExampleTestRunResultLog}
           else
-            echo "\033[32m - destroy diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[32m - destroy diff check: success.\033[0m" | tee -a ${docsExampleTestRunResultLog}
           fi
           if [[ "${failed}" = "true" ]]; then
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
