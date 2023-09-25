@@ -147,6 +147,8 @@ echo -e "finished!"
 
 exampleTerraformErrorTmpLog=terraform-example.error.temp.log
 exampleTerraformDoubleCheckTmpLog=terraform-example.double.check.log
+exampleTerraformImportCheckTmpLog=terraform-example.import.check.log
+exampleTerraformImportCheckErrorTmpLog=terraform-example.import.error.log
 docsExampleTestRunLog=terraform-example.run.log
 docsExampleTestRunResultLog=terraform-example.run.result.log
 declare -A allExample
@@ -210,48 +212,94 @@ for fileName in ${changeFiles[@]}; do
       #  end
       if [[ $line == '```' && "${begin}" = "true" ]]; then
         begin=false
+        failed=false
         echo "=== RUN   ${exampleFileName} APPLY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
         #    terraform apply
         { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan && terraform -chdir=${exampleFileName} apply -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
 
         if [ $? -ne 0 ]; then
+          failed=true
           cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
           sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+          echo "apply check: failed" | tee -a ${docsExampleTestRunResultLog}
         else
+          echo "apply check: success" | tee -a ${docsExampleTestRunResultLog}
           # double check
           { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
           if [[ ${haveDiff} == "" ]]; then
+            failed=true
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-            echo "--Check again. Resource diff information exists in the template and status file."
-            echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "Plan: ")
+            echo "apply diff check: failed. ${diffs}" | tee -a ${docsExampleTestRunResultLog}
           else
-            echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+            echo "apply diff check: success" | tee -a ${docsExampleTestRunResultLog}
+            # import check
+            go run scripts/import_check.go ${exampleFileName}
+            mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
+            { terraform -chdir=${exampleFileName} plan -out tf.tfplan; } >${exampleTerraformImportCheckTmpLog}
+            haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
+            if [[ ${haveDiff} == "" ]]; then
+              failed=true
+              cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
+              importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "Plan: ")
+              echo "import diff check: failed. ${importDiff}" | tee -a ${docsExampleTestRunResultLog}
+            else
+              echo "import diff check: success" | tee -a ${docsExampleTestRunResultLog}
+              { terraform -chdir=${exampleFileName} apply tf.tfplan; } 2>${exampleTerraformImportCheckErrorTmpLog} >>${docsExampleTestRunLog}
+              if [ $? -ne 0 ]; then
+                failed=true
+                cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunLog}
+                sdkError=$(cat ${exampleTerraformImportCheckErrorTmpLog} | grep "ERROR]:")
+                if [[ ${sdkError} == "" ]]; then
+                  cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
+                fi
+                echo "import apply check: failed" | tee -a ${docsExampleTestRunResultLog}
+              else
+                echo "import apply check: success" | tee -a ${docsExampleTestRunResultLog}
+              fi
+            fi
           fi
         fi
+        if [[ "${failed}" = "true" ]]; then
+          echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+        else
+          echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+        fi
+        mv ${exampleFileName}/terraform.tfstate.bak ${exampleFileName}/terraform.tfstate
+        rm -rf ${exampleFileName}/import.tf
         # run destory
+        failed=false
         echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
         # check diff
         { terraform -chdir=${exampleFileName} init && terraform -chdir=${exampleFileName} plan -destroy && terraform -chdir=${exampleFileName} apply -destroy -auto-approve; } 2>${exampleTerraformErrorTmpLog} >>${docsExampleTestRunLog}
 
         if [ $? -ne 0 ]; then
+          failed=true
           cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunLog}
           sdkError=$(cat ${exampleTerraformErrorTmpLog} | grep "ERROR]:")
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
+          echo "destroy check: failed" | tee -a ${docsExampleTestRunResultLog}
           echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
         else
+          echo "destroy check: success" | tee -a ${docsExampleTestRunResultLog}
           # check diff
           { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
           if [[ ${haveDiff} == "" ]]; then
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-            echo "--Check again. Resource diff information exists in the template and status file."
+            echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
+            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "Plan: ")
+            echo "destroy diff check: failed. ${diffs}" | tee -a ${docsExampleTestRunResultLog}
+          else
+            echo "destroy diff check: success" | tee -a ${docsExampleTestRunResultLog}
+          fi
+          if [[ "${failed}" = "true" ]]; then
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
           else
             echo "--- PASS: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
