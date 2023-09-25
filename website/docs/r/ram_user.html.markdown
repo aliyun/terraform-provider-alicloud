@@ -29,7 +29,6 @@ resource "alicloud_ram_user" "user" {
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
-  force        = true
 }
 ```
 

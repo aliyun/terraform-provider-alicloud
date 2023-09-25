@@ -51,7 +51,6 @@ func resourceAlicloudRamUser() *schema.Resource {
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 		},
 	}

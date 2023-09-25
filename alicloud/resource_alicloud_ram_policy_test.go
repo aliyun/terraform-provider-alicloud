@@ -104,7 +104,7 @@ func testSweepRamPolicies(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRAMPolicy_basic(t *testing.T) {
+func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)
@@ -132,6 +132,7 @@ func TestAccAlicloudRAMPolicy_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
 						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
+						"force":       "true",
 					}),
 				),
 			},
@@ -147,6 +148,7 @@ func TestAccAlicloudRAMPolicy_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
 						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
+						"force":       "true",
 					}),
 				),
 			},
@@ -179,7 +181,7 @@ func TestAccAlicloudRAMPolicy_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRAMPolicy_multi(t *testing.T) {
+func TestAccAliCloudRAMPolicy_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default.9"
 	ra := resourceAttrInit(resourceId, ramPolicyMap)
@@ -218,7 +220,6 @@ var ramPolicyMap = map[string]string{
 	"description":      "this is a policy test",
 	"version":          "1",
 	"attachment_count": CHECKSET,
-	"force":            "true",
 	"statement.#":      "1",
 }
 

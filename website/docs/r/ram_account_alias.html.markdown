@@ -11,7 +11,7 @@ description: |-
 
 Provides a RAM cloud account alias.
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 

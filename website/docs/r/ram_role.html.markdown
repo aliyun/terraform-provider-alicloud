@@ -39,7 +39,6 @@ resource "alicloud_ram_role" "role" {
   }
   EOF
   description = "this is a role test."
-  force       = true
 }
 ```
 ## Argument Reference

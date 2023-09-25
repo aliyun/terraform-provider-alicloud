@@ -37,7 +37,6 @@ resource "alicloud_ram_role" "role" {
     }
     EOF
   description = "this is a role test."
-  force       = true
 }
 
 resource "alicloud_ram_policy" "policy" {
@@ -61,7 +60,6 @@ resource "alicloud_ram_policy" "policy" {
   }
   EOF
   description = "this is a policy test"
-  force       = true
 }
 
 resource "alicloud_ram_role_policy_attachment" "attach" {

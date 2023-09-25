@@ -89,7 +89,6 @@ func resourceAlicloudRamRole() *schema.Resource {
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 			"arn": {
 				Type:     schema.TypeString,
