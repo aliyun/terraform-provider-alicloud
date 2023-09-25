@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaBasicEndpoint_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicEndpoint_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_endpoint.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicEndpointMap)
+	ra := resourceAttrInit(resourceId, resourceAliCloudGaBasicEndpointMap)
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
 		"alicloud": func() (terraform.ResourceProvider, error) {
@@ -28,11 +28,10 @@ func TestAccAlicloudGaBasicEndpoint_basic0(t *testing.T) {
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicEndpoint-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicEndpointBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudGaBasicEndpointBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
@@ -47,6 +46,7 @@ func TestAccAlicloudGaBasicEndpoint_basic0(t *testing.T) {
 					"endpoint_address":          "${alicloud_ecs_network_interface.default.id}",
 					"endpoint_sub_address_type": "secondary",
 					"endpoint_sub_address":      "192.168.0.1",
+					"endpoint_zone_id":          "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"basic_endpoint_name":       name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -58,6 +58,7 @@ func TestAccAlicloudGaBasicEndpoint_basic0(t *testing.T) {
 						"endpoint_address":          CHECKSET,
 						"endpoint_sub_address_type": "secondary",
 						"endpoint_sub_address":      "192.168.0.1",
+						"endpoint_zone_id":          CHECKSET,
 						"basic_endpoint_name":       name,
 					}),
 				),
@@ -145,11 +146,12 @@ func testAccCheckGaBasicEndpointExistsWithProviders(n string, res map[string]int
 	}
 }
 
-var resourceAlicloudGaBasicEndpointMap = map[string]string{
-	"status": CHECKSET,
+var resourceAliCloudGaBasicEndpointMap = map[string]string{
+	"endpoint_id": CHECKSET,
+	"status":      CHECKSET,
 }
 
-func resourceAlicloudGaBasicEndpointBasicDependence(name string) string {
+func resourceAliCloudGaBasicEndpointBasicDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"

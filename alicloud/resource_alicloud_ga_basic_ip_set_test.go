@@ -21,11 +21,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaBasicIpSet_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicIpSet_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_ip_set.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicIpSetMap)
+	ra := resourceAttrInit(resourceId, resourceAliCloudGaBasicIpSetMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicIpSet")
@@ -33,11 +33,10 @@ func TestAccAlicloudGaBasicIpSet_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%s-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaBasicIpSetBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicIpSetBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -78,11 +77,13 @@ func TestAccAlicloudGaBasicIpSet_basic0(t *testing.T) {
 	})
 }
 
-var resourceAlicloudGaBasicIpSetMap = map[string]string{
-	"status": CHECKSET,
+var resourceAliCloudGaBasicIpSetMap = map[string]string{
+	"isp_type":  CHECKSET,
+	"bandwidth": CHECKSET,
+	"status":    CHECKSET,
 }
 
-func AlicloudGaBasicIpSetBasicDependence0(name string) string {
+func AliCloudGaBasicIpSetBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -102,7 +103,7 @@ func AlicloudGaBasicIpSetBasicDependence0(name string) string {
 `, name)
 }
 
-func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
+func TestUnitAliCloudGaBasicIpSet(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_basic_ip_set"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_basic_ip_set"].Schema).Data(nil, nil)
@@ -167,7 +168,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicIpSetCreate(dInit, rawClient)
+	err = resourceAliCloudGaBasicIpSetCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -190,7 +191,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicIpSetCreate(dInit, rawClient)
+		err := resourceAliCloudGaBasicIpSetCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -217,7 +218,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicIpSetUpdate(dExisted, rawClient)
+	err = resourceAliCloudGaBasicIpSetUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -254,7 +255,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicIpSetUpdate(dExisted, rawClient)
+		err := resourceAliCloudGaBasicIpSetUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -298,7 +299,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicIpSetRead(dExisted, rawClient)
+		err := resourceAliCloudGaBasicIpSetRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -318,7 +319,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 		}
 	})
 	dExisted, _ = schema.InternalMap(p["alicloud_ga_basic_ip_set"].Schema).Data(dInit.State(), diff)
-	err = resourceAlicloudGaBasicIpSetDelete(dExisted, rawClient)
+	err = resourceAliCloudGaBasicIpSetDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -343,7 +344,7 @@ func TestUnitAlicloudGaBasicIpSet(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicIpSetDelete(dExisted, rawClient)
+		err := resourceAliCloudGaBasicIpSetDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
