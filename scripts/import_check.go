@@ -11,7 +11,6 @@ import (
 
 func main() {
 	stateFilePath := strings.TrimSpace(os.Args[1])
-	log.Println("reading the state file to checking import block")
 	stateContent, err := os.ReadFile(stateFilePath + "/terraform.tfstate")
 	if err != nil {
 		log.Println("reading the state file failed, error: ", err)
@@ -46,7 +45,6 @@ import {
 		}
 	}
 	os.WriteFile(stateFilePath+"/import.tf", appendBuf.Bytes(), 0644)
-	log.Println("export the state to import block success.")
 }
 
 type TerraformState struct {

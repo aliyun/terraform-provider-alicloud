@@ -224,19 +224,19 @@ for fileName in ${changeFiles[@]}; do
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "apply check: failed" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[31m - apply check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
         else
-          echo "apply check: success" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[32m - apply check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
           # double check
           { terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
           if [[ ${haveDiff} == "" ]]; then
             failed=true
-            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "Plan: ")
-            echo "apply diff check: failed. ${diffs}" | tee -a ${docsExampleTestRunResultLog}
+            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
+            echo "\033[31m - apply diff check: failed. \033[0m ${diffs} " | tee -a ${docsExampleTestRunResultLog}
           else
-            echo "apply diff check: success" | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[32m - apply diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
             # import check
             go run scripts/import_check.go ${exampleFileName}
             mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
@@ -244,11 +244,11 @@ for fileName in ${changeFiles[@]}; do
             haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
             if [[ ${haveDiff} == "" ]]; then
               failed=true
-              cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
-              importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "Plan: ")
-              echo "import diff check: failed. ${importDiff}" | tee -a ${docsExampleTestRunResultLog}
+              cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+              importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
+              echo "\033[31m - import diff check: failed. \033[0m${importDiff}" | tee -a ${docsExampleTestRunResultLog}
             else
-              echo "import diff check: success" | tee -a ${docsExampleTestRunResultLog}
+              echo "\033[32m - import diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
               { terraform -chdir=${exampleFileName} apply tf.tfplan; } 2>${exampleTerraformImportCheckErrorTmpLog} >>${docsExampleTestRunLog}
               if [ $? -ne 0 ]; then
                 failed=true
@@ -257,9 +257,9 @@ for fileName in ${changeFiles[@]}; do
                 if [[ ${sdkError} == "" ]]; then
                   cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
                 fi
-                echo "import apply check: failed" | tee -a ${docsExampleTestRunResultLog}
+                echo "\033[31m - import apply check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
               else
-                echo "import apply check: success" | tee -a ${docsExampleTestRunResultLog}
+                echo "\033[32m - import apply check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
               fi
             fi
           fi
@@ -284,20 +284,20 @@ for fileName in ${changeFiles[@]}; do
           if [[ ${sdkError} == "" ]]; then
             cat ${exampleTerraformErrorTmpLog} | tee -a ${docsExampleTestRunResultLog}
           fi
-          echo "destroy check: failed" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[31m - destroy check: failed. \033[0m" | tee -a ${docsExampleTestRunResultLog}
           echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
         else
-          echo "destroy check: success" | tee -a ${docsExampleTestRunResultLog}
+          echo "\033[32m - destroy check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
           # check diff
           { terraform -chdir=${exampleFileName} plan -destroy; } >${exampleTerraformDoubleCheckTmpLog}
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
           if [[ ${haveDiff} == "" ]]; then
-            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunResultLog} ${docsExampleTestRunLog}
+            cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
-            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "Plan: ")
-            echo "destroy diff check: failed. ${diffs}" | tee -a ${docsExampleTestRunResultLog}
+            diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
+            echo "\033[31m - destroy diff check: failed. \033[0m ${diffs}" | tee -a ${docsExampleTestRunResultLog}
           else
-            echo "destroy diff check: success" | tee -a ${docsExampleTestRunResultLog}
+            echo "\033[32m - destroy diff check: success. \033[0m" | tee -a ${docsExampleTestRunResultLog}
           fi
           if [[ "${failed}" = "true" ]]; then
             echo "--- FAIL: ${exampleFileName}" | tee -a ${docsExampleTestRunResultLog}
@@ -320,13 +320,17 @@ done
 aliyun oss cp ${docsExampleTestRunResultLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunResultLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION} --meta x-oss-object-acl:public-read
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check result log  to oss failed, please checking it.\033[0m"
-  exit 1
 fi
 aliyun oss cp ${docsExampleTestRunLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${docsExampleTestRunLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${exampleTerraformErrorTmpLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTerraformErrorTmpLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${exampleTerraformDoubleCheckTmpLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTerraformDoubleCheckTmpLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${exampleTerraformImportCheckTmpLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTerraformImportCheckTmpLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
+aliyun oss cp ${exampleTerraformImportCheckErrorTmpLog} oss://${OSS_BUCKET_NAME}/${ossObjectPath}/${exampleTerraformImportCheckErrorTmpLog} -f --access-key-id ${ALICLOUD_ACCESS_KEY_FOR_SERVICE} --access-key-secret ${ALICLOUD_SECRET_KEY_FOR_SERVICE} --region ${OSS_BUCKET_REGION}
+
 if [[ "$?" != "0" ]]; then
   echo -e "\033[31m uploading the pr ${prNum} example check log  to oss failed, please checking it.\033[0m"
-  exit 1
 fi
+
 docsExampleTestRunResult=$(cat ${docsExampleTestRunResultLog} | grep "FAIL")
 if [[ ${docsExampleTestRunResult} != "" ]]; then
   echo -e "\033[33m the pr ${prNum} example test check job has failed!\033[0m"
