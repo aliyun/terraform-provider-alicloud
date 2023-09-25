@@ -112,7 +112,7 @@ func testSweepRamGroups(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRAMGroup_basic(t *testing.T) {
+func TestAccAliCloudRAMGroup_basic(t *testing.T) {
 	var v *ram.GetGroupResponse
 	resourceId := "alicloud_ram_group.default"
 	ra := resourceAttrInit(resourceId, ramGroupBasicMap)
@@ -212,7 +212,7 @@ func TestAccAlicloudRAMGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRAMGroup_multi(t *testing.T) {
+func TestAccAliCloudRAMGroup_multi(t *testing.T) {
 	var v *ram.GetGroupResponse
 	resourceId := "alicloud_ram_group.default.9"
 	ra := resourceAttrInit(resourceId, ramGroupBasicMap)
@@ -253,7 +253,6 @@ func TestAccAlicloudRAMGroup_multi(t *testing.T) {
 
 var ramGroupBasicMap = map[string]string{
 	"comments": "",
-	"force":    CHECKSET,
 }
 
 func resourceRamGroupConfigDependence(name string) string {

@@ -109,7 +109,7 @@ func testSweepRamRoles(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRAMRole_basic(t *testing.T) {
+func TestAccAliCloudRAMRole_basic(t *testing.T) {
 	var v *ram.GetRoleResponse
 	resourceId := "alicloud_ram_role.default"
 	ra := resourceAttrInit(resourceId, ramRoleMap)
@@ -186,7 +186,7 @@ func TestAccAlicloudRAMRole_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRAMRole_multi(t *testing.T) {
+func TestAccAliCloudRAMRole_multi(t *testing.T) {
 	var v *ram.GetRoleResponse
 	resourceId := "alicloud_ram_role.default.9"
 	ra := resourceAttrInit(resourceId, ramRoleMap)
@@ -244,7 +244,7 @@ func testAccRamRoleCreateConfig(rand int) string {
 	}`, defaultRegionToTest, rand)
 }
 
-func TestAccAlicloudRAMRole_Description(t *testing.T) {
+func TestAccAliCloudRAMRole_Description(t *testing.T) {
 	var v *ram.GetRoleResponse
 	resourceId := "alicloud_ram_role.default"
 	ra := resourceAttrInit(resourceId, ramRoleMap)

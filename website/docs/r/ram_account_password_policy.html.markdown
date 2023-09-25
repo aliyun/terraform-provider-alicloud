@@ -13,7 +13,7 @@ Provides a RAM password policy configuration for entire account. Only one resour
 
 -> **NOTE:** This resource overwrites an existing configuration. During action `terraform destroy` it sets values the same as defaults for this resource (it does not preserve any preexisted configuration).
 
--> **NOTE:** Available since v1.46.0+.
+-> **NOTE:** Available since v1.46.0.
 
 ## Example Usage
 

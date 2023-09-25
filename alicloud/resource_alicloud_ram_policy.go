@@ -76,7 +76,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 			"rotate_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "None",
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"DeleteOldestNonDefaultVersionWhenLimitExceeded", "None"}, false),
 			},
 			"version_id": {
@@ -125,7 +125,6 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 			"type": {
 				Type:     schema.TypeString,

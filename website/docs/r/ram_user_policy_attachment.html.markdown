@@ -11,7 +11,7 @@ description: |-
 
 Provides a RAM User Policy attachment resource. 
 
--> **NOTE:** Available since v1.0.0+.
+-> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
@@ -23,7 +23,6 @@ resource "alicloud_ram_user" "user" {
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
-  force        = true
 }
 
 resource "alicloud_ram_policy" "policy" {
@@ -47,7 +46,6 @@ resource "alicloud_ram_policy" "policy" {
   }
   EOF
   description = "this is a policy test"
-  force       = true
 }
 
 resource "alicloud_ram_user_policy_attachment" "attach" {

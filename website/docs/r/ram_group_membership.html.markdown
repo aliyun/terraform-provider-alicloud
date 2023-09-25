@@ -22,7 +22,6 @@ variable "name" {
 resource "alicloud_ram_group" "group" {
   name     = format("%sgroup", var.name)
   comments = "this is a group comments."
-  force    = true
 }
 
 resource "alicloud_ram_user" "user" {
@@ -31,7 +30,6 @@ resource "alicloud_ram_user" "user" {
   mobile       = "86-18688888888"
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
-  force        = true
 }
 
 resource "alicloud_ram_user" "user1" {
@@ -40,7 +38,6 @@ resource "alicloud_ram_user" "user1" {
   mobile       = "86-18688888889"
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
-  force        = true
 }
 
 resource "alicloud_ram_group_membership" "membership" {

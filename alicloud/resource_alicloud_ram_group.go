@@ -32,7 +32,6 @@ func resourceAlicloudRamGroup() *schema.Resource {
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
 			},
 		},
 	}

@@ -20,7 +20,6 @@ Provides a RAM Group Policy attachment resource.
 resource "alicloud_ram_group" "group" {
   name     = "groupName"
   comments = "this is a group comments."
-  force    = true
 }
 
 resource "alicloud_ram_policy" "policy" {
@@ -44,7 +43,6 @@ resource "alicloud_ram_policy" "policy" {
     }
   EOF
   description = "this is a policy test"
-  force       = true
 }
 
 resource "alicloud_ram_group_policy_attachment" "attach" {
