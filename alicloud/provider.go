@@ -943,6 +943,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_subnet":                        resourceAliCloudVpcVswitch(),
 			"alicloud_vswitch":                       resourceAliCloudVpcVswitch(),
 			"alicloud_route_entry":                   resourceAliyunRouteEntry(),
+			"alicloud_vpc_route_entry":               resourceAliCloudVpcRouteEntry(),
 			"alicloud_route_table":                   resourceAliCloudVpcRouteTable(),
 			"alicloud_route_table_attachment":        resourceAliyunRouteTableAttachment(),
 			"alicloud_snat_entry":                    resourceAlicloudSnatEntry(),
