@@ -33,7 +33,7 @@ func init() {
 func testSweepConfigAggregateCompliancePack(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -182,10 +182,10 @@ func testSweepConfigAggregateCompliancePack(region string) error {
 	return nil
 }
 
-func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
+func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_compliance_pack.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap0)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateCompliancePackMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateCompliancePack")
@@ -193,13 +193,11 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateCompliancePackBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -208,58 +206,31 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
 					"aggregate_compliance_pack_name": name,
-					"compliance_pack_template_id":    "${data.alicloud_config_compliance_packs.example.packs.0.compliance_pack_template_id}",
+					"description":                    name,
+					"risk_level":                     "1",
 					"config_rules": []map[string]interface{}{
 						{
-							"managed_rule_identifier": "ecs-snapshot-retention-days",
-							"config_rule_parameters": []map[string]interface{}{
-								{
-									"parameter_name":  "days",
-									"parameter_value": "7",
-								},
-							},
+							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
 						},
 					},
-					"description": name,
-					"risk_level":  "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"aggregator_id":                  CHECKSET,
 						"aggregate_compliance_pack_name": name,
-						"compliance_pack_template_id":    CHECKSET,
-						"config_rules.#":                 "1",
 						"description":                    name,
 						"risk_level":                     "1",
+						"config_rules.#":                 "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"config_rules": []map[string]interface{}{
-						{
-							"managed_rule_identifier": "ecs-snapshot-retention-days",
-							"config_rule_parameters": []map[string]interface{}{
-								{
-									"parameter_name":  "days",
-									"parameter_value": "7",
-								},
-							},
-						},
-						{
-							"managed_rule_identifier": "ecs-instance-expired-check",
-							"config_rule_parameters": []map[string]interface{}{
-								{
-									"parameter_name":  "days",
-									"parameter_value": "60",
-								},
-							},
-						},
-					},
+					"aggregate_compliance_pack_name": name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"config_rules.#": "2",
+						"aggregate_compliance_pack_name": name + "_update",
 					}),
 				),
 			},
@@ -295,15 +266,40 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 								},
 							},
 						},
+						{
+							"managed_rule_identifier": "ecs-instance-expired-check",
+							"config_rule_parameters": []map[string]interface{}{
+								{
+									"parameter_name":  "days",
+									"parameter_value": "60",
+								},
+							},
+						},
 					},
-					"description": name,
-					"risk_level":  "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"config_rules.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"config_rules": []map[string]interface{}{
+						{
+							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_parameters": []map[string]interface{}{
+								{
+									"parameter_name":  "days",
+									"parameter_value": "7",
+								},
+							},
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"config_rules.#": "1",
-						"description":    name,
-						"risk_level":     "1",
 					}),
 				),
 			},
@@ -311,10 +307,10 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
+func TestAccAliCloudConfigAggregateCompliancePack_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_compliance_pack.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap0)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateCompliancePackMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateCompliancePack")
@@ -322,13 +318,11 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateCompliancePackBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -337,122 +331,40 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
 					"aggregate_compliance_pack_name": name,
-					"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
+					"description":                    name,
+					"risk_level":                     "1",
+					"compliance_pack_template_id":    "${data.alicloud_config_compliance_packs.default.packs.0.compliance_pack_template_id}",
 					"config_rules": []map[string]interface{}{
 						{
-							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
+							"managed_rule_identifier": "ecs-snapshot-retention-days",
+							"config_rule_parameters": []map[string]interface{}{
+								{
+									"parameter_name":  "days",
+									"parameter_value": "7",
+								},
+							},
 						},
 					},
-					"description": name,
-					"risk_level":  "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"aggregator_id":                  CHECKSET,
 						"aggregate_compliance_pack_name": name,
-						"compliance_pack_template_id":    "ct-3d20ff4e06a30027f76e",
-						"config_rules.#":                 "1",
 						"description":                    name,
 						"risk_level":                     "1",
-					}),
-				),
-			},
-		},
-	})
-}
-
-func TestAccAlicloudConfigAggregateCompliancePack_UpdatePackName(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_config_aggregate_compliance_pack.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeConfigAggregateCompliancePack")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
-					"aggregate_compliance_pack_name": name,
-					"compliance_pack_template_id":    "${data.alicloud_config_compliance_packs.example.packs.0.compliance_pack_template_id}",
-					"config_rules": []map[string]interface{}{
-						{
-							"managed_rule_identifier": "oss-bucket-public-read-prohibited",
-						},
-					},
-					"description": name,
-					"risk_level":  "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregator_id":                  CHECKSET,
-						"aggregate_compliance_pack_name": name,
 						"compliance_pack_template_id":    CHECKSET,
 						"config_rules.#":                 "1",
-						"description":                    name,
-						"risk_level":                     "1",
 					}),
 				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-
-					"aggregate_compliance_pack_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"aggregate_compliance_pack_name": name + "_update",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
 			},
 		},
 	})
 }
 
-var AlicloudConfigAggregateCompliancePackMap0 = map[string]string{
-	"aggregator_id":                  CHECKSET,
-	"aggregate_compliance_pack_name": CHECKSET,
-	"compliance_pack_template_id":    CHECKSET,
-	"config_rules.#":                 "1",
-	"description":                    CHECKSET,
-	"risk_level":                     "1",
-	"status":                         CHECKSET,
-}
-
-func AlicloudConfigAggregateCompliancePackBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-data "alicloud_config_compliance_packs" "example" {
-}
-data "alicloud_config_aggregators" "default" {}
-
-`, name)
-}
-
-func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
+func TestAccAliCloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_compliance_pack.default"
-	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateCompliancePackMap1)
+	ra := resourceAttrInit(resourceId, AliCloudConfigAggregateCompliancePackMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ConfigService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeConfigAggregateCompliancePack")
@@ -460,13 +372,11 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sconfigaggregatecompliancepack%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateCompliancePackBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudConfigAggregateCompliancePackBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -475,6 +385,8 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
 					"aggregate_compliance_pack_name": name,
+					"description":                    name,
+					"risk_level":                     "1",
 					"config_rule_ids": []map[string]interface{}{
 						{
 							"config_rule_id": "${alicloud_config_aggregate_config_rule.default.0.config_rule_id}",
@@ -483,16 +395,14 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 							"config_rule_id": "${alicloud_config_aggregate_config_rule.default.1.config_rule_id}",
 						},
 					},
-					"description": name,
-					"risk_level":  "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"aggregator_id":                  CHECKSET,
 						"aggregate_compliance_pack_name": name,
-						"config_rule_ids.#":              "2",
 						"description":                    name,
 						"risk_level":                     "1",
+						"config_rule_ids.#":              "2",
 					}),
 				),
 			},
@@ -546,46 +456,104 @@ func TestAccAlicloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudConfigAggregateCompliancePackMap1 = map[string]string{}
+var AliCloudConfigAggregateCompliancePackMap0 = map[string]string{
+	"aggregator_compliance_pack_id": CHECKSET,
+	"status":                        CHECKSET,
+}
 
-func AlicloudConfigAggregateCompliancePackBasicDependence1(name string) string {
+func AliCloudConfigAggregateCompliancePackBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
-}
+	data "alicloud_config_aggregators" "default" {
+	}
 
-data "alicloud_instances" "default" {}
-
-data "alicloud_config_aggregators" "default" {}
-
-resource "alicloud_config_aggregate_config_rule" "default" {
-  count                      = 2
-  aggregator_id              = data.alicloud_config_aggregators.default.ids.0
-  aggregate_config_rule_name = var.name
-  source_owner               = "ALIYUN"
-  source_identifier    		= "ecs-cpu-min-count-limit"
-  config_rule_trigger_types = "ConfigurationItemChangeNotification"
-  resource_types_scope      = ["ACS::ECS::Instance"]
-  risk_level                = 1
-  description                = var.name
-  exclude_resource_ids_scope = data.alicloud_instances.default.ids.0
-  input_parameters = {
-    cpuCount = "4",
-  }
-  region_ids_scope         = "cn-hangzhou"
-  resource_group_ids_scope = data.alicloud_resource_manager_resource_groups.default.ids.0
-  tag_key_scope            = "tFTest"
-  tag_value_scope          = "forTF 123"
-}
-
+	data "alicloud_config_compliance_packs" "default" {
+	}
 `, name)
 }
 
-func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
+func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_config_aggregators" "default" {
+	}
+
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		instance_name              = var.name
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_zones.default.zones.0.id
+  		instance_charge_type       = "PostPaid"
+  		password                   = "YourPassword12345!"
+  		system_disk_category       = "cloud_efficiency"
+  		vswitch_id                 = data.alicloud_vswitches.default.ids.0
+	}
+
+	resource "alicloud_config_aggregate_config_rule" "default" {
+  		count                      = 2
+  		aggregator_id              = data.alicloud_config_aggregators.default.ids.0
+  		aggregate_config_rule_name = var.name
+  		source_owner               = "ALIYUN"
+  		source_identifier          = "ecs-cpu-min-count-limit"
+  		config_rule_trigger_types  = "ConfigurationItemChangeNotification"
+  		resource_types_scope       = ["ACS::ECS::Instance"]
+  		risk_level                 = 1
+  		description                = var.name
+  		exclude_resource_ids_scope = alicloud_instance.default.id
+  		input_parameters = {
+    		cpuCount = "4",
+  		}
+  		region_ids_scope         = "%s"
+  		resource_group_ids_scope = data.alicloud_resource_manager_resource_groups.default.ids.0
+  		tag_key_scope            = "tFTest"
+  		tag_value_scope          = "forTF 123"
+	}
+`, name, defaultRegionToTest)
+}
+
+func TestUnitAliCloudConfigAggregateCompliancePack(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_config_aggregate_compliance_pack"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_config_aggregate_compliance_pack"].Schema).Data(nil, nil)
@@ -678,7 +646,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateCompliancePackCreate(dInit, rawClient)
+	err = resourceAliCloudConfigAggregateCompliancePackCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -704,7 +672,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateCompliancePackCreate(dInit, rawClient)
+		err := resourceAliCloudConfigAggregateCompliancePackCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -731,7 +699,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateAggregateCompliancePack
@@ -794,7 +762,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -853,7 +821,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateCompliancePackUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -898,7 +866,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateCompliancePackRead(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateCompliancePackRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -917,7 +885,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateCompliancePackDelete(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateCompliancePackDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -945,7 +913,7 @@ func TestUnitAlicloudConfigAggregateCompliancePack(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateCompliancePackDelete(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateCompliancePackDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

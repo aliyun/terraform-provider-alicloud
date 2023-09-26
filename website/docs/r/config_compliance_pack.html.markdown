@@ -23,7 +23,8 @@ Basic Usage
 variable "name" {
   default = "tf-example-config-name"
 }
-data "alicloud_regions" "example" {
+
+data "alicloud_regions" "default" {
   current = true
 }
 
@@ -33,7 +34,7 @@ resource "alicloud_config_rule" "rule1" {
   source_identifier           = "ram-user-ak-create-date-expired-check"
   risk_level                  = 1
   maximum_execution_frequency = "TwentyFour_Hours"
-  region_ids_scope            = data.alicloud_regions.example.regions.0.id
+  region_ids_scope            = data.alicloud_regions.default.regions.0.id
   config_rule_trigger_types   = "ScheduledNotification"
   resource_types_scope        = ["ACS::RAM::User"]
   rule_name                   = "ciscompliancecheck_ram-user-ak-create-date-expired-check"
@@ -47,7 +48,7 @@ resource "alicloud_config_rule" "rule2" {
   source_owner              = "ALIYUN"
   source_identifier         = "adb-cluster-maintain-time-check"
   risk_level                = 2
-  region_ids_scope          = data.alicloud_regions.example.regions.0.id
+  region_ids_scope          = data.alicloud_regions.default.regions.0.id
   config_rule_trigger_types = "ScheduledNotification"
   resource_types_scope      = ["ACS::ADB::DBCluster"]
   rule_name                 = "governance-evaluation-adb-cluster-maintain-time-check"
@@ -73,25 +74,28 @@ resource "alicloud_config_compliance_pack" "default" {
 
 The following arguments are supported:
 
-* `compliance_pack_name` - (Required) The Compliance Package Name. . **NOTE:** the `compliance_pack_name` supports modification since V1.146.0.
-* `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
-* `config_rules` - (Optional form v1.141.0, Deprecated from v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. 
-* `config_rule_ids` - (Optional, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below. 
+* `compliance_pack_name` - (Required) The Compliance Package Name. **NOTE:** From version 1.146.0, `compliance_pack_name` can be modified.
 * `description` - (Required) The Description of compliance pack.
-* `risk_level` - (Required) The Risk Level. Valid values:  `1`: critical, `2`: warning, `3`: info.
-
-### `config_rules`
-
-The config_rules supports the following: 
-
-* `config_rule_parameters` - (Optional) A list of Config Rule Parameters. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below. 
-* `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `risk_level` - (Required, Int) The Risk Level. Valid values:
+  - `1`: critical.
+  - `2`: warning.
+  - `3`: info.
+* `compliance_pack_template_id` - (Optional, ForceNew) Compliance Package Template Id.
+* `config_rule_ids` - (Optional, Set, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below.
+* `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. **NOTE:** Field `config_rules` has been deprecated from provider version 1.141.0. New field `config_rule_ids` instead.
 
 ### `config_rule_ids`
 
 The config_rule_ids supports the following:
 
 * `config_rule_id` - (Optional) The rule ID of Config Rule.
+
+### `config_rules`
+
+The config_rules supports the following: 
+
+* `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `config_rule_parameters` - (Optional, Set) A list of Config Rule Parameters. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
 
 ### `config_rules-config_rule_parameters`
 
@@ -105,7 +109,7 @@ The config_rule_parameters supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Compliance Pack.
-* `status` -  The status of the resource. The valid values: `CREATING`, `ACTIVE`.
+* `status` -  The status of the Compliance Pack.
 
 ## Timeouts
 
@@ -113,6 +117,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 1 mins) Used when create the Compliance Pack.
 * `update` - (Defaults to 2 mins) Used when update the Compliance Pack.
+* `delete` - (Defaults to 1 mins) Used when delete the Compliance Pack.
 
 ## Import
 
