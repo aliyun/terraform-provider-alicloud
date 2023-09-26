@@ -162,6 +162,16 @@ func resourceAlicloudNlbLoadBalancer() *schema.Resource {
 				Computed: true,
 			},
 		},
+		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+			for _, key := range diff.GetChangedKeysPrefix("zone_mappings") {
+				// If the set contains computed key, there are some diff changes when one of element has been changed,
+				// and there aims to ignore the diff
+				if o, n := diff.GetChange(key); o == n {
+					diff.Clear(key)
+				}
+			}
+			return nil
+		},
 	}
 }
 
@@ -198,7 +208,7 @@ func resourceAlicloudNlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		request["ZoneMappings."+fmt.Sprint(zoneMappingsPtr+1)+".VSwitchId"] = zoneMappingsArg["vswitch_id"]
 		request["ZoneMappings."+fmt.Sprint(zoneMappingsPtr+1)+".ZoneId"] = zoneMappingsArg["zone_id"]
 		request["ZoneMappings."+fmt.Sprint(zoneMappingsPtr+1)+".AllocationId"] = zoneMappingsArg["allocation_id"]
-		request["ZoneMappings."+fmt.Sprint(zoneMappingsPtr+1)+".PrivateIPv4Address"] = zoneMappingsArg["private_ip_address"]
+		request["ZoneMappings."+fmt.Sprint(zoneMappingsPtr+1)+".PrivateIPv4Address"] = zoneMappingsArg["private_ipv4_address"]
 
 	}
 	request["ClientToken"] = buildClientToken("CreateLoadBalancer")
