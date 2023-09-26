@@ -23,6 +23,7 @@ Basic Usage
 variable "name" {
   default = "terraform_example"
 }
+
 data "alicloud_resource_manager_accounts" "default" {
   status = "CreateSuccess"
 }
@@ -37,12 +38,14 @@ resource "alicloud_config_aggregator" "default" {
   description     = var.name
   aggregator_type = "CUSTOM"
 }
+
 resource "alicloud_config_aggregate_config_rule" "default" {
   aggregate_config_rule_name = "contains-tag"
   aggregator_id              = alicloud_config_aggregator.default.id
   config_rule_trigger_types  = "ConfigurationItemChangeNotification"
   source_owner               = "ALIYUN"
   source_identifier          = "contains-tag"
+  description                = var.name
   risk_level                 = 1
   resource_types_scope       = ["ACS::ECS::Instance"]
   input_parameters = {
@@ -66,26 +69,29 @@ resource "alicloud_config_aggregate_compliance_pack" "default" {
 
 The following arguments are supported:
 
-* `aggregate_compliance_pack_name` - (Required)The name of compliance package name. **NOTE:** the `aggregate_compliance_pack_name` supports modification since V1.145.0.
-* `aggregator_id` - (Required, ForceNew)The ID of aggregator.
-* `compliance_pack_template_id` - (Optional from v1.141.0, ForceNew)The Template ID of compliance package.
-* `config_rules` - (Optional, Deprecated from v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. 
-* `config_rule_ids` - (Optional, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below. 
+* `aggregator_id` - (Required, ForceNew) The ID of aggregator.
+* `aggregate_compliance_pack_name` - (Required) The name of compliance package name. **NOTE:** From version 1.145.0, `aggregate_compliance_pack_name` can be modified.
 * `description` - (Required) The description of compliance package.
-* `risk_level` - (Required) The Risk Level. Valid values: `1`: critical `2`: warning `3`: info.
-
-### `config_rules`
-
-The config_rules supports the following: 
-
-* `config_rule_parameters` - (Optional) A list of parameter rules. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below. 
-* `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `risk_level` - (Required, Int) The Risk Level. Valid values:
+  - `1`: critical.
+  - `2`: warning.
+  - `3`: info.
+* `compliance_pack_template_id` - (Optional, ForceNew, Available since v1.141.0) The Template ID of compliance package.
+* `config_rule_ids` - (Optional, Set, Available since v1.141.0) A list of Config Rule IDs. See [`config_rule_ids`](#config_rule_ids) below.
+* `config_rules` - (Optional, Set, Deprecated since v1.141.0) A list of Config Rules. See [`config_rules`](#config_rules) below. **NOTE:** Field `config_rules` has been deprecated from provider version 1.141.0. New field `config_rule_ids` instead.
 
 ### `config_rule_ids`
 
 The config_rule_ids supports the following:
 
 * `config_rule_id` - (Optional) The rule ID of Aggregate Config Rule.
+
+### `config_rules`
+
+The config_rules supports the following: 
+
+* `managed_rule_identifier` - (Required) The Managed Rule Identifier.
+* `config_rule_parameters` - (Optional, Set) A list of parameter rules. See [`config_rule_parameters`](#config_rules-config_rule_parameters) below.
 
 ### `config_rules-config_rule_parameters`
 
@@ -98,8 +104,9 @@ The config_rule_parameters supports the following:
 
 The following attributes are exported:
 
-* `id` - The resource ID of Aggregate Compliance Pack. The value is formatted `<aggregator_id>:<aggregator_compliance_pack_id>`.
-* `status` - The status of the resource. The valid values: `CREATING`, `ACTIVE`.
+* `id` - The resource ID of Aggregate Compliance Pack. It formats as `<aggregator_id>:<aggregator_compliance_pack_id>`.
+* `aggregator_compliance_pack_id` - The ID of the compliance package.
+* `status` - The status of the Aggregate Compliance Pack.
 
 ## Timeouts
 
@@ -107,6 +114,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 1 mins) Used when create the Aggregate Compliance Pack.
 * `update` - (Defaults to 1 mins) Used when update the Aggregate Compliance Pack.
+* `delete` - (Defaults to 1 mins) Used when delete the Aggregate Compliance Pack.
 
 ## Import
 
