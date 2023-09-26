@@ -28,6 +28,10 @@ func main() {
 		if res.Mode != "managed" || !strings.HasPrefix(res.Type, "alicloud_") {
 			continue
 		}
+		if _, ok := importUnsupportedResources[res.Type]; ok {
+			log.Printf("\\033[33m[WARNING] %s does not support import.\\033[0m", res.Type)
+			continue
+		}
 		for _, instance := range res.Instances {
 			item := instance.(map[string]interface{})
 			id := item["attributes"].(map[string]interface{})["id"]
@@ -63,4 +67,13 @@ type Resource struct {
 	Name      string        `json:"name"`
 	Provider  string        `json:"provider"`
 	Instances []interface{} `json:"instances"`
+}
+
+var importUnsupportedResources = map[string]struct{}{
+	"alicloud_ram_access_key":             {},
+	"alicloud_ram_role_attachment":        {},
+	"alicloud_maxcompute_project":         {},
+	"alicloud_api_gateway_app_attachment": {},
+	"alicloud_nas_smb_acl_attachment":     {},
+	"alicloud_ots_instance_attachment":    {},
 }
