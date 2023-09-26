@@ -29,15 +29,35 @@ func main() {
 			continue
 		}
 		if _, ok := importUnsupportedResources[res.Type]; ok {
-			log.Printf("\\033[33m[WARNING] %s does not support import.\\033[0m", res.Type)
+			log.Printf("[WARNING] %s does not support import.", res.Type)
 			continue
 		}
 		for _, instance := range res.Instances {
 			item := instance.(map[string]interface{})
 			id := item["attributes"].(map[string]interface{})["id"]
 			to := res.Type + "." + res.Name
+			// -generate-config-out does not support count and for_each
+			// some example depends on specified region
+			to += "-import"
 			if v, ok := item["index_key"]; ok {
-				to += fmt.Sprintf("[%v]", v)
+				//if vv, okk := v.(string) ; okk {
+				//	to += fmt.Sprintf("[\"%v\"]", vv)
+				//}else {
+				//	to += fmt.Sprintf("[%v]", v)
+				//}
+				if vv, okk := v.(string); okk {
+					bufs := make([]byte, 0)
+					for _, ch := range vv {
+						if (ch > 47 && ch < 58) || (ch > 64 && ch < 91) || (ch > 96 && ch < 123) || ch == 45 || ch == 95 {
+							bufs = append(bufs, byte(ch))
+							continue
+						}
+						bufs = append(bufs, '-')
+					}
+					to += "-" + string(bufs)
+				} else {
+					to += fmt.Sprintf("-%v", v)
+				}
 			}
 			appendBuf.WriteString(fmt.Sprintf(`
 import {

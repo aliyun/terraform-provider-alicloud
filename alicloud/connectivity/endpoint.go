@@ -253,7 +253,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var endpointResult string
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		endpointsResponse, err := locationClient.DescribeEndpoints(args)
 		if err != nil {
 			re := regexp.MustCompile("^Post [\"]*https://.*")

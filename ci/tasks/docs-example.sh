@@ -240,7 +240,7 @@ for fileName in ${changeFiles[@]}; do
             # import check
             go run scripts/import_check.go ${exampleFileName}
             mv ${exampleFileName}/terraform.tfstate ${exampleFileName}/terraform.tfstate.bak
-            planResult=$({ terraform -chdir=${exampleFileName} plan -out tf.tfplan; } >${exampleTerraformImportCheckTmpLog})
+            planResult=$({ terraform -chdir=${exampleFileName} plan -out tf.tfplan -generate-config-out=generate.tf; } >${exampleTerraformImportCheckTmpLog})
             haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
             if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
               failed=true
@@ -271,6 +271,7 @@ for fileName in ${changeFiles[@]}; do
         fi
         mv ${exampleFileName}/terraform.tfstate.bak ${exampleFileName}/terraform.tfstate
         rm -rf ${exampleFileName}/import.tf
+        rm -rf ${exampleFileName}/generate.tf
         # run destory
         failed=false
         echo "=== RUN   ${exampleFileName} DESTROY" | tee -a ${docsExampleTestRunLog} ${docsExampleTestRunResultLog}
