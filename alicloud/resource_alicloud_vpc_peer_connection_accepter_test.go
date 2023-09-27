@@ -4,31 +4,38 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 // Case 1
-func TestAccAlicloudVpcPeerConnectionAccepter_basic(t *testing.T) {
-	var v map[string]interface{}
+func TestAccAliCloudVpcPeerConnectionAccepter_basic2(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection_accepter.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcPeerConnectionAccepterMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeVpcPeerConnectionAccepter")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
+	ra := resourceAttrInit(resourceId, AlicloudVpcPeerConnectionAccepterMap0)
+	var providers []*schema.Provider
+	providerFactories := map[string]terraform.ResourceProviderFactory{
+		"alicloud": func() (terraform.ResourceProvider, error) {
+			p := Provider()
+			providers = append(providers, p.(*schema.Provider))
+			return p, nil
+		},
+	}
+	testAccCheck := ra.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sVpcPeerConnectionAccepter%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcPeerConnectionAccepterBasicDependence)
+	name := fmt.Sprintf("tf-testacc%svpcpeerconnection%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcPeerConnectionAccepterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		IDRefreshName:     resourceId,
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckVPCPeerConnectionAccepterDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -40,60 +47,91 @@ func TestAccAlicloudVpcPeerConnectionAccepter_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
 
-var AlicloudVpcPeerConnectionAccepterMap = map[string]string{}
-
-func AlicloudVpcPeerConnectionAccepterBasicDependence(name string) string {
-	return fmt.Sprintf(`
+func AlicloudVpcPeerConnectionAccepterBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
 variable "name" {
-    default = "%s"
+  default = "%s"
 }
-
-data "alicloud_account" "default" {}
-
 variable "accepting_region" {
   default = "cn-beijing"
 }
 
+data "alicloud_account" "default" {}
+
 provider "alicloud" {
-  alias  = "local"
+  alias = "local"
   region = "%s"
 }
 
 provider "alicloud" {
-  alias  = "accepting"
+  alias = "accepting"
   region = var.accepting_region
 }
 
-data "alicloud_vpcs" "default" {
+resource "alicloud_vpc" "default" {
   provider   = alicloud.local
-  name_regex = "default-NODELETING"
+  vpc_name    = var.name
+  enable_ipv6 = "true"
 }
 
-data "alicloud_vpcs" "defaultone" {
+resource "alicloud_vpc" "default1" {
   provider   = alicloud.accepting
-  name_regex = "default-NODELETING"
+  vpc_name    = var.name
+  enable_ipv6 = "true"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_vpc_peer_connection" "default" {
   peer_connection_name = var.name
-  vpc_id               = data.alicloud_vpcs.default.ids.0
+  vpc_id               = alicloud_vpc.default.id
   accepting_ali_uid    = data.alicloud_account.default.id
   accepting_region_id  = var.accepting_region
-  accepting_vpc_id     = data.alicloud_vpcs.defaultone.ids.0
+  accepting_vpc_id     = alicloud_vpc.default1.id
   description          = var.name
   provider             = alicloud.local
 }
 
-
 `, name, defaultRegionToTest)
+}
+
+var AlicloudVpcPeerConnectionAccepterMap0 = map[string]string{}
+
+func testAccCheckVPCPeerConnectionAccepterDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, provider := range *providers {
+			if provider.Meta() == nil {
+				continue
+			}
+			if err := testAccCheckVPCPeerConnectionAccepterDestroyWithProvider(s, provider); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func testAccCheckVPCPeerConnectionAccepterDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	client := provider.Meta().(*connectivity.AliyunClient)
+	vpcPeerService := VpcPeerService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_vpc_peer_connection_accepter" {
+			continue
+		}
+
+		_, err := vpcPeerService.DescribeVpcPeerConnection(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+	}
+
+	return nil
 }

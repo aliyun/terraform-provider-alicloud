@@ -104,7 +104,7 @@ func testSweepHavipAttachment(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCHavipAttachment_basic(t *testing.T) {
+func TestAccAliCloudVPCHavipAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
@@ -147,7 +147,7 @@ func TestAccAlicloudVPCHavipAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCHavipAttachment_basic1(t *testing.T) {
+func TestAccAliCloudVPCHavipAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
@@ -191,7 +191,7 @@ func TestAccAlicloudVPCHavipAttachment_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCHavipAttachment_basic2(t *testing.T) {
+func TestAccAliCloudVPCHavipAttachment_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_havip_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudHavipAttachmentMap0)
@@ -217,6 +217,7 @@ func TestAccAlicloudVPCHavipAttachment_basic2(t *testing.T) {
 					"havip_id":      "${alicloud_havip.foo.id}",
 					"instance_id":   "${alicloud_ecs_network_interface_attachment.default[0].network_interface_id}",
 					"instance_type": "NetworkInterface",
+					"force":         "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -227,9 +228,18 @@ func TestAccAlicloudVPCHavipAttachment_basic2(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_basic0(t *testing.T) {
+func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
@@ -161,7 +161,7 @@ func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_basic1(t *testing.T) {
+func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
 	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
@@ -205,6 +205,83 @@ func TestAccAlicloudVPCTrafficMirrorFilterIngressRule_basic1(t *testing.T) {
 						"dry_run":                  "false",
 						"destination_port_range":   "1/120",
 						"source_port_range":        "1/120",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPCTrafficMirrorFilterIngressRule_basic2(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VpcTrafficMirrorSupportRegions)
+	resourceId := "alicloud_vpc_traffic_mirror_filter_ingress_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPCTrafficMirrorFilterIngressRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcTrafficMirrorFilterIngressRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-vpctrafficmirrorfilteringressrule%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCTrafficMirrorFilterIngressRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_mirror_filter_id": "${alicloud_vpc_traffic_mirror_filter.default.id}",
+					"priority":                 "1",
+					"action":                   "accept",
+					"protocol":                 "UDP",
+					"destination_cidr_block":   "10.0.0.0/24",
+					"source_cidr_block":        "10.0.0.0/24",
+					"dry_run":                  "false",
+					"destination_port_range":   "1/120",
+					"source_port_range":        "1/120",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_mirror_filter_id": CHECKSET,
+						"priority":                 "1",
+						"action":                   "accept",
+						"protocol":                 "UDP",
+						"destination_cidr_block":   "10.0.0.0/24",
+						"source_cidr_block":        "10.0.0.0/24",
+						"dry_run":                  "false",
+						"destination_port_range":   "1/120",
+						"source_port_range":        "1/120",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"action": "drop",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"action": "drop",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"action": "accept",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"action": "accept",
 					}),
 				),
 			},
@@ -361,7 +438,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -379,7 +456,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -397,7 +474,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -413,7 +490,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -432,7 +509,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -467,7 +544,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -487,7 +564,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -522,7 +599,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -537,7 +614,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -555,7 +632,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -572,7 +649,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -590,7 +667,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -610,7 +687,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleDelete(resourceData1, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleDelete(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -626,7 +703,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -643,7 +720,7 @@ func TestUnitAlicloudVPCTrafficMirrorFilterIngressRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcTrafficMirrorFilterIngressRuleRead(d, rawClient)
+		err := resourceAliCloudVpcTrafficMirrorFilterIngressRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

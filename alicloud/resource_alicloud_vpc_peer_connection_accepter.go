@@ -106,7 +106,9 @@ func resourceAlicloudVpcPeerConnectionAccepterCreate(d *schema.ResourceData, met
 		return nil
 	})
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_peer_connection_accepter", action, AlibabaCloudSdkGoERROR)
+		if !IsExpectedErrors(err, []string{"IncorrectStatus.VpcPeer"}) {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_peer_connection_accepter", action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	d.SetId(fmt.Sprint(request["InstanceId"]))

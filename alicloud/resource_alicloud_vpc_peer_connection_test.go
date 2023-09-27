@@ -115,7 +115,7 @@ func testSweepVpcPeerConnection(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCPeerConnection_basic0(t *testing.T) {
+func TestAccAliCloudVPCPeerConnection_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPeerConnectionMap0)
@@ -142,10 +142,10 @@ func TestAccAlicloudVPCPeerConnection_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"peer_connection_name": "${var.name}",
-					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":               "${alicloud_vpc.default.id}",
 					"accepting_ali_uid":    "${data.alicloud_account.default.id}",
 					"accepting_region_id":  "${var.accepting_region}",
-					"accepting_vpc_id":     "${data.alicloud_vpcs.default1.ids.0}",
+					"accepting_vpc_id":     "${alicloud_vpc.default1.id}",
 					"description":          "${var.name}",
 					"bandwidth":            "100",
 					"provider":             "alicloud.local",
@@ -194,14 +194,16 @@ provider "alicloud" {
   region = var.accepting_region
 }
 
-data "alicloud_vpcs" "default" {
-	provider = alicloud.local
-	name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default" {
+  provider   = alicloud.local
+  vpc_name    = var.name
+  enable_ipv6 = "true"
 }
 
-data "alicloud_vpcs" "default1" {
-	provider = alicloud.accepting
-	name_regex = "default-NODELETING"
+resource "alicloud_vpc" "default1" {
+  provider   = alicloud.accepting
+  vpc_name    = var.name
+  enable_ipv6 = "true"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
@@ -243,7 +245,7 @@ func testAccCheckVPCPeerConnectionDestroyWithProvider(s *terraform.State, provid
 	return nil
 }
 
-func TestAccAlicloudVPCPeerConnection_basic1(t *testing.T) {
+func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_vpc_peer_connection.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCPeerConnectionMap0)
@@ -269,10 +271,10 @@ func TestAccAlicloudVPCPeerConnection_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":              "${alicloud_vpc.default.id}",
 					"accepting_ali_uid":   "${data.alicloud_account.default.id}",
 					"accepting_region_id": "${var.accepting_region}",
-					"accepting_vpc_id":    "${data.alicloud_vpcs.default1.ids.0}",
+					"accepting_vpc_id":    "${alicloud_vpc.default1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

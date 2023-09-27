@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcNetworkAclAttachment_basic0(t *testing.T) {
+func TestAccAliCloudVpcNetworkAclAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_network_acl_attachment.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcNetworkAclAttachmentMap)
@@ -166,7 +166,7 @@ func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcNetworkAclAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudVpcNetworkAclAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -189,7 +189,7 @@ func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcNetworkAclAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudVpcNetworkAclAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -234,7 +234,7 @@ func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcNetworkAclAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudVpcNetworkAclAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -253,7 +253,7 @@ func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcNetworkAclAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudVpcNetworkAclAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -281,7 +281,7 @@ func TestUnitAlicloudVpcNetworkAclAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcNetworkAclAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudVpcNetworkAclAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
