@@ -94,7 +94,7 @@ func testSweepServiceMeshServiceMesh(region string) error {
 	return nil
 }
 
-func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
+func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
 	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
@@ -104,11 +104,12 @@ func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sservicemeshdefault%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -280,7 +281,9 @@ func TestAccAlicloudServiceMeshServiceMesh_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudServiceMeshServiceMeshMap0 = map[string]string{}
+var AlicloudServiceMeshServiceMeshMap0 = map[string]string{
+	"cluster_spec": "standard",
+}
 
 func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 	return fmt.Sprintf(`
@@ -324,7 +327,7 @@ func AlicloudServiceMeshServiceMeshBasicDependence0(name string) string {
 `, name)
 }
 
-func SkipTestAccAlicloudServiceMeshServiceMesh_basic1(t *testing.T) {
+func TestAccAlicloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_service_mesh_service_mesh.default"
@@ -335,7 +338,7 @@ func SkipTestAccAlicloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandInt()
-	name := fmt.Sprintf("tf-testacc%sservicemesh%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sservicemeshstandard%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -477,6 +480,312 @@ func SkipTestAccAlicloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudServiceMeshServiceMesh_basic2(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshenterprise%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Pro",
+					"cluster_spec":      "enterprise",
+					"version":           "${data.alicloud_service_mesh_versions.default.versions.0.version}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+						},
+					},
+					"cluster_ids": []string{"${data.alicloud_cs_managed_kubernetes_clusters.default.clusters[0].id}"},
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "true",
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"mesh_config.#":         "1",
+						"cluster_ids.#":         "1",
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": REMOVEKEY,
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "false",
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
+func TestAccAlicloudServiceMeshServiceMesh_basic3(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshultimate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Pro",
+					"cluster_spec":      "ultimate",
+					"version":           "${data.alicloud_service_mesh_versions.default.versions.0.version}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+						},
+					},
+					"cluster_ids": []string{"${data.alicloud_cs_managed_kubernetes_clusters.default.clusters[0].id}"},
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "true",
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"cluster_spec":          "ultimate",
+						"edition":               "Pro",
+						"mesh_config.#":         "1",
+						"cluster_ids.#":         "1",
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": REMOVEKEY,
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "false",
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
 func AlicloudServiceMeshServiceMeshBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
@@ -522,7 +831,7 @@ func AlicloudServiceMeshServiceMeshBasicDependence1(name string) string {
 `, name)
 }
 
-func TestAccAlicloudServiceMeshServiceMesh_basic3(t *testing.T) {
+func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_service_mesh.default"
 	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
