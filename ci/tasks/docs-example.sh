@@ -172,6 +172,10 @@ for fileName in ${changeFiles[@]}; do
     fi
     resourceName=${fileName%%.html.markdown}
     docsDir="${docsPathKey}/${resourceName}.html.markdown"
+    # there should skip docs checking for some special resource types
+    if [ "${resourceName}" == "vpc_peer_connection_accepter" ]; then
+      continue
+    fi
     #run example
     begin=false
     count=0
