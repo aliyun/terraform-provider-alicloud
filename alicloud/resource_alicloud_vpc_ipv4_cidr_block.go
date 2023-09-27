@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -11,13 +13,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcIpv4CidrBlock() *schema.Resource {
+func resourceAliCloudVpcIpv4CidrBlock() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcIpv4CidrBlockCreate,
-		Read:   resourceAlicloudVpcIpv4CidrBlockRead,
-		Delete: resourceAlicloudVpcIpv4CidrBlockDelete,
+		Create: resourceAliCloudVpcIpv4CidrBlockCreate,
+		Read:   resourceAliCloudVpcIpv4CidrBlockRead,
+		Delete: resourceAliCloudVpcIpv4CidrBlockDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"secondary_cidr_block": {
@@ -34,93 +40,112 @@ func resourceAlicloudVpcIpv4CidrBlock() *schema.Resource {
 	}
 }
 
-func resourceAlicloudVpcIpv4CidrBlockCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcIpv4CidrBlockCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "AssociateVpcCidrBlock"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["IpVersion"] = "IPV4"
-	request["RegionId"] = client.RegionId
-	request["SecondaryCidrBlock"] = d.Get("secondary_cidr_block")
+	request = make(map[string]interface{})
 	request["VpcId"] = d.Get("vpc_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request["SecondaryCidrBlock"] = d.Get("secondary_cidr_block")
+	request["RegionId"] = client.RegionId
+
+	request["IpVersion"] = "IPV4"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "OperationFailed.CidrInUse"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipv4_cidr_block", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["VpcId"], ":", request["SecondaryCidrBlock"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["VpcId"], request["SecondaryCidrBlock"]))
 
-	return resourceAlicloudVpcIpv4CidrBlockRead(d, meta)
+	return resourceAliCloudVpcIpv4CidrBlockRead(d, meta)
 }
-func resourceAlicloudVpcIpv4CidrBlockRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudVpcIpv4CidrBlockRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	_, err := vpcService.DescribeVpcIpv4CidrBlock(d.Id())
+	vpcServiceV2 := VpcServiceV2{client}
+
+	_, err := vpcServiceV2.DescribeVpcIpv4CidrBlock(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_ipv4_cidr_block vpcService.DescribeVpcIpv4CidrBlock Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_ipv4_cidr_block DescribeVpcIpv4CidrBlock Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("secondary_cidr_block", parts[1])
 	d.Set("vpc_id", parts[0])
+
 	return nil
 }
-func resourceAlicloudVpcIpv4CidrBlockDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudVpcIpv4CidrBlockDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	action := "UnassociateVpcCidrBlock"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"SecondaryCidrBlock": parts[1],
-		"VpcId":              parts[0],
-	}
-
+	request = make(map[string]interface{})
+	request["VpcId"] = parts[0]
+	request["SecondaryCidrBlock"] = parts[1]
 	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "OperationFailed.CidrInUse"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy", "LastTokenProcessing", "OperationFailed.CidrInUse"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

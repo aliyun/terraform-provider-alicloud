@@ -2,18 +2,17 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_route_table_attachment"
-sidebar_current: "docs-alicloud-resource-route-table-attachment"
 description: |-
-  Provides an Alicloud Route Table Attachment resource.
+  Provides a Alicloud VPC Route Table Attachment resource.
 ---
 
-# alicloud\_route\_table\_attachment
+# alicloud_route_table_attachment
 
-Provides an Alicloud Route Table Attachment resource for associating Route Table to VSwitch Instance.
+Provides a VPC Route Table Attachment resource. Routing table associated resource type.
 
--> **NOTE:** Terraform will auto build route table attachment while it uses `alicloud_route_table_attachment` to build a route table attachment resource.
+For information about VPC Route Table Attachment and how to use it, see [What is Route Table Attachment](https://www.alibabacloud.com/help/doc-detail/174112.htm).
 
-For information about route table and how to use it, see [What is Route Table](https://www.alibabacloud.com/help/doc-detail/87057.htm).
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
@@ -21,7 +20,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "route-table-attachment-example-name"
+  default = "terraform-example"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -51,24 +50,29 @@ resource "alicloud_route_table_attachment" "foo" {
   route_table_id = alicloud_route_table.foo.id
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
-
-* `vswitch_id` - (Required, ForceNew) The vswitch_id of the route table attachment, the field can't be changed.
-* `route_table_id` - (Required, ForceNew) The route_table_id of the route table attachment, the field can't be changed.
+* `route_table_id` - (Required, ForceNew) The ID of the route table to be bound to the switch.
+* `vswitch_id` - (Required, ForceNew) The ID of the switch to bind the route table.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<route_table_id>:<vswitch_id>`.
+* `status` - The status of the resource.
 
-* `id` - The ID of the route table attachment id and formates as `<route_table_id>:<vswitch_id>`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Route Table Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Route Table Attachment.
 
 ## Import
 
-The route table attachment can be imported using the id, e.g.
+VPC Route Table Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_route_table_attachment.foo vtb-abc123456:vsw-abc123456
+$ terraform import alicloud_route_table_attachment.example <route_table_id>:<vswitch_id>
 ```
-

@@ -123,9 +123,11 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -160,9 +162,11 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -1570,13 +1574,14 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["DhcpOptionsSetId"] = id
 	request["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1588,16 +1593,17 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	currentStatus := response["Status"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, response)
 	}
 
 	return response, nil
@@ -1613,7 +1619,8 @@ func (s *VpcServiceV2) VpcDhcpOptionsSetStateRefreshFunc(id string, field string
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -1933,3 +1940,583 @@ func (s *VpcServiceV2) VpcGatewayEndpointRouteTableAttachmentStateRefreshFunc(id
 }
 
 // DescribeVpcGatewayEndpointRouteTableAttachment >>> Encapsulated.
+
+// DescribeVpcNetworkAclAttachment <<< Encapsulated get interface for Vpc NetworkAclAttachment.
+
+func (s *VpcServiceV2) DescribeVpcNetworkAclAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeNetworkAcls"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["NetworkAclId"] = parts[0]
+	query["ResourceId"] = parts[1]
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if IsExpectedErrors(err, []string{"OperationFailure.OperationFailed"}) || NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.NetworkAcls.NetworkAcl[*].Resources.Resource[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkAcls.NetworkAcl[*].Resources.Resource[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
+	if currentStatus == "UNBINDING" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAclAttachment", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *VpcServiceV2) VpcNetworkAclAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcNetworkAclAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcNetworkAclAttachment >>> Encapsulated.
+
+// DescribeVpcTrafficMirrorFilterEgressRule <<< Encapsulated get interface for Vpc TrafficMirrorFilterEgressRule.
+
+func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterEgressRule(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "ListTrafficMirrorFilters"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TrafficMirrorFilterIds.1"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TrafficMirrorFilters[*].EgressRules[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["TrafficMirrorFilterId"] != parts[0] {
+			continue
+		}
+		if item["TrafficMirrorFilterRuleId"] != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterEgressRule", id)), NotFoundMsg, response)
+}
+
+func (s *VpcServiceV2) VpcTrafficMirrorFilterEgressRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcTrafficMirrorFilterEgressRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcTrafficMirrorFilterEgressRule >>> Encapsulated.
+
+// DescribeVpcTrafficMirrorFilterIngressRule <<< Encapsulated get interface for Vpc TrafficMirrorFilterIngressRule.
+
+func (s *VpcServiceV2) DescribeVpcTrafficMirrorFilterIngressRule(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "ListTrafficMirrorFilters"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["TrafficMirrorFilterIds.1"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TrafficMirrorFilters[*].IngressRules[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["TrafficMirrorFilterId"] != parts[0] {
+			continue
+		}
+		if item["TrafficMirrorFilterRuleId"] != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMirrorFilterIngressRule", id)), NotFoundMsg, response)
+}
+
+func (s *VpcServiceV2) VpcTrafficMirrorFilterIngressRuleStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcTrafficMirrorFilterIngressRule(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcTrafficMirrorFilterIngressRule >>> Encapsulated.
+
+// DescribeVpcHaVipAttachment <<< Encapsulated get interface for Vpc HaVipAttachment.
+
+func (s *VpcServiceV2) DescribeVpcHaVipAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeHaVips"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	jsonString := "{}"
+	jsonString, _ = sjson.Set(jsonString, "Filter[0].Value[0]", parts[0])
+	err = json.Unmarshal([]byte(jsonString), &request)
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.HaVips.HaVip[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.HaVips.HaVip[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["HaVipId"] != parts[0] {
+			continue
+		}
+		instanceIds, err := jsonpath.Get("$.AssociatedInstances.associatedInstance[*]", item)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AssociatedInstances.associatedInstance[*]", item)
+		}
+		found := false
+		for _, vv := range instanceIds.([]interface{}) {
+			if vv == parts[1] {
+				found = true
+				break
+			}
+		}
+		if found {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("HaVipAttachment", id)), NotFoundMsg, response)
+}
+
+func (s *VpcServiceV2) VpcHaVipAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcHaVipAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcHaVipAttachment >>> Encapsulated.
+
+// DescribeVpcRouteTableAttachment <<< Encapsulated get interface for Vpc RouteTableAttachment.
+
+func (s *VpcServiceV2) DescribeVpcRouteTableAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeRouteTableList"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["RouteTableId"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.RouterTableList.RouterTableListType[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.RouterTableList.RouterTableListType[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["RouteTableId"] != parts[0] {
+			continue
+		}
+		vSwitchIds, err := jsonpath.Get("$.VSwitchIds.VSwitchId[*]", item)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.VSwitchIds.VSwitchId[*]", item)
+		}
+		found := false
+		for _, vv := range vSwitchIds.([]interface{}) {
+			if vv == parts[1] {
+				found = true
+				break
+			}
+		}
+		if found {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("RouteTableAttachment", id)), NotFoundMsg, response)
+}
+
+func (s *VpcServiceV2) VpcRouteTableAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcRouteTableAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcRouteTableAttachment >>> Encapsulated.
+
+// DescribeVpcIpv4CidrBlock <<< Encapsulated get interface for Vpc Ipv4CidrBlock.
+
+func (s *VpcServiceV2) DescribeVpcIpv4CidrBlock(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeVpcs"
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["VpcId"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"Throttling.User", "OperationFailure.OperationFailed"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Vpcs.Vpc[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Vpcs.Vpc[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		secondaryCidrBlocks, err := jsonpath.Get("$.SecondaryCidrBlocks.SecondaryCidrBlock[*]", item)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecondaryCidrBlocks.SecondaryCidrBlock[*]", item)
+		}
+		found := false
+		for _, vv := range secondaryCidrBlocks.([]interface{}) {
+			if vv == parts[1] {
+				found = true
+				break
+			}
+		}
+		if found {
+			return item, nil
+		}
+		if item["VpcId"] != parts[0] {
+			continue
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("Ipv4CidrBlock", id)), NotFoundMsg, response)
+}
+
+func (s *VpcServiceV2) VpcIpv4CidrBlockStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeVpcIpv4CidrBlock(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		currentStatus := fmt.Sprint(object[field])
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeVpcIpv4CidrBlock >>> Encapsulated.

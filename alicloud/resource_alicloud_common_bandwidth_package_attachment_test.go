@@ -212,6 +212,52 @@ func TestAccAliCloudCommonBandwidthPackageAttachment_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCommonBandwidthPackageAttachment_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_common_bandwidth_package_attachment.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudCommonBandwidthPackageAttachmentMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbwpServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCommonBandwidthPackageAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccCommonBandwidthPackageAttachment-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudCommonBandwidthPackageAttachmentBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_package_id":        "${alicloud_common_bandwidth_package.default.id}",
+					"instance_id":                 "${alicloud_eip_address.default.id}",
+					"bandwidth_package_bandwidth": "2",
+					"ip_type":                     "EIP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_package_id":        CHECKSET,
+						"instance_id":                 CHECKSET,
+						"bandwidth_package_bandwidth": "2",
+						"ip_type":                     "EIP",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cancel_common_bandwidth_package_ip_bandwidth", "ip_type"},
+			},
+		},
+	})
+}
+
 var resourceAlicloudCommonBandwidthPackageAttachmentMap = map[string]string{}
 
 func resourceAlicloudCommonBandwidthPackageAttachmentBasicDependence(name string) string {

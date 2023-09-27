@@ -2,14 +2,13 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_havip_attachment"
-sidebar_current: "docs-alicloud-resource-havip-attachment"
 description: |-
-  Provides an Alicloud HaVip Attachment resource.
+  Provides a Alicloud VPC Ha Vip Attachment resource.
 ---
 
 # alicloud_havip_attachment
 
-Provides an Alicloud HaVip Attachment resource for associating HaVip to ECS Instance.
+Provides a VPC Ha Vip Attachment resource. Attaching ECS instance to Havip.
 
 -> **NOTE:** Terraform will auto build havip attachment while it uses `alicloud_havip_attachment` to build a havip attachment resource.
 
@@ -21,11 +20,13 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
+
 data "alicloud_instance_types" "example" {
   availability_zone = data.alicloud_zones.default.zones.0.id
   cpu_core_count    = 1
@@ -78,35 +79,37 @@ resource "alicloud_havip_attachment" "example" {
   instance_id = alicloud_instance.example.id
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
+* `force` - (Optional, Available since v1.18.0) Whether to force the ECS instance or Eni instance bound to AVIP to be unbound. The value is:
+  - **True**: Force unbinding.
+  - **False** (default): unbinding is not forced.
+-> **NOTE:**  If the value of this parameter is **False**, the Master instance bound to HaVip cannot be unbound.
+* `ha_vip_id` - (Optional, ForceNew, Available since v1.211.0) The ID of the HaVip instance.
+* `instance_id` - (Required, ForceNew, Available since v1.18.0) The ID of the ECS instance bound to the HaVip instance.
+* `instance_type` - (Optional, ForceNew, Available since v1.18.0) The type of the instance associated with the VIIP.
 
-* `havip_id` - (Required, ForceNew) The havip_id of the havip attachment, the field can't be changed.
-* `instance_id` - (Required, ForceNew) The instance_id of the havip attachment, the field can't be changed.
-* `force` - (Optional, Available since v1.200.0) Specifies whether to forcefully disassociate the HAVIP from the ECS instance or ENI. Default value: `False`. Valid values: `True` and `False`.
-* `instance_type` - (Optional, ForceNew, Available since v1.201.0) The Type of instance to bind HaVip to. Valid values: `EcsInstance` and `NetworkInterface`. When the HaVip instance is bound to a resilient NIC, the resilient NIC instance must be filled in.
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `havip_id` - (Deprecated since v1.211.0). Field 'havip_id' has been deprecated from provider version 1.211.0. New field 'ha_vip_id' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The ID of the havip attachment id and formates as `<havip_id>:<instance_id>`.
-* `status` - (Available in v1.201.0+) The status of the HaVip instance.
+* `id` - The ID of the resource supplied above.The value is formulated as `<ha_vip_id>:<instance_id>`.
+* `status` - The status of the resource.
 
 ## Timeouts
 
--> **NOTE:** Available since 1.194.0.
-
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 5 mins) Used when create the HaVip Attachment.
-* `delete` - (Defaults to 5 mins) Used when delete the HaVip Attachment.
+* `create` - (Defaults to 5 mins) Used when create the Ha Vip Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Ha Vip Attachment.
 
 ## Import
 
-The havip attachment can be imported using the id, e.g.
+VPC Ha Vip Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_havip_attachment.foo havip-abc123456:i-abc123456
+$ terraform import alicloud_havip_attachment.example <ha_vip_id>:<instance_id>
 ```

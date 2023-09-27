@@ -2,31 +2,38 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_ipv4_cidr_block"
-sidebar_current: "docs-alicloud-resource-vpc-ipv4-cidr-block"
 description: |-
   Provides a Alicloud VPC Ipv4 Cidr Block resource.
 ---
 
-# alicloud\_vpc\_ipv4\_cidr\_block
+# alicloud_vpc_ipv4_cidr_block
 
-Provides a VPC Ipv4 Cidr Block resource.
+Provides a VPC Ipv4 Cidr Block resource. VPC IPv4 additional network segment.
 
 For information about VPC Ipv4 Cidr Block and how to use it, see [What is Ipv4 Cidr Block](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/associatevpccidrblock).
 
--> **NOTE:** Available in v1.185.0+.
+-> **NOTE:** Available since v1.185.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_vpc" "default" {
-  cidr_block = "192.168.0.0/24"
-  vpc_name   = "terraform-example"
+variable "name" {
+  default = "terraform-example"
 }
-resource "alicloud_vpc_ipv4_cidr_block" "example" {
-  vpc_id               = alicloud_vpc.default.id
-  secondary_cidr_block = "192.163.0.0/16"
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_vpc" "defaultvpc" {
+  description = var.name
+}
+
+resource "alicloud_vpc_ipv4_cidr_block" "default" {
+  secondary_cidr_block = "192.168.0.0/16"
+  vpc_id               = alicloud_vpc.defaultvpc.id
 }
 ```
 
@@ -44,8 +51,13 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<vpc_id>:<secondary_cidr_block>`.
 
-* `id` - The resource ID of Ipv4 Cidr Block. The value formats as `<vpc_id>:<secondary_cidr_block>`.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Ipv4 Cidr Block.
+* `delete` - (Defaults to 5 mins) Used when delete the Ipv4 Cidr Block.
 
 ## Import
 

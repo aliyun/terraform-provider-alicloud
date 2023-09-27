@@ -1,21 +1,30 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"fmt"
+	"log"
+	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunRouteTableAttachment() *schema.Resource {
+func resourceAliCloudVpcRouteTableAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunRouteTableAttachmentCreate,
-		Read:   resourceAliyunRouteTableAttachmentRead,
-		Delete: resourceAliyunRouteTableAttachmentDelete,
+		Create: resourceAliCloudVpcRouteTableAttachmentCreate,
+		Read:   resourceAliCloudVpcRouteTableAttachmentRead,
+		Delete: resourceAliCloudVpcRouteTableAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"route_table_id": {
@@ -23,7 +32,10 @@ func resourceAliyunRouteTableAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -33,93 +45,125 @@ func resourceAliyunRouteTableAttachment() *schema.Resource {
 	}
 }
 
-func resourceAliyunRouteTableAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+func resourceAliCloudVpcRouteTableAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 
-	request := vpc.CreateAssociateRouteTableRequest()
-	request.RegionId = client.RegionId
-	request.RouteTableId = Trim(d.Get("route_table_id").(string))
-	request.VSwitchId = Trim(d.Get("vswitch_id").(string))
-	request.ClientToken = buildClientToken(request.GetActionName())
-	if err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.AssociateRouteTable(&args)
-		})
+	client := meta.(*connectivity.AliyunClient)
+
+	action := "AssociateRouteTable"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["RouteTableId"] = d.Get("route_table_id")
+	request["VSwitchId"] = d.Get("vswitch_id")
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.RouteTable", "IncorrectVSwitchStatus", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy", "OperationDenied.Ipv4GatewayNotActive", "LastTokenProcessing", "IncorrectStatus.Ipv4Gateway", "OperationFailed.LastTokenProcessing"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table_attachment", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	d.SetId(request.RouteTableId + COLON_SEPARATED + request.VSwitchId)
-	err := vpcService.WaitForRouteTableAttachment(d.Id(), Available, DefaultTimeout)
+	})
+
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_route_table_attachment", action, AlibabaCloudSdkGoERROR)
 	}
-	if err := vpcService.WaitForVSwitch(request.VSwitchId, Available, DefaultTimeoutMedium); err != nil {
-		return WrapError(err)
+
+	d.SetId(fmt.Sprintf("%v:%v", request["RouteTableId"], request["VSwitchId"]))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcRouteTableAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAliyunRouteTableAttachmentRead(d, meta)
+
+	return resourceAliCloudVpcRouteTableAttachmentRead(d, meta)
 }
 
-func resourceAliyunRouteTableAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcRouteTableAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
-	object, err := vpcService.DescribeRouteTableAttachment(d.Id())
+	vpcServiceV2 := VpcServiceV2{client}
+
+	objectRaw, err := vpcServiceV2.DescribeVpcRouteTableAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_route_table_attachment DescribeVpcRouteTableAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.Set("route_table_id", object["RouteTableId"])
-	d.Set("vswitch_id", parts[1])
+
+	d.Set("status", objectRaw["Status"])
+	d.Set("route_table_id", objectRaw["RouteTableId"])
+	vSwitchIds1Raw, _ := jsonpath.Get("$.VSwitchIds.VSwitchId", objectRaw)
+	d.Set("vswitch_id", vSwitchIds1Raw.([]interface{})[0])
+
 	return nil
 }
 
-func resourceAliyunRouteTableAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	vpcService := VpcService{client}
+func resourceAliCloudVpcRouteTableAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "UnassociateRouteTable"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["RouteTableId"] = parts[0]
+	request["VSwitchId"] = parts[1]
+	request["RegionId"] = client.RegionId
 
-	request := vpc.CreateUnassociateRouteTableRequest()
-	request.RegionId = client.RegionId
-	request.RouteTableId = parts[0]
-	request.VSwitchId = parts[1]
-	request.ClientToken = buildClientToken(request.GetActionName())
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		args := *request
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.UnassociateRouteTable(&args)
-		})
-		//Waiting for unassociate the route table
+	request["ClientToken"] = buildClientToken(action)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"TaskConflict", "OperationConflict"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.RouteTable", "IncorrectVSwitchStatus", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "SystemBusy", "OperationDenied.Ipv4GatewayNotActive", "LastTokenProcessing", "IncorrectStatus.Ipv4Gateway", "OperationFailed.LastTokenProcessing"}) || NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(vpcService.WaitForRouteTableAttachment(d.Id(), Deleted, DefaultTimeoutMedium))
+
+	vpcServiceV2 := VpcServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcRouteTableAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+	return nil
 }

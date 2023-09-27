@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -253,9 +254,151 @@ func (s *CbwpServiceV2) DescribeCommonBandwidthPackageAttachment(id string) (obj
 	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandWidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
 }
 
+// DescribeCbwpCommonBandwidthPackageAttachment <<< Encapsulated get interface for Cbwp CommonBandwidthPackageAttachment.
+
+func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeCommonBandwidthPackages"
+	conn, err := client.NewCbwpClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["BandwidthPackageId"] = parts[0]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.CommonBandwidthPackages.CommonBandwidthPackage[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CommonBandwidthPackages.CommonBandwidthPackage[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["BandwidthPackageId"] != parts[0] {
+			continue
+		}
+		instanceIds, err := jsonpath.Get("$.PublicIpAddresses.PublicIpAddresse[*]", item)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PublicIpAddresses.PublicIpAddresse[*]", item)
+		}
+		found := false
+		for _, vv := range instanceIds.([]interface{}) {
+			if vv.(map[string]interface{})["AllocationId"] == parts[1] {
+				found = true
+				break
+			}
+		}
+		if found {
+			return item, nil
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+}
+func (s *CbwpServiceV2) DescribeDescribeEipAddresses(id string) (object map[string]interface{}, err error) {
+
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "DescribeEipAddresses"
+	conn, err := client.NewCbwpClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AllocationId"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.EipAddresses.EipAddress[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EipAddresses.EipAddress[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["BandwidthPackageId"] != parts[0] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackageAttachment", id)), NotFoundMsg, response)
+}
+
 func (s *CbwpServiceV2) CbwpCommonBandwidthPackageAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeCommonBandwidthPackageAttachment(id)
+		object, err := s.DescribeCbwpCommonBandwidthPackageAttachment(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -272,3 +415,5 @@ func (s *CbwpServiceV2) CbwpCommonBandwidthPackageAttachmentStateRefreshFunc(id 
 		return object, currentStatus, nil
 	}
 }
+
+// DescribeCbwpCommonBandwidthPackageAttachment >>> Encapsulated.
