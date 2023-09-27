@@ -128,7 +128,6 @@ func checkoutSupportedRegions(t *testing.T, supported bool, regions []connectivi
 	for _, r := range regions {
 		if region == string(r) {
 			find = true
-			break
 		}
 		if string(r) == backupRegion {
 			backupRegionFind = true

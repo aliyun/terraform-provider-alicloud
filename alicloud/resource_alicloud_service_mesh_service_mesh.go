@@ -13,19 +13,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
+func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudServiceMeshServiceMeshCreate,
-		Read:   resourceAlicloudServiceMeshServiceMeshRead,
-		Update: resourceAlicloudServiceMeshServiceMeshUpdate,
-		Delete: resourceAlicloudServiceMeshServiceMeshDelete,
+		Create: resourceAliCloudServiceMeshServiceMeshCreate,
+		Read:   resourceAliCloudServiceMeshServiceMeshRead,
+		Update: resourceAliCloudServiceMeshServiceMeshUpdate,
+		Delete: resourceAliCloudServiceMeshServiceMeshDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"force": {
@@ -372,7 +372,7 @@ func resourceAlicloudServiceMeshServiceMesh() *schema.Resource {
 	}
 }
 
-func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateServiceMesh"
@@ -559,19 +559,19 @@ func resourceAlicloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 
 	d.SetId(fmt.Sprint(response["ServiceMeshId"]))
 	servicemeshService := ServicemeshService{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"create_timeout", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudServiceMeshServiceMeshUpdate(d, meta)
+	return resourceAliCloudServiceMeshServiceMeshUpdate(d, meta)
 }
-func resourceAlicloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicemeshService := ServicemeshService{client}
 	object, err := servicemeshService.DescribeServiceMeshServiceMesh(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_service_mesh_service_mesh servicemeshService.DescribeServiceMeshServiceMesh Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -740,7 +740,7 @@ func resourceAlicloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	d.Set("cluster_ids", clusters)
 	return nil
 }
-func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicemeshService := ServicemeshService{client}
 	var response map[string]interface{}
@@ -922,7 +922,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -962,7 +962,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -996,7 +996,7 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -1065,13 +1065,13 @@ func resourceAlicloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 	d.Partial(false)
 
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudServiceMeshServiceMeshRead(d, meta)
+	return resourceAliCloudServiceMeshServiceMeshRead(d, meta)
 }
-func resourceAlicloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	servicemeshService := ServicemeshService{client}
 	action := "DeleteServiceMesh"
@@ -1091,7 +1091,7 @@ func resourceAlicloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ErrorPermitted.ClustersNotEmpty", "RelatedResourceReused"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ErrorPermitted.ClustersNotEmpty", "RelatedResourceReused", "StillInitializing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

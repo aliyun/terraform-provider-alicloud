@@ -17,9 +17,11 @@ For information about Service Mesh Service Mesh and how to use it, see [What is 
 
 ## Example Usage
 
-Basic Usage
-
+creating a standard cluster
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf_example"
 }
@@ -58,6 +60,46 @@ resource "alicloud_service_mesh_service_mesh" "default" {
 }
 ```
 
+creating an enterprise cluster
+```terraform
+variable "name" {
+  default = "tf_example"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_service_mesh_versions" "default" {
+  edition = "Default"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_service_mesh_service_mesh" "default" {
+  service_mesh_name = var.name
+  edition           = "Pro"
+  version           = data.alicloud_service_mesh_versions.default.versions.0.version
+  cluster_spec      = "enterprise"
+  network {
+    vpc_id        = alicloud_vpc.default.id
+    vswitche_list = [alicloud_vswitch.default.id]
+  }
+  load_balancer {
+    pilot_public_eip      = false
+    api_server_public_eip = false
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -67,9 +109,10 @@ The following arguments are supported:
 * `network` - (Required, ForceNew) The network configuration of the Service grid. See [`network`](#network) below.
 * `service_mesh_name` - (Optional, ForceNew) The name of the resource.
 * `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
-* `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`:the standard. `Pro`:the Pro version.
+* `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`: the standard. `Pro`: the Pro version.
 * `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
-* `cluster_spec` - (Optional, Available since v1.166.0) The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`.
+* `cluster_spec` - (Optional, Available since v1.166.0) The service mesh instance specification. 
+  Valid values: `standard`,`enterprise`,`ultimate`. Default to `standard`.
 * `cluster_ids` - (Optional, Available since v1.166.0) The array of the cluster ids.
 * `extra_configuration` - (Optional, Available since v1.169.0) The configurations of additional features for the ASM instance. See [`extra_configuration`](#extra_configuration) below.
 
@@ -193,7 +236,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 5 mins) Used when create the Service Mesh.
 * `update` - (Defaults to 5 mins) Used when update the Service Mesh.
-* `delete` - (Defaults to 5 mins) Used when delete the Service Mesh.
+* `delete` - (Defaults to 10 mins) Used when delete the Service Mesh.
 
 ## Import
 

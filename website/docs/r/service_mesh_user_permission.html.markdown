@@ -44,9 +44,9 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_service_mesh_service_mesh" "default" {
   service_mesh_name = var.name
-  edition           = "Default"
+  edition           = "Pro"
   version           = data.alicloud_service_mesh_versions.default.versions.0.version
-  cluster_spec      = "standard"
+  cluster_spec      = "enterprise"
   network {
     vpc_id        = alicloud_vpc.default.id
     vswitche_list = [alicloud_vswitch.default.id]
