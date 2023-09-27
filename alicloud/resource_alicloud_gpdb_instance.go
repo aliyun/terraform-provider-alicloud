@@ -222,7 +222,13 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"ip_whitelist"},
-				Deprecated:    "Field 'security_ip_list' has been deprecated from version 1.187.0. Use 'ip_whitelist' instead.",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if _, ok := d.GetOk("ip_whitelist"); ok {
+						return true
+					}
+					return false
+				},
+				Deprecated: "Field 'security_ip_list' has been deprecated from version 1.187.0. Use 'ip_whitelist' instead.",
 			},
 			"instance_charge_type": {
 				Type:          schema.TypeString,
