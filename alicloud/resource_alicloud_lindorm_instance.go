@@ -89,7 +89,7 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 			"group_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field `group_name` has been removed from provider version 1.210.1.",
+				Removed:  "Field `group_name` has been removed from provider version 1.211.0.",
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
@@ -119,12 +119,12 @@ func resourceAliCloudLindormInstance() *schema.Resource {
 			"phoenix_node_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Removed:  "Field `phoenix_node_count` has been removed from provider version 1.210.1.",
+				Removed:  "Field `phoenix_node_count` has been removed from provider version 1.211.0.",
 			},
 			"phoenix_node_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field `phoenix_node_specification` has been removed from provider version 1.210.1.",
+				Removed:  "Field `phoenix_node_specification` has been removed from provider version 1.211.0.",
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,

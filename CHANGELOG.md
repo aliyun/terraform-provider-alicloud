@@ -1,4 +1,51 @@
 ## 1.211.0 (Unreleased)
+
+- **New Resource:** `alicloud_gpdb_backup_policy` [GH-6542]
+- **New Resource:** `alicloud_event_bridge_api_destination` [GH-6555]
+
+ENHANCEMENTS:
+
+- resource/alicloud_log_store: make attribute mode changable. [GH-6488]
+- resource/alicloud_sae_application: Added the field php, image_pull_secrets, programming_language, command_args_v2, custom_host_alias_v2, oss_mount_descs_v2, config_map_mount_desc_v2, liveness_v2, readiness_v2, post_start_v2, pre_stop_v2, tomcat_config_v2, update_strategy_v2, nas_configs, kafka_configs, pvtz_discovery_svc. [GH-6501]
+- resource/alicloud_cs_kubernetes_addon: skip delete system addon. [GH-6509]
+- resource/alicloud_slb_listener: Improves the error message for the error InvalidParameter. [GH-6512]
+- resource/alicloud_lindorm_instance: Added the field stream_engine_node_count and stream_engine_specification. [GH-6513]
+- resource/alicloud_common_bandwidth_package_attachment: add new attribute ip_type; resource/alicloud_havip_attachment: optimized code implementation; resource/alicloud_vpc_network_acl_attachment: optimized code implementation; resource/alicloud_vpc_traffic_mirror_filter_egress_rule: add new attribute action; resource/alicloud_vpc_traffic_mirror_filter_ingress_rule: add new attribute action; resource/alicloud_route_table_attachment: optimized code implementation; resource/alicloud_vpc_ipv4_cidr_block: optimized code implementation; resource/alicloud_vpc_peer_connection_accepter: optimized code implementation; resource/alicloud_vpc_dhcp_options_set: add retry code. [GH-6514]
+- resource/alicloud_ga_acl_attachment: Improved default create and delete timeout. [GH-6516]
+- resource/alicloud_kvstore_instance: Ignores the period diff when payment type is PostPaid. [GH-6518]
+- resource/alicloud_alb_listener_acl_attachment: add retry error code. [GH-6530]
+- resource/alicloud_cs_kubernetes_node_pool: Improves the resource not found checking for the error code ErrorClusterNotFound. [GH-6532]
+- resource/alicloud_service_mesh_service_mesh: Improves the waiting logic for the failed status; resource/alicloud_service_mesh_user_permission: Adds retry for the error InvalidOperation.Grant.NotRunning. [GH-6535]
+- resource/alicloud_ga_basic_endpoint_group: Added error code NotExist.EndPointGroup; resource/alicloud_ga_basic_ip_set: Added error code NotExist.IpSet; resource/alicloud_ga_basic_accelerate_ip: Added error code NotExist.AccelerateIpId; resource/alicloud_ga_basic_endpoint: Added error code NotExist.EndPoints. [GH-6536]
+- resource/alicloud_ram_user: Removes the attribute 'force' default value to fix the import diff error; resource/alicloud_ram_group: Removes the attribute 'force' default value to fix the import diff error; resource/alicloud_ram_policy: Removes the attribute 'force' default value to fix the import diff error; resource/alicloud_ram_role: Removes the attribute 'force' default value to fix the import diff error. [GH-6537]
+- resource/alicloud_db_instance: Ignore ssl_action setting for serverless instance. [GH-6547]
+- resource/alicloud_nlb_load_balancer_security_group_attachment: add retrycode. [GH-6550]
+- data-source/alicloud_resource_manager_shared_resources: Added retry strategy; data-source/alicloud_resource_manager_shared_targets: Added retry strategy. [GH-6496]
+- docs: Improves the docs example. [GH-6473]
+- docs: Improves the rm docs example. [GH-6478]
+- docs: Improves the docs example. [GH-6482]
+- docs: Mark deprecated resource waf_instance,waf_domain. [GH-6485]
+- docs: Improves the docs example. [GH-6493]
+- docs: Improves the docs example. [GH-6517]
+- docs: Adds alicloud network mirror setting docs. [GH-6548]
+- docs: Improves the cdn domain docs. [GH-6549]
+
+BUG FIXES:
+
+- resource/alicloud_ess_scalinggroup: Fixes the BackendServer.configuring error when attaching vserver groups. [GH-6508]
+- resource/alicloud_slb_listener: Fixes the VServerGroupId does not exist error when updating listener attribute. [GH-6511]
+- resource/alicloud_db_backup_policy: Fixed setting for turning off log backup. [GH-6515]
+- resource/alicloud_alb_load_balancer: Removed the field dry_run default value; resource/alicloud_alb_listener: Fixed alb TypeSet bug caused by tf s dk v1.17.2; resource/alicloud_alb_rule: Fixed alb TypeSet bug caused by tf sdk v1.17.2. [GH-6523]
+- resource/alicloud_ssl_certificates_service_certificate: Fixed the cas endpoint error. [GH-6524]
+- resource/alicloud_sae_grey_tag_route: Fixed sae TypeSet bug caused by tf sdk v1.17.2. [GH-6526]
+- resource/alicloud_instance: Fixes the InvalidParameter error when modifying the instance auto_renew attribute. [GH-6533]
+- resource/alicloud_kvstore_instance: Fixes the SSLEnabledStateExistsFault error after importing and applying. [GH-6534]
+- resource/alicloud_nlb_load_balancer: Fixes the OperationDenied.ZoneMappingsNotChanged error when updating the resource zone_mappings. [GH-6540]
+- resource/alicloud_config_compliance_pack: Fixed config TypeSet bug caused by tf sdk v1.17.2; resource/alicloud_config_aggregate_compliance_pack: Fixed config TypeSet bug caused by tf sdk v1.17.2. [GH-6543]
+- resource/alicloud_mongodb_instance: Fixes the StorageTypeOrInstanceTypeNotSupported error when refreshing the resource state. [GH-6551]
+- resource/alicloud_ecs_key_pair: Fixes the InvalidResourceGroup.NotFound error when resource_group_id is empty. [GH-6552]
+- data-source/alicloud_cdn_service: Fixes the CdnServiceNotFound error. [GH-6520]
+
 ## 1.210.0 (September 15, 2023)
 
 - **New Resource:** `alicloud_cloud_monitor_service_hybrid_double_write` ([#6386](https://github.com/aliyun/terraform-provider-alicloud/issues/6386))

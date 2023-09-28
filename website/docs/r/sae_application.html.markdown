@@ -88,7 +88,7 @@ The following arguments are supported:
 * `replicas` - (Required, Int) Initial number of instances.
 * `namespace_id` - (Optional, ForceNew) SAE namespace ID. Only namespaces whose names are lowercase letters and dashes (-) are supported, and must start with a letter. The namespace can be obtained by calling the DescribeNamespaceList interface.
 * `vpc_id` - (Optional, ForceNew) The vpc id.
-* `vswitch_id` - (Optional) The vswitch id. **NOTE:** From version 1.210.1, `vswitch_id` can be modified.
+* `vswitch_id` - (Optional) The vswitch id. **NOTE:** From version 1.211.0, `vswitch_id` can be modified.
 * `package_version` - (Optional) The version number of the deployment package. Required when the Package Type is War and FatJar.
 * `package_url` - (Optional) Deployment package address. Only FatJar or War type applications can configure the deployment package address.
 * `image_url` - (Optional) Mirror address. Only Image type applications can configure the mirror address.
@@ -99,7 +99,7 @@ The following arguments are supported:
 * `jdk` - (Optional) The JDK version that the deployment package depends on. Image type applications are not supported.
 * `jar_start_options` - (Optional) The JAR package starts the application option. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
 * `jar_start_args` - (Optional) The JAR package starts application parameters. Application default startup command: $JAVA_HOME/bin/java $JarStartOptions -jar $CATALINA_OPTS "$package_path" $JarStartArgs.
-* `app_description` - (Optional) Application description information. No more than 1024 characters. **NOTE:** From version 1.210.1, `app_description` can be modified.
+* `app_description` - (Optional) Application description information. No more than 1024 characters. **NOTE:** From version 1.211.0, `app_description` can be modified.
 * `auto_config` - (Optional, Bool) The auto config. Valid values: `true`, `false`.
 * `auto_enable_application_scaling_rule` - (Optional, Bool) The auto enable application scaling rule. Valid values: `true`, `false`.
 * `batch_wait_time` - (Optional, Int) The batch wait time.
@@ -131,42 +131,42 @@ The following arguments are supported:
   * `name` - environment variable name.
   * `value` - Environment variable value or environment variable reference.
 * `sls_configs` - (Optional) SLS  configuration.
-* `php` - (Optional, Available since v1.210.1) The Php environment.
-* `image_pull_secrets` - (Optional, Available since v1.210.1) The ID of the corresponding Secret.
-* `programming_language` - (Optional, ForceNew, Available since v1.210.1) The programming language that is used to create the application. Valid values: `java`, `php`, `other`.
-* `command_args_v2` - (Optional, List, Available since v1.210.1) The parameters of the image startup command.
-* `custom_host_alias_v2` - (Optional, Set, Available since v1.210.1) The custom mapping between the hostname and IP address in the container. See [`custom_host_alias_v2`](#custom_host_alias_v2) below.
-* `oss_mount_descs_v2` - (Optional, Set, Available since v1.210.1) The description of the mounted Object Storage Service (OSS) bucket. See [`oss_mount_descs_v2`](#oss_mount_descs_v2) below.
-* `config_map_mount_desc_v2` - (Optional, Set, Available since v1.210.1) The description of the ConfigMap that is mounted to the application. A ConfigMap that is created on the ConfigMaps page of a namespace is used to inject configurations into containers. See [`config_map_mount_desc_v2`](#config_map_mount_desc_v2) below.
-* `liveness_v2` - (Optional, Set, Available since v1.210.1) The liveness check settings of the container. See [`liveness_v2`](#liveness_v2) below.
-* `readiness_v2` - (Optional, Set, Available since v1.210.1) The readiness check settings of the container. If a container fails this health check multiple times, the container is stopped and then restarted. See [`readiness_v2`](#readiness_v2) below.
-* `post_start_v2` - (Optional, Set, Available since v1.210.1) The script that is run immediately after the container is started. See [`post_start_v2`](#post_start_v2) below.
-* `pre_stop_v2` - (Optional, Set, Available since v1.210.1) The script that is run before the container is stopped. See [`pre_stop_v2`](#pre_stop_v2) below.
-* `tomcat_config_v2` - (Optional, Set, Available since v1.210.1) The Tomcat configuration. See [`tomcat_config_v2`](#tomcat_config_v2) below.
-* `update_strategy_v2` - (Optional, Set, Available since v1.210.1) The release policy. See [`update_strategy_v2`](#update_strategy_v2) below.
-* `nas_configs` - (Optional, Set, Available since v1.210.1) The configurations for mounting the NAS file system. See [`nas_configs`](#nas_configs) below.
-* `kafka_configs` - (Optional, Set, Available since v1.210.1) The logging configurations of ApsaraMQ for Kafka. See [`kafka_configs`](#kafka_configs) below.
-* `pvtz_discovery_svc` - (Optional, Set, Available since v1.210.1) The configurations of Kubernetes Service-based service registration and discovery. See [`pvtz_discovery_svc`](#pvtz_discovery_svc) below.
+* `php` - (Optional, Available since v1.211.0) The Php environment.
+* `image_pull_secrets` - (Optional, Available since v1.211.0) The ID of the corresponding Secret.
+* `programming_language` - (Optional, ForceNew, Available since v1.211.0) The programming language that is used to create the application. Valid values: `java`, `php`, `other`.
+* `command_args_v2` - (Optional, List, Available since v1.211.0) The parameters of the image startup command.
+* `custom_host_alias_v2` - (Optional, Set, Available since v1.211.0) The custom mapping between the hostname and IP address in the container. See [`custom_host_alias_v2`](#custom_host_alias_v2) below.
+* `oss_mount_descs_v2` - (Optional, Set, Available since v1.211.0) The description of the mounted Object Storage Service (OSS) bucket. See [`oss_mount_descs_v2`](#oss_mount_descs_v2) below.
+* `config_map_mount_desc_v2` - (Optional, Set, Available since v1.211.0) The description of the ConfigMap that is mounted to the application. A ConfigMap that is created on the ConfigMaps page of a namespace is used to inject configurations into containers. See [`config_map_mount_desc_v2`](#config_map_mount_desc_v2) below.
+* `liveness_v2` - (Optional, Set, Available since v1.211.0) The liveness check settings of the container. See [`liveness_v2`](#liveness_v2) below.
+* `readiness_v2` - (Optional, Set, Available since v1.211.0) The readiness check settings of the container. If a container fails this health check multiple times, the container is stopped and then restarted. See [`readiness_v2`](#readiness_v2) below.
+* `post_start_v2` - (Optional, Set, Available since v1.211.0) The script that is run immediately after the container is started. See [`post_start_v2`](#post_start_v2) below.
+* `pre_stop_v2` - (Optional, Set, Available since v1.211.0) The script that is run before the container is stopped. See [`pre_stop_v2`](#pre_stop_v2) below.
+* `tomcat_config_v2` - (Optional, Set, Available since v1.211.0) The Tomcat configuration. See [`tomcat_config_v2`](#tomcat_config_v2) below.
+* `update_strategy_v2` - (Optional, Set, Available since v1.211.0) The release policy. See [`update_strategy_v2`](#update_strategy_v2) below.
+* `nas_configs` - (Optional, Set, Available since v1.211.0) The configurations for mounting the NAS file system. See [`nas_configs`](#nas_configs) below.
+* `kafka_configs` - (Optional, Set, Available since v1.211.0) The logging configurations of ApsaraMQ for Kafka. See [`kafka_configs`](#kafka_configs) below.
+* `pvtz_discovery_svc` - (Optional, Set, Available since v1.211.0) The configurations of Kubernetes Service-based service registration and discovery. See [`pvtz_discovery_svc`](#pvtz_discovery_svc) below.
 * `tags` - (Optional, Available since v1.167.0) A mapping of tags to assign to the resource.
 * `status` - (Optional) The status of the resource. Valid values: `RUNNING`, `STOPPED`, `UNKNOWN`.
-* `command_args` - (Deprecated since v1.210.1) Mirror startup command parameters. The parameters required for the above start command. For example: 1d. **NOTE:** Field `command_args` has been deprecated from provider version 1.210.1. New field `command_args_v2` instead.
-* `custom_host_alias` - (Deprecated since v1.210.1) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}]. **NOTE:** Field `custom_host_alias` has been deprecated from provider version 1.210.1. New field `custom_host_alias_v2` instead.
-* `oss_mount_descs` - (Deprecated since v1.210.1) OSS mount description information. **NOTE:** Field `oss_mount_descs` has been deprecated from provider version 1.210.1. New field `oss_mount_descs_v2` instead.
-* `config_map_mount_desc` - (Deprecated since v1.210.1) ConfigMap mount description. **NOTE:** Field `config_map_mount_desc` has been deprecated from provider version 1.210.1. New field `config_map_mount_desc_v2` instead.
-* `liveness` - (Deprecated since v1.210.1) Container health check. Containers that fail the health check will be shut down and restored. Currently, only the method of issuing commands in the container is supported.
-  **NOTE:** Field `liveness` has been deprecated from provider version 1.210.1. New field `liveness_v2` instead.
-* `readiness` - (Deprecated since v1.210.1) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
-  **NOTE:** Field `readiness` has been deprecated from provider version 1.210.1. New field `readiness_v2` instead.
-* `post_start` - (Deprecated since v1.210.1) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `post_start` has been deprecated from provider version 1.210.1. New field `post_start_v2` instead.
-* `pre_stop` - (Deprecated since v1.210.1) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `pre_stop` has been deprecated from provider version 1.210.1. New field `pre_stop_v2` instead.
-* `tomcat_config` - (Deprecated since v1.210.1) Tomcat file configuration, set to "{}" means to delete the configuration:  useDefaultConfig: Whether to use a custom configuration, if it is true, it means that the custom configuration is not used; if it is false, it means that the custom configuration is used. If you do not use custom configuration, the following parameter configuration will not take effect.  contextInputType: Select the access path of the application.  war: No need to fill in the custom path, the access path of the application is the WAR package name. root: No need to fill in the custom path, the access path of the application is /. custom: You need to fill in the custom path in the custom path below. contextPath: custom path, this parameter only needs to be configured when the contextInputType type is custom.  httpPort: The port range is 1024~65535. Ports less than 1024 need Root permission to operate. Because the container is configured with Admin permissions, please fill in a port greater than 1024. If not configured, the default is 8080. maxThreads: Configure the number of connections in the connection pool, the default size is 400. uriEncoding: Tomcat encoding format, including UTF-8, ISO-8859-1, GBK and GB2312. If not set, the default is ISO-8859-1. useBodyEncoding: Whether to use BodyEncoding for URL. Valid values: `contextInputType`, `contextPath`, `httpPort`, `maxThreads`, `uriEncoding`, `useBodyEncoding`, `useDefaultConfig`.
-  **NOTE:** Field `tomcat_config` has been deprecated from provider version 1.210.1. New field `tomcat_config_v2` instead.
-* `update_strategy` - (Deprecated since v1.210.1) The update strategy. **NOTE:** Field `update_strategy` has been deprecated from provider version 1.210.1. New field `update_strategy_v2` instead.
-* `nas_id` - (Removed since v1.210.1) ID of the mounted NAS, Must be in the same region as the cluster. It must have an available mount point creation quota, or its mount point must be on a switch in the VPC. If it is not filled in and the mountDescs field is present, a NAS will be automatically purchased and mounted on the switch in the VPC by default.
-  **NOTE:** Field `nas_id` has been removed from provider version 1.210.1.
-* `mount_host` - (Removed since v1.210.1) Mount point of NAS in application VPC. **NOTE:** Field `mount_host` has been removed from provider version 1.210.1.
-* `mount_desc` - (Removed since v1.210.1) Mount description. **NOTE:** Field `mount_desc` has been removed from provider version 1.210.1.
-* `version_id` - (Removed since v1.210.1) Application version id. **NOTE:** Field `version_id` has been removed from provider version 1.210.1.
+* `command_args` - (Deprecated since v1.211.0) Mirror startup command parameters. The parameters required for the above start command. For example: 1d. **NOTE:** Field `command_args` has been deprecated from provider version 1.211.0. New field `command_args_v2` instead.
+* `custom_host_alias` - (Deprecated since v1.211.0) Custom host mapping in the container. For example: [{`hostName`:`samplehost`,`ip`:`127.0.0.1`}]. **NOTE:** Field `custom_host_alias` has been deprecated from provider version 1.211.0. New field `custom_host_alias_v2` instead.
+* `oss_mount_descs` - (Deprecated since v1.211.0) OSS mount description information. **NOTE:** Field `oss_mount_descs` has been deprecated from provider version 1.211.0. New field `oss_mount_descs_v2` instead.
+* `config_map_mount_desc` - (Deprecated since v1.211.0) ConfigMap mount description. **NOTE:** Field `config_map_mount_desc` has been deprecated from provider version 1.211.0. New field `config_map_mount_desc_v2` instead.
+* `liveness` - (Deprecated since v1.211.0) Container health check. Containers that fail the health check will be shut down and restored. Currently, only the method of issuing commands in the container is supported.
+  **NOTE:** Field `liveness` has been deprecated from provider version 1.211.0. New field `liveness_v2` instead.
+* `readiness` - (Deprecated since v1.211.0) Application startup status checks, containers that fail multiple health checks will be shut down and restarted. Containers that do not pass the health check will not receive SLB traffic. For example: {`exec`:{`command`:[`sh`,"-c","cat /home/admin/start.sh"]},`initialDelaySeconds`:30,`periodSeconds`:30,"timeoutSeconds ":2}. Valid values: `command`, `initialDelaySeconds`, `periodSeconds`, `timeoutSeconds`.
+  **NOTE:** Field `readiness` has been deprecated from provider version 1.211.0. New field `readiness_v2` instead.
+* `post_start` - (Deprecated since v1.211.0) Execute the script after startup, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `post_start` has been deprecated from provider version 1.211.0. New field `post_start_v2` instead.
+* `pre_stop` - (Deprecated since v1.211.0) Execute the script before stopping, the format is like: {`exec`:{`command`:[`cat`,"/etc/group"]}}. **NOTE:** Field `pre_stop` has been deprecated from provider version 1.211.0. New field `pre_stop_v2` instead.
+* `tomcat_config` - (Deprecated since v1.211.0) Tomcat file configuration, set to "{}" means to delete the configuration:  useDefaultConfig: Whether to use a custom configuration, if it is true, it means that the custom configuration is not used; if it is false, it means that the custom configuration is used. If you do not use custom configuration, the following parameter configuration will not take effect.  contextInputType: Select the access path of the application.  war: No need to fill in the custom path, the access path of the application is the WAR package name. root: No need to fill in the custom path, the access path of the application is /. custom: You need to fill in the custom path in the custom path below. contextPath: custom path, this parameter only needs to be configured when the contextInputType type is custom.  httpPort: The port range is 1024~65535. Ports less than 1024 need Root permission to operate. Because the container is configured with Admin permissions, please fill in a port greater than 1024. If not configured, the default is 8080. maxThreads: Configure the number of connections in the connection pool, the default size is 400. uriEncoding: Tomcat encoding format, including UTF-8, ISO-8859-1, GBK and GB2312. If not set, the default is ISO-8859-1. useBodyEncoding: Whether to use BodyEncoding for URL. Valid values: `contextInputType`, `contextPath`, `httpPort`, `maxThreads`, `uriEncoding`, `useBodyEncoding`, `useDefaultConfig`.
+  **NOTE:** Field `tomcat_config` has been deprecated from provider version 1.211.0. New field `tomcat_config_v2` instead.
+* `update_strategy` - (Deprecated since v1.211.0) The update strategy. **NOTE:** Field `update_strategy` has been deprecated from provider version 1.211.0. New field `update_strategy_v2` instead.
+* `nas_id` - (Removed since v1.211.0) ID of the mounted NAS, Must be in the same region as the cluster. It must have an available mount point creation quota, or its mount point must be on a switch in the VPC. If it is not filled in and the mountDescs field is present, a NAS will be automatically purchased and mounted on the switch in the VPC by default.
+  **NOTE:** Field `nas_id` has been removed from provider version 1.211.0.
+* `mount_host` - (Removed since v1.211.0) Mount point of NAS in application VPC. **NOTE:** Field `mount_host` has been removed from provider version 1.211.0.
+* `mount_desc` - (Removed since v1.211.0) Mount description. **NOTE:** Field `mount_desc` has been removed from provider version 1.211.0.
+* `version_id` - (Removed since v1.211.0) Application version id. **NOTE:** Field `version_id` has been removed from provider version 1.211.0.
 
 ### `custom_host_alias_v2`
 
