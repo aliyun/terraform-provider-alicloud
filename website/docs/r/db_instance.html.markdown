@@ -484,8 +484,7 @@ The following arguments are supported:
 
 * `engine` - (Required, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL, MariaDB.
 
--> **NOTE:**
-- Available in 1.191.0+. When the 'EngineVersion' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
+-> **NOTE:** When the 'engine_version' changes, it can be used as the target database version for the large version upgrade of RDS for MySQL instance.
 * `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
   - MySQL: [ 5.5、5.6、5.7、8.0 ]
   - SQLServer: [ 2008r2、08r2_ent_ha、2012、2012_ent_ha、2012_std_ha、2012_web、2014_std_ha、2016_ent_ha、2016_std_ha、2016_web、2017_std_ha、2017_ent、2019_std_ha、2019_ent ]
@@ -503,16 +502,14 @@ The following arguments are supported:
   - SQLServer high availability: mssql.mem2.serverless.s2
   - PostgreSQL basic: pg.n2.serverless.1c
 
--> **NOTE:**
-- When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value.
-- When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
+-> **NOTE:** When `storage_auto_scale="Enable"`, do not perform `instance_storage` check. when `storage_auto_scale="Disable"`, if the instance itself `instance_storage`has changed. You need to manually revise the `instance_storage` in the template value. When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
 * `instance_storage` - (Required) User-defined DB instance storage space. Value range:
   - [5, 2000] for MySQL/PostgreSQL HA dual node edition;
   - [20,1000] for MySQL 5.7 basic single node edition;
   - [10, 2000] for SQL Server 2008R2;
   - [20,2000] for SQL Server 2012 basic single node edition
     Increase progressively at a rate of 5 GB. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
-    Note: There is extra 5 GB storage for SQL Server Instance and it is not in specified `instance_storage`.
+    Note: There is extra 5 GB storage for SQL Server Instance, and it is not in specified `instance_storage`.
 
 * `db_instance_storage_type` - (Optional, Available in 1.68.0+) The storage type of the instance. Serverless instance, only `cloud_essd` can be selected. Valid values:
   - local_ssd: specifies to use local SSDs. This value is recommended.
@@ -529,9 +526,7 @@ The following arguments are supported:
     - This time zone of the instance is not in UTC. For more information about time zones, see [Time zones](https://www.alibabacloud.com/help/doc-detail/297356.htm).
     - You can specify this parameter only when the instance is equipped with standard SSDs or ESSDs.
 
--> **NOTE:**
-- You can specify the time zone when you create a primary instance. You cannot specify the time zone when you create a read-only instance. Read-only instances inherit the time zone of their primary instance.
-- If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
+-> **NOTE:** You can specify the time zone when you create a primary instance. You cannot specify the time zone when you create a read-only instance. Read-only instances inherit the time zone of their primary instance. If you do not specify this parameter, the system assigns the default time zone of the region where the instance resides.
 * `sql_collector_status` - (Optional, Available in 1.70.0+) The sql collector status of the instance. Valid values are `Enabled`, `Disabled`, Default to `Disabled`.
 * `sql_collector_config_value` - (Optional, Available in 1.70.0+) The sql collector keep time of the instance. Valid values are `30`, `180`, `365`, `1095`, `1825`, Default to `30`.
 
@@ -613,7 +608,13 @@ The following arguments are supported:
 -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `zone_id_slave_b`- (Optional, ForceNew, Available in 1.101.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
-* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions, Valid values: `Open`: turn on SSL encryption; `Close`: turn off SSL encryption; `Update`: update SSL certificate. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
+* `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions. Valid values: 
+  `Open`: turn on SSL encryption; 
+  `Close`: turn off SSL encryption; 
+  `Update`: update SSL certificate. 
+  See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
+  
+-> **NOTE:** The attribute `ssl_action` will be ignored when setting `instance_charge_type = "Serverless"` for SQLServer, PostgreSQL or MariaDB.
 * `ssl_connection_string` - (Optional, Available in v1.198.0+) The internal or public endpoint for which the server certificate needs to be created or updated.
 * `tde_status` - (Optional, Available in 1.90.0+) The TDE(Transparent Data Encryption) status. After TDE is turned on, it cannot be turned off. See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26256.htm).
 * `encryption_key` - (Optional, Available in 1.109.0+) The key id of the KMS. Used for encrypting a disk if not null. Only for PostgreSQL, MySQL and SQLServer.
@@ -659,12 +660,8 @@ The following arguments are supported:
   - Disable
 
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
-* `storage_threshold` - (Optional, Available in 1.129.0+)The trigger threshold (percentage) for automatic storage space expansion. Valid values:
-  - 10
-  - 20
-  - 30
-  - 40
-  - 50
+* `storage_threshold` - (Optional, Available in 1.129.0+)The trigger threshold (percentage) for automatic storage space expansion.
+  Valid values: [10, 20, 30, 40, 50].
 
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable. The value must be greater than or equal to the total size of the current storage space of the instance.
 * `storage_upper_bound` - (Optional, Available in 1.129.0+) The upper limit of the total storage space for automatic expansion of the storage space, that is, automatic expansion will not cause the total storage space of the instance to exceed this value. Unit: GB. The value must be ≥0.
@@ -712,11 +709,7 @@ The following arguments are supported:
 
 * `serverless_config` - (Optional, Available in 1.200.0+) The settings of the serverless instance. This parameter is required when you create a serverless instance. This parameter takes effect only when you create an ApsaraDB RDS for Serverless instance. See [`serverless_config`](#serverless_config) below.
 * `role_arn` - (ForceNew, Optional, Available in 1.208.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role.
-* `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values:
-  - Up
-  - Down
-  - TempUpgrade
-  - Serverless
+* `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values: ["Up", "Down", "TempUpgrade", "Serverless"]
 
 ### `parameters`
 
@@ -793,7 +786,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the db instance (until it reaches the initial `Running` status).
+* `create` - (Defaults to 50 mins) Used when creating the db instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
 * `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 

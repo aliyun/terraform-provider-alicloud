@@ -182,7 +182,7 @@ func testSweepDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -305,6 +305,16 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "delayed_insert_timeout",
@@ -406,11 +416,20 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tde_status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"engine":                     "MySQL",
 					"engine_version":             "8.0",
 					"instance_type":              "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
 					"instance_storage":           "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min * 3}",
 					"db_instance_storage_type":   "cloud_essd",
+					"ssl_action":                 "Close",
 					"instance_name":              "${var.name}",
 					"monitoring_period":          "60",
 					"instance_charge_type":       "Postpaid",
@@ -433,6 +452,7 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"instance_type":              CHECKSET,
 						"instance_storage":           CHECKSET,
 						"db_instance_storage_type":   "cloud_essd",
+						"ssl_action":                 "Close",
 						"instance_name":              name,
 						"monitoring_period":          "60",
 						"zone_id":                    CHECKSET,
@@ -470,6 +490,12 @@ func TestAccAlicloudRdsDBInstanceMysql(t *testing.T) {
 						"storage_upper_bound": "1000",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
 			},
 		},
 	})
@@ -558,7 +584,7 @@ data "alicloud_vswitches" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstanceHighAvailabilityInstance(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_Mysql_5_7_HighAvailabilityInstance(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap2)
@@ -806,7 +832,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_SQLServer(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -818,6 +844,8 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	connectionStringPrefix := acctest.RandString(8) + "rm"
+	connectionStringPrefixSecond := acctest.RandString(8) + "rm"
 	name := "tf-testAccDBInstanceConfig"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceSQLServerConfigDependence)
 	resource.Test(t, resource.TestCase{
@@ -897,6 +925,46 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_ips": []string{"10.168.1.12", "100.69.7.112"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -927,6 +995,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 					"security_group_ids":       []string{"${alicloud_security_group.default.0.id}"},
 					"monitoring_period":        "300",
 					"category":                 "HighAvailability",
+					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -944,6 +1013,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer(t *testing.T) {
 						"security_group_id":        CHECKSET,
 						"security_group_ids.#":     "1",
 						"category":                 "HighAvailability",
+						"connection_string_prefix": connectionStringPrefixSecond,
 					}),
 				),
 			},
@@ -1001,7 +1071,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -1013,6 +1083,8 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	connectionStringPrefix := acctest.RandString(8) + "rm"
+	connectionStringPrefixSecond := acctest.RandString(8) + "rm"
 	name := "tf-testAccDBInstanceConfig"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePostgreSQLConfigDependence)
 	resource.Test(t, resource.TestCase{
@@ -1118,6 +1190,26 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"monitoring_period": "300",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1159,6 +1251,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 					"encryption_key":           "${alicloud_kms_key.default.id}",
 					"category":                 "HighAvailability",
 					"db_instance_storage_type": "cloud_essd2",
+					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1176,6 +1269,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL(t *testing.T) {
 						"security_group_ids.#":     "0",
 						"category":                 "HighAvailability",
 						"db_instance_storage_type": "cloud_essd2",
+						"connection_string_prefix": connectionStringPrefixSecond,
 					}),
 				),
 			},
@@ -1240,7 +1334,7 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_SSL(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -1513,7 +1607,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQLSSL(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBInstancePostgreSQLBabelfish(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_PostgreSQL_13_0_Babelfish(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	connectionStringPrefix := acctest.RandString(8) + "rm"
@@ -1832,7 +1926,7 @@ resource "alicloud_kms_key" "default" {
 
 `, name)
 }
-func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_MariaDB_10_3(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -1844,6 +1938,8 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	connectionStringPrefix := acctest.RandString(8) + "rm"
+	connectionStringPrefixSecond := acctest.RandString(8) + "rm"
 	name := "tf-testAccDBInstanceConfig"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceMariaDBDependence)
 	resource.Test(t, resource.TestCase{
@@ -1892,6 +1988,46 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_type": "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1921,29 +2057,31 @@ func TestAccAlicloudRdsDBInstanceMariaDB(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":               "MariaDB",
-					"engine_version":       "10.3",
-					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":     "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
-					"instance_charge_type": "Postpaid",
-					"instance_name":        "${var.name}",
-					"vswitch_id":           "${local.vswitch_id}",
-					"security_group_ids":   []string{},
+					"engine":                   "MariaDB",
+					"engine_version":           "10.3",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min + data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.step}",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"security_group_ids":       []string{},
+					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":               "MariaDB",
-						"engine_version":       "10.3",
-						"instance_type":        CHECKSET,
-						"instance_storage":     CHECKSET,
-						"instance_name":        "tf-testAccDBInstanceConfig",
-						"monitoring_period":    "300",
-						"zone_id":              CHECKSET,
-						"instance_charge_type": "Postpaid",
-						"connection_string":    CHECKSET,
-						"port":                 CHECKSET,
-						"security_group_id":    CHECKSET,
-						"security_group_ids.#": "0",
+						"engine":                   "MariaDB",
+						"engine_version":           "10.3",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"instance_name":            "tf-testAccDBInstanceConfig",
+						"monitoring_period":        "300",
+						"zone_id":                  CHECKSET,
+						"instance_charge_type":     "Postpaid",
+						"connection_string":        CHECKSET,
+						"port":                     CHECKSET,
+						"security_group_id":        CHECKSET,
+						"security_group_ids.#":     "0",
+						"connection_string_prefix": connectionStringPrefixSecond,
 					}),
 				),
 			},
@@ -2007,7 +2145,7 @@ resource "alicloud_kms_key" "default" {
 }
 
 // Unknown current resource exists
-func TestAccAlicloudRdsDBInstanceMultiAZ(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_MultiAZ(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
@@ -2058,7 +2196,7 @@ func TestAccAlicloudRdsDBInstanceMultiAZ(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBInstanceBasic(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
@@ -2125,77 +2263,7 @@ func TestAccAlicloudRdsDBInstanceBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBInstance_VpcId(t *testing.T) {
-	var instance map[string]interface{}
-	resourceId := "alicloud_db_instance.default"
-	ra := resourceAttrInit(resourceId, instanceBasicMap2)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
-		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeDBInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 999999)
-	name := fmt.Sprintf("tftestaccdbcreatemysql%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependenceVpcId)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-
-		// module name
-		IDRefreshName: resourceId,
-
-		Providers:    testAccProviders,
-		CheckDestroy: rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"engine":                   "MySQL",
-					"engine_version":           "5.7",
-					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min}",
-					"instance_charge_type":     "Postpaid",
-					"instance_name":            "${var.name}",
-					"db_instance_storage_type": "local_ssd",
-					"zone_id":                  "${local.zone_id}",
-					"zone_id_slave_a":          "${local.zone_id}",
-					"vswitch_id":               "${local.vswitch_id}",
-					"monitoring_period":        "60",
-					"security_group_ids":       "${alicloud_security_group.default.*.id}",
-					"role_arn":                 "${data.alicloud_ram_roles.default.roles.0.arn}",
-					//"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine":                   "MySQL",
-						"engine_version":           "5.7",
-						"db_instance_storage_type": "local_ssd",
-						"instance_name":            name,
-						//"vpc_id":                   CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tde_status": "Enabled",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "role_arn", "tde_status"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudRdsDBInstanceMySQL_ServerlessBasic(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_MySQL_8_0_ServerlessBasic(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -2207,6 +2275,7 @@ func TestAccAlicloudRdsDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	connectionStringPrefix := acctest.RandString(8) + "rm"
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccDBInstance_MysqlServerlessBasic_%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceMysqlServerlessBasicConfigDependence)
@@ -2302,6 +2371,56 @@ func TestAccAlicloudRdsDBInstanceMySQL_ServerlessBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Close",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -2351,7 +2470,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_PostgreSQL_14_0_Serverless(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -2363,6 +2482,7 @@ func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	connectionStringPrefix := acctest.RandString(8) + "rm"
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccDBInstance_PostgreSQLServerlessBasic_%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstancePostgreSQLServerlessBasicConfigDependence)
@@ -2462,6 +2582,55 @@ func TestAccAlicloudRdsDBInstancePostgreSQL_ServerlessBasic(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			// ssl_action is ignored for pg serverless
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Close",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -2511,7 +2680,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstanceMySQL_ServerlessStandard(t *testing.T) {
+func TestAccAliCloudRdsDBInstanceMySQL_ServerlessStandard(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -2672,7 +2841,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsDBInstanceSQLServer_ServerlessHA(t *testing.T) {
+func TestAccAliCloudRdsDBInstance_SQLServer_2019_ServerlessHA(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -2686,6 +2855,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccDBInstance_MssqlServerlessHA_%d", rand)
+	connectionStringPrefix := acctest.RandString(8) + "rm"
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceMssqlServerlessHAConfigDependence)
 
 	resource.Test(t, resource.TestCase{
@@ -2772,6 +2942,55 @@ func TestAccAlicloudRdsDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3306",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3306",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3333",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3333",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_string_prefix": connectionStringPrefix,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_string_prefix": connectionStringPrefix,
+					}),
+				),
+			},
+			// ssl_action is ignored for SQLServer
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Close",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_action": "Close",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -2781,7 +3000,7 @@ func TestAccAlicloudRdsDBInstanceSQLServer_ServerlessHA(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
+func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
 	var instance map[string]interface{}
 	resourceId := "alicloud_db_instance.default"
 	ra := resourceAttrInit(resourceId, instanceBasicMap)
@@ -3078,6 +3297,7 @@ var instanceBasicMap = map[string]string{
 	"port":                 "3306",
 	"status":               CHECKSET,
 	"create_time":          CHECKSET,
+	"ssl_action":           "Close",
 }
 
 var instanceBasicMap2 = map[string]string{
@@ -3091,6 +3311,7 @@ var instanceBasicMap2 = map[string]string{
 	"instance_charge_type": "Postpaid",
 	"connection_string":    CHECKSET,
 	"port":                 CHECKSET,
+	"ssl_action":           "Close",
 }
 
 var instanceBasicMap3 = map[string]string{
@@ -3103,11 +3324,16 @@ var instanceBasicMap3 = map[string]string{
 	"zone_id":           CHECKSET,
 	"connection_string": CHECKSET,
 	"port":              CHECKSET,
+	"ssl_action":        "Close",
 }
 
-var instanceBasicMap4 = map[string]string{}
+var instanceBasicMap4 = map[string]string{
+	"ssl_action": "Close",
+}
 
-var instanceServerlessMap = map[string]string{}
+var instanceServerlessMap = map[string]string{
+	"ssl_action": "Close",
+}
 
 var instancePostgreSQLBasicMap = map[string]string{
 	"engine":               "PostgreSQL",
@@ -3123,4 +3349,5 @@ var instancePostgreSQLBasicMap = map[string]string{
 	"port":                 "5432",
 	"status":               CHECKSET,
 	"create_time":          CHECKSET,
+	"ssl_action":           "Close",
 }

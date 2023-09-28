@@ -21,18 +21,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDBInstance() *schema.Resource {
+func resourceAliCloudDBInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDBInstanceCreate,
-		Read:   resourceAlicloudDBInstanceRead,
-		Update: resourceAlicloudDBInstanceUpdate,
-		Delete: resourceAlicloudDBInstanceDelete,
+		Create: resourceAliCloudDBInstanceCreate,
+		Read:   resourceAliCloudDBInstanceRead,
+		Update: resourceAliCloudDBInstanceUpdate,
+		Delete: resourceAliCloudDBInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(30 * time.Minute),
+			Create: schema.DefaultTimeout(50 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
@@ -357,6 +357,10 @@ func resourceAlicloudDBInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"Open", "Close", "Update"}, false),
 				Optional:     true,
 				Computed:     true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// currently, only mysql serverless support setting ssl_action
+					return d.Get("instance_charge_type").(string) == "Serverless" && d.Get("engine").(string) != "MySQL"
+				},
 			},
 			"ssl_connection_string": {
 				Type:             schema.TypeString,
@@ -590,7 +594,7 @@ func parameterToHash(v interface{}) int {
 	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
 }
 
-func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	conn, err := client.NewRdsClient()
@@ -617,10 +621,10 @@ func resourceAlicloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDBInstanceUpdate(d, meta)
+	return resourceAliCloudDBInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 	d.Partial(true)
@@ -978,10 +982,6 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 		instance, err := rdsService.DescribeDBInstance(d.Id())
 		if err != nil {
-			if NotFoundError(err) {
-				d.SetId("")
-				return nil
-			}
 			return WrapError(err)
 		}
 
@@ -1044,7 +1044,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1220,7 +1220,7 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudDBInstanceRead(d, meta)
+		return resourceAliCloudDBInstanceRead(d, meta)
 	}
 
 	if d.HasChange("instance_name") {
@@ -1531,16 +1531,16 @@ func resourceAlicloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Partial(false)
-	return resourceAlicloudDBInstanceRead(d, meta)
+	return resourceAliCloudDBInstanceRead(d, meta)
 }
 
-func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
 	instance, err := rdsService.DescribeDBInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -1752,7 +1752,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 	d.Set("ssl_status", sslAction["RequireUpdate"])
-	d.Set("ssl_action", d.Get("ssl_action"))
+	d.Set("ssl_action", convertRdsInstanceSslActionResponse(sslAction["SSLEnabled"], d.Get("ssl_action")))
 	d.Set("client_ca_enabled", d.Get("client_ca_enabled"))
 	d.Set("client_crl_enabled", d.Get("client_crl_enabled"))
 	d.Set("ca_type", sslAction["CAType"])
@@ -1785,7 +1785,7 @@ func resourceAlicloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func resourceAlicloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rdsService := RdsService{client}
 
@@ -2059,4 +2059,17 @@ func findKmsRoleArn(client *connectivity.AliyunClient, k string) (string, error)
 		return "", WrapErrorf(err, FailedGetAttributeMsg, action, "$.VersionIds.VersionId", response)
 	}
 	return strings.Join([]string{"acs:ram::", fmt.Sprint(resp), ":role/aliyunrdsinstanceencryptiondefaultrole"}, ""), nil
+}
+
+func convertRdsInstanceSslActionResponse(sslEnable, sslActionRead interface{}) string {
+	if fmt.Sprint(sslActionRead) == "Update" {
+		return "Update"
+	}
+	switch fmt.Sprint(sslEnable) {
+	case "Yes", "on":
+		return "Open"
+	case "No", "off":
+		return "Close"
+	}
+	return fmt.Sprint(sslActionRead)
 }
