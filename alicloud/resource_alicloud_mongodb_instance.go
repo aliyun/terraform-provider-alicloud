@@ -17,12 +17,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongoDBInstance() *schema.Resource {
+func resourceAliCloudMongoDBInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongoDBInstanceCreate,
-		Read:   resourceAlicloudMongoDBInstanceRead,
-		Update: resourceAlicloudMongoDBInstanceUpdate,
-		Delete: resourceAlicloudMongoDBInstanceDelete,
+		Create: resourceAliCloudMongoDBInstanceCreate,
+		Read:   resourceAliCloudMongoDBInstanceRead,
+		Update: resourceAliCloudMongoDBInstanceUpdate,
+		Delete: resourceAliCloudMongoDBInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -275,7 +275,7 @@ func resourceAlicloudMongoDBInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateDBInstance"
@@ -399,10 +399,10 @@ func resourceAlicloudMongoDBInstanceCreate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongoDBInstanceUpdate(d, meta)
+	return resourceAliCloudMongoDBInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
@@ -492,9 +492,12 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {
-		return WrapError(err)
+		if !IsExpectedErrors(err, []string{"StorageTypeOrInstanceTypeNotSupported"}) {
+			return WrapError(err)
+		}
+	} else {
+		d.Set("ssl_status", sslAction["SSLStatus"])
 	}
-	d.Set("ssl_status", sslAction["SSLStatus"])
 
 	d.Set("replication_factor", formatInt(instance["ReplicationFactor"]))
 	if instance["ReplicationFactor"] != "" && instance["ReplicationFactor"] != "1" {
@@ -511,7 +514,7 @@ func resourceAlicloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 	conn, err := client.NewDdsClient()
@@ -687,7 +690,7 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if d.IsNewResource() {
 		d.Partial(false)
-		return resourceAlicloudMongoDBInstanceRead(d, meta)
+		return resourceAliCloudMongoDBInstanceRead(d, meta)
 	}
 
 	if d.HasChange("resource_group_id") {
@@ -842,13 +845,13 @@ func resourceAlicloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	d.Partial(false)
 
-	return resourceAlicloudMongoDBInstanceRead(d, meta)
+	return resourceAliCloudMongoDBInstanceRead(d, meta)
 }
 
-func resourceAlicloudMongoDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	// Pre paid instance can not be release.
 	if d.Get("instance_charge_type").(string) == string(PrePaid) {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resource mongoDB instance. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 	client := meta.(*connectivity.AliyunClient)

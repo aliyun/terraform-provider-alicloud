@@ -109,7 +109,7 @@ func testSweepMongoDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_classic(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -294,7 +294,7 @@ func TestAccAlicloudMongoDBInstance_classic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_classic1(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_classic1(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -369,7 +369,7 @@ func TestAccAlicloudMongoDBInstance_classic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_vpc(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -499,7 +499,7 @@ func TestAccAlicloudMongoDBInstance_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_vpc1(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_vpc1(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -570,7 +570,7 @@ func TestAccAlicloudMongoDBInstance_vpc1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_vpc2(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_vpc2(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -649,7 +649,7 @@ func TestAccAlicloudMongoDBInstance_vpc2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_multiAZ(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
@@ -780,7 +780,7 @@ func TestAccAlicloudMongoDBInstance_multiAZ(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMongoDBInstance_parameters(t *testing.T) {
+func TestAccAliCloudMongoDBInstance_parameters(t *testing.T) {
 	var v dds.DBInstance
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
