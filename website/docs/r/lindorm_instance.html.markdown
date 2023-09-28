@@ -77,14 +77,14 @@ The following arguments are supported:
 * `duration` - (Optional) The duration of paid. Valid when the `payment_type` is `Subscription`.  When `pricing_cycle` set to `Month`, the valid value id `1` to `9`.  When `pricing_cycle` set to `Year`, the valid value id `1` to `3`.
 * `file_engine_node_count` - (Optional, Int) The count of file engine.
 * `file_engine_specification` - (Optional) The specification of file engine. Valid values: `lindorm.c.xlarge`.
-* `group_name` - (Removed since v1.210.1) The group name. **NOTE:** Field `group_name` has been removed from provider version 1.210.1.
+* `group_name` - (Removed since v1.211.0) The group name. **NOTE:** Field `group_name` has been removed from provider version 1.211.0.
 * `instance_name` - (Optional) The name of the instance.
 * `instance_storage` - (Optional) The storage capacity of the instance. Unit: GB. For example, the value 50 indicates 50 GB.
 * `ip_white_list` - (Optional, List) The ip white list of instance.
 * `lts_node_count` - (Optional, Int) The count of lindorm tunnel service.
 * `lts_node_specification` - (Optional) The specification of lindorm tunnel service. Valid values: `lindorm.g.2xlarge`, `lindorm.g.xlarge`.
-* `phoenix_node_count` - (Removed since v1.210.1) The count of phoenix. **NOTE:** Field `phoenix_node_count` has been removed from provider version 1.210.1.
-* `phoenix_node_specification` - (Removed since v1.210.1) The specification of phoenix. **NOTE:** Field `phoenix_node_specification` has been removed from provider version 1.210.1.
+* `phoenix_node_count` - (Removed since v1.211.0) The count of phoenix. **NOTE:** Field `phoenix_node_count` has been removed from provider version 1.211.0.
+* `phoenix_node_specification` - (Removed since v1.211.0) The specification of phoenix. **NOTE:** Field `phoenix_node_specification` has been removed from provider version 1.211.0.
 * `pricing_cycle` - (Optional) The pricing cycle. Valid when the `payment_type` is `Subscription`. Valid values: `Month` and `Year`.
 * `search_engine_node_count` - (Optional, Int) The count of search engine.
 * `search_engine_specification` - (Optional) The specification of search engine. Valid values: `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.g.xlarge`.
@@ -93,8 +93,8 @@ The following arguments are supported:
 * `time_series_engine_node_count` - (Optional, Int) The count of time series engine.
 * `time_serires_engine_specification` - (Deprecated since v1.182.0) Field `time_serires_engine_specification` has been deprecated from provider version 1.182.0. New field `time_series_engine_specification` instead.
 * `time_series_engine_specification` - (Optional, Available since v1.182.0) The specification of time series engine. Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`, `lindorm.r.8xlarge`.
-* `stream_engine_node_count` - (Optional, Int, Available since v1.210.1) The number of LindormStream nodes in the instance.
-* `stream_engine_specification` - (Optional, Available since v1.210.1) The specification of the LindormStream nodes in the instance. Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`.
+* `stream_engine_node_count` - (Optional, Int, Available since v1.211.0) The number of LindormStream nodes in the instance.
+* `stream_engine_specification` - (Optional, Available since v1.211.0) The specification of the LindormStream nodes in the instance. Valid values: `lindorm.g.xlarge`, `lindorm.g.2xlarge`, `lindorm.g.4xlarge`, `lindorm.g.8xlarge`.
 * `upgrade_type` - (Removed since v1.207.0) The upgrade type. **NOTE:** Field `upgrade_type` has been deprecated from provider version 1.163.0, and it has been removed from provider version 1.207.0.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew) The zone ID of the instance.
@@ -124,7 +124,7 @@ The following attributes are exported:
 * `enabled_table_engine` - (Available since v1.163.0) Whether to enable table engine.
 * `enabled_search_engine` - (Available since v1.163.0) Whether to enable search engine.
 * `enabled_lts_engine` - (Available since v1.163.0) Whether to enable lts engine.
-* `enabled_stream_engine` - (Available since v1.210.1) Whether to enable streaming engine.
+* `enabled_stream_engine` - (Available since v1.211.0) Whether to enable streaming engine.
 * `service_type` - (Available since v1.196.0) The instance type.
 * `status` - The status of Instance.
 
