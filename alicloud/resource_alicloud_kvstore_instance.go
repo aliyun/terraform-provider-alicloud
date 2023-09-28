@@ -35,7 +35,6 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
-				Default:          false,
 				DiffSuppressFunc: redisPostPaidDiffSuppressFunc,
 			},
 			"auto_renew_period": {
@@ -164,7 +163,6 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"instance_release_protection": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
@@ -269,6 +267,7 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 			"ssl_enable": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Disable", "Enable", "Update"}, false),
 			},
 			"secondary_zone_id": {
@@ -638,7 +637,6 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("node_type", object["NodeType"])
 	d.Set("payment_type", object["ChargeType"])
 	d.Set("instance_charge_type", object["ChargeType"])
-
 	d.Set("private_ip", object["PrivateIp"])
 	d.Set("qps", object["QPS"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
@@ -670,12 +668,13 @@ func resourceAlicloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 	}
 	d.Set("security_group_id", strings.Join(sgs, ","))
 
-	if _, ok := d.GetOk("ssl_enable"); ok {
-
-		describeInstanceSSLObject, err := r_kvstoreService.DescribeInstanceSSL(d.Id())
-		if err != nil {
+	describeInstanceSSLObject, err := r_kvstoreService.DescribeInstanceSSL(d.Id())
+	if err != nil {
+		// some engine does not support the ssl
+		if !IsExpectedErrors(err, []string{"IncorrectEngineVersion"}) {
 			return WrapError(err)
 		}
+	} else {
 		d.Set("ssl_enable", describeInstanceSSLObject.SSLEnabled)
 	}
 
