@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAliCloudAlbRule() *schema.Resource {
+func resourceAlicloudAlbRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAlbRuleCreate,
-		Read:   resourceAliCloudAlbRuleRead,
-		Update: resourceAliCloudAlbRuleUpdate,
-		Delete: resourceAliCloudAlbRuleDelete,
+		Create: resourceAlicloudAlbRuleCreate,
+		Read:   resourceAlicloudAlbRuleRead,
+		Update: resourceAlicloudAlbRuleUpdate,
+		Delete: resourceAlicloudAlbRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,45 +28,24 @@ func resourceAliCloudAlbRule() *schema.Resource {
 			Delete: schema.DefaultTimeout(2 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"listener_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"rule_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"priority": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"direction": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Request", "Response"}, false),
-			},
-			"dry_run": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 			"rule_actions": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"order": {
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: IntBetween(1, 50000),
-						},
-						"type": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors"}, false),
-						},
 						"fixed_response_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -164,6 +143,11 @@ func resourceAliCloudAlbRule() *schema.Resource {
 									},
 								},
 							},
+						},
+						"order": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: IntBetween(1, 50000),
 						},
 						"redirect_config": {
 							Type:     schema.TypeSet,
@@ -313,6 +297,11 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors"}, false),
+						},
 					},
 				},
 			},
@@ -321,11 +310,6 @@ func resourceAliCloudAlbRule() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "QueryString", "Method", "Cookie", "SourceIp"}, false),
-						},
 						"cookie_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -441,6 +425,11 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "HTTP", "QueryString", "Method", "Cookie", "SourceIp"}, false),
+						},
 						"source_ip_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -459,6 +448,17 @@ func resourceAliCloudAlbRule() *schema.Resource {
 					},
 				},
 			},
+			"rule_name": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"direction": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Request", "Response"}, false),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -467,9 +467,8 @@ func resourceAliCloudAlbRule() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
 	var response map[string]interface{}
 	var direction string
 	action := "CreateRule"
@@ -478,23 +477,14 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request["ClientToken"] = buildClientToken("CreateRule")
-	request["ListenerId"] = d.Get("listener_id")
-	request["RuleName"] = d.Get("rule_name")
-	request["Priority"] = d.Get("priority")
-
-	if v, ok := d.GetOk("direction"); ok {
-		direction = v.(string)
-		request["Direction"] = v
-	}
-
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
 
+	request["ListenerId"] = d.Get("listener_id")
+	request["Priority"] = d.Get("priority")
 	ruleActionsMaps := make([]map[string]interface{}, 0)
-	for _, ruleActions := range d.Get("rule_actions").(*schema.Set).List() {
+	for _, ruleActions := range d.Get("rule_actions").([]interface{}) {
 		ruleActionsArg := ruleActions.(map[string]interface{})
 		ruleActionsMap := map[string]interface{}{}
 		ruleActionsMap["Order"] = ruleActionsArg["order"]
@@ -713,6 +703,14 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	request["RuleConditions"] = ruleConditionsMaps
 
+	request["RuleName"] = d.Get("rule_name")
+
+	if v, ok := d.GetOk("direction"); ok {
+		direction = v.(string)
+		request["Direction"] = v
+	}
+
+	request["ClientToken"] = buildClientToken("CreateRule")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -735,15 +733,16 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 
 	d.SetId(fmt.Sprint(response["RuleId"]))
 
+	albService := AlbService{client}
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudAlbRuleRead(d, meta)
+	return resourceAlicloudAlbRuleRead(d, meta)
 }
 
-func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 
@@ -763,10 +762,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	d.Set("listener_id", object["ListenerId"])
-	d.Set("rule_name", object["RuleName"])
-	d.Set("direction", object["Direction"])
-	d.Set("status", object["RuleStatus"])
-
 	if v, ok := object["Priority"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("priority", formatInt(v))
 	}
@@ -1074,273 +1069,270 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 		d.Set("rule_conditions", ruleConditionsMaps)
 	}
 
+	d.Set("rule_name", object["RuleName"])
+	d.Set("direction", object["Direction"])
+	d.Set("status", object["RuleStatus"])
+
 	return nil
 }
 
-func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	albService := AlbService{client}
 	var response map[string]interface{}
 	update := false
-
 	request := map[string]interface{}{
-		"ClientToken": buildClientToken("UpdateRuleAttribute"),
-		"RuleId":      d.Id(),
+		"RuleId": d.Id(),
 	}
-
-	if d.HasChange("rule_name") {
-		update = true
-	}
-	request["RuleName"] = d.Get("rule_name")
-
 	if d.HasChange("priority") {
 		update = true
+		request["Priority"] = d.Get("priority")
 	}
-	request["Priority"] = d.Get("priority")
+	if d.HasChange("rule_name") {
+		update = true
+		request["RuleName"] = d.Get("rule_name")
+	}
+
+	if d.HasChange("rule_actions") {
+		update = true
+		ruleActionsMaps := make([]map[string]interface{}, 0)
+		for _, ruleActions := range d.Get("rule_actions").([]interface{}) {
+			ruleActionsArg := ruleActions.(map[string]interface{})
+			ruleActionsMap := map[string]interface{}{}
+			ruleActionsMap["Order"] = ruleActionsArg["order"]
+			ruleActionsMap["Type"] = ruleActionsArg["type"]
+
+			if ruleActionsMap["Type"] == "" {
+				continue
+			}
+
+			fixedResponseConfigMap := map[string]interface{}{}
+			for _, fixedResponseConfig := range ruleActionsArg["fixed_response_config"].(*schema.Set).List() {
+				fixedResponseConfigArg := fixedResponseConfig.(map[string]interface{})
+				fixedResponseConfigMap["Content"] = fixedResponseConfigArg["content"]
+				fixedResponseConfigMap["ContentType"] = fixedResponseConfigArg["content_type"]
+				fixedResponseConfigMap["HttpCode"] = fixedResponseConfigArg["http_code"]
+				ruleActionsMap["FixedResponseConfig"] = fixedResponseConfigMap
+			}
+
+			forwardGroupConfigMap := map[string]interface{}{}
+			for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
+				forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
+				serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+				for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
+					serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+					serverGroupTuplesMap := map[string]interface{}{}
+					serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
+					if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
+						serverGroupTuplesMap["Weight"] = v
+					}
+
+					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+				}
+				forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+
+				serverGroupStickySessionMap := map[string]interface{}{}
+				for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
+					serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
+					serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
+					serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
+				}
+				forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
+
+				ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
+			}
+
+			insertHeaderConfigMap := map[string]interface{}{}
+			for _, insertHeaderConfig := range ruleActionsArg["insert_header_config"].(*schema.Set).List() {
+				insertHeaderConfigArg := insertHeaderConfig.(map[string]interface{})
+				insertHeaderConfigMap["Key"] = insertHeaderConfigArg["key"]
+				insertHeaderConfigMap["Value"] = insertHeaderConfigArg["value"]
+				insertHeaderConfigMap["ValueType"] = insertHeaderConfigArg["value_type"]
+				ruleActionsMap["InsertHeaderConfig"] = insertHeaderConfigMap
+			}
+
+			redirectConfigMap := map[string]interface{}{}
+			for _, redirectConfig := range ruleActionsArg["redirect_config"].(*schema.Set).List() {
+				redirectConfigArg := redirectConfig.(map[string]interface{})
+				redirectConfigMap["Host"] = redirectConfigArg["host"]
+				redirectConfigMap["HttpCode"] = redirectConfigArg["http_code"]
+				redirectConfigMap["Path"] = redirectConfigArg["path"]
+				redirectConfigMap["Port"] = redirectConfigArg["port"]
+				redirectConfigMap["Protocol"] = redirectConfigArg["protocol"]
+				redirectConfigMap["Query"] = redirectConfigArg["query"]
+				ruleActionsMap["RedirectConfig"] = redirectConfigMap
+			}
+
+			rewriteConfigMap := map[string]interface{}{}
+			for _, rewriteConfig := range ruleActionsArg["rewrite_config"].(*schema.Set).List() {
+				rewriteConfigArg := rewriteConfig.(map[string]interface{})
+				rewriteConfigMap["Host"] = rewriteConfigArg["host"]
+				rewriteConfigMap["Path"] = rewriteConfigArg["path"]
+				rewriteConfigMap["Query"] = rewriteConfigArg["query"]
+				ruleActionsMap["RewriteConfig"] = rewriteConfigMap
+			}
+
+			trafficLimitConfigList := ruleActionsArg["traffic_limit_config"].(*schema.Set).List()
+			if len(trafficLimitConfigList) > 0 {
+				trafficLimitConfigArg := trafficLimitConfigList[0].(map[string]interface{})
+				ruleActionsMap["TrafficLimitConfig"] = map[string]interface{}{
+					"QPS": trafficLimitConfigArg["qps"],
+				}
+			}
+
+			trafficMirrorConfigList := ruleActionsArg["traffic_mirror_config"].(*schema.Set).List()
+			if len(trafficMirrorConfigList) > 0 {
+				trafficMirrorConfigArg := trafficMirrorConfigList[0].(map[string]interface{})
+				mirrorGroupConfigMap := make(map[string]interface{}, 0)
+				mirrorGroupConfigList := trafficMirrorConfigArg["mirror_group_config"].(*schema.Set).List()
+				if len(mirrorGroupConfigList) > 0 {
+					mirrorGroupConfigArg := mirrorGroupConfigList[0].(map[string]interface{})
+					serverGroupTuplesMaps := make([]map[string]interface{}, 0)
+					for _, serverGroupTuples := range mirrorGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
+						serverGroupTuplesMap := map[string]interface{}{}
+						serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
+						serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
+						serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
+					}
+					mirrorGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
+				}
+				ruleActionsMap["TrafficMirrorConfig"] = map[string]interface{}{
+					"MirrorGroupConfig": mirrorGroupConfigMap,
+					"TargetType":        trafficMirrorConfigArg["target_type"],
+				}
+			}
+
+			if v, ok := ruleActionsArg["cors_config"]; ok {
+				corsConfigMap := map[string]interface{}{}
+				for _, corsConfigList := range v.(*schema.Set).List() {
+					corsConfigArg := corsConfigList.(map[string]interface{})
+
+					if allowOrigin, ok := corsConfigArg["allow_origin"]; ok {
+						corsConfigMap["AllowOrigin"] = allowOrigin
+					}
+
+					if allowMethods, ok := corsConfigArg["allow_methods"]; ok {
+						corsConfigMap["AllowMethods"] = allowMethods
+					}
+
+					if allowHeaders, ok := corsConfigArg["allow_headers"]; ok {
+						corsConfigMap["AllowHeaders"] = allowHeaders
+					}
+
+					if exposeHeaders, ok := corsConfigArg["expose_headers"]; ok {
+						corsConfigMap["ExposeHeaders"] = exposeHeaders
+					}
+
+					if allowCredentials, ok := corsConfigArg["allow_credentials"]; ok {
+						corsConfigMap["AllowCredentials"] = allowCredentials
+					}
+
+					if maxAge, ok := corsConfigArg["max_age"]; ok {
+						corsConfigMap["MaxAge"] = maxAge
+					}
+				}
+
+				ruleActionsMap["CorsConfig"] = corsConfigMap
+			}
+
+			ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+		}
+		request["RuleActions"] = ruleActionsMaps
+	}
+
+	if d.HasChange("rule_conditions") {
+		update = true
+		ruleConditionsMaps := make([]map[string]interface{}, 0)
+		for _, ruleConditions := range d.Get("rule_conditions").(*schema.Set).List() {
+			ruleConditionsArg := ruleConditions.(map[string]interface{})
+			ruleConditionsMap := map[string]interface{}{}
+			ruleConditionsMap["Type"] = ruleConditionsArg["type"]
+
+			cookieConfigMap := map[string]interface{}{}
+			for _, cookieConfig := range ruleConditionsArg["cookie_config"].(*schema.Set).List() {
+				cookieConfigArg := cookieConfig.(map[string]interface{})
+				valuesMaps := make([]map[string]interface{}, 0)
+				for _, values := range cookieConfigArg["values"].(*schema.Set).List() {
+					valuesArg := values.(map[string]interface{})
+					valuesMap := map[string]interface{}{}
+					valuesMap["Key"] = valuesArg["key"]
+					valuesMap["Value"] = valuesArg["value"]
+					valuesMaps = append(valuesMaps, valuesMap)
+				}
+				cookieConfigMap["Values"] = valuesMaps
+				ruleConditionsMap["CookieConfig"] = cookieConfigMap
+			}
+
+			headerConfigMap := map[string]interface{}{}
+			for _, headerConfig := range ruleConditionsArg["header_config"].(*schema.Set).List() {
+				headerConfigArg := headerConfig.(map[string]interface{})
+				headerConfigMap["Key"] = headerConfigArg["key"]
+				headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+				ruleConditionsMap["HeaderConfig"] = headerConfigMap
+			}
+
+			hostConfigMap := map[string]interface{}{}
+			for _, hostConfig := range ruleConditionsArg["host_config"].(*schema.Set).List() {
+				hostConfigArg := hostConfig.(map[string]interface{})
+				hostConfigMap["Values"] = hostConfigArg["values"].(*schema.Set).List()
+				ruleConditionsMap["HostConfig"] = hostConfigMap
+			}
+
+			methodConfigMap := map[string]interface{}{}
+			for _, methodConfig := range ruleConditionsArg["method_config"].(*schema.Set).List() {
+				methodConfigArg := methodConfig.(map[string]interface{})
+				methodConfigMap["Values"] = methodConfigArg["values"].(*schema.Set).List()
+				ruleConditionsMap["MethodConfig"] = methodConfigMap
+			}
+
+			pathConfigMap := map[string]interface{}{}
+			for _, pathConfig := range ruleConditionsArg["path_config"].(*schema.Set).List() {
+				pathConfigArg := pathConfig.(map[string]interface{})
+				pathConfigMap["Values"] = pathConfigArg["values"].(*schema.Set).List()
+				ruleConditionsMap["PathConfig"] = pathConfigMap
+			}
+
+			sourceIpConfigMap := map[string]interface{}{}
+			for _, sourceIpConfig := range ruleConditionsArg["source_ip_config"].(*schema.Set).List() {
+				sourceIpConfigArg := sourceIpConfig.(map[string]interface{})
+				sourceIpConfigMap["Values"] = sourceIpConfigArg["values"].(*schema.Set).List()
+				ruleConditionsMap["SourceIpConfig"] = sourceIpConfigMap
+			}
+
+			queryStringConfigMap := map[string]interface{}{}
+			for _, queryStringConfig := range ruleConditionsArg["query_string_config"].(*schema.Set).List() {
+				queryStringConfigArg := queryStringConfig.(map[string]interface{})
+				valuesMaps := make([]map[string]interface{}, 0)
+				for _, values := range queryStringConfigArg["values"].(*schema.Set).List() {
+					valuesArg := values.(map[string]interface{})
+					valuesMap := map[string]interface{}{}
+					valuesMap["Key"] = valuesArg["key"]
+					valuesMap["Value"] = valuesArg["value"]
+					valuesMaps = append(valuesMaps, valuesMap)
+				}
+				queryStringConfigMap["Values"] = valuesMaps
+				ruleConditionsMap["QueryStringConfig"] = queryStringConfigMap
+			}
+
+			ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
+		}
+		request["RuleConditions"] = ruleConditionsMaps
+	}
 
 	var direction string
 	if v, ok := d.GetOk("direction"); ok {
 		direction = v.(string)
 	}
 
-	if d.HasChange("rule_actions") {
-		update = true
-	}
-	ruleActionsMaps := make([]map[string]interface{}, 0)
-	for _, ruleActions := range d.Get("rule_actions").(*schema.Set).List() {
-		ruleActionsArg := ruleActions.(map[string]interface{})
-		ruleActionsMap := map[string]interface{}{}
-		ruleActionsMap["Order"] = ruleActionsArg["order"]
-		ruleActionsMap["Type"] = ruleActionsArg["type"]
-
-		if ruleActionsMap["Type"] == "" {
-			continue
-		}
-
-		fixedResponseConfigMap := map[string]interface{}{}
-		for _, fixedResponseConfig := range ruleActionsArg["fixed_response_config"].(*schema.Set).List() {
-			fixedResponseConfigArg := fixedResponseConfig.(map[string]interface{})
-			fixedResponseConfigMap["Content"] = fixedResponseConfigArg["content"]
-			fixedResponseConfigMap["ContentType"] = fixedResponseConfigArg["content_type"]
-			fixedResponseConfigMap["HttpCode"] = fixedResponseConfigArg["http_code"]
-			ruleActionsMap["FixedResponseConfig"] = fixedResponseConfigMap
-		}
-
-		forwardGroupConfigMap := map[string]interface{}{}
-		for _, forwardGroupConfig := range ruleActionsArg["forward_group_config"].([]interface{}) {
-			forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
-			serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-			for _, serverGroupTuples := range forwardGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
-				serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
-				serverGroupTuplesMap := map[string]interface{}{}
-				serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-				if v, ok := serverGroupTuplesArg["weight"]; ok && fmt.Sprint(v) != "0" {
-					serverGroupTuplesMap["Weight"] = v
-				}
-
-				serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
-			}
-			forwardGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
-
-			serverGroupStickySessionMap := map[string]interface{}{}
-			for _, serverGroupStickySession := range forwardGroupConfigArg["server_group_sticky_session"].(*schema.Set).List() {
-				serverGroupStickySessionArg := serverGroupStickySession.(map[string]interface{})
-				serverGroupStickySessionMap["Enabled"] = serverGroupStickySessionArg["enabled"]
-				serverGroupStickySessionMap["Timeout"] = serverGroupStickySessionArg["timeout"]
-			}
-			forwardGroupConfigMap["ServerGroupStickySession"] = serverGroupStickySessionMap
-
-			ruleActionsMap["ForwardGroupConfig"] = forwardGroupConfigMap
-		}
-
-		insertHeaderConfigMap := map[string]interface{}{}
-		for _, insertHeaderConfig := range ruleActionsArg["insert_header_config"].(*schema.Set).List() {
-			insertHeaderConfigArg := insertHeaderConfig.(map[string]interface{})
-			insertHeaderConfigMap["Key"] = insertHeaderConfigArg["key"]
-			insertHeaderConfigMap["Value"] = insertHeaderConfigArg["value"]
-			insertHeaderConfigMap["ValueType"] = insertHeaderConfigArg["value_type"]
-			ruleActionsMap["InsertHeaderConfig"] = insertHeaderConfigMap
-		}
-
-		redirectConfigMap := map[string]interface{}{}
-		for _, redirectConfig := range ruleActionsArg["redirect_config"].(*schema.Set).List() {
-			redirectConfigArg := redirectConfig.(map[string]interface{})
-			redirectConfigMap["Host"] = redirectConfigArg["host"]
-			redirectConfigMap["HttpCode"] = redirectConfigArg["http_code"]
-			redirectConfigMap["Path"] = redirectConfigArg["path"]
-			redirectConfigMap["Port"] = redirectConfigArg["port"]
-			redirectConfigMap["Protocol"] = redirectConfigArg["protocol"]
-			redirectConfigMap["Query"] = redirectConfigArg["query"]
-			ruleActionsMap["RedirectConfig"] = redirectConfigMap
-		}
-
-		rewriteConfigMap := map[string]interface{}{}
-		for _, rewriteConfig := range ruleActionsArg["rewrite_config"].(*schema.Set).List() {
-			rewriteConfigArg := rewriteConfig.(map[string]interface{})
-			rewriteConfigMap["Host"] = rewriteConfigArg["host"]
-			rewriteConfigMap["Path"] = rewriteConfigArg["path"]
-			rewriteConfigMap["Query"] = rewriteConfigArg["query"]
-			ruleActionsMap["RewriteConfig"] = rewriteConfigMap
-		}
-
-		trafficLimitConfigList := ruleActionsArg["traffic_limit_config"].(*schema.Set).List()
-		if len(trafficLimitConfigList) > 0 {
-			trafficLimitConfigArg := trafficLimitConfigList[0].(map[string]interface{})
-			ruleActionsMap["TrafficLimitConfig"] = map[string]interface{}{
-				"QPS": trafficLimitConfigArg["qps"],
-			}
-		}
-
-		trafficMirrorConfigList := ruleActionsArg["traffic_mirror_config"].(*schema.Set).List()
-		if len(trafficMirrorConfigList) > 0 {
-			trafficMirrorConfigArg := trafficMirrorConfigList[0].(map[string]interface{})
-			mirrorGroupConfigMap := make(map[string]interface{}, 0)
-			mirrorGroupConfigList := trafficMirrorConfigArg["mirror_group_config"].(*schema.Set).List()
-			if len(mirrorGroupConfigList) > 0 {
-				mirrorGroupConfigArg := mirrorGroupConfigList[0].(map[string]interface{})
-				serverGroupTuplesMaps := make([]map[string]interface{}, 0)
-				for _, serverGroupTuples := range mirrorGroupConfigArg["server_group_tuples"].(*schema.Set).List() {
-					serverGroupTuplesMap := map[string]interface{}{}
-					serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
-					serverGroupTuplesMap["ServerGroupId"] = serverGroupTuplesArg["server_group_id"]
-					serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
-				}
-				mirrorGroupConfigMap["ServerGroupTuples"] = serverGroupTuplesMaps
-			}
-			ruleActionsMap["TrafficMirrorConfig"] = map[string]interface{}{
-				"MirrorGroupConfig": mirrorGroupConfigMap,
-				"TargetType":        trafficMirrorConfigArg["target_type"],
-			}
-		}
-
-		if v, ok := ruleActionsArg["cors_config"]; ok {
-			corsConfigMap := map[string]interface{}{}
-			for _, corsConfigList := range v.(*schema.Set).List() {
-				corsConfigArg := corsConfigList.(map[string]interface{})
-
-				if allowOrigin, ok := corsConfigArg["allow_origin"]; ok {
-					corsConfigMap["AllowOrigin"] = allowOrigin
-				}
-
-				if allowMethods, ok := corsConfigArg["allow_methods"]; ok {
-					corsConfigMap["AllowMethods"] = allowMethods
-				}
-
-				if allowHeaders, ok := corsConfigArg["allow_headers"]; ok {
-					corsConfigMap["AllowHeaders"] = allowHeaders
-				}
-
-				if exposeHeaders, ok := corsConfigArg["expose_headers"]; ok {
-					corsConfigMap["ExposeHeaders"] = exposeHeaders
-				}
-
-				if allowCredentials, ok := corsConfigArg["allow_credentials"]; ok {
-					corsConfigMap["AllowCredentials"] = allowCredentials
-				}
-
-				if maxAge, ok := corsConfigArg["max_age"]; ok {
-					corsConfigMap["MaxAge"] = maxAge
-				}
-			}
-
-			ruleActionsMap["CorsConfig"] = corsConfigMap
-		}
-
-		ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-	}
-	request["RuleActions"] = ruleActionsMaps
-
-	if d.HasChange("rule_conditions") {
-		update = true
-	}
-	ruleConditionsMaps := make([]map[string]interface{}, 0)
-	for _, ruleConditions := range d.Get("rule_conditions").(*schema.Set).List() {
-		ruleConditionsArg := ruleConditions.(map[string]interface{})
-		ruleConditionsMap := map[string]interface{}{}
-		ruleConditionsMap["Type"] = ruleConditionsArg["type"]
-
-		cookieConfigMap := map[string]interface{}{}
-		for _, cookieConfig := range ruleConditionsArg["cookie_config"].(*schema.Set).List() {
-			cookieConfigArg := cookieConfig.(map[string]interface{})
-			valuesMaps := make([]map[string]interface{}, 0)
-			for _, values := range cookieConfigArg["values"].(*schema.Set).List() {
-				valuesArg := values.(map[string]interface{})
-				valuesMap := map[string]interface{}{}
-				valuesMap["Key"] = valuesArg["key"]
-				valuesMap["Value"] = valuesArg["value"]
-				valuesMaps = append(valuesMaps, valuesMap)
-			}
-			cookieConfigMap["Values"] = valuesMaps
-			ruleConditionsMap["CookieConfig"] = cookieConfigMap
-		}
-
-		headerConfigMap := map[string]interface{}{}
-		for _, headerConfig := range ruleConditionsArg["header_config"].(*schema.Set).List() {
-			headerConfigArg := headerConfig.(map[string]interface{})
-			headerConfigMap["Key"] = headerConfigArg["key"]
-			headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
-			ruleConditionsMap["HeaderConfig"] = headerConfigMap
-		}
-
-		hostConfigMap := map[string]interface{}{}
-		for _, hostConfig := range ruleConditionsArg["host_config"].(*schema.Set).List() {
-			hostConfigArg := hostConfig.(map[string]interface{})
-			hostConfigMap["Values"] = hostConfigArg["values"].(*schema.Set).List()
-			ruleConditionsMap["HostConfig"] = hostConfigMap
-		}
-
-		methodConfigMap := map[string]interface{}{}
-		for _, methodConfig := range ruleConditionsArg["method_config"].(*schema.Set).List() {
-			methodConfigArg := methodConfig.(map[string]interface{})
-			methodConfigMap["Values"] = methodConfigArg["values"].(*schema.Set).List()
-			ruleConditionsMap["MethodConfig"] = methodConfigMap
-		}
-
-		pathConfigMap := map[string]interface{}{}
-		for _, pathConfig := range ruleConditionsArg["path_config"].(*schema.Set).List() {
-			pathConfigArg := pathConfig.(map[string]interface{})
-			pathConfigMap["Values"] = pathConfigArg["values"].(*schema.Set).List()
-			ruleConditionsMap["PathConfig"] = pathConfigMap
-		}
-
-		sourceIpConfigMap := map[string]interface{}{}
-		for _, sourceIpConfig := range ruleConditionsArg["source_ip_config"].(*schema.Set).List() {
-			sourceIpConfigArg := sourceIpConfig.(map[string]interface{})
-			sourceIpConfigMap["Values"] = sourceIpConfigArg["values"].(*schema.Set).List()
-			ruleConditionsMap["SourceIpConfig"] = sourceIpConfigMap
-		}
-
-		queryStringConfigMap := map[string]interface{}{}
-		for _, queryStringConfig := range ruleConditionsArg["query_string_config"].(*schema.Set).List() {
-			queryStringConfigArg := queryStringConfig.(map[string]interface{})
-			valuesMaps := make([]map[string]interface{}, 0)
-			for _, values := range queryStringConfigArg["values"].(*schema.Set).List() {
-				valuesArg := values.(map[string]interface{})
-				valuesMap := map[string]interface{}{}
-				valuesMap["Key"] = valuesArg["key"]
-				valuesMap["Value"] = valuesArg["value"]
-				valuesMaps = append(valuesMaps, valuesMap)
-			}
-			queryStringConfigMap["Values"] = valuesMaps
-			ruleConditionsMap["QueryStringConfig"] = queryStringConfigMap
-		}
-
-		ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
-	}
-	request["RuleConditions"] = ruleConditionsMaps
-
 	if update {
 		if v, ok := d.GetOkExists("dry_run"); ok {
 			request["DryRun"] = v
 		}
-
 		action := "UpdateRuleAttribute"
-
 		conn, err := client.NewAlbClient()
 		if err != nil {
 			return WrapError(err)
 		}
-
+		request["ClientToken"] = buildClientToken("UpdateRuleAttribute")
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -1361,16 +1353,17 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
+		albService := AlbService{client}
 		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, albService.AlbRuleStateRefreshFunc(d.Id(), direction, []string{"CreateFailed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
-	return resourceAliCloudAlbRuleRead(d, meta)
+	return resourceAlicloudAlbRuleRead(d, meta)
 }
 
-func resourceAliCloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRule"
 	var response map[string]interface{}
@@ -1378,16 +1371,14 @@ func resourceAliCloudAlbRuleDelete(d *schema.ResourceData, meta interface{}) err
 	if err != nil {
 		return WrapError(err)
 	}
-
 	request := map[string]interface{}{
-		"ClientToken": buildClientToken("DeleteRule"),
-		"RuleId":      d.Id(),
+		"RuleId": d.Id(),
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-
+	request["ClientToken"] = buildClientToken("DeleteRule")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)

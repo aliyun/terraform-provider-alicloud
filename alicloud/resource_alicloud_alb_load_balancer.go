@@ -11,14 +11,15 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAliCloudAlbLoadBalancer() *schema.Resource {
+func resourceAlicloudAlbLoadBalancer() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudAlbLoadBalancerCreate,
-		Read:   resourceAliCloudAlbLoadBalancerRead,
-		Update: resourceAliCloudAlbLoadBalancerUpdate,
-		Delete: resourceAliCloudAlbLoadBalancerDelete,
+		Create: resourceAlicloudAlbLoadBalancerCreate,
+		Read:   resourceAlicloudAlbLoadBalancerRead,
+		Update: resourceAlicloudAlbLoadBalancerUpdate,
+		Delete: resourceAlicloudAlbLoadBalancerDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -49,12 +50,12 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Dynamic", "Fixed"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Dynamic", "Fixed"}, false),
 			},
 			"address_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"Intranet", "Internet"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Intranet", "Internet"}, false),
 			},
 			"deletion_protection_enabled": {
 				Type:     schema.TypeBool,
@@ -63,6 +64,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 			"dry_run": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  false,
 			},
 			"load_balancer_billing_config": {
 				Type:     schema.TypeSet,
@@ -74,7 +76,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 						"pay_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo"}, false),
 						},
 					},
 				},
@@ -82,7 +84,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 			"load_balancer_edition": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"Basic", "Standard", "StandardWithWaf"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard", "StandardWithWaf"}, false),
 			},
 			"load_balancer_name": {
 				Type:     schema.TypeString,
@@ -99,14 +101,14 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 							Type:             schema.TypeString,
 							Optional:         true,
 							Computed:         true,
-							ValidateFunc:     StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_\-.]{1,127}$`), "The reason must be 2 to 128 characters in length, and must start with a letter. It can contain digits, periods (.), underscores (_), and hyphens (-)."),
+							ValidateFunc:     validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_\-.]{1,127}$`), "The reason must be 2 to 128 characters in length, and must start with a letter. It can contain digits, periods (.), underscores (_), and hyphens (-)."),
 							DiffSuppressFunc: modificationProtectionConfigDiffSuppressFunc,
 						},
 						"status": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"ConsoleProtection", "NonProtection"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"ConsoleProtection", "NonProtection"}, false),
 						},
 					},
 				},
@@ -149,7 +151,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Ipv4", "DualStack"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"Ipv4", "DualStack"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -159,7 +161,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 	}
 }
 
-func resourceAliCloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateLoadBalancer"
@@ -236,10 +238,10 @@ func resourceAliCloudAlbLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudAlbLoadBalancerUpdate(d, meta)
+	return resourceAlicloudAlbLoadBalancerUpdate(d, meta)
 }
 
-func resourceAliCloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	object, err := albService.DescribeAlbLoadBalancer(d.Id())
@@ -303,17 +305,10 @@ func resourceAliCloudAlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("dns_name", object["DNSName"])
-
-	if deletionProtectionConfig, ok := object["DeletionProtectionConfig"]; ok {
-		deletionProtectionConfigArg := deletionProtectionConfig.(map[string]interface{})
-
-		d.Set("deletion_protection_enabled", deletionProtectionConfigArg["Enabled"])
-	}
-
 	return nil
 }
 
-func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	albService := AlbService{client}
 	var response map[string]interface{}
@@ -684,10 +679,10 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 
 	d.Partial(false)
 
-	return resourceAliCloudAlbLoadBalancerRead(d, meta)
+	return resourceAlicloudAlbLoadBalancerRead(d, meta)
 }
 
-func resourceAliCloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudAlbLoadBalancerDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLoadBalancer"
 	var response map[string]interface{}
