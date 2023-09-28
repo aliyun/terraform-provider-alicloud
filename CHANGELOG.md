@@ -37,7 +37,6 @@ BUG FIXES:
 - resource/alicloud_ess_scalinggroup: Fixes the BackendServer.configuring error when attaching vserver groups. ([#6508](https://github.com/aliyun/terraform-provider-alicloud/issues/6508))
 - resource/alicloud_slb_listener: Fixes the VServerGroupId does not exist error when updating listener attribute. ([#6511](https://github.com/aliyun/terraform-provider-alicloud/issues/6511))
 - resource/alicloud_db_backup_policy: Fixed setting for turning off log backup. ([#6515](https://github.com/aliyun/terraform-provider-alicloud/issues/6515))
-- resource/alicloud_alb_load_balancer: Removed the field dry_run default value; resource/alicloud_alb_listener: Fixed alb TypeSet bug caused by tf s dk v1.17.2; resource/alicloud_alb_rule: Fixed alb TypeSet bug caused by tf sdk v1.17.2. ([#6523](https://github.com/aliyun/terraform-provider-alicloud/issues/6523))
 - resource/alicloud_ssl_certificates_service_certificate: Fixed the cas endpoint error. ([#6524](https://github.com/aliyun/terraform-provider-alicloud/issues/6524))
 - resource/alicloud_sae_grey_tag_route: Fixed sae TypeSet bug caused by tf sdk v1.17.2. ([#6526](https://github.com/aliyun/terraform-provider-alicloud/issues/6526))
 - resource/alicloud_instance: Fixes the InvalidParameter error when modifying the instance auto_renew attribute. ([#6533](https://github.com/aliyun/terraform-provider-alicloud/issues/6533))
