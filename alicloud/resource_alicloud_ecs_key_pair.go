@@ -195,7 +195,7 @@ func resourceAlicloudEcsKeyPairUpdate(d *schema.ResourceData, meta interface{}) 
 		"ResourceId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if d.HasChange("resource_group_id") {
+	if d.HasChange("resource_group_id") && d.Get("resource_group_id").(string) != "" {
 		update = true
 		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
