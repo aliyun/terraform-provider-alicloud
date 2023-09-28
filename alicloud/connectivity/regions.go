@@ -269,4 +269,3 @@ var KmsInstanceSupportRegions = []Region{Hangzhou}
 var KmsInstanceIntlSupportRegions = []Region{APSouthEast1}
 var SlsTestRegions = []Region{EUWest1}
 var ServiceMeshStandardUnsupportedRegions = []Region{EUCentral1, APSouthEast1, USEast1, USWest1}
-var DRDSPolarDbxSupportRegions = []Region{Hangzhou}
