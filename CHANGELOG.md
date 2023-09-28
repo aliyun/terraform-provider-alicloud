@@ -1,6 +1,7 @@
 ## 1.212.0 (Unreleased)
 ## 1.211.0 (September 28, 2023)
 
+- **New Resource:** `alicloud_drds_polardbx_instance` ([#6554](https://github.com/aliyun/terraform-provider-alicloud/issues/6554))
 - **New Resource:** `alicloud_gpdb_backup_policy` ([#6542](https://github.com/aliyun/terraform-provider-alicloud/issues/6542))
 - **New Resource:** `alicloud_event_bridge_api_destination` ([#6555](https://github.com/aliyun/terraform-provider-alicloud/issues/6555))
 
