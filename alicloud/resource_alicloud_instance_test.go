@@ -556,6 +556,27 @@ func TestAccAliCloudECSInstanceVpc(t *testing.T) {
 					}),
 				),
 			},
+			// renew will be ignored for post paid
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": NOSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_period": NOSET,
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_id": "${data.alicloud_images.default.images.1.id}",
@@ -1211,6 +1232,118 @@ func TestAccAliCloudECSInstancePrepaid(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
+	var v ecs.Instance
+
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstanceConfigPrePaid%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstancePrePaidConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":        "${data.alicloud_images.default.images.0.id}",
+					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
+
+					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":          "cloud_efficiency",
+					"instance_name":                 "${var.name}",
+					"key_name":                      "${alicloud_key_pair.default.key_name}",
+					"spot_strategy":                 "NoSpot",
+					"spot_price_limit":              "0",
+					"security_enhancement_strategy": "Active",
+					"user_data":                     "I_am_user_data",
+					"period":                        "1",
+					"instance_charge_type":          "PrePaid",
+					"vswitch_id":                    "${alicloud_vswitch.default.id}",
+					"role_name":                     "${alicloud_ram_role.default.name}",
+					"renewal_status":                "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": name,
+						"key_name":      name,
+						"role_name":     name,
+
+						"instance_charge_type": "PrePaid",
+						"period":               "1",
+						"period_unit":          "Month",
+						"renewal_status":       "AutoRenewal",
+						"auto_renew_period":    "1",
+						"force_delete":         "false",
+						"include_data_disks":   "true",
+						"dry_run":              "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "NotRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status":    "NotRenewal",
+						"auto_renew_period": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data": "${base64encode(\"I am the user data\")}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data": "SSBhbSB0aGUgdXNlciBkYXRh",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_delete": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_delete": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"period", "security_enhancement_strategy", "data_disks", "dry_run", "force_delete",
+					"include_data_disks"},
+			},
+		},
+	})
+}
 func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 

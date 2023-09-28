@@ -686,6 +686,12 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		if v, ok := d.GetOk("period_unit"); ok {
 			request["PeriodUnit"] = v
 		}
+		if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
+			request["AutoRenew"] = true
+		}
+		if v, ok := d.GetOk("auto_renew_period"); ok {
+			request["AutoRenewPeriod"] = v
+		}
 	} else {
 		if v, ok := d.GetOk("spot_strategy"); ok {
 			request["SpotStrategy"] = v
@@ -1383,7 +1389,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	// Only PrePaid instance can support modifying renewal attribute
-	if d.Get("instance_charge_type").(string) == string(PrePaid) &&
+	if !d.IsNewResource() && d.Get("instance_charge_type").(string) == string(PrePaid) &&
 		(d.HasChange("renewal_status") || d.HasChange("auto_renew_period")) {
 		status := d.Get("renewal_status").(string)
 		request := ecs.CreateModifyInstanceAutoRenewAttributeRequest()
