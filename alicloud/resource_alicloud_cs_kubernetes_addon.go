@@ -124,24 +124,33 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 		}
 	} else {
 		// Addon has been installed
-		ok, err := needUpgrade(d, status)
+		updateVersion, updateConfig, err := needUpgrade(d, status)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
 		}
-		if ok {
+		if updateVersion {
 			changed = true
-			err := csClient.upgradeAddon(d)
+			err := csClient.upgradeAddon(d, updateVersion, updateConfig)
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
+			}
+		} else if updateConfig {
+			changed = true
+			err := csClient.updateAddonConfig(d)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
 			}
 		}
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, name))
-
-	stateConf := BuildStateConf([]string{"running", "Running", "Upgrading", "Pause"}, []string{"Success", "NoUpgrade"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	stateConf := BuildStateConf([]string{}, []string{"active", "Success", "NoUpgrade"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled", "unhealthy"}))
 	if changed {
 		if _, err := stateConf.WaitForState(); err != nil {
+			status, _ := csClient.DescribeCsKubernetesAddonStatus(clusterId, name)
+			if status != nil && status.Error != nil {
+				return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", status.Error)
+			}
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", d.Id())
 		}
 	}
@@ -159,7 +168,7 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 	name := d.Get("name").(string)
 
 	if d.HasChange("version") {
-		err := csClient.upgradeAddon(d)
+		err := csClient.upgradeAddon(d, true, true)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddon", err)
 		}
@@ -169,8 +178,12 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "upgradeAddonConfig", err)
 		}
 	}
-	stateConf := BuildStateConf([]string{"running", "Running", "Upgrading", "Pause"}, []string{"Success", "NoUpgrade"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"Failed", "Canceled"}))
+	stateConf := BuildStateConf([]string{}, []string{"active", "deleted"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonStateRefreshFunc(clusterId, name, []string{"unhealthy"}))
 	if _, err := stateConf.WaitForState(); err != nil {
+		status, _ := csClient.DescribeCsKubernetesAddonStatus(clusterId, name)
+		if status != nil && status.Error != nil {
+			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", status.Error)
+		}
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterUpdate", d.Id())
 	}
 
@@ -205,19 +218,23 @@ func resourceAlicloudCSKubernetesAddonDelete(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "uninstallAddon", err)
 	}
 
-	stateConf := BuildStateConf([]string{"Running"}, []string{"Deleted"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonExistRefreshFunc(clusterId, name))
+	stateConf := BuildStateConf([]string{"deleting"}, []string{"deleted"}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csClient.CsKubernetesAddonExistRefreshFunc(clusterId, name))
 	if _, err := stateConf.WaitForState(); err != nil {
+		status, _ := csClient.DescribeCsKubernetesAddonStatus(clusterId, name)
+		if status != nil && status.Error != nil {
+			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterCreate", status.Error)
+		}
 		return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "WaitForSuccessAfterDelete", d.Id())
 	}
 
 	return nil
 }
 
-func needUpgrade(d *schema.ResourceData, c *Component) (bool, error) {
+func needUpgrade(d *schema.ResourceData, c *Component) (updateVersion bool, updateConfig bool, err error) {
 	// Is version changed
 	version := d.Get("version").(string)
 	if c.Version != "" && c.Version != version {
-		return true, nil
+		updateVersion = true
 	}
 
 	// Is config changed
@@ -225,7 +242,7 @@ func needUpgrade(d *schema.ResourceData, c *Component) (bool, error) {
 		localConfig := map[string]interface{}{}
 		err := json.Unmarshal([]byte(d.Get("config").(string)), &localConfig)
 		if err != nil {
-			return false, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "json config parse error", err)
+			return false, false, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "json config parse error", err)
 		}
 
 		if c.Config == "" {
@@ -234,9 +251,11 @@ func needUpgrade(d *schema.ResourceData, c *Component) (bool, error) {
 		remoteConfig := map[string]interface{}{}
 		err = json.Unmarshal([]byte(c.Config), &remoteConfig)
 		if err != nil {
-			return false, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "json config parse error", err)
+			return false, false, WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "json config parse error", err)
 		}
-		return !reflect.DeepEqual(localConfig, remoteConfig), nil
+		if !reflect.DeepEqual(localConfig, remoteConfig) {
+			updateConfig = true
+		}
 	}
-	return false, nil
+	return
 }
