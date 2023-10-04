@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"sort"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -44,7 +45,7 @@ func dataSourceAlicloudCSKubernetesAddons() *schema.Resource {
 			},
 			"addons": {
 				Type:     schema.TypeList,
-				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -151,5 +152,8 @@ func fetchAddonsMetadata(addonsMap map[string]*Component) []map[string]interface
 		state["current_config"] = addon.Config
 		result = append(result, state)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i]["name"].(string) > result[j]["name"].(string)
+	})
 	return result
 }
