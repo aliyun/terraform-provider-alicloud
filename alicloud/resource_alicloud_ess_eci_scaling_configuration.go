@@ -577,6 +577,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["IngressBandwidth"] = d.Get("ingress_bandwidth")
 	request["EgressBandwidth"] = d.Get("egress_bandwidth")
 	request["SpotStrategy"] = d.Get("spot_strategy")
+	request["EphemeralStorage"] = d.Get("ephemeral_storage")
 
 	if v, ok := d.GetOk("spot_price_limit"); ok {
 		request["SpotPriceLimit"] = strconv.FormatFloat(v.(float64), 'f', 2, 64)

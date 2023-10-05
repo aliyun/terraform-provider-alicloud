@@ -109,6 +109,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"ephemeral_storage": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"tags": tagsSchema(),
 			"containers": {
 				Type:     schema.TypeList,
@@ -1060,6 +1064,9 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("insecure_registry"); ok {
 		request["InsecureRegistry"] = v
+	}
+	if v, ok := d.GetOkExists("ephemeral_storage"); ok {
+		request["EphemeralStorage"] = v
 	}
 
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
