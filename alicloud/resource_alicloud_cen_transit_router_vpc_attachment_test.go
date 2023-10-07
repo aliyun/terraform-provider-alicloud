@@ -932,7 +932,6 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524(t *testing.T) {
 					"transit_router_id":                     "${alicloud_cen_transit_router.defaults5WvfD.id}",
 					"transit_router_vpc_attachment_name":    name + "_update",
 					"transit_router_attachment_description": "test",
-					"charge_type":                           "POSTPAY",
 					"auto_publish_route_enabled":            "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -943,7 +942,6 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524(t *testing.T) {
 						"transit_router_id":                     CHECKSET,
 						"transit_router_vpc_attachment_name":    name + "_update",
 						"transit_router_attachment_description": "test",
-						"charge_type":                           "POSTPAY",
 						"auto_publish_route_enabled":            "true",
 					}),
 				),
@@ -994,16 +992,18 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cen_id", "resource_type"},
+				ImportStateVerifyIgnore: []string{"cen_id"},
 			},
 		},
 	})
 }
 
 var AlicloudCenTransitRouterVpcAttachmentMap3524 = map[string]string{
-	"status":       CHECKSET,
-	"create_time":  CHECKSET,
-	"vpc_owner_id": CHECKSET,
+	"status":                     CHECKSET,
+	"create_time":                CHECKSET,
+	"vpc_owner_id":               CHECKSET,
+	"auto_publish_route_enabled": CHECKSET,
+	"payment_type":               CHECKSET,
 }
 
 func AlicloudCenTransitRouterVpcAttachmentBasicDependence3524(name string) string {
@@ -1101,8 +1101,6 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524_twin(t *testing.T) {
 					"transit_router_id":                     "${alicloud_cen_transit_router.defaults5WvfD.id}",
 					"transit_router_vpc_attachment_name":    name,
 					"transit_router_attachment_description": "testupdate",
-					"charge_type":                           "POSTPAY",
-					"resource_type":                         "TransitRouterVpcAttachment",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -1116,8 +1114,6 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524_twin(t *testing.T) {
 						"transit_router_id":                     CHECKSET,
 						"transit_router_vpc_attachment_name":    name,
 						"transit_router_attachment_description": "testupdate",
-						"charge_type":                           "POSTPAY",
-						"resource_type":                         "TransitRouterVpcAttachment",
 						"tags.%":                                "2",
 						"tags.Created":                          "TF",
 						"tags.For":                              "Test",
@@ -1128,7 +1124,7 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cen_id", "resource_type"},
+				ImportStateVerifyIgnore: []string{"cen_id"},
 			},
 		},
 	})

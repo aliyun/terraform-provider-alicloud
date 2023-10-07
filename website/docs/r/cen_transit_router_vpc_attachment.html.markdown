@@ -90,7 +90,6 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
   transit_router_vpc_attachment_name = var.name
 
   transit_router_attachment_description = "test"
-  charge_type                           = "POSTPAY"
   auto_publish_route_enabled            = true
 }
 ```
@@ -98,15 +97,15 @@ resource "alicloud_cen_transit_router_vpc_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auto_publish_route_enabled` - (Optional, Available since v1.126.0) Switch to turn automatic route publish on or off.
+* `auto_publish_route_enabled` - (Optional, Computed, Available since v1.126.0) Switch to turn automatic route publish on or off.
 * `cen_id` - (Optional, Available since v1.126.0) CenId.
-* `charge_type` - (Optional, ForceNew) ChargeType.
-* `resource_type` - (Optional, Available since v1.126.0) ResourceType.
+* `payment_type` - (Optional, ForceNew, Computed, Available since v1.126.0) Payment Type.
 * `tags` - (Optional, Map, Available since v1.126.0) The tag of the resource.
 * `transit_router_attachment_description` - (Optional, Available since v1.126.0) TransitRouterAttachmentDescription.
 * `transit_router_id` - (Optional, ForceNew, Available since v1.126.0) TransitRouterId.
 * `transit_router_vpc_attachment_name` - (Optional) TransitRouterAttachmentName.
 * `vpc_id` - (Required, ForceNew, Available since v1.126.0) VpcId.
+* `vpc_owner_id` - (Optional, ForceNew, Computed) VpcOwnerId.
 * `zone_mappings` - (Required, Available since v1.126.0) ZoneMappingss. See [`zone_mappings`](#zone_mappings) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
@@ -124,7 +123,6 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `status` - Status.
-* `vpc_owner_id` - VpcOwnerId.
 
 ## Timeouts
 

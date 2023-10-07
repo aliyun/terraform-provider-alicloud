@@ -30,23 +30,22 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			"auto_publish_route_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"cen_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"charge_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"resource_type": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -75,7 +74,9 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 			},
 			"vpc_owner_id": {
 				Type:     schema.TypeInt,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"zone_mappings": {
 				Type:     schema.TypeList,
@@ -140,9 +141,6 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	if v, ok := d.GetOk("transit_router_attachment_description"); ok {
 		request["TransitRouterAttachmentDescription"] = v
 	}
-	if v, ok := d.GetOk("charge_type"); ok {
-		request["ChargeType"] = v
-	}
 	if v, ok := d.GetOk("transit_router_attachment_name"); ok {
 		request["TransitRouterAttachmentName"] = v
 	}
@@ -152,6 +150,12 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 	}
 	if v, ok := d.GetOkExists("auto_publish_route_enabled"); ok {
 		request["AutoPublishRouteEnabled"] = v
+	}
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertCenChargeTypeRequest(v.(string))
+	}
+	if v, ok := d.GetOk("vpc_owner_id"); ok {
+		request["VpcOwnerId"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -201,15 +205,14 @@ func resourceAliCloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	}
 
 	d.Set("auto_publish_route_enabled", objectRaw["AutoPublishRouteEnabled"])
-	d.Set("charge_type", objectRaw["ChargeType"])
 	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("payment_type", convertCenTransitRouterAttachmentsChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("status", objectRaw["Status"])
 	d.Set("transit_router_attachment_description", objectRaw["TransitRouterAttachmentDescription"])
 	d.Set("transit_router_id", objectRaw["TransitRouterId"])
 	d.Set("transit_router_vpc_attachment_name", objectRaw["TransitRouterAttachmentName"])
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("vpc_owner_id", objectRaw["VpcOwnerId"])
-	d.Set("resource_type", objectRaw["ResourceType"])
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 	zoneMappings1Raw := objectRaw["ZoneMappings"]
@@ -396,7 +399,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 	}
 	if d.HasChange("tags") {
 		cenServiceV2 := CenServiceV2{client}
-		if err := cenServiceV2.SetResourceTags(d, ""); err != nil {
+		if err := cenServiceV2.SetResourceTags(d, "TransitRouterVpcAttachment"); err != nil {
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
@@ -462,6 +465,21 @@ func convertCenTransitRouterVpcAttachmentPaymentTypeResponse(source string) stri
 }
 
 func convertCenTransitRouterVpcAttachmentPaymentTypeRequest(source string) string {
+	switch source {
+	case "PayAsYouGo":
+		return "POSTPAY"
+	}
+	return source
+}
+
+func convertCenTransitRouterAttachmentsChargeTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "POSTPAY":
+		return "PayAsYouGo"
+	}
+	return source
+}
+func convertCenChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
 		return "POSTPAY"

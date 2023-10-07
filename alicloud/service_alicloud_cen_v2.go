@@ -71,7 +71,18 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 		return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterVpcAttachment", id)), NotFoundMsg, response)
 	}
 
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if item["ResourceType"] != "TransitRouterVpcAttachment" {
+			continue
+		}
+		if item["TransitRouterAttachmentId"] != id {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterVpcAttachment", id)), NotFoundMsg, response)
 }
 
 func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -127,9 +138,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			if v, ok := d.GetOk("resource_type"); ok {
-				request["ResourceType"] = v
-			}
+			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -168,9 +177,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				count++
 			}
 
-			if v, ok := d.GetOk("resource_type"); ok {
-				request["ResourceType"] = v
-			}
+			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
