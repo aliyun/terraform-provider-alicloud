@@ -830,14 +830,18 @@ func (s *CmsService) DescribeCmsHybridMonitorFcTask(id string) (object map[strin
 
 func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeEventRuleList"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeEventRuleList"
+
 	request := map[string]interface{}{
 		"NamePrefix": id,
 	}
+
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -853,24 +857,35 @@ func (s *CmsService) DescribeCmsEventRule(id string) (object map[string]interfac
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	v, err := jsonpath.Get("$.EventRules.EventRule", response)
+
+	resp, err := jsonpath.Get("$.EventRules.EventRule", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.EventRules.EventRule", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cms", id)), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["Name"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Cms", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:EventRule", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["Name"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:EventRule", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
