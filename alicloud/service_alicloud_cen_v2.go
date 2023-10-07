@@ -31,7 +31,11 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = id
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	query["TransitRouterAttachmentId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}

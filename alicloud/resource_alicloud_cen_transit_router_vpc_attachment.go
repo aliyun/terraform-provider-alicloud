@@ -171,7 +171,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cen_transit_router_vpc_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["TransitRouterAttachmentId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["CenId"], response["TransitRouterAttachmentId"]))
 
 	cenServiceV2 := CenServiceV2{client}
 	stateConf := BuildStateConf([]string{}, []string{"Attached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cenServiceV2.CenTransitRouterVpcAttachmentStateRefreshFunc(d.Id(), "Status", []string{}))
@@ -235,7 +235,8 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["TransitRouterAttachmentId"] = d.Id()
+	parts, _ := ParseResourceId(d.Id(), 2)
+	request["TransitRouterAttachmentId"] = parts[1]
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("transit_router_attachment_description") {
 		update = true
@@ -297,7 +298,8 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-			request["TransitRouterAttachmentId"] = d.Id()
+			parts, _ := ParseResourceId(d.Id(), 2)
+			request["TransitRouterAttachmentId"] = parts[1]
 			request["ClientToken"] = buildClientToken(action)
 			localData := removed.([]interface{})
 			removeZoneMappingsMaps := make([]map[string]interface{}, 0)
@@ -345,7 +347,8 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-			request["TransitRouterAttachmentId"] = d.Id()
+			parts, _ := ParseResourceId(d.Id(), 2)
+			request["TransitRouterAttachmentId"] = parts[1]
 			request["ClientToken"] = buildClientToken(action)
 			localData := added.([]interface{})
 			addZoneMappingsMaps := make([]map[string]interface{}, 0)
@@ -407,7 +410,8 @@ func resourceAliCloudCenTransitRouterVpcAttachmentDelete(d *schema.ResourceData,
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["TransitRouterAttachmentId"] = d.Id()
+	parts, _ := ParseResourceId(d.Id(), 2)
+	request["TransitRouterAttachmentId"] = parts[1]
 
 	request["ClientToken"] = buildClientToken(action)
 
