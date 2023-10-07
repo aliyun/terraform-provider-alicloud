@@ -1001,8 +1001,9 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic3524(t *testing.T) {
 }
 
 var AlicloudCenTransitRouterVpcAttachmentMap3524 = map[string]string{
-	"status":      CHECKSET,
-	"create_time": CHECKSET,
+	"status":       CHECKSET,
+	"create_time":  CHECKSET,
+	"vpc_owner_id": CHECKSET,
 }
 
 func AlicloudCenTransitRouterVpcAttachmentBasicDependence3524(name string) string {

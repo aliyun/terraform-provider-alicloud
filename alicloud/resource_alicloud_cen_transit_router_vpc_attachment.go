@@ -73,6 +73,10 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"vpc_owner_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"zone_mappings": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -204,6 +208,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentRead(d *schema.ResourceData, m
 	d.Set("transit_router_id", objectRaw["TransitRouterId"])
 	d.Set("transit_router_vpc_attachment_name", objectRaw["TransitRouterAttachmentName"])
 	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("vpc_owner_id", objectRaw["VpcOwnerId"])
 	d.Set("resource_type", objectRaw["ResourceType"])
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))

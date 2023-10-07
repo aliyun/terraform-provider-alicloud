@@ -124,6 +124,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the resource.
 * `status` - Status.
+* `vpc_owner_id` - VpcOwnerId.
 
 ## Timeouts
 
