@@ -1515,7 +1515,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv4_gateway":                                      resourceAliCloudVpcIpv4Gateway(),
 			"alicloud_api_gateway_backend":                                   resourceAlicloudApiGatewayBackend(),
 			"alicloud_vpc_prefix_list":                                       resourceAliCloudVpcPrefixList(),
-			"alicloud_cms_event_rule":                                        resourceAlicloudCmsEventRule(),
+			"alicloud_cms_event_rule":                                        resourceAliCloudCloudMonitorServiceEventRule(),
 			"alicloud_ddos_basic_threshold":                                  resourceAlicloudDdosBasicThreshold(),
 			"alicloud_cen_transit_router_vpn_attachment":                     resourceAlicloudCenTransitRouterVpnAttachment(),
 			"alicloud_polardb_parameter_group":                               resourceAlicloudPolarDBParameterGroup(),

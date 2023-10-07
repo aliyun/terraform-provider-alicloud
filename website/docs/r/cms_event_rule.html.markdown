@@ -23,23 +23,24 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
 resource "alicloud_cms_monitor_group" "default" {
   monitor_group_name = var.name
 }
 
 resource "alicloud_cms_event_rule" "example" {
-  rule_name   = var.name
-  group_id    = alicloud_cms_monitor_group.default.id
-  description = var.name
-  status      = "ENABLED"
+  rule_name    = var.name
+  group_id     = alicloud_cms_monitor_group.default.id
+  silence_time = 100
+  description  = var.name
+  status       = "ENABLED"
   event_pattern {
     product         = "ecs"
-    event_type_list = ["StatusNotification"]
-    level_list      = ["CRITICAL"]
-    name_list       = ["example_value"]
     sql_filter      = "example_value"
+    name_list       = ["example_value"]
+    level_list      = ["CRITICAL"]
+    event_type_list = ["StatusNotification"]
   }
-  silence_time = 100
 }
 ```
 
@@ -49,34 +50,103 @@ The following arguments are supported:
 
 * `rule_name` - (Required, ForceNew) The name of the event-triggered alert rule.
 * `group_id` - (Optional) The ID of the application group to which the event-triggered alert rule belongs.
+* `silence_time` - (Optional, Int) The silence time.
 * `description` - (Optional) The description of the event-triggered alert rule.
 * `status` - (Optional) The status of the resource. Valid values: `ENABLED`, `DISABLED`.
-* `event_pattern` - (Required) Event mode, used to describe the trigger conditions for this event. See [`event_pattern`](#event_pattern) below. 
-* `silence_time` - (Optional) The silence time.
+* `event_pattern` - (Required, Set) Event mode, used to describe the trigger conditions for this event. See [`event_pattern`](#event_pattern) below.
+* `contact_parameters` - (Optional, Set, Available since v1.211.1) The information about the alert contact groups that receive alert notifications. See [`contact_parameters`](#contact_parameters) below.
+* `webhook_parameters` - (Optional, Set, Available since v1.211.1) The information about the callback URLs that are used to receive alert notifications. See [`webhook_parameters`](#webhook_parameters) below.
+* `fc_parameters` - (Optional, Set, Available since v1.211.1) The information about the recipients in Function Compute. See [`fc_parameters`](#fc_parameters) below.
+* `mns_parameters` - (Optional, Set, Available since v1.211.1) The information about the recipients in Message Service (MNS). See [`mns_parameters`](#mns_parameters) below.
+* `sls_parameters` - (Optional, Set, Available since v1.211.1) The information about the recipients in Simple Log Service. See [`sls_parameters`](#sls_parameters) below.
+* `open_api_parameters` - (Optional, Set, Available since v1.211.1) The parameters of API callback notification. See [`open_api_parameters`](#open_api_parameters) below.
 
 ### `event_pattern`
 
 The event_pattern supports the following: 
 
 * `product` - (Required) The type of the cloud service.
-* `event_type_list` - (Optional) The type of the event-triggered alert rule. Valid values:
-  - `StatusNotification`: fault notifications.
-  - `Exception`: exceptions.
-  - `Maintenance`: O&M.
-  - `*`: all types.
-* `level_list` - (Optional) The level of the event-triggered alert rule. Valid values:
+* `sql_filter` - (Optional) The SQL condition that is used to filter events. If the content of an event meets the specified SQL condition, an alert is automatically triggered.
+* `name_list` - (Optional, List) The name of the event-triggered alert rule.
+* `level_list` - (Optional, List) The level of the event-triggered alert rule. Valid values:
   - `CRITICAL`: critical.
   - `WARN`: warning.
   - `INFO`: information.
   - `*`: all types.
-* `name_list` - (Optional) The name of the event-triggered alert rule.
-* `sql_filter` - (Optional) The SQL condition that is used to filter events. If the content of an event meets the specified SQL condition, an alert is automatically triggered.
+* `event_type_list` - (Optional, List) The type of the event-triggered alert rule. Valid values:
+  - `StatusNotification`: fault notifications.
+  - `Exception`: exceptions.
+  - `Maintenance`: O&M.
+  - `*`: all types.
+
+### `contact_parameters`
+
+The contact_parameters supports the following:
+
+* `contact_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
+* `contact_group_name` (Optional) The name of the alert contact group.
+* `level` (Optional) The alert level and the corresponding notification methods.
+
+### `webhook_parameters`
+
+The webhook_parameters supports the following:
+
+* `webhook_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
+* `protocol` (Optional) The name of the protocol.
+* `method` (Optional) The HTTP request method.
+* `url` (Optional) The callback URL.
+
+### `fc_parameters`
+
+The fc_parameters supports the following:
+
+* `fc_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
+* `service_name` (Optional) The name of the Function Compute service.
+* `function_name` (Optional) The name of the function.
+* `region` (Optional) The region where Function Compute is deployed.
+
+### `sls_parameters`
+
+The sls_parameters supports the following:
+
+* `sls_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
+* `project` (Optional) The name of the Simple Log Service project.
+* `log_store` (Optional) The name of the Simple Log Service Logstore.
+* `region` (Optional) The region where Simple Log Service is deployed.
+
+### `mns_parameters`
+
+The mns_parameters supports the following:
+
+* `mns_parameters_id` (Optional) The ID of the recipient that receives alert notifications.
+* `queue` (Optional) The name of the MNS queue.
+* `topic` (Optional) The MNS topic.
+* `region` (Optional) The region where Message Service (MNS) is deployed.
+
+### `open_api_parameters`
+
+The open_api_parameters supports the following:
+
+* `open_api_parameters_id` (Optional) The ID of the recipient that receives alert notifications sent by an API callback.
+* `product` (Optional) The ID of the cloud service to which the API operation belongs.
+* `action` (Optional) The API name.
+* `version` (Optional) The version of the API.
+* `role` (Optional) The name of the role.
+* `region` (Optional) The region where the resource resides.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Event Rule. Its value is same as `rule_name`.
+* `fc_parameters` - The information about the recipients in Function Compute.
+  * `arn` - (Available since v1.211.1) The Alibaba Cloud Resource Name (ARN) of the function.
+* `sls_parameters` - The information about the recipients in Log Service.
+  * `arn` - (Available since v1.211.1) The ARN of the Log Service Logstore.
+* `mns_parameters` - The information about the recipients in Message Service (MNS).
+  * `arn` - (Available since v1.211.1) The ARN of the MNS queue.
+* `open_api_parameters` - The information about the recipients in OpenAPI Explorer.
+  * `arn` - (Available since v1.211.1) The ARN of the API operation.
 
 ## Timeouts
 
