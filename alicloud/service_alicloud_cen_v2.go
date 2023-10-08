@@ -74,10 +74,7 @@ func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object 
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["ResourceType"] != "TransitRouterVpcAttachment" {
-			continue
-		}
-		if item["TransitRouterAttachmentId"] != id {
+		if item["TransitRouterAttachmentId"] != parts[1] {
 			continue
 		}
 		return item, nil
