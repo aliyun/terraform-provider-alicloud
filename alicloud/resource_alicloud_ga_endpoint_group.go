@@ -392,9 +392,10 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 
 	if !d.IsNewResource() && d.HasChange("traffic_percentage") {
 		update = true
-	}
-	if v, ok := d.GetOkExists("traffic_percentage"); ok {
-		request["TrafficPercentage"] = v
+
+		if v, ok := d.GetOkExists("traffic_percentage"); ok {
+			request["TrafficPercentage"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("endpoint_configurations") {
@@ -425,9 +426,10 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 	request["PortOverrides"] = PortOverrides
 
 	if update {
-		if _, ok := d.GetOk("endpoint_request_protocol"); ok {
-			request["EndpointRequestProtocol"] = d.Get("endpoint_request_protocol")
+		if v, ok := d.GetOk("endpoint_request_protocol"); ok {
+			request["EndpointRequestProtocol"] = v
 		}
+
 		action := "UpdateEndpointGroup"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
