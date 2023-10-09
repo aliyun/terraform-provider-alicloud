@@ -52,11 +52,14 @@ data "alicloud_zones" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
+
 data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_zones.default.zones.0.id
+  count                = 3
+  availability_zone    = data.alicloud_zones.default.zones[count.index].id
   cpu_core_count       = 4
   memory_size          = 8
   kubernetes_node_role = "Master"
+  system_disk_category = "cloud_essd"
 }
 
 resource "alicloud_vpc" "default" {
@@ -73,8 +76,9 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_cs_kubernetes" "default" {
   master_vswitch_ids    = alicloud_vswitch.default.*.id
-  master_instance_types = [data.alicloud_instance_types.default.instance_types.0.id, data.alicloud_instance_types.default.instance_types.0.id, data.alicloud_instance_types.default.instance_types.0.id]
-  master_disk_category  = "cloud_ssd"
+  master_instance_types = [data.alicloud_instance_types.default.0.instance_types.0.id, data.alicloud_instance_types.default.1.instance_types.0.id, data.alicloud_instance_types.default.2.instance_types.0.id]
+  master_disk_category  = "cloud_essd"
+  worker_vswitch_ids    = alicloud_vswitch.default.*.id
   version               = "1.24.6-aliyun.1"
   password              = "Yourpassword1234"
   pod_cidr              = "10.72.0.0/16"

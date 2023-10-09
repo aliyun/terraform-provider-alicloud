@@ -7,11 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -681,18 +684,17 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"control_plane_log_ttl": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
-				ForceNew: true,
 			},
 			"control_plane_log_project": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
-				ForceNew: true,
 			},
 			"control_plane_log_components": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				MinItems: 1,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -966,4 +968,75 @@ func versionCompare(neededVersion, curVersion string) (int, error) {
 	}
 
 	return compare, nil
+}
+
+func updateControlPlaneLog(d *schema.ResourceData, meta interface{}) error {
+	request := &roacs.UpdateControlPlaneLogRequest{}
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	csService := CsService{client}
+	if d.HasChange("control_plane_log_ttl") {
+		if v, ok := d.GetOk("control_plane_log_ttl"); ok {
+			request.LogTtl = tea.String(v.(string))
+		}
+	}
+	if d.HasChange("control_plane_log_project") {
+		if v, ok := d.GetOk("control_plane_log_project"); ok {
+			request.LogProject = tea.String(v.(string))
+		}
+	}
+	if d.HasChange("control_plane_log_components") {
+		if v, ok := d.GetOk("control_plane_log_components"); ok {
+			list := v.([]interface{})
+			components := make([]*string, len(list))
+			for i, c := range list {
+				components[i] = tea.String(c.(string))
+			}
+			request.Components = components
+		}
+	}
+
+	_, err = csClient.UpdateControlPlaneLog(tea.String(d.Id()), request)
+	if err != nil {
+		return err
+	}
+	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	response, err := client.CheckControlPlaneLogEnable(tea.String(d.Id()))
+	if err != nil {
+		return err
+	}
+	if response.Body != nil {
+		if response.Body.LogTtl != nil {
+			d.Set("control_plane_log_ttl", *response.Body.LogTtl)
+		}
+		if response.Body.LogProject != nil {
+			d.Set("control_plane_log_project", *response.Body.LogProject)
+		}
+		components := make([]string, len(response.Body.Components))
+		for i, c := range response.Body.Components {
+			components[i] = *c
+		}
+		d.Set("control_plane_log_components", components)
+	}
+
+	return nil
 }

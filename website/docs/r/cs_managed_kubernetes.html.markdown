@@ -7,9 +7,11 @@ description: |-
   Provides a Alicloud resource to manage container managed kubernetes cluster.
 ---
 
-# alicloud\_cs\_managed\_kubernetes
+# alicloud_cs_managed_kubernetes
 
 This resource will help you to manage a ManagedKubernetes Cluster in Alibaba Cloud Kubernetes Service. 
+
+-> **NOTE:** Available since v1.26.0.
 
 -> **NOTE:** It is recommended to create a cluster with zero worker nodes, and then use a node pool to manage the cluster nodes. 
 
@@ -38,7 +40,100 @@ We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage y
 
 ## Example Usage
 
-```
+```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+variable "name" {
+  default = "tf-example"
+}
+
+variable "availability_zone" {
+  description = "The availability zones of vswitches."
+  default     = ["cn-hangzhou-f", "cn-hangzhou-g"]
+}
+
+# leave it to empty would create a new one
+variable "vpc_id" {
+  description = "Existing vpc id used to create several vswitches and other resources."
+  default     = ""
+}
+
+variable "vpc_cidr" {
+  description = "The cidr block used to launch a new vpc when 'vpc_id' is not specified."
+  default     = "10.0.0.0/8"
+}
+
+# leave it to empty then terraform will create several vswitches
+variable "vswitch_ids" {
+  description = "List of existing vswitch id."
+  type        = list(string)
+  default     = []
+}
+
+
+variable "vswitch_cidrs" {
+  description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
+  type        = list(string)
+  default     = ["10.1.0.0/16", "10.2.0.0/16", "10.3.0.0/16"]
+}
+
+# options: between 24-28
+variable "node_cidr_mask" {
+  description = "The node cidr block to specific how many pods can run on single node."
+  default     = 24
+}
+
+# options: ipvs|iptables
+variable "proxy_mode" {
+  description = "Proxy mode is option of kube-proxy."
+  default     = "ipvs"
+}
+
+variable "service_cidr" {
+  description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them."
+  default     = "192.168.0.0/16"
+}
+
+variable "terway_vswitch_ids" {
+  description = "List of existing vswitch ids for terway."
+  type        = list(string)
+  default     = []
+}
+
+variable "terway_vswitch_cidrs" {
+  description = "List of cidr blocks used to create several new vswitches when 'terway_vswitch_cidrs' is not specified."
+  type        = list(string)
+  default     = ["10.4.0.0/16", "10.5.0.0/16", "10.6.0.0/16"]
+}
+
+variable "cluster_addons" {
+  type = list(object({
+    name   = string
+    config = string
+  }))
+
+  default = [
+    {
+      "name"   = "terway-eniip",
+      "config" = "",
+    },
+    {
+      "name"   = "alicloud-disk-controller",
+      "config" = "",
+    },
+    {
+      "name"   = "logtail-ds",
+      "config" = "{'IngressDashboardEnabled':'true'}",
+    },
+    {
+      "name"   = "nginx-ingress-controller",
+      "config" = "{'IngressSlbNetworkType':'internet'}",
+    }
+  ]
+}
+
 # If there is not specifying vpc_id, the module will launch a new vpc
 resource "alicloud_vpc" "vpc" {
   count      = var.vpc_id == "" ? 1 : 0
@@ -56,35 +151,30 @@ resource "alicloud_vswitch" "vswitches" {
 
 # According to the vswitch cidr blocks to launch several vswitches
 resource "alicloud_vswitch" "terway_vswitches" {
-  count      = length(var.terway_vswitch_ids) > 0 ? 0 : length(var.terway_vswitch_cirds)
+  count      = length(var.terway_vswitch_ids) > 0 ? 0 : length(var.terway_vswitch_cidrs)
   vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
-  cidr_block = element(var.terway_vswitch_cirds, count.index)
+  cidr_block = element(var.terway_vswitch_cidrs, count.index)
   zone_id    = element(var.availability_zone, count.index)
 }
 
 resource "alicloud_cs_managed_kubernetes" "k8s" {
-  count              = var.k8s_number
-  name               = var.name
-  cluster_spec       = "ack.pro.small"
+  name         = var.name
+  cluster_spec = "ack.pro.small"
   # version can not be defined in variables.tf.
-  version            = "1.24.6-aliyun.1"
-  worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)): length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  version            = "1.26.3-aliyun.1"
+  worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  pod_vswitch_ids    = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
   new_nat_gateway    = true
   node_cidr_mask     = var.node_cidr_mask
   proxy_mode         = var.proxy_mode
   service_cidr       = var.service_cidr
-  pod_cidr           = var.pod_cidr
 
   dynamic "addons" {
-      for_each = var.cluster_addons
-      content {
-        name   = lookup(addons.value, "name", var.cluster_addons)
-        config = lookup(addons.value, "config", var.cluster_addons)
-      }
-  }
-  runtime = {
-    name    = "containerd"
-    version = "1.5.13"
+    for_each = var.cluster_addons
+    content {
+      name   = lookup(addons.value, "name", var.cluster_addons)
+      config = lookup(addons.value, "config", var.cluster_addons)
+    }
   }
 }
 
@@ -97,12 +187,12 @@ The following arguments are supported:
 ### Global params
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
-* `worker_vswitch_ids` - (**Required**) The vswitches used by control plane.
+* `worker_vswitch_ids` - (**Required**) The vswitches used by control plane. See [`worker_vswitch_ids`](#worker_vswitch_ids) below.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). Detailed below.
+* `runtime` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) The runtime of containers. If you select another container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm). See [`runtime`](#runtime) below.
 * `enable_ssh` - (Deprecated from version 1.177.0)(Optional) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
@@ -117,18 +207,18 @@ The following arguments are supported:
 * `exclude_autoscaler_nodes` - (Deprecated from version 1.177.0)(Optional, Available in 1.88.0+) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
 * `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
 * `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["https://kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well. From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. Detailed below.
+* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. See [`tags`](#tags) below.
 * `cluster_spec` - (Optional, Available in 1.101.0+) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
   * ack.standard : Standard managed clusters.
   * ack.pro.small : Professional managed clusters.
 * `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
-* `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. Detailed below.
+* `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
 * `load_balancer_spec` - (Optional, ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
-* `control_plane_log_ttl` - (Optional, ForceNew, Available in 1.141.0+) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
-* `control_plane_log_components` - (Optional, ForceNew, Available in 1.141.0+) List of target components for which logs need to be collected. Supports `apiserver`, `kcm` and `scheduler`.
-* `control_plane_log_project` - (Optional, ForceNew, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
+* `control_plane_log_ttl` - (Optional, Available in 1.141.0+) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
+* `control_plane_log_components` - (Optional, Available in 1.141.0+) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
+* `control_plane_log_project` - (Optional, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
-* `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster. Detailed below.
+* `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster. See [`addons`](#addons) below.
 
 ### Network params
 
@@ -157,7 +247,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `worker_auto_renew_period` - (Deprecated from version 1.177.0, Optional) Worker payment auto-renew period, it can be one of {1, 2, 3, 6, 12}.
 * `worker_disk_category` - (Deprecated from version 1.177.0)(Optional) The system disk category of worker node. Its valid value are `cloud`, `cloud_ssd`, `cloud_essd` and `cloud_efficiency`. Default to `cloud_efficiency`.
 * `worker_disk_size` - (Deprecated from version 1.177.0)(Optional) The system disk size of worker node. Its valid value range [40~500] in GB.
-* `worker_data_disks` - (Deprecated from version 1.177.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size. Detailed below.
+* `worker_data_disks` - (Deprecated from version 1.177.0)(Optional, Available in 1.91.0+) The data disk configurations of worker nodes, such as the disk type and disk size.  See [`worker_data_disks`](#worker_data_disks) below.
 * `node_name_mode` - (Deprecated from version 1.177.0)(Optional, Available in 1.88.0+) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
 * `node_port_range`- (Deprecated from version 1.177.0)(Optional, ForceNew, Available in 1.103.2+) The service port range of nodes, valid values: `30000` to `65535`. Default to `30000-32767`.
 * `os_type` - (Deprecated from version 1.177.0)(Optional, ForceNew, Available in 1.103.2+) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
@@ -165,7 +255,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specific the `po
 * `image_id` - (Deprecated from version 1.177.0)(Optional) Custom Image support. Must based on CentOS7 or AliyunLinux2.
 * `cpu_policy` - (Deprecated from version 1.177.0)(Optional) Kubelet cpu policy. For Kubernetes 1.12.6 and later, its valid value is either `static` or `none`. Default to `none`.
 * `user_data` - (Deprecated from version 1.177.0)(Optional, Available in 1.81.0+) Custom data that can execute on nodes. For more information, see [Prepare user data](https://www.alibabacloud.com/help/doc-detail/49121.htm).
-* `taints` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Detailed below.
+* `taints` - (Deprecated from version 1.177.0)(Optional, Available in 1.103.2+) Taints ensure pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints. For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
 * `worker_disk_performance_level` - (Deprecated from version 1.177.0)(Optional, Available in 1.120.0+) Worker node system disk performance level, when `worker_disk_category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
 * `worker_disk_snapshot_policy_id` - (Deprecated from version 1.177.0)(Optional, Available in 1.120.0+) Worker node system disk auto snapshot policy.
 
@@ -184,7 +274,7 @@ You can set some file paths to save kube_config information, but this way is cum
 * `worker_instance_type` - (Removed from version 1.16.0)(Optional, Force new resource) The instance type of worker node.
 * `vswitch_ids` - (Removed)(Optional) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
 * `force_update` - (Removed)(Optional, Available in 1.50.0+) Whether to force the update of kubernetes cluster arguments. Default to false.
-* `log_config` - (Removed)(Optional) A list of one element containing information about the associated log store. Detailed below.
+* `log_config` - (Removed)(Optional) A list of one element containing information about the associated log store. See [`log_config`](#log_config) below.
 * `cluster_network_type` - (Removed)(Optional) The network that cluster uses, use `flannel` or `terway`.
 * `worker_data_disk_category` - (Removed)(Optional) The data disk category of worker, use `worker_data_disks` to instead it.
 * `worker_data_disk_size` - (Removed)(Optional) The data disk size of worker, use `worker_data_disks` to instead it.
@@ -227,7 +317,7 @@ You can get more information about addons on ACK web console. When you create a 
 
 The `main.tf`:
 
-```terraform
+```
 resource "alicloud_cs_managed_kubernetes" "k8s" {
   # ... other configuration ...
 

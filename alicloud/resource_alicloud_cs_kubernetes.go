@@ -1095,6 +1095,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	// update control plane config
+	if d.HasChanges([]string{"control_plane_log_ttl", "control_plane_log_project", "control_plane_log_components"}...) {
+		if err := updateControlPlaneLog(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateControlPlaneLog", AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	// migrate cluster to pro form standard
 	if d.HasChange("cluster_spec") {
 		oldValue, newValue := d.GetChange("cluster_spec")
@@ -1439,7 +1446,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// write cluster conn authority to tf state
 	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
-		return fmt.Errorf("error setting certificate_authority: %s", err)
+		return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 	}
 
 	// rrsa metadata only for managed, ignore attributes error
@@ -1447,6 +1454,10 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	} else {
 		d.Set("rrsa_metadata", data)
+	}
+
+	if err := checkControlPlaneLogEnable(d, meta); err != nil {
+		return WrapError(fmt.Errorf("error setting controlPlaneLog: %s", err))
 	}
 
 	return nil

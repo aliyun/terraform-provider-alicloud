@@ -158,7 +158,7 @@ func testSweepCSKubernetes(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCSKubernetes_basic(t *testing.T) {
+func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 	var v *cs.KubernetesClusterDetail
 
 	resourceId := "alicloud_cs_kubernetes.default"
@@ -418,7 +418,7 @@ var csKubernetesBasicMap = map[string]string{
 	"name": CHECKSET,
 }
 
-func Test_parseRRSAMetadata(t *testing.T) {
+func TestUnit_parseRRSAMetadata(t *testing.T) {
 	type args struct {
 		meta string
 	}
