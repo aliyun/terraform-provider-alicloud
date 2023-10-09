@@ -416,6 +416,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"disabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
@@ -1524,6 +1528,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 					addons = append(addons, cs.Addon{
 						Name:     addon["name"].(string),
 						Config:   addon["config"].(string),
+						Version:  addon["version"].(string),
 						Disabled: addon["disabled"].(bool),
 					})
 				}

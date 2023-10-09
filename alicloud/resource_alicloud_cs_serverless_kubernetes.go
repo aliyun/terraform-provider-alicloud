@@ -300,6 +300,7 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 					addons = append(addons, cs.Addon{
 						Name:     addon["name"].(string),
 						Config:   addon["config"].(string),
+						Version:  addon["version"].(string),
 						Disabled: addon["disabled"].(bool),
 					})
 				}
