@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudADBDBClusterLakeVersion_basic0(t *testing.T) {
+func TestAccAliCloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
 	resourceId := "alicloud_adb_db_cluster_lake_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterLakeVersionMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAdbDbClusterLakeVersion")
@@ -31,7 +31,7 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbDbClusterLakeVersionBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterLakeVersionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,108 +42,23 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                        "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
-					"compute_resource":              "16ACU",
-					"storage_resource":              "0ACU",
-					"db_cluster_version":            "5.0",
-					"payment_type":                  "PayAsYouGo",
-					"enable_default_resource_group": "false",
-					"zone_id":                       "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]}",
+					"db_cluster_version": "5.0",
+					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":            "${data.alicloud_adb_zones.default.ids.0}",
+					"compute_resource":   "16ACU",
+					"storage_resource":   "0ACU",
+					"payment_type":       "PayAsYouGo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
+						"db_cluster_version": "5.0",
 						"vpc_id":             CHECKSET,
 						"vswitch_id":         CHECKSET,
+						"zone_id":            CHECKSET,
 						"compute_resource":   "16ACU",
 						"storage_resource":   "0ACU",
-						"db_cluster_version": "5.0",
 						"payment_type":       "PayAsYouGo",
-						"zone_id":            CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enable_default_resource_group"},
-			},
-		},
-	})
-}
-
-var AlicloudAdbDbClusterLakeVersionMap0 = map[string]string{
-	"resource_group_id": CHECKSET,
-}
-
-func AlicloudAdbDbClusterLakeVersionBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
-}
-`, name)
-}
-
-func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
-	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
-	resourceId := "alicloud_adb_db_cluster_lake_version.default"
-	ra := resourceAttrInit(resourceId, AlicloudAdbDbClusterLakeVersionMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAdbDbClusterLakeVersion")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAdbDbClusterLakeVersionBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                 "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":             "${data.alicloud_vswitches.default.ids.0}",
-					"compute_resource":       "16ACU",
-					"storage_resource":       "0ACU",
-					"db_cluster_version":     "5.0",
-					"payment_type":           "PayAsYouGo",
-					"zone_id":                "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]}",
-					"security_ips":           "10.23.1.0",
-					"db_cluster_description": "tf-description",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_id":                 CHECKSET,
-						"vswitch_id":             CHECKSET,
-						"compute_resource":       "16ACU",
-						"storage_resource":       "0ACU",
-						"db_cluster_version":     "5.0",
-						"payment_type":           "PayAsYouGo",
-						"zone_id":                CHECKSET,
-						"security_ips":           "10.23.1.0",
-						"db_cluster_description": "tf-description",
 					}),
 				),
 			},
@@ -169,13 +84,13 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"compute_resource": "48ACU",
-					"storage_resource": "48ACU",
+					"compute_resource": "16ACU",
+					"storage_resource": "0ACU",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"compute_resource": "48ACU",
-						"storage_resource": "48ACU",
+						"compute_resource": "16ACU",
+						"storage_resource": "0ACU",
 					}),
 				),
 			},
@@ -191,23 +106,21 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_description": "tf-db-cluster-description",
+					"db_cluster_description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_description": "tf-db-cluster-description",
+						"db_cluster_description": name,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_ips":           "10.23.1.2",
-					"db_cluster_description": "update-tf-db-cluster-description",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ips":           "10.23.1.2",
-						"db_cluster_description": "update-tf-db-cluster-description",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -215,13 +128,110 @@ func TestAccAlicloudADBDBClusterLakeVersion_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"enable_default_resource_group"},
+				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
 			},
 		},
 	})
 }
 
-func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
+func TestAccAliCloudADBDBClusterLakeVersion_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.ADBDBClusterLakeVersionSupportRegions)
+	resourceId := "alicloud_adb_db_cluster_lake_version.default"
+	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterLakeVersionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAdbDbClusterLakeVersion")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testacc%sadbdbclusterlakeversion%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterLakeVersionBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":            "5.0",
+					"vpc_id":                        "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":                       "${data.alicloud_adb_zones.default.ids.0}",
+					"compute_resource":              "16ACU",
+					"storage_resource":              "0ACU",
+					"payment_type":                  "PayAsYouGo",
+					"security_ips":                  "10.23.1.0",
+					"db_cluster_description":        name,
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"enable_default_resource_group": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":     "5.0",
+						"vpc_id":                 CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"zone_id":                CHECKSET,
+						"compute_resource":       "16ACU",
+						"storage_resource":       "0ACU",
+						"payment_type":           "PayAsYouGo",
+						"security_ips":           "10.23.1.0",
+						"db_cluster_description": name,
+						"resource_group_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"enable_default_resource_group", "source_db_cluster_id", "backup_set_id", "restore_type", "restore_to_time"},
+			},
+		},
+	})
+}
+
+var AliCloudAdbDbClusterLakeVersionMap0 = map[string]string{
+	"security_ips":           CHECKSET,
+	"db_cluster_description": CHECKSET,
+	"commodity_code":         CHECKSET,
+	"connection_string":      CHECKSET,
+	"engine":                 CHECKSET,
+	"engine_version":         CHECKSET,
+	"create_time":            CHECKSET,
+	"lock_mode":              CHECKSET,
+	"port":                   CHECKSET,
+	"resource_group_id":      CHECKSET,
+	"status":                 CHECKSET,
+}
+
+func AliCloudAdbDbClusterLakeVersionBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_adb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_adb_zones.default.ids.0
+	}
+`, name)
+}
+
+func TestUnitAliCloudAdbDbClusterLakeVersion(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_adb_db_cluster_lake_version"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_adb_db_cluster_lake_version"].Schema).Data(nil, nil)
@@ -313,7 +323,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudAdbDbClusterLakeVersionCreate(dInit, rawClient)
+	err = resourceAliCloudAdbDbClusterLakeVersionCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -345,7 +355,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAdbDbClusterLakeVersionCreate(dInit, rawClient)
+		err := resourceAliCloudAdbDbClusterLakeVersionCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -371,7 +381,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudAdbDbClusterLakeVersionUpdate(dExisted, rawClient)
+	err = resourceAliCloudAdbDbClusterLakeVersionUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyDBCluster
@@ -413,7 +423,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAdbDbClusterLakeVersionUpdate(dExisted, rawClient)
+		err := resourceAliCloudAdbDbClusterLakeVersionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -452,7 +462,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAdbDbClusterLakeVersionRead(dExisted, rawClient)
+		err := resourceAliCloudAdbDbClusterLakeVersionRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -470,7 +480,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudAdbDbClusterLakeVersionDelete(dExisted, rawClient)
+	err = resourceAliCloudAdbDbClusterLakeVersionDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidDBCluster.NotFound"}
@@ -492,7 +502,7 @@ func TestUnitAlicloudAdbDbClusterLakeVersion(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAdbDbClusterLakeVersionDelete(dExisted, rawClient)
+		err := resourceAliCloudAdbDbClusterLakeVersionDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
