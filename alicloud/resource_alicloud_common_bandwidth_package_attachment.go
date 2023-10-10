@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -133,14 +132,14 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentRead(d *schema.Resource
 
 	d.Set("status", objectRaw["Status"])
 	d.Set("bandwidth_package_id", objectRaw["BandwidthPackageId"])
-	publicIpAddresse1RawObj, _ := jsonpath.Get("$.PublicIpAddresses.PublicIpAddresse[*]", objectRaw)
-	publicIpAddresse1Raw := make([]interface{}, 0)
-	if publicIpAddresse1RawObj != nil {
-		publicIpAddresse1Raw = publicIpAddresse1RawObj.([]interface{})
-	}
 
-	publicIpAddresseChild1Raw := publicIpAddresse1Raw[0].(map[string]interface{})
-	d.Set("instance_id", publicIpAddresseChild1Raw["AllocationId"])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	bandwidthPackageId, ipInstanceId := parts[0], parts[1]
+	d.Set("bandwidth_package_id", bandwidthPackageId)
+	d.Set("instance_id", ipInstanceId)
 
 	objectRaw, err = cbwpServiceV2.DescribeDescribeEipAddresses(d.Id())
 	if err != nil {
@@ -148,7 +147,6 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentRead(d *schema.Resource
 	}
 
 	d.Set("bandwidth_package_bandwidth", objectRaw["Bandwidth"])
-	d.Set("bandwidth_package_id", objectRaw["BandwidthPackageId"])
 
 	return nil
 }

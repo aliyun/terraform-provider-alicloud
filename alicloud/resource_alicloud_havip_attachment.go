@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -140,9 +139,12 @@ func resourceAliCloudVpcHaVipAttachmentRead(d *schema.ResourceData, meta interfa
 
 	d.Set("instance_type", objectRaw["AssociatedInstanceType"])
 	d.Set("status", objectRaw["Status"])
-	d.Set("ha_vip_id", objectRaw["HaVipId"])
-	associatedInstances1Raw, _ := jsonpath.Get("$.AssociatedInstances.associatedInstance", objectRaw)
-	d.Set("instance_id", associatedInstances1Raw.([]interface{})[0])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("ha_vip_id", parts[0])
+	d.Set("instance_id", parts[1])
 
 	d.Set("havip_id", d.Get("ha_vip_id"))
 	return nil
