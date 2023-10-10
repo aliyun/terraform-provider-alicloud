@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -110,9 +109,12 @@ func resourceAliCloudVpcRouteTableAttachmentRead(d *schema.ResourceData, meta in
 	}
 
 	d.Set("status", objectRaw["Status"])
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
 	d.Set("route_table_id", objectRaw["RouteTableId"])
-	vSwitchIds1Raw, _ := jsonpath.Get("$.VSwitchIds.VSwitchId", objectRaw)
-	d.Set("vswitch_id", vSwitchIds1Raw.([]interface{})[0])
+	d.Set("vswitch_id", parts[1])
 
 	return nil
 }
