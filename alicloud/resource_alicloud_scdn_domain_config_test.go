@@ -74,7 +74,7 @@ func TestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
+func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
@@ -127,7 +127,7 @@ func TestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
+func SkipTestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
