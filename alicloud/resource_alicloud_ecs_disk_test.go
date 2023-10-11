@@ -98,7 +98,7 @@ func testAlicloudEcsDisk(region string) error {
 	return nil
 }
 
-func TestAccAlicloudECSDisk_basic(t *testing.T) {
+func TestAccAliCloudECSDisk_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -279,7 +279,7 @@ func TestAccAlicloudECSDisk_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSDisk_basic1(t *testing.T) {
+func TestAccAliCloudECSDisk_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -357,7 +357,7 @@ func TestAccAlicloudECSDisk_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudECSDisk_basic2(t *testing.T) {
+func TestAccAliCloudECSDisk_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -451,7 +451,7 @@ var AlicloudEcsDiskMap = map[string]string{
 	"availability_zone":    CHECKSET,
 }
 
-func TestAccAlicloudECSDisk_basic3(t *testing.T) {
+func TestAccAliCloudECSDisk_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
@@ -515,6 +515,16 @@ func TestAccAlicloudECSDisk_basic3(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"size": "500",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},

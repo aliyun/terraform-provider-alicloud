@@ -78,7 +78,7 @@ The following arguments are supported:
     * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
     * `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `resource_group_id` - (Optional) The Id of resource group which the disk belongs.
+* `resource_group_id` - (Optional) The Id of resource group which the disk belongs. This attribute only supports adding or updating, not destroying.
 * `size` - (Optional) The size of the disk in GiBs. When resize the disk, the new size must be greater than the former value, or you would get an error `InvalidDiskSize.TooSmall`.
 * `snapshot_id` - (Optional, ForceNew) A snapshot to base the disk off of. If the disk size required by snapshot is greater than `size`, the `size` will be ignored, conflict with `encrypted`.
 * `storage_set_id` - (Optional, ForceNew) The ID of the storage set.

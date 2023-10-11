@@ -2924,7 +2924,7 @@ func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"image_id":                      "${data.alicloud_images.default.images.0.id}",
 					"security_groups":               []string{"${alicloud_security_group.default.id}"},
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.1.id}",
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.2.id}",
 					"availability_zone":             "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
@@ -2955,7 +2955,7 @@ func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"operator_type": "downgrade",
-					"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.1.id}",
 				},
 				),
 				Check: resource.ComposeTestCheckFunc(
@@ -2967,7 +2967,7 @@ func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"operator_type": "upgrade",
-					"instance_type": "${data.alicloud_instance_types.default.instance_types.1.id}",
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.2.id}",
 				},
 				),
 				Check: resource.ComposeTestCheckFunc(
@@ -3228,6 +3228,16 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"user_data": "SSBhbSB0aGUgdXNlciBkYXRh",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id": "${data.alicloud_images.default.images.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_id": CHECKSET,
 					}),
 				),
 			},
