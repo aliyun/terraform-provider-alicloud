@@ -118,6 +118,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"size": {
 				Type:     schema.TypeInt,

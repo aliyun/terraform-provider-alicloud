@@ -1836,6 +1836,21 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		request.InstanceId = d.Id()
 		request.ImageId = d.Get("image_id").(string)
 		request.SystemDiskSize = requests.NewInteger(d.Get("system_disk_size").(int))
+		if v, ok := d.GetOk("system_disk_encrypted"); ok {
+			request.Encrypted = requests.NewBoolean(v.(bool))
+		}
+		if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+			request.EncryptAlgorithm = v.(string)
+		}
+		if v, ok := d.GetOk("security_enhancement_strategy"); ok {
+			request.SecurityEnhancementStrategy = v.(string)
+		}
+		if v, ok := d.GetOk("password"); ok {
+			request.Password = v.(string)
+		}
+		if v, ok := d.GetOk("system_disk_kms_key_id"); ok {
+			request.KMSKeyId = v.(string)
+		}
 		request.ClientToken = buildClientToken(request.GetActionName())
 		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ReplaceSystemDisk(request)
