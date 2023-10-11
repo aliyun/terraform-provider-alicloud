@@ -15,6 +15,8 @@ For information about domain config and how to use it, see [Batch set config](ht
 
 -> **NOTE:** Available in v1.131.0+.
 
+-> **NOTE:** Alibaba Cloud SCDN has stopped new customer purchases from January 26, 2023, and you can choose to buy Alibaba Cloud DCDN products with more comprehensive acceleration and protection capabilities. If you are already a SCDN customer, you can submit a work order at any time to apply for a smooth migration to Alibaba Cloud DCDN products. In the future, we will provide better acceleration and security protection services in Alibaba Cloud DCDN, thank you for your understanding and cooperation.
+
 ## Example Usage
 
 Basic Usage
