@@ -290,8 +290,12 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"serverless_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"AgileServerless"}, false),
-				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"AgileServerless", "SteadyServerless"}, false),
+			},
+			"serverless_steady_switch": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
 			},
 			"scale_min": {
 				Type:             schema.TypeInt,
@@ -329,6 +333,20 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     IntBetween(300, 86400),
 				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+			},
+			"scale_ap_ro_num_min": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntBetween(0, 7),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+				Computed:         true,
+			},
+			"scale_ap_ro_num_max": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntBetween(0, 7),
+				DiffSuppressFunc: polardbServrelessTypeDiffSuppressFunc,
+				Computed:         true,
 			},
 			"tags": tagsSchema(),
 			"vpc_id": {
@@ -886,67 +904,187 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		d.SetPartial("deletion_lock")
 	}
-	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
-		if w, ok := d.GetOk("db_version"); ok && w.(string) == "8.0" {
-			if !d.IsNewResource() && d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause") {
-				action := "ModifyDBClusterServerlessConf"
-				request := map[string]interface{}{
-					"DBClusterId": d.Id(),
-				}
-				if v, ok := d.GetOk("scale_min"); ok {
-					scaleMin := v.(int)
-					request["ScaleMin"] = strconv.Itoa(scaleMin)
-				}
-				if v, ok := d.GetOk("scale_max"); ok {
-					scaleMax := v.(int)
-					request["ScaleMax"] = strconv.Itoa(scaleMax)
-				}
-				if v, ok := d.GetOk("scale_ro_num_min"); ok {
-					scaleRoNumMin := v.(int)
-					request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
-				}
-				if v, ok := d.GetOk("scale_ro_num_max"); ok {
-					scaleRoNumMax := v.(int)
-					request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
-				}
-				if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
-					request["AllowShutDown"] = v.(string)
-				}
-				if v, ok := d.GetOk("seconds_until_auto_pause"); ok {
-					secondsUntilAutoPause := v.(int)
-					request["SecondsUntilAutoPause"] = strconv.Itoa(secondsUntilAutoPause)
-				}
 
-				//retry
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					addDebug(action, response, request)
-					return nil
-				})
+	if d.HasChange("serverless_steady_switch") {
+		// Enable steady state
+		if d.HasChanges("scale_min", "scale_max", "scale_ro_num_min", "scale_ro_num_max", "scale_ap_ro_num_min", "scale_ap_ro_num_max") {
+			action := "EnableDBClusterServerless"
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+			}
+			if v, ok := d.GetOk("scale_min"); ok {
+				scaleMin := v.(int)
+				request["ScaleMin"] = strconv.Itoa(scaleMin)
+			}
+			if v, ok := d.GetOk("scale_max"); ok {
+				scaleMax := v.(int)
+				request["ScaleMax"] = strconv.Itoa(scaleMax)
+			}
+			if v, ok := d.GetOk("scale_ro_num_min"); ok {
+				scaleRoNumMin := v.(int)
+				request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
+			}
+			if v, ok := d.GetOk("scale_ro_num_max"); ok {
+				scaleRoNumMax := v.(int)
+				request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+			}
+			clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
+			if err != nil {
+				return WrapError(err)
+			}
+			imciParamterSwitch := false
+			for _, nodes := range clusterAttribute.DBNodes {
+				if nodes.ImciSwitch == "ON" {
+					imciParamterSwitch = true
+				}
+			}
+			if imciParamterSwitch {
+				if v, ok := d.GetOk("scale_ap_ro_num_min"); ok {
+					scaleApRoNumMin := v.(int)
+					request["ScaleApRoNumMin"] = strconv.Itoa(scaleApRoNumMin)
+				}
+				if v, ok := d.GetOk("scale_ap_ro_num_max"); ok {
+					scaleApRoNumMax := v.(int)
+					request["ScaleApRoNumMax"] = strconv.Itoa(scaleApRoNumMax)
+				}
+			}
+
+			//retry
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
 				}
-				// wait cluster status change from ConfigSwitching to running
-				stateConf := BuildStateConf([]string{"ConfigSwitching", "Stopped", "STARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			// wait cluster status change from ConfigSwitching to running
+			stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 8*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("scale_min")
+			d.SetPartial("scale_max")
+			d.SetPartial("scale_ro_num_min")
+			d.SetPartial("scale_ro_num_max")
+			d.SetPartial("scale_ap_ro_num_min")
+			d.SetPartial("scale_ap_ro_num_max")
+		}
+		// Turn off steady state
+		if u, ok := d.GetOk("serverless_steady_switch"); ok && u.(string) == "OFF" {
+			action := "DisableDBClusterServerless"
+			request := map[string]interface{}{
+				"DBClusterId": d.Id(),
+			}
+			//retry
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
 				}
-				d.SetPartial("scale_min")
-				d.SetPartial("scale_max")
-				d.SetPartial("scale_ro_num_min")
-				d.SetPartial("scale_ro_num_max")
-				d.SetPartial("allow_shut_down")
-				d.SetPartial("seconds_until_auto_pause")
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			// wait cluster status change from ConfigSwitching to running
+			stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 8*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
+	}
+
+	if !d.IsNewResource() && d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause", "scale_ap_ro_num_min", "scale_ap_ro_num_max") {
+		action := "ModifyDBClusterServerlessConf"
+		request := map[string]interface{}{
+			"DBClusterId": d.Id(),
+		}
+		if v, ok := d.GetOk("scale_min"); ok {
+			scaleMin := v.(int)
+			request["ScaleMin"] = strconv.Itoa(scaleMin)
+		}
+		if v, ok := d.GetOk("scale_max"); ok {
+			scaleMax := v.(int)
+			request["ScaleMax"] = strconv.Itoa(scaleMax)
+		}
+		if v, ok := d.GetOk("scale_ro_num_min"); ok {
+			scaleRoNumMin := v.(int)
+			request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
+		}
+		if v, ok := d.GetOk("scale_ro_num_max"); ok {
+			scaleRoNumMax := v.(int)
+			request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+		}
+		if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
+			request["AllowShutDown"] = v.(string)
+		}
+		if v, ok := d.GetOk("seconds_until_auto_pause"); ok {
+			secondsUntilAutoPause := v.(int)
+			request["SecondsUntilAutoPause"] = strconv.Itoa(secondsUntilAutoPause)
+		}
+		clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		imciParamterSwitch := false
+		for _, nodes := range clusterAttribute.DBNodes {
+			if nodes.ImciSwitch == "ON" {
+				imciParamterSwitch = true
+			}
+		}
+		if imciParamterSwitch {
+			if v, ok := d.GetOk("scale_ap_ro_num_min"); ok {
+				scaleApRoNumMin := v.(int)
+				request["ScaleApRoNumMin"] = strconv.Itoa(scaleApRoNumMin)
+			}
+			if v, ok := d.GetOk("scale_ap_ro_num_max"); ok {
+				scaleApRoNumMax := v.(int)
+				request["ScaleApRoNumMax"] = strconv.Itoa(scaleApRoNumMax)
+			}
+		}
+		//retry
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// wait cluster status change from ConfigSwitching to running
+		stateConf := BuildStateConf([]string{"ConfigSwitching", "Stopped", "STARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("scale_min")
+		d.SetPartial("scale_max")
+		d.SetPartial("scale_ro_num_min")
+		d.SetPartial("scale_ro_num_max")
+		d.SetPartial("allow_shut_down")
+		d.SetPartial("seconds_until_auto_pause")
 	}
 
 	if d.HasChange("storage_space") {
@@ -1087,14 +1225,17 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if len(clusterAttribute.DBNodes) > 0 {
 		d.Set("zone_id", clusterAttribute.DBNodes[0].ZoneId)
 	}
-	dbNodeId, ok := d.GetOk("db_node_id")
-	if len(clusterAttribute.DBNodes) > 0 && ok && dbNodeId.(string) == "db_node_id_index" {
-		d.Set("db_node_id", clusterAttribute.DBNodes[0].DBNodeId)
-	} else {
-		d.Set("db_node_id", dbNodeId)
-	}
 	d.Set("db_node_class", cluster.DBNodeClass)
-	d.Set("db_node_count", len(clusterAttribute.DBNodes))
+	// db_node_count normal nodes, excluding backend generated sensitive nodes
+	dbNodeCount := len(clusterAttribute.DBNodes)
+	if clusterAttribute.ServerlessType == "SteadyServerless" {
+		for _, nodes := range clusterAttribute.DBNodes {
+			if nodes.ServerlessType != "SteadyServerless" {
+				dbNodeCount--
+			}
+		}
+	}
+	d.Set("db_node_count", dbNodeCount)
 	d.Set("resource_group_id", clusterAttribute.ResourceGroupId)
 	d.Set("deletion_lock", clusterAttribute.DeletionLock)
 	d.Set("creation_category", clusterAttribute.Category)
@@ -1193,6 +1334,13 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		d.Set("scale_ro_num_max", formatInt(serverlessInfo["ScaleRoNumMax"]))
 		d.Set("allow_shut_down", serverlessInfo["AllowShutDown"])
 		d.Set("seconds_until_auto_pause", formatInt(serverlessInfo["SecondsUntilAutoPause"]))
+		d.Set("scale_ap_ro_num_min", formatInt(serverlessInfo["ScaleApRoNumMin"]))
+		d.Set("scale_ap_ro_num_max", formatInt(serverlessInfo["ScaleApRoNumMax"]))
+		serverlessSwitch := ""
+		if v, ok := serverlessInfo["Switch"]; ok {
+			serverlessSwitch = fmt.Sprint(v)
+			d.Set("serverless_steady_switch", convertPolarDBServerlessSteadySwitchReadResponse(serverlessSwitch))
+		}
 	}
 	return nil
 }
@@ -1391,27 +1539,29 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	request["TDEStatus"] = requests.NewBoolean(convertPolarDBTdeStatusCreateRequest(d.Get("tde_status").(string)))
 
-	if v, ok := d.GetOk("serverless_type"); ok && v.(string) != "" {
+	if v, ok := d.GetOk("serverless_type"); ok && v.(string) == "AgileServerless" {
 		request["ServerlessType"] = d.Get("serverless_type").(string)
-	}
-	if v, ok := d.GetOk("scale_min"); ok {
-		scaleMin := v.(int)
-		request["ScaleMin"] = strconv.Itoa(scaleMin)
-	}
-	if v, ok := d.GetOk("scale_max"); ok {
-		scaleMax := v.(int)
-		request["ScaleMax"] = strconv.Itoa(scaleMax)
-	}
-	if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
-		request["AllowShutDown"] = d.Get("allow_shut_down").(string)
-	}
-	if v, ok := d.GetOk("scale_ro_num_min"); ok {
-		scaleRoNumMin := v.(int)
-		request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
-	}
-	if v, ok := d.GetOk("scale_ro_num_max"); ok {
-		scaleRoNumMax := v.(int)
-		request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+
+		if v, ok := d.GetOk("scale_min"); ok {
+			scaleMin := v.(int)
+			request["ScaleMin"] = strconv.Itoa(scaleMin)
+		}
+		if v, ok := d.GetOk("scale_max"); ok {
+			scaleMax := v.(int)
+			request["ScaleMax"] = strconv.Itoa(scaleMax)
+		}
+		if v, ok := d.GetOk("allow_shut_down"); ok && v.(string) != "" {
+			request["AllowShutDown"] = d.Get("allow_shut_down").(string)
+		}
+		if v, ok := d.GetOk("scale_ro_num_min"); ok {
+			scaleRoNumMin := v.(int)
+			request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
+		}
+		if v, ok := d.GetOk("scale_ro_num_max"); ok {
+			scaleRoNumMax := v.(int)
+			request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
+		}
+
 	}
 
 	if v, ok := d.GetOk("proxy_type"); ok {
@@ -1489,4 +1639,12 @@ func convertPolarDBStorageTypeDescribeRequest(source string) string {
 		return "ESSDPL3"
 	}
 	return source
+}
+
+func convertPolarDBServerlessSteadySwitchReadResponse(source string) string {
+	switch source {
+	case "1":
+		return "ON"
+	}
+	return "OFF"
 }

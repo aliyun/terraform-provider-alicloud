@@ -347,8 +347,10 @@ func polardbTDEAndEnabledDiffSuppressFunc(k, old, new string, d *schema.Resource
 }
 
 func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("serverless_type").(string) == "AgileServerless" {
-		return false
+	if d.Get("db_type").(string) == "MySQL" && (d.Get("db_version").(string) == "8.0" || d.Get("db_version").(string) == "5.7") {
+		if d.Get("serverless_type").(string) == "AgileServerless" || (d.Get("serverless_type").(string) == "SteadyServerless" && d.Get("serverless_steady_switch").(string) == "ON") {
+			return false
+		}
 	}
 	return true
 }
