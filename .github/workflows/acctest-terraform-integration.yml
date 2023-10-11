@@ -37,7 +37,7 @@ jobs:
             exit 0
           fi
           for fileName in ${diffFiles[@]}; do
-            if [[ ${fileName} != *?_test.go ]]; then
+            if [[ ${fileName} == *?_test.go ]]; then
                 echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
                 continue
             fi

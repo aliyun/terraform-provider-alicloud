@@ -64,7 +64,7 @@ declare -A allResources
 allResources["init"]=1
 #check if need run
 for fileName in ${changeFiles[@]}; do
-  if [[ ${fileName} != *?_test.go ]]; then
+  if [[ ${fileName} == *?_test.go ]]; then
       echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
       continue
   fi
