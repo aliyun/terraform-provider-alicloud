@@ -166,20 +166,17 @@ The following arguments are supported:
 -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
 * `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0+) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
 * `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0+) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
-* `serverless_type` - (Optional, ForceNew, Available since v1.204.0+) The type of the serverless cluster. Set the value to AgileServerless.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `scale_min` - (Optional, Available since v1.204.0+) The minimum number of PCUs per node for scaling. Valid values: 1 PCU to 31 PCUs.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `scale_max` - (Optional, Available since v1.204.0+) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `scale_ro_num_min` - (Optional, Available since v1.204.0+) The minimum number of read-only nodes for scaling. Valid values: 0 to 15.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `scale_ro_num_max` - (Optional, Available since v1.204.0+) The maximum number of read-only nodes for scaling. Valid values: 0 to 15.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `allow_shut_down` - (Optional, Available since v1.204.0+) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`.
--> **NOTE:** This parameter is valid only for serverless clusters.
-* `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0+) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds.
--> **NOTE:** This parameter is valid only for serverless clusters.
+* `serverless_type` - (Optional, Available since v1.204.0+) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `serverless_steady_switch` - (Optional, Available since v1.212.0+) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
+  -> **NOTE:** When serverless_steady_switch is `ON` and serverless_type is `SteadyServerless`, parameters `scale_min`, `scale_max`, `scale_ro_num_min` and `scale_ro_num_max` are all required.
+* `scale_min` - (Optional, Available since v1.204.0+) The minimum number of PCUs per node for scaling. Valid values: 1 PCU to 31 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`.· This parameter is valid only for serverless clusters.
+* `scale_max` - (Optional, Available since v1.204.0+) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `scale_ro_num_min` - (Optional, Available since v1.204.0+) The minimum number of read-only nodes for scaling. Valid values: 0 to 15 . It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7 .It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `scale_ro_num_max` - (Optional, Available since v1.204.0+) The maximum number of read-only nodes for scaling. Valid values: 0 to 15. It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7. It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `allow_shut_down` - (Optional, Available since v1.204.0+) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`. This parameter is valid only for serverless clusters.
+* `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0+) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds. This parameter is valid only for serverless clusters.
+* `scale_ap_ro_num_min` - (Optional, Available since v1.212.0+) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
+* `scale_ap_ro_num_max` - (Optional, Available since v1.212.0+) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
 * `upgrade_type` - (Optional, Available since v1.208.1) Version upgrade type. Valid values are PROXY, DB, ALL. PROXY means upgrading the proxy version, DB means upgrading the db version, ALL means upgrading both db and proxy versions simultaneously.
 * `from_time_service` - (Optional, Available since v1.208.1) Immediate or scheduled kernel version upgrade. Valid values are `true`, `false`. True means immediate execution, False means scheduled execution.
 * `planned_start_time` - (Optional, Available since v1.208.1) The earliest time to start executing a scheduled (i.e. within the target time period) kernel version upgrade task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
