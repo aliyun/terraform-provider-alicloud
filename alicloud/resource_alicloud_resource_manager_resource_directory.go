@@ -5,19 +5,20 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudResourceManagerResourceDirectory() *schema.Resource {
+func resourceAliCloudResourceManagerResourceDirectory() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudResourceManagerResourceDirectoryCreate,
-		Read:   resourceAlicloudResourceManagerResourceDirectoryRead,
-		Update: resourceAlicloudResourceManagerResourceDirectoryUpdate,
-		Delete: resourceAlicloudResourceManagerResourceDirectoryDelete,
+		Create: resourceAliCloudResourceManagerResourceDirectoryCreate,
+		Read:   resourceAliCloudResourceManagerResourceDirectoryRead,
+		Update: resourceAliCloudResourceManagerResourceDirectoryUpdate,
+		Delete: resourceAliCloudResourceManagerResourceDirectoryDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -25,6 +26,22 @@ func resourceAlicloudResourceManagerResourceDirectory() *schema.Resource {
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Disabled", "Enabled"}, false),
+			},
+			"member_deletion_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Disabled", "Enabled"}, false),
+			},
+			"root_folder_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"master_account_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -33,27 +50,11 @@ func resourceAlicloudResourceManagerResourceDirectory() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"root_folder_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled"}, false),
-			},
-			"member_deletion_status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Disabled", "Enabled"}, false),
-			},
 		},
 	}
 }
 
-func resourceAlicloudResourceManagerResourceDirectoryCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudResourceManagerResourceDirectoryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "InitResourceDirectory"
@@ -62,9 +63,12 @@ func resourceAlicloudResourceManagerResourceDirectoryCreate(d *schema.ResourceDa
 	if err != nil {
 		return WrapError(err)
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -72,59 +76,76 @@ func resourceAlicloudResourceManagerResourceDirectoryCreate(d *schema.ResourceDa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_resource_manager_resource_directory", action, AlibabaCloudSdkGoERROR)
 	}
-	responseResourceDirectory := response["ResourceDirectory"].(map[string]interface{})
-	d.SetId(fmt.Sprint(responseResourceDirectory["ResourceDirectoryId"]))
 
-	return resourceAlicloudResourceManagerResourceDirectoryUpdate(d, meta)
+	if resp, err := jsonpath.Get("$.ResourceDirectory", response); err != nil || resp == nil {
+		return WrapErrorf(err, IdMsg, "alicloud_resource_manager_resource_directory")
+	} else {
+		resourceDirectoryId := resp.(map[string]interface{})["ResourceDirectoryId"]
+		d.SetId(fmt.Sprint(resourceDirectoryId))
+	}
+
+	return resourceAliCloudResourceManagerResourceDirectoryUpdate(d, meta)
 }
-func resourceAlicloudResourceManagerResourceDirectoryRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudResourceManagerResourceDirectoryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	resourcemanagerService := ResourcemanagerService{client}
-	object, err := resourcemanagerService.DescribeResourceManagerResourceDirectory(d.Id())
+	resourceManagerService := ResourcemanagerService{client}
+
+	object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_resource_manager_resource_directory resourcemanagerService.DescribeResourceManagerResourceDirectory Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_resource_manager_resource_directory resourceManagerService.DescribeResourceManagerResourceDirectory Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("master_account_id", object["MasterAccountId"])
-	d.Set("master_account_name", object["MasterAccountName"])
-	d.Set("root_folder_id", object["RootFolderId"])
+
 	d.Set("status", object["ScpStatus"])
 	d.Set("member_deletion_status", object["MemberDeletionStatus"])
+	d.Set("root_folder_id", object["RootFolderId"])
+	d.Set("master_account_id", object["MasterAccountId"])
+	d.Set("master_account_name", object["MasterAccountName"])
+
 	return nil
 }
-func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	resourceManagerService := ResourcemanagerService{client}
-	conn, err := client.NewResourcemanagerClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
 	d.Partial(true)
 
 	if d.HasChange("status") {
+		conn, err := client.NewResourcemanagerClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
 		object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
+
 		target := d.Get("status").(string)
 		if object["ScpStatus"].(string) != target {
 			if target == "Disabled" {
 				request := map[string]interface{}{}
+
 				action := "DisableControlPolicy"
+
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -132,23 +153,30 @@ func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+
 				stateConf := BuildStateConf([]string{}, []string{"Disabled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, resourceManagerService.ResourceManagerResourceDirectoryStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
+
 			if target == "Enabled" {
 				request := map[string]interface{}{}
+
 				action := "EnableControlPolicy"
+
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -156,34 +184,48 @@ func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, request)
 					return nil
 				})
+				addDebug(action, response, request)
+
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+
 				stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, resourceManagerService.ResourceManagerResourceDirectoryStateRefreshFunc(d.Id(), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
+
 			d.SetPartial("status")
 		}
 	}
+
 	if d.HasChange("member_deletion_status") {
+		conn, err := client.NewResourcemanagerClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
 		object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
 		if err != nil {
 			return WrapError(err)
 		}
+
 		target := d.Get("member_deletion_status").(string)
 		if object["MemberDeletionStatus"].(string) != target {
 			request := map[string]interface{}{
 				"Status": target,
 			}
+
 			action := "SetMemberDeletionPermission"
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -191,31 +233,72 @@ func resourceAlicloudResourceManagerResourceDirectoryUpdate(d *schema.ResourceDa
 					}
 					return resource.NonRetryableError(err)
 				}
-				addDebug(action, response, request)
 				return nil
 			})
+			addDebug(action, response, request)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			d.SetPartial("member_deletion_status")
 		}
 	}
+
 	d.Partial(false)
-	return resourceAlicloudResourceManagerResourceDirectoryRead(d, meta)
+
+	return resourceAliCloudResourceManagerResourceDirectoryRead(d, meta)
 }
-func resourceAlicloudResourceManagerResourceDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudResourceManagerResourceDirectoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	resourceManagerService := ResourcemanagerService{client}
 	action := "DestroyResourceDirectory"
+	request := map[string]interface{}{}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	var response map[string]interface{}
+
 	conn, err := client.NewResourcemanagerClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{}
+
+	object, err := resourceManagerService.DescribeResourceManagerResourceDirectory(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if fmt.Sprint(object["ScpStatus"]) == "Enabled" {
+		disableAction := "DisableControlPolicy"
+
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(disableAction), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(disableAction, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), disableAction, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Disabled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, resourceManagerService.ResourceManagerResourceDirectoryStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 
 	wait := incrementalWait(3*time.Second, 0*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-03-31"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-03-31"), StringPointer("AK"), request, nil, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -223,11 +306,13 @@ func resourceAlicloudResourceManagerResourceDirectoryDelete(d *schema.ResourceDa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
