@@ -45,6 +45,7 @@ func (s *BssOpenApiService) QueryAvailableInstances(id, instanceRegion, productC
 				request["ProductType"] = productTypeIntl
 				return resource.RetryableError(err)
 			}
+			return resource.NonRetryableError(err)
 		}
 		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
 		if len(resp.([]interface{})) < 1 {
