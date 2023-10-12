@@ -163,6 +163,12 @@ func TestAccAlicloudCmsEventRule_basic00(t *testing.T) {
 							"level_list":      []string{"CRITICAL"},
 							"name_list":       []string{"test"},
 							"sql_filter":      "test",
+							"keyword_filter": []map[string]interface{}{
+								{
+									"relation": "OR",
+									"keywords": []string{"ecs"},
+								},
+							},
 						},
 					},
 					"silence_time": "100",
@@ -217,6 +223,12 @@ func TestAccAlicloudCmsEventRule_basic00(t *testing.T) {
 							"level_list":      []string{"WARN"},
 							"name_list":       []string{"update_test"},
 							"sql_filter":      "update_test",
+							"keyword_filter": []map[string]interface{}{
+								{
+									"relation": "OR",
+									"keywords": []string{"ecs_update"},
+								},
+							},
 						},
 					},
 				}),
