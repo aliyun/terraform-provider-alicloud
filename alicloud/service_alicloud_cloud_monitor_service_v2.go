@@ -16,7 +16,7 @@ type CloudMonitorServiceServiceV2 struct {
 
 func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWrite(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	action := "DescribeHybridDoubleWriteForOutput"
+	action := "DescribeHybridDoubleWrite"
 
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
@@ -30,6 +30,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 
 	request := map[string]interface{}{
 		"SourceNamespace": parts[0],
+		"SourceUserId":    parts[1],
 	}
 
 	idExist := false
@@ -67,7 +68,7 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceHybridDoubleWr
 	}
 
 	for _, v := range resp.([]interface{}) {
-		if fmt.Sprint(v.(map[string]interface{})["SourceNamespace"]) == parts[0] {
+		if fmt.Sprint(v.(map[string]interface{})["SourceNamespace"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["SourceUserId"]) == parts[1] {
 			idExist = true
 			return v.(map[string]interface{}), nil
 		}
