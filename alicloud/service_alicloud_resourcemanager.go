@@ -346,14 +346,15 @@ func (s *ResourcemanagerService) AccountDeletionStateRefreshFunc(id string, fail
 
 func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetResourceDirectory"
+
 	conn, err := s.client.NewResourcemanagerClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetResourceDirectory"
-	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
-	}
+
+	request := map[string]interface{}{}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
@@ -362,15 +363,17 @@ func (s *ResourcemanagerService) DescribeResourceManagerResourceDirectory(id str
 			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceDirectory", id)), NotFoundMsg, ProviderERROR)
 			return object, err
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$.ResourceDirectory", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceDirectory", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 

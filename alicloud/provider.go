@@ -1150,7 +1150,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_resource_manager_policy":                               resourceAlicloudResourceManagerPolicy(),
 			"alicloud_resource_manager_account":                              resourceAlicloudResourceManagerAccount(),
 			"alicloud_waf_instance":                                          resourceAlicloudWafInstance(),
-			"alicloud_resource_manager_resource_directory":                   resourceAlicloudResourceManagerResourceDirectory(),
+			"alicloud_resource_manager_resource_directory":                   resourceAliCloudResourceManagerResourceDirectory(),
 			"alicloud_alidns_domain_group":                                   resourceAlicloudAlidnsDomainGroup(),
 			"alicloud_resource_manager_policy_version":                       resourceAlicloudResourceManagerPolicyVersion(),
 			"alicloud_kms_key_version":                                       resourceAlicloudKmsKeyVersion(),

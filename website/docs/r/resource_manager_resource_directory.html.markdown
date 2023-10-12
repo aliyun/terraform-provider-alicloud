@@ -26,7 +26,8 @@ For information about Resource Manager Resource Directory and how to use it, see
 Basic Usage
 
 ```terraform
-data "alicloud_resource_manager_resource_directories" "default" {}
+data "alicloud_resource_manager_resource_directories" "default" {
+}
 
 resource "alicloud_resource_manager_resource_directory" "default" {
   count  = length(data.alicloud_resource_manager_resource_directories.default.directories) > 0 ? 0 : 1
@@ -37,15 +38,15 @@ resource "alicloud_resource_manager_resource_directory" "default" {
 
 The following arguments are supported:
 
-* `status` - (Optional, Available since v1.120.0) The status of control policy. Valid values:`Enabled` and `Disabled`. 
-* `member_deletion_status` - (Optional, Available since v1.201.0) Specifies whether to enable the member deletion feature. Valid values:`Enabled` and `Disabled`. 
+* `status` - (Optional, Available since v1.120.0) The status of control policy. Valid values:`Enabled` and `Disabled`.
+* `member_deletion_status` - (Optional, Available since v1.201.0) Specifies whether to enable the member deletion feature. Valid values:`Enabled` and `Disabled`.
 
 ## Attributes Reference
 
 * `id` - The ID of the resource directory.
+* `root_folder_id` - The ID of the root folder.
 * `master_account_id` - The ID of the master account.
 * `master_account_name` - The name of the master account.
-* `root_folder_id` - The ID of the root folder.
 
 -> **NOTE:** Available since v1.120.0.
 
