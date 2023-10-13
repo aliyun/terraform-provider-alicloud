@@ -164,6 +164,7 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 	line := 0
 	rootPrefixLen := 0
 	rootName := ""
+	extraResourceAttribute := map[string]struct{}{}
 	for scanner.Scan() {
 		line += 1
 		text := scanner.Text()
@@ -210,7 +211,7 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 						parts := strings.Split(subAttributeName, ".")
 						if len(parts) > 0 {
 							subAttributeName = strings.TrimSuffix(strings.TrimSuffix(subAttributeName, parts[len(parts)-1]), ".")
-							rootName = parts[len(parts)-1]
+							rootName = m[1]
 						}
 					} else {
 						rootName = m[1]
@@ -225,11 +226,24 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 				if _, ok := resourceAttributes[attribute.Name]; !ok {
 					resourceAttributes[attribute.Name] = *attribute
 				} else if isResource {
-					log.Errorf("'%v' has been set in the `## Argument Reference` and it should be removed from `## Attributes Reference`", attribute.Name)
+					extraResourceAttribute[attribute.Name] = struct{}{}
+				}
+				if phase == "Attribute" {
+					for key := range extraResourceAttribute {
+						if strings.HasPrefix(attribute.Name, key+".") {
+							delete(extraResourceAttribute, key)
+						}
+					}
 				}
 			}
 		}
 	}
+
+	for key := range extraResourceAttribute {
+		log.Errorf("'%v' has been set in the `## Argument Reference` and it should be removed from `## Attributes Reference`", key)
+
+	}
+
 	return nil
 }
 
