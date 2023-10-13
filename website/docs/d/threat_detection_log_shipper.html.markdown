@@ -11,7 +11,7 @@ description: |-
 
 Using this data source can open Threat Detection Log Shipper automatically. If the service has been enabled, it will return `Opened`.
 
-For information about Threat Detection Log Shipper and how to use it, see [What is Log Shipper](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifyopenlogshipper).
+For information about Threat Detection Log Shipper and how to use it, see [What is Log Shipper](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifyopenlogshipper).
 
 -> **NOTE:** Available in v1.195.0+.
 

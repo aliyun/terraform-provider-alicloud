@@ -83,12 +83,12 @@ The following arguments are supported:
   * **cloud_essd2**: ESSDs of PL2
   * **cloud_essd3**: ESSDs of PL3
 * `payment_type` - (Required) The billing method of the new instance. Valid values: `PayAsYouGo` and `Subscription` and `Serverless`.
-* `db_instance_class` - (Optional, Computed) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
+* `db_instance_class` - (Optional, Computed) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 * `restore_time` - (Optional) The point in time to which you want to restore the data of the original instance. The point in time must fall within the specified log backup retention period. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `backup_id` - (Optional) The ID of the data backup file you want to use. You can call the DescribeBackups operation to query the most recent data backup file list.
 
 -> **NOTE:** You must specify at least one of the BackupId and RestoreTime parameters. When `payment_type="Serverless"` and when modifying, do not perform `instance_storage` check. Otherwise, check.
-* `db_instance_storage` - (Optional, Computed) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
+* `db_instance_storage` - (Optional, Computed) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 
 -> **NOTE:** The default value of this parameter is the storage capacity of the original instance.
 * `restore_table` - (Optional) Specifies whether to restore only the databases and tables that you specify. The value 1 specifies to restore only the specified databases and tables. If you do not want to restore only the specified databases or tables, you can choose not to specify this parameter.
@@ -165,7 +165,7 @@ The following arguments are supported:
 * `released_keep_policy` - (Optional) The released keep policy.
 * `replication_acl` - (Optional, Computed) This parameter is only supported by the RDS PostgreSQL cloud disk version, indicating the authentication method of the replication permission. It is only allowed when the public key of the client certificate authority is enabled. Valid values: `cert` and `perfer` and `verify-ca` and `verify-full (supported by RDS PostgreSQL above 12)`.
 * `resource_group_id` - (Optional) The resource group id.
-* `role_arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of a RAM role. A RAM role is a virtual RAM identity that you can create within your Alibaba Cloud account. For more information, see [RAM role overview](https://www.alibabacloud.com/doc-detail/93689.htm).
+* `role_arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of a RAM role. A RAM role is a virtual RAM identity that you can create within your Alibaba Cloud account. For more information, see [RAM role overview](https://www.alibabacloud.com/help/en/ram/).
 
 -> **NOTE:** This parameter is available only when the instance runs MySQL.
 * `security_ips` - (Optional, Computed) The IP address whitelist of the instance. Separate multiple IP addresses with commas (,) and cannot be repeated. The following two formats are supported:
@@ -192,7 +192,7 @@ The following arguments are supported:
 * `tde_status` - (Optional) Specifies whether to enable TDE. Valid values:
   * Enabled
   * Disabled
-* `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/doc-detail/26243.htm) operation to query the most recent region list.
+* `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query the most recent region list.
 * `zone_id_slave_a` - (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `zone_id_slave_b`- (Optional, Computed, ForceNew, Available in 1.207.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 
