@@ -7,7 +7,7 @@ description: |-
     Provides an Alicloud MSE Cluster resource.
 ---
 
-# alicloud\_mse\_cluster
+# alicloud_mse_cluster
 
 Provides a MSE Cluster resource. It is a one-stop microservice platform for the industry's mainstream open source microservice frameworks Spring Cloud and Dubbo, providing governance center, managed registry and managed configuration center.
 
@@ -59,7 +59,7 @@ The following arguments are supported:
   - `MSE_SC_4_8_60_c`: 4C8G
   - `MSE_SC_8_16_60_c`: 8C16G
 * `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
-* `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/microservices-engine/latest/api-doc-mse-2019-05-31-api-doc-createcluster)
+* `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-createcluster)
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".

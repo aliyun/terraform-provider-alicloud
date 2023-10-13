@@ -11,7 +11,7 @@ description: |-
 
 Provides a Application Load Balancer (ALB) Rule resource.
 
-For information about Application Load Balancer (ALB) Rule and how to use it, see [What is Rule](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-doc-alb-2020-06-16-api-doc-createrule).
+For information about Application Load Balancer (ALB) Rule and how to use it, see [What is Rule](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-createrule).
 
 -> **NOTE:** Available since v1.133.0.
 

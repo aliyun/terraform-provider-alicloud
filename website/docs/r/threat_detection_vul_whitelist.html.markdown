@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud Threat Detection Vul Whitelist resource.
 ---
 
-# alicloud\_threat\_detection\_vul\_whitelist
+# alicloud_threat_detection_vul_whitelist
 
 Provides a Threat Detection Vul Whitelist resource.
 
-For information about Threat Detection Vul Whitelist and how to use it, see [What is Vul Whitelist](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifycreatevulwhitelist).
+For information about Threat Detection Vul Whitelist and how to use it, see [What is Vul Whitelist](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
 
 -> **NOTE:** Available in v1.195.0+.
 
@@ -31,8 +31,8 @@ resource "alicloud_threat_detection_vul_whitelist" "default" {
 
 The following arguments are supported:
 
-* `whitelist` - (Required,ForceNew) Information about the vulnerability to be added to the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifycreatevulwhitelist).
-* `target_info` - (Optional) Set the effective range of the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifycreatevulwhitelist).
+* `whitelist` - (Required,ForceNew) Information about the vulnerability to be added to the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
+* `target_info` - (Optional) Set the effective range of the whitelist. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifycreatevulwhitelist).
 * `reason` - (Optional) Reason for adding whitelist.
 
 ## Attributes Reference

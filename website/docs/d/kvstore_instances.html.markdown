@@ -7,7 +7,7 @@ description: |-
     Provides a collection of kvstore instances according to the specified filters.
 ---
 
-# alicloud\_kvstore\_instances
+# alicloud_kvstore_instances
 
 The `alicloud_kvstore_instances` data source provides a collection of kvstore instances available in Alicloud account.
 Filters support regular expression for the instance name, searches by tags, and other filters which are listed below.
@@ -69,7 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `status` - Status of the instance.
   * `instance_type` - (Optional) Database type. Valid Values: `Memcache`, `Redis`. If no value is specified, all types are returned.
   * `instance_class`- (Optional) Type of the applied ApsaraDB for instance.
-  For more information, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/61135.htm).
+  For more information, see [Instance type table](https://www.alibabacloud.com/help/en/redis/product-overview/overview-4).
   * `vpc_id` - VPC ID the instance belongs to.
   * `vswitch_id` - VSwitch ID the instance belongs to.
   * `private_ip` - Private IP address of the instance.

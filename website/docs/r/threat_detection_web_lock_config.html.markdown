@@ -11,7 +11,7 @@ description: |-
 
 Provides a Threat Detection Web Lock Config resource.
 
-For information about Threat Detection Web Lock Config and how to use it, see [What is Web Lock Config](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifyweblockstart).
+For information about Threat Detection Web Lock Config and how to use it, see [What is Web Lock Config](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-modifyweblockstart).
 
 -> **NOTE:** Available in v1.195.0+.
 

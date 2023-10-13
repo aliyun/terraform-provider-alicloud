@@ -11,7 +11,7 @@ description: |-
 
 Provides a Dcdn Kv resource.
 
-For information about Dcdn Kv and how to use it, see [What is Kv](https://www.alibabacloud.com/help/en/dynamic-route-for-cdn/latest/putdcdnkv).
+For information about Dcdn Kv and how to use it, see [What is Kv](https://www.alibabacloud.com/help/en/dcdn/developer-reference/api-dcdn-2018-01-15-putdcdnkv).
 
 -> **NOTE:** Available since v1.198.0.
 
