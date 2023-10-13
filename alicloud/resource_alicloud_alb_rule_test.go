@@ -27,7 +27,7 @@ func init() {
 func testSweepAlbRule(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -114,10 +114,10 @@ func testSweepAlbRule(region string) error {
 	return nil
 }
 
-func TestAccAlicloudALBRule_basic0(t *testing.T) {
+func TestAccAliCloudALBRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbRule", []string{"direction"}...)
@@ -125,7 +125,7 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -322,6 +322,122 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"redirect_config": []map[string]interface{}{
+								{
+									"host":      "ww.ali.com",
+									"http_code": "301",
+									"path":      "/test",
+									"port":      "10",
+									"protocol":  "HTTP",
+									"query":     "query",
+								},
+							},
+							"order": "2",
+							"type":  "Redirect",
+						},
+						{
+							"traffic_limit_config": []map[string]interface{}{
+								{
+									"qps": "120",
+								},
+							},
+							"order": "1",
+							"type":  "TrafficLimit",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
+							"cors_config": []map[string]interface{}{
+								{
+									"allow_origin":      []string{"http://test1.com", "http://test2.com", "http://test3.com"},
+									"allow_methods":     []string{"GET", "POST", "PUT"},
+									"allow_headers":     []string{"tf_test", "tf_test2", "tf_test3"},
+									"expose_headers":    []string{"tf_test", "tf_test2", "tf_test3"},
+									"allow_credentials": "on",
+									"max_age":           "10",
+								},
+							},
+							"order": "1",
+							"type":  "Cors",
+						},
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "2",
+										},
+									},
+								},
+							},
+							"order": "2",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_conditions": []map[string]interface{}{
+						{
+							"cookie_config": []map[string]interface{}{
+								{
+									"values": []map[string]interface{}{
+										{
+											"key":   "createdupdate",
+											"value": "tfupdate",
+										},
+									},
+								},
+							},
+							"type": "Cookie",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_conditions": []map[string]interface{}{
+						{
+							"source_ip_config": []map[string]interface{}{
+								{
+									"values": []string{"192.168.1.0/24"},
+								},
+							},
+							"type": "SourceIp",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"rule_conditions": []map[string]interface{}{
 						{
 							"header_config": []map[string]interface{}{
@@ -434,19 +550,18 @@ func TestAccAlicloudALBRule_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBRule_basic1(t *testing.T) {
+func TestAccAliCloudALBRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbRule", []string{"direction"}...)
@@ -454,7 +569,7 @@ func TestAccAlicloudALBRule_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -494,7 +609,6 @@ func TestAccAlicloudALBRule_basic1(t *testing.T) {
 							"type":  "FixedResponse",
 						},
 					},
-					"dry_run": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -504,24 +618,22 @@ func TestAccAlicloudALBRule_basic1(t *testing.T) {
 						"direction":         "Response",
 						"rule_actions.#":    "1",
 						"rule_conditions.#": "1",
-						"dry_run":           "false",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBRule_basic2(t *testing.T) {
+func TestAccAliCloudALBRule_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbRule", []string{"direction"}...)
@@ -529,7 +641,7 @@ func TestAccAlicloudALBRule_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -582,7 +694,6 @@ func TestAccAlicloudALBRule_basic2(t *testing.T) {
 							"type":  "ForwardGroup",
 						},
 					},
-					"dry_run": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -592,266 +703,23 @@ func TestAccAlicloudALBRule_basic2(t *testing.T) {
 						"direction":         "Request",
 						"rule_actions.#":    "2",
 						"rule_conditions.#": "1",
-						"dry_run":           "false",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBRule_basic3(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbRule", []string{"direction"}...)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"method_config": []map[string]interface{}{
-								{
-									"values": []string{"PUT"},
-								},
-							},
-							"type": "Method",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"redirect_config": []map[string]interface{}{
-								{
-									"host":      "ww.ali.com",
-									"http_code": "301",
-									"path":      "/test",
-									"port":      "10",
-									"protocol":  "HTTP",
-									"query":     "query",
-								},
-							},
-							"order": "4",
-							"type":  "Redirect",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":       CHECKSET,
-						"rule_name":         name,
-						"priority":          "666",
-						"rule_actions.#":    "1",
-						"rule_conditions.#": "1",
-						"dry_run":           "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudALBRule_basic4(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbRule", []string{"direction"}...)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"path_config": []map[string]interface{}{
-								{
-									"values": []string{"/test"},
-								},
-							},
-							"type": "Path",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"redirect_config": []map[string]interface{}{
-								{
-									"host":      "ww.ali.com",
-									"http_code": "301",
-									"path":      "/test",
-									"port":      "10",
-									"protocol":  "HTTP",
-									"query":     "query",
-								},
-							},
-							"order": "4",
-							"type":  "Redirect",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":       CHECKSET,
-						"rule_name":         name,
-						"priority":          "666",
-						"rule_actions.#":    "1",
-						"rule_conditions.#": "1",
-						"dry_run":           "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudALBRule_basic5(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbRule", []string{"direction"}...)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"query_string_config": []map[string]interface{}{
-								{
-									"values": []map[string]interface{}{
-										{
-											"key":   "test",
-											"value": "test",
-										},
-									},
-								},
-							},
-							"type": "QueryString",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"rewrite_config": []map[string]interface{}{
-								{
-									"host":  "www.test.com",
-									"path":  "/test",
-									"query": "test",
-								},
-							},
-							"order": "5",
-							"type":  "Rewrite",
-						},
-						{
-							"forward_group_config": []map[string]interface{}{
-								{
-									"server_group_tuples": []map[string]interface{}{
-										{
-											"server_group_id": "${alicloud_alb_server_group.default.id}",
-											"weight":          "1",
-										},
-									},
-								},
-							},
-							"order": "9",
-							"type":  "ForwardGroup",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":       CHECKSET,
-						"rule_name":         name,
-						"priority":          "666",
-						"rule_actions.#":    "2",
-						"rule_conditions.#": "1",
-						"dry_run":           "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudALBRule_trafficLimitConfig(t *testing.T) {
+func TestAccAliCloudALBRule_trafficMirror(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbRule", []string{"direction"}...)
@@ -859,136 +727,7 @@ func TestAccAlicloudALBRule_trafficLimitConfig(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"source_ip_config": []map[string]interface{}{
-								{
-									"values": []string{"192.168.0.0/24"},
-								},
-							},
-							"type": "SourceIp",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"redirect_config": []map[string]interface{}{
-								{
-									"host":      "ww.ali.com",
-									"http_code": "301",
-									"path":      "/test",
-									"port":      "10",
-									"protocol":  "HTTP",
-									"query":     "query",
-								},
-							},
-							"order": "2",
-							"type":  "Redirect",
-						},
-						{
-							"traffic_limit_config": []map[string]interface{}{
-								{
-									"qps": "100",
-								},
-							},
-							"order": "1",
-							"type":  "TrafficLimit",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":       CHECKSET,
-						"rule_name":         name,
-						"priority":          "666",
-						"rule_actions.#":    "2",
-						"rule_conditions.#": "1",
-						"dry_run":           "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rule_conditions": []map[string]interface{}{
-						{
-							"source_ip_config": []map[string]interface{}{
-								{
-									"values": []string{"192.168.1.0/24"},
-								},
-							},
-							"type": "SourceIp",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"redirect_config": []map[string]interface{}{
-								{
-									"host":      "ww.ali.com",
-									"http_code": "301",
-									"path":      "/test",
-									"port":      "10",
-									"protocol":  "HTTP",
-									"query":     "query",
-								},
-							},
-							"order": "2",
-							"type":  "Redirect",
-						},
-						{
-							"traffic_limit_config": []map[string]interface{}{
-								{
-									"qps": "120",
-								},
-							},
-							"order": "1",
-							"type":  "TrafficLimit",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rule_actions.#":    "2",
-						"rule_conditions.#": "1",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudALBRule_TrafficMirror(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbRule", []string{"direction"}...)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependenceTrafficMirror)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependenceTrafficMirror)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1050,7 +789,6 @@ func TestAccAlicloudALBRule_TrafficMirror(t *testing.T) {
 							"type":  "ForwardGroup",
 						},
 					},
-					"dry_run": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1059,7 +797,6 @@ func TestAccAlicloudALBRule_TrafficMirror(t *testing.T) {
 						"priority":          "666",
 						"rule_actions.#":    "2",
 						"rule_conditions.#": "1",
-						"dry_run":           "false",
 					}),
 				),
 			},
@@ -1106,25 +843,23 @@ func TestAccAlicloudALBRule_TrafficMirror(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"rule_actions.#":    "2",
-						"rule_conditions.#": "1",
+						"rule_actions.#": "2",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
+func TestAccAliCloudALBRule_basicStickySession(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudALBRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbRule", []string{"direction"}...)
@@ -1132,7 +867,7 @@ func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependenceStickySession)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBRuleBasicDependenceStickySession)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1168,7 +903,7 @@ func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
 								{
 									"server_group_tuples": []map[string]interface{}{
 										{
-											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"server_group_id": "${alicloud_alb_server_group.default.0.id}",
 											"weight":          "100",
 										},
 										{
@@ -1207,7 +942,7 @@ func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
 								{
 									"server_group_tuples": []map[string]interface{}{
 										{
-											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"server_group_id": "${alicloud_alb_server_group.default.0.id}",
 											"weight":          "100",
 										},
 										{
@@ -1242,7 +977,7 @@ func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
 								{
 									"server_group_tuples": []map[string]interface{}{
 										{
-											"server_group_id": "${alicloud_alb_server_group.default[0].id}",
+											"server_group_id": "${alicloud_alb_server_group.default.0.id}",
 											"weight":          "100",
 										},
 										{
@@ -1269,167 +1004,20 @@ func TestAccAlicloudALBRule_basicStickySession(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBRule_corsConfig(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.AlbSupportRegions)
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBRuleMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbRule", []string{"direction"}...)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbrule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBRuleBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"source_ip_config": []map[string]interface{}{
-								{
-									"values": []string{"192.168.0.0/24"},
-								},
-							},
-							"type": "SourceIp",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"cors_config": []map[string]interface{}{
-								{
-									"allow_origin":      []string{"http://test1.com", "http://test2.com", "http://test3.com"},
-									"allow_methods":     []string{"GET", "POST", "PUT"},
-									"allow_headers":     []string{"tf_test", "tf_test2", "tf_test3"},
-									"expose_headers":    []string{"tf_test", "tf_test2", "tf_test3"},
-									"allow_credentials": "on",
-									"max_age":           "10",
-								},
-							},
-							"order": "1",
-							"type":  "Cors",
-						},
-						{
-							"forward_group_config": []map[string]interface{}{
-								{
-									"server_group_tuples": []map[string]interface{}{
-										{
-											"server_group_id": "${alicloud_alb_server_group.default.id}",
-											"weight":          "2",
-										},
-									},
-								},
-							},
-							"order": "2",
-							"type":  "ForwardGroup",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":                  CHECKSET,
-						"rule_name":                    name,
-						"priority":                     "666",
-						"rule_actions.#":               "2",
-						"rule_actions.0.cors_config.#": "1",
-						"rule_conditions.#":            "1",
-						"dry_run":                      "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"listener_id": "${alicloud_alb_listener.default.id}",
-					"rule_name":   "${var.name}",
-					"priority":    "666",
-					"rule_conditions": []map[string]interface{}{
-						{
-							"source_ip_config": []map[string]interface{}{
-								{
-									"values": []string{"192.168.0.0/24"},
-								},
-							},
-							"type": "SourceIp",
-						},
-					},
-					"rule_actions": []map[string]interface{}{
-						{
-							"cors_config": []map[string]interface{}{
-								{
-									"allow_origin":      []string{"http://test1.com", "http://test2.com", "http://test3.com"},
-									"allow_methods":     []string{"GET", "POST", "PUT", "DELETE"},
-									"allow_headers":     []string{"tf_test5", "tf_test6", "tf_test8"},
-									"expose_headers":    []string{"tf_test5", "tf_test6", "tf_test8"},
-									"allow_credentials": "on",
-									"max_age":           "10",
-								},
-							},
-							"order": "1",
-							"type":  "Cors",
-						},
-						{
-							"forward_group_config": []map[string]interface{}{
-								{
-									"server_group_tuples": []map[string]interface{}{
-										{
-											"server_group_id": "${alicloud_alb_server_group.default.id}",
-											"weight":          "2",
-										},
-									},
-								},
-							},
-							"order": "2",
-							"type":  "ForwardGroup",
-						},
-					},
-					"dry_run": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"listener_id":                  CHECKSET,
-						"rule_name":                    name,
-						"priority":                     "666",
-						"rule_actions.#":               "2",
-						"rule_actions.0.cors_config.#": "1",
-						"rule_conditions.#":            "1",
-						"dry_run":                      "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
-			},
-		},
-	})
+var AliCloudALBRuleMap0 = map[string]string{
+	"direction": CHECKSET,
+	"status":    CHECKSET,
 }
 
-var AlicloudALBRuleMap0 = map[string]string{}
-
-func AlicloudALBRuleBasicDependence0(name string) string {
+func AliCloudALBRuleBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -1438,38 +1026,27 @@ func AlicloudALBRuleBasicDependence0(name string) string {
 	data "alicloud_alb_zones" "default" {
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
-	}
-
-	data "alicloud_vswitches" "default_1" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.0.id
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
 	}
 
 	resource "alicloud_vswitch" "vswitch_1" {
-  		count        = length(data.alicloud_vswitches.default_1.ids) > 0 ? 0 : 1
-  		vpc_id       = data.alicloud_vpcs.default.ids.0
-  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
   		zone_id      = data.alicloud_alb_zones.default.zones.0.id
   		vswitch_name = var.name
 	}
 
-	data "alicloud_vswitches" "default_2" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.1.id
-	}
-
 	resource "alicloud_vswitch" "vswitch_2" {
-  		count        = length(data.alicloud_vswitches.default_2.ids) > 0 ? 0 : 1
-  		vpc_id       = data.alicloud_vpcs.default.ids.0
-  		cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
   		zone_id      = data.alicloud_alb_zones.default.zones.1.id
   		vswitch_name = var.name
 	}
 
 	resource "alicloud_alb_load_balancer" "default" {
-  		vpc_id                 = data.alicloud_vpcs.default.ids.0
+  		vpc_id                 = alicloud_vpc.default.id
   		address_type           = "Internet"
   		address_allocated_mode = "Fixed"
   		load_balancer_name     = var.name
@@ -1478,18 +1055,18 @@ func AlicloudALBRuleBasicDependence0(name string) string {
     		pay_type = "PayAsYouGo"
   		}
   		zone_mappings {
-    		vswitch_id = length(data.alicloud_vswitches.default_1.ids) > 0 ? data.alicloud_vswitches.default_1.ids[0] : concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
+    		vswitch_id = alicloud_vswitch.vswitch_1.id
     		zone_id    = data.alicloud_alb_zones.default.zones.0.id
   		}
   		zone_mappings {
-    		vswitch_id = length(data.alicloud_vswitches.default_2.ids) > 0 ? data.alicloud_vswitches.default_2.ids[0] : concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
+    		vswitch_id = alicloud_vswitch.vswitch_2.id
     		zone_id    = data.alicloud_alb_zones.default.zones.1.id
   		}
 	}
 
 	resource "alicloud_alb_server_group" "default" {
   		protocol          = "HTTP"
-  		vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  		vpc_id            = alicloud_vpc.default.id
   		server_group_name = var.name
   		health_check_config {
     		health_check_enabled = "false"
@@ -1516,7 +1093,7 @@ func AlicloudALBRuleBasicDependence0(name string) string {
 `, name)
 }
 
-func AlicloudALBRuleBasicDependenceTrafficMirror(name string) string {
+func AliCloudALBRuleBasicDependenceTrafficMirror(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -1525,22 +1102,27 @@ func AlicloudALBRuleBasicDependenceTrafficMirror(name string) string {
 	data "alicloud_alb_zones" "default" {
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default_1" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.0.id
+	resource "alicloud_vswitch" "vswitch_1" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  		vswitch_name = var.name
 	}
 
-	data "alicloud_vswitches" "default_2" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.1.id
+	resource "alicloud_vswitch" "vswitch_2" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+  		zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  		vswitch_name = var.name
 	}
 
 	resource "alicloud_alb_load_balancer" "default" {
-  		vpc_id                 = data.alicloud_vpcs.default.ids.0
+  		vpc_id                 = alicloud_vpc.default.id
   		address_type           = "Internet"
   		address_allocated_mode = "Fixed"
   		load_balancer_name     = var.name
@@ -1549,11 +1131,11 @@ func AlicloudALBRuleBasicDependenceTrafficMirror(name string) string {
     		pay_type = "PayAsYouGo"
   		}
   		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default_1.ids[0]
+    		vswitch_id = alicloud_vswitch.vswitch_1.id
     		zone_id    = data.alicloud_alb_zones.default.zones.0.id
   		}
   		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default_2.ids[0]
+    		vswitch_id = alicloud_vswitch.vswitch_2.id
     		zone_id    = data.alicloud_alb_zones.default.zones.1.id
   		}
 	}
@@ -1561,7 +1143,7 @@ func AlicloudALBRuleBasicDependenceTrafficMirror(name string) string {
 	resource "alicloud_alb_server_group" "default" {
   		count             = 3
   		protocol          = "HTTP"
-  		vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  		vpc_id            = alicloud_vpc.default.id
   		server_group_name = var.name
   		health_check_config {
     		health_check_enabled = "false"
@@ -1588,7 +1170,7 @@ func AlicloudALBRuleBasicDependenceTrafficMirror(name string) string {
 `, name)
 }
 
-func AlicloudALBRuleBasicDependenceStickySession(name string) string {
+func AliCloudALBRuleBasicDependenceStickySession(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -1597,22 +1179,27 @@ func AlicloudALBRuleBasicDependenceStickySession(name string) string {
 	data "alicloud_alb_zones" "default" {
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
 	}
 
-	data "alicloud_vswitches" "default_1" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.0.id
+	resource "alicloud_vswitch" "vswitch_1" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
+  		zone_id      = data.alicloud_alb_zones.default.zones.0.id
+  		vswitch_name = var.name
 	}
 
-	data "alicloud_vswitches" "default_2" {
-  		vpc_id  = data.alicloud_vpcs.default.ids.0
-  		zone_id = data.alicloud_alb_zones.default.zones.1.id
+	resource "alicloud_vswitch" "vswitch_2" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+  		zone_id      = data.alicloud_alb_zones.default.zones.1.id
+  		vswitch_name = var.name
 	}
 
 	resource "alicloud_alb_load_balancer" "default" {
-  		vpc_id                 = data.alicloud_vpcs.default.ids.0
+  		vpc_id                 = alicloud_vpc.default.id
   		address_type           = "Internet"
   		address_allocated_mode = "Fixed"
   		load_balancer_name     = var.name
@@ -1621,11 +1208,11 @@ func AlicloudALBRuleBasicDependenceStickySession(name string) string {
     		pay_type = "PayAsYouGo"
   		}
   		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default_1.ids[0]
+    		vswitch_id = alicloud_vswitch.vswitch_1.id
     		zone_id    = data.alicloud_alb_zones.default.zones.0.id
   		}
   		zone_mappings {
-    		vswitch_id = data.alicloud_vswitches.default_2.ids[0]
+    		vswitch_id = alicloud_vswitch.vswitch_2.id
     		zone_id    = data.alicloud_alb_zones.default.zones.1.id
   		}
 	}
@@ -1633,7 +1220,7 @@ func AlicloudALBRuleBasicDependenceStickySession(name string) string {
 	resource "alicloud_alb_server_group" "default" {
   		count             = 2
   		protocol          = "HTTP"
-  		vpc_id            = data.alicloud_vpcs.default.vpcs.0.id
+  		vpc_id            = alicloud_vpc.default.id
   		server_group_name = var.name
   		health_check_config {
     		health_check_enabled = "false"
@@ -1652,7 +1239,7 @@ func AlicloudALBRuleBasicDependenceStickySession(name string) string {
     		type = "ForwardGroup"
     		forward_group_config {
       			server_group_tuples {
-        			server_group_id = alicloud_alb_server_group.default[0].id
+        			server_group_id = alicloud_alb_server_group.default.0.id
       			}
     		}
   		}
