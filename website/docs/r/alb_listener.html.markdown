@@ -23,13 +23,19 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
-data "alicloud_alb_zones" "default" {}
-data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_alb_zones" "default" {
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
 data "alicloud_instance_types" "default" {
   availability_zone = data.alicloud_alb_zones.default.zones.0.id
   cpu_core_count    = 1
   memory_size       = 2
 }
+
 data "alicloud_images" "default" {
   name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners     = "system"
@@ -157,7 +163,7 @@ The following arguments are supported:
 * `idle_timeout` - (Optional) Specify the Connection Idle Timeout Value: `1` to `60`. Unit: Seconds.
 * `listener_description` - (Optional)The description of the listener. The description must be 2 to 256 characters in length. The name can contain only the characters in the following string: `/^([^\x00-\xff]|[\w.,;/@-]){2,256}$/`.
 * `listener_port` - (Required, ForceNew) The ALB Instance Front-End, and Those of the Ports Used. Value: `1` to `65535`.
-* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: `HTTP`, `HTTPS` Or `QUIC`. 
+* `listener_protocol` - (Required, ForceNew) Snooping Protocols. Valid Values: `HTTP`, `HTTPS` Or `QUIC`.
 * `load_balancer_id` - (Required, ForceNew) The ALB Instance Id.
 * `quic_config` - (Optional) Configuration Associated with the QuIC Listening. See [`quic_config`](#quic_config) below for details.
 * `request_timeout` - (Optional) The Specified Request Timeout Time. Value: `1` to `180`. Unit: Seconds. Default Value: `60`. If the Timeout Time Within the Back-End Server Has Not Answered the ALB Will Give up Waiting, the Client Returns the HTTP 504 Error Code.
@@ -165,10 +171,10 @@ The following arguments are supported:
 
 -> **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
 
-* `status` - (Optional, Available in v1.133.0+) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
-* `xforwarded_for_config` - (Optional, Deprecated from v1.161.0+) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated from provider version 1.161.0+. Use 'x_forwarded_for_config' instead.",
-* `x_forwarded_for_config` - (Optional, Available in v1.161.0+) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
-* `acl_config` - (Optional, Deprecated from v1.163.0+)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
+* `status` - (Optional, Available since v1.133.0) The state of the listener. Valid Values: `Running` Or `Stopped`. Valid values: `Running`: The listener is running. `Stopped`: The listener is stopped.
+* `xforwarded_for_config` - (Optional, Deprecated since v1.161.0) xforwardfor Related Attribute Configuration. See [`xforwarded_for_config`](#xforwarded_for_config) below for details.  **NOTE:** 'xforwarded_for_config' has been deprecated since provider version 1.161.0. Use 'x_forwarded_for_config' instead.",
+* `x_forwarded_for_config` - (Optional, Available since v1.161.0) The `x_forward_for` Related Attribute Configuration. See [`x_forwarded_for_config`](#x_forwarded_for_config) below for details. **NOTE:** The attribute is valid when the attribute `listener_protocol` is `HTTPS`.
+* `acl_config` - (Optional, Deprecated since v1.163.0)The configurations of the access control lists (ACLs). See [`acl_config`](#acl_config) below for details. **NOTE:** Field `acl_config` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_alb_listener_acl_attachment`.,
 
 
 ### `x_forwarded_for_config`
@@ -191,15 +197,15 @@ The x_forwarded_for_config supports the following:
 
 ### `xforwarded_for_config`
 
-The xforwarded_for_config supports the following: 
+The xforwarded_for_config supports the following:
 
-* `xforwardedforclientcert_issuerdnenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-issuerdn` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate after the Manifests Are Signed, the Publisher Information. 		
-* `xforwardedforclientcertclientverifyalias` - (Optional) The Custom Header Field Names Only When `xforwardedforclientcertclientverifyenabled` Has a Value of True, this Value Will Not Take Effect until.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits. 		
-* `xforwardedforclientcertclientverifyenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-clientverify` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results. 		
-* `xforwardedforclientcertfingerprintalias` - (Optional) The Custom Header Field Names Only When `xforwardedforclientcertfingerprintenabled`, Which Evaluates to True When the Entry into Force of.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits. 		
-* `xforwardedforclientcertfingerprintenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-fingerprint` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Fingerprint Value. 		
-* `xforwardedforclientcertsubjectdnalias` - (Optional) The name of the custom header. This parameter is valid only if `xforwardedforclientcertsubjectdnenabled` is set to true. The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits. 		
-* `xforwardedforclientcertsubjectdnenabled` - (Optional) Specifies whether to use the `X-Forwarded-Clientcert-subjectdn` header field to obtain information about the owner of the ALB client certificate. Valid values: true and false. Default value: false. 	
+* `xforwardedforclientcert_issuerdnenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-issuerdn` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate after the Manifests Are Signed, the Publisher Information.
+* `xforwardedforclientcertclientverifyalias` - (Optional) The Custom Header Field Names Only When `xforwardedforclientcertclientverifyenabled` Has a Value of True, this Value Will Not Take Effect until.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `xforwardedforclientcertclientverifyenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-clientverify` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate to Verify the Results.
+* `xforwardedforclientcertfingerprintalias` - (Optional) The Custom Header Field Names Only When `xforwardedforclientcertfingerprintenabled`, Which Evaluates to True When the Entry into Force of.The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `xforwardedforclientcertfingerprintenabled` - (Optional) Indicates Whether the `X-Forwarded-Clientcert-fingerprint` Header Field Is Used to Obtain Access to the Server Load Balancer Instance of the Client Certificate Fingerprint Value.
+* `xforwardedforclientcertsubjectdnalias` - (Optional) The name of the custom header. This parameter is valid only if `xforwardedforclientcertsubjectdnenabled` is set to true. The name must be 1 to 40 characters in length, and can contain letters, hyphens (-), underscores (_), and digits.
+* `xforwardedforclientcertsubjectdnenabled` - (Optional) Specifies whether to use the `X-Forwarded-Clientcert-subjectdn` header field to obtain information about the owner of the ALB client certificate. Valid values: true and false. Default value: false.
 * `xforwardedforclientcert_issuerdnalias` - (Optional) The Custom Header Field Names Only When `xforwardedforclientcert_issuerdnenabled`, Which Evaluates to True When the Entry into Force of.
 * `xforwardedforclientsrcportenabled` - (Optional) Indicates Whether the X-Forwarded-Client-Port Header Field Is Used to Obtain Access to Server Load Balancer Instances to the Client, and Those of the Ports.
 * `xforwardedforenabled` - (Optional) Whether to Enable by X-Forwarded-For Header Field Is Used to Obtain the Client IP Addresses.
@@ -209,7 +215,7 @@ The xforwarded_for_config supports the following:
 
 ### `quic_config`
 
-The quic_config supports the following: 
+The quic_config supports the following:
 
 * `quic_listener_id` - (Optional) There Is a Need to Correlate the QuIC Listener ID. The Https Listener, in Effect at the Time. quicupgradeenabled True When Required.
 * `quic_upgrade_enabled` - (Optional) Indicates Whether to Enable the QuIC Upgrade.
@@ -218,7 +224,7 @@ The quic_config supports the following:
 
 ### `default_actions`
 
-The default_actions supports the following: 
+The default_actions supports the following:
 
 * `type` - (Required) Action Type.
 * `forward_group_config` - (Required) The configurations of the actions. This parameter is required if Type is set to FowardGroup. See [`forward_group_config`](#default_actions-forward_group_config) below for details.
@@ -239,19 +245,19 @@ The server_group_tuples supports the following:
 
 The acl_config supports the following:
 
-* `acl_relations` - (Optional, Available 1.136.0+) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
-* `acl_type` - (Optional, Available 1.136.0+) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
+* `acl_relations` - (Optional, Available since v1.136.0) The ACLs that are associated with the listener. See [`acl_relations`](#acl_config-acl_relations) below for details.
+* `acl_type` - (Optional, Available since v1.136.0) The type of the ACL. Valid values: `White` Or `Black`. `White`: specifies the ACL as a whitelist. Only requests from the IP addresses or CIDR blocks in the ACL are forwarded. Whitelists apply to scenarios where only specific IP addresses are allowed to access an application. Risks may occur if the whitelist is improperly set. After you set a whitelist for an Application Load Balancer (ALB) listener, only requests from IP addresses that are added to the whitelist are distributed by the listener. If the whitelist is enabled without IP addresses specified, the ALB listener does not forward requests. `Black`: All requests from the IP addresses or CIDR blocks in the ACL are denied. The blacklist is used to prevent specified IP addresses from accessing an application. If the blacklist is enabled but the corresponding ACL does not contain IP addresses, the ALB listener forwards all requests.
 
 ### `acl_config-acl_relations`
 
 The acl_relations supports the following:
 
-* `acl_id` - (Optional, Available 1.136.0+) Snooping Binding of the Access Policy Group ID List.
+* `acl_id` - (Optional, Available since v1.136.0) Snooping Binding of the Access Policy Group ID List.
 * `status` - (Optional) The status of the ACL relation.
 
 ### `access_log_tracing_config`
 
-The access_log_tracing_config supports the following: 
+The access_log_tracing_config supports the following:
 
 * `tracing_enabled` - (Optional) Xtrace Function. Value: `True` Or `False` . Default Value: `False`.
 
@@ -281,8 +287,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Listener.
-* `delete` - (Defaults to 2 mins) Used when delete the Listener.
 * `update` - (Defaults to 2 mins) Used when update the Listener.
+* `delete` - (Defaults to 2 mins) Used when delete the Listener.
 
 ## Import
 
