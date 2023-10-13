@@ -19,45 +19,51 @@ For information about Redis Tair Instance and how to use it, see [What is Tair I
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
-  default = "terraform-example"
+  default = "tf-example"
 }
 
 data "alicloud_kvstore_zones" "default" {
-  product_type = "Tair_rdb"
-}
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+  product_type         = "Tair_essd"
+  instance_charge_type = "PostPaid"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name    = var.name
-  enable_ipv6 = true
-  description = "tf-example-vpc"
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/24"
 }
 
 resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/21"
-  zone_id    = data.alicloud_kvstore_zones.default.zones.0.id
+  vswitch_name = var.name
+  cidr_block   = "192.168.0.0/24"
+  zone_id      = data.alicloud_kvstore_zones.default.zones.1.id
+  vpc_id       = alicloud_vpc.default.id
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 
 resource "alicloud_redis_tair_instance" "default" {
-  auto_renew         = "false"
-  port               = 6379
-  payment_type       = "PayAsYouGo"
-  instance_type      = "tair_rdb"
-  password           = "Pass!123456"
-  engine_version     = "5.0"
-  zone_id            = alicloud_vswitch.default.zone_id
-  instance_class     = "tair.rdb.1g"
-  tair_instance_name = var.name
-  shard_count        = 2
-  secondary_zone_id  = alicloud_vswitch.default.zone_id
-  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
-  vswitch_id         = alicloud_vswitch.default.id
-  vpc_id             = alicloud_vpc.default.id
+  instance_class            = "tair.essd.standard.xlarge"
+  secondary_zone_id         = alicloud_vswitch.default.zone_id
+  resource_group_id         = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  storage_performance_level = "PL1"
+  payment_type              = "PayAsYouGo"
+  auto_renew                = "false"
+  storage_size_gb           = "20"
+  vpc_id                    = alicloud_vswitch.default.vpc_id
+  force_upgrade             = "false"
+  instance_type             = "tair_essd"
+  zone_id                   = alicloud_vswitch.default.zone_id
+  period                    = "9"
+  port                      = "6379"
+  tair_instance_name        = var.name
+  vswitch_id                = alicloud_vswitch.default.id
+  auto_renew_period         = "1"
 }
 ```
 
@@ -83,20 +89,21 @@ The following arguments are supported:
 * `port` - (Optional, ForceNew, Computed) The Tair service port. The service port of the instance. Valid values: 1024 to 65535. Default value: 6379.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group to which the instance belongs.
 * `secondary_zone_id` - (Optional, ForceNew) The ID of the secondary zone.This parameter is returned only if the instance is deployed in two zones.
-* `shard_count` - (Optional) The number of data nodes in the instance. When 1 is passed, it means that the instance created is a standard architecture with only one data node. You can create an instance in the standard architecture that contains only a single data node. 2 to 32: You can create an instance in the cluster architecture that contains the specified number of data nodes. Only persistent memory-optimized instances can use the cluster architecture. Therefore, you can set this parameter to an integer from 2 to 32 only if you set the InstanceType parameter to tair_scm.
+* `shard_count` - (Optional) The number of data nodes in the instance. When 1 is passed, it means that the instance created is a standard architecture with only one data node. You can create an instance in the standard architecture that contains only a single data node. 2 to 32: You can create an instance in the cluster architecture that contains the specified number of data nodes. Only persistent memory-optimized instances can use the cluster architecture. Therefore, you can set this parameter to an integer from 2 to 32 only if you set the InstanceType parameter to tair_scm. It is not allowed to modify the number of shards by modifying this parameter after creating a master-slave architecture instance with or without passing 1.
+* `storage_performance_level` - (Optional, ForceNew, Available since v1.212.0) The storage type. The value range is [PL1, PL2, and PL3]. The default value is PL1. When the value of instance_type is "tair_essd", this attribute takes effect and is required.
+* `storage_size_gb` - (Optional, ForceNew, Computed, Available since v1.212.0) The value range of different specifications is different, see [ESSD-based instances](https://www.alibabacloud.com/help/en/tair/product-overview/essd-based-instances). When the value of instance_type is "tair_essd", this attribute takes effect and is required.
+* `tags` - (Optional, Map, Available since v1.212.0) The tag of the resource.
 * `tair_instance_name` - (Optional) The name of the resource.
 * `vswitch_id` - (Required, ForceNew) The ID of the vSwitch to which the instance is connected.
 * `vpc_id` - (Required, ForceNew) The ID of the virtual private cloud (VPC).
-* `zone_id` - (Required, ForceNew) The zone ID of the instance.
-
-
+* `zone_id` - (Required, ForceNew) Zone ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the instance was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-* `status` - The status of the instance. Valid values: Normal, Creating, Changing, Inactive, Flushing, Released, Transforming, Unavailable, Error, Migrating, and upgrading, networkModifying, SSLModifying, and MajorVersionUpgrading.
+* `status` - The status of the resource.
 
 ## Timeouts
 

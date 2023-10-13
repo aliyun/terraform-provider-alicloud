@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -107,6 +108,19 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"storage_performance_level": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
+			},
+			"storage_size_gb": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"tags": tagsSchema(),
 			"tair_instance_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -131,6 +145,7 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 }
 
 func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateTairInstance"
@@ -183,9 +198,17 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("engine_version"); ok {
 		request["EngineVersion"] = v
 	}
-	wait := incrementalWait(2*time.Minute, 1*time.Minute)
+	if v, ok := d.GetOk("storage_size_gb"); ok {
+		request["Storage"] = v
+	}
+	if v, ok := d.GetOk("storage_performance_level"); ok {
+		request["StorageType"] = convertRedisStorageTypeRequest(v.(string))
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -238,10 +261,14 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	d.Set("secondary_zone_id", objectRaw["SecondaryZoneId"])
 	d.Set("shard_count", objectRaw["ShardCount"])
 	d.Set("status", objectRaw["InstanceStatus"])
+	d.Set("storage_performance_level", convertRedisInstancesDBInstanceAttributeStorageTypeResponse(objectRaw["StorageType"]))
+	d.Set("storage_size_gb", formatInt(objectRaw["Storage"]))
 	d.Set("tair_instance_name", objectRaw["InstanceName"])
 	d.Set("vswitch_id", objectRaw["VSwitchId"])
 	d.Set("vpc_id", objectRaw["VpcId"])
 	d.Set("zone_id", objectRaw["ZoneId"])
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
@@ -270,9 +297,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -317,9 +346,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -359,9 +390,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -380,9 +413,7 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("resource_group_id")
 	}
 
-	update = false
 	if !d.IsNewResource() && d.HasChange("shard_count") {
-		update = true
 		oldEntry, newEntry := d.GetChange("shard_count")
 		oldEntryValue := oldEntry.(int)
 		newEntryValue := newEntry.(int)
@@ -398,9 +429,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			request = make(map[string]interface{})
 			request["InstanceId"] = d.Id()
 			request["ShardCount"] = removed
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -434,9 +467,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			request["InstanceId"] = d.Id()
 			request["ClientToken"] = buildClientToken(action)
 			request["ShardCount"] = added
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -462,6 +497,13 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 
 	}
+	if d.HasChange("tags") {
+		redisServiceV2 := RedisServiceV2{client}
+		if err := redisServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
 	d.Partial(false)
 	return resourceAliCloudRedisTairInstanceRead(d, meta)
 }
@@ -486,9 +528,11 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -502,6 +546,9 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 	})
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -517,12 +564,34 @@ func convertRedisInstancesDBInstanceAttributeChargeTypeResponse(source interface
 	}
 	return source
 }
+func convertRedisInstancesDBInstanceAttributeStorageTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "essd_pl1":
+		return "PL1"
+	case "essd_pl2":
+		return "PL2"
+	case "essd_pl3":
+		return "PL3"
+	}
+	return source
+}
 func convertRedisChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
 		return "PostPaid"
 	case "Subscription":
 		return "PrePaid"
+	}
+	return source
+}
+func convertRedisStorageTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PL1":
+		return "essd_pl1"
+	case "PL2":
+		return "essd_pl2"
+	case "PL3":
+		return "essd_pl3"
 	}
 	return source
 }
