@@ -11,7 +11,7 @@ description: |-
 
 Provides a Threat Detection Backup Policy resource.
 
-For information about Threat Detection Backup Policy and how to use it, see [What is Backup Policy](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-createbackuppolicy).
+For information about Threat Detection Backup Policy and how to use it, see [What is Backup Policy](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createbackuppolicy).
 
 -> **NOTE:** Available in v1.195.0+.
 

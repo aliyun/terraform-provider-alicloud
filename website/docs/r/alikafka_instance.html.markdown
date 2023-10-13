@@ -11,7 +11,7 @@ description: |-
 
 Provides an ALIKAFKA instance resource.
 
-For information about Kafka instance and how to use it, see [What is alikafka instance](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-startinstance).
+For information about Kafka instance and how to use it, see [What is alikafka instance](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-startinstance).
 
 -> **NOTE:** Available since v1.59.0
 

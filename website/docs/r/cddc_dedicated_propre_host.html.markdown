@@ -10,7 +10,7 @@ description: |-
 
 Provides a CDDC Dedicated Propre Host resource. MyBase proprietary cluster host resources, you need to add a whitelist to purchase a proprietary version of the cluster.
 
-For information about CDDC Dedicated Propre Host and how to use it, see [What is Dedicated Propre Host](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/laexample/what-is-apsaradb-for-mybase).
+For information about CDDC Dedicated Propre Host and how to use it, see [What is Dedicated Propre Host](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/api-cddc-2020-03-20-creatededicatedhostgroup).
 
 -> **NOTE:** Available since v1.210.0.
 

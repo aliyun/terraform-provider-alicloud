@@ -11,7 +11,7 @@ description: |-
 
 Provides a Alb Load Balancer Common Bandwidth Package Attachment resource.
 
-For information about Alb Load Balancer Common Bandwidth Package Attachment and how to use it, see [What is Load Balancer Common Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/attachcommonbandwidthpackagetoloadbalancer).
+For information about Alb Load Balancer Common Bandwidth Package Attachment and how to use it, see [What is Load Balancer Common Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/slb/application-load-balancer/developer-reference/api-alb-2020-06-16-attachcommonbandwidthpackagetoloadbalancer).
 
 -> **NOTE:** Available since v1.200.0.
 

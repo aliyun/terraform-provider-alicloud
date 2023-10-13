@@ -11,7 +11,7 @@ description: |-
 
 Provides a Threat Detection Honeypot Probe resource.
 
-For information about Threat Detection Honeypot Probe and how to use it, see [What is Honeypot Probe](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-createhoneypotprobe).
+For information about Threat Detection Honeypot Probe and how to use it, see [What is Honeypot Probe](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createhoneypotprobe).
 
 -> **NOTE:** Available in v1.195.0+.
 

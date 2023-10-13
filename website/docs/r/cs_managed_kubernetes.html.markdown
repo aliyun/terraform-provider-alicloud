@@ -31,8 +31,6 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.72.0, Some parameters have been removed from resource,You can check them below and re-import the cluster if necessary.
 
--> **NOTE:** From version 1.109.1, Professional managed cluster supports zero worker node. For more information, see [Create an ACK cluster with no worker node by using Terraform](https://help.aliyun.com/document_detail/205101.html).
-
 -> **NOTE:** From version 1.120.0, Support for cluster migration from Standard cluster to professional.
 
 -> **NOTE:** From version 1.177.0+, `runtime`,`enable_ssh`,`rds_instances`,`exclude_autoscaler_nodes`,`worker_number`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`image_id`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id`,`install_cloud_monitor` are deprecated.
