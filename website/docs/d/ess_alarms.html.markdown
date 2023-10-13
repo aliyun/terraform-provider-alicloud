@@ -51,7 +51,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `alarm_actions` - The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
   * `scaling_group_id` -  The scaling group associated with this alarm.
   * `metric_type` -  The type for the alarm's associated metric. 
-  * `metric_name` -  The name for the alarm's associated metric. See [Block_metricNames_and_dimensions](#block-metricnames_and_dimensions) below for details.
+  * `metric_name` -  The name for the alarm's associated metric.
   * `period` -  The period in seconds over which the specified statistic is applied.
   * `statistics` -  The statistic to apply to the alarm's associated metric. 
   * `threshold` -  The value against which the specified statistics is compared.
