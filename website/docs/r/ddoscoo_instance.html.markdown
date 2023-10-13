@@ -47,7 +47,7 @@ The following arguments are supported:
 * `port_count` - (Required) Port retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `domain_count` - (Required) Domain retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `period` - (Optional, ForceNew) The duration that you will buy Ddoscoo instance (in month). Valid values: [1~9], 12, 24, 36. Default to 1. At present, the provider does not support modify "period".
-* `product_type` - (Optional, Available since v1.125.0) The product type for purchasing DDOSCOO instances used to differ different account type. Valid values:
+* `product_type` - (Optional, Available since v1.125.0) The product type for purchasing DDoSCOO instances used to differ different account type. Valid values:
   - ddoscoo: Only supports domestic account.
   - ddoscoo_intl: Only supports to international account.
   Default to ddoscoo.

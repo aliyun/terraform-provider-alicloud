@@ -11,7 +11,7 @@ description: |-
 
 Provides a DMS Enterprise Logic Database resource.
 
-For information about DMS Enterprise Logic Database and how to use it, see [What is Logic Database](https://www.alibabacloud.com/help/zh/data-management-service/latest/api-doc-dms-enterprise-2018-11-01-api-doc-createlogicdatabase).
+For information about DMS Enterprise Logic Database and how to use it, see [What is Logic Database](https://www.alibabacloud.com/help/en/dms/developer-reference/api-dms-enterprise-2018-11-01-createlogicdatabase).
 
 -> **NOTE:** Available in v1.195.0+.
 

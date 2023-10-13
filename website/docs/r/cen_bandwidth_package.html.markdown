@@ -11,7 +11,7 @@ description: |-
 
 Provides a CEN bandwidth package resource. The CEN bandwidth package is an abstracted object that includes an interconnection bandwidth and interconnection areas. To buy a bandwidth package, you must specify the areas to connect. An area consists of one or more Alibaba Cloud regions. The areas in CEN include Mainland China, Asia Pacific, North America, and Europe.
 
-For information about CEN and how to use it, see [Manage bandwidth packages](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createcenbandwidthpackage).
+For information about CEN and how to use it, see [Manage bandwidth packages](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createcenbandwidthpackage).
 
 -> **NOTE:** Available since v1.18.0.
 

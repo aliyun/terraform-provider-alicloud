@@ -7,7 +7,7 @@ description: |-
   Provides an Application Load Balancer resource.
 ---
 
-# alicloud\_slb\_load\_balancer
+# alicloud_slb_load_balancer
 
 Provides an Application Load Balancer resource.
 
@@ -73,7 +73,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
 * `bandwidth` - (Optional) Valid value is between 1 and 5120, If argument `internet_charge_type` is `PayByTraffic`, then this value will be ignored.
 * `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in. **Note:** Required for a VPC SLB. If `address_type` is internet, it will be ignored.
 * `load_balancer_spec` - (Optional) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
- Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/doc-detail/27657.htm)" instance, it must be specified. Valid values: `slb.s1.small`, `slb.s2.small`, `slb.s2.medium`,
+ Launching "Performance-guaranteed" instance, it must be specified. Valid values: `slb.s1.small`, `slb.s2.small`, `slb.s2.medium`,
  `slb.s3.small`, `slb.s3.medium`, `slb.s3.large` and `slb.s4.large`. It will be ignored when `instance_charge_type = "PayByCLCU"`.
 * `tags` - (Optional) A mapping of tags to assign to the resource. The `tags` can have a maximum of 10 tag for every load balancer instance.
 * `payment_type` - (Optional) The billing method of the load balancer. Valid values are `PayAsYouGo` and `Subscription`. Default to `PayAsYouGo`.

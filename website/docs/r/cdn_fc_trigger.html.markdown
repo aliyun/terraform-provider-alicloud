@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud CDN Fc Trigger resource.
 ---
 
-# alicloud\_cdn\_fc\_trigger
+# alicloud_cdn_fc_trigger
 
 Provides a CDN Fc Trigger resource.
 
-For information about CDN Fc Trigger and how to use it, see [What is Fc Trigger](https://www.alibabacloud.com/help/zh/alibaba-cloud-cdn/latest/add-function-calculation-trigger).
+For information about CDN Fc Trigger and how to use it, see [What is Fc Trigger](https://www.alibabacloud.com/help/en/cdn/developer-reference/api-cdn-2018-05-10-addfctrigger).
 
 -> **NOTE:** Available in v1.165.0+.
 
@@ -45,7 +45,7 @@ The following arguments are supported:
 * `notes` - (Required) The Note information.
 * `role_arn` - (Required) The role authorized by RAM. The value formats as `acs:ram::{AccountID}:role/{RoleName}`.
 * `source_arn` - (Required) Resources and filters for event listening. The value formats as `acs:cdn:{RegionID}:{AccountID}:{Filter}`.
-* `trigger_arn` - (Required, ForceNew) The trigger corresponding to the function Compute Service. The value formats as `acs:fc:{RegionID}:{AccountID}:{Filter}`. See [Create a CDN Fc Trigger](https://www.alibabacloud.com/help/zh/alibaba-cloud-cdn/latest/add-function-calculation-trigger) for more details.
+* `trigger_arn` - (Required, ForceNew) The trigger corresponding to the function Compute Service. The value formats as `acs:fc:{RegionID}:{AccountID}:{Filter}`. See [Create a CDN Fc Trigger](https://www.alibabacloud.com/help/en/cdn/developer-reference/api-cdn-2018-05-10-addfctrigger) for more details.
 
 ## Attributes Reference
 
