@@ -54,6 +54,7 @@ func TestAccAlicloudAutoProvisioningGroup(t *testing.T) {
 						"vswitch_id":        "${alicloud_vswitch.default.id}",
 						"weighted_capacity": "1",
 						"max_price":         "2",
+						"instance_type":     "ecs.sn1ne.large",
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -229,6 +230,7 @@ func TestAccAlicloudAutoProvisioningGroup_valid(t *testing.T) {
 						"vswitch_id":        "${alicloud_vswitch.default.id}",
 						"weighted_capacity": "1",
 						"max_price":         "2",
+						"instance_type":     "ecs.sn1ne.large",
 					}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -253,7 +255,7 @@ func resourceAutoProvisioningGroupConfigDependence(name string) string {
     resource "alicloud_launch_template" "template" {
           name                          = "${var.name}"
           image_id                      = "${data.alicloud_images.default.images.0.id}"
-          instance_type                 = "ecs.n1.tiny"
+          instance_type                 = "ecs.sn1ne.large"
           security_group_id             = "${alicloud_security_group.default.id}"
     }`, EcsInstanceCommonTestCase, name)
 }
