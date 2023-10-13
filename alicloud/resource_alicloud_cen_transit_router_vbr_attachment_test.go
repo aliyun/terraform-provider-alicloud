@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
@@ -125,7 +125,7 @@ func TestAccAlicloudCenTransitRouterVbrAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
+func TestAccAliCloudCenTransitRouterVbrAttachment_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_vbr_attachment.default"
