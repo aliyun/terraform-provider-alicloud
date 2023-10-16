@@ -80,7 +80,7 @@ The following attributes are exported in addition to the arguments listed above:
 	* `resource_group_id` - The ID of the resource group.
 	* `security_ips` - List of IP addresses allowed to access all databases of an cluster.
 	* `status` - The status of the resource.
-	* `storage_resource` - The specifications of storage resources in elastic mode. The resources are used for data read and write operations. The increase of resources can improve the read and write performance of your cluster. For more information, see [Specifications](https://www.alibabacloud.com/help/en/doc-detail/144851.htm).
+	* `storage_resource` - The specifications of storage resources in elastic mode. The resources are used for data read and write operations. The increase of resources can improve the read and write performance of your cluster.
 	* `tags` - The tags of the resource.
 	* `vpc_cloud_instance_id` - The vpc cloud instance id.
 	* `vpc_id` - The vpc id.

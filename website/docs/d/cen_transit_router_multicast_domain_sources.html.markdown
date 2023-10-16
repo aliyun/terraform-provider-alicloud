@@ -11,11 +11,11 @@ description: |-
 
 This data source provides Cen Transit Router Multicast Domain Source available to the user.[What is Transit Router Multicast Domain Source](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-registertransitroutermulticastgroupsources)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cen_transit_router_multicast_domain_sources" "default" {
   transit_router_multicast_domain_id = "tr-mcast-domain-xxxxxx"
 }
@@ -28,7 +28,8 @@ output "alicloud_cen_transit_router_multicast_domain_source_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `transit_router_multicast_domain_id` - (Required,ForceNew) The ID of the multicast domain to which the multicast source belongs.
+* `ids` - (Optional)A list of the multicast domain IDs.
+* `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast source belongs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 
@@ -41,3 +42,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `network_interface_id` - ENI ID of the multicast source.
   * `vpc_id` - The VPC to which the ENI of the multicast source belongs. This field is mandatory for VPCs that is owned by another accounts.
   * `status` - The status of the resource.
+  * `id` - The id of the resource.

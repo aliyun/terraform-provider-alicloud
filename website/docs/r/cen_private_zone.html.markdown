@@ -13,7 +13,7 @@ This topic describes how to configure PrivateZone access.
 PrivateZone is a VPC-based resolution and management service for private domain names. 
 After you set a PrivateZone access, the Cloud Connect Network (CCN) and Virtual Border Router (VBR) attached to a CEN instance can access the PrivateZone service through CEN.
 
-For information about CEN Private Zone and how to use it, see [Manage CEN Private Zone](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-routeprivatezoneincentovpc).
+For information about CEN Private Zone and how to use it, see [Manage CEN Private Zone](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-cbn-2017-09-12-routeprivatezoneincentovpc).
 
 -> **NOTE:** Available since v1.83.0.
 

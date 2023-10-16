@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cen Transit Router Multicast Domain Source resource.
 
-For information about Cen Transit Router Multicast Domain Source and how to use it, see [What is Transit Router Multicast Domain Source](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-registertransitroutermulticastgroupsources).
+For information about Cen Transit Router Multicast Domain Source and how to use it, see [What is Transit Router Multicast Domain Source](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-cbn-2017-09-12-registertransitroutermulticastgroupsources).
 
 -> **NOTE:** Available since v1.195.0.
 

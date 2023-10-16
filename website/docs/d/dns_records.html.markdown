@@ -7,13 +7,15 @@ description: |-
     Provides a list of records available to the dns.
 ---
 
-# alicloud\_dns\_records
+# alicloud_dns_records
 
 This data source provides a list of DNS Domain Records in an Alibaba Cloud account according to the specified filters.
 
+-> **NOTE:** Available since v1.0.0.
+
 ## Example Usage
 
-```
+```terraform
 data "alicloud_dns_records" "records_ds" {
   domain_name       = "xiaozhu.top"
   is_locked         = false
@@ -31,13 +33,13 @@ output "first_record_id" {
 
 The following arguments are supported:
 
-* `domain_name` - (Required) The domain name associated to the records.
-* `host_record_regex` - (Optional) Host record regex. 
-* `value_regex` - (Optional) Host record value regex. 
-* `type` - (Optional) Record type. Valid items are `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
-* `line` - (Optional) ISP line. Valid items are `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`, .etc. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/doc-detail/34339.htm) 
-* `status` - (Optional) Record status. Valid items are `ENABLE` and `DISABLE`.
-* `is_locked` - (Optional, type: bool) Whether the record is locked or not.
+* `domain_name` - (Required, ForceNew) The domain name associated to the records.
+* `host_record_regex` - (Optional, ForceNew) Host record regex. 
+* `value_regex` - (Optional, ForceNew) Host record value regex. 
+* `type` - (Optional, ForceNew) Record type. Valid items are `A`, `NS`, `MX`, `TXT`, `CNAME`, `SRV`, `AAAA`, `REDIRECT_URL`, `FORWORD_URL` .
+* `line` - (Optional, ForceNew) ISP line. Valid items are `default`, `telecom`, `unicom`, `mobile`, `oversea`, `edu`, `drpeng`, `btvn`, .etc. For checking all resolution lines enumeration please visit [Alibaba Cloud DNS doc](https://www.alibabacloud.com/help/en/doc-detail/29807.htm) 
+* `status` - (Optional, ForceNew) Record status. Valid items are `ENABLE` and `DISABLE`.
+* `is_locked` - (Optional, ForceNew, type: bool) Whether the record is locked or not.
 * `ids` - (Optional, Available 1.52.2+) A list of record IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

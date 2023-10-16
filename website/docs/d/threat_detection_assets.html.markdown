@@ -9,13 +9,13 @@ description: |-
 
 # alicloud_threat_detection_assets
 
-This data source provides Threat Detection Asset available to the user.[What is Asset](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-describecloudcenterinstances)
+This data source provides Threat Detection Asset available to the user.[What is Asset](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-describecloudcenterinstances)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_threat_detection_assets" "default" {}
 
 output "alicloud_threat_detection_asset_example_id" {
@@ -26,15 +26,15 @@ output "alicloud_threat_detection_asset_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `criteria` - (ForceNew,Optional) Set the conditions for searching assets. This parameter is in JSON format. Note the case when you enter the parameter. **NOTE:** You can search for assets by using conditions such as the instance ID, instance name, VPC ID, region, and public IP address of the asset.
-* `importance` - (ForceNew,Optional) Set asset importance. Value:
+* `criteria` - (ForceNew, Optional) Set the conditions for searching assets. This parameter is in JSON format. Note the case when you enter the parameter. **NOTE:** You can search for assets by using conditions such as the instance ID, instance name, VPC ID, region, and public IP address of the asset.
+* `importance` - (ForceNew, Optional) Set asset importance. Value:
   - **2**: Significant assets
   - **1**: General assets
   - **0**: Test asset
-* `logical_exp` - (ForceNew,Optional) Set the logical relationship between multiple search conditions. The default value is **OR**. Valid values:
+* `logical_exp` - (ForceNew, Optional) Set the logical relationship between multiple search conditions. The default value is **OR**. Valid values:
   - **OR**: indicates that the relationship between multiple search conditions is **OR**.
   - **AND**: indicates that the relationship between multiple search conditions is **AND**.
-* `machine_types` - (ForceNew,Optional) The type of asset to query. Value:
+* `machine_types` - (ForceNew, Optional) The type of asset to query. Value:
   - **ecs**: server.
   - **cloud_product**: Cloud product.
 * `no_group_trace` - (Optional, ForceNew) Specifies whether to internationalize the name of the default group. Default value: false

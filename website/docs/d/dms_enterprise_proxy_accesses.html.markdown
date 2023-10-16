@@ -9,9 +9,9 @@ description: |-
 
 # alicloud_dms_enterprise_proxy_accesses
 
-This data source provides DMS Enterprise Proxy Access available to the user.[What is Proxy Access](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxy)
+This data source provides DMS Enterprise Proxy Access available to the user.[What is Proxy Access](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxyAccess)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -36,10 +36,9 @@ output "alicloud_dms_proxy_acceses_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `proxy_id` - (Required,ForceNew) The ID of the security agent.
+* `proxy_id` - (Required, ForceNew) The ID of the security agent.
 * `ids` - (Optional, ForceNew, Computed) A list of Proxy Access IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-
 
 ## Attributes Reference
 
@@ -48,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `accesses` - A list of Proxy Access Entries. Each element contains the following attributes:
     * `id` - Security Protection authorization ID.
     * `access_id` - The authorized account of the security agent.
-    * `gmt_create` - The authorization time of the security access agent permission.
+    * `create_time` - The authorization time of the security access agent permission.
     * `indep_account` - Database account.
     * `instance_id` - The ID of the instance.
     * `origin_info` - The source information of the security access agent permission is enabled, and the return value is as follows:**Owner Authorization**: The UID of the owner in parentheses.**Work Order Authorization**: The ticket number in parentheses is the number of the user to apply for permission.

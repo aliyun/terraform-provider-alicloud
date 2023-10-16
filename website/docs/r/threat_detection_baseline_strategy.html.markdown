@@ -11,9 +11,9 @@ description: |-
 
 Provides a Threat Detection Baseline Strategy resource.
 
-For information about Threat Detection Baseline Strategy and how to use it, see [What is Baseline Strategy](https://www.alibabacloud.com/help/zh/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifystrategy).
+For information about Threat Detection Baseline Strategy and how to use it, see [What is Baseline Strategy](https://www.alibabacloud.com/help/en/security-center/latest/api-sas-2018-12-03-modifystrategy).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -58,7 +58,7 @@ The following attributes are exported:
 * `id` - The ID of the baseline check policy, same with `baseline_strategy_id`.
 * `baseline_strategy_id` - The ID of the baseline check policy.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Baseline Strategy.
