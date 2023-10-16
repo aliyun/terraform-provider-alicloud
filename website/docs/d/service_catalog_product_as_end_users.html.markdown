@@ -12,7 +12,7 @@ description: |-
 -> **DEPRECATED:** It has been deprecated from version `1.197.0`.
 Please use new datasource [alicloud_service_catalog_end_user_products](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/service_catalog_end_user_products) instead.
 
-This data source provides Service Catalog Product As End User available to the user.[What is Product As End User](https://www.alibabacloud.com/help/en/servicecatalog/latest/api-doc-servicecatalog-2021-09-01-api-doc-listproductsasenduser)
+This data source provides Service Catalog Product As End User available to the user.[What is Product As End User](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-listproductsasenduser)
 
 -> **NOTE:** Available in 1.196.0+
 

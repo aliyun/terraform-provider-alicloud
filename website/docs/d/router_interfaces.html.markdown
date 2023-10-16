@@ -9,10 +9,10 @@ description: |-
 
 # alicloud\_router\_interfaces
 
-This data source provides information about [router interfaces](https://www.alibabacloud.com/help/doc-detail/52412.htm)
+This data source provides information about [router interfaces](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-describerouterinterfaces-efficiency-channels)
 that connect VPCs together.
 
--> **DEPRECATED:**  This datasource has been deprecated from version `1.199.0`. Please use new resource [alicloud_express_connect_router_interfaces](https://www.terraform.io/docs/providers/alicloud/d/alicloud_express_connect_router_interfaces).
+-> **DEPRECATED:**  This datasource has been deprecated from version `1.199.0`. Please use new data source [alicloud_express_connect_router_interfaces](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/express_connect_router_interfaces).
 
 ## Example Usage
 

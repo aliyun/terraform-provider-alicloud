@@ -9,7 +9,7 @@ description: |-
 
 # alicloud\_express\_connect\_router\_interfaces
 
-This data source provides Router Interface available to the user.[What is Router Interface](https://www.alibabacloud.com/help/doc-detail/52412.htm)
+This data source provides Router Interface available to the user.[What is Router Interface](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-describerouterinterfaces-efficiency-channels)
 
 -> **NOTE:** Available in 1.199.0+
 

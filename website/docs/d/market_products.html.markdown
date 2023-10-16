@@ -38,7 +38,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, Available 1.66.0+) A regex string to apply to the product name.
 * `ids` - (Optional, Available 1.66.0+) A list of product code.
 * `sort` - (Optional, ForceNew) This field determines how to sort the filtered results, Valid values: `user_count-desc`, `created_on-desc`, `price-desc` and `score-desc`.
-* `category_id` - (Optional, ForceNew) The Category ID of products. For more information, see [DescribeProducts](https://help.aliyun.com/document_detail/89834.htm). 
+* `category_id` - (Optional, ForceNew) The Category ID of products.
 * `product_type` - (Optional, ForceNew) The type of products, Valid values: `APP`, `SERVICE`, `MIRROR`, `DOWNLOAD` and `API_SERVICE`.
 * `search_term` - (Optional, ForceNew, Available 1.69.0+) Search term in this query.
 * `supplier_id` - (Optional, ForceNew, Available 1.71.1+) The supplier id of the product.
